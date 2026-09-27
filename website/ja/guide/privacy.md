@@ -64,12 +64,23 @@ X-Machine-Id: a3f8c2b1d4e5f6078a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1
 - マシンハッシュはどのアカウント、メール、または IP アドレスにも関連付けられていません — 匿名デバイスカウンターのみです
 - トラッキングクッキー、フィンガープリンティング、または分析 SDK は使用していません
 
+## VMark がディスク上で読み取れる範囲
+
+VMark のファイルアクセスは、ディスク全体ではなく、限定された権限スコープです:
+
+- **静的スコープ**: ホームフォルダ（`$HOME/**`）と、マウントされたボリューム — macOS では `/Volumes/**`、Linux では `/mnt/**` と `/media/**`。Windows ではドライブ `C:\` から `F:\` も対象になるため、実行時の許可が必要なのは `G:\` 以降のドライブとネットワーク共有だけです。macOS と Linux では、隠しフォルダ（名前が `.` で始まるフォルダ）の中にあるものはすべて静的スコープの外です。
+- **実行時の許可**: 明示的に開いたファイル — Finder やエクスプローラー、`vmark` コマンドライン、ファイルダイアログから開いたもの — には、そのファイルだけの許可が与えられます。**フォルダ**が許可されるのは、あなたが選んだことを VMark が確認できる場合だけです。つまり、VMark のフォルダ選択ダイアログで選んだか、Finder から開いた場合です。VMark はこうしたフォルダの一覧（アプリデータフォルダ内の `workspace-grants.json`）を保持し、起動のたびに改めて許可するため、復元されたセッションや **最近開いたワークスペース** はそのまま使えます。この一覧になく、静的スコープにも含まれない最近のワークスペースを開くと、そのフォルダを開いた状態でフォルダ選択ダイアログが表示されます — そのフォルダを選んで確定してください。AI アシスタントがそのようなフォルダを開こうとした場合も、あなたが要求を承認した後に同じ手順になります。
+- **画像とメディア**: ローカルの画像・動画・音声は VMark のアセットプロトコルを通じて表示され、その到達範囲も同じです — 静的スコープと、上記の実行時の許可です。メディアビューアは、表示する 1 つのファイルにだけ、しかもメディアの拡張子を持つファイルに限って許可を追加します。それ以外のパスへの要求は、スコープを広げずに拒否されます。これらの範囲外にある画像 — たとえば、静的スコープの外から単独で開いたドキュメントの隣にある画像 — は、そのフォルダをワークスペースとして開くまで表示されません。
+
+ここで何かが外部に送信されることはありません。スコープは、アプリ自身が何を読み取れるかを決めるものです。
+
 ## オープンソースによる透明性
 
 VMark は完全なオープンソースです。ここに記載されているすべてのことを確認できます:
 
 - 更新エンドポイントの設定: [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json)
 - マシンハッシュの生成: [`src-tauri/src/lib.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/lib.rs) — `machine_id_hash`を検索
+- ファイルシステムとアセットのスコープ: [`src-tauri/capabilities/default.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/capabilities/default.json)、[`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json) の `assetProtocol` 項目、[`src-tauri/src/fs_scope.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/fs_scope.rs)、[`src-tauri/src/workspace_grants/`](https://github.com/xiaolai/vmark/tree/main/src-tauri/src/workspace_grants)
 - サーバー側の統計集計: [`scripts/vmark-stats-json`](https://github.com/xiaolai/vmark/blob/main/scripts/vmark-stats-json) — [公開統計](https://log.vmark.app/api/stats)を生成するためにサーバーで実行される正確なスクリプト
 - コードベースに他のネットワーク呼び出しは存在しません — `fetch`、`http`、または`reqwest`を自分で検索してください
 
