@@ -40,7 +40,7 @@ El rechazo absoluto a 50 MB no es ajustable por el usuario. La webview no puede 
 
 - Si tienes que seguir editando un archivo muy grande en WYSIWYG, plantéate dividirlo en archivos más pequeños enlazados desde un documento índice. Markdown funciona bien como un conjunto de capítulos más pequeños.
 - Si solo necesitas leer o buscar en un archivo grande, el modo Fuente con la regla de números de línea y `Find` (`Mod + F`) suele ser el flujo de trabajo más rápido.
-- `Formato > Formatear texto CJK` y otros comandos de documento completo siguen ejecutándose correctamente en documentos en modo Fuente.
+- **Formato → CJK → Formatear archivo completo** y otros comandos de documento completo siguen ejecutándose correctamente en documentos en modo Fuente.
 
 ## Casos límite
 
@@ -52,4 +52,4 @@ El rechazo absoluto a 50 MB no es ajustable por el usuario. La webview no puede 
 ## Limitaciones conocidas
 
 - Los umbrales son tamaños en bytes, que son una aproximación al coste real (recuento de bloques). Un archivo de 600 KB con miles de bloques cortos puede ser más lento que uno de 1,2 MB con párrafos largos. Los valores por defecto son conservadores.
-- La fase C de la iniciativa de archivos grandes (renderizado WYSIWYG diferido) aún no se ha lanzado — consulta `dev-docs/plans/20260422-large-file-open-ux.md` para conocer el estado.
+- WYSIWYG sigue construyendo el documento completo al abrirlo — todavía no hay renderizado diferido ni incremental —, así que cambiar un archivo grande a WYSIWYG cuesta el tiempo de apertura completo descrito arriba.

@@ -93,8 +93,8 @@ Si prefieres mantener las funciones del sistema en las teclas F, puedes personal
 | Duplicar Línea | `Shift + Alt + Abajo` |
 | Eliminar Línea | `Mod + Shift + K` |
 | Unir Líneas | `Mod + J` |
-| Ordenar Líneas Ascendente | `F4` |
-| Ordenar Líneas Descendente | `Shift + F4` |
+| Ordenar Líneas Ascendente | `F4` _(solo en modo Fuente)_ |
+| Ordenar Líneas Descendente | `Shift + F4` _(solo en modo Fuente)_ |
 
 ## Transformaciones de Texto
 
@@ -312,10 +312,33 @@ Cuando el terminal integrado está enfocado:
 | Acción | Atajo |
 |--------|-------|
 | Alternar Terminal | `` Ctrl + ` `` |
+| Enfocar la Terminal o el Editor | `` Ctrl + Shift + ` `` |
 | Copiar | `Mod + C` (con selección) |
 | Pegar | `Mod + V` |
+| Seleccionar Todo (solo la salida del terminal) | `Mod + A` |
 | Limpiar | `Mod + K` |
 | Buscar | `Mod + F` |
+| Cambiar a la sesión 1–5 | `Mod + 1` hasta `Mod + 5` |
+| Aumentar la fuente del terminal | `Mod + =` |
+| Reducir la fuente del terminal | `Mod + -` |
+| Tamaño de fuente predeterminado del terminal | `Mod + 0` |
+| Prompt de comando anterior | `Mod + ↑` |
+| Prompt de comando siguiente | `Mod + ↓` |
+| Nueva línea en la línea de entrada (Claude Code y herramientas similares) | `Shift + Enter` |
+
+Mientras el terminal está enfocado, `Mod + =`, `Mod + -` y `Mod + 0` cambian el tamaño de la fuente del terminal en lugar de la del editor.
+
+La navegación entre prompts salta de un prompt de comando a otro en el historial de desplazamiento y requiere la integración del shell (zsh o bash).
+
+En macOS, el terminal también traduce para el shell las combinaciones habituales de edición de texto:
+
+| Acción | Atajo |
+|--------|-------|
+| Mover una palabra a la izquierda / derecha | `Option + ←` / `Option + →` |
+| Mover al inicio / final de la línea | `Cmd + ←` / `Cmd + →` |
+| Borrar la línea de entrada (envía `Ctrl + U`) | `Cmd + Backspace` |
+
+En macOS, las combinaciones con `Ctrl` como `Ctrl + A`, `Ctrl + R` y `Ctrl + W` van directamente al shell.
 
 Cuando la barra de búsqueda del terminal está abierta:
 
@@ -332,10 +355,16 @@ Cuando la barra de búsqueda del terminal está abierta:
 ## Personalizar Atajos
 
 1. Abre Configuración con `Mod + ,`
-2. Navega a la pestaña **Atajos**
-3. Haz clic en cualquier atajo para editarlo
-4. Pulsa la combinación de teclas deseada
-5. Los cambios se guardan automáticamente
+2. Navega a la pestaña **Atajos** (escribe en el cuadro de búsqueda para filtrar por nombre, categoría, descripción o tecla)
+3. Haz clic en la tecla que aparece junto a un atajo — o en **Sin asignar** si todavía no tiene ninguna
+4. Pulsa la combinación de teclas deseada y luego haz clic en **Asignar** (`Escape` cancela)
+
+El diálogo te avisa antes de asignar una combinación:
+
+- **Conflicto** — otro atajo ya usa esa combinación, y el diálogo indica cuál. Aun así puedes elegir **Asignar de todos modos**.
+- **No compatible** — VMark no puede usar esa combinación, así que no se puede asignar. Prueba con otra.
+
+Un atajo personalizado aparece resaltado y recibe un botón **Restablecer al predeterminado**. **Restablecer todos** restaura todos los valores predeterminados tras pedir confirmación. **Exportar** guarda tus atajos como un archivo JSON (`vmark-shortcuts.json`) e **Importar** carga uno; si alguna entrada del archivo no es válida, no se importa nada y se enumeran los problemas.
 
 ::: tip
 Los atajos se sincronizan con los aceleradores del menú cuando corresponde, de modo que los elementos del menú mostrarán tus atajos personalizados.

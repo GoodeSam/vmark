@@ -28,9 +28,9 @@ Escribe un bloque de código delimitado con el identificador de lenguaje `markma
 ```text
 ````
 
-### Usando la Herramienta MCP
+### Desde un Asistente de IA
 
-Usa la herramienta MCP `media` con `action: "markmap"` y el parámetro `code` que contiene los encabezados Markdown.
+No hay una herramienta dedicada a los mapas mentales. Un cliente de IA conectado a través del [servidor MCP de VMark](/es/guide/mcp-setup) inserta un mapa mental igual que inserta cualquier otro Markdown — escribiendo un bloque de código ` ```markmap ` en el documento con la herramienta `document` o `selection`.
 
 ## Modos de Edición
 
@@ -38,15 +38,15 @@ Usa la herramienta MCP `media` con `action: "markmap"` y el parámetro `code` qu
 
 En el modo WYSIWYG, los mapas mentales Markmap se renderizan como árboles SVG interactivos. Puedes:
 
-- **Hacer panorámica** desplazando o haciendo clic y arrastrando
-- **Hacer zoom** manteniendo `Cmd`/`Ctrl` y desplazando
+- **Hacer panorámica** haciendo clic y arrastrando (un desplazamiento normal desplaza el documento, no el mapa mental)
+- **Hacer zoom** manteniendo `Ctrl` y desplazando
 - **Colapsar/expandir** nodos haciendo clic en el círculo en cada rama
 - **Ajustar** la vista usando el botón de ajuste (esquina superior derecha al pasar el ratón)
 - **Doble clic** en el mapa mental para editar el código fuente
 
 ### Modo Fuente con Vista Previa en Vivo
 
-En el modo Fuente, aparece un panel de vista previa flotante cuando el cursor está dentro de un bloque de código markmap, actualizándose a medida que escribes.
+En el modo Fuente, un panel de vista previa flotante muestra el mapa mental mientras el cursor está dentro de un bloque de código markmap, actualizándose a medida que escribes. La vista previa está desactivada por defecto — actívala con **Vista → Alternar vista previa de diagramas** (`Alt + Mod + P`) o desde la paleta de comandos.
 
 ## Formato de Entrada
 
@@ -121,8 +121,8 @@ Aquí hay un markmap interactivo renderizado directamente en esta página — pr
 
 | Acción | Cómo |
 |--------|------|
-| **Panorámica** | Desplazar o hacer clic y arrastrar |
-| **Zoom** | `Cmd`/`Ctrl` + desplazar |
+| **Panorámica** | Hacer clic y arrastrar |
+| **Zoom** | `Ctrl` + desplazar |
 | **Colapsar nodo** | Hacer clic en el círculo en un punto de rama |
 | **Expandir nodo** | Hacer clic en el círculo de nuevo |
 | **Ajustar a la vista** | Hacer clic en el botón de ajuste (arriba a la derecha al pasar el ratón) |

@@ -8,7 +8,11 @@ VMark soporta diagramas [Mermaid](https://mermaid.js.org/) para crear diagramas 
 
 ## Insertar un Diagrama
 
-### Usando Atajo de Teclado
+### Usando el Menú o el Atajo
+
+Elige **Insertar → Diagrama**, o pulsa `Alt + Mod + Shift + D`. VMark inserta un bloque de código `mermaid` con un diagrama de flujo inicial para que lo edites. Si hay texto seleccionado, la selección se convierte en el código fuente del diagrama.
+
+### Escribiendo un Bloque de Código
 
 Escribe un bloque de código delimitado con el identificador de lenguaje `mermaid`:
 
@@ -21,21 +25,15 @@ graph TD
 ```
 ````
 
-### Usando el Comando de Barra
-
-1. Escribe `/` para abrir el menú de comandos
-2. Selecciona **Diagrama Mermaid**
-3. Se inserta un diagrama de plantilla para que lo edites
-
 ## Modos de Edición
 
 ### Modo Texto Enriquecido (WYSIWYG)
 
-En el modo WYSIWYG, los diagramas Mermaid se renderizan en línea mientras escribes. Haz clic en un diagrama para editar su código fuente.
+En el modo WYSIWYG, los diagramas Mermaid se renderizan en línea. Haz doble clic en un diagrama para editar su código fuente; el encabezado de edición tiene los botones **Copiar**, **Cancelar** y **Guardar**.
 
 ### Modo Fuente con Vista Previa en Vivo
 
-En el modo Fuente, aparece un panel de vista previa flotante cuando el cursor está dentro de un bloque de código mermaid:
+En el modo Fuente, un panel de vista previa flotante muestra el diagrama mientras el cursor está dentro de un bloque de código mermaid. La vista previa está **desactivada por defecto** — actívala con **Vista → Alternar vista previa de diagramas** (`Alt + Mod + P`) o desde la paleta de comandos. Permanece activada en esa ventana hasta que vuelvas a desactivarla.
 
 ![Panel de vista previa en vivo en modo Fuente](/screenshots/mermaid-source-preview.png)
 
@@ -44,7 +42,7 @@ En el modo Fuente, aparece un panel de vista previa flotante cuando el cursor es
 | **Vista Previa en Vivo** | Ve el diagrama renderizado mientras escribes (debounce de 200ms) |
 | **Arrastrar para Mover** | Arrastra el encabezado para reposicionar la vista previa |
 | **Redimensionar** | Arrastra cualquier borde o esquina para redimensionar |
-| **Zoom** | Usa los botones `−` y `+` (10% a 300%) |
+| **Zoom** | Usa los botones `−` y `+`, o `Cmd/Ctrl` + desplazar (10% a 300%) |
 
 El panel de vista previa recuerda su posición si lo mueves, lo que facilita organizar tu espacio de trabajo.
 
@@ -235,7 +233,7 @@ En el modo WYSIWYG, los diagramas renderizados admiten navegación interactiva:
 
 | Acción | Cómo |
 |--------|------|
-| **Panorámica** | Desplaza o haz clic y arrastra el diagrama |
+| **Panorámica** | Haz clic y arrastra el diagrama (un desplazamiento normal desplaza el documento, no el diagrama) |
 | **Zoom** | Mantén `Cmd` (macOS) o `Ctrl` (Windows/Linux) y desplaza |
 | **Restablecer** | Haz clic en el botón de restablecimiento que aparece al pasar el ratón (esquina superior derecha) |
 
@@ -264,7 +262,7 @@ Al exportar el documento completo a HTML o PDF, los diagramas Mermaid se renderi
 
 ## Corregir Diagramas Generados por IA
 
-VMark usa **Mermaid v11**, que tiene un analizador más estricto (Langium) que las versiones anteriores. Las herramientas de IA (ChatGPT, Claude, Copilot, etc.) a menudo generan sintaxis que funcionaba en versiones anteriores de Mermaid pero falla en v11. Aquí están los problemas más comunes y cómo solucionarlos.
+VMark usa **Mermaid v12**, que mantiene el analizador más estricto (Langium) que llegó con v11. Las herramientas de IA (ChatGPT, Claude, Copilot, etc.) a menudo generan sintaxis que funcionaba en versiones anteriores de Mermaid pero falla en v11 y posteriores. Aquí están los problemas más comunes y cómo solucionarlos.
 
 ### 1. Etiquetas Sin Comillas con Caracteres Especiales
 
@@ -290,7 +288,7 @@ flowchart TD
 
 ### 2. Punto y Coma al Final de Línea
 
-Los modelos de IA a veces añaden punto y coma al final de las líneas. Mermaid v11 no los permite.
+Los modelos de IA a veces añaden punto y coma al final de las líneas. Mermaid v11 y posteriores no los permiten.
 
 ````markdown
 <!-- Falla -->

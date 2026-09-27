@@ -423,7 +423,7 @@ front-matter del flujo grabado; su valor predeterminado es `recording`).
 nunca puede grabarte en silencio. Hasta que lo permitas, `start` devuelve `needsApproval`; en cuanto lo
 haces, VMark arma un shim de captura latente en el mundo de la página y empieza a grabar los **clics y
 las ediciones de campos** que realizas. `stop` devuelve `{source, inputs, eventCount}` — el `source` es
-texto de flujo de trabajo que puedes guardar o pasar directamente a [`workflow_run`](#workflow-run).
+texto de flujo de trabajo que puedes guardar o pasar directamente a [`workflow_run`](#workflow-run-workflow-cancel).
 
 La grabación está **libre de valores por construcción**, y esto no es un filtro que confíe en la página:
 nada de lo que escribes se captura jamás. Cada campo de texto se convierte en una variable `{input}` con
