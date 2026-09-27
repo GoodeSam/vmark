@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ViewPlugin } from "@codemirror/view";
 import type { FormatConfig } from "@/lib/formats/types";
 import { SourcePane } from "./SourcePane";
+import { useEditorStore } from "@/stores/editorStore";
 
 // Mutable mock state so individual tests can simulate async store
 // updates that arrive after the editor has mounted.
@@ -80,6 +81,21 @@ describe("SourcePane", () => {
       content: "hello world",
       filePath: "/foo.txt",
     };
+  });
+
+  // WI-LX2.4 — the pane's CodeMirror view is the window's active source view
+  // while its pane is focused: the workflow diagnostics banner, JobNode's
+  // Escape, undo in source mode and the IME guard all read it from there.
+  it("registers its view as the active source view under its own tab, and forgets it on unmount", () => {
+    useEditorStore.getState().clearActiveEditors();
+    const { container, unmount } = render(
+      <SourcePane tabId="tab-1" formatId="txt" formatConfig={txtConfig} />,
+    );
+    const active = useEditorStore.getState().active;
+    expect(active.activeSourceTabId).toBe("tab-1");
+    expect(active.activeSourceView?.dom).toBe(container.querySelector(".cm-editor"));
+    unmount();
+    expect(useEditorStore.getState().active.activeSourceView).toBeNull();
   });
 
   it("renders a source-pane container", () => {

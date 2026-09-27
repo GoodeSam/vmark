@@ -10,9 +10,9 @@
  *   message routes by what context the diagnostic carries (priority
  *   order):
  *
- *     1. `position` → scroll the active CodeMirror Source view to the
- *        offending line, place the caret at the start of that line.
- *     2. `context.jobId` → select that job in `workflowViewStore` so
+ *     1. `position` → scroll THIS pane's CodeMirror source view (never the
+ *        other pane's) to the line, caret at the start of that line.
+ *     2. `context.jobId` → select that job in the workflow store's view so
  *        the form below the canvas opens to the offending entity.
  *     3. Neither → render as a static row (no jump action).
  *
@@ -30,7 +30,7 @@
  *
  * @coordinates-with src/lib/ghaWorkflow/types.ts — Diagnostic shape
  * @coordinates-with src/stores/workflowStore.ts — selectJob target
- * @coordinates-with src/stores/editorStore.ts — activeSourceView (CodeMirror)
+ * @coordinates-with src/components/Editor/WorkflowPanel/paneSourceView.ts — the pane's source view
  * @module components/Editor/WorkflowEditor/DiagnosticsBanner
  */
 
@@ -41,7 +41,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { EditorView as CMEditorView } from "@codemirror/view";
 import type { Diagnostic, Severity } from "@/lib/ghaWorkflow/types";
 import { useWorkflowStore } from "@/stores/workflowStore";
-import { useEditorStore } from "@/stores/editorStore";
+import { paneSourceView } from "@/components/Editor/WorkflowPanel/paneSourceView";
 import "./workflow-editor.css";
 
 interface DiagnosticsBannerProps {
@@ -63,16 +63,16 @@ const SEVERITY_ICON: Record<Severity, string> = {
 };
 
 /**
- * Scroll the active source-mode CodeMirror view to a 1-based (line, col)
- * position. Drops the caret at the start of the targeted line so the
- * user lands precisely on the offending row even if the column is off.
+ * Scroll THIS pane's CodeMirror source view (`paneSourceView`) to a 1-based
+ * (line, col) position. Drops the caret at the start of the targeted line so
+ * the user lands precisely on the offending row even if the column is off.
  *
- * Returns true when a scroll dispatched, false when no source view is
- * active (caller can fall back to selection-based navigation).
+ * Returns true when a scroll dispatched, false when the pane has no source
+ * view (caller can fall back to selection-based navigation).
  */
-function scrollSourceToPosition(line: number, col: number): boolean {
-  const { activeSourceView } = useEditorStore.getState().active;
-  if (!activeSourceView || !activeSourceView.dom?.isConnected) return false;
+function scrollSourceToPosition(line: number, col: number, from: Element): boolean {
+  const activeSourceView = paneSourceView(from);
+  if (!activeSourceView) return false;
   const doc = activeSourceView.state.doc;
   const targetLine = Math.max(1, Math.min(line, doc.lines));
   const lineInfo = doc.line(targetLine);
@@ -200,15 +200,15 @@ export function DiagnosticsBanner({
           const hasPosition = !!diag.position;
           const isInteractive = hasPosition || jobId !== null;
 
-          const onMessageClick = (): void => {
-            // Position takes priority — it's more precise than job-level
-            // selection. Falls through to selection if no source view
-            // is active (e.g. WYSIWYG mode with the panel open).
+          const onMessageClick = (e: MouseEvent<HTMLButtonElement>): void => {
+            // Position wins (more precise); falls back to selecting the job
+            // when this pane has no source view (preview-only, or split).
             if (
               diag.position &&
               scrollSourceToPosition(
                 diag.position.startLine,
                 diag.position.startCol,
+                e.currentTarget,
               )
             ) {
               return;
