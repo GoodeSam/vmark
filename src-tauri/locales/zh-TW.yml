@@ -299,6 +299,12 @@ errors:
   workflow.noPendingApproval: "沒有相符的待處理核准請求"
   workflow.appDataDirUnavailable: "無法解析應用程式資料目錄：%{detail}"
   workflow.snapshotFailed: "無法為此工作流程將修改的檔案建立快照，因此未執行：%{detail}"
+  workflow.snapshotNotFound: "該工作流程快照已不存在"
+  workflow.snapshotUnreadable: "無法讀取工作流程快照的記錄：%{detail}"
+  workflow.snapshotNoWorkspace: "此快照由舊版 VMark 建立，無法還原"
+  workflow.snapshotWorkspaceMissing: "此快照所屬的資料夾已不存在：%{path}"
+  workflow.snapshotListFailed: "無法列出工作流程快照：%{detail}"
+  workflow.restoreWhileRunning: "有工作流程正在執行。請等待完成或取消後再還原檔案。"
 
   # === 儲存路徑（file_write.rs，WI-14 CommandError）===
   save.parentMissing: "該檔案所在的資料夾已不存在：%{dir}"

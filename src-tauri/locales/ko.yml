@@ -299,6 +299,12 @@ errors:
   workflow.noPendingApproval: "일치하는 대기 중인 승인 요청이 없습니다"
   workflow.appDataDirUnavailable: "앱 데이터 디렉터리를 확인할 수 없습니다: %{detail}"
   workflow.snapshotFailed: "이 워크플로가 수정할 파일의 스냅샷을 만들 수 없어 실행하지 않았습니다: %{detail}"
+  workflow.snapshotNotFound: "해당 워크플로 스냅샷이 더 이상 존재하지 않습니다"
+  workflow.snapshotUnreadable: "워크플로 스냅샷 기록을 읽을 수 없습니다: %{detail}"
+  workflow.snapshotNoWorkspace: "이 스냅샷은 이전 버전의 VMark에서 만들어져 복원할 수 없습니다"
+  workflow.snapshotWorkspaceMissing: "이 스냅샷이 속한 폴더가 더 이상 존재하지 않습니다: %{path}"
+  workflow.snapshotListFailed: "워크플로 스냅샷 목록을 가져올 수 없습니다: %{detail}"
+  workflow.restoreWhileRunning: "워크플로가 실행 중입니다. 파일을 복원하기 전에 완료될 때까지 기다리거나 취소하세요."
 
   # === 저장 경로 (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "이 파일이 있던 폴더가 더 이상 존재하지 않습니다: %{dir}"

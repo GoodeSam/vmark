@@ -299,6 +299,12 @@ errors:
   workflow.noPendingApproval: "該当する保留中の承認リクエストはありません"
   workflow.appDataDirUnavailable: "アプリデータディレクトリを解決できませんでした: %{detail}"
   workflow.snapshotFailed: "このワークフローが変更するファイルのスナップショットを作成できなかったため、実行しませんでした: %{detail}"
+  workflow.snapshotNotFound: "そのワークフローのスナップショットはもう存在しません"
+  workflow.snapshotUnreadable: "ワークフローのスナップショットの記録を読み取れませんでした: %{detail}"
+  workflow.snapshotNoWorkspace: "このスナップショットは以前のバージョンの VMark で作成されたため、復元できません"
+  workflow.snapshotWorkspaceMissing: "このスナップショットが属するフォルダーはもう存在しません: %{path}"
+  workflow.snapshotListFailed: "ワークフローのスナップショットを一覧表示できませんでした: %{detail}"
+  workflow.restoreWhileRunning: "ワークフローが実行中です。ファイルを復元する前に、完了を待つかキャンセルしてください。"
 
   # === 保存パス（file_write.rs、WI-14 CommandError）===
   save.parentMissing: "このファイルのフォルダはもう存在しません: %{dir}"

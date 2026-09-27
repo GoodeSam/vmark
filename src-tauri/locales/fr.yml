@@ -299,6 +299,12 @@ errors:
   workflow.noPendingApproval: "Aucune demande d'approbation en attente ne correspond"
   workflow.appDataDirUnavailable: "Impossible de résoudre le répertoire de données de l'application : %{detail}"
   workflow.snapshotFailed: "Impossible de sauvegarder les fichiers que ce flux de travail va modifier ; il n’a donc pas été exécuté : %{detail}"
+  workflow.snapshotNotFound: "Cet instantané de flux de travail n’existe plus"
+  workflow.snapshotUnreadable: "Impossible de lire l’enregistrement de l’instantané du flux de travail : %{detail}"
+  workflow.snapshotNoWorkspace: "Cet instantané a été créé par une version antérieure de VMark et ne peut pas être restauré"
+  workflow.snapshotWorkspaceMissing: "Le dossier auquel appartient cet instantané n’existe plus : %{path}"
+  workflow.snapshotListFailed: "Impossible de lister les instantanés de flux de travail : %{detail}"
+  workflow.restoreWhileRunning: "Un flux de travail est en cours. Attendez qu’il se termine ou annulez-le avant de restaurer des fichiers."
 
   # === Chemin d'enregistrement (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "Le dossier de ce fichier n'existe plus : %{dir}"

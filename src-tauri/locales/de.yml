@@ -299,6 +299,12 @@ errors:
   workflow.noPendingApproval: "Keine offene Genehmigungsanfrage stimmt überein"
   workflow.appDataDirUnavailable: "Das App-Datenverzeichnis konnte nicht ermittelt werden: %{detail}"
   workflow.snapshotFailed: "Die Dateien, die dieser Workflow ändern würde, konnten nicht gesichert werden; er wurde daher nicht ausgeführt: %{detail}"
+  workflow.snapshotNotFound: "Dieser Workflow-Snapshot existiert nicht mehr"
+  workflow.snapshotUnreadable: "Die Angaben zum Workflow-Snapshot konnten nicht gelesen werden: %{detail}"
+  workflow.snapshotNoWorkspace: "Dieser Snapshot wurde von einer älteren VMark-Version erstellt und kann nicht wiederhergestellt werden"
+  workflow.snapshotWorkspaceMissing: "Der Ordner, zu dem dieser Snapshot gehört, existiert nicht mehr: %{path}"
+  workflow.snapshotListFailed: "Workflow-Snapshots konnten nicht aufgelistet werden: %{detail}"
+  workflow.restoreWhileRunning: "Ein Workflow läuft gerade. Warten Sie, bis er fertig ist, oder brechen Sie ihn ab, bevor Sie Dateien wiederherstellen."
 
   # === Speicherpfad (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "Der Ordner dieser Datei existiert nicht mehr: %{dir}"

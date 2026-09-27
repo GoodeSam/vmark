@@ -26,6 +26,7 @@ mod prepare;
 mod recent_ids;
 pub mod runner;
 pub mod sandbox;
+pub mod snapshot_commands;
 mod snapshot_copy;
 mod snapshot_restore;
 pub mod snapshots;

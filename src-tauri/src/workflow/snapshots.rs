@@ -51,6 +51,11 @@ pub struct SnapshotInfo {
     /// Files that did not exist before execution (should be deleted on restore).
     #[serde(default)]
     pub created_files: Vec<String>,
+    /// The canonical workspace root the snapshot was taken against — the ONLY
+    /// root a restore writes under, so no caller can aim it elsewhere. Absent
+    /// on snapshots written before restore existed, which are not restorable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workspace_root: Option<String>,
 }
 
 /// Create a snapshot of the given files before modification.
@@ -217,6 +222,7 @@ async fn fill_snapshot(
             .as_secs(),
         files: saved_files,
         created_files,
+        workspace_root: Some(canonical_root.to_string_lossy().to_string()),
     };
     let meta_path = snapshot_dir.join("metadata.json");
     let meta_json =

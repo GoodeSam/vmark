@@ -128,6 +128,8 @@ macro_rules! all_commands {
             workflow::commands::workflow_engine_policy,
             workflow::commands::cancel_workflow,
             workflow::commands::respond_workflow_approval,
+            workflow::snapshot_commands::list_workflow_snapshots,
+            workflow::snapshot_commands::restore_workflow_snapshot,
             gha_workflow::commands::gha_lint,
             gha_workflow::commands::gha_fetch_action_yml,
             ai_provider::detect_ai_providers,

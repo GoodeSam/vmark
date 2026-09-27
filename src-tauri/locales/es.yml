@@ -299,6 +299,12 @@ errors:
   workflow.noPendingApproval: "Ninguna solicitud de aprobación pendiente coincide"
   workflow.appDataDirUnavailable: "No se pudo resolver el directorio de datos de la aplicación: %{detail}"
   workflow.snapshotFailed: "No se pudo crear una instantánea de los archivos que este flujo de trabajo modificará, por lo que no se ejecutó: %{detail}"
+  workflow.snapshotNotFound: "Esa instantánea del flujo de trabajo ya no existe"
+  workflow.snapshotUnreadable: "No se pudo leer el registro de la instantánea del flujo de trabajo: %{detail}"
+  workflow.snapshotNoWorkspace: "Esta instantánea la creó una versión anterior de VMark y no se puede restaurar"
+  workflow.snapshotWorkspaceMissing: "La carpeta a la que pertenece esta instantánea ya no existe: %{path}"
+  workflow.snapshotListFailed: "No se pudieron listar las instantáneas de flujos de trabajo: %{detail}"
+  workflow.restoreWhileRunning: "Hay un flujo de trabajo en ejecución. Espere a que termine o cancélelo antes de restaurar archivos."
 
   # === Ruta de guardado (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "La carpeta de este archivo ya no existe: %{dir}"

@@ -299,6 +299,12 @@ errors:
   workflow.noPendingApproval: "Nessuna richiesta di approvazione in sospeso corrisponde"
   workflow.appDataDirUnavailable: "Impossibile risolvere la cartella dei dati dell'applicazione: %{detail}"
   workflow.snapshotFailed: "Impossibile creare uno snapshot dei file che questo flusso di lavoro modificherà, quindi non è stato eseguito: %{detail}"
+  workflow.snapshotNotFound: "Questo snapshot del flusso di lavoro non esiste più"
+  workflow.snapshotUnreadable: "Impossibile leggere i dati dello snapshot del flusso di lavoro: %{detail}"
+  workflow.snapshotNoWorkspace: "Questo snapshot è stato creato da una versione precedente di VMark e non può essere ripristinato"
+  workflow.snapshotWorkspaceMissing: "La cartella a cui appartiene questo snapshot non esiste più: %{path}"
+  workflow.snapshotListFailed: "Impossibile elencare gli snapshot dei flussi di lavoro: %{detail}"
+  workflow.restoreWhileRunning: "Un flusso di lavoro è in esecuzione. Attendere il completamento o annullarlo prima di ripristinare i file."
 
   # === Percorso di salvataggio (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "La cartella di questo file non esiste più: %{dir}"
