@@ -193,6 +193,29 @@ describe("gha-tdd-guard — WI-19: SCOPED names paths that exist", () => {
     expect(runGuard(write("src/stores/workflowStore.ts")).status).toBe(0);
   });
 
+  // WI-LX2.4 — the store slices and the yaml adapter's workflow modules joined
+  // the scope. Each real file must pass (it ships with a sibling test) and an
+  // untested sibling must be blocked, so neither half of the entry is fiction.
+  it("scopes the workflow store slices and the yaml adapter's workflow modules (WI-LX2.4)", () => {
+    for (const real of [
+      "src/stores/workflowEditQueue.ts",
+      "src/stores/workflowSerialize.ts",
+      "src/stores/workflowPreviewSlice.ts",
+      "src/stores/workflowViewSlice.ts",
+      "src/stores/workflowApprovalSlice.ts",
+      "src/lib/formats/adapters/yamlWorkflowExtensions.ts",
+      "src/lib/formats/adapters/yamlWorkflowRenderer.tsx",
+      "src/lib/formats/adapters/yamlEngineRenderer.tsx",
+    ]) {
+      expect(runGuard(write(real)).status, `${real} ships with its test`).toBe(0);
+    }
+    for (const probe of ["src/lib/formats/adapters/yamlWorkflow__probe__.ts", "src/lib/formats/adapters/yamlEngine__probe__.tsx"]) {
+      expect(runGuard(write(probe)).status, `${probe} should be scoped (blocked, no test)`).toBe(2);
+    }
+    // Named, not globbed: a new unrelated store must stay out of scope.
+    expect(runGuard(write("src/stores/workflowSomethingElse__probe__.ts")).status).toBe(0);
+  });
+
   it("still honours the allow-list inside the new scopes", () => {
     expect(runGuard(write("src/lib/workflow/types.ts")).status).toBe(0);
     expect(runGuard(write("src/lib/workflow/parser.test.ts")).status).toBe(0);

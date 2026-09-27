@@ -1,14 +1,20 @@
 /**
  * Workflow Side Panel
  *
- * Purpose: Persistent side panel for standalone .yml workflow files.
- * Shows the React Flow graph alongside the CodeMirror YAML editor and
- * exposes Run / Cancel controls for the runner (WI-4.2).
+ * Purpose: the engine's run panel as a resizable right-hand dock inside the
+ * MARKDOWN surface. That surface edits a YAML file only when the user has
+ * associated `.yml`/`.yaml` with markdown (Settings → Formats); in Source mode
+ * `sourceWorkflowPreview` parses the file into the workflow store and opens
+ * this panel. The ordinary path for a `.yml` engine workflow is the yaml
+ * adapter's split pane, which mounts the same `WorkflowRunPanel` directly.
  *
- * @coordinates-with stores/workflowStore.ts — reads panel + execution state
- * @coordinates-with WorkflowPreview.tsx — renders the React Flow canvas
- * @coordinates-with useWorkflowExecution.ts — start / cancel
- * @coordinates-with Editor.tsx — mounted alongside editor-content
+ * Runs ITS tab's document (`tabId`, from the surface that mounts it) — never
+ * the active tab of window "main", which is what it used to read (WI-LX2.2).
+ *
+ * @coordinates-with stores/workflowStore.ts — panel open state + parsed graph
+ * @coordinates-with components/Editor/WorkflowPanel/WorkflowRunPanel.tsx — the panel body
+ * @coordinates-with components/Editor/WorkflowPanel/WorkflowEngineSlot.tsx — the gated mount
+ * @coordinates-with plugins/codemirror/sourceWorkflowPreview.ts — opens it
  * @module components/Editor/WorkflowPanel/WorkflowSidePanel
  */
 
@@ -16,27 +22,18 @@ import { useCallback, useRef, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useWorkflowStore } from "@/stores/workflowStore";
-import { useWorkflowExecution } from "@/hooks/useWorkflowExecution";
-import { useTabStore } from "@/stores/tabStore";
-import { useDocumentStore } from "@/stores/documentStore";
-import { useWorkspaceStore } from "@/stores/workspaceStore";
-import { genieError } from "@/utils/debug";
-import { WorkflowPreview } from "@/plugins/workflowPreview/WorkflowPreview";
+import { WorkflowRunPanel } from "./WorkflowRunPanel";
 import "./workflow-side-panel.css";
 
 const MIN_PANEL_WIDTH = 200;
 const MAX_PANEL_WIDTH_RATIO = 0.8; // max 80% of container
 const DEFAULT_PANEL_WIDTH = 400;
 
-export function WorkflowSidePanel() {
+export function WorkflowSidePanel({ tabId }: { tabId: string | null }) {
   const { t } = useTranslation();
   const panelOpen = useWorkflowStore((s) => s.preview.panelOpen);
   const graph = useWorkflowStore((s) => s.preview.graph);
   const parseError = useWorkflowStore((s) => s.preview.parseError);
-  const activeStepId = useWorkflowStore((s) => s.preview.activeStepId);
-  const stepStatuses = useWorkflowStore((s) => s.preview.stepStatuses);
-  const executionId = useWorkflowStore((s) => s.preview.executionId);
-  const { start, cancel } = useWorkflowExecution();
 
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -59,34 +56,6 @@ export function WorkflowSidePanel() {
 
   // Cleanup on unmount
   useEffect(() => cleanup, [cleanup]);
-
-  const handleNodeClick = useCallback((stepId: string, _yamlLine?: number) => {
-    useWorkflowStore.getState().setActiveStepId(stepId);
-  }, []);
-
-  const handleRun = useCallback(async () => {
-    // Read the YAML body from the active tab's document and the workspace
-    // root from the workspace store so action-step path validation works.
-    const windowLabel = "main";
-    const tab = useTabStore.getState().getActiveTab(windowLabel);
-    if (!tab) return;
-    const doc = useDocumentStore.getState().getDocument(tab.id);
-    const yaml = doc?.content;
-    const workspaceRoot = useWorkspaceStore.getState().rootPath;
-    if (!yaml || !workspaceRoot) return;
-    try {
-      await start({ yaml, workspaceRoot });
-    } catch (err) {
-      // The runner reports step failures as workflow:complete events;
-      // synchronous invoke errors (parse error, missing workspace,
-      // already-running guard) bubble up here.
-      genieError("Workflow run failed to start:", err);
-    }
-  }, [start]);
-
-  const handleCancel = useCallback(() => {
-    void cancel();
-  }, [cancel]);
 
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -113,9 +82,6 @@ export function WorkflowSidePanel() {
 
   if (!panelOpen) return null;
 
-  const isRunning = executionId !== null;
-  const canRun = !!graph && !parseError && !isRunning;
-
   return (
     <div
       className="workflow-side-panel"
@@ -128,51 +94,7 @@ export function WorkflowSidePanel() {
         role="separator"
         aria-label={t("common:resize")}
       />
-      <div className="workflow-side-panel__content">
-        <div className="workflow-side-panel__toolbar" role="toolbar">
-          {isRunning ? (
-            <button
-              type="button"
-              className="workflow-side-panel__btn workflow-side-panel__btn--cancel"
-              onClick={handleCancel}
-              aria-label={t("workflow:run.cancel", "Cancel workflow")}
-              title={t("workflow:run.cancel", "Cancel workflow")}
-            >
-              ◼
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="workflow-side-panel__btn workflow-side-panel__btn--run"
-              onClick={() => void handleRun()}
-              disabled={!canRun}
-              aria-label={t("workflow:run.start", "Run workflow")}
-              title={t("workflow:run.start", "Run workflow")}
-            >
-              ▶
-            </button>
-          )}
-        </div>
-        {parseError ? (
-          <div className="workflow-side-panel__error">
-            <span className="workflow-side-panel__error-icon">&#x26A0;</span>
-            <span className="workflow-side-panel__error-text">{parseError}</span>
-          </div>
-        ) : graph ? (
-          <div className="workflow-preview-canvas">
-            <WorkflowPreview
-              graph={graph}
-              activeStepId={activeStepId}
-              stepStatuses={stepStatuses}
-              onNodeClick={handleNodeClick}
-            />
-          </div>
-        ) : (
-          <div className="workflow-side-panel__empty">
-            {t("editor:workflow.noPreview")}
-          </div>
-        )}
-      </div>
+      <WorkflowRunPanel tabId={tabId} graph={graph} parseError={parseError} />
     </div>
   );
 }

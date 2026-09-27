@@ -1,8 +1,10 @@
 /**
  * Workflow Preview React Flow Canvas
  *
- * Purpose: Self-contained React Flow canvas for rendering a WorkflowGraph.
- * Used inside the WorkflowSidePanel for standalone .yml files.
+ * Purpose: Self-contained React Flow canvas for rendering a WorkflowGraph
+ * (the bespoke engine's step graph, with live run statuses). Mounted by
+ * `WorkflowRunPanel`, which both engine surfaces use: the yaml split pane's
+ * `vmark-workflow` preview and the markdown surface's side panel.
  *
  * @coordinates-with layout.ts — converts graph to positioned nodes/edges
  * @coordinates-with WorkflowNode.tsx — custom node renderer

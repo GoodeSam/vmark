@@ -158,12 +158,31 @@ jobs:
     it("returns null for empty content + unrelated path", () => {
       expect(yamlSchemaDetector("/x/random.yaml", "")).toBeNull();
     });
+
+    // WI-LX2.1 — a VMark engine workflow gets its own schema, so the yaml
+    // split pane can mount the Run/Cancel panel for it.
+    const ENGINE = "name: triage\nsteps:\n  - id: a\n    uses: genie/translate\n";
+
+    it("returns 'vmark-workflow' for an engine workflow (top-level steps using genie/action/webhook)", () => {
+      expect(yamlSchemaDetector("/ws/flows/triage.yml", ENGINE)).toBe("vmark-workflow");
+    });
+
+    it("keeps an engine-shaped file under .github/workflows/ as GitHub's", () => {
+      expect(yamlSchemaDetector("/ws/.github/workflows/triage.yml", ENGINE)).toBe("gha-workflow");
+    });
+
+    it("claims malformed engine YAML too, so the run panel can show the parse error", () => {
+      expect(
+        yamlSchemaDetector("/ws/flow.yml", "name: [x\nsteps:\n  - uses: action/notify\n"),
+      ).toBe("vmark-workflow");
+    });
   });
 
   describe("yamlFormat schema wiring", () => {
-    it("declares schemaDetector + schemaRenderers['gha-workflow']", () => {
+    it("declares schemaDetector + schemaRenderers['gha-workflow'] + ['vmark-workflow']", () => {
       expect(typeof yamlFormat.schemaDetector).toBe("function");
       expect(yamlFormat.schemaRenderers?.["gha-workflow"]).toBeDefined();
+      expect(yamlFormat.schemaRenderers?.["vmark-workflow"]).toBeDefined();
     });
   });
 

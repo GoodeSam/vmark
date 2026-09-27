@@ -1,16 +1,26 @@
 /**
  * Source Workflow Preview Plugin
  *
- * Purpose: When editing a standalone .yml workflow file in Source mode,
- * debounces YAML parsing and feeds the result through `workflowPort` (the
- * workflow store) so the WorkflowSidePanel shows a live React Flow graph.
+ * Purpose: When the MARKDOWN Source editor edits a YAML file (a `.yml`
+ * associated with markdown in Settings → Formats — ordinary `.yml` files use
+ * the yaml adapter's own `vmark-workflow` preview instead), debounces YAML
+ * parsing and feeds the result through `workflowPort` (the workflow store) so
+ * the WorkflowSidePanel shows a live React Flow graph.
+ *
+ * Key decisions (WI-LX2.4):
+ *   - Parses the document it OPENS with. It used to wait for a `docChanged`
+ *     update, so a workflow file opened as-is never showed its panel until the
+ *     user typed.
+ *   - Leaving the file clears the graph and closes the panel but does NOT
+ *     reset the slice: `resetPreview` also dropped a live run's registration,
+ *     and the run's events then stopped routing to anything.
  *
  * @coordinates-with workflowPort.ts — the store port that receives graph/parseError (bound to stores/workflowStore.ts)
  * @coordinates-with parser.ts — parseWorkflow, isWorkflowYaml
  * @module plugins/codemirror/sourceWorkflowPreview
  */
 
-import { ViewPlugin, type ViewUpdate } from "@codemirror/view";
+import { ViewPlugin, type EditorView, type ViewUpdate } from "@codemirror/view";
 import { workflowPort } from "./workflowPort";
 import { parseWorkflow, isWorkflowYaml, WorkflowParseError, WorkflowValidationError } from "@/lib/workflow/parser";
 import { workflowLog, workflowWarn } from "@/utils/debug";
@@ -22,19 +32,19 @@ class SourceWorkflowPreviewPlugin {
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private lastContent = "";
 
-  constructor() {
-    // Initial parse when plugin mounts
-    // (content isn't available in constructor — will parse on first update)
+  constructor(view: EditorView) {
+    this.schedule(view.state.doc.toString());
   }
 
   update(update: ViewUpdate) {
     if (!update.docChanged) return;
+    this.schedule(update.state.doc.toString());
+  }
 
-    const content = update.state.doc.toString();
+  /** Debounced parse of `content`, skipping a repeat of the last one. */
+  private schedule(content: string) {
     if (content === this.lastContent) return;
     this.lastContent = content;
-
-    // Debounce parsing
     if (this.debounceTimer) clearTimeout(this.debounceTimer);
     this.debounceTimer = setTimeout(() => {
       this.parseAndUpdate(content);
@@ -72,8 +82,10 @@ class SourceWorkflowPreviewPlugin {
 
   destroy() {
     if (this.debounceTimer) clearTimeout(this.debounceTimer);
-    // Reset store when leaving the workflow file
-    workflowPort().getState().resetPreview();
+    // Leaving the workflow file: no graph, no panel — and a live run keeps
+    // its registration, so its events still route (see the header).
+    workflowPort().getState().setGraph(null);
+    workflowPort().getState().previewClosePanel();
   }
 }
 

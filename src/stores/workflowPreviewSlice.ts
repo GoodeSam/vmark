@@ -26,6 +26,14 @@ export interface PreviewSlice {
   stepStatuses: Record<string, StepStatusEntry>;
   /** How the run that just ended ended; null since the last `setExecution`. */
   lastRunOutcome: WorkflowRunOutcome | null;
+  /** Which run just ended — the key its pre-run snapshot is found by. */
+  lastExecutionId: string | null;
+  /**
+   * The tab whose panel started the current (or last) run, or null for a run
+   * nobody bound — a workflow genie's. Only that tab's panel paints the run's
+   * statuses, offers Cancel, and offers the restore (WI-LX2.1).
+   */
+  runTabId: string | null;
 }
 
 export const initialPreview: PreviewSlice = {
@@ -36,6 +44,8 @@ export const initialPreview: PreviewSlice = {
   executionId: null,
   stepStatuses: {},
   lastRunOutcome: null,
+  lastExecutionId: null,
+  runTabId: null,
 };
 
 export function setPanelOpen(slice: PreviewSlice, panelOpen: boolean): PreviewSlice {
@@ -75,8 +85,32 @@ export function setActiveStepId(slice: PreviewSlice, activeStepId: string | null
   return { ...slice, activeStepId };
 }
 
+/** Register a new run — UNOWNED until `bindRunToTab` — or roll one back. */
 export function setExecution(slice: PreviewSlice, executionId: string | null): PreviewSlice {
-  return { ...slice, executionId, stepStatuses: {}, lastRunOutcome: null };
+  return {
+    ...slice,
+    executionId,
+    stepStatuses: {},
+    lastRunOutcome: null,
+    lastExecutionId: null,
+    runTabId: null,
+  };
+}
+
+/**
+ * Record that `tabId`'s panel started `executionId`. Bound AFTER the start
+ * resolves, so the run may already be over — a fast workflow can finish
+ * before `invoke` returns — and a finished run binds too. A run this window
+ * is not tracking returns the slice unchanged.
+ */
+export function bindRunToTab(
+  slice: PreviewSlice,
+  executionId: string,
+  tabId: string,
+): PreviewSlice {
+  const tracked = slice.executionId === executionId || slice.lastExecutionId === executionId;
+  if (!tracked || slice.runTabId === tabId) return slice;
+  return { ...slice, runTabId: tabId };
 }
 
 /**
@@ -94,7 +128,7 @@ export function finishExecution(
   outcome: WorkflowRunOutcome,
 ): PreviewSlice {
   if (slice.executionId !== executionId) return slice;
-  return { ...slice, executionId: null, lastRunOutcome: outcome };
+  return { ...slice, executionId: null, lastRunOutcome: outcome, lastExecutionId: executionId };
 }
 
 export function setStepStatus(

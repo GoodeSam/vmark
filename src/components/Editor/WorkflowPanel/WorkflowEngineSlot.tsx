@@ -12,6 +12,10 @@
  * surface is the yaml adapter's `gha-workflow` schema renderer, which ships
  * always-on and is gated by neither flag.
  *
+ * The yaml adapter reaches the same Run/Cancel panel on its own path — the
+ * `vmark-workflow` schema renderer (`yamlEngineRenderer.tsx`), which applies
+ * the same flag — because a `.yml` file never mounts the markdown surface.
+ *
  * @coordinates-with lib/formats/adapters/markdownSurface.tsx — the sole mount
  * @coordinates-with services/featureFlags/workflowFeatureFlag.ts — the flags
  * @module components/Editor/WorkflowPanel/WorkflowEngineSlot
@@ -26,12 +30,13 @@ const WorkflowSidePanel = lazy(() =>
   })),
 );
 
-export function WorkflowEngineSlot() {
+/** `tabId` is the surface's own document: the panel runs THAT tab (WI-LX2.2). */
+export function WorkflowEngineSlot({ tabId }: { tabId: string | null }) {
   const engineEnabled = useSettingsStore((s) => s.advanced.workflowEngine);
   if (!engineEnabled) return null;
   return (
     <Suspense fallback={null}>
-      <WorkflowSidePanel />
+      <WorkflowSidePanel tabId={tabId} />
     </Suspense>
   );
 }

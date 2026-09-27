@@ -111,7 +111,7 @@ export function MarkdownEditorSurface({ tabId }: { tabId: string }) {
       <div className="editor-content" data-active-editor={activeEditor}>
         {editorContent}
       </div>
-      <WorkflowEngineSlot />
+      <WorkflowEngineSlot tabId={tabId} />
       <HeadingPicker />
       <DropZoneIndicator />
     </div>

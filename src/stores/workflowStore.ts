@@ -79,6 +79,8 @@ interface WorkflowStoreActions {
   setGraph: (graph: WorkflowGraph | null, error?: string) => void;
   setActiveStepId: (stepId: string | null) => void;
   setExecution: (id: string | null) => void;
+  /** Record which tab's panel started `executionId` (WI-LX2.1). */
+  bindRunToTab: (executionId: string, tabId: string) => void;
   /** End a run, keeping its step statuses (audit #767); see the impl. */
   finishExecution: (executionId: string, outcome: WorkflowRunOutcome) => void;
   setStepStatus: (stepId: string, entry: StepStatusEntry) => void;
@@ -180,6 +182,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => {
     setGraph: (graph, error) => updatePreview((s) => preview.setGraph(s, graph, error)),
     setActiveStepId: (stepId) => updatePreview((s) => preview.setActiveStepId(s, stepId)),
     setExecution: (id) => updatePreview((s) => preview.setExecution(s, id)),
+    bindRunToTab: (id, tabId) => updatePreview((s) => preview.bindRunToTab(s, id, tabId)),
     finishExecution: (executionId, outcome) =>
       updatePreview((s) => preview.finishExecution(s, executionId, outcome)),
     setStepStatus: (stepId, entry) => updatePreview((s) => preview.setStepStatus(s, stepId, entry)),

@@ -107,6 +107,17 @@ describe("preview slice", () => {
     expect(useWorkflowStore.getState().preview.stepStatuses).toEqual({});
   });
 
+  it("bindRunToTab binds the tracked run to the tab that started it (WI-LX2.1)", () => {
+    useWorkflowStore.getState().setExecution("exec-1");
+    useWorkflowStore.getState().bindRunToTab("exec-other", "tab-1");
+    expect(useWorkflowStore.getState().preview.runTabId).toBeNull();
+    useWorkflowStore.getState().bindRunToTab("exec-1", "tab-1");
+    expect(useWorkflowStore.getState().preview.runTabId).toBe("tab-1");
+    useWorkflowStore.getState().finishExecution("exec-1", "completed");
+    expect(useWorkflowStore.getState().preview.lastExecutionId).toBe("exec-1");
+    expect(useWorkflowStore.getState().preview.runTabId).toBe("tab-1");
+  });
+
   it("setStepStatus accumulates per stepId", () => {
     useWorkflowStore.getState().setStepStatus("s1", { status: "running" });
     useWorkflowStore.getState().setStepStatus("s2", { status: "success" });
