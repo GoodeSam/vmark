@@ -118,6 +118,13 @@ reason; it goes stale once merged and must then be deleted.
 - **Workflow engine**: recommended EXTRACT behind a cargo feature + build-time
   frontend flag by 2026-10-01, else keep dark behind the WI-19 backend gate.
   `run_workflow` backs genie workflows, so removal is a migration.
+  **RE-VERDICT 2026-09-27:** the maintainer decided to KEEP the engine in every
+  build behind `advanced.workflowEngine` (default off, developer-gated) and make
+  it work — the Run/Cancel panel opens for VMark workflow `.yml` files in the
+  yaml split pane, and a finished run's pre-run snapshot is restorable. The
+  EXTRACT recommendation and its 2026-10-01 date are withdrawn; the WI-19
+  backend gate stays the enforcement. Next review: 2027-03-27, or sooner if the
+  setting is proposed to leave Developer Tools or to default on.
 - The pushed policy flags (`workflow_engine_policy`, `browser_ai_policy`) only
   stop UI-less paths from running a disabled feature; they are not a security
   boundary. Only commands that START work are gated — cancel/approval commands
