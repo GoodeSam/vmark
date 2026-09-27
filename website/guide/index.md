@@ -8,7 +8,7 @@ The differentiator isn't "open more file types" — every IDE does that. It's **
 
 1. **Download and install** VMark from the [download page](/download)
 2. **Launch the app** and start writing immediately
-3. **Open a file** with `Cmd/Ctrl + O` or drag & drop any [supported format](/guide/formats)
+3. **Open a file** with **File → Open File…** or drag & drop any [supported format](/guide/formats) — `Cmd/Ctrl + O` is **Quick Open**, for jumping to a recent, open, or workspace file
 4. **Open a folder** with `Cmd/Ctrl + Shift + O` for workspace mode
 
 ## Interface Overview
@@ -27,8 +27,8 @@ The differentiator isn't "open more file types" — every IDE does that. It's **
 - **Edit**: Undo/redo, clipboard, find (including Find in Files), selection, line operations, line endings, Genies
 - **Format**: Text styles, headings, lists, blockquotes, text transformations, CJK formatting, text cleanup, image cleanup
 - **Insert**: Links, images, video, audio, tables, code fences, math, diagrams, footnotes, collapsible blocks, info boxes
-- **View**: Editor modes, panes, sidebar panels, focus/typewriter modes, toolbar, terminal, Check Markdown, zoom
-- **Window** (macOS): Minimize, Maximize, Window Status, Coherence Breakdown, Bring All to Front
+- **View**: Editor modes, panes, sidebar panels, focus/typewriter modes, toolbar, terminal, Window Status, Check Markdown, zoom
+- **Window** (macOS): Minimize, Maximize, Coherence Breakdown, Bring All to Front
 - **Help**: VMark Help, Keyboard Shortcuts, the `vmark` shell command (macOS), Report an Issue
 
 ### Editing Modes
@@ -75,7 +75,8 @@ Enhance your writing focus with these view modes:
 ### Creating and Opening
 
 - **New file**: `Cmd/Ctrl + N`
-- **Open file**: `Cmd/Ctrl + O`
+- **Open file**: **File → Open File…** (no default shortcut)
+- **Quick Open**: `Cmd/Ctrl + O` — jump to a recent, open, or workspace file
 - **Open folder**: `Cmd/Ctrl + Shift + O` (workspace mode)
 
 ### Saving

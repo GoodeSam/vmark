@@ -181,8 +181,8 @@ Edit wiki-style links for internal document connections.
 Quick table editing actions.
 
 **Trigger:**
-- **WYSIWYG:** Use toolbar or keyboard shortcuts
-- **Source:** Right-click on table cell
+- **WYSIWYG:** Right-click on a table cell (the same actions are also on the toolbar and have keyboard shortcuts)
+- **Source:** Right-click on a table cell
 
 **Actions:**
 | Action | Description |
@@ -195,6 +195,7 @@ Quick table editing actions.
 | Align Column Left/Center/Right | Set alignment for current column |
 | Align All Left/Center/Right | Set alignment for all columns |
 | Format Table | Auto-align table columns (prettify markdown) |
+| Fit to Width / Natural Width | WYSIWYG only: pin this table to the editor width with content-proportional columns, or return it to its natural width |
 
 ## Spell Check Popup
 

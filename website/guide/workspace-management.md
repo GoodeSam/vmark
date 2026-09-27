@@ -1,6 +1,6 @@
 # Workspace Management
 
-A workspace in VMark is a folder opened as the root of your project. When you open a workspace, the sidebar shows a file tree, Quick Open indexes every markdown file, the terminal starts in the project root, and your open tabs are remembered for next time.
+A workspace in VMark is a folder opened as the root of your project. When you open a workspace, the sidebar shows a file tree, Quick Open can find every file the file tree shows, the terminal starts in the project root, and your open tabs are remembered for next time.
 
 Without a workspace you can still open individual files, but you lose the file explorer, in-project search, and session restore.
 
@@ -30,8 +30,9 @@ The file explorer appears in the sidebar whenever a workspace is open. It shows 
 ### Navigation
 
 - **Single-click** a folder to expand or collapse it
-- **Double-click** or **Enter** on a file to open it in a tab
-- Non-markdown files open with your system's default application
+- **Single-click** a file to open it in a tab
+- **Enter** (or `F2`) on a selected item starts renaming it inline
+- Files VMark does not edit itself (visible with **Show All Files**) open with your system's default application
 - Folders start collapsed when a workspace is first opened; their open state is preserved while you switch between the Files, Outline, and History views
 
 ### Quick Look
@@ -51,19 +52,20 @@ The Files-view header carries the tree-wide controls:
 
 ### File Operations
 
-Right-click any file or folder to access the context menu:
+Right-click a file, a folder, or the empty space below the tree to access the context menu:
 
-| Action | Description |
-|--------|-------------|
-| Open | Open the file in a new tab |
-| Rename | Edit the file or folder name inline (also `F2`) |
-| Duplicate | Create a copy of the file |
-| Move To... | Move the file to a different folder via a dialog |
-| Delete | Move the file or folder to the system trash |
-| Copy Path | Copy the absolute file path to the clipboard |
-| Reveal in Finder | Show the file in Finder (macOS) |
-| New File | Create a new markdown file in this location |
-| New Folder | Create a new folder in this location |
+| Action | Shown for | Description |
+|--------|-----------|-------------|
+| Open | Files | Open the file in a new tab |
+| Rename | Files, folders | Edit the file or folder name inline (also `F2`) |
+| Duplicate | Files | Create a copy of the file |
+| Move to… | Files | Move the file to a different folder via a dialog |
+| Delete | Files, folders | Move the file or folder to the system trash |
+| Copy Path | Files, folders | Copy the absolute path to the clipboard |
+| Reveal in Finder | Files, folders | Show the item in your file manager — labelled **Show in Explorer** on Windows and **Show in File Manager** on Linux |
+| New File | Folders, empty space | Create a new markdown file in this location |
+| New Folder | Folders, empty space | Create a new folder in this location |
+| Open Terminal Here | Folders | Start a new terminal session in this folder (disabled once 5 sessions are open) — see [Terminal](/guide/terminal) |
 
 You can also **drag and drop** files between folders directly in the tree.
 
@@ -98,11 +100,13 @@ re-reading a busy workspace.
 
 ## Quick Open
 
-Press `Mod + O` to open the Quick Open overlay. It provides fuzzy search across three sources:
+Press `Mod + O` to open the Quick Open overlay. It provides fuzzy search across three sources, listed in this order:
 
-1. **Recent files** you have opened before
-2. **Open tabs** in the current window (marked with a dot indicator)
+1. **Open tabs** in the current window (marked with a dot indicator), most recently used first
+2. **Recent files** you have opened before
 3. **Every file the file explorer is currently showing** in the workspace
+
+Before you type, the list shows only open tabs and recent files. Once you type, results from all three sources appear, grouped in that order and ranked by match quality within each group.
 
 Type a few characters to filter — matching is fuzzy, so `rme` finds `README.md`. Use arrow keys to navigate and **Enter** to open. A pinned **Browse...** row at the bottom opens a file dialog.
 
@@ -135,11 +139,7 @@ When a workspace is open, VMark can search across **file contents** (not just fi
 | Jump to next result | `Enter` (or arrow keys to navigate) |
 | Open result in new tab | Click the match preview |
 
-Each result shows the file path, line number, and a snippet with the matching text highlighted. Matches are ranked by:
-
-1. Filename relevance (file containing the term in its name first)
-2. Heading proximity (matches inside headings before body text)
-3. Recency (recently-modified files surface first)
+Each result shows the file path, line number, and a snippet with the matching text highlighted. Results are not ranked: files are listed in the order the search reaches them while walking the workspace folders. A search stops after 50 matching files, 1,000 matches or 5 seconds, and shows what it found up to that point.
 
 **Excluded by default**: the folders VMark never descends — `.git`, `node_modules`, `.obsidian`, `.svn`, `__pycache__`, `.DS_Store`, `.vscode`, `.idea`, `target`, `.next`, `dist`, `.superpowers` — plus any names in **Exclude folders** in Workspace Settings (a new workspace starts with `.git` and `node_modules` there).
 
@@ -178,7 +178,7 @@ Closing the last open document no longer closes the window. Instead, the window 
 
 The Welcome screen offers quick actions to get back to work:
 
-- **New File**, **Open File**, and **Open Folder** buttons
+- **New File**, **Open File**, and **Open Workspace…** buttons
 - A **Recent Files** list and a **Recent Workspaces** list — click any entry to
   reopen it. Each list appears only when it has entries.
 
@@ -202,9 +202,11 @@ This is distinct from **Markdown Split View** (`Shift + F6`), which is the
 source + preview of the *same* file.
 
 - Toggle the split with **`Alt + Mod + \`** or the command palette
-  (**Split Editor — Two Documents**). It opens the current document in the
-  second pane; click a tab while a pane is focused to change that pane's
-  document.
+  (**Split Editor — Two Documents**). The current document stays in one pane
+  and the document you used most recently before it (or, if there is none, another open document) opens in the other — the
+  same document is never shown twice, so the split needs two documents open.
+  Click a tab while a pane is focused to change that pane's document, or
+  right-click a tab and choose **Open to the Side**.
 - Drag the divider (or focus it and use the arrow keys) to resize the panes.
 - The pane you're editing is the **focused** pane — the toolbar, find bar, and
   menu commands act on it.
@@ -245,9 +247,11 @@ second copy. macOS has always worked this way.
 
 You can pull a tab out of its window to create a new one:
 
-- **Drag a tab downward** past the tab bar (about 40 px) to detach it into a new window at the cursor position
+- **Drag a tab out of the tab bar** — more than about 40 px above or below it — to detach it. Release it over another VMark window to move the tab into that window; release it anywhere else to open it in a new window at the pointer
 - **Drag a tab horizontally** within the tab bar to reorder it among other tabs
 - Pinned tabs cannot be dragged
+
+A toast confirms the move and offers **Undo**, which brings the tab back. Browser tabs and the last tab of the main window cannot be dragged out; they snap back instead.
 
 The gesture is direction-locked: horizontal movement starts a reorder, while vertical movement triggers a detach. You can switch from reorder to detach mid-drag by moving the pointer outside the tab bar.
 
@@ -289,7 +293,7 @@ Documents you open in VMark are registered with macOS, so they appear in the **O
 
 ## Terminal Integration
 
-The integrated terminal automatically uses the workspace root as its working directory. When you open or switch workspaces, all terminal sessions `cd` to the new root.
+The integrated terminal automatically uses the workspace root as its working directory. When you open or switch workspaces, idle terminal sessions `cd` to the new root. A session that is busy running a command is left alone and changes directory once the command finishes (this needs shell integration to tell when it is busy). With the [workspace rail](/guide/workspace-rail) on, a session that belongs to one workspace keeps its own directory.
 
 The `VMARK_WORKSPACE` environment variable is set to the workspace path in every terminal session, so your scripts can reference the project root.
 

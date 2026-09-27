@@ -8,7 +8,11 @@ VMark supports [Mermaid](https://mermaid.js.org/) diagrams for creating flowchar
 
 ## Inserting a Diagram
 
-### Using Keyboard Shortcut
+### Using the Menu or Shortcut
+
+Choose **Insert → Diagram**, or press `Alt + Mod + Shift + D`. VMark inserts a `mermaid` code block with a starter flowchart for you to edit. If text is selected, the selection becomes the diagram source instead.
+
+### Typing a Code Block
 
 Type a fenced code block with the `mermaid` language identifier:
 
@@ -21,21 +25,15 @@ graph TD
 ```text
 ````
 
-### Using Slash Command
-
-1. Type `/` to open the command menu
-2. Select **Mermaid Diagram**
-3. A template diagram is inserted for you to edit
-
 ## Editing Modes
 
 ### Rich Text Mode (WYSIWYG)
 
-In WYSIWYG mode, Mermaid diagrams are rendered inline as you type. Click on a diagram to edit its source code.
+In WYSIWYG mode, Mermaid diagrams are rendered inline. Double-click a diagram to edit its source code; the edit header has **Copy**, **Cancel** and **Save** buttons.
 
 ### Source Mode with Live Preview
 
-In Source mode, a floating preview panel appears when your cursor is inside a mermaid code block:
+In Source mode, a floating preview panel shows the diagram while your cursor is inside a mermaid code block. The preview is **off by default** — turn it on with **View → Toggle Diagram Preview** (`Alt + Mod + P`) or the command palette. It stays on for that window until you toggle it off again.
 
 ![Live preview panel in Source mode](/screenshots/mermaid-source-preview.png)
 
@@ -44,7 +42,7 @@ In Source mode, a floating preview panel appears when your cursor is inside a me
 | **Live Preview** | See rendered diagram as you type (200ms debounce) |
 | **Drag to Move** | Drag the header to reposition the preview |
 | **Resize** | Drag any edge or corner to resize |
-| **Zoom** | Use `−` and `+` buttons (10% to 300%) |
+| **Zoom** | Use `−` and `+` buttons, or `Cmd/Ctrl` + scroll (10% to 300%) |
 
 The preview panel remembers its position if you move it, making it easy to arrange your workspace.
 
@@ -235,7 +233,7 @@ In WYSIWYG mode, rendered diagrams support interactive navigation:
 
 | Action | How |
 |--------|-----|
-| **Pan** | Scroll or click and drag the diagram |
+| **Pan** | Click and drag the diagram (a plain scroll scrolls the document, not the diagram) |
 | **Zoom** | Hold `Cmd` (macOS) or `Ctrl` (Windows/Linux) and scroll |
 | **Reset** | Click the reset button that appears on hover (top-right corner) |
 
@@ -264,7 +262,7 @@ When exporting the full document to HTML or PDF, Mermaid diagrams are rendered a
 
 ## Fixing AI-Generated Diagrams
 
-VMark uses **Mermaid v11**, which has a stricter parser (Langium) than older versions. AI tools (ChatGPT, Claude, Copilot, etc.) often generate syntax that worked in older Mermaid versions but fails in v11. Here are the most common issues and how to fix them.
+VMark uses **Mermaid v12**, which keeps the stricter parser (Langium) that arrived in v11. AI tools (ChatGPT, Claude, Copilot, etc.) often generate syntax that worked in older Mermaid versions but fails in v11 and later. Here are the most common issues and how to fix them.
 
 ### 1. Unquoted Labels with Special Characters
 
@@ -290,7 +288,7 @@ flowchart TD
 
 ### 2. Trailing Semicolons
 
-AI models sometimes add semicolons at line ends. Mermaid v11 does not allow them.
+AI models sometimes add semicolons at line ends. Mermaid v11 and later do not allow them.
 
 ````markdown
 <!-- Fails -->

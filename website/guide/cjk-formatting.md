@@ -8,9 +8,9 @@ Korean uses native word spacing, and particles attach directly to the preceding 
 
 ## Quick Start
 
-Use **Format → CJK Format Document** or press `Alt + Mod + Shift + F` to format the entire document.
+Use **Format → CJK → Format Entire File** or press `Alt + Mod + Shift + F` to format the entire document.
 
-`Mod + Shift + F` formats the **blocks your selection spans** — the whole paragraph, list or table your cursor or selection touches, not the exact characters selected. CJK spacing is a property of the boundary *between* two adjacent characters, and a part-word selection contains no such boundary, so the command names a region to fix rather than the text to rewrite. With no selection it formats the block at the cursor.
+**Format → CJK → Format Selection** (`Mod + Shift + F`) formats the **blocks your selection spans** — the whole paragraph, list or table your cursor or selection touches, not the exact characters selected. CJK spacing is a property of the boundary *between* two adjacent characters, and a part-word selection contains no such boundary, so the command names a region to fix rather than the text to rewrite. With no selection it formats the block at the cursor.
 
 Both commands protect the same things (see [Protected Content](#protected-content)), so a select-all before `Mod + Shift + F` is safe.
 
@@ -147,6 +147,12 @@ The following content is **not** affected by formatting:
 - HTML tags
 - Frontmatter — both YAML (`---`) and TOML (`+++`)
 - Inline math (`$…$`), matched by the same rule VMark's renderer uses, so a currency pair like `价格是 $100 和 $200 元` is *not* mistaken for math
+- Display math (`$$…$$`)
+- Indented code blocks
+- Wiki links (`[[target]]`, `[[target|display]]`)
+- Footnote markers — references like `[^1]` and the `[^1]:` label of a definition (the definition's own text is formatted)
+- HTML character references (`&amp;`, `&#x5176;`)
+- Thematic breaks (`---`, `***`)
 - Backslash-escaped punctuation (e.g., `\,` stays as `,`)
 
 ### Technical Constructs
@@ -186,13 +192,13 @@ Prefix any punctuation with `\` to prevent conversion:
 
 When the [MCP server](/guide/mcp-setup) is connected, AI assistants can apply CJK formatting programmatically via the `document.transform` tool with one of three `kind` values:
 
-- `"cjk-format"` — full CJK normalization (spacing + punctuation + smart quotes per your settings)
-- `"cjk-spacing"` — adjust whitespace around CJK ↔ Latin/digit boundaries only
-- `"cjk-punctuation"` — convert punctuation between full-width and half-width per the rules
+- `"cjk-format"` — full CJK normalization (spacing + punctuation + smart quotes), the same formatter the menu command runs, following your settings in Settings → Language
+- `"cjk-spacing"` — inserts one space wherever a CJK character meets a Latin letter or digit, and nothing else
+- `"cjk-punctuation"` — converts half-width `,` `.` `!` `?` `;` `:` `(` `)` next to a CJK character into its full-width form; it never converts full-width back to half-width
 
-Each transform runs the active document through a serialize-format-parse roundtrip to preserve inline marks (bold, links, math, etc.) and respect your configured formatting rules.
+Only `cjk-format` reads your formatting settings. `cjk-spacing` and `cjk-punctuation` are fixed rules that ignore them, and unlike the formatter they also treat Korean Hangul as CJK. All three work on the document's markdown source and leave [protected content](#protected-content) untouched.
 
-See the [MCP Tools Reference](/guide/mcp-tools#document-tool) for the full request shape — `document.transform` takes `tabId`, `kind`, and an `expected_revision` for optimistic concurrency.
+See the [MCP Tools Reference](/guide/mcp-tools#transform) for the full request shape — `document.transform` takes `tabId`, `kind`, and an `expected_revision` for optimistic concurrency.
 
 ## Configuration
 
@@ -302,7 +308,7 @@ Apostrophes in contractions (like "it's" or "don't") are preserved correctly.
 
 ### Toggle Quote Style at Cursor
 
-You can quickly toggle the quote style of existing quotes without reformatting the whole document. Place your cursor inside any quote pair and press `Shift + Mod + '` to toggle.
+You can quickly toggle the quote style of existing quotes without reformatting the whole document. Place your cursor inside any quote pair and press `Shift + Mod + '` to toggle. This works in WYSIWYG mode only; Source mode has no quote toggle.
 
 **Simple mode** (default): Toggles between straight quotes and your preferred style.
 

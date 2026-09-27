@@ -459,7 +459,7 @@ front-matter site id; defaults to `recording`).
 never silently record you. Until you allow it, `start` returns `needsApproval`; once you do,
 VMark arms a dormant page-world capture shim and begins recording the **clicks and field
 edits** you perform. `stop` returns `{source, inputs, eventCount}` — the `source` is workflow
-text you can save or hand straight to [`workflow_run`](#workflow-run).
+text you can save or hand straight to [`workflow_run`](#workflow-run-workflow-cancel).
 
 The recording is **value-free by construction**, and this is not a filter that trusts the
 page: nothing you type is ever captured. Every text field becomes a named `{input}` variable

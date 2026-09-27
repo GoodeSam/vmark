@@ -69,15 +69,15 @@ When you select a REST provider, three fields appear:
 
 ### Environment Variable Auto-Fill
 
-VMark reads standard environment variables on launch. If `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `GEMINI_API_KEY` is set in your shell profile, the API key field auto-populates when you select that provider.
+VMark reads standard environment variables from its own process environment. If `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `GOOGLE_API_KEY` / `GEMINI_API_KEY` (checked in that order) is set, the API key field auto-populates when you select that provider.
 
-This means you can set your key once in `~/.zshrc` or `~/.bashrc`:
+Which variables VMark sees depends on how it was started. A key exported in a shell profile such as `~/.zshrc` or `~/.bashrc`:
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-Then restart VMark — no manual key entry needed.
+reaches VMark only when you launch the app from that shell. Started from the Dock, Finder, Spotlight or a desktop launcher, VMark does not read your shell profile, so the field stays empty — paste the key instead. On Windows, a user or system environment variable works however VMark is launched.
 
 ### Setup: Anthropic (REST)
 

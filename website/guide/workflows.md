@@ -10,7 +10,7 @@
 A **genie workflow** is a YAML file that chains several AI steps into one pipeline. Where a single [AI Genie](/guide/ai-genies) runs one prompt against your text, a workflow runs an ordered graph of steps — each step can call a genie, pass its output to the next step, ask for your approval, or run a small built-in action — and shows you the whole pipeline as a live diagram while it runs.
 
 ::: tip Feature flag
-Genie workflows are gated behind an opt-in setting. In **Settings → Advanced**, turn on **Developer tools** to reveal the experimental group, then **Workflow Engine**, to make `.yml` / `.yaml` files open as workflows with a Run / Cancel side panel. With the flag off, YAML files open as plain text, and a workflow genie in the picker refuses to run.
+Genie workflows are gated behind an opt-in setting. In **Settings → Advanced**, turn on **Developer Tools** to reveal the experimental group, then **Workflow Engine**. With it on, a workflow file opens with its step graph and a **Run** / **Cancel** toolbar beside the YAML source, and workflow genies can run. With it off, a workflow file shows as an ordinary YAML tree, and a workflow genie in the picker refuses to run. GitHub Actions files are not affected either way — they always open in the [GitHub Actions Workflow Viewer](/guide/workflow-viewer).
 :::
 
 ## When to use a workflow
@@ -58,6 +58,18 @@ steps:
 
 This workflow has three steps. `rewrite` runs the bundled `genie/rewrite-in-english` markdown genie on the seed text. `translate` waits for it (`needs: rewrite`) and feeds its text output into `genie/translate`. `save` writes the translation to `triage-and-translate.out.md` in the workspace. The result is a three-node graph that runs left to right.
 
+### Workflow file or GitHub Actions file?
+
+Both are YAML, and VMark opens every `.yml` / `.yaml` file in the same split view. It tells them apart like this, in order:
+
+| Check | GitHub Actions workflow | VMark workflow |
+|-------|-------------------------|----------------|
+| Path under `.github/workflows/` | Always — GitHub owns that folder | Never |
+| Top-level `jobs:` | Yes | Never |
+| Top-level `steps:` whose `uses:` names `genie/`, `action/` or `webhook/` | Never — its steps live inside a job | Yes |
+
+`on:` decides nothing — both kinds may have one. A file with both top-level `steps:` and `jobs:` is treated as GitHub Actions, never run. A file with neither shape is plain YAML.
+
 ::: info Where the bundled sample lives
 The sample ships inside the app bundle — `VMark.app/Contents/Resources/resources/workflows/examples/triage-and-translate.yml` on macOS, the app's `resources` folder elsewhere — and in the [source repository](https://github.com/xiaolai/vmark/blob/main/src-tauri/resources/workflows/examples/triage-and-translate.yml). It is not copied into your genies folder: to run it as a [workflow genie](/guide/workflow-genies), copy it there yourself and edit the seed text.
 :::
@@ -96,13 +108,16 @@ The `uses:` prefix decides what a step does.
 |----------------|----------|
 | `genie/<name>` | Loads the matching markdown genie, fills its prompt template from the step's `with:` map, and calls the active AI provider. |
 | `action/read-file` | Reads a workspace-relative path. The file body becomes the step's text output. |
-| `action/save-file` | Writes `with.input` to `with.path` (workspace-relative). |
+| `action/read-folder` | Reads every file directly inside the workspace-relative folder `with.path` — optionally only those matching `with.accept` (`*.md`, or a list such as `*.md,*.txt`) — in name order, each introduced by a `--- name ---` line. Up to 1,000 files, 10 MB per file and 100 MB in total. |
+| `action/save-file` | Writes `with.input` to `with.path` (workspace-relative). The path must be literal — no `${{ }}` expression — so the file can be snapshotted before the run (see [Undoing a run](#undoing-a-run)). |
 | `action/notify` | Logs `with.message`. |
 | `action/copy` | Returns `with.input` unchanged — handy for renaming or fanning out a value. |
 
 ::: warning
 `webhook/*` steps are not supported yet — a workflow that uses one is rejected before it runs. File-output genies (`output.type: file` / `files`) are likewise deferred.
 :::
+
+A successful `action/save-file` write is recorded by [Coherence](/guide/coherence), with the read steps that fed it as inputs, only as far as **Stamp identity block on save** (Settings → Files & Images) allows: with it off, no `.vmark` folder is created and no file is stamped, and a workspace that already has one records the write only for a document it already tracks.
 
 ## Genie steps and `with:` aliasing
 
@@ -226,14 +241,23 @@ Choose **Approve** to run the step, or **Deny** (Esc also denies) to fail it wit
 
 ## Running a workflow
 
-Open a `.yml` / `.yaml` workflow file in a workspace (workflows require an open workspace — action steps validate paths against the workspace root). The workflow side panel opens alongside the editor and renders the steps as an interactive graph.
+Open a workflow `.yml` / `.yaml` file in a workspace (workflows require an open workspace — action steps validate paths against the workspace root). The file opens in a split view: the YAML source on the left, and on the right the steps as an interactive graph under a toolbar. The **Source / Split / Preview** toggle switches layouts, as for any YAML file.
 
 | Control | Icon | Action |
 |---------|------|--------|
-| Run | ▶ | Starts the workflow. Disabled while a parse error is present, while a run is in progress, or with no workspace open. |
-| Cancel | ◼ | Replaces Run while a workflow is executing. Stops the run, kills any in-flight CLI child, and drops in-flight REST requests. |
+| Run | ▶ | Starts the workflow in this file, exactly as it is in the editor — saved or not. Disabled while the file has a parse error, while a workflow is running, or with no folder open; the toolbar says which. |
+| Cancel | ◼ | Replaces Run while this file's workflow is executing. Stops the run, kills any in-flight CLI child, and drops in-flight REST requests. |
+| Restore Files | — | Appears after a run that wrote files. See [Undoing a run](#undoing-a-run). |
 
-As the run proceeds, each node updates live — running, succeeded, skipped, or errored — so you can watch the pipeline advance and see exactly which step failed if one does. Only one workflow runs per window at a time.
+As the run proceeds, each node updates live — running, succeeded, skipped, or errored — so you can watch the pipeline advance and see exactly which step failed if one does. When it ends, the toolbar says whether it completed, failed or was cancelled. If the backend refuses to start a run — the engine is off, the YAML does not validate, the snapshot failed — a notification says why.
+
+Only one workflow runs at a time across the whole app, not per window: while one is running, Run is disabled in every other workflow file, and a workflow genie started meanwhile is refused.
+
+### Undoing a run
+
+Before a run that has `action/save-file` steps, VMark copies every file those steps will write (up to 64 MB per file and 256 MB in total) into a snapshot in its app-data folder, and notes which of them do not exist yet. If the snapshot cannot be taken, the workflow is not run at all.
+
+When the run ends, the toolbar offers **Restore Files**. After you confirm, VMark puts each snapshotted file back as it was before the run and deletes the files the run created. Edits made to those files since the run are lost, which is why the button is offered once. A file that cannot be restored — its folder was replaced by a link leading outside the workspace, say — is left as it is and counted in the notification. Restore is refused while any workflow is running.
 
 ### Execution flow
 
@@ -259,7 +283,7 @@ flowchart TD
 
 ## Sharing the diagram
 
-The same React Flow canvas that renders genie workflows also backs the [GitHub Actions Workflow Viewer](/guide/workflow-viewer), which provides an export control on the canvas with three options:
+The step graph of a genie workflow has no export control. The [GitHub Actions Workflow Viewer](/guide/workflow-viewer)'s canvas, built on the same React Flow library, has one with three options:
 
 | Export | Result |
 |--------|--------|

@@ -98,7 +98,7 @@ In Source mode, when your cursor is inside a ` ```svg ` code block, a floating p
 | **Zoom** | `−` and `+` buttons, or `Cmd/Ctrl` + scroll (10% to 300%) |
 
 ::: info
-The Source mode diagram preview must be enabled. Toggle it with the **Diagram Preview** button in the status bar.
+The Source mode diagram preview is off by default. Turn it on with **View → Toggle Diagram Preview** (`Alt + Mod + P`) or the command palette.
 :::
 
 ## SVG Validation

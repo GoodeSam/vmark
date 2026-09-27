@@ -113,7 +113,8 @@ The menu is fully keyboard-navigable: it opens with the first available action f
 
 ## Running a code block
 
-Hover any `bash`, `sh`, `zsh`, `shell`, or `console` fence in your document and
+Hover any `bash`, `sh`, `zsh` or `shell` fence — or a transcript fence tagged
+`console`, `shell-session`, `shellsession` or `terminal` — in your document and
 a **▶ Run in Terminal** button appears beside the copy button. It pastes the
 block into the terminal — revealing the panel and starting a session if needed —
 and stops there.
@@ -125,7 +126,8 @@ landed there first — a document can come from anywhere, and a code fence is
 just text somebody wrote.
 :::
 
-For a `console` fence — a pasted transcript — leading `$ `, `% `, and `# `
+For a transcript fence (`console`, `shell-session`, `shellsession`,
+`terminal`) — a pasted session — leading `$ `, `% `, and `# `
 prompts are stripped so you get the command rather than the prompt. In a `bash`
 fence they are left alone, since there they are source code.
 
@@ -135,7 +137,7 @@ The terminal detects three kinds of links in command output:
 
 - **Web URLs** — click to open in your default browser
 - **OSC 8 hyperlinks** — explicit terminal hyperlinks emitted by tools like `ls --hyperlink=auto`, `gh`, and modern compilers. The visible text and the underlying URL can differ; clicking opens the URL.
-- **File paths** — click to open the file in the editor (supports `:line:col` suffixes and relative paths resolved against the workspace root)
+- **File paths** — a path containing a `/` and ending in a file extension; click to open the file in the editor (supports `:line:col` suffixes; a relative path resolves against the shell's current directory when [shell integration](#shell-integration) reports it, otherwise against the workspace root)
 
 ## Shell Environment
 
@@ -178,11 +180,11 @@ is not built yet.)
 
 The integrated terminal inherits your login shell's `PATH`, so CLI tools like `node`, `claude`, and other user-installed binaries are discoverable — just as they would be in a regular terminal window.
 
-The shell is read from `$SHELL` (falls back to `/bin/sh`). The working directory starts at the workspace root, or the active file's parent directory, or `$HOME`.
+Unless you pick a shell in the terminal settings, VMark starts your login shell. On macOS and Linux it reads the login shell from your user account entry first, then `$SHELL`, and falls back to `/bin/sh`. On Windows it uses `%COMSPEC%`, falling back to the full path of `cmd.exe`. The working directory starts at the workspace root, or the active file's parent directory, or `$HOME`.
 
 Standard shell shortcuts like `Ctrl+R` (reverse history search in zsh/bash) work when the terminal is focused — they are not intercepted by the editor.
 
-When you open a workspace or file after the terminal is already running, all sessions automatically `cd` to the new workspace root.
+When the workspace root changes after the terminal is already running, idle sessions automatically `cd` to the new root. A session busy with a command (say, `vim` or `less`) is not interrupted: it changes directory once the command finishes, which needs [shell integration](#shell-integration) to detect. With the [workspace rail](/guide/workspace-rail) on, sessions that belong to a workspace keep their own directory.
 
 ## Not yet implemented
 
@@ -221,7 +223,7 @@ Open **Settings → Terminal** to configure:
 | Terminal bell | Off / Visual / Audible | Visual |
 | Minimum contrast | Off / WCAG AA (4.5:1) / WCAG AAA (7:1) / Maximum | WCAG AA (4.5:1) |
 
-Changes apply immediately to all open sessions. **Panel Size** goes up to 80 % of the available space. The editor keeps a minimum size in pixels, so it never disappears entirely no matter how large the terminal gets. Double-click the resize handle to jump straight to the maximum and back again without changing the stored size. **Mac Option as Meta** routes the macOS Option key as Meta in the integrated terminal so emacs, tmux, and similar tools see Alt-prefixed shortcuts (macOS only); it is on by default, so Option+Arrow does word movement rather than inserting accented characters. **Shell Integration** is available on macOS and Linux (hidden on Windows). **Remote Clipboard** is write-only (reads are always refused) and is described below. **Scrollback** controls how many lines of output each session retains in its scroll history — higher values use more memory. **Screen Reader Mode** exposes terminal output to assistive technology such as VoiceOver; it is off by default for performance. **Terminal bell** chooses how a bell (BEL) is signalled — a visual background-activity mark on the session tab, a soft audible beep (which also flags a background session's tab so you can find it), or nothing. **Minimum contrast** lifts faint terminal text to a readable contrast ratio against its background; raise it for accessibility or set it to Off to disable the lift.
+Most changes apply immediately to every open session — panel size and position, font size, line height, cursor, Copy on Select, Mac Option as Meta, Scrollback, Screen Reader Mode, Terminal bell and Minimum contrast. **Shell**, the **WebGL renderer**, **Remote Clipboard** and **Shell Integration** are fixed when a session starts, so they apply to sessions opened afterwards. **Panel Size** goes up to 80 % of the available space. The editor keeps a minimum size in pixels, so it never disappears entirely no matter how large the terminal gets. Double-click the resize handle to jump straight to the maximum and back again without changing the stored size. **Mac Option as Meta** routes the macOS Option key as Meta in the integrated terminal so emacs, tmux, and similar tools see Alt-prefixed shortcuts (macOS only); it is on by default, so Option+Arrow does word movement rather than inserting accented characters. **Shell Integration** is available on macOS and Linux (hidden on Windows). **Remote Clipboard** is write-only (reads are always refused) and is described below. **Scrollback** controls how many lines of output each session retains in its scroll history — higher values use more memory. **Screen Reader Mode** exposes terminal output to assistive technology such as VoiceOver; it is off by default for performance. **Terminal bell** chooses how a bell (BEL) is signalled — a visual background-activity mark on the session tab, a soft audible beep (which also flags a background session's tab so you can find it), or nothing. **Minimum contrast** lifts faint terminal text to a readable contrast ratio against its background; raise it for accessibility or set it to Off to disable the lift.
 
 ::: tip Terminal font family
 The terminal uses the **Mono Font** from **Settings → Editor**, not a font of
@@ -295,4 +297,4 @@ sessions (restart the terminal to apply).
 
 ## Persistence
 
-Terminal panel visibility and size are saved and restored across hot-exit restarts. Shell processes themselves cannot be preserved — a fresh shell is spawned for each session on restart. Scrollback is not preserved either: restoring it would mean writing whatever passed through your terminal (API keys included) to disk, so it is deliberately left for a design that addresses that first.
+Whether the terminal panel is open is saved and restored across hot-exit restarts. Its size is the **Panel Size** setting — a share of the window that dragging the resize handle updates — so it is kept with your settings and survives every restart, whichever side the panel is on. Shell processes themselves cannot be preserved — a fresh shell is spawned for each session on restart. Scrollback is not preserved either: restoring it would mean writing whatever passed through your terminal (API keys included) to disk, so it is deliberately left for a design that addresses that first.
