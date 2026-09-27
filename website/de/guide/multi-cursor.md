@@ -9,6 +9,7 @@ VMark unterstützt leistungsstarke Mehrcursor-Bearbeitung sowohl im WYSIWYG- als
 | Cursor bei nächster Übereinstimmung hinzufügen | `Mod + D` |
 | Übereinstimmung überspringen, zur nächsten springen | `Mod + Umschalt + D` |
 | Cursor bei allen Übereinstimmungen hinzufügen | `Mod + Umschalt + L` |
+| Cursor bei allen Übereinstimmungen im aktuellen Block hinzufügen | `Alt + Mod + Umschalt + L` |
 | Letzte Cursor-Hinzufügung rückgängig machen | `Alt + Mod + Z` |
 | Cursor darüber hinzufügen | `Mod + Alt + Auf` |
 | Cursor darunter hinzufügen | `Mod + Alt + Ab` |
@@ -44,8 +45,10 @@ Alle Vorkommen des aktuellen Wortes oder der Auswahl auf einmal auswählen:
 
 1. Ein Wort oder Text auswählen
 2. `Mod + Umschalt + L` drücken
-3. Alle übereinstimmenden Vorkommen im aktuellen Block werden ausgewählt
+3. Alle übereinstimmenden Vorkommen im Dokument werden ausgewählt — oder, innerhalb eines Code-Blocks, alle Treffer in diesem Block (siehe [Geltungsbereich](#geltungsbereich))
 4. Tippen, um alle auf einmal zu ersetzen
+
+Um innerhalb des aktuellen Absatzes, der Überschrift oder des Listenelements zu bleiben, verwenden Sie stattdessen `Alt + Mod + Umschalt + L`.
 
 ### Alt + Klick
 
@@ -123,21 +126,21 @@ Dies ermöglicht das gleichzeitige Verlassen mehrerer formatierter Bereiche. Sie
 - Wenn die Zwischenablage genauso viele Zeilen wie Cursor enthält, geht jede Zeile zu jedem Cursor
 - Andernfalls wird der vollständige Inhalt der Zwischenablage an allen Cursorn eingefügt
 
-## Block-Scoping
+## Geltungsbereich
 
-Mehrcursor-Operationen sind **auf den aktuellen Block beschränkt**, um unbeabsichtigte Bearbeitungen über nicht verwandte Abschnitte hinweg zu vermeiden.
+**Code ist begrenzt, Fließtext nicht.** Innerhalb eines Code-Blocks (WYSIWYG) oder eines umzäunten Blocks (Quellmodus) überschreiten Cursor nie die Zaungrenze — das Abgleichen eines Variablennamens in einem Snippet kann keinen Cursor in einem anderen platzieren. Im gewöhnlichen Fließtext durchsuchen `Mod + D` und `Mod + Umschalt + L` das **gesamte Dokument**.
 
-### Im WYSIWYG-Modus
-- Cursor können keine Code-Block-Grenzen überschreiten
-- Wenn sich Ihr primärer Cursor innerhalb eines Code-Blocks befindet, bleiben neue Cursor in diesem Block
+Das ist oft genau das, was Sie wollen, gelegentlich aber nicht: In einem langen Dokument platziert das Abgleichen eines häufigen Wortes Cursor in Absätzen weit außerhalb des sichtbaren Bereichs.
 
-### Im Quellmodus
-- Leerzeilen wirken als Block-Grenzen
-- `Mod + D` und `Mod + Umschalt + L` stimmen nur innerhalb des aktuellen Absatzes überein
+### Alle Vorkommen im Block auswählen
+
+`Alt + Mod + Umschalt + L` wählt jeden Treffer **nur innerhalb des aktuellen Blocks** aus — des Absatzes, der Überschrift oder des Listenelements, in dem sich Ihr Cursor befindet. Im Quellmodus begrenzen Leerzeilen einen Block; im WYSIWYG-Modus begrenzt ihn der umschließende Block. Innerhalb eines Code-Zauns verhält es sich genau wie `Mod + Umschalt + L`, da der Zaun bereits der Block ist.
+
+Die beiden sind Geschwister, kein Modus: `Mod + Umschalt + L` reicht weiterhin über das gesamte Dokument, sodass sich an nichts, worauf Sie sich bereits verlassen, etwas ändert.
 
 <div class="feature-box">
-<strong>Warum Block-Scoping?</strong>
-<p>Dies verhindert das versehentliche Bearbeiten eines Variablennamens in nicht verwandten Code-Abschnitten oder das Ändern von Text in verschiedenen Absätzen, die zufällig übereinstimmen.</p>
+<strong>Welches nehmen?</strong>
+<p>Greifen Sie zur blockbegrenzten Variante, wenn das Wort häufig vorkommt — etwa beim Umbenennen einer Variablen, die im Fließtext erwähnt wird, oder beim Bearbeiten des Musters eines einzelnen Listenelements. Greifen Sie zur dokumentweiten Variante, wenn Sie wirklich überall meinen.</p>
 </div>
 
 ## Cursor reduzieren
@@ -166,14 +169,15 @@ Im Dunkelmodus passen sich Cursor- und Auswahlfarben automatisch für bessere Si
 | `Alt + Mod + Z` (Weiches Rückgängig) | ✓ | ✓ |
 | `Mod + Alt + Auf/Ab` | ✓ | ✓ |
 | `Alt + Klick` | ✓ | ✓ |
-| Block-Scoping | Code-Zäune | Leerzeilen |
+| Zaun-Begrenzung | Code-Blöcke | Code-Zäune |
+| Blockbegrenztes Alles-Auswählen | `Alt + Mod + Umschalt + L` | `Alt + Mod + Umschalt + L` |
 | Rundum-Suche | ✓ | ✓ |
 
 ## Tipps & Bewährte Praktiken
 
 ### Variablen umbenennen
 1. Doppelklick auf den Variablennamen
-2. `Mod + Umschalt + L`, um alle im Block auszuwählen
+2. `Alt + Mod + Umschalt + L`, um jeden Treffer in diesem Block auszuwählen (oder `Mod + Umschalt + L` für das gesamte Dokument)
 3. Neuen Namen eingeben
 
 ### Präfixe/Suffixe hinzufügen
@@ -192,7 +196,8 @@ Im Dunkelmodus passen sich Cursor- und Auswahlfarben automatisch für bessere Si
 |----------|---------------|
 | Sorgfältige, schrittweise Auswahl | `Mod + D` |
 | Unerwünschte Übereinstimmung überspringen | `Mod + Umschalt + D` |
-| Alle im Block ersetzen | `Mod + Umschalt + L` |
+| Alle im aktuellen Block ersetzen | `Alt + Mod + Umschalt + L` |
+| Alle im Dokument ersetzen | `Mod + Umschalt + L` |
 | Letzten Cursor-Schritt rückgängig machen | `Alt + Mod + Z` |
 | Aufeinanderfolgende Zeilen bearbeiten | `Mod + Alt + Auf/Ab` |
 | Beliebige Positionen | `Alt + Klick` |
@@ -202,7 +207,7 @@ Im Dunkelmodus passen sich Cursor- und Auswahlfarben automatisch für bessere Si
 
 - **Atom-Knoten**: Im WYSIWYG-Modus können keine Cursor innerhalb von Bildern, eingebetteten Inhalten oder Mathe-Blöcken platziert werden
 - **IME-Eingabe**: Bei der Verwendung von Eingabemethoden (Chinesisch, Japanisch usw.) beeinflusst die Komposition nur den primären Cursor
-- **Dokumentweit**: Auswahlen sind auf Blöcke beschränkt, nicht auf das gesamte Dokument
+- **Code-Blöcke**: Innerhalb eines Code-Blocks (WYSIWYG) oder umzäunten Blocks (Quellmodus) verlässt die Suche nach Vorkommen diesen Block nie
 
 ## Tastaturkurzreferenz
 

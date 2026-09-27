@@ -8,7 +8,11 @@ VMark unterstützt [Mermaid](https://mermaid.js.org/)-Diagramme zum Erstellen vo
 
 ## Ein Diagramm einfügen
 
-### Tastaturkürzel verwenden
+### Menü oder Tastaturkürzel verwenden
+
+Wählen Sie **Einfügen → Diagramm** oder drücken Sie `Alt + Mod + Shift + D`. VMark fügt einen `mermaid`-Code-Block mit einem Start-Flussdiagramm ein, das Sie bearbeiten können. Ist Text markiert, wird stattdessen die Auswahl zum Quelltext des Diagramms.
+
+### Code-Block eintippen
 
 Geben Sie einen umzäunten Code-Block mit der `mermaid`-Sprachkennung ein:
 
@@ -21,21 +25,15 @@ graph TD
 ```
 ````
 
-### Slash-Befehl verwenden
-
-1. `/` eingeben, um das Befehlsmenü zu öffnen
-2. **Mermaid-Diagramm** auswählen
-3. Ein Vorlagendiagramm wird für Sie zum Bearbeiten eingefügt
-
 ## Bearbeitungsmodi
 
 ### Rich-Text-Modus (WYSIWYG)
 
-Im WYSIWYG-Modus werden Mermaid-Diagramme beim Tippen inline gerendert. Klicken Sie auf ein Diagramm, um seinen Quellcode zu bearbeiten.
+Im WYSIWYG-Modus werden Mermaid-Diagramme inline gerendert. Doppelklicken Sie auf ein Diagramm, um seinen Quellcode zu bearbeiten; die Bearbeitungskopfzeile bietet die Schaltflächen **Kopieren**, **Abbrechen** und **Speichern**.
 
 ### Quellmodus mit Live-Vorschau
 
-Im Quellmodus erscheint ein schwebendes Vorschau-Panel, wenn sich Ihr Cursor innerhalb eines Mermaid-Code-Blocks befindet:
+Im Quellmodus zeigt ein schwebendes Vorschau-Panel das Diagramm an, solange sich Ihr Cursor innerhalb eines Mermaid-Code-Blocks befindet. Die Vorschau ist **standardmäßig ausgeschaltet** — schalten Sie sie mit **Ansicht → Diagramm-Vorschau umschalten** (`Alt + Mod + P`) oder über die Befehlspalette ein. Sie bleibt für dieses Fenster eingeschaltet, bis Sie sie wieder ausschalten.
 
 ![Live-Vorschau-Panel im Quellmodus](/screenshots/mermaid-source-preview.png)
 
@@ -44,7 +42,7 @@ Im Quellmodus erscheint ein schwebendes Vorschau-Panel, wenn sich Ihr Cursor inn
 | **Live-Vorschau** | Gerendertes Diagramm beim Tippen anzeigen (200ms Entprellung) |
 | **Ziehen zum Verschieben** | Kopfzeile ziehen, um die Vorschau neu zu positionieren |
 | **Größe ändern** | Beliebige Kante oder Ecke ziehen zum Vergrößern/Verkleinern |
-| **Zoom** | `−`- und `+`-Schaltflächen verwenden (10% bis 300%) |
+| **Zoom** | `−`- und `+`-Schaltflächen verwenden oder `Cmd/Strg` + Scrollen (10% bis 300%) |
 
 Das Vorschau-Panel merkt sich seine Position, wenn Sie es verschieben, sodass Sie Ihren Arbeitsbereich leicht anordnen können.
 
@@ -235,7 +233,7 @@ Im WYSIWYG-Modus unterstützen gerenderte Diagramme interaktive Navigation:
 
 | Aktion | Wie |
 |--------|-----|
-| **Schwenken** | Scrollen oder das Diagramm klicken und ziehen |
+| **Schwenken** | Das Diagramm klicken und ziehen (einfaches Scrollen scrollt das Dokument, nicht das Diagramm) |
 | **Zoomen** | `Cmd` (macOS) oder `Strg` (Windows/Linux) gedrückt halten und scrollen |
 | **Zurücksetzen** | Auf die Zurücksetzen-Schaltfläche klicken, die beim Hovern erscheint (obere rechte Ecke) |
 
@@ -264,7 +262,7 @@ Beim Exportieren des vollständigen Dokuments nach HTML oder PDF werden Mermaid-
 
 ## KI-generierte Diagramme korrigieren
 
-VMark verwendet **Mermaid v11**, das einen strengeren Parser (Langium) als ältere Versionen hat. KI-Tools (ChatGPT, Claude, Copilot usw.) generieren oft Syntax, die in älteren Mermaid-Versionen funktionierte, aber in v11 fehlschlägt. Hier sind die häufigsten Probleme und wie man sie behebt.
+VMark verwendet **Mermaid v12**, das den strengeren Parser (Langium) beibehält, der mit v11 eingeführt wurde. KI-Tools (ChatGPT, Claude, Copilot usw.) generieren oft Syntax, die in älteren Mermaid-Versionen funktionierte, aber in v11 und neuer fehlschlägt. Hier sind die häufigsten Probleme und wie man sie behebt.
 
 ### 1. Nicht-quotierte Beschriftungen mit Sonderzeichen
 
@@ -290,7 +288,7 @@ flowchart TD
 
 ### 2. Abschließende Semikolons
 
-KI-Modelle fügen manchmal Semikolons am Zeilenende hinzu. Mermaid v11 erlaubt diese nicht.
+KI-Modelle fügen manchmal Semikolons am Zeilenende hinzu. Mermaid v11 und neuer erlauben diese nicht.
 
 ````markdown
 <!-- Schlägt fehl -->

@@ -71,9 +71,17 @@ Bearbeiten Sie mehrere Positionen gleichzeitig — VMark unterstützt vollständ
 | Letzten Cursor rückgängig machen | `Alt + Mod + Z` |
 | Auf einzelnen Cursor reduzieren | `Escape` |
 
-Alle Standardbearbeitungen (Tippen, Löschen, Zwischenablage, Navigation) funktionieren an jedem Cursor unabhängig. Standardmäßig blockbegrenzt, um unbeabsichtigte Bearbeitungen über Abschnitte hinweg zu verhindern.
+Alle Standardbearbeitungen (Tippen, Löschen, Zwischenablage, Navigation) funktionieren an jedem Cursor unabhängig. Im Fließtext durchsuchen `Mod + D` und `Mod + Umschalt + L` das gesamte Dokument; innerhalb eines Codeblocks bleiben sie in diesem Block. `Alt + Mod + Umschalt + L` wählt nur alle Treffer im aktuellen Block aus.
 
 [Mehr erfahren →](/de/guide/multi-cursor)
+
+## Intelligentes Alles-Auswählen
+
+Im WYSIWYG-Modus erweitert `Mod + A` die Auswahl Container für Container, statt sofort das ganze Dokument auszuwählen: In einer Tabelle wählt es zuerst die Zelle, dann die Zeile, dann die Tabelle und schließlich das Dokument aus. `Mod + Z` nimmt einen Erweiterungsschritt zurück, und `Escape` reduziert die Auswahl auf einen Cursor.
+
+Im Quellmodus wählt `Mod + A` zuerst den umschließenden Block aus — einen Code-Fence, eine Tabelle, ein Blockzitat oder eine Liste — und dann das ganze Dokument; auch dort nimmt `Mod + Z` einen Erweiterungsschritt zurück.
+
+Die Tastenbelegung gehört zum Editor und ist nicht anpassbar.
 
 ## Auto-Pair & Tab-Escape
 
@@ -140,8 +148,10 @@ Leistungsstarke Zeilenmanipulation über Bearbeiten → Zeilen:
 | Zeile löschen | `Mod + Umschalt + K` |
 | Zeilen verbinden | `Mod + J` |
 | Leerzeilen entfernen | — |
-| Zeilen aufsteigend sortieren | `F4` |
-| Zeilen absteigend sortieren | `Umschalt + F4` |
+| Zeilen aufsteigend sortieren | `F4` _(nur im Quellmodus)_ |
+| Zeilen absteigend sortieren | `Umschalt + F4` _(nur im Quellmodus)_ |
+
+Das Sortieren arbeitet mit reinen Textzeilen und ist daher nur im Quellmodus verfügbar.
 
 ## Tabellen
 
@@ -152,7 +162,7 @@ Vollständige Tabellenbearbeitung:
 - Zellenausrichtung (links, mitte, rechts)
 - Spalten durch Ziehen in der Größe ändern
 - Kontext-Symbolleiste für schnelle Aktionen
-- Tastaturnavigation (Tab, Pfeiltasten, Eingabe)
+- Tastaturnavigation — `Tab` / `Umschalt + Tab` wechseln zwischen Zellen, die Pfeiltasten verlassen die Tabelle an ihren Rändern, und `Mod + Eingabe` / `Mod + Umschalt + Eingabe` fügen eine Zeile darunter / darüber ein
 
 ## Bilder
 
@@ -240,6 +250,15 @@ Rohes SVG inline über ` ```svg `-Codeblöcke rendern:
 - Ideal für KI-generierte Diagramme und benutzerdefinierte Illustrationen
 - [Mehr erfahren →](/de/guide/svg)
 
+### Inline-Inhaltsverzeichnis
+
+Geben Sie `[TOC]` in einer eigenen Zeile ein oder wählen Sie **Einfügen → Inhaltsverzeichnis**, um ein live aktualisiertes Inhaltsverzeichnis einzufügen (der Menüpunkt hat kein Standard-Tastenkürzel; weisen Sie ihm eines unter Einstellungen → Tastenkürzel zu):
+
+- Automatisch aus den Überschriften des Dokuments erzeugt, korrekt verschachtelt
+- Klicken Sie auf eine Überschrift, um direkt dorthin zu scrollen
+- Aktualisiert sich in Echtzeit beim Bearbeiten
+- Wird in WYSIWYG und im Export (HTML/PDF) gerendert und übersteht den Wechsel in den Quellmodus unverändert
+
 ## KI-Genies
 
 Integrierte KI-Schreibassistenz, unterstützt von Ihrem bevorzugten Anbieter:
@@ -253,7 +272,7 @@ Integrierte KI-Schreibassistenz, unterstützt von Ihrem bevorzugten Anbieter:
 
 ## Suchen & Ersetzen
 
-Öffnen Sie die Suchleiste mit `Mod + F`. Sie erscheint inline oben im Editorbereich und funktioniert in WYSIWYG- und Quellmodus.
+Öffnen Sie die Suchleiste mit `Mod + F`. Sie öffnet sich in der Leiste am unteren Fensterrand und funktioniert in WYSIWYG- und Quellmodus.
 
 **Navigation:**
 
@@ -272,7 +291,7 @@ Integrierte KI-Schreibassistenz, unterstützt von Ihrem bevorzugten Anbieter:
 
 **Ersetzen:**
 
-Klicken Sie auf das Erweiterungs-Chevron in der Suchleiste, um die Ersetzen-Zeile anzuzeigen. Geben Sie den Ersatztext ein, dann verwenden Sie **Ersetzen** (einzelne Übereinstimmung) oder **Alle ersetzen** (alle Übereinstimmungen auf einmal). Der Übereinstimmungszähler zeigt die aktuelle Position und Gesamtzahl an (z. B. „3 von 12").
+Das Ersetzen-Feld steht neben dem Suchfeld — beide sind immer sichtbar, und `Tab` wechselt vom einen zum anderen. Geben Sie den Ersatztext ein, dann verwenden Sie **Ersetzen** (einzelne Übereinstimmung) oder **Alle ersetzen** (alle Übereinstimmungen auf einmal). Der Übereinstimmungszähler zeigt die aktuelle Position und Gesamtzahl an (z. B. „3 von 12").
 
 ## Markdown-Lint
 
@@ -303,7 +322,7 @@ Wenn Sie eine Lint-Prüfung ausführen, erscheinen Diagnosen als Inline-Hervorhe
 - Nicht geschlossene Fenced-Codeblöcke
 - Fehlerhafte Fragment-Links (`#anker` stimmt mit keiner Überschrift überein)
 
-Lint-Ergebnisse sind flüchtig und werden beim Bearbeiten des Dokuments gelöscht. Führen Sie die Prüfung jederzeit mit `Alt + Mod + V` erneut aus.
+Lint-Ergebnisse werden beim Tippen nicht aktualisiert. Im Quellmodus löscht eine Bearbeitung sie. Im WYSIWYG-Modus entfernt eine Bearbeitung die Hervorhebungen, aber die Anzahl der Probleme in der Statusleiste und die Sprungziele von `F2` / `Umschalt + F2` bleiben vom letzten Durchlauf erhalten, bis Sie die Prüfung erneut ausführen oder den Tab schließen. Führen Sie die Prüfung jederzeit mit `Alt + Mod + V` erneut aus.
 
 ## Universelle Symbolleiste
 
@@ -361,7 +380,7 @@ Integrierte Textformatierungswerkzeuge für Chinesisch/Japanisch/Koreanisch:
 VMark speichert automatisch Schnappschüsse Ihrer Dokumente, damit Sie frühere Versionen wiederherstellen können.
 
 - **Automatisches Speichern** mit konfigurierbarem Intervall erfasst Schnappschüsse im Hintergrund
-- **Dokumentbezogener Verlauf** lokal im JSONL-Format gespeichert
+- **Dokumentbezogener Verlauf** lokal im Anwendungsdatenordner von VMark gespeichert — eine Indexdatei plus eine Markdown-Datei pro Schnappschuss
 - Öffnen Sie die Verlaufs-Seitenleiste mit `Ctrl + Shift + 3`, um vergangene Versionen zu durchsuchen
 - Schnappschüsse sind **nach Tagen gruppiert** mit Zeitstempeln, die den genauen Speicherzeitpunkt anzeigen
 - **Wiederherstellen** einer früheren Version durch Klicken auf die Wiederherstellungsschaltfläche neben einem Schnappschuss (ein Bestätigungsdialog verhindert versehentliches Zurücksetzen)
@@ -372,9 +391,9 @@ VMark speichert automatisch Schnappschüsse Ihrer Dokumente, damit Sie frühere 
 
 ## Sitzungswiederherstellung (Hot Exit)
 
-Wenn Sie VMark beenden oder es unerwartet beendet wird, wird Ihre Sitzung bewahrt und beim nächsten Start wiederhergestellt.
+Wenn VMark neu startet, um ein Update zu installieren, oder unerwartet beendet wird, bleibt Ihre Arbeit erhalten und wird beim nächsten Start wiederhergestellt.
 
-**Was gespeichert wird:**
+**Was ein Update-Neustart speichert:**
 - Alle offenen Tabs und ihr Inhalt (einschließlich ungespeicherter Änderungen)
 - Cursorpositionen und Rückgängig-/Wiederholen-Verlauf
 - UI-Layout: Seitenleistenstatus, Gliederungssichtbarkeit, Quell-/Fokus-/Schreibmaschinenmodus, Terminalstatus
@@ -382,10 +401,11 @@ Wenn Sie VMark beenden oder es unerwartet beendet wird, wird Ihre Sitzung bewahr
 - Aktiver Arbeitsbereich und Dateiexplorer-Einstellungen
 
 **Funktionsweise:**
-- Beim Beenden erfasst VMark den vollständigen Sitzungsstatus aller Fenster
+- Wenn Sie wählen, neu zu starten und ein Update zu installieren, erfasst VMark zuvor den vollständigen Sitzungsstatus aller Fenster
 - Beim Neustart werden Tabs genau so wiederhergestellt, wie Sie sie verlassen haben, wobei geänderte (ungespeicherte) Dokumente entsprechend markiert sind
-- Absturzwiederherstellung läuft automatisch nach einem unerwarteten Beenden und stellt Dokumente aus periodischen Wiederherstellungsschnappschüssen wieder her
+- Ungespeicherte Änderungen werden außerdem alle 10 Sekunden in Wiederherstellungsschnappschüsse geschrieben. Nach einem unerwarteten Beenden stellt VMark sie beim nächsten Start als ungespeicherte Tabs wieder her
 - Wiederherstellungsschnappschüsse älter als 7 Tage werden automatisch bereinigt
+- Ein gewöhnliches Beenden erfasst die Sitzung nicht: VMark fordert Sie zuvor auf, ungespeicherte Dokumente zu speichern. Die offenen Tabs eines Arbeitsbereichs kehren dennoch zurück, wenn Sie ihn das nächste Mal öffnen (siehe [Sitzungswiederherstellung](/de/guide/workspace-management#sitzungswiederherstellung))
 
 Keine Konfiguration erforderlich. Sitzungswiederherstellung ist immer aktiv.
 
@@ -445,9 +465,9 @@ VMark enthält Hilfsprogramme zur Textbereinigung und -formatierung, verfügbar 
 
 Integrierte Textformatierungswerkzeuge für Chinesisch/Japanisch/Koreanisch. [Mehr erfahren →](/de/guide/cjk-formatting)
 
-### Bildbereinigung (Datei → Unbenutzte Bilder bereinigen)
+### Bildbereinigung (Format → Textbereinigung → Nicht verwendete Bilder bereinigen…)
 
-Verwaiste Bilder aus Ihrem Asset-Ordner finden und entfernen.
+Verwaiste Bilder aus Ihrem Asset-Ordner finden und entfernen (auch über die Befehlspalette verfügbar). VMark zeigt, was es gefunden hat, und fragt vor dem Löschen nach; gelöschte Bilder landen im Papierkorb des Systems. Ein Bild, das noch von einem geöffneten Dokument verwendet wird — einschließlich ungespeicherter Änderungen in einem anderen VMark-Fenster —, bleibt erhalten. Kann VMark nicht bestätigen, dass ein Bild unbenutzt ist (etwa weil ein anderes Fenster nicht rechtzeitig antwortet), löscht es nichts.
 
 ## Integriertes Terminal
 
@@ -471,6 +491,11 @@ VMark sucht automatisch nach Updates und kann diese in der App herunterladen und
 
 [Mehr erfahren →](/de/guide/workspace-management)
 
+## Kohärenz, Wissensdatenbank & Slidev
+
+- **Kohärenz- & Aufschlüsselungsansicht** — die optionale Herkunftsverfolgung zeichnet auf, welche Dokumente jede KI-Generierung gelesen hat, markiert nachgelagerte Dokumente, wenn sich ein vorgelagertes ändert, und ergänzt semantische Prüfungen, Kanon-Aussagen und Kontexte. Öffnen Sie sie über **Fenster → Kohärenz-Aufschlüsselung**. [Mehr erfahren →](/de/guide/coherence)
+- **Wissensdatenbank** — stellt einen geöffneten Arbeitsbereich als verlinkte Website bereit (Wiki-Links, Rückverweise, Beziehungsgraph, Volltextsuche) auf `127.0.0.1`, in einem Panel (`Ctrl + Shift + 4`) oder in Ihrem Browser, und zeigt Slidev-Präsentationen in der Vorschau an und exportiert sie. Noch kein Release-Build enthält die dafür nötige Content-Server-Laufzeit, daher sind das Panel, sein Menüpunkt, der Paletten-Befehl und das Tastenkürzel ausgeblendet, solange **Einstellungen → Erweitert → Entwickler-Tools** nicht eingeschaltet ist. [Mehr erfahren →](/de/guide/knowledge-base)
+
 ## Anpassung
 
 ### Designs
@@ -490,6 +515,8 @@ Separate Schriftarten konfigurieren für:
 - Lateinischen Text
 - CJK (Chinesisch/Japanisch/Koreanisch) Text
 - Monospace (Code)
+
+Jede Auswahl bietet eine kurze Liste empfohlener Schriftarten, die auf Ihrem Computer installierten Schriftarten und einen Eintrag **Benutzerdefiniert…**, in den Sie einen beliebigen Schriftfamiliennamen eingeben. [Details →](/de/guide/settings#typografie)
 
 ### Layout
 

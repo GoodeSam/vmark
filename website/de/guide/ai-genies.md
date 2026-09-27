@@ -89,9 +89,9 @@ Wenn der Bereich **Auswahl** ist, aber nichts ausgewählt ist, arbeitet der Geni
 
 Nachdem ein Genie ausgeführt wurde, erscheint der Vorschlag inline:
 
-- **Ersetzen** — Originaltext mit Durchstreichung, neuer Text in Grün
-- **Einfügen** — Neuer Text in Grün nach dem Quellblock
-- **Löschen** — Originaltext mit Durchstreichung
+- **Ersetzen** — Originaltext mit roter, gewellter Durchstreichung, gefolgt vom neuen Text als verblasstem, kursivem „Geistertext" in der Akzentfarbe
+- **Einfügen** — Neuer Text als Geistertext nach dem Quellblock
+- **Löschen** — Originaltext mit roter, gewellter Durchstreichung
 
 Jeder Vorschlag hat Annehmen- (Häkchen) und Ablehnen- (X) Schaltflächen.
 
@@ -136,7 +136,7 @@ Genies werden im Anwendungsdatenverzeichnis gespeichert:
 
 Unterverzeichnisse werden zu **Kategorien** in der Auswahl. Sie können Genies beliebig organisieren:
 
-```
+```text
 genies/
 ├── editing/
 │   ├── polish.md
@@ -145,10 +145,10 @@ genies/
 ├── creative/
 │   ├── expand.md
 │   └── rephrase.md
-├── academic/          ← Ihre eigene Kategorie
+├── academic/          ← your custom category
 │   ├── cite.md
 │   └── abstract.md
-└── my-workflows/      ← Eine weitere eigene Kategorie
+└── my-workflows/      ← another custom category
     └── blog-intro.md
 ```
 
@@ -158,15 +158,15 @@ Jede Genie-Datei hat zwei Teile: **Frontmatter** (Metadaten) und **Vorlage** (de
 
 ```markdown
 ---
-description: Klarheit und Fluss verbessern
+description: Improve clarity and flow
 scope: selection
 category: editing
 ---
 
-Sie sind ein Expertenredakteur. Verbessern Sie die Klarheit, den Fluss und die Prägnanz
-des folgenden Textes unter Beibehaltung der Stimme und Absicht des Autors.
+You are an expert editor. Improve the clarity, flow, and conciseness
+of the following text while preserving the author's voice and intent.
 
-Geben Sie nur den verbesserten Text zurück — keine Erklärungen.
+Return only the improved text — no explanations.
 
 {{content}}
 ```
@@ -198,15 +198,15 @@ Der `{{content}}`-Platzhalter ist das Kernstück jedes Genie. Wenn ein Genie aus
 Mit dieser Vorlage zum Beispiel:
 
 ```markdown
-Übersetzen Sie den folgenden Text ins Französische.
+Translate the following text into French.
 
 {{content}}
 ```
 
 Wenn der Benutzer "Hello, how are you?" auswählt, erhält die KI:
 
-```
-Übersetzen Sie den folgenden Text ins Französische.
+```text
+Translate the following text into French.
 
 Hello, how are you?
 ```
@@ -233,14 +233,14 @@ Der `{{context}}`-Platzhalter gibt der KI schreibgeschützten Umgebungstext — 
 
 **Beispiel — was die KI erhält:**
 
-Mit `context: 1` und dem Cursor im zweiten Absatz eines dreiseitigen Dokuments:
+Mit `context: 1` und dem Cursor im zweiten Absatz eines Dokuments mit drei Absätzen:
 
-```
+```text
 [Before]
-Inhalt des ersten Absatzes.
+First paragraph content here.
 
 [After]
-Inhalt des dritten Absatzes.
+Third paragraph content here.
 ```
 
 Die Abschnitte `[Before]` und `[After]` werden weggelassen, wenn es keine Nachbarn in dieser Richtung gibt (z.B. der Inhalt am Anfang oder Ende des Dokuments ist).
@@ -257,15 +257,15 @@ Verwenden Sie `insert` für: Weiterschreiben, Zusammenfassungen unter Inhalten e
 
 ```markdown
 ---
-description: Von hier aus weiterschreiben
+description: Continue writing from here
 scope: block
 action: insert
 ---
 
-Schreiben Sie natürlich weiter, wo der folgende Text aufhört.
-Passen Sie die Stimme, den Stil und den Ton des Autors an. Schreiben Sie 2-3 Absätze.
+Continue writing naturally from where the following text leaves off.
+Match the author's voice, style, and tone. Write 2-3 paragraphs.
 
-Wiederholen oder fassen Sie den vorhandenen Text nicht zusammen — setzen Sie ihn einfach fort.
+Do not repeat or summarize the existing text — just continue it.
 
 {{content}}
 ```
@@ -276,12 +276,12 @@ Wiederholen oder fassen Sie den vorhandenen Text nicht zusammen — setzen Sie i
 
 ```markdown
 ---
-description: Schnelle Grammatikkorrektur (verwendet schnelles Modell)
+description: Quick grammar fix (uses fast model)
 scope: selection
 model: claude-haiku-4-5-20251001
 ---
 
-Korrigieren Sie Grammatik- und Rechtschreibfehler. Geben Sie nur den korrigierten Text zurück.
+Fix grammar and spelling errors. Return only the corrected text.
 
 {{content}}
 ```
@@ -295,11 +295,11 @@ Der Modell-Bezeichner muss mit dem übereinstimmen, was Ihr aktiver Anbieter akz
 Sagen Sie der KI genau, was sie zurückgeben soll. Ohne dies neigen Modelle dazu, Erklärungen, Überschriften oder Kommentare hinzuzufügen.
 
 ```markdown
-<!-- Gut -->
-Geben Sie nur den verbesserten Text zurück — keine Erklärungen.
+<!-- Good -->
+Return only the improved text — no explanations.
 
-<!-- Schlecht — KI kann Ausgabe in Anführungszeichen einschließen, "Hier ist die verbesserte Version:" hinzufügen usw. -->
-Verbessern Sie diesen Text.
+<!-- Bad — AI may wrap output in quotes, add "Here's the improved version:", etc. -->
+Improve this text.
 ```
 
 ### Eine Rolle festlegen
@@ -307,11 +307,11 @@ Verbessern Sie diesen Text.
 Geben Sie der KI eine Persona, um ihr Verhalten zu verankern.
 
 ```markdown
-<!-- Gut -->
-Sie sind ein erfahrener technischer Redakteur, der auf API-Dokumentation spezialisiert ist.
+<!-- Good -->
+You are an expert technical editor who specializes in API documentation.
 
-<!-- Okay, aber weniger fokussiert -->
-Bearbeiten Sie den folgenden Text.
+<!-- Okay but less focused -->
+Edit the following text.
 ```
 
 ### Den Bereich einschränken
@@ -319,13 +319,13 @@ Bearbeiten Sie den folgenden Text.
 Sagen Sie der KI, was sie NICHT ändern soll. Dies verhindert übermäßiges Bearbeiten.
 
 ```markdown
-<!-- Gut -->
-Korrigieren Sie nur Grammatik- und Rechtschreibfehler.
-Ändern Sie nicht die Bedeutung, den Stil oder den Ton.
-Strukturieren Sie keine Sätze um.
+<!-- Good -->
+Fix grammar and spelling errors only.
+Do not change the meaning, style, or tone.
+Do not restructure sentences.
 
-<!-- Schlecht — gibt der KI zu viel Freiheit -->
-Korrigieren Sie diesen Text.
+<!-- Bad — gives the AI too much freedom -->
+Fix this text.
 ```
 
 ### Markdown in Prompts verwenden
@@ -334,22 +334,22 @@ Sie können Markdown-Formatierung in Ihren Prompt-Vorlagen verwenden. Dies ist h
 
 ```markdown
 ---
-description: Eine Pro/Kontra-Analyse erstellen
+description: Generate a pros/cons analysis
 scope: selection
 action: insert
 ---
 
-Analysieren Sie den folgenden Text und erstellen Sie eine kurze Pro/Kontra-Liste.
+Analyze the following text and produce a brief pros/cons list.
 
-Format:
+Format as:
 
-**Pro:**
-- Punkt 1
-- Punkt 2
+**Pros:**
+- point 1
+- point 2
 
-**Kontra:**
-- Punkt 1
-- Punkt 2
+**Cons:**
+- point 1
+- point 2
 
 {{content}}
 ```
@@ -359,15 +359,15 @@ Format:
 Ein Genie, eine Aufgabe. Kombinieren Sie keine mehreren Aufgaben in einem einzigen Genie — erstellen Sie stattdessen separate Genies.
 
 ```markdown
-<!-- Gut — eine klare Aufgabe -->
+<!-- Good — one clear job -->
 ---
-description: In Aktiv umwandeln
+description: Convert to active voice
 scope: selection
 ---
 
-Schreiben Sie den folgenden Text in der Aktivform.
-Ändern Sie nicht die Bedeutung.
-Geben Sie nur den umgeschriebenen Text zurück.
+Rewrite the following text using active voice.
+Do not change the meaning.
+Return only the rewritten text.
 
 {{content}}
 ```
@@ -378,14 +378,14 @@ Geben Sie nur den umgeschriebenen Text zurück.
 
 ```markdown
 ---
-description: Einen akademischen Abstract erstellen
+description: Generate an academic abstract
 scope: document
 action: insert
 ---
 
-Lesen Sie das folgende Paper und schreiben Sie einen prägnanten akademischen Abstract
-(150-250 Wörter). Folgen Sie der Standardstruktur: Hintergrund, Methoden,
-Ergebnisse, Schlussfolgerung.
+Read the following paper and write a concise academic abstract
+(150-250 words). Follow standard structure: background, methods,
+results, conclusion.
 
 {{content}}
 ```
@@ -394,14 +394,14 @@ Ergebnisse, Schlussfolgerung.
 
 ```markdown
 ---
-description: Einen ansprechenden Eröffnungsabsatz schreiben
+description: Write an engaging opening paragraph
 scope: document
 action: insert
 ---
 
-Lesen Sie den folgenden Entwurf und schreiben Sie einen überzeugenden Eröffnungsabsatz,
-der den Leser fesselt. Verwenden Sie eine Frage, eine überraschende Tatsache oder eine lebendige
-Szene. Halten Sie es unter 3 Sätzen.
+Read the following draft and write a compelling opening paragraph
+that hooks the reader. Use a question, surprising fact, or vivid
+scene. Keep it under 3 sentences.
 
 {{content}}
 ```
@@ -410,13 +410,14 @@ Szene. Halten Sie es unter 3 Sätzen.
 
 ```markdown
 ---
-description: Eine einfachsprachige Erklärung über Code hinzufügen
+description: Add a plain-English explanation above code
 scope: selection
 action: insert
 ---
 
-Lesen Sie den folgenden Code und schreiben Sie eine kurze einfachsprachige Erklärung
-was er tut. Verwenden Sie 1-2 Sätze. Nehmen Sie den Code selbst nicht in Ihre Antwort auf.
+Read the following code and write a brief plain-English explanation
+of what it does. Use 1-2 sentences. Do not include the code itself
+in your response.
 
 {{content}}
 ```
@@ -425,15 +426,15 @@ was er tut. Verwenden Sie 1-2 Sätze. Nehmen Sie den Code selbst nicht in Ihre A
 
 ```markdown
 ---
-description: In professionellem Ton umschreiben
+description: Rewrite in professional tone
 scope: selection
 ---
 
-Schreiben Sie den folgenden Text in einem professionellen, geschäftsgerechten Ton um.
-Behalten Sie dieselbe Bedeutung und die wichtigsten Punkte bei. Entfernen Sie umgangssprachliche Ausdrücke,
-Slang und Füllwörter.
+Rewrite the following text in a professional, business-appropriate tone.
+Keep the same meaning and key points. Remove casual language,
+slang, and filler words.
 
-Geben Sie nur den umgeschriebenen Text zurück — keine Erklärungen.
+Return only the rewritten text — no explanations.
 
 {{content}}
 ```
@@ -442,15 +443,15 @@ Geben Sie nur den umgeschriebenen Text zurück — keine Erklärungen.
 
 ```markdown
 ---
-description: Ins vereinfachte Chinesisch übersetzen
+description: Translate to Simplified Chinese
 scope: selection
 ---
 
-Übersetzen Sie den folgenden Text ins vereinfachte Chinesisch.
-Bewahren Sie die ursprüngliche Bedeutung, den Ton und die Formatierung.
-Verwenden Sie natürliches, idiomatisches Chinesisch — keine wörtliche Übersetzung.
+Translate the following text into Simplified Chinese.
+Preserve the original meaning, tone, and formatting.
+Use natural, idiomatic Chinese — not word-for-word translation.
 
-Geben Sie nur den übersetzten Text zurück — keine Erklärungen.
+Return only the translated text — no explanations.
 
 {{content}}
 ```
@@ -459,20 +460,20 @@ Geben Sie nur den übersetzten Text zurück — keine Erklärungen.
 
 ```markdown
 ---
-description: Umschreiben, um Ton und Stil der Umgebung anzupassen
+description: Rewrite to match surrounding tone and style
 scope: selection
 context: 1
 ---
 
-Schreiben Sie den folgenden Inhalt um, damit er natürlich zu seinem Umgebungskontext passt.
-Passen Sie Ton, Stil und Detailtiefe an.
+Rewrite the following content to fit naturally with its surrounding context.
+Match the tone, style, and level of detail.
 
-Geben Sie nur den umgeschriebenen Text zurück — keine Erklärungen.
+Return only the rewritten text — no explanations.
 
-## Umgebungskontext (nicht in der Ausgabe einschließen):
+## Surrounding context (do not include in output):
 {{context}}
 
-## Umzuschreibender Inhalt:
+## Content to rewrite:
 {{content}}
 ```
 
@@ -480,35 +481,59 @@ Geben Sie nur den umgeschriebenen Text zurück — keine Erklärungen.
 
 ```markdown
 ---
-description: Aussagen markieren, die überprüft werden müssen
+description: Flag claims that need verification
 scope: selection
 action: insert
 ---
 
-Lesen Sie den folgenden Text und listen Sie alle faktischen Behauptungen auf, die
-überprüft werden sollten. Notieren Sie für jede Behauptung, warum sie überprüft werden muss (z.B.
-spezifische Zahlen, Daten, Statistiken oder starke Aussagen).
+Read the following text and list any factual claims that should be
+verified. For each claim, note why it might need checking (e.g.,
+specific numbers, dates, statistics, or strong assertions).
 
-Formatieren Sie als Aufzählungsliste. Wenn alles solide aussieht, sagen Sie
-"Keine Behauptungen zur Überprüfung markiert."
+Format as a bullet list. If everything looks solid, say
+"No claims flagged for verification."
 
 {{content}}
 ```
 
 ## KI-Vorschläge
 
-Wenn ein Genie Text zurückgibt, der als Ersatz für die Auswahl gedacht ist (statt einer freien Chat-Antwort), zeigt VMark ihn als **Vorschlag** mit einem Inline-Diff an: roter durchgestrichener Text für das Original, grüne Unterstreichung für den vorgeschlagenen Text. Sie prüfen und bestätigen, bevor irgendeine Änderung dauerhaft wird.
+Wenn ein Genie Text zurückgibt, der als Ersatz für die Auswahl gedacht ist (statt einer freien Chat-Antwort), zeigt VMark ihn als **Vorschlag** mit einem Inline-Diff an: rote, gewellte Durchstreichung für den Originaltext, verblasster, kursiver Geistertext in der Akzentfarbe für den vorgeschlagenen Text. Sie prüfen und bestätigen, bevor irgendeine Änderung dauerhaft wird.
 
 | Aktion | Kürzel |
 |---|---|
-| Fokussierten Vorschlag annehmen | `Tab` |
+| Fokussierten Vorschlag annehmen | `Eingabe` |
 | Fokussierten Vorschlag ablehnen | `Esc` |
-| Alle Vorschläge im Dokument annehmen | `Mod + Shift + Eingabe` _(kontextabhängig — innerhalb einer Tabelle bedeutet es zugleich „Zeile darüber hinzufügen")_ |
-| Zum nächsten Vorschlag wechseln | `Tab` von einer nicht fokussierten Position aus |
+| Zum nächsten / vorherigen Vorschlag wechseln | `Tab` / `Umschalt + Tab` |
+| Alle Vorschläge im Dokument annehmen | `Mod + Umschalt + Eingabe` _(kontextabhängig — innerhalb einer Tabelle bedeutet es zugleich „Zeile darüber hinzufügen“)_ |
+| Alle Vorschläge im Dokument ablehnen | `Mod + Umschalt + Escape` |
 
 Wenn ein Genie mehrere Absätze umschreibt, ist jede Ersetzung ein eigenständig navigierbarer Vorschlag. Das Annehmen eines Vorschlags akzeptiert die anderen nicht automatisch.
 
-Die Vorschlags-Oberfläche hat außerdem eine MCP-Schnittstelle — externe KI-Agenten, die über den [MCP-Server](/de/guide/mcp-tools) verbunden sind, können `suggestion.accept`-/`suggestion.reject`-Aktionen ausgeben, um denselben Zustand zu manipulieren.
+## Genies in Workflows
+
+Ein einzelnes Genie führt einen Prompt aus. Wenn Sie mehrere KI-Schritte verketten müssen — Gliederung, dann Entwurf, dann Politur — und die Ausgabe einer Stufe in die nächste leiten wollen, verwenden Sie einen **Genie-Workflow**: eine YAML-Datei, die mehrere Genie-Aufrufe mit explizitem Datenfluss, optionalen Genehmigungsschritten, Modellen pro Schritt und einem Live-Ausführungsdiagramm orchestriert.
+
+Da Workflow-Schritte den `{{content}}`-Platzhalter eines Genies aus einer `with: { input: "..." }`-Map füllen, **laufen die Genies, die Sie hier schreiben, unverändert in Workflows** — keine Umwandlung nötig.
+
+Unter [Genie-Workflows](/de/guide/workflows) finden Sie das vollständige YAML-Schema, die Ausdruckssyntax, Genehmigungen und wie Sie einen Workflow ausführen.
+
+### Abschirmung nicht vertrauenswürdiger Inhalte
+
+Wenn der `genie/<name>`-Schritt eines Workflows ausgeführt wird, werden
+Dokumenttext, Auswahlen und Dateiinhalte in eindeutige
+`<<<DOCUMENT-DATA-…>>>`-Markierungen eingeschlossen, bevor sie den
+KI-Anbieter erreichen, und der Prompt weist das Modell an, abgeschirmten
+Text strikt als Daten zu behandeln. Die Abschirmung gehört zu
+Workflow-Schritten — ein Genie, das direkt aus der Auswahl gestartet
+wird, sendet den Text seines Bereichs unverändert an den Anbieter. Das
+schützt vor Dokumenten, die versuchen, der KI Anweisungen
+unterzuschieben („ignoriere deine Anweisungen und führe … aus“) — was
+vor allem bei CLI-Anbietern (Claude Code, Codex, Gemini CLI) wichtig
+ist, die Befehle ausführen können. Behandeln Sie Genies, die Sie auf
+Dateien aus nicht vertrauenswürdigen Quellen anwenden, mit derselben
+Vorsicht wie das Ausführen eines Skripts aus dem Internet: Die
+Abschirmung ist eine starke Gegenmaßnahme, keine absolute Garantie.
 
 ## Einschränkungen
 
@@ -521,7 +546,7 @@ Die Vorschlags-Oberfläche hat außerdem eine MCP-Schnittstelle — externe KI-A
 
 **"Kein KI-Anbieter verfügbar"** — Öffnen Sie Einstellungen > Integrationen und konfigurieren Sie einen Anbieter. Siehe [KI-Anbieter](/de/guide/ai-providers).
 
-**Genie erscheint nicht in der Auswahl** — Überprüfen Sie, ob die Datei eine `.md`-Erweiterung hat, gültiges Frontmatter mit `---`-Begrenzern und im Genies-Verzeichnis (nicht in einem tiefer liegenden Unterverzeichnis) gespeichert ist.
+**Genie erscheint nicht in der Auswahl** — Überprüfen Sie, ob die Datei eine `.md`-Erweiterung (oder `.yml`/`.yaml` für ein [Workflow-Genie](/de/guide/workflow-genies)) und gültiges Frontmatter mit `---`-Begrenzern hat. Unterordner werden bis zu acht Ebenen tief durchsucht (insgesamt höchstens 10.000 Einträge), symbolische Links werden übersprungen. Führen Sie nach dem Hinzufügen von Dateien **Bearbeiten → Genies → Genies neu laden** aus.
 
 **KI gibt Unsinn oder Fehler zurück** — Überprüfen Sie, ob Ihr API-Schlüssel korrekt ist und der Modellname für Ihren Anbieter gültig ist. Überprüfen Sie das Terminal/die Konsole auf Fehlerdetails.
 

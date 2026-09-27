@@ -98,7 +98,7 @@ Im Quellmodus erscheint ein schwebendes Vorschau-Panel, wenn sich Ihr Cursor inn
 | **Zoom** | `−`- und `+`-Schaltflächen oder `Cmd/Strg` + Scrollen (10% bis 300%) |
 
 ::: info
-Die Diagrammvorschau im Quellmodus muss aktiviert sein. Mit der **Diagrammvorschau**-Schaltfläche in der Statusleiste umschalten.
+Die Diagrammvorschau im Quellmodus ist standardmäßig ausgeschaltet. Schalten Sie sie mit **Ansicht → Diagramm-Vorschau umschalten** (`Alt + Mod + P`) oder über die Befehlspalette ein.
 :::
 
 ## SVG-Validierung

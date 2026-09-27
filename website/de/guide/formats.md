@@ -30,10 +30,60 @@ Beim ersten Start nach dem Upgrade auf die Mehrformat-Unterstützung zeigt VMark
 | Daten — TOML | `.toml` | erfordert **Datenformate**-Umschalter | Quelle + Baum | navigierbarer Baum, schemagestützt (`Cargo.toml`, `pyproject.toml`) |
 | Diagramme | `.mmd` | erfordert **Diagramme & SVG**-Umschalter | Quelle + Rendering | Live-Mermaid-Diagramm |
 | Vektor | `.svg` | erfordert **Diagramme & SVG**-Umschalter | Quelle + Rendering | bereinigtes Inline-Rendering |
-| Web | `.html`, `.htm` | erfordert **HTML-Vorschau**-Umschalter | Quelle + Rendering | sandboxed iframe (leeres `sandbox=""`, DOMPurify, CSP) |
+| Web | `.html`, `.htm` | erfordert **HTML-Vorschau**-Umschalter | Quelle + Rendering | sandboxed iframe (leeres `sandbox=""`, DOMPurify, CSP); der [vertrauenswürdige Modus](#vertrauenswurdige-html-vorschau-opt-in) wird pro Datei ausdrücklich aktiviert |
 | Code (schreibgeschützt) | `.ts`, `.tsx`, `.js`, `.jsx`, `.py`, `.rs`, `.go`, `.css`, `.sh`, `.bash`, `.rb`, `.lua` | erfordert **Code-Betrachter**-Umschalter | Betrachter (zum Bearbeiten umschalten) | — |
+| Medien | Bilder (`.png`, `.jpg`, `.gif`, `.webp`, `.heic`, `.tiff`, …), Video (`.mp4`, `.webm`, `.mov`, …), Audio (`.mp3`, `.wav`, `.flac`, …) | immer aktiv | Betrachter (schreibgeschützt) | natives Bild / `<video>` / `<audio>` |
 
 Code-Dateien sind standardmäßig schreibgeschützt und zeigen ein Banner mit den Optionen **Bearbeitung aktivieren** oder **In externem Editor öffnen**.
+
+## Ansichtsmodi (Quelltext / Geteilt / Vorschau)
+
+Jedes Format mit einer Vorschau — HTML, SVG, Mermaid, JSON, YAML, TOML — öffnet sich
+mit einem kleinen Umschalter **Quelltext · Geteilt · Vorschau** in der oberen rechten Ecke:
+
+- **Quelltext** — der bearbeitbare Quellbereich in voller Breite.
+- **Geteilt** — Quelltext und Vorschau nebeneinander (Standard).
+- **Vorschau** — das gerenderte Ergebnis in voller Breite. Die Vorschau ist eine
+  **schreibgeschützte** Darstellung; zum Bearbeiten wechseln Sie zurück zu Quelltext
+  oder Geteilt.
+
+Sie können auch per Tastatur wechseln: **`F6`** schaltet zwischen Quelltext ⇄ Geteilt um,
+**`Umschalt + F6`** zwischen Vorschau ⇄ Geteilt (Geteilt ist der Grundzustand). Die Wahl
+wird pro Tab gespeichert. Den Standard für neu geöffnete Dateien legen Sie unter
+**Einstellungen → Formate → Standard-Ansichtsmodus** fest.
+
+Formate ohne Vorschau (Klartext, Code-Betrachter) zeigen immer nur den Quelltext,
+daher erscheint dort kein Umschalter.
+
+## Mediendateien (Bilder, Video, Audio)
+
+Öffnen Sie ein Bild, ein Video oder eine Audiodatei, und VMark zeigt sie direkt an —
+wie Quick Look im Finder. Es gibt zwei Wege zur Vorschau:
+
+- **Öffnen** (im Datei-Explorer anklicken, **Datei → Datei öffnen…** verwenden oder
+  hineinziehen), um die Datei in einem Tab anzuzeigen.
+- **Quick Look**: Wählen Sie eine Datei im Explorer aus und drücken Sie die **Leertaste**
+  für eine Vorschau-Überlagerung über das ganze Fenster. Drücken Sie **Leertaste** oder
+  **Esc** oder klicken Sie auf den Hintergrund, um sie zu schließen.
+
+So funktioniert es und das können Sie erwarten:
+
+- **Nie als Text geladen.** Medien sind binär — VMark streamt die Datei über die native
+  Asset-Pipeline direkt an den Betrachter. Sie wird nie als UTF-8 gelesen, nie als
+  Dokument im Speicher gehalten und ist nie bearbeitbar oder speicherbar. Selbst
+  mehrere Gigabyte große Videos öffnen sich sofort und lassen sich nativ spulen.
+- **Änderungen auf der Festplatte werden übernommen.** Exportieren Sie das Bild aus
+  Ihrem Programm erneut oder lassen Sie ein Skript es überschreiben, und der geöffnete
+  Tab übernimmt die neue Version von selbst — ohne erneutes Öffnen, ohne Schließen und
+  Wiederöffnen der Datei.
+- **Breite Formatunterstützung.** VMark übergibt die Datei an die Medien-Engine der
+  Plattform, sodass die Unterstützung davon abhängt, was die Webview Ihres Systems
+  dekodieren kann. Auf macOS ist das umfangreich — HEIC, TIFF, `.mov`/H.264 und FLAC
+  werden alle wiedergegeben. Formate, die die Webview nicht dekodieren kann (z. B.
+  `.mkv`, `.avi`, `.wmv`), öffnen sich trotzdem und zeigen ein Ersatzfeld mit
+  **Mit Standard-App öffnen** und **Im Finder anzeigen**.
+- **Schreibgeschützt.** Medien-Tabs werden nie als geändert markiert und schließen
+  ohne Speichern-Abfrage.
 
 ## Schemagestützte Vorschauen
 
@@ -41,7 +91,7 @@ Wenn Pfad oder Inhalt einem bekannten Schema entsprechen, ersetzt VMark die gene
 
 ### GitHub Actions Workflow (`.github/workflows/*.yml`)
 
-Öffnet mit der Workflow-Visualisierung (Job-DAG, Trigger, Berechtigungen).
+Öffnet mit der Workflow-Werkbank: dem interaktiven Job-DAG-Canvas und einem strukturierten Formular-Editor mit Speichern / Verwerfen (siehe den [Leitfaden zum Workflow-Viewer](/de/guide/workflow-viewer)). Auch der Quellbereich kennt Workflows — Vervollständigung für `${{ }}`-Ausdrücke, Hervorhebung des Jobs im Canvas passend zur Cursorposition und Cmd-Klick auf lokale `uses:`-Verweise.
 
 - Pfad-Erkennung: Eine `.yml`- / `.yaml`-Datei unter `.github/workflows/` wird an den Workflow-Renderer weitergeleitet — auch bei fehlerhaftem YAML, sodass Sie die degradierte Ansicht mit Diagnose statt eines leeren Baums sehen. (Die Datei muss zuerst den YAML-Adapter erreichen; dafür ist die Erweiterung `.yml`/`.yaml` erforderlich.)
 - Inhalts-Erkennung: Schlüssel `on:` und `jobs:` auf der obersten Ebene.
@@ -71,13 +121,39 @@ Wenn Pfad oder Inhalt einem bekannten Schema entsprechen, ersetzt VMark die gene
 ## Bearbeitungsregeln
 
 - **Markdown** enthält die vollständige Symbolleiste, Absatzformatierung, CJK-Regeln, Mathematik, Mermaid, Fußnoten — alle vorhandenen Markdown-Funktionen.
-- **Datenformate** (JSON, YAML, TOML) werden im Quellbereich mit Parse-Fehler-Markierungen im Seitenrand angezeigt; die Baumvorschau aktualisiert sich beim Tippen. Nur für Markdown relevante Menüaktionen sind deaktiviert (CJK-Formatierung, Block einfügen, Absatzformatierung); modusrelevante Steuerelemente bleiben aktiv.
-- **Visuelle Formate** (Mermaid, SVG, HTML) werden im Quellbereich angezeigt, mit der gerenderten Ansicht im rechten Bereich (mit Entprellung).
+- **Datenformate** (JSON, YAML, TOML) werden im Quellbereich mit Parse-Fehler-Markierungen im Seitenrand angezeigt; die Baumvorschau aktualisiert sich beim Tippen. Nur für Markdown relevante Menüaktionen sind deaktiviert (CJK-Formatierung, Block einfügen, Absatzformatierung); modusrelevante Steuerelemente bleiben aktiv. Das Kontextmenü (Rechtsklick) ist auf Zwischenablage-Aktionen reduziert (Ausschneiden/Kopieren/Einfügen/Alles auswählen).
+- **Visuelle Formate** (Mermaid, SVG, HTML) werden im Quellbereich angezeigt, mit der gerenderten Ansicht im rechten Bereich. Die Vorschau wird mit niedrigerer Priorität als Ihre Eingabe gerendert, sodass sie bei einem großen Dokument einen Moment hinter dem Cursor nachzieht, statt bei jedem Tastendruck neu zu rendern.
 - **Code-Formate** öffnen sich als syntaxhervorgehobene Betrachter; schalten Sie zum Bearbeiten an Ort und Stelle um oder öffnen Sie die Datei in Ihrem externen Editor (siehe unten).
+
+## Wie VMark den Dateityp bestimmt
+
+VMark behandelt **Markdown als Positivliste, nicht als Standard**. Die Regel, der Reihe nach:
+
+1. **Eine Erweiterung aus der Markdown-Familie** (`.md`, `.markdown`, `.mdown`, `.mkd`, `.mdx`) öffnet sich im Rich-Markdown-Editor.
+2. **Eine registrierte Nicht-Markdown-Erweiterung** (sofern ihre Kategorie aktiviert ist — JSON, YAML, Code-Betrachter usw.) öffnet sich im Quellbereich dieses Formats.
+3. **Alles andere** — `.env`, `.env.local`, `Dockerfile`, `Makefile`, `.gitignore`, unbekannte Erweiterungen — öffnet sich im **Klartext-Quellbereich**, niemals im Markdown-Editor.
+
+Eine Konfigurationsdatei wird also nie stillschweigend als Markdown gerendert. Eine `.env.local` öffnet sich als Klartext, mit ihren `KEY=value`-Zeilen, `#`-Kommentaren und Unterstrichen genau so, wie sie eingegeben wurden.
+
+Punktdatei-Familien werden als Gruppe erkannt: Eine Überschreibung für `.env` gilt auch für `.env.local`, `.env.production` und so weiter.
+
+### Syntaxhervorhebung für Klartextdateien
+
+Auch wenn eine Datei als Klartext geöffnet wird, färbt VMark sie ein, sobald es den Typ erkennt — `.env`/`.ini`/`.conf` (Properties), `.sh`/`.bash` (Shell), `Dockerfile`, `.toml`, `.sql`, `.diff` und die üblichen Sprachen. Das ist rein kosmetisch; es ändert nie, in welchem Editor die Datei geöffnet wurde, und es funktioniert unabhängig davon, ob die Kategorie Code-Betrachter aktiviert ist.
+
+### Überschreiben: „Dateityp festlegen“ {#uberschreiben-dateityp-festlegen}
+
+Die Erkennung ist der Standard, kein Käfig. Öffnen Sie die Befehlspalette und führen Sie aus:
+
+- **Dateityp festlegen: Nur-Text** — erzwingt, dass die aktuelle Dateifamilie als Klartext geöffnet wird (z. B. damit eine `.txt`, die Sie als rohe Notizen führen, nicht gerendert wird).
+- **Dateityp festlegen: Markdown** — rendert eine Nicht-`.md`-Datei mit dem Markdown-Editor (z. B. eine `.txt`, in der Sie tatsächlich Markdown schreiben).
+- **Dateityp festlegen: Auf Standard zurücksetzen** — entfernt die Überschreibung.
+
+Überschreibungen werden pro Dateifamilie gespeichert (nach Erweiterung oder, bei Dateien wie `.env`, nach dem Namen der Punktdatei) und bleiben über Sitzungen hinweg erhalten. Sie haben Vorrang vor den oben beschriebenen integrierten Regeln.
 
 ## Suchen, Speichern, Inhaltssuche
 
-- **Cmd+O** Filter: ein einzelner Eintrag „Alle unterstützten Formate", der jedes registrierte Format umfasst. Speichern-unter-Filter und die Standard-Speichererweiterung werden vom Format-Adapter des aktiven Tabs abgeleitet, sodass beim Speichern einer `.toml`-Datei `.toml` als Erweiterung vorgeschlagen wird.
+- **Datei → Datei öffnen…** bietet zwei Filter: **Alle unterstützten Formate** (jedes registrierte Format) und **Markdown**. Der Eintrag hat kein Standard-Tastenkürzel — `Mod + O` ist **Schnell öffnen** —, Sie können ihm aber unter **Einstellungen → Tastenkürzel** eines zuweisen. Speichern-unter-Filter und die Standard-Speichererweiterung werden vom Format-Adapter des aktiven Tabs abgeleitet, sodass beim Speichern einer `.toml`-Datei `.toml` als Erweiterung vorgeschlagen wird.
 - **Drag & Drop** akzeptiert jede registrierte Erweiterung.
 - **Speichern unter** Filter und die Standard-Erweiterung beim Speichern werden vom Format-Adapter des aktiven Tabs abgeleitet.
 - **Cmd+Shift+H** Inhaltssuche („In Dateien suchen") indiziert jedes textbasierte Format (Markdown, txt, json, yaml, toml, html, svg, Mermaid). Code-Dateien sind standardmäßig ausgeschlossen — sie befinden sich im Code-Betrachter-Modus.
@@ -91,6 +167,66 @@ Gemäß ADR-4 im Mehrformat-Plan basiert die HTML-Vorschau auf drei unabhängige
 3. **CSP `<meta>`-Injektion** — `default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; base-uri 'none';` — schränkt das Laden von Ressourcen innerhalb des iframes ein.
 
 Der Validator zeigt Script-Tags, `javascript:`-URLs und Inline-Ereignishandler als Warnungen an, damit Sie sehen können, was blockiert wird.
+
+Die formale Sicherheitsfreigabe für diese Vorschau steht noch aus, und die Vorschau weist in einem Hinweis über der gerenderten Seite darauf hin: **Die HTML-Vorschau ist isoliert, die OWASP-Freigabe steht jedoch noch aus.** Die drei oben genannten Schichten sind vorhanden; der noch offene Schritt ist, sie in der Webview der laufenden App gegen die OWASP-XSS-Payloads zu bestätigen.
+
+### Vertrauenswürdige HTML-Vorschau (Opt-in)
+
+Die oben beschriebene sichere Vorschau ist der Standard und ändert sich nie. Für ein
+Dokument, das Sie selbst geschrieben haben — ein interaktives Labor, ein lokales
+Dashboard, eine eigenständige Demo —, können Sie die Skriptausführung für **genau diese
+eine Datei und für diese Sitzung** erlauben.
+
+Verwenden Sie **Vertrauenswürdige Vorschau aktivieren…** in der Leiste über der Vorschau.
+Zuerst erhalten Sie eine Warnung; nichts wird ausgeführt, bevor Sie bestätigen. Solange
+der Modus aktiv ist, bleibt die Leiste sichtbar und zeigt **Vertrauenswürdig — Skripte
+aktiviert**, und **Vertrauen widerrufen** ist nur einen Klick entfernt.
+
+Was der vertrauenswürdige Modus gewährt und was nicht:
+
+| | Vertrauenswürdige Vorschau |
+|---|---|
+| JavaScript, DOM, Zeigerereignisse, `requestAnimationFrame`, Web Audio | ✅ läuft |
+| Netzwerk (`fetch`, `XMLHttpRequest`, WebSocket, entfernte Bilder/Skripte) | ❌ blockiert durch `default-src 'none'` |
+| VMarks eigene Seite, Tauri-Befehle, Ihr Dateisystem | ❌ unerreichbar — das Dokument läuft in einem eigenen opaken Origin |
+| Navigation auf oberster Ebene, Popups, Formularübermittlung, Downloads, Modale | ❌ nicht gewährt (`sandbox="allow-scripts"` und sonst nichts) |
+| Kamera, Mikrofon, Standort, Zwischenablage | ❌ keine Funktion wird an den Frame delegiert |
+| `localStorage` / `sessionStorage` | ❌ nicht verfügbar — ein opaker Origin hat keinen Same-Origin-Speicher |
+| `eval` / `new Function` | ❌ nicht erlaubt |
+
+Drei Eigenschaften, die man kennen sollte:
+
+- **Vertrauen wird nie abgeleitet.** Nicht aus der Erweiterung `.html`, nicht aus der
+  Herkunft der Datei, nicht aus einer Nachbardatei, der Sie bereits vertraut haben. Nur
+  die Bestätigung gewährt es.
+- **Vertrauen wird nie gespeichert.** Wenn Sie VMark schließen, ist jede Freigabe weg.
+  Für ein ungespeichertes Dokument ist es außerdem nicht verfügbar, da es keine
+  Identität hat, an die eine Freigabe gebunden werden könnte — speichern Sie die Datei
+  zuerst.
+- **Eine vertrauenswürdige Vorschau startet sich nie selbst neu.** Wenn Sie den
+  Quelltext bearbeiten, wird sie als *Stimmt möglicherweise nicht mit dem aktuellen
+  Quelltext überein* markiert und wartet auf **Neu laden**, damit eine laufende
+  Simulation nicht bei jedem Tastendruck zurückgesetzt wird. Dieselbe Markierung
+  erscheint, wenn VMark nicht wissen kann, was der Frame gerade ausführt — nachdem Sie
+  den Tab verlassen und wieder zurückkehren oder ihn schließen und wieder öffnen, führt
+  die Vorschau weiter aus, was zuletzt für diese Datei veröffentlicht wurde, und sagt
+  das, statt zu behaupten, sie sei aktuell. **Neu laden** veröffentlicht die Datei
+  erneut in ihrem jetzigen Zustand.
+
+::: info Windows liefert sie über einen lokalen http-Origin aus
+WebView2 kennt keine benutzerdefinierten URL-Schemata, daher wird das vertrauenswürdige
+Dokument unter Windows von `http://vmark-trusted.localhost` statt von `vmark-trusted://`
+ausgeliefert — dieselbe Freigabe, dieselbe Sandbox und dieselbe CSP, unter der URL-Form,
+die Tauri dort für jedes benutzerdefinierte Protokoll verwendet. Die sichere Vorschau
+funktioniert auf jeder Plattform.
+:::
+
+Vertrauenswürdige Inhalte werden von einem `vmark-trusted://`-Origin
+(`http://vmark-trusted.localhost` unter Windows) mit einer eigenen restriktiven CSP
+ausgeliefert. Dieser Umweg ist notwendig, nicht dekorativ: Ein `srcdoc`-, `blob:`- oder
+`data:`-Frame erbt VMarks eigene Richtlinie `script-src 'self'`, und eine CSP innerhalb
+des Frames kann eine geerbte Richtlinie nur verschärfen, nie lockern — daher kann kein
+iframe-Attribut allein ein Inline-Skript zum Laufen bringen.
 
 ## In externem Editor öffnen
 
@@ -123,7 +259,8 @@ Gemäß den Nicht-Zielen des Plans:
 
 - **Kein Code-Editor.** Kein LSP, keine Autovervollständigung, kein Refactoring, kein Debugger, keine Git-Gutter.
 - **Nicht „jedes Klartextformat".** Begrenzter Umfang — siehe die Tabelle oben.
-- **Keine HTML-Skriptausführung.** Nur sandboxed Rendering.
+- **Standardmäßig keine HTML-Skriptausführung.** Nur sandboxed Rendering, es sei denn,
+  Sie erlauben ausdrücklich eine einzelne Datei über die [vertrauenswürdige HTML-Vorschau](#vertrauenswurdige-html-vorschau-opt-in).
 - **Kein Drucken / Export / Kopieren als HTML für Nicht-Markdown-Formate** in v1.
 - **Noch nicht als Code-Betrachter unterstützt**: Zig, Swift, Kotlin, Java, Elixir, OCaml und andere Sprachen außerhalb des 12-Erweiterungen-Sets. Die Entscheidungsregel lautet „Sprachen, die wir selbst verwenden" — öffnen Sie ein Issue, wenn Sie eine hinzufügen möchten.
 

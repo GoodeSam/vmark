@@ -40,7 +40,7 @@ Die harte 50-MB-Grenze ist nicht vom Benutzer einstellbar. Die Webview kann beli
 
 - Müssen Sie eine sehr große Datei weiter in WYSIWYG bearbeiten, sollten Sie sie in kleinere, von einem Indexdokument verlinkte Dateien aufteilen. Markdown eignet sich gut als Sammlung kleinerer Kapitel.
 - Wenn Sie eine große Datei nur lesen oder durchsuchen müssen, ist der Quellmodus mit dem Zeilennummern-Lineal und `Find` (`Mod + F`) meist der schnellste Arbeitsablauf.
-- `Format > CJK-Text formatieren` und andere ganzdokumentbezogene Befehle laufen auch auf Quellmodus-Dokumenten korrekt.
+- **Format → CJK → Gesamte Datei formatieren** und andere ganzdokumentbezogene Befehle laufen auch auf Quellmodus-Dokumenten korrekt.
 
 ## Edge Cases
 
@@ -52,4 +52,4 @@ Die harte 50-MB-Grenze ist nicht vom Benutzer einstellbar. Die Webview kann beli
 ## Bekannte Einschränkungen
 
 - Die Schwellen sind Byte-Größen, also ein Stellvertreter für die tatsächlichen Kosten (Block-Anzahl). Eine 600 KB große Datei mit Tausenden kurzer Blöcke kann langsamer sein als eine 1,2 MB große Datei mit langen Absätzen. Die Standardwerte sind konservativ.
-- Phase C der Initiative für große Dateien (verzögertes WYSIWYG-Rendering) wurde noch nicht ausgeliefert — Status siehe `dev-docs/plans/20260422-large-file-open-ux.md`.
+- WYSIWYG baut beim Öffnen weiterhin das gesamte Dokument auf — ein verzögertes oder inkrementelles Rendering gibt es noch nicht —, daher kostet der Wechsel einer großen Datei zu WYSIWYG die oben beschriebene volle Öffnungszeit.

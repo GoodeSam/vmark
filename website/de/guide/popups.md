@@ -169,8 +169,8 @@ Wiki-Stil-Links für interne Dokumentverbindungen bearbeiten.
 Schnelle Tabellen-Bearbeitungsaktionen.
 
 **Auslöser:**
-- **WYSIWYG:** Symbolleiste oder Tastaturkürzel verwenden
-- **Quelle:** Rechtsklick auf Tabellenzelle
+- **WYSIWYG:** Rechtsklick auf eine Tabellenzelle (dieselben Aktionen gibt es auch in der Symbolleiste und als Tastaturkürzel)
+- **Quelle:** Rechtsklick auf eine Tabellenzelle
 
 **Aktionen:**
 | Aktion | Beschreibung |
@@ -183,6 +183,7 @@ Schnelle Tabellen-Bearbeitungsaktionen.
 | Spalte links/zentriert/rechts ausrichten | Ausrichtung für aktuelle Spalte festlegen |
 | Alle links/zentriert/rechts ausrichten | Ausrichtung für alle Spalten festlegen |
 | Tabelle formatieren | Tabellenspalten automatisch ausrichten (Markdown verschönern) |
+| An Breite anpassen / Natürliche Breite | Nur WYSIWYG: diese Tabelle mit inhaltsproportionalen Spalten an die Editorbreite anheften oder auf ihre natürliche Breite zurücksetzen |
 
 ## Rechtschreibprüfungs-Popup
 

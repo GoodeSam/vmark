@@ -9,15 +9,33 @@ bleiben der Chefredakteur.
 
 ## So funktioniert es (30 Sekunden)
 
-- Jedes Speichern, jede Genie-Anwendung, jeder angenommene KI-Vorschlag,
-  jeder MCP-Schreibvorgang und jeder `save-file`-Schritt eines Workflows
-  wird als **Transformation** in einem Klartext-Ledger in Ihrem
-  Arbeitsbereich aufgezeichnet (`.vmark/` — git-freundliches,
-  menschenlesbares JSONL; das Löschen der abgeleiteten `index.db` verliert
-  nichts).
+- **Provenienzverfolgung ist opt-in.** Aktivieren Sie zuerst
+  *Einstellungen → Dateien & Bilder → Speichern → Identitätsblock beim
+  Speichern einfügen*. Bis dahin versieht kein Schreibvorgang —
+  Speichern, Genie-Anwendung, angenommener KI-Vorschlag,
+  MCP-Schreibvorgang, Zurücksetzen auf eine frühere Version oder eine
+  neue Datei aus dem Datei-Explorer — Ihre Dateien mit einem
+  Identitätsblock oder legt `.vmark/` an.
+- Sobald die Einstellung aktiv ist, wird jedes Speichern, jede
+  Genie-Anwendung, jeder angenommene KI-Vorschlag, jeder
+  MCP-Schreibvorgang, jedes Zurücksetzen auf eine frühere Version und
+  jeder `save-file`-Schritt eines Workflows als **Transformation** in
+  einem Klartext-Ledger in Ihrem Arbeitsbereich aufgezeichnet (`.vmark/`
+  — git-freundliches, menschenlesbares JSONL; das Löschen der
+  abgeleiteten `index.db` verliert nichts).
+- **Ein Arbeitsbereich, der bereits ein Ledger hat** — ein `.vmark/`,
+  das Sie früher angelegt haben oder das ein Mitwirkender eingecheckt
+  hat — zeichnet auch bei ausgeschalteter Einstellung weiterhin
+  Schreibvorgänge an den Dokumenten auf, die er bereits verfolgt. Er
+  fügt nichts ein und beginnt kein neues Dokument zu verfolgen; ein noch
+  nicht verfolgtes Dokument wird ausgelassen, und ein Schreibvorgang mit
+  dadurch unvollständigen Eingaben wird als `inferred` statt `exact`
+  erfasst.
 - Wenn eine KI ein Dokument schreibt und dabei andere liest, werden diese
   Lesevorgänge zu **Abhängigkeitskanten**, fixiert auf die exakte
-  Revision, die gelesen wurde.
+  Revision, die gelesen wurde. In der App instrumentierte Pfade
+  zeichnen `exact`-Eingaben auf; MCP-Schreibvorgänge erfassen ehrlich
+  einen `inferred`, in der Sitzung beobachteten Lesesatz.
 - Wenn ein Upstream-Dokument über eine fixierte Revision hinaus
   voranschreitet, wird die Kante **veraltet**. Haben sich zwei Revisionen
   parallel entwickelt (z. B. auf Git-Branches), ist die Kante
@@ -60,6 +78,8 @@ Historie um:
   Dienst.
 - **Aussetzen** — dokumentiert eine beabsichtigte Divergenz mit einer
   **verpflichtenden Begründung** (unzuverlässige Erzähler gibt es).
+  In v0 ist ein Aussetzen bewusst eng gefasst: Es gilt nur für diese
+  Kante und die konkrete Upstream-Revision, gegen die es aufgelöst wird.
   Ausgesetzte Einträge bleiben sichtbar, deutlich markiert, und öffnen
   sich erneut, wenn sich der Upstream wieder bewegt.
 
@@ -67,6 +87,66 @@ Neuere übernehmen und Aussetzen sind deaktiviert, wenn der Upstream
 mehrere aktuelle Versionen hat — es gibt keine einzelne Revision, gegen
 die aufgelöst werden könnte; überarbeiten Sie zuerst (oder führen Sie die
 Versionen zusammen).
+
+## Meldungen stummschalten, die Sie nicht brauchen
+
+Zwei Steuerelemente in jeder Zeile der Aufschlüsselung grenzen ein,
+wonach die Schicht fragt. Beide sind rein menschlich — kein MCP-Tool
+kann sie setzen.
+
+**Als abgeschlossen markieren (Dokument-Lebenszyklus).** Wenn ein
+Downstream-Dokument fertig ist — ein veröffentlichtes Kapitel, ein
+ausgelieferter Bericht —, wählen Sie in einer beliebigen seiner Zeilen
+**Als abgeschlossen markieren**. Das schaltet jede Abhängigkeit zu
+diesem Dokument stumm, auch solche, die gerade nicht aufgeführt sind,
+weshalb eine Bestätigung verlangt wird. Seine Kanten wandern in die
+eingeklappte Gruppe **Hierzu keine Rückfragen** am unteren Rand des
+Panels, gekennzeichnet als *abgeschlossenes Dokument*: weiterhin
+erfasst, auf Wunsch weiterhin sichtbar, nur ohne Sie zu unterbrechen.
+**Wieder öffnen** holt sie mit einem einzigen Klick und ohne
+Bestätigung zurück, da Wiederöffnen immer nur Unterbrechungen
+hinzufügt. Der Lebenszyklus wird im Ledger aufgezeichnet, nicht im
+Frontmatter, sodass das Markieren eines Dokuments als abgeschlossen
+keine neue Revision davon erzeugt.
+
+**Abschnittsanker.** Eine nicht verankerte Kante fragt: „Hat sich die
+Upstream-Datei geändert?“ **An Abschnitt verankern** grenzt das ein
+auf: „Hat sich der Abschnitt geändert, von dem ich abhänge?“ Wählen Sie
+eine Überschrift aus dem Upstream-Dokument, und die Kante wird auf
+diesen Überschriftenpfad fixiert. Solange der verankerte Abschnitt
+unverändert ist, lässt eine Upstream-Änderung an anderer Stelle die
+Kante in der unterdrückten Gruppe, gekennzeichnet als *referenzierter
+Abschnitt unverändert*; eine Änderung innerhalb des Abschnitts zeigt
+sie als *verankerter Abschnitt geändert* an. Verschwindet die
+Überschrift, wird die Kante als *Anker verloren* markiert, statt
+stillschweigend zum Verhalten für die ganze Datei zurückzukehren.
+**Anker ändern** fixiert sie neu, und **Ganze Datei** entfernt den
+Anker. Anker sind eigene, überarbeitbare Ledger-Einträge und folgen der
+Kante daher durch spätere Revisionen.
+
+## Das Kohärenz-Protokoll und die Bewertung von Meldungen
+
+**Kohärenz-Protokoll** (ein aufklappbarer Bereich im
+Aufschlüsselungs-Panel) ist der Verlauf pro Kante, den das Ledger
+enthält: jede Prüfung, Ratifizierung und Aussetzung, wie oft jede
+Kante aufgelöst wurde (*3x aufgelöst*) und wie viele Kanten mehr als
+einmal aufgelöst wurden — Wiederholungsaufwand, die eigentliche Last
+eines verrauschten Abhängigkeitsgraphen. Eine semantische Prüfung, die
+das Modell unterhalb der Konfidenzschwelle beantwortet hat, wird mit
+ihrem erhaltenen Urteil und ihrer Konfidenz angezeigt (*Modell sagte …
+bei …, unter dem Schwellenwert*), sodass „kein Signal“ und
+„beantwortet, aber nicht sicher genug“ unterscheidbar bleiben. Das
+Protokoll wird aus dem gesamten Ledger gelesen; es lädt daher erst,
+wenn Sie es aufklappen, und lädt bei jedem Aufklappen neu.
+
+**War diese Meldung sinnvoll?** Jede angezeigte Zeile bietet **Meldung
+sinnvoll?** mit drei Antworten — **Ja**, **Nein**, **Unklar** — und
+bewusst ohne Voreinstellung. Ihre Antworten werden als eigene
+Ledger-Einträge aufgezeichnet und im Protokoll gezählt (*Bewertet:
+relevant … · Rauschen … · unklar … · offen …*). Das ist das Maß für die
+Relevanz von Veraltungsmeldungen, auf das die Schicht abgestimmt wird:
+Eine Meldung, die Sie als Rauschen bewerten, ist ein Kandidat für einen
+Abschnittsanker oder eine Abschluss-Markierung.
 
 ## Semantische Prüfung, Aussagen und Kontexte
 
@@ -127,12 +207,12 @@ womit man nerven könnte.
 
 **Agenten-Delegation.** Standardmäßig können nur Sie veraltete Kanten
 auflösen. Wenn Sie möchten, dass ein KI-Agent in Ihrem Namen die neuere
-Version übernimmt oder aussetzt (über die MCP-Oberfläche
-„schreibgeschützt plus `resolve`"), erteilen Sie ihm aus der
+Version übernimmt oder aussetzt (über das MCP-Tool
+`coherence_resolve`), erteilen Sie ihm aus der
 Aufschlüsselung eine **zeitlich begrenzte Delegation**: Benennen Sie den
 Agenten, wählen Sie den Geltungsbereich (Neuere übernehmen und/oder
 Aussetzen) und setzen Sie ein Ablaufdatum (standardmäßig 7 Tage, nie
-„für immer"). Jede delegierte Auflösung wird der Erteilung zugeordnet,
+„für immer“). Jede delegierte Auflösung wird der Erteilung zugeordnet,
 sodass der Audit-Verlauf immer zeigt, wer unter wessen Befugnis
 gehandelt hat. Widerrufen Sie jede Erteilung mit einem Klick.
 Kanon-Aussagen und Kontexte bleiben rein menschlich — ein Agent kann
@@ -150,7 +230,8 @@ also nichts Neues, Sie werden nur zur Prüfung geführt.
 
 ## Frontmatter-Identität
 
-Beim ersten Erfassen einer Datei fügt VMark ihrem Frontmatter einen
+Sobald *Identitätsblock beim Speichern einfügen* aktiv ist, fügt VMark
+beim ersten Erfassen einer Datei ihrem Frontmatter einen
 kleinen Identitätsblock hinzu:
 
 ```yaml
@@ -164,6 +245,12 @@ Hinzufügen erzeugt keine „Änderung“), und alles andere in Ihrem
 Frontmatter bleibt unangetastet. Wenn Sie eine Datei kopieren, wird die
 doppelte ID erkannt und Ihnen zur Auflösung angezeigt — nie automatisch
 korrigiert.
+
+Wenn VMark Ihre Dateien nie verändern soll, lassen Sie *Identitätsblock
+beim Speichern einfügen* ausgeschaltet — das ist die Voreinstellung.
+Dann fügt VMark diesen Block in keine Datei ein, gleich wie sie
+geschrieben wird — auch nicht in Dateien, die eine KI- oder
+MCP-Bearbeitung nur gelesen hat.
 
 ## Git-Interoperabilität
 
@@ -180,9 +267,21 @@ korrigiert.
 
 Externe Agenten können den Kohärenzzustand über das
 [`coherence`-MCP-Tool](/de/guide/mcp-tools#coherence) abfragen (Aktionen
-`status` und `edges`) — für Arbeitsbereiche, die Sie in VMark geöffnet
-haben. `status` ist ein reiner Lesevorgang; `edges` gleicht zuerst ab —
-es kann Provenienz-Einträge an das Ledger des Arbeitsbereichs anhängen,
-rührt Ihre Dokumente aber nie an. Die Auflösung (Ratifizieren/Aussetzen)
-ist in dieser Version bewusst *nicht* über MCP verfügbar — die
-Entscheidungen bleiben beim Menschen in der App.
+`status`, `edges`, `claims` und `contexts`) — für Arbeitsbereiche, die Sie
+in VMark geöffnet haben. `status` ist ein reiner Lesevorgang; `edges`
+gleicht zuerst ab — es kann Provenienz-Einträge an das Ledger des
+Arbeitsbereichs anhängen, rührt Ihre Dokumente aber nie an. Das Tool
+deklariert `readOnlyHint: true`, sodass ein Client es automatisch
+genehmigen darf.
+
+Die Auflösung (Ratifizieren/Aussetzen) liegt in einem **separaten** Tool,
+[`coherence_resolve`](/de/guide/mcp-tools#coherence-resolve), und bleibt
+standardmäßig beim Menschen: Ein Agent kann es erst aufrufen, nachdem
+Sie genau diesem Agenten eine zeitlich begrenzte Delegation erteilt
+haben, und jede Auflösung wird im Audit-Protokoll der Erteilung
+zugeordnet. Dass es aus `coherence` herausgehalten wird, erlaubt es,
+das Lese-Tool automatisch zu genehmigen, ohne dass ein Agent
+stillschweigend die Fähigkeit erlangt, in Ihr Ledger zu schreiben.
+
+Kanon-Aussagen und Kontexte lassen sich über MCP überhaupt nicht
+verändern.
