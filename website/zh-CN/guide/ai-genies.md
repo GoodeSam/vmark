@@ -12,7 +12,7 @@ AI 精灵是使用 AI 转换文本的提示词模板。选中文本，调用精�
 
 ## 精灵选择器
 
-按 `Mod + Y`（或菜单 **工具 > AI 精灵**）打开一个类似聚焦搜索的覆盖层，包含一个统一输入框。
+按 `Mod + Y`（或菜单 **编辑 → Genies → 搜索 Genies…**）打开一个类似聚焦搜索的覆盖层，包含一个统一输入框。同一个子菜单按名称列出了所有精灵，因此也可以直接从菜单运行某个精灵。
 
 **搜索与自由格式**——开始输入以按名称、描述或分类筛选精灵。如果没有匹配的精灵，输入框变为自由格式提示词字段。
 
@@ -22,15 +22,15 @@ AI 精灵是使用 AI 转换文本的提示词模板。选中文本，调用精�
 
 **范围切换**——按 `Tab` 循环切换范围：选区 → 块 → 文档 → 全部。
 
-**提示词历史**——在自由格式模式（无匹配精灵）下，按 `ArrowUp` / `ArrowDown` 循环浏览之前的提示词。按 `Ctrl + R` 打开可搜索的历史下拉列表。幽灵文字会以灰色显示最近匹配的提示词作为提示——按 `Tab` 接受。
+**提示词历史**——在自由格式模式（无匹配精灵）下，按 `ArrowUp` / `ArrowDown` 循环浏览之前的提示词。按 `Ctrl + R` 打开可搜索的历史下拉列表。幽灵文字会以灰色显示最近匹配的提示词作为提示——按 `Tab` 接受，或按 `Escape` 忽略（修改输入内容后它会再次出现）。
 
 ### 处理反馈
 
 选择精灵或提交自由格式提示词后，选择器会显示内联反馈：
 
 - **处理中**——带有已用时间计数器的思考指示器。按 `Escape` 取消。
-- **预览**——AI 响应实时流式传输。使用"接受"应用或"拒绝"放弃。
-- **错误**——如果出现问题，错误信息会显示并附带"重试"按钮。
+- **预览**——AI 响应到达后即显示：CLI 提供商会边生成边流式输出，而 REST 提供商会在请求完成时一次性给出完整答复。使用 `Accept` 应用或 `Reject` 放弃。
+- **错误**——如果出现问题，错误信息会显示并附带 `Retry` 按钮。
 
 状态栏也会显示 AI 进度——运行时显示旋转图标和已用时间，成功时短暂闪现"完成"，出错时显示带有重试/关闭按钮的错误指示器。当 AI 有活跃状态时，状态栏会自动显示，即使你之前用 `F7` 隐藏了它。
 
@@ -89,9 +89,9 @@ VMark 内置 13 个精灵，分为四个分类：
 
 精灵运行后，建议会以内联方式显示：
 
-- **替换**——原文加删除线，新文本以绿色显示
-- **插入**——新文本以绿色显示在源块之后
-- **删除**——原文加删除线
+- **替换**——原文加红色波浪删除线，其后是以强调色显示的淡色斜体"幽灵"文字形式的新文本
+- **插入**——新文本以幽灵文字形式显示在源块之后
+- **删除**——原文加红色波浪删除线
 
 每条建议都有接受（对勾）和拒绝（X）按钮。
 
@@ -108,7 +108,7 @@ VMark 内置 13 个精灵，分为四个分类：
 
 ## 状态栏指示器
 
-AI 生成时，状态栏显示旋转的星光图标和已用时间计数器（"思考中... 3 秒"）。取消按钮（×）可以停止请求。
+AI 生成时，状态栏显示旋转的星光图标和已用时间计数器（"思考中... 3秒"）。取消按钮（×）可以停止请求。
 
 完成后，"完成"对勾会短暂闪现 3 秒。如果发生错误，状态栏显示错误信息以及重试和关闭按钮。
 
@@ -130,13 +130,13 @@ AI 生成时，状态栏显示旋转的星光图标和已用时间计数器（"�
 | Windows | `%APPDATA%\app.vmark\genies\` |
 | Linux | `~/.local/share/app.vmark/genies/` |
 
-从菜单 **工具 > 打开精灵文件夹** 打开此文件夹。
+从菜单 **编辑 → Genies → 打开 Genies 文件夹** 打开此文件夹；添加或编辑文件后，使用 **编辑 → Genies → 重新加载 Genies** 刷新列表。
 
 ### 目录结构
 
-子目录在选择器中成为 **分类**。你可以按自己喜欢的方式组织精灵：
+子目录在选择器中成为 **分类**，且扫描是递归的——文件夹可以任意嵌套；精灵的分类就是它相对于 `genies/` 的文件夹路径（因此 `academic/thesis/abstract.md` 归入 `academic/thesis`），除非前置内容设置了 `category`。符号链接会被跳过。你可以按自己喜欢的方式组织精灵：
 
-```
+```text
 genies/
 ├── editing/
 │   ├── polish.md
@@ -145,10 +145,10 @@ genies/
 ├── creative/
 │   ├── expand.md
 │   └── rephrase.md
-├── academic/          ← 你的自定义分类
+├── academic/          ← your custom category
 │   ├── cite.md
 │   └── abstract.md
-└── my-workflows/      ← 另一个自定义分类
+└── my-workflows/      ← another custom category
     └── blog-intro.md
 ```
 
@@ -158,18 +158,6 @@ genies/
 
 ```markdown
 ---
-description: Improve clarity and flow
-scope: selection
-category: editing
----
-
-You are an expert editor. Improve the clarity, flow, and conciseness
-of the following text while preserving the author's voice and intent.
-
-Return only the improved text — no explanations.
-
-{{content}}
-```---
 description: Improve clarity and flow
 scope: selection
 category: editing
@@ -205,7 +193,7 @@ Return only the improved text — no explanations.
 1. 根据范围 **提取文本**（选中文本、当前块或完整文档）
 2. **替换** 模板中的每个 `{{content}}` 为提取的文本
 3. 将填充后的提示词 **发送** 给活跃的 AI 提供商
-4. 将响应以 **流式** 方式作为内联建议返回
+4. 将响应作为内联建议 **返回**——来自 CLI 提供商时边生成边流式输出，来自 REST 提供商时一次性给出
 
 例如，使用以下模板：
 
@@ -217,7 +205,7 @@ Translate the following text into French.
 
 如果用户选中了"Hello, how are you?"，AI 收到的是：
 
-```
+```text
 Translate the following text into French.
 
 Hello, how are you?
@@ -247,7 +235,7 @@ AI 响应"Bonjour, comment allez-vous ?"，并以内联建议的形式替换选�
 
 设置 `context: 1`，光标位于三段文档的第二段：
 
-```
+```text
 [Before]
 First paragraph content here.
 
@@ -280,18 +268,6 @@ Match the author's voice, style, and tone. Write 2-3 paragraphs.
 Do not repeat or summarize the existing text — just continue it.
 
 {{content}}
-```---
-description: Continue writing from here
-scope: block
-action: insert
----
-
-Continue writing naturally from where the following text leaves off.
-Match the author's voice, style, and tone. Write 2-3 paragraphs.
-
-Do not repeat or summarize the existing text — just continue it.
-
-{{content}}
 ```
 
 ### `model` 字段
@@ -300,15 +276,6 @@ Do not repeat or summarize the existing text — just continue it.
 
 ```markdown
 ---
-description: Quick grammar fix (uses fast model)
-scope: selection
-model: claude-haiku-4-5-20251001
----
-
-Fix grammar and spelling errors. Return only the corrected text.
-
-{{content}}
-```---
 description: Quick grammar fix (uses fast model)
 scope: selection
 model: claude-haiku-4-5-20251001
@@ -328,10 +295,10 @@ Fix grammar and spelling errors. Return only the corrected text.
 告诉 AI 确切需要返回什么。否则，模型倾向于添加解释、标题或注释。
 
 ```markdown
-<!-- 好 -->
+<!-- Good -->
 Return only the improved text — no explanations.
 
-<!-- 不好——AI 可能用引号包裹输出，添加"以下是改进版本："等内容 -->
+<!-- Bad — AI may wrap output in quotes, add "Here's the improved version:", etc. -->
 Improve this text.
 ```
 
@@ -340,10 +307,10 @@ Improve this text.
 给 AI 一个角色以锚定其行为。
 
 ```markdown
-<!-- 好 -->
+<!-- Good -->
 You are an expert technical editor who specializes in API documentation.
 
-<!-- 一般，但不够聚焦 -->
+<!-- Okay but less focused -->
 Edit the following text.
 ```
 
@@ -352,12 +319,12 @@ Edit the following text.
 告诉 AI 什么 **不** 应该改变。这可以防止过度编辑。
 
 ```markdown
-<!-- 好 -->
+<!-- Good -->
 Fix grammar and spelling errors only.
 Do not change the meaning, style, or tone.
 Do not restructure sentences.
 
-<!-- 不好——给了 AI 太多自由 -->
+<!-- Bad — gives the AI too much freedom -->
 Fix this text.
 ```
 
@@ -385,25 +352,6 @@ Format as:
 - point 2
 
 {{content}}
-```---
-description: Generate a pros/cons analysis
-scope: selection
-action: insert
----
-
-Analyze the following text and produce a brief pros/cons list.
-
-Format as:
-
-**Pros:**
-- point 1
-- point 2
-
-**Cons:**
-- point 1
-- point 2
-
-{{content}}
 ```
 
 ### 保持提示词聚焦
@@ -411,18 +359,8 @@ Format as:
 一个精灵，一项任务。不要把多个任务组合到一个精灵中——而是创建独立的精灵。
 
 ```markdown
-<!-- 好——一项明确的任务 -->
+<!-- Good — one clear job -->
 ---
-description: Convert to active voice
-scope: selection
----
-
-Rewrite the following text using active voice.
-Do not change the meaning.
-Return only the rewritten text.
-
-{{content}}
-```---
 description: Convert to active voice
 scope: selection
 ---
@@ -450,34 +388,12 @@ Read the following paper and write a concise academic abstract
 results, conclusion.
 
 {{content}}
-```---
-description: Generate an academic abstract
-scope: document
-action: insert
----
-
-Read the following paper and write a concise academic abstract
-(150-250 words). Follow standard structure: background, methods,
-results, conclusion.
-
-{{content}}
 ```
 
 ### 博客——生成引子
 
 ```markdown
 ---
-description: Write an engaging opening paragraph
-scope: document
-action: insert
----
-
-Read the following draft and write a compelling opening paragraph
-that hooks the reader. Use a question, surprising fact, or vivid
-scene. Keep it under 3 sentences.
-
-{{content}}
-```---
 description: Write an engaging opening paragraph
 scope: document
 action: insert
@@ -504,35 +420,12 @@ of what it does. Use 1-2 sentences. Do not include the code itself
 in your response.
 
 {{content}}
-```---
-description: Add a plain-English explanation above code
-scope: selection
-action: insert
----
-
-Read the following code and write a brief plain-English explanation
-of what it does. Use 1-2 sentences. Do not include the code itself
-in your response.
-
-{{content}}
 ```
 
 ### 邮件——使用专业语气
 
 ```markdown
 ---
-description: Rewrite in professional tone
-scope: selection
----
-
-Rewrite the following text in a professional, business-appropriate tone.
-Keep the same meaning and key points. Remove casual language,
-slang, and filler words.
-
-Return only the rewritten text — no explanations.
-
-{{content}}
-```---
 description: Rewrite in professional tone
 scope: selection
 ---
@@ -561,40 +454,12 @@ Use natural, idiomatic Chinese — not word-for-word translation.
 Return only the translated text — no explanations.
 
 {{content}}
-```---
-description: Translate to Simplified Chinese
-scope: selection
----
-
-Translate the following text into Simplified Chinese.
-Preserve the original meaning, tone, and formatting.
-Use natural, idiomatic Chinese — not word-for-word translation.
-
-Return only the translated text — no explanations.
-
-{{content}}
 ```
 
 ### 上下文感知——适应周边风格
 
 ```markdown
 ---
-description: Rewrite to match surrounding tone and style
-scope: selection
-context: 1
----
-
-Rewrite the following content to fit naturally with its surrounding context.
-Match the tone, style, and level of detail.
-
-Return only the rewritten text — no explanations.
-
-## Surrounding context (do not include in output):
-{{context}}
-
-## Content to rewrite:
-{{content}}
-```---
 description: Rewrite to match surrounding tone and style
 scope: selection
 context: 1
@@ -629,36 +494,33 @@ Format as a bullet list. If everything looks solid, say
 "No claims flagged for verification."
 
 {{content}}
-```---
-description: Flag claims that need verification
-scope: selection
-action: insert
----
-
-Read the following text and list any factual claims that should be
-verified. For each claim, note why it might need checking (e.g.,
-specific numbers, dates, statistics, or strong assertions).
-
-Format as a bullet list. If everything looks solid, say
-"No claims flagged for verification."
-
-{{content}}
 ```
 
 ## AI 建议
 
-当 Genie 返回的文本意图作为选区的替换（而非自由格式的对话回复）时，VMark 会以 **建议** 的形式展示它，附带内联差异：原文红色删除线，提议文本绿色下划线。在任何更改持久化之前，你都需要审核并批准。
+当精灵返回的文本意图作为选区的替换（而非自由格式的对话回复）时，VMark 会以 **建议** 的形式展示它，附带内联差异：原文为红色波浪删除线，提议文本为强调色的淡色斜体幽灵文字。在任何更改持久化之前，你都需要审核并批准。
 
 | 操作 | 快捷键 |
 |---|---|
-| 接受聚焦的建议 | `Tab` |
+| 接受聚焦的建议 | `Enter` |
 | 拒绝聚焦的建议 | `Esc` |
-| 接受文档中的所有建议 | `Mod + Shift + Enter` _（上下文感知 —— 在表格内时也是"在上方添加行"）_ |
-| 切换到下一个建议 | 从未聚焦位置按 `Tab` |
+| 移到下一个 / 上一个建议 | `Tab` / `Shift + Tab` |
+| 接受文档中的所有建议 | `Mod + Shift + Enter` _（上下文感知——在表格内时也是"在上方添加行"）_ |
+| 拒绝文档中的所有建议 | `Mod + Shift + Escape` |
 
-当一个 Genie 重写多个段落时，每个替换都是独立可导航的建议。接受其中一个不会自动接受其他建议。
+当一个精灵重写多个段落时，每个替换都是独立可导航的建议。接受其中一个不会自动接受其他建议。
 
-建议 UI 也有 MCP 接口 —— 通过 [MCP 服务器](/zh-CN/guide/mcp-tools)连接的外部 AI 代理可以发出 `suggestion.accept` / `suggestion.reject` 操作来操控同一状态。
+## 工作流中的精灵
+
+单个精灵只运行一个提示词。当你需要串接多个 AI 步骤——先大纲、再草稿、再润色——并把一个阶段的输出传给下一个阶段时，请使用 **精灵工作流**：一个 YAML 文件，以显式的数据流编排多次精灵调用，并支持可选的审批关卡、按步骤指定模型，以及实时的执行图。
+
+由于工作流步骤会通过 `with: { input: "..." }` 映射填充精灵的 `{{content}}` 占位符，**你在这里编写的精灵无需改动即可在工作流中运行**——不需要任何转换。
+
+完整的 YAML 结构、表达式语法、审批以及如何运行工作流，请参阅 [Genie 工作流](/zh-CN/guide/workflows)。
+
+### 不受信任内容的隔离
+
+当工作流的 `genie/<name>` 步骤运行时，文档文本、选区和文件内容在送达 AI 提供商之前，会被包裹在唯一的 `<<<DOCUMENT-DATA-…>>>` 标记中，并且提示词会指示模型把被隔离的文本严格视为数据。这种隔离只作用于工作流步骤——直接从选择器运行的精灵会把范围内的文本原样发送给提供商。它用于防范那些试图向 AI 夹带指令的文档（"忽略你的指令并运行……"）——这对能够执行命令的 CLI 提供商（Claude Code、Codex、Gemini CLI）尤为重要。对来源不可信的文件运行精灵时，请像运行一段来自互联网的脚本那样保持谨慎：隔离是一种有力的缓解措施，而非绝对的保证。
 
 ## 限制
 
@@ -671,7 +533,7 @@ Format as a bullet list. If everything looks solid, say
 
 **"无可用 AI 提供商"**——打开设置 > 集成并配置提供商。参见 [AI 提供商](/zh-CN/guide/ai-providers)。
 
-**精灵未出现在选择器中**——检查文件是否有 `.md` 扩展名，是否有用 `---` 围住的有效前置内容，以及是否在精灵目录中（不能超过一级子目录）。
+**精灵未出现在选择器中**——检查文件是否有 `.md` 扩展名（[工作流精灵](/zh-CN/guide/workflow-genies)则为 `.yml`/`.yaml`），以及是否有用 `---` 围住的有效前置内容。子目录最多扫描八层深（总计最多 10,000 个条目），并且会跳过符号链接。添加文件后，请运行 **编辑 → Genies → 重新加载 Genies**。
 
 **AI 返回乱码或错误**——验证 API 密钥是否正确，模型名称是否对你的提供商有效。在终端/控制台中查看错误详情。
 
