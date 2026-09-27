@@ -94,7 +94,8 @@
     "lint:rust-deps": "cargo machete src-tauri",
     "lint:test-only-modules": "node scripts/check-test-only-modules.mjs",
     "lint:doc-joins": "node scripts/check-doc-joins.mjs",
-    "lint:header-refs": "node scripts/check-header-references.mjs"
+    "lint:header-refs": "node scripts/check-header-references.mjs",
+    "gen:feature-ledger": "node scripts/gen-feature-ledger.mjs"
   },
   "dependencies": {
     "@actions/workflow-parser": "0.3.61",

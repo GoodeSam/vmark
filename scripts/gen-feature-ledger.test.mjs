@@ -21,7 +21,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   CODE_EXTENSIONS,
   countLines,
@@ -557,5 +557,66 @@ describe("rendering", () => {
     });
     const line = doc.split("\n").find((l) => l.startsWith("| M "));
     expect(line).toBe("| M | 10 | 1 | 1 | 0.50 | -- | -- | -- | -- | -- | -- | 2026-09-07 | always on |");
+  });
+});
+
+// ---------------------------------------------------------------- single ownership + ledger join (2026-09-27)
+
+describe("single ownership and the ledger join, end to end", () => {
+  /** A committed tree with valid (empty) baselines, a folder claim and a file claim inside it. */
+  function ownedTree({ ledger } = {}) {
+    const root = mkdtempSync(join(tmpdir(), "ledger-owned-"));
+    const put = (rel, body) => { mkdirSync(dirname(join(root, rel)), { recursive: true }); writeFileSync(join(root, rel), body); };
+    put("src/editor/a.ts", "export const a = 1;\n");
+    put("src/editor/table.ts", "export const t = 1;\n");
+    put("src/stores/settingsStore/defaults.ts", "export const initialState = {};\n");
+    put("scripts/feature-map.json", JSON.stringify({
+      features: [
+        { name: "Editor", paths: ["src/editor"], flag: null, flagDefault: null, doc: null },
+        { name: "Tables", paths: ["src/editor/table.ts"], flag: null, flagDefault: null, doc: null },
+      ],
+      infrastructure: { paths: ["src/stores"] },
+    }));
+    put("scripts/file-size-baseline.json", JSON.stringify({ files: {}, testFiles: {} }));
+    put("scripts/mock-boundaries-baseline.json", JSON.stringify({ entries: [] }));
+    put(".dependency-cruiser-known-violations.json", "[]");
+    put("scripts/plugin-store-coupling-baseline.json", JSON.stringify({ units: {} }));
+    const git = (...a) => spawnSync("git", ["-c", "user.email=g@example.test", "-c", "user.name=G", "-c", "commit.gpgsign=false", ...a], { cwd: root, encoding: "utf8" });
+    git("init", "-q", "-b", "main");
+    git("add", "-A");
+    git("commit", "-qm", "base");
+    const base = git("rev-parse", "--short", "HEAD").stdout.trim();
+    put("src/editor/table.ts", "export const t = 2;\n");
+    git("commit", "-qam", "touch the table");
+    if (ledger) put(".claude/feature-ledger.md", ledger(base));
+    return root;
+  }
+  const rowOf = (doc, name) => doc.split("\n").find((l) => l.startsWith(`| ${name} |`)) ?? "";
+
+  it("measures a file under ONE feature — the most specific claim — so rows add up", () => {
+    const root = ownedTree();
+    const res = spawnSync(process.execPath, [GENERATOR], { cwd: root, encoding: "utf8" });
+    expect(res.stderr).toBe("");
+    expect(res.status).toBe(0);
+    const doc = readFileSync(join(root, "dev-docs/feature-metrics.md"), "utf8");
+    // | name | code | src files | ...
+    expect(rowOf(doc, "Editor").split("|")[3].trim()).toBe("1");
+    expect(rowOf(doc, "Tables").split("|")[3].trim()).toBe("1");
+    expect(doc).toContain("feature-ledger.md` is absent, so the ledger tables are not rendered");
+  });
+
+  it("renders ledger counts, the at-a-glance index and commits since each feature was verified", () => {
+    const blockFor = (feature, id) =>
+      `### ${feature} block\n- id: ${id}\n- feature: ${feature}\n- status: shipped-on, macos-only\n- gate: always on\n- docs: none\n- tests: none\n`;
+    const root = ownedTree({ ledger: (sha) => `# Ledger\n\n## Area 1 — All\n\nVerified: \`${sha}\`\n\n${blockFor("Editor", "ed")}\n${blockFor("Tables", "tb")}` });
+    const res = spawnSync(process.execPath, [GENERATOR], { cwd: root, encoding: "utf8" });
+    expect(res.status).toBe(0);
+    const doc = readFileSync(join(root, "dev-docs/feature-metrics.md"), "utf8");
+    expect(doc).toMatch(/\| Status includes macos-only \| 2 \|/);
+    expect(doc).toMatch(/\| No website page cited \| 2 \|/);
+    // Only the table changed after the verified commit.
+    expect(doc).toMatch(/\| Tables \| 1 \| 1 \|/);
+    expect(doc).toMatch(/\| Editor \| 1 \| 0 \|/);
+    expect(doc).toMatch(/\| 1 \| Tables \| Tables block \(`tb`\) \| shipped-on, macos-only \| always on \|/);
   });
 });

@@ -9,7 +9,7 @@
  * This file is the QUANTITATIVE half of the feature ledger. The qualitative
  * half — what each feature does, how it is reached and gated, what documents
  * and tests it, what is known to be unwired or stale — is the hand-inspected
- * `dev-docs/feature-ledger.md`, which cites these cells rather than restating
+ * `.claude/feature-ledger.md`, which cites these cells rather than restating
  * them. Keep the two apart: a generated file that anyone hand-edits is
  * overwritten on the next run, and a hand-written file that restates numbers
  * goes stale on the next commit.
@@ -89,6 +89,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { renderLedger } from "./lib/featureLedgerRender.mjs";
+import { isTestFile, resolveOwners } from "./lib/featureOwnership.mjs";
+import { LEDGER_REL, parseLedger } from "./lib/featureLedgerDoc.mjs";
 
 const OUTPUT_REL = "dev-docs/feature-metrics.md";
 const DEFAULTS_REL = "src/stores/settingsStore/defaults.ts";
@@ -118,8 +120,7 @@ function readJson(p, label = p) {
   if (parsed === null) throw new Error(`${label}: holds the literal null, which is not a document this joins`);
   return parsed;
 }
-const isTest = (f) => /\.test\.|\.spec\.|__tests__|\/test\/|\.bench\./.test(f);
-const underAny = (p, paths) => paths.some((base) => p === base || p.startsWith(base.endsWith("/") ? base : base + "/"));
+const isTest = isTestFile;
 const isPlainObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 
 /** Strict argv: only `--since=<git date>`, non-empty and table-safe; anything else is a usage error. */
@@ -507,18 +508,34 @@ export function featureCoverage(covSummary, eligible, root) {
   return { pct: complete ? (covered / total) * 100 : null, seen, expected };
 }
 
+/**
+ * Commits touching `files`, counted by `git log` over an EXPLICIT file list.
+ * An empty list is zero commits — `git log --` with no pathspec would count
+ * every commit in the repository as this feature's.
+ */
+function gitOver(args, files) {
+  return files.length === 0 ? "" : run("git", [...args, "--", ...files]).trim();
+}
+
 /** One ledger row: every column joined or measured for one spine feature. */
 function measureFeature(f, ctx) {
   const paths = normalizePaths(f.paths);
-  const { src: srcFiles, test: testFiles } = ctx.inventory.get(f.name);
+  const { src: srcFiles, test: testFiles, all: ownedAll } = ctx.inventory.get(f.name);
+  const owns = (file) => ctx.owner.get(file) === f.name;
   // Coupling units are bare plugin/module names ("codemirror", "toolbarActions"),
   // so match the LAST path segment rather than searching the whole string — a
   // substring test makes "svg" match "src/plugins/svgSomethingElse".
   const coup = Object.entries(ctx.couplingUnits)
     .filter(([unit]) => paths.some((p) => p.split("/").pop() === unit))
     .reduce((n, [, v]) => n + (typeof v === "number" ? v : Object.values(v || {}).reduce((a, b) => a + (b || 0), 0)), 0);
-  const commits = run("git", ["log", `--since=${ctx.since}`, "--oneline", "--", ...paths]).trim();
-  const last = run("git", ["log", "-1", "--format=%ad", "--date=short", "--", ...paths]).trim();
+  const commits = gitOver(["log", `--since=${ctx.since}`, "--oneline"], ownedAll);
+  const last = gitOver(["log", "-1", "--format=%ad", "--date=short"], ownedAll);
+  // Ledger freshness: commits to this feature's files since the OLDEST commit
+  // any of its ledger blocks was verified against. `null` (printed `--`) when
+  // no ledger is present or no block describes the feature.
+  const shas = [...new Set((ctx.ledgerBlocks.get(f.name) ?? []).map((b) => b.verified).filter(Boolean))];
+  const sinceLedger = shas.length === 0 ? null
+    : Math.max(...shas.map((sha) => { const out = gitOver(["log", "--oneline", `${sha}..HEAD`], ownedAll); return out ? out.split("\n").length : 0; }));
   return {
     name: f.name, flag: f.flag, flagDefault: f.flagDefault, doc: f.doc,
     code: tokeiCode(srcFiles),
@@ -526,12 +543,14 @@ function measureFeature(f, ctx) {
     testFiles: testFiles.length,
     testLines: testFiles.reduce((n, x) => n + countLines(readFileSync(path.join(ctx.root, x), "utf8")), 0),
     cov: featureCoverage(ctx.covSummary, coverageEligible(srcFiles), ctx.root),
-    bigFiles: Object.keys(ctx.fileSizeFlat).filter((k) => underAny(k, paths)).length,
-    mocks: ctx.mockRecords.filter((r) => underAny(r.file, paths)).length,
-    dep: ctx.depRecords.filter((r) => underAny(r.from, paths)).length,
+    bigFiles: Object.keys(ctx.fileSizeFlat).filter(owns).length,
+    mocks: ctx.mockRecords.filter((r) => owns(r.file)).length,
+    dep: ctx.depRecords.filter((r) => owns(r.from)).length,
     coup,
     commits: commits ? commits.split("\n").length : 0,
     last: last || "--",
+    blocks: (ctx.ledgerBlocks.get(f.name) ?? []).length,
+    sinceLedger,
   };
 }
 
@@ -593,7 +612,30 @@ function main() {
   // ONE inventory per feature, built here and consumed by both the
   // coverage-provenance scan below and every measured column. The staleness
   // scan used to re-enumerate every feature's tree for itself (audit R2 #125).
-  const inventory = new Map(spine.features.map((f) => [f.name, featureInventory(normalizePaths(f.paths))]));
+  // SINGLE OWNERSHIP: a file under two claims (a folder and a file inside it)
+  // is measured once, for the most specific claim — the rule
+  // scripts/check-feature-map.mjs enforces. Without it 90 files were counted
+  // under two features and column totals could not be added up.
+  const rawInventory = new Map(spine.features.map((f) => [f.name, featureInventory(normalizePaths(f.paths))]));
+  const { owner } = resolveOwners(spine, [...new Set([...rawInventory.values()].flatMap((v) => v.all))]);
+  const inventory = new Map([...rawInventory].map(([name, v]) => {
+    const mine = (file) => owner.get(file) === name;
+    return [name, { all: v.all.filter(mine), code: v.code.filter(mine), src: v.src.filter(mine), test: v.test.filter(mine) }];
+  }));
+  // The qualitative ledger, when this machine has it: its blocks join the
+  // spine by feature name, each carrying the commit its area was verified at.
+  const ledgerPath = path.join(ROOT, LEDGER_REL);
+  const ledger = existsSync(ledgerPath) ? parseLedger(readFileSync(ledgerPath, "utf8")) : null;
+  const ledgerBlocks = new Map();
+  if (ledger) {
+    const verifiedAt = new Map(ledger.areas.map((a) => [a.number, a.verified]));
+    for (const b of ledger.blocks) {
+      const name = b.fields.feature;
+      if (!name) continue;
+      if (!ledgerBlocks.has(name)) ledgerBlocks.set(name, []);
+      ledgerBlocks.get(name).push({ ...b, verified: verifiedAt.get(b.area) });
+    }
+  }
 
   const covPath = path.join(ROOT, "coverage/coverage-summary.json");
   let covSummary = read("coverage/coverage-summary.json");
@@ -609,7 +651,7 @@ function main() {
     covStale = newest > summaryAt;
     if (covStale) covSummary = null;
   }
-  const ctx = { root: ROOT, since: args.since, covSummary, inventory, ...sources };
+  const ctx = { root: ROOT, since: args.since, covSummary, inventory, owner, ledgerBlocks, ...sources };
 
   let rows;
   try {
@@ -627,7 +669,7 @@ function main() {
   // directory is atomic, so a reader sees the old file or the new one.
   const outPath = path.join(ROOT, OUTPUT_REL);
   const tmpPath = `${outPath}.tmp-${process.pid}`;
-  writeFileSync(tmpPath, renderLedger(rows, { since: args.since, defaultsRel: DEFAULTS_REL, covPresent }));
+  writeFileSync(tmpPath, renderLedger(rows, { since: args.since, defaultsRel: DEFAULTS_REL, covPresent, ledger }));
   renameSync(tmpPath, outPath);
   console.log(`wrote ${OUTPUT_REL} — ${rows.length} features`);
   if (!covPresent) {
