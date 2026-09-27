@@ -69,22 +69,63 @@ assert_grep_in_section() {
 # template literal, a call site in a doc comment satisfied the greps these
 # replaced (audit 20260907 #26/#27/#31/#32) and satisfy nothing now.
 DOD_SYNTAX="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/dod-syntax.mjs"
+# Every probe goes through `dod_syntax`, which answers from ONE long-lived
+# `dod-syntax.mjs --serve` per shell instead of a node per probe: loading the
+# TypeScript compiler costs ~0.36s, and a phase issues dozens of probes (the
+# feature-ledger phase 5 spent 11s starting processes, and its self-test took
+# eleven minutes). The server is started only by the top-level shell
+# (BASH_SUBSHELL 0), whose subshells inherit fds 7/8; a subshell with no server,
+# an argument the line protocol cannot carry, or a server that cannot start all
+# fall back to a fresh process, so the answer never depends on the transport.
+_DOD_READY=""
+_dod_start() {
+  [[ "$BASH_SUBSHELL" -eq 0 ]] || return 1
+  local d
+  d="$(mktemp -d "${TMPDIR:-/tmp}/dod-serve.XXXXXX")" || return 1
+  if ! mkfifo "$d/out"; then rm -rf "$d"; return 1; fi
+  # Requests travel over an anonymous PIPE (process substitution), never a
+  # FIFO: on macOS node never sees end-of-file on a FIFO stdin, so a FIFO-fed
+  # server outlived every shell that started it. Over a pipe, the shell's exit
+  # closes fd 7 and the server ends with it.
+  exec 7> >(exec node "$DOD_SYNTAX" --serve >"$d/out" 2>/dev/null)
+  exec 8<"$d/out"
+  rm -rf "$d"
+  _DOD_READY=1
+}
+dod_syntax() {
+  local a line code=""
+  for a in "$@"; do
+    case "$a" in *$'\n'*|*$'\x1f'*) node "$DOD_SYNTAX" "$@"; return ;; esac
+  done
+  if [[ -z "$_DOD_READY" ]] && ! _dod_start; then node "$DOD_SYNTAX" "$@"; return; fi
+  ( IFS=$'\x1f'; printf '%s\n' "$PWD"$'\x1f'"$*" ) >&7
+  while IFS= read -r line <&8; do
+    case "$line" in
+      O$'\t'*) printf '%s\n' "${line#??}" ;;
+      E$'\t'*) printf '%s\n' "${line#??}" >&2 ;;
+      X$'\t'*) code="${line#??}"; break ;;
+    esac
+  done
+  # A server that died mid-request is a loud failure, never a silent pass.
+  if [[ -z "$code" ]]; then echo "dod-syntax: --serve stopped answering" >&2; return 70; fi
+  return "$code"
+}
 # A Rust test file cargo will compile: an ACTIVE `#[path = "<base>"]` attribute
 # in CODE (not inside a raw string), followed — other attributes only — by the
 # `mod x;` it decorates, under no `cfg` gate but `cfg(test)`.
-rust_test_included() { node "$DOD_SYNTAX" rust-mod-include "$1" "$2" >/dev/null 2>&1; }
+rust_test_included() { dod_syntax rust-mod-include "$1" "$2" >/dev/null 2>&1; }
 # A TS/mjs test that DECLARES a case: an `it(`/`test(` call with a title (or
 # the call `it.each(…)` returns), outside comments and strings and not under
 # `skip`/`todo`. This does not prove vitest RUNS the file — check:all does —
 # only that the file declares one.
-has_test_case() { node "$DOD_SYNTAX" ts-has-test-case "$1" >/dev/null 2>&1; }
+has_test_case() { dod_syntax ts-has-test-case "$1" >/dev/null 2>&1; }
 # Non-test .rs files under `dir` (minus the `exclude` bash regex) whose CODE
 # matches `re` — a mention in a comment or a string literal does not. Prints
 # the matching files.
 rust_code_grep() {
   local re="$1" dir="$2" exclude="${3:-^$}" f files=()
   for f in "$dir"/*.rs; do [[ -f "$f" && "$f" != *.test.rs && ! "$f" =~ $exclude ]] && files+=("$f"); done
-  (( ${#files[@]} > 0 )) && node "$DOD_SYNTAX" rust-code-grep "$re" "${files[@]}" 2>/dev/null
+  (( ${#files[@]} > 0 )) && dod_syntax rust-code-grep "$re" "${files[@]}" 2>/dev/null
 }
 # assert_rust_code_grep <JS regex> <file.rs> <label> [--keep-strings]
 # The CODE of one Rust file must match. `grep` is satisfied by a doc comment
@@ -96,7 +137,7 @@ rust_code_grep() {
 assert_rust_code_grep() {
   local re="$1" file="$2" label="$3" keep="${4:-}"
   if [[ ! -f "$file" ]]; then fail "$label (file missing: $file)"; return; fi
-  if node "$DOD_SYNTAX" rust-code-grep ${keep:+--keep-strings} "$re" "$file" >/dev/null 2>&1; then ok "$label"
+  if dod_syntax rust-code-grep ${keep:+--keep-strings} "$re" "$file" >/dev/null 2>&1; then ok "$label"
   else fail "$label (no /$re/ in the CODE of $file — a comment, a commented-out call or a quoted mention does not count)"; fi
 }
 # assert_ts_code_grep <JS regex> <file.ts(x)> <label> [--keep-strings]
@@ -106,7 +147,7 @@ assert_rust_code_grep() {
 assert_ts_code_grep() {
   local re="$1" file="$2" label="$3" keep="${4:-}"
   if [[ ! -f "$file" ]]; then fail "$label (file missing: $file)"; return; fi
-  if node "$DOD_SYNTAX" ts-code-grep ${keep:+--keep-strings} "$re" "$file" >/dev/null 2>&1; then ok "$label"
+  if dod_syntax ts-code-grep ${keep:+--keep-strings} "$re" "$file" >/dev/null 2>&1; then ok "$label"
   else fail "$label (no /$re/ in the CODE of $file — a comment or a commented-out line does not count)"; fi
 }
 # Which `.rs` beside `$1` includes it with an active `#[path = "<basename>"]`?
@@ -136,7 +177,7 @@ rust_module_declared() {
   # only INSIDE the directory reported both as uncompiled (audit R2 #154).
   for parent in "$dir/mod.rs" "$dir/lib.rs" "$dir/main.rs" "$dir.rs"; do
     [[ -f "$parent" ]] || continue
-    node "$DOD_SYNTAX" rust-code-grep "(^|[^A-Za-z0-9_])mod\\s+${stem}\\s*;" "$parent" >/dev/null 2>&1 && return 0
+    dod_syntax rust-code-grep "(^|[^A-Za-z0-9_])mod\\s+${stem}\\s*;" "$parent" >/dev/null 2>&1 && return 0
   done
   # A `#[path = "<base>"] mod x;` mount is a declaration too, and a file
   # mounted that way carries no `mod <stem>;` anywhere — `nav_payloads_macos.rs`
@@ -187,7 +228,7 @@ assert_test_file() {
 assert_journey() {
   local f="$1" label="$2" why
   if [[ ! -f "$f" ]]; then fail "$label missing: $f"; return; fi
-  if why=$(node "$DOD_SYNTAX" journey-shape "$f" 2>&1 >/dev/null); then ok "$label (default { name, run })"
+  if why=$(dod_syntax journey-shape "$f" 2>&1 >/dev/null); then ok "$label (default { name, run })"
   else fail "$label present but not a runner-discoverable journey (${why:-needs \`export default { name, run }\`})"; fi
 }
 # `$1` as a LITERAL inside a POSIX ERE. Work-item and decision ids carry dots
