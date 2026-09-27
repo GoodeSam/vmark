@@ -28,7 +28,7 @@ Ambas as linguagens de delimitação se comportam de forma idêntica:
 ## Modos de Edição
 
 - **Modo WYSIWYG** — o bloco de código é renderizado como um diagrama. Dê um duplo clique nele para editar o código-fonte DOT com prévia ao vivo com debounce; salve ou cancele pelo cabeçalho de edição.
-- **Modo Fonte** — posicione o cursor dentro de um bloco ` ```dot ` para obter a prévia flutuante do diagrama (arrastar, redimensionar, zoom), igual ao Mermaid.
+- **Modo Fonte** — posicione o cursor dentro de um bloco ` ```dot ` para obter a prévia flutuante do diagrama (arrastar, redimensionar, zoom), igual ao Mermaid. A prévia vem desativada por padrão; ative-a com **Visualizar → Alternar pré-visualização de diagrama** (`Alt + Mod + P`).
 
 ## Pan, Zoom e Exportação
 

@@ -93,8 +93,8 @@ Se você preferir manter as funções do sistema nas teclas F, pode personalizar
 | Duplicar Linha | `Shift + Alt + Baixo` |
 | Excluir Linha | `Mod + Shift + K` |
 | Unir Linhas | `Mod + J` |
-| Ordenar Linhas Crescente | `F4` |
-| Ordenar Linhas Decrescente | `Shift + F4` |
+| Ordenar Linhas Crescente | `F4` _(somente no modo Fonte)_ |
+| Ordenar Linhas Decrescente | `Shift + F4` _(somente no modo Fonte)_ |
 
 ## Transformações de Texto
 
@@ -314,10 +314,33 @@ Quando o terminal integrado estiver focado:
 | Ação | Atalho |
 |------|--------|
 | Alternar Terminal | `` Ctrl + ` `` |
+| Focar Terminal ou Editor | `` Ctrl + Shift + ` `` |
 | Copiar | `Mod + C` (com seleção) |
 | Colar | `Mod + V` |
+| Selecionar Tudo (somente a saída do terminal) | `Mod + A` |
 | Limpar | `Mod + K` |
 | Pesquisar | `Mod + F` |
+| Alternar para a sessão 1–5 | `Mod + 1` até `Mod + 5` |
+| Aumentar fonte do terminal | `Mod + =` |
+| Diminuir fonte do terminal | `Mod + -` |
+| Tamanho padrão da fonte do terminal | `Mod + 0` |
+| Prompt de comando anterior | `Mod + ↑` |
+| Próximo prompt de comando | `Mod + ↓` |
+| Nova linha na linha de entrada (Claude Code e ferramentas semelhantes) | `Shift + Enter` |
+
+Enquanto o terminal estiver focado, `Mod + =`, `Mod + -` e `Mod + 0` redimensionam a fonte do terminal em vez da do editor.
+
+A navegação entre prompts salta entre os prompts de comando no histórico de rolagem e requer integração com o shell (zsh ou bash).
+
+No macOS, o terminal também traduz os atalhos habituais de edição de texto para o shell:
+
+| Ação | Atalho |
+|------|--------|
+| Mover uma palavra para a esquerda / direita | `Option + ←` / `Option + →` |
+| Mover para o início / fim da linha | `Cmd + ←` / `Cmd + →` |
+| Apagar a linha de entrada (envia `Ctrl + U`) | `Cmd + Backspace` |
+
+Combinações com `Ctrl`, como `Ctrl + A`, `Ctrl + R` e `Ctrl + W`, vão direto para o shell no macOS.
 
 Quando a barra de pesquisa do terminal estiver aberta:
 
@@ -334,10 +357,16 @@ Quando a barra de pesquisa do terminal estiver aberta:
 ## Personalizando Atalhos
 
 1. Abra as Configurações com `Mod + ,`
-2. Navegue até a aba **Atalhos**
-3. Clique em qualquer atalho para editar
-4. Pressione a combinação de teclas desejada
-5. As alterações são salvas automaticamente
+2. Navegue até a aba **Atalhos** (digite na caixa de pesquisa para filtrar por nome, categoria, descrição ou tecla)
+3. Clique na tecla mostrada ao lado de um atalho — ou em **Não atribuído** para um que ainda não tem tecla
+4. Pressione a combinação de teclas desejada e clique em **Atribuir** (`Escape` cancela)
+
+A caixa de diálogo avisa você antes de atribuir uma combinação:
+
+- **Conflito** — a combinação já é usada por outro atalho, que é indicado pelo nome. Você ainda pode escolher **Atribuir mesmo assim**.
+- **Não suportada** — o VMark não pode usar essa combinação, então ela não pode ser atribuída. Tente outra.
+
+Um atalho personalizado fica destacado e ganha um botão **Redefinir para o padrão**. **Redefinir tudo** restaura todos os padrões após pedir confirmação. **Exportar** salva seus atalhos como um arquivo JSON (`vmark-shortcuts.json`) e **Importar** carrega um; se alguma entrada do arquivo for inválida, nada é importado e os problemas são listados.
 
 ::: tip
 Os atalhos sincronizam com os aceleradores de menu quando aplicável, portanto os itens de menu mostrarão seus atalhos personalizados.

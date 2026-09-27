@@ -23,7 +23,7 @@ Em resumo: se a imagem já existe em uma URL, cole a URL. O VMark a insere como 
 
 A funcionalidade proposta significaria que o VMark detecta uma imagem local no momento da colagem, faz o upload para armazenamento remoto e grava a URL retornada no Markdown em vez de um caminho `./.assets/…`. Parece pequeno, mas expande o escopo do VMark em três aspectos críticos:
 
-1. **Cofre de credenciais**. O upload nativo S3-compatible exige que a access key e a secret access key do usuário fiquem armazenadas em repouso. O VMark hoje tem zero segredos de longa duração — nenhuma decisão sobre criptografia em repouso, nenhuma integração com o keychain do SO, nenhuma UX de rotação de chaves, nenhum modo de falha do tipo "chave acidentalmente no Markdown". Adicionar upload cruza essa fronteira.
+1. **Cofre de credenciais**. O upload nativo S3-compatible exige que a access key e a secret access key do usuário fiquem armazenadas em repouso. O VMark já guarda alguns segredos hoje — chaves de API de provedores de IA e sessões do navegador que você salva para uma IA ficam no keychain do SO —, mas nenhum deles é uma credencial que grava em um bucket de armazenamento pelo qual você paga. O upload acrescentaria exatamente isso: as chaves de outro provedor para armazenar, UX de rotação de chaves e um modo de falha do tipo "chave acidentalmente no Markdown".
 
 2. **Cauda de suporte multi-provedor**. S3, Cloudflare R2, Backblaze B2, MinIO, DigitalOcean Spaces todos anunciam compatibilidade com S3, mas cada um tem suas peculiaridades (endereçamento path-style vs virtual-hosted, semântica de ACL, endpoints regionais, regras de CORS). Um único mantenedor absorver essa área de superfície é um imposto de longo prazo sobre uma ferramenta de escrita.
 

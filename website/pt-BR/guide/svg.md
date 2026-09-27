@@ -4,8 +4,8 @@ O VMark oferece suporte de primeira classe para SVG — Scalable Vector Graphics
 
 | Método | Melhor Para | Fonte Editável? |
 |--------|-------------|-----------------|
-| [Incorporação de imagem](#embedding-svg-as-an-image) (`![](file.svg)`) | Arquivos SVG estáticos no disco | Não |
-| [Bloco de código](#svg-code-blocks) (` ```svg `) | SVG inline, gráficos gerados por IA | Sim |
+| [Incorporação de imagem](#incorporando-svg-como-imagem) (`![](file.svg)`) | Arquivos SVG estáticos no disco | Não |
+| [Bloco de código](#blocos-de-codigo-svg) (` ```svg `) | SVG inline, gráficos gerados por IA | Sim |
 
 ## Incorporando SVG como Imagem
 
@@ -98,7 +98,7 @@ No modo Fonte, quando o cursor estiver dentro de um bloco de código ` ```svg `,
 | **Zoom** | Botões `−` e `+`, ou `Cmd/Ctrl` + scroll (10% a 300%) |
 
 ::: info
-A prévia de diagrama no modo Fonte deve estar habilitada. Alterne-a com o botão **Prévia de Diagrama** na barra de status.
+A prévia de diagrama no modo Fonte vem desativada por padrão. Ative-a com **Visualizar → Alternar pré-visualização de diagrama** (`Alt + Mod + P`) ou pela paleta de comandos.
 :::
 
 ## Validação SVG

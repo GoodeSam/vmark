@@ -64,12 +64,23 @@ Esses números são publicados abertamente em [`log.vmark.app/api/stats`](https:
 - O hash da máquina não está vinculado a nenhuma conta, e-mail ou endereço IP — é apenas um contador pseudônimo de dispositivos
 - Não usamos cookies de rastreamento, impressão digital ou qualquer SDK de análise
 
+## O Que o VMark Pode Ler no Disco
+
+O acesso do VMark a arquivos é um escopo de permissões restrito, não o disco inteiro:
+
+- **Escopo estático**: sua pasta pessoal (`$HOME/**`) mais os volumes montados — `/Volumes/**` no macOS, `/mnt/**` e `/media/**` no Linux. No Windows ele também cobre as unidades de `C:\` a `F:\`, então só `G:\` e as unidades seguintes, além de compartilhamentos de rede, precisam de uma permissão em tempo de execução. No macOS e no Linux, tudo o que está dentro de uma pasta oculta (cujo nome começa com `.`) fica fora do escopo estático.
+- **Permissões em tempo de execução**: um arquivo que você abre explicitamente — pelo Finder ou pelo Explorador de Arquivos, pela linha de comando `vmark` ou por uma caixa de diálogo de arquivos — recebe uma permissão apenas para esse arquivo. Uma **pasta** só recebe permissão quando o VMark consegue saber que foi você quem a escolheu: você a selecionou na caixa de diálogo de pastas do VMark ou a abriu pelo Finder. O VMark mantém uma lista dessas pastas (`workspace-grants.json` na pasta de dados do app) e concede a permissão de novo a cada inicialização, para que sua sessão restaurada e **Abrir espaço de trabalho recente** continuem funcionando. Um espaço de trabalho recente que não está nessa lista, e que o escopo estático não cobre, abre a caixa de diálogo de pastas nessa pasta — escolha-a para confirmar. Quando um assistente de IA pede para abrir uma pasta assim, o VMark faz o mesmo depois que você aprova o pedido.
+- **Imagens e mídia**: imagens, vídeos e áudios locais são exibidos pelo protocolo de recursos do VMark, que alcança os mesmos lugares — o escopo estático mais as permissões em tempo de execução acima. O visualizador de mídia adiciona uma permissão para o único arquivo que exibe, e somente para um arquivo com extensão de mídia; um pedido para qualquer outro caminho é recusado em vez de ampliar o escopo. Uma imagem fora desses lugares, como uma ao lado de um documento que você abriu sozinho de fora do escopo estático, não é exibida até que você abra a pasta dela como espaço de trabalho.
+
+Nada disso é enviado a lugar algum; o escopo decide o que o próprio app pode ler.
+
 ## Transparência de Código Aberto
 
 O VMark é totalmente de código aberto. Você pode verificar tudo descrito aqui:
 
 - Configuração do endpoint de atualização: [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json)
 - Geração do hash da máquina: [`src-tauri/src/lib.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/lib.rs) — pesquise por `machine_id_hash`
+- Escopo do sistema de arquivos e de recursos: [`src-tauri/capabilities/default.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/capabilities/default.json), a entrada `assetProtocol` em [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json), [`src-tauri/src/fs_scope.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/fs_scope.rs) e [`src-tauri/src/workspace_grants/`](https://github.com/xiaolai/vmark/tree/main/src-tauri/src/workspace_grants)
 - Agregação de estatísticas no lado do servidor: [`scripts/vmark-stats-json`](https://github.com/xiaolai/vmark/blob/main/scripts/vmark-stats-json) — o script exato que roda no nosso servidor para produzir as [estatísticas públicas](https://log.vmark.app/api/stats)
 - Nenhuma outra chamada de rede existe na base de código — pesquise por `fetch`, `http` ou `reqwest` você mesmo
 

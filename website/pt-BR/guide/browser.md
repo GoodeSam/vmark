@@ -2,8 +2,8 @@
 
 O VMark pode hospedar um navegador web real **dentro** de uma janela de documento — uma página da web se torna uma aba de primeira classe ao lado dos seus documentos markdown. É uma webview nativa genuína (o `WKWebView` do macOS), não uma janela externa do Chrome nem um frame incorporado.
 
-::: warning Experimental
-O navegador integrado é um recurso em estágio inicial e está disponível **apenas no macOS** nesta versão. O suporte a Windows e Linux virá mais tarde — nessas plataformas, as configurações abaixo não aparecem.
+::: info Apenas macOS
+O navegador integrado está disponível no **macOS**, onde vem ativado por padrão. Ele não está disponível no Windows nem no Linux: nessas plataformas, as configurações abaixo e o comando **Nova aba do navegador** não aparecem.
 :::
 
 
@@ -35,7 +35,7 @@ navegador, na janela que as detém.
 
 ## Como usá-lo
 
-Uma aba do navegador abre na área do editor, ao lado dos seus documentos — a barra lateral, a faixa de abas, o terminal e a barra de status permanecem todos onde estão. Seus controles ficam **acima da página**: no macOS, eles compartilham a barra de título da janela, já que o próprio VMark a desenha. Onde é o sistema que desenha a barra de título (Windows, Linux), eles ficam dentro da janela, acima da página, do jeito que todo outro navegador de desktop os organiza.
+Uma aba do navegador abre na área do editor, ao lado dos seus documentos — a barra lateral, a faixa de abas, o terminal e a barra de status permanecem todos onde estão. Seus controles ficam **acima da página**, compartilhando a barra de título da janela, que o próprio VMark desenha.
 
 | Controle | Ação |
 |---------|--------|
@@ -70,7 +70,7 @@ Se o processo de conteúdo web de uma página morrer, a aba mostra uma sobreposi
 
 O VMark cria a própria webview da plataforma e a adiciona como um filho nativo da janela — ele **não** pede uma ao framework do aplicativo. Isso importa para a privacidade: uma webview criada pelo framework injetaria uma ponte de mensagens interna em cada página, entregando a qualquer site um canal para dentro do aplicativo. Como o VMark possui uma webview recém-construída sem essa ponte, **uma página navegada não tem canal para dentro do VMark**. A página é controlada estritamente em uma única direção (o aplicativo pode ler e agir sobre a página; a página não pode responder de volta).
 
-As sessões (logins, cookies) persistem por perfil no próprio armazenamento de dados da webview do sistema operacional, então você faz login em cada site apenas uma vez. O próprio VMark não armazena credenciais.
+As sessões (logins, cookies) persistem por perfil no próprio armazenamento de dados da webview do sistema operacional, então você faz login em cada site apenas uma vez. O VMark não mantém um armazenamento próprio de senhas ou cookies; a única exceção é uma sessão que você aprova explicitamente salvar para uma IA (veja *Salvar / carregar sessão* abaixo), cujos cookies e `localStorage` vão para o **keychain do sistema operacional**, nunca para um arquivo.
 
 ## Controlando o navegador com IA
 
@@ -158,14 +158,16 @@ Esta é a forma pretendida de uso do navegador por IA no VMark: o agente propõe
 ## Quando uma página não carrega
 
 Uma rede off-line, um nome de host inválido, um certificado rejeitado ou uma conexão recusada — todos
-produzem uma mensagem no painel do navegador dizendo o que deu errado, com um botão **Tentar novamente**.
-Versões anteriores mostravam um painel em branco no lugar, o que era indistinguível de uma
-página que estava apenas lenta.
+produzem uma mensagem no painel do navegador dizendo o que deu errado, com um botão **Tentar novamente**, então um carregamento que falhou nunca parece uma página
+que está apenas lenta.
 
 ## Limitações atuais
 
 - Apenas macOS nesta versão.
-- As caixas de diálogo `confirm()` / `prompt()` do JavaScript estão suprimidas por enquanto (apenas `alert()` é exibida); pop-ups (`window.open`) são bloqueados em vez de abertos como novas abas.
-- Downloads, impressão e política de rede por requisição ainda não foram implementados.
+- As caixas de diálogo `alert()` e `confirm()` do JavaScript são exibidas e respondidas por você; `prompt()` está suprimido por enquanto. Pop-ups (`window.open`) são bloqueados, e o endereço bloqueado é oferecido como uma nova aba.
+- Uma página protegida por autenticação HTTP básica não carrega — ainda não há um prompt de nome de usuário/senha.
+- Localizar na página e zoom da página não foram implementados.
+- O VMark ainda não decide por conta própria as solicitações de câmera, microfone, localização ou notificações; vale o tratamento padrão da webview do sistema.
+- Downloads, impressão e política de rede por requisição ainda não foram implementados. Ações de passar o mouse e arrastar ainda não têm um verbo para a IA.
 
 Esses recursos estão sendo adicionados de forma incremental; a página acima descreve o que funciona hoje.
