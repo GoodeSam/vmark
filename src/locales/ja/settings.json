@@ -20,7 +20,7 @@
   "formats.diagrams.label": "図と SVG(Mermaid、SVG)",
   "formats.diagrams.description": ".mmd と .svg を、サニタイズされたライブ描画とソースを並べて開きます。",
   "formats.htmlPreview.label": "HTML プレビュー",
-  "formats.htmlPreview.description": ".html と .htm をサンドボックス化した iframe プレビューで開きます(sandbox=\"\"、DOMPurify、CSP)。OWASP トップ 20 で検証済み。",
+  "formats.htmlPreview.description": ".html と .htm をサンドボックス化した iframe プレビューで開きます(sandbox=\"\"、DOMPurify、CSP)。OWASP の承認は保留中です。",
   "formats.codeViewers.label": "コードビューア",
   "formats.codeViewers.description": ".ts、.js、.py、.rs、.go、.css、.sh、.rb、.lua などのファイルをシンタックスハイライト付きのビューアで開きます(デフォルトでは読み取り専用 — 入力するには「編集を有効にする」をクリックしてください)。",
   "formats.defaultViewMode.label": "デフォルトの表示モード",

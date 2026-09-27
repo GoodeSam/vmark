@@ -20,7 +20,7 @@
   "formats.diagrams.label": "Diagrams & SVG (Mermaid, SVG)",
   "formats.diagrams.description": "Open .mmd and .svg with a sanitized live render alongside the source",
   "formats.htmlPreview.label": "HTML preview",
-  "formats.htmlPreview.description": "Open .html and .htm with a sandboxed iframe preview (sandbox=\"\", DOMPurify, CSP). OWASP top-20 verified.",
+  "formats.htmlPreview.description": "Open .html and .htm with a sandboxed iframe preview (sandbox=\"\", DOMPurify, CSP). OWASP sign-off is pending.",
   "formats.codeViewers.label": "Code viewers",
   "formats.codeViewers.description": "Open .ts, .js, .py, .rs, .go, .css, .sh, .rb, .lua and similar files in a syntax-highlighted viewer (read-only by default — click Enable Editing to type)",
   "formats.defaultViewMode.label": "Default view mode",

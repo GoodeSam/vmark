@@ -20,7 +20,7 @@
   "formats.diagrams.label": "圖表與 SVG(Mermaid、SVG)",
   "formats.diagrams.description": "以經過淨化的即時算繪與原始碼並排開啟 .mmd 和 .svg。",
   "formats.htmlPreview.label": "HTML 預覽",
-  "formats.htmlPreview.description": "以沙箱化的 iframe 預覽開啟 .html 和 .htm(sandbox=\"\"、DOMPurify、CSP)。已通過 OWASP 前 20 項驗證。",
+  "formats.htmlPreview.description": "以沙箱化的 iframe 預覽開啟 .html 和 .htm(sandbox=\"\"、DOMPurify、CSP)。OWASP 審核簽署仍在等待中。",
   "formats.codeViewers.label": "程式碼檢視器",
   "formats.codeViewers.description": "以語法高亮檢視器開啟 .ts、.js、.py、.rs、.go、.css、.sh、.rb、.lua 及類似檔案(預設唯讀 — 點擊「啟用編輯」即可輸入)。",
   "formats.defaultViewMode.label": "預設檢視模式",
