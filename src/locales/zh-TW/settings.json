@@ -393,7 +393,7 @@
   "integrations.installMcp.legacyHint": "該工具已停止支援，請移除殘留的 VMark 條目。",
   "integrations.group.aiProviders": "AI 提供者",
   "integrations.detectCli.label": "偵測 CLI 提供者",
-  "integrations.detectCli.description": "掃描已安裝的 AI CLI（claude、codex、gemini、ollama）",
+  "integrations.detectCli.description": "掃描已安裝的 AI CLI（claude、codex、gemini）",
   "integrations.detectCli.button": "偵測",
   "integrations.aiProviders.cliProviders": "CLI 提供者",
   "integrations.aiProviders.restProviders": "REST API 提供者",

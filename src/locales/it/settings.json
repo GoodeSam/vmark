@@ -393,7 +393,7 @@
   "integrations.installMcp.legacyHint": "Questo strumento è stato dismesso. Rimuovi la voce VMark residua.",
   "integrations.group.aiProviders": "Provider IA",
   "integrations.detectCli.label": "Rileva provider CLI",
-  "integrations.detectCli.description": "Cerca le CLI IA installate (claude, codex, gemini, ollama)",
+  "integrations.detectCli.description": "Cerca le CLI IA installate (claude, codex, gemini)",
   "integrations.detectCli.button": "Rileva",
   "integrations.aiProviders.cliProviders": "Provider CLI",
   "integrations.aiProviders.restProviders": "Provider REST API",

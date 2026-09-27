@@ -393,7 +393,7 @@
   "integrations.installMcp.legacyHint": "Esta herramienta está descontinuada. Elimina la entrada restante de VMark.",
   "integrations.group.aiProviders": "Proveedores de IA",
   "integrations.detectCli.label": "Detectar proveedores de CLI",
-  "integrations.detectCli.description": "Buscar CLIs de IA instalados (claude, codex, gemini, ollama)",
+  "integrations.detectCli.description": "Buscar CLIs de IA instalados (claude, codex, gemini)",
   "integrations.detectCli.button": "Detectar",
   "integrations.aiProviders.cliProviders": "Proveedores de CLI",
   "integrations.aiProviders.restProviders": "Proveedores de API REST",

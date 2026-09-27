@@ -393,7 +393,7 @@
   "integrations.installMcp.legacyHint": "Cet outil est abandonné. Supprimez l'entrée VMark restante.",
   "integrations.group.aiProviders": "Fournisseurs IA",
   "integrations.detectCli.label": "Détecter les fournisseurs CLI",
-  "integrations.detectCli.description": "Rechercher les CLI IA installés (claude, codex, gemini, ollama)",
+  "integrations.detectCli.description": "Rechercher les CLI IA installés (claude, codex, gemini)",
   "integrations.detectCli.button": "Détecter",
   "integrations.aiProviders.cliProviders": "Fournisseurs CLI",
   "integrations.aiProviders.restProviders": "Fournisseurs API REST",

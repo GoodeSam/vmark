@@ -393,7 +393,7 @@
   "integrations.installMcp.legacyHint": "このツールは提供が終了しました。残っている VMark エントリを削除してください。",
   "integrations.group.aiProviders": "AIプロバイダー",
   "integrations.detectCli.label": "CLIプロバイダーを検出",
-  "integrations.detectCli.description": "インストール済みのAI CLI（claude、codex、gemini、ollama）をスキャンする",
+  "integrations.detectCli.description": "インストール済みのAI CLI（claude、codex、gemini）をスキャンする",
   "integrations.detectCli.button": "検出",
   "integrations.aiProviders.cliProviders": "CLIプロバイダー",
   "integrations.aiProviders.restProviders": "REST APIプロバイダー",
