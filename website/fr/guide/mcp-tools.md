@@ -439,7 +439,7 @@ l'autorisez pas, `start` retourne `needsApproval`&nbsp;; une fois que vous l'ave
 arme un shim de capture dormant du monde de la page et commence à enregistrer les **clics et
 saisies de champ** que vous effectuez. `stop` retourne `{source, inputs, eventCount}` — le
 `source` est un texte de workflow que vous pouvez enregistrer ou passer directement à
-[`workflow_run`](#workflow-run).
+[`workflow_run`](#workflow-run-workflow-cancel).
 
 L'enregistrement est **sans valeurs par construction**, et il ne s'agit pas d'un filtre qui
 fait confiance à la page&nbsp;: rien de ce que vous saisissez n'est jamais capturé. Chaque

@@ -40,7 +40,7 @@ Le refus strict à 50 Mo n'est pas modifiable par l'utilisateur. La webview ne p
 
 - Si vous devez continuer à éditer un fichier très volumineux en WYSIWYG, envisagez de le diviser en fichiers plus petits liés depuis un document d'index. Le markdown fonctionne bien comme un ensemble de petits chapitres.
 - Si vous avez seulement besoin de lire ou de rechercher dans un fichier volumineux, le mode Source avec la règle de numéros de ligne et `Find` (`Mod + F`) est généralement le flux de travail le plus rapide.
-- `Format > Formater le texte CJK` et les autres commandes appliquées à l'ensemble du document fonctionnent toujours correctement sur les documents en mode Source.
+- **Format → CJK → Mettre en forme le fichier entier** et les autres commandes appliquées à l'ensemble du document fonctionnent toujours correctement sur les documents en mode Source.
 
 ## Cas particuliers
 
@@ -52,4 +52,4 @@ Le refus strict à 50 Mo n'est pas modifiable par l'utilisateur. La webview ne p
 ## Limitations connues
 
 - Les seuils sont des tailles en octets, qui sont un proxy pour le coût réel (nombre de blocs). Un fichier de 600 Ko avec des milliers de petits blocs peut être plus lent qu'un fichier de 1,2 Mo composé de longs paragraphes. Les valeurs par défaut sont conservatrices.
-- La phase C de l'initiative «&nbsp;fichiers volumineux&nbsp;» (rendu WYSIWYG différé) n'est pas encore livrée — voir `dev-docs/plans/20260422-large-file-open-ux.md` pour le statut.
+- Le WYSIWYG construit toujours l'intégralité du document à l'ouverture — il n'existe pas encore de rendu différé ou incrémental —, donc passer un fichier volumineux en WYSIWYG coûte tout le temps d'ouverture décrit ci-dessus.

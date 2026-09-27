@@ -9,6 +9,7 @@ VMark prend en charge l'édition multi-curseur puissante en modes WYSIWYG et Sou
 | Ajouter un curseur à la prochaine correspondance | `Mod + D` |
 | Ignorer la correspondance, passer à la suivante | `Mod + Shift + D` |
 | Ajouter des curseurs à toutes les correspondances | `Mod + Shift + L` |
+| Ajouter des curseurs à toutes les correspondances du bloc actuel | `Alt + Mod + Shift + L` |
 | Annuler le dernier ajout de curseur | `Alt + Mod + Z` |
 | Ajouter un curseur au-dessus | `Mod + Alt + Haut` |
 | Ajouter un curseur en-dessous | `Mod + Alt + Bas` |
@@ -44,8 +45,10 @@ Sélectionnez toutes les occurrences du mot ou de la sélection actuelle en une 
 
 1. Sélectionnez un mot ou du texte
 2. Appuyez sur `Mod + Shift + L`
-3. Toutes les occurrences correspondantes dans le bloc actuel sont sélectionnées
+3. Toutes les occurrences correspondantes dans le document sont sélectionnées — ou, à l'intérieur d'un bloc de code, toutes celles de ce bloc (voir [Portée](#portee))
 4. Tapez pour remplacer toutes les occurrences en même temps
+
+Pour rester dans le paragraphe, le titre ou l'élément de liste où vous vous trouvez, utilisez plutôt `Alt + Mod + Shift + L`.
 
 ### Alt + Clic
 
@@ -123,21 +126,21 @@ Cela vous permet de vous échapper de plusieurs régions formatées simultanéme
 - Si le presse-papiers a le même nombre de lignes que de curseurs, chaque ligne va à chaque curseur
 - Sinon, le contenu complet du presse-papiers est collé à tous les curseurs
 
-## Portée par bloc
+## Portée
 
-Les opérations multi-curseur sont **limitées au bloc actuel** pour éviter les modifications non intentionnelles dans des sections non liées.
+**Le code est délimité ; la prose ne l'est pas.** À l'intérieur d'un bloc de code (WYSIWYG) ou d'un bloc délimité (Source), les curseurs ne franchissent jamais la clôture — une correspondance sur un nom de variable dans un extrait ne peut pas placer de curseur dans un autre. Dans la prose ordinaire, `Mod + D` et `Mod + Shift + L` recherchent dans **tout le document**.
 
-### En mode WYSIWYG
-- Les curseurs ne peuvent pas traverser les frontières de blocs de code
-- Si votre curseur principal est à l'intérieur d'un bloc de code, les nouveaux curseurs restent dans ce bloc
+C'est souvent ce que vous voulez, mais pas toujours : dans un long document, une correspondance sur un mot courant place des curseurs dans des paragraphes situés loin hors de l'écran.
 
-### En mode Source
-- Les lignes vides agissent comme frontières de blocs
-- `Mod + D` et `Mod + Shift + L` correspondent uniquement dans le paragraphe actuel
+### Sélectionner toutes les occurrences du bloc
+
+`Alt + Mod + Shift + L` sélectionne toutes les correspondances **dans le bloc actuel uniquement** — le paragraphe, le titre ou l'élément de liste où se trouve votre curseur. En mode Source, ce sont les lignes vides qui délimitent un bloc ; en WYSIWYG, c'est le bloc englobant. À l'intérieur d'un bloc de code délimité, il se comporte exactement comme `Mod + Shift + L`, puisque le bloc délimité est déjà le bloc.
+
+Les deux raccourcis sont complémentaires, il ne s'agit pas d'un mode : `Mod + Shift + L` couvre toujours tout le document, donc rien de ce sur quoi vous comptez déjà ne change.
 
 <div class="feature-box">
-<strong>Pourquoi la portée par bloc ?</strong>
-<p>Cela évite de modifier accidentellement un nom de variable dans des sections de code non liées ou de changer du texte dans des paragraphes différents qui correspondent par hasard.</p>
+<strong>Lequel choisir ?</strong>
+<p>Utilisez la version limitée au bloc lorsque le mot est courant — pour renommer une variable mentionnée dans la prose, ou modifier le motif d'un seul élément de liste. Utilisez la version sur tout le document lorsque vous voulez vraiment agir partout.</p>
 </div>
 
 ## Réduire les curseurs
@@ -166,14 +169,15 @@ En mode sombre, les couleurs de curseur et de sélection s'ajustent automatiquem
 | `Alt + Mod + Z` (Annulation douce) | ✓ | ✓ |
 | `Mod + Alt + Haut/Bas` | ✓ | ✓ |
 | `Alt + Clic` | ✓ | ✓ |
-| Portée par bloc | Délimiteurs de code | Lignes vides |
+| Portée limitée aux blocs de code | Blocs de code | Blocs de code délimités |
+| Tout sélectionner limité au bloc | `Alt + Mod + Shift + L` | `Alt + Mod + Shift + L` |
 | Recherche avec retour à la ligne | ✓ | ✓ |
 
 ## Conseils et bonnes pratiques
 
 ### Renommer des variables
 1. Double-cliquez sur le nom de la variable
-2. `Mod + Shift + L` pour sélectionner toutes les occurrences dans le bloc
+2. `Alt + Mod + Shift + L` pour sélectionner toutes les correspondances de ce bloc (ou `Mod + Shift + L` pour tout le document)
 3. Tapez le nouveau nom
 
 ### Ajouter des préfixes/suffixes
@@ -192,7 +196,8 @@ En mode sombre, les couleurs de curseur et de sélection s'ajustent automatiquem
 |----------|-------------------|
 | Sélection prudente et progressive | `Mod + D` |
 | Ignorer une correspondance non souhaitée | `Mod + Shift + D` |
-| Remplacer tout dans le bloc | `Mod + Shift + L` |
+| Remplacer tout dans le bloc actuel | `Alt + Mod + Shift + L` |
+| Remplacer tout dans le document | `Mod + Shift + L` |
 | Annuler la dernière étape de curseur | `Alt + Mod + Z` |
 | Modifier des lignes consécutives | `Mod + Alt + Haut/Bas` |
 | Positions arbitraires | `Alt + Clic` |
@@ -202,7 +207,7 @@ En mode sombre, les couleurs de curseur et de sélection s'ajustent automatiquem
 
 - **Nœuds atomiques** : Impossible de placer des curseurs à l'intérieur des images, du contenu intégré ou des blocs mathématiques en mode WYSIWYG
 - **Saisie IME** : Lors de l'utilisation de méthodes de saisie (chinois, japonais, etc.), la composition n'affecte que le curseur principal
-- **Portée dans le document** : Les sélections sont limitées aux blocs, pas à l'intégralité du document
+- **Blocs de code** : À l'intérieur d'un bloc de code (WYSIWYG) ou d'un bloc délimité (Source), la recherche d'occurrences ne sort jamais de ce bloc
 
 ## Référence des raccourcis clavier
 

@@ -169,7 +169,7 @@ Modifier les liens de style wiki pour les connexions internes de documents.
 Actions d'édition rapides pour les tableaux.
 
 **Déclencheur :**
-- **WYSIWYG :** Utiliser la barre d'outils ou les raccourcis clavier
+- **WYSIWYG :** Clic droit sur une cellule de tableau (les mêmes actions sont aussi disponibles dans la barre d'outils et via des raccourcis clavier)
 - **Source :** Clic droit sur une cellule de tableau
 
 **Actions :**
@@ -183,6 +183,7 @@ Actions d'édition rapides pour les tableaux.
 | Aligner la colonne à gauche/centre/droite | Définir l'alignement pour la colonne actuelle |
 | Aligner tout à gauche/centre/droite | Définir l'alignement pour toutes les colonnes |
 | Formater le tableau | Aligner automatiquement les colonnes du tableau (embellir le markdown) |
+| Ajuster à la largeur / Largeur naturelle | WYSIWYG uniquement : fixer ce tableau à la largeur de l'éditeur avec des colonnes proportionnelles au contenu, ou lui rendre sa largeur naturelle |
 
 ## Fenêtre contextuelle de vérification orthographique
 

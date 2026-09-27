@@ -12,7 +12,7 @@ Markdown, texte brut et YAML/YML s'ouvrent toujours dans leurs éditeurs complet
 |---|---|
 | **Formats de données** | `.json`, `.jsonl`, `.toml` (volet source + arbre avec rendus de schéma Cargo / package.json / pyproject) |
 | **Diagrammes & SVG** | `.mmd`, `.svg` (volet source + rendu en direct désinfecté) |
-| **Aperçu HTML** | `.html`, `.htm` (iframe isolée — voir [Modèle de sécurité pour HTML](#modèle-de-sécurité-pour-html)) |
+| **Aperçu HTML** | `.html`, `.htm` (iframe isolée — voir [Modèle de sécurité pour HTML](#modele-de-securite-pour-html)) |
 | **Visionneuses de code** | 12 visionneuses de code en lecture seule (`.ts`, `.tsx`, `.js`, `.jsx`, `.py`, `.rs`, `.go`, `.css`, `.sh`, `.bash`, `.rb`, `.lua`) |
 
 Lorsqu'une catégorie est désactivée, les extensions correspondantes basculent vers le mode texte brut — le fichier s'ouvre quand même, simplement sans l'aperçu ni la vue schéma. Activez un basculement et le registre se reconstruit à la volée ; les onglets ouverts se remontent avec l'adaptateur approprié.
@@ -30,10 +30,59 @@ Au premier lancement après une mise à niveau vers la prise en charge multi-for
 | Données — TOML | `.toml` | nécessite le basculement **Formats de données** | source + arbre | arbre navigable, adapté au schéma (`Cargo.toml`, `pyproject.toml`) |
 | Diagrammes | `.mmd` | nécessite le basculement **Diagrammes & SVG** | source + rendu | diagramme Mermaid en direct |
 | Vecteur | `.svg` | nécessite le basculement **Diagrammes & SVG** | source + rendu | rendu intégré désinfecté |
-| Web | `.html`, `.htm` | nécessite le basculement **Aperçu HTML** | source + rendu | iframe isolée (attribut `sandbox=""` vide, DOMPurify, CSP) |
+| Web | `.html`, `.htm` | nécessite le basculement **Aperçu HTML** | source + rendu | iframe isolée (attribut `sandbox=""` vide, DOMPurify, CSP) ; le [mode approuvé](#apercu-html-approuve-sur-activation) s'active fichier par fichier |
 | Code (lecture seule) | `.ts`, `.tsx`, `.js`, `.jsx`, `.py`, `.rs`, `.go`, `.css`, `.sh`, `.bash`, `.rb`, `.lua` | nécessite le basculement **Visionneuses de code** | visionneuse (basculer pour modifier) | — |
+| Médias | images (`.png`, `.jpg`, `.gif`, `.webp`, `.heic`, `.tiff`, …), vidéo (`.mp4`, `.webm`, `.mov`, …), audio (`.mp3`, `.wav`, `.flac`, …) | toujours actif | visionneuse (lecture seule) | image native / `<video>` / `<audio>` |
 
-Les fichiers de code s'ouvrent en lecture seule avec une bannière proposant **Activer l'édition** ou **Ouvrir dans l'éditeur externe**.
+Les fichiers de code s'ouvrent en lecture seule avec une bannière proposant **Activer la modification** ou **Ouvrir dans l'éditeur externe**.
+
+## Modes d'affichage (Source / Divisé / Aperçu)
+
+Tout format doté d'un aperçu — HTML, SVG, Mermaid, JSON, YAML, TOML — s'ouvre avec
+un petit sélecteur **Source · Divisé · Aperçu** dans le coin supérieur droit :
+
+- **Source** — le volet source modifiable, en pleine largeur.
+- **Divisé** — la source et l'aperçu côte à côte (par défaut).
+- **Aperçu** — le résultat rendu, en pleine largeur. L'aperçu est un rendu en
+  **lecture seule** ; pour modifier, revenez à Source ou Divisé.
+
+Vous pouvez aussi basculer au clavier : **`F6`** alterne Source ⇄ Divisé et
+**`Shift + F6`** alterne Aperçu ⇄ Divisé (Divisé est l'état de base). Le choix est
+mémorisé par onglet. Définissez la valeur par défaut pour les fichiers nouvellement
+ouverts dans **Paramètres → Formats → Mode d'affichage par défaut**.
+
+Les formats sans aperçu (texte brut, visionneuses de code) affichent toujours la
+source seule, donc aucun sélecteur n'apparaît.
+
+## Fichiers multimédias (images, vidéo, audio)
+
+Ouvrez une image, une vidéo ou un fichier audio et VMark l'affiche directement — comme
+Coup d'œil (Quick Look) dans le Finder. Deux façons de prévisualiser :
+
+- **Ouvrez-le** (cliquez dessus dans l'explorateur de fichiers, utilisez **Fichier →
+  Ouvrir un fichier…**, ou faites-le glisser) pour l'afficher dans un onglet.
+- **Coup d'œil** : sélectionnez un fichier dans l'explorateur et appuyez sur **Espace**
+  pour un aperçu en surimpression sur toute la fenêtre. Appuyez sur **Espace**, **Échap**,
+  ou cliquez sur l'arrière-plan pour fermer.
+
+Fonctionnement et ce à quoi s'attendre :
+
+- **Jamais chargé comme texte.** Un média est binaire — VMark transmet le fichier
+  directement à la visionneuse via le pipeline d'assets natif. Il n'est jamais lu en
+  UTF-8, jamais conservé en mémoire comme document, et jamais modifiable ni enregistré.
+  Même des vidéos de plusieurs gigaoctets s'ouvrent instantanément et se parcourent
+  nativement.
+- **Les modifications sur disque apparaissent.** Réexportez l'image depuis votre
+  éditeur, ou laissez un script la réécrire, et l'onglet ouvert récupère la nouvelle
+  version de lui-même — sans rouvrir, sans fermer puis rouvrir le fichier.
+- **Large couverture de formats.** VMark confie le fichier au moteur multimédia de la
+  plateforme, donc la prise en charge suit ce que la webview de votre système sait
+  décoder. Sur macOS, c'est large — HEIC, TIFF, `.mov`/H.264 et FLAC sont tous lus.
+  Les formats que la webview ne sait pas décoder (par ex. `.mkv`, `.avi`, `.wmv`)
+  s'ouvrent quand même, avec un panneau de repli proposant **Ouvrir avec l'application
+  par défaut** et **Afficher dans le Finder**.
+- **Lecture seule.** Les onglets de médias ne deviennent jamais modifiés et se ferment
+  sans demande d'enregistrement.
 
 ## Aperçus adaptés au schéma
 
@@ -41,7 +90,7 @@ Lorsque le chemin ou le contenu correspond à un schéma connu, VMark substitue 
 
 ### Workflow GitHub Actions (`.github/workflows/*.yml`)
 
-S'ouvre avec la visualisation du workflow (DAG des jobs, déclencheurs, permissions).
+S'ouvre avec l'atelier de workflow : le canevas interactif du DAG des jobs plus un éditeur de formulaires structuré avec Enregistrer / Abandonner (voir le [guide de la visionneuse de workflow](/fr/guide/workflow-viewer)). Le volet source connaît lui aussi les workflows — complétion des expressions `${{ }}`, mise en évidence du job sur le canevas selon la position du curseur, et Cmd-clic sur les références `uses:` locales.
 
 - Détection par chemin : un fichier `.yml` / `.yaml` sous `.github/workflows/` est dirigé vers le moteur de rendu de workflow — même avec du YAML malformé, de sorte que vous voyez la vue dégradée avec des diagnostics plutôt qu'un arbre vide. (Le fichier doit d'abord atteindre l'adaptateur YAML ; cela nécessite l'extension `.yml`/`.yaml`.)
 - Détection par contenu : clés de premier niveau `on:` et `jobs:`.
@@ -71,13 +120,39 @@ S'ouvre avec un arbre de dépendances Python — à la fois PEP 621 (`[project]`
 ## Règles d'édition
 
 - **Markdown** propose la barre d'outils complète, le formatage des paragraphes, les règles CJK, les maths, mermaid, les notes de bas de page — toutes les fonctionnalités markdown existantes.
-- **Formats de données** (JSON, YAML, TOML) s'affichent dans le volet source avec des marqueurs d'erreur de parsing dans la marge ; l'aperçu en arbre se met à jour à la frappe. Les actions de menu propres au Markdown sont désactivées (formatage CJK, insertion de bloc, formatage de paragraphe) ; les contrôles pertinents au mode restent actifs.
-- **Formats visuels** (Mermaid, SVG, HTML) s'affichent dans le volet source avec la vue rendue dans le volet droit (avec rebond).
+- **Formats de données** (JSON, YAML, TOML) s'affichent dans le volet source avec des marqueurs d'erreur de parsing dans la marge ; l'aperçu en arbre se met à jour à la frappe. Les actions de menu propres au Markdown sont désactivées (formatage CJK, insertion de bloc, formatage de paragraphe) ; les contrôles pertinents au mode restent actifs. Le menu contextuel du clic droit est réduit aux actions du presse-papiers (Couper/Copier/Coller/Tout sélectionner).
+- **Formats visuels** (Mermaid, SVG, HTML) s'affichent dans le volet source avec la vue rendue dans le volet droit. L'aperçu est rendu avec une priorité inférieure à votre frappe : sur un document volumineux, il rattrape le curseur avec un léger décalage plutôt que de se re-rendre à chaque frappe.
 - **Formats de code** s'ouvrent comme des visionneuses à coloration syntaxique ; basculez pour modifier sur place ou ouvrir dans votre éditeur externe (voir ci-dessous).
+
+## Comment VMark détermine le type d'un fichier
+
+VMark traite **le markdown comme une liste d'autorisation, pas comme une valeur par défaut**. La règle, dans l'ordre :
+
+1. **Une extension de la famille markdown** (`.md`, `.markdown`, `.mdown`, `.mkd`, `.mdx`) s'ouvre dans l'éditeur markdown enrichi.
+2. **Une extension non-markdown enregistrée** (lorsque sa catégorie est activée — JSON, YAML, visionneuses de code, etc.) s'ouvre dans le volet source de ce format.
+3. **Tout le reste** — `.env`, `.env.local`, `Dockerfile`, `Makefile`, `.gitignore`, extensions inconnues — s'ouvre dans le **volet source en texte brut**, jamais dans l'éditeur markdown.
+
+Ainsi, un fichier de configuration n'est jamais rendu silencieusement comme du markdown. Un `.env.local` s'ouvre en texte brut, avec ses lignes `KEY=value`, ses commentaires `#` et ses tirets bas laissés exactement tels que saisis.
+
+Les familles de fichiers point sont reconnues en groupe : un remplacement sur `.env` couvre `.env.local`, `.env.production`, et ainsi de suite.
+
+### Coloration syntaxique des fichiers en texte brut
+
+Même lorsqu'un fichier s'ouvre en texte brut, VMark le colore lorsqu'il en reconnaît le type — `.env`/`.ini`/`.conf` (propriétés), `.sh`/`.bash` (shell), `Dockerfile`, `.toml`, `.sql`, `.diff`, et les langages habituels. C'est purement cosmétique ; cela ne change jamais l'éditeur dans lequel le fichier s'est ouvert, et cela fonctionne que la catégorie des visionneuses de code soit activée ou non.
+
+### Remplacement : « Définir le type de fichier »
+
+La détection est une valeur par défaut, pas une cage. Ouvrez la palette de commandes et exécutez :
+
+- **Définir le type de fichier : Texte brut** — force la famille du fichier courant à s'ouvrir en texte brut (par ex. empêcher le rendu d'un `.txt` que vous gardez comme notes brutes).
+- **Définir le type de fichier : Markdown** — affiche un fichier non-`.md` avec l'éditeur markdown (par ex. un `.txt` dans lequel vous écrivez réellement du markdown).
+- **Définir le type de fichier : Réinitialiser** — supprime le remplacement.
+
+Les remplacements sont mémorisés par famille de fichiers (par extension, ou par radical de fichier point pour des fichiers comme `.env`) et persistent d'une session à l'autre. Ils ont priorité sur les règles intégrées ci-dessus.
 
 ## Recherche, sauvegarde, recherche dans le contenu
 
-- **Cmd+O** filtre : une seule préférence « Tous les formats pris en charge » couvrant chaque format enregistré. Les filtres Enregistrer sous et l'extension de sauvegarde par défaut sont dérivés de l'adaptateur de format de l'onglet actif, donc sauvegarder un fichier `.toml` propose `.toml` comme extension.
+- **Fichier → Ouvrir un fichier…** propose deux filtres : **Tous les formats pris en charge** (chaque format enregistré) et **Markdown**. L'élément n'a pas de raccourci par défaut — `Mod + O` est **Ouverture rapide** —, mais vous pouvez lui en attribuer un dans **Paramètres → Raccourcis**. Les filtres Enregistrer sous et l'extension de sauvegarde par défaut sont dérivés de l'adaptateur de format de l'onglet actif, donc sauvegarder un fichier `.toml` propose `.toml` comme extension.
 - **Glisser-déposer** accepte toute extension enregistrée.
 - **Enregistrer sous** les filtres et l'extension par défaut à l'enregistrement sont dérivés de l'adaptateur de format de l'onglet actif.
 - **Cmd+Shift+H** recherche dans le contenu (« Rechercher dans les fichiers ») indexe chaque format textuel (markdown, txt, json, yaml, toml, html, svg, mermaid). Les fichiers de code sont exclus par défaut — ils sont en mode visionneuse.
@@ -91,6 +166,63 @@ Conformément à l'ADR-4 du plan multi-format, l'aperçu HTML repose sur trois c
 3. **Injection de `<meta>` CSP** — `default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; base-uri 'none';` — limite le chargement des ressources dans l'iframe.
 
 Le validateur signale les balises script, les URLs `javascript:` et les gestionnaires d'événements en ligne comme avertissements afin que vous puissiez voir ce qui est bloqué.
+
+La validation de sécurité formelle de cet aperçu est toujours en attente, et l'aperçu l'indique dans un avis au-dessus de la page rendue : **L'aperçu HTML est isolé mais en attente de validation OWASP.** Les trois couches ci-dessus sont en place ; l'étape restante consiste à les confirmer face aux charges XSS de l'OWASP dans la webview de l'application en cours d'exécution.
+
+### Aperçu HTML approuvé (sur activation)
+
+L'aperçu sécurisé ci-dessus est le comportement par défaut et ne change jamais. Pour un
+document que vous avez écrit vous-même — un laboratoire interactif, un tableau de bord
+local, une démo autonome — vous pouvez autoriser l'exécution de scripts pour **ce seul
+fichier, pour cette session**.
+
+Utilisez **Activer l'aperçu approuvé…** dans la barre au-dessus de l'aperçu. Un
+avertissement s'affiche d'abord ; rien ne s'exécute tant que vous n'avez pas confirmé.
+Tant qu'il est actif, la barre reste visible et indique **Approuvé — scripts activés**,
+et **Révoquer l'approbation** est à un clic.
+
+Ce que le mode approuvé accorde, et ce qu'il n'accorde pas :
+
+| | Aperçu approuvé |
+|---|---|
+| JavaScript, DOM, événements de pointeur, `requestAnimationFrame`, Web Audio | ✅ s'exécute |
+| Réseau (`fetch`, `XMLHttpRequest`, WebSocket, images/scripts distants) | ❌ bloqué par `default-src 'none'` |
+| La page de VMark elle-même, les commandes Tauri, votre système de fichiers | ❌ inaccessibles — le document s'exécute dans sa propre origine opaque |
+| Navigation de premier niveau, popups, envoi de formulaires, téléchargements, fenêtres modales | ❌ non accordés (`sandbox="allow-scripts"` et rien d'autre) |
+| Caméra, microphone, géolocalisation, presse-papiers | ❌ aucune fonctionnalité n'est déléguée au cadre |
+| `localStorage` / `sessionStorage` | ❌ indisponibles — une origine opaque n'a pas de stockage de même origine |
+| `eval` / `new Function` | ❌ non autorisés |
+
+Trois propriétés à connaître :
+
+- **L'approbation n'est jamais déduite.** Ni de l'extension `.html`, ni de la
+  provenance du fichier, ni d'un fichier voisin que vous avez déjà approuvé. Seule la
+  confirmation l'accorde.
+- **L'approbation n'est jamais conservée.** Fermez VMark et chaque autorisation
+  disparaît. Elle est aussi indisponible pour un document non enregistré, qui n'a pas
+  d'identité à laquelle rattacher une autorisation — enregistrez d'abord le fichier.
+- **Un aperçu approuvé ne se relance jamais de lui-même.** Modifier la source le marque
+  *Peut ne pas correspondre à la source actuelle* et attend **Recharger**, de sorte
+  qu'une simulation en cours n'est pas réinitialisée à chaque frappe. Le même marqueur
+  apparaît lorsque VMark ne peut pas savoir ce que le cadre exécute — après avoir quitté
+  l'onglet puis y être revenu, ou l'avoir fermé puis rouvert, l'aperçu continue
+  d'exécuter ce qui a été publié en dernier pour ce fichier, et il le signale donc plutôt
+  que de prétendre être à jour. **Recharger** republie le fichier dans son état actuel.
+
+::: info Windows le sert via une origine http locale
+WebView2 ne prend pas en charge les schémas d'URL personnalisés : sous Windows, le
+document approuvé est donc servi depuis `http://vmark-trusted.localhost` au lieu de
+`vmark-trusted://` — la même autorisation, le même sandbox et la même CSP, sous la forme
+d'URL que Tauri utilise pour tout protocole personnalisé sur cette plateforme. L'aperçu
+sécurisé fonctionne sur toutes les plateformes.
+:::
+
+Le contenu approuvé est servi depuis une origine `vmark-trusted://`
+(`http://vmark-trusted.localhost` sous Windows) avec sa propre CSP restrictive. Ce
+détour est nécessaire et non décoratif : un cadre `srcdoc`, `blob:` ou `data:` hérite
+de la politique `script-src 'self'` de VMark, et une CSP à l'intérieur du cadre ne peut
+que resserrer une politique héritée, jamais l'assouplir — aucun attribut d'iframe ne
+peut donc à lui seul faire exécuter un script en ligne.
 
 ## Ouvrir dans l'éditeur externe
 
@@ -123,7 +255,8 @@ Conformément aux objectifs hors périmètre du plan :
 
 - **Pas un éditeur de code.** Pas de LSP, pas d'autocomplétion, pas de refactoring, pas de débogueur, pas de gouttières git.
 - **Pas « tout format texte brut ».** Périmètre délimité — voir le tableau ci-dessus.
-- **Pas d'exécution de scripts HTML.** Rendu isolé uniquement.
+- **Pas d'exécution de scripts HTML par défaut.** Rendu isolé uniquement, sauf si vous
+  autorisez explicitement un fichier via l'[aperçu HTML approuvé](#apercu-html-approuve-sur-activation).
 - **Pas d'impression / export / copie en HTML pour les formats non-markdown** en v1.
 - **Pas encore pris en charge comme visionneuses de code** : Zig, Swift, Kotlin, Java, Elixir, OCaml et d'autres langages hors du jeu des 12 extensions. La règle de décision est « les langages que nous utilisons nous-mêmes » — ouvrez un ticket si vous souhaitez qu'un langage soit ajouté.
 

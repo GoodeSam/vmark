@@ -98,7 +98,7 @@ En mode Source, lorsque votre curseur est à l'intérieur d'un bloc de code ` ``
 | **Zoom** | Boutons `−` et `+`, ou `Cmd/Ctrl` + défilement (10% à 300%) |
 
 ::: info
-La prévisualisation de diagramme en mode Source doit être activée. Basculez-la avec le bouton **Prévisualisation de diagramme** dans la barre d'état.
+La prévisualisation de diagramme en mode Source est désactivée par défaut. Activez-la avec **Affichage → Afficher/masquer l'aperçu des diagrammes** (`Alt + Mod + P`) ou la palette de commandes.
 :::
 
 ## Validation SVG

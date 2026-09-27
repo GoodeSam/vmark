@@ -93,8 +93,8 @@ Si vous préférez conserver les fonctions système sur les touches F, vous pouv
 | Dupliquer la ligne | `Shift + Alt + Bas` |
 | Supprimer la ligne | `Mod + Shift + K` |
 | Joindre les lignes | `Mod + J` |
-| Trier les lignes croissant | `F4` |
-| Trier les lignes décroissant | `Shift + F4` |
+| Trier les lignes croissant | `F4` _(mode Source uniquement)_ |
+| Trier les lignes décroissant | `Shift + F4` _(mode Source uniquement)_ |
 
 ## Transformations de texte
 
@@ -314,10 +314,33 @@ Quand le terminal intégré est focalisé :
 | Action | Raccourci |
 |--------|----------|
 | Basculer le terminal | `` Ctrl + ` `` |
+| Focaliser le terminal ou l'éditeur | `` Ctrl + Shift + ` `` |
 | Copier | `Mod + C` (avec sélection) |
 | Coller | `Mod + V` |
+| Tout sélectionner (sortie du terminal uniquement) | `Mod + A` |
 | Effacer | `Mod + K` |
 | Rechercher | `Mod + F` |
+| Passer à la session 1–5 | `Mod + 1` à `Mod + 5` |
+| Agrandir la police du terminal | `Mod + =` |
+| Réduire la police du terminal | `Mod + -` |
+| Taille de police par défaut du terminal | `Mod + 0` |
+| Invite de commande précédente | `Mod + ↑` |
+| Invite de commande suivante | `Mod + ↓` |
+| Nouvelle ligne dans la ligne de saisie (Claude Code et outils similaires) | `Shift + Enter` |
+
+Quand le terminal est focalisé, `Mod + =`, `Mod + -` et `Mod + 0` redimensionnent la police du terminal au lieu de celle de l'éditeur.
+
+La navigation entre invites saute d'une invite de commande à l'autre dans l'historique de défilement et nécessite l'intégration shell (zsh ou bash).
+
+Sur macOS, le terminal traduit aussi pour le shell les combinaisons habituelles d'édition de texte :
+
+| Action | Raccourci |
+|--------|----------|
+| Déplacer d'un mot vers la gauche / droite | `Option + ←` / `Option + →` |
+| Aller au début / à la fin de la ligne | `Cmd + ←` / `Cmd + →` |
+| Supprimer la ligne de saisie (envoie `Ctrl + U`) | `Cmd + Backspace` |
+
+Sur macOS, les combinaisons `Ctrl` comme `Ctrl + A`, `Ctrl + R` et `Ctrl + W` sont transmises directement au shell.
 
 Quand la barre de recherche du terminal est ouverte :
 
@@ -334,10 +357,16 @@ Quand la barre de recherche du terminal est ouverte :
 ## Personnaliser les raccourcis
 
 1. Ouvrez les Paramètres avec `Mod + ,`
-2. Naviguez vers l'onglet **Raccourcis**
-3. Cliquez sur n'importe quel raccourci pour le modifier
-4. Appuyez sur la combinaison de touches souhaitée
-5. Les modifications sont enregistrées automatiquement
+2. Naviguez vers l'onglet **Raccourcis** (tapez dans le champ de recherche pour filtrer par nom, catégorie, description ou touche)
+3. Cliquez sur la touche affichée à côté d'un raccourci — ou sur **Non attribué** pour un raccourci qui n'a pas encore de touche
+4. Appuyez sur la combinaison de touches souhaitée, puis cliquez sur **Assigner** (`Échap` annule)
+
+La boîte de dialogue vous avertit avant que vous n'attribuiez une combinaison :
+
+- **Conflit** — la combinaison est déjà utilisée par un autre raccourci, qu'elle nomme. Vous pouvez tout de même choisir **Assigner quand même**.
+- **Non prise en charge** — VMark ne peut pas utiliser cette combinaison, elle ne peut donc pas être attribuée. Essayez-en une autre.
+
+Un raccourci personnalisé est mis en évidence et reçoit un bouton **Rétablir les valeurs par défaut**. **Tout réinitialiser** restaure toutes les valeurs par défaut après confirmation. **Exporter** enregistre vos raccourcis dans un fichier JSON (`vmark-shortcuts.json`) et **Importer** en charge un ; si une entrée du fichier est invalide, rien n'est importé et les problèmes sont listés.
 
 ::: tip
 Les raccourcis se synchronisent avec les accélérateurs de menu le cas échéant, les éléments de menu afficheront donc vos raccourcis personnalisés.

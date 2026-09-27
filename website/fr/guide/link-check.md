@@ -1,6 +1,6 @@
 # Vérification des liens
 
-VMark vérifie que les cibles locales de liens et d'images dans votre markdown existent réellement sur le disque. S'exécute aux côtés du [moteur de lint markdown](/fr/guide/lint) sur `Cmd-Shift-L` ou **Outils → Vérifier le Markdown**.
+VMark vérifie que les cibles locales de liens et d'images dans votre markdown existent réellement sur le disque. S'exécute aux côtés du [moteur de lint markdown](/fr/guide/lint) sur `Alt + Mod + V` ou **Affichage → Vérifier le Markdown**.
 
 ## Ce qui est vérifié
 
@@ -8,26 +8,27 @@ Pour chaque lien et image local dans le document&nbsp;:
 
 - `[texte](./other.md)` — le fichier `./other.md` se résout et existe
 - `![alt](./image.png)` — le fichier image existe
-- `[texte](./other.md#section)` — le fichier existe (la vérification d'ancre est gérée par la [règle `linkFragments`](/fr/guide/lint#r%C3%A9f%C3%A9rence-des-r%C3%A8gles))
+- `[texte](./other.md#section)` — le fichier existe (la vérification d'ancre est gérée par la [règle `linkFragments`](/fr/guide/lint#reference-des-regles))
 
-Lorsqu'une cible est manquante, le texte du lien est souligné par un trait rouge et une entrée apparaît dans le badge de lint / la navigation F2.
+Lorsqu'une cible est manquante, une entrée apparaît dans le badge de lint et dans la navigation `F2` / `Shift + F2`. Son affichage dépend du mode&nbsp;: en mode Source, le lien reçoit le soulignement de diagnostic rouge de CodeMirror&nbsp;; en mode WYSIWYG, tout le bloc contenant le lien est marqué d'une barre rouge le long de son bord gauche et d'une légère teinte — les marques de lint en WYSIWYG sont au niveau du bloc, jamais un soulignement en ligne.
 
 ## Ce qui est ignoré
 
 - **Liens fragments uniquement** (`#ancre`) — gérés par la règle `linkFragments` qui vérifie par rapport aux titres du document actuel
-- **URL externes** — `http://`, `https://`, `ftp://`, `mailto:`, `tel:`, `data:`, `file:`
+- **URL externes** — tout schéma d'URI (`http:`, `https:`, `mailto:`, `obsidian:`, `vscode:`, …) et les URL relatives au protocole `//host/…`. Les chemins Windows avec lettre de lecteur (`C:\…`, `C:/…`) sont tout de même vérifiés comme chemins de fichiers
 - **Documents sans titre** — sans chemin de fichier enregistré, les URL relatives ne peuvent pas être résolues par rapport à un répertoire
+- **Chemins réseau et chemins relatifs à un lecteur** — un chemin UNC (`\\server\share\…`) n'est jamais consulté, car le vérifier sous Windows contacterait cet hôte via le réseau (et pourrait lui proposer vos identifiants de connexion Windows). Un chemin relatif à un lecteur comme `C:file.md` (une lettre de lecteur sans barre oblique après) est également ignoré&nbsp;: il est relatif au répertoire de travail de l'application, pas au document
 
 ## Comment fonctionne la résolution
 
-La vérification des liens résout les chemins par rapport au répertoire du fichier source&nbsp;:
+La vérification des liens résout un chemin relatif par rapport au répertoire du fichier source, et prend un chemin absolu comme le fichier qu'il désigne&nbsp;:
 
 | Lien dans `/repo/docs/intro.md` | Se résout en |
 |---|---|
 | `[a](./other.md)` | `/repo/docs/other.md` |
 | `[a](../shared.md)` | `/repo/shared.md` |
 | `[a](images/logo.png)` | `/repo/docs/images/logo.png` |
-| `[a](/docs/intro.md)` | `/repo/docs/docs/intro.md` (enraciné comme relatif dans le répertoire du fichier) |
+| `[a](/docs/intro.md)` | `/docs/intro.md` (un chemin absolu désigne ce fichier&nbsp;; sous Windows, il se situe sur le lecteur du document lui-même) |
 
 Les fragments sont supprimés avant la recherche du fichier — `[a](./other.md#section)` vérifie uniquement `./other.md`.
 

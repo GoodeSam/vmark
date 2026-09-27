@@ -28,9 +28,9 @@ Tapez un bloc de code délimité avec l'identifiant de langage `markmap` :
 ```text
 ````
 
-### Utiliser l'outil MCP
+### Depuis un assistant IA
 
-Utilisez l'outil MCP `media` avec `action: "markmap"` et le paramètre `code` contenant des titres Markdown.
+Il n'existe pas d'outil dédié aux cartes mentales. Un client IA connecté via le [serveur MCP de VMark](/fr/guide/mcp-setup) insère une carte mentale de la même manière que n'importe quel autre Markdown — en écrivant un bloc de code ` ```markmap ` dans le document avec l'outil `document` ou `selection`.
 
 ## Modes d'édition
 
@@ -38,15 +38,15 @@ Utilisez l'outil MCP `media` avec `action: "markmap"` et le paramètre `code` co
 
 En mode WYSIWYG, les cartes mentales Markmap sont rendues comme des arbres SVG interactifs. Vous pouvez :
 
-- **Panoramique** en défilant ou en cliquant et glissant
-- **Zoom** en maintenant `Cmd`/`Ctrl` et en défilant
+- **Panoramique** en cliquant et glissant (un simple défilement fait défiler le document, pas la carte mentale)
+- **Zoom** en maintenant `Ctrl` et en défilant
 - **Réduire/développer** les nœuds en cliquant sur le cercle à chaque branche
 - **Ajuster** la vue en utilisant le bouton d'ajustement (coin supérieur droit au survol)
 - **Double-cliquer** sur la carte mentale pour modifier le source
 
 ### Mode Source avec prévisualisation en direct
 
-En mode Source, un panneau de prévisualisation flottant apparaît lorsque votre curseur est à l'intérieur d'un bloc de code markmap, se mettant à jour au fil de la saisie.
+En mode Source, un panneau de prévisualisation flottant affiche la carte mentale tant que votre curseur est à l'intérieur d'un bloc de code markmap, en se mettant à jour au fil de la saisie. La prévisualisation est désactivée par défaut — activez-la avec **Affichage → Afficher/masquer l'aperçu des diagrammes** (`Alt + Mod + P`) ou la palette de commandes.
 
 ## Format d'entrée
 
@@ -121,8 +121,8 @@ Voici un markmap interactif rendu directement sur cette page — essayez de fair
 
 | Action | Comment |
 |--------|---------|
-| **Panoramique** | Défiler ou cliquer et glisser |
-| **Zoom** | `Cmd`/`Ctrl` + défilement |
+| **Panoramique** | Cliquer et glisser |
+| **Zoom** | `Ctrl` + défilement |
 | **Réduire le nœud** | Cliquer sur le cercle à un point de branche |
 | **Développer le nœud** | Cliquer à nouveau sur le cercle |
 | **Ajuster à la vue** | Cliquer sur le bouton d'ajustement (en haut à droite au survol) |
