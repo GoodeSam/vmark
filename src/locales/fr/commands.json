@@ -12,7 +12,7 @@
   "genies.togglePicker": "Basculer le sélecteur de génies",
   "genies.openPicker": "Rechercher des génies",
   "export.html": "Exporter en HTML",
-  "export.pdf": "Imprimer en PDF",
+  "export.pdf": "Imprimer…",
   "export.pdfNative": "Exporter en PDF",
   "export.copyHtml": "Copier en HTML",
   "export.pandocHint": "Installer Pandoc",

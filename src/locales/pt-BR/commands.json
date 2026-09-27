@@ -12,7 +12,7 @@
   "genies.togglePicker": "Alternar seletor de assistentes",
   "genies.openPicker": "Buscar assistentes",
   "export.html": "Exportar como HTML",
-  "export.pdf": "Imprimir para PDF",
+  "export.pdf": "Imprimir…",
   "export.pdfNative": "Exportar como PDF",
   "export.copyHtml": "Copiar como HTML",
   "export.pandocHint": "Instalar Pandoc",

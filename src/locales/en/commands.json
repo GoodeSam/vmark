@@ -12,7 +12,7 @@
   "genies.togglePicker": "Toggle Genie Picker",
   "genies.openPicker": "Search Genies",
   "export.html": "Export as HTML",
-  "export.pdf": "Print to PDF",
+  "export.pdf": "Print…",
   "export.pdfNative": "Export as PDF",
   "export.copyHtml": "Copy as HTML",
   "export.pandocHint": "Install Pandoc",
