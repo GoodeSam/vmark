@@ -503,3 +503,32 @@ describe("setGraph during a run", () => {
     expect(useWorkflowStore.getState().preview.lastRunOutcome).toBe("completed");
   });
 });
+
+/* WI-LX2.4 — deleting two steps saves two deletions (dedup used to keep one). */
+describe("structural step edits survive the queue end to end", () => {
+  const THREE_STEPS = [
+    "name: CI",
+    "on: push",
+    "jobs:",
+    "  build:",
+    "    runs-on: ubuntu-latest",
+    "    steps:",
+    "      - run: a",
+    "      - run: b",
+    "      - run: c",
+    "",
+  ].join("\n");
+
+  it("two deletes at index 0 leave only the third step", () => {
+    const store = useWorkflowStore.getState();
+    store.bindToDocument("doc-steps");
+    store.queuePatch({ kind: "step.delete", jobId: "build", stepIndex: 0 } as IRPatch);
+    store.queuePatch({ kind: "step.delete", jobId: "build", stepIndex: 0 } as IRPatch);
+    const result = useWorkflowStore.getState().serializeWorkflowEdits(THREE_STEPS, "doc-steps");
+    expect(result.status).toBe("applied");
+    const yaml = result.status === "applied" ? result.yaml : "";
+    expect(yaml).toContain("run: c");
+    expect(yaml).not.toContain("run: a");
+    expect(yaml).not.toContain("run: b");
+  });
+});

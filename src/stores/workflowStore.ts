@@ -32,9 +32,9 @@ import type { IRPatch } from "@/lib/ghaWorkflow/save/mutators";
 import { serializeWithPatches, type WorkflowSerializeResult } from "./workflowSerialize";
 import {
   bindEditDocument,
+  cancelTarget,
   dedupQueue,
   mirrorActiveQueue,
-  patchTarget,
   renameEditDocument,
   type EditSlice,
 } from "./workflowEditQueue";
@@ -203,9 +203,8 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => {
       }),
     cancelPatchForTarget: (target) =>
       set((s) => {
-        const t = patchTarget(target);
-        const next = s.edit.pendingPatches.filter((p) => patchTarget(p) !== t);
-        if (next.length === s.edit.pendingPatches.length) return {};
+        const next = cancelTarget(s.edit.pendingPatches, target);
+        if (next === s.edit.pendingPatches) return {};
         return { edit: mirrorActiveQueue(s.edit, next) };
       }),
     clearPatches: () =>

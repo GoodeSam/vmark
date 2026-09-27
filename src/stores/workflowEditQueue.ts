@@ -65,12 +65,63 @@ export function patchTarget(patch: IRPatch): string {
   }
 }
 
-/** Append `next`, dropping any earlier patch that writes the same target. */
+/** A patch that renumbers a job's steps: every one is its own operation. */
+function shiftsSteps(p: IRPatch): p is Extract<IRPatch, { kind: "step.insert" | "step.delete" | "step.move" }> {
+  return p.kind === "step.insert" || p.kind === "step.delete" || p.kind === "step.move";
+}
+
+/** The job whose step INDICES `p` is written against, if it addresses a step. */
+function stepFrame(p: IRPatch): string | null {
+  switch (p.kind) {
+    case "step.set":
+    case "with.set":
+    case "with.remove":
+      return p.jobId;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Index of the last queued patch that renumbers `jobId`'s steps, or -1. A
+ * step edit queued before it addressed a different step by the same index.
+ */
+function lastShift(queue: readonly IRPatch[], jobId: string | null): number {
+  if (jobId === null) return -1;
+  for (let i = queue.length - 1; i >= 0; i--) {
+    const p = queue[i];
+    if (shiftsSteps(p) && p.jobId === jobId) return i;
+  }
+  return -1;
+}
+
+/**
+ * Append `next`, dropping any earlier patch that writes the same target —
+ * within the same coordinate frame (WI-LX2.4). An insert, delete or move is
+ * never collapsed: two deletes at index 0 delete two steps. And a step edit
+ * only replaces an edit queued AFTER the last renumbering of that job; one
+ * queued before it addressed whatever step then had that index.
+ */
 export function dedupQueue(queue: IRPatch[], next: IRPatch): IRPatch[] {
+  if (shiftsSteps(next)) return [...queue, next];
   const target = patchTarget(next);
-  const filtered = queue.filter((p) => patchTarget(p) !== target);
+  const barrier = lastShift(queue, stepFrame(next));
+  const filtered = queue.filter((p, i) => i <= barrier || patchTarget(p) !== target);
   filtered.push(next);
   return filtered;
+}
+
+/**
+ * Drop the queued edit(s) for `target` in the current frame — what a field
+ * does when its value returns to the original. Edits queued before the last
+ * renumbering of the job address another step and are kept. Same array back
+ * when nothing matched.
+ */
+export function cancelTarget(queue: IRPatch[], target: IRPatch): IRPatch[] {
+  const key = patchTarget(target);
+  const barrier = lastShift(queue, stepFrame(target));
+  const next = queue.filter((p, i) => i <= barrier || patchTarget(p) !== key);
+  return next.length === queue.length ? queue : next;
 }
 
 /** Set the bound document's queue, keeping `patchesByDocument` in step with it. */
