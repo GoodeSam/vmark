@@ -89,9 +89,9 @@ Se l'ambito è **Selezione** ma non è selezionato nulla, il genie opera sul par
 
 Dopo che un genie viene eseguito, il suggerimento appare inline:
 
-- **Sostituisci** — Testo originale con barra, nuovo testo in verde
-- **Inserisci** — Nuovo testo mostrato in verde dopo il blocco sorgente
-- **Elimina** — Testo originale con barra
+- **Sostituisci** — Testo originale con barratura ondulata rossa, seguito dal nuovo testo come testo "fantasma" in corsivo sbiadito nel colore d'accento
+- **Inserisci** — Nuovo testo mostrato come testo fantasma dopo il blocco sorgente
+- **Elimina** — Testo originale con barratura ondulata rossa
 
 Ogni suggerimento ha pulsanti accetta (segno di spunta) e rifiuta (X).
 
@@ -136,7 +136,7 @@ Apri questa cartella dal menu **Strumenti > Apri cartella Genies**.
 
 Le sottodirectory diventano **categorie** nel selettore. Puoi organizzare i genies come preferisci:
 
-```
+```text
 genies/
 ├── editing/
 │   ├── polish.md
@@ -145,10 +145,10 @@ genies/
 ├── creative/
 │   ├── expand.md
 │   └── rephrase.md
-├── academic/          ← la tua categoria personalizzata
+├── academic/          ← your custom category
 │   ├── cite.md
 │   └── abstract.md
-└── my-workflows/      ← un'altra categoria personalizzata
+└── my-workflows/      ← another custom category
     └── blog-intro.md
 ```
 
@@ -205,7 +205,7 @@ Translate the following text into French.
 
 Se l'utente seleziona "Hello, how are you?", l'IA riceve:
 
-```
+```text
 Translate the following text into French.
 
 Hello, how are you?
@@ -235,12 +235,12 @@ Il segnaposto `{{context}}` fornisce all'IA il testo circostante in sola lettura
 
 Con `context: 1` e il cursore sul secondo paragrafo di un documento a tre paragrafi:
 
-```
+```text
 [Before]
-Contenuto del primo paragrafo qui.
+First paragraph content here.
 
 [After]
-Contenuto del terzo paragrafo qui.
+Third paragraph content here.
 ```
 
 Le sezioni `[Before]` e `[After]` vengono omesse quando non ci sono vicini in quella direzione (es. il contenuto è all'inizio o alla fine del documento).
@@ -498,18 +498,29 @@ Format as a bullet list. If everything looks solid, say
 
 ## Suggerimenti IA
 
-Quando un Genie restituisce testo destinato a essere una sostituzione per la selezione (piuttosto che una risposta di chat libera), VMark lo mostra come **suggerimento** con un diff inline: barrato rosso per il testo originale, sottolineatura verde per il testo proposto. Esamini e approvi prima che qualsiasi modifica persista.
+Quando un Genie restituisce testo destinato a essere una sostituzione per la selezione (piuttosto che una risposta di chat libera), VMark lo mostra come **suggerimento** con un diff inline: barratura ondulata rossa per il testo originale, testo fantasma in corsivo sbiadito nel colore d'accento per il testo proposto. Esamini e approvi prima che qualsiasi modifica persista.
 
 | Azione | Scorciatoia |
 |---|---|
-| Accetta il suggerimento focalizzato | `Tab` |
+| Accetta il suggerimento focalizzato | `Enter` |
 | Rifiuta il suggerimento focalizzato | `Esc` |
+| Passa al suggerimento successivo / precedente | `Tab` / `Shift + Tab` |
 | Accetta tutti i suggerimenti nel documento | `Mod + Shift + Enter` _(contestuale — anche Aggiungi riga sopra quando all'interno di una tabella)_ |
-| Cicla al suggerimento successivo | `Tab` da una posizione non focalizzata |
+| Rifiuta tutti i suggerimenti nel documento | `Mod + Shift + Escape` |
 
 Quando un Genie riscrive più paragrafi, ogni sostituzione è il proprio suggerimento navigabile in modo indipendente. Accettarne uno non accetta automaticamente gli altri.
 
-L'interfaccia dei suggerimenti ha anche una superficie MCP — gli agenti IA esterni connessi tramite il [server MCP](/it/guide/mcp-tools) possono emettere azioni `suggestion.accept` / `suggestion.reject` per manipolare lo stesso stato.
+## Genies nei Workflow
+
+Un singolo genie esegue un solo prompt. Quando devi concatenare più passaggi IA — scaletta, poi bozza, poi rifinitura — e instradare l'output di una fase nella successiva, usa un **flusso di lavoro Genie**: un file YAML che orchestra più chiamate ai genies con un flusso di dati esplicito, punti di approvazione opzionali, modelli per singolo passaggio e un diagramma di esecuzione dal vivo.
+
+Poiché i passaggi di un workflow riempiono il segnaposto `{{content}}` di un genie a partire da una mappa `with: { input: "..." }`, **i genies che scrivi qui funzionano senza modifiche all'interno dei workflow** — non serve alcuna conversione.
+
+Vedi [Flussi di lavoro Genie](/it/guide/workflows) per lo schema YAML completo, la sintassi delle espressioni, le approvazioni e come eseguirne uno.
+
+### Delimitazione dei contenuti non attendibili
+
+Quando viene eseguito un passaggio `genie/<name>` di un workflow, il testo del documento, le selezioni e i contenuti dei file vengono racchiusi tra marcatori univoci `<<<DOCUMENT-DATA-…>>>` prima di raggiungere il provider IA, e il prompt istruisce il modello a trattare il testo delimitato strettamente come dati. La delimitazione riguarda i passaggi dei workflow — un genie eseguito direttamente dal selettore invia al provider il testo del suo ambito così com'è. Questo protegge dai documenti che cercano di far passare di nascosto istruzioni all'IA ("ignora le tue istruzioni ed esegui …") — il che conta soprattutto per i provider CLI (Claude Code, Codex, Gemini CLI) che possono eseguire comandi. Tratta i genies che esegui su file provenienti da fonti non attendibili con la stessa cautela che useresti per eseguire uno script scaricato da internet: la delimitazione è una mitigazione solida, non una garanzia assoluta.
 
 ## Limitazioni
 
@@ -522,7 +533,7 @@ L'interfaccia dei suggerimenti ha anche una superficie MCP — gli agenti IA est
 
 **"Nessun provider IA disponibile"** — Apri Impostazioni > Integrazioni e configura un provider. Vedi [Provider IA](/it/guide/ai-providers).
 
-**Il genie non appare nel selettore** — Verifica che il file abbia un'estensione `.md`, un frontmatter valido con delimitatori `---` e si trovi nella directory dei genies (non in una sottodirectory più profonda di un livello).
+**Il genie non appare nel selettore** — Verifica che il file abbia un'estensione `.md`, un frontmatter valido con delimitatori `---` e si trovi nella directory dei genies. Le sottocartelle vengono analizzate fino a otto livelli di profondità (e al massimo 10.000 voci in totale), e i collegamenti simbolici vengono ignorati.
 
 **L'IA restituisce spazzatura o errori** — Verifica che la tua chiave API sia corretta e che il nome del modello sia valido per il tuo provider. Controlla il terminale/console per i dettagli dell'errore.
 

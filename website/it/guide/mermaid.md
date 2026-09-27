@@ -8,7 +8,11 @@ VMark supporta i diagrammi [Mermaid](https://mermaid.js.org/) per creare diagram
 
 ## Inserimento di un Diagramma
 
-### Usando la Scorciatoia da Tastiera
+### Usando il Menu o la Scorciatoia
+
+Scegli **Inserisci → Diagramma**, oppure premi `Alt + Mod + Shift + D`. VMark inserisce un blocco di codice `mermaid` con un diagramma di flusso iniziale da modificare. Se è selezionato del testo, la selezione diventa invece il sorgente del diagramma.
+
+### Digitando un Blocco di Codice
 
 Digita un blocco di codice delimitato con l'identificatore di linguaggio `mermaid`:
 
@@ -21,21 +25,15 @@ graph TD
 ```
 ````
 
-### Usando il Comando Slash
-
-1. Digita `/` per aprire il menu dei comandi
-2. Seleziona **Diagramma Mermaid**
-3. Viene inserito un diagramma template da modificare
-
 ## Modalità di Modifica
 
 ### Modalità Rich Text (WYSIWYG)
 
-In modalità WYSIWYG, i diagrammi Mermaid vengono renderizzati inline mentre digiti. Fai clic su un diagramma per modificarne il codice sorgente.
+In modalità WYSIWYG, i diagrammi Mermaid vengono renderizzati inline. Fai doppio clic su un diagramma per modificarne il codice sorgente; l'intestazione di modifica ha i pulsanti **Copia**, **Annulla** e **Salva**.
 
 ### Modalità Sorgente con Anteprima Live
 
-In modalità Sorgente, un pannello di anteprima fluttuante appare quando il cursore è all'interno di un blocco di codice mermaid:
+In modalità Sorgente, un pannello di anteprima fluttuante mostra il diagramma mentre il cursore è all'interno di un blocco di codice mermaid. L'anteprima è **disattivata per impostazione predefinita** — attivala con **Vista → Mostra/Nascondi anteprima diagramma** (`Alt + Mod + P`) o dalla palette dei comandi. Resta attiva per quella finestra finché non la disattivi di nuovo.
 
 ![Pannello di anteprima live in modalità Sorgente](/screenshots/mermaid-source-preview.png)
 
@@ -44,7 +42,7 @@ In modalità Sorgente, un pannello di anteprima fluttuante appare quando il curs
 | **Anteprima Live** | Visualizza il diagramma renderizzato mentre digiti (debounce di 200ms) |
 | **Trascina per Spostare** | Trascina l'intestazione per riposizionare l'anteprima |
 | **Ridimensiona** | Trascina qualsiasi bordo o angolo per ridimensionare |
-| **Zoom** | Usa i pulsanti `−` e `+` (dal 10% al 300%) |
+| **Zoom** | Usa i pulsanti `−` e `+`, oppure `Cmd/Ctrl` + scroll (dal 10% al 300%) |
 
 Il pannello di anteprima ricorda la sua posizione se lo sposti, rendendo facile organizzare il tuo workspace.
 
@@ -235,7 +233,7 @@ In modalità WYSIWYG, i diagrammi renderizzati supportano la navigazione interat
 
 | Azione | Come |
 |--------|------|
-| **Pan** | Scorri o fai clic e trascina il diagramma |
+| **Pan** | Fai clic e trascina il diagramma (un normale scorrimento fa scorrere il documento, non il diagramma) |
 | **Zoom** | Tieni premuto `Cmd` (macOS) o `Ctrl` (Windows/Linux) e scorri |
 | **Reset** | Fai clic sul pulsante reset che appare al passaggio (angolo in alto a destra) |
 
@@ -264,7 +262,7 @@ Quando si esporta l'intero documento in HTML o PDF, i diagrammi Mermaid vengono 
 
 ## Correzione dei Diagrammi Generati dall'IA
 
-VMark usa **Mermaid v11**, che ha un parser più rigoroso (Langium) rispetto alle versioni precedenti. Gli strumenti IA (ChatGPT, Claude, Copilot, ecc.) spesso generano sintassi che funzionava nelle versioni precedenti di Mermaid ma che non funziona in v11. Ecco i problemi più comuni e come risolverli.
+VMark usa **Mermaid v12**, che mantiene il parser più rigoroso (Langium) introdotto con v11. Gli strumenti IA (ChatGPT, Claude, Copilot, ecc.) spesso generano sintassi che funzionava nelle versioni precedenti di Mermaid ma che non funziona in v11 e successive. Ecco i problemi più comuni e come risolverli.
 
 ### 1. Etichette Senza Virgolette con Caratteri Speciali
 
@@ -290,7 +288,7 @@ flowchart TD
 
 ### 2. Punto e Virgola Finale
 
-I modelli IA a volte aggiungono punto e virgola alla fine delle righe. Mermaid v11 non li consente.
+I modelli IA a volte aggiungono punto e virgola alla fine delle righe. Mermaid v11 e le versioni successive non li consentono.
 
 ````markdown
 <!-- Non funziona -->

@@ -169,8 +169,8 @@ Modifica i collegamenti in stile wiki per le connessioni interne ai documenti.
 Azioni rapide per la modifica delle tabelle.
 
 **Attivazione:**
-- **WYSIWYG:** Usa la barra degli strumenti o le scorciatoie da tastiera
-- **Sorgente:** Clic destro sulla cella della tabella
+- **WYSIWYG:** Clic destro su una cella della tabella (le stesse azioni sono disponibili anche nella barra degli strumenti e hanno scorciatoie da tastiera)
+- **Sorgente:** Clic destro su una cella della tabella
 
 **Azioni:**
 | Azione | Descrizione |
@@ -183,6 +183,7 @@ Azioni rapide per la modifica delle tabelle.
 | Allinea Colonna Sinistra/Centro/Destra | Imposta l'allineamento per la colonna corrente |
 | Allinea Tutto Sinistra/Centro/Destra | Imposta l'allineamento per tutte le colonne |
 | Formatta Tabella | Allinea automaticamente le colonne della tabella (abbellisci markdown) |
+| Adatta alla larghezza / Larghezza naturale | Solo WYSIWYG: fissa questa tabella alla larghezza dell'editor con colonne proporzionali al contenuto, oppure riportala alla sua larghezza naturale |
 
 ## Popup Controllo Ortografico
 

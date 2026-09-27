@@ -1,13 +1,13 @@
 # Lint markdown
 
-VMark include un motore di lint integrato che intercetta **problemi di correttezza**, non preferenze di stile. Il lint viene eseguito su richiesta (Cmd-Shift-L o **Strumenti → Controlla Markdown**) e mostra i risultati inline come ondulati nel margine, con un badge nella barra di stato e navigazione F2 tra i risultati.
+VMark include un motore di lint integrato che intercetta **problemi di correttezza**, non preferenze di stile. Il lint viene eseguito su richiesta (`Alt + Mod + V` o **Vista → Controlla Markdown**) e mostra i risultati inline — una barra colorata lungo il lato di ogni blocco interessato in modalità WYSIWYG, una sottolineatura ondulata sotto il testo esatto in modalità Sorgente — con un badge nella barra di stato e navigazione F2 tra i risultati.
 
 ## Cos'è e cosa non è il lint
 
 Il lint di VMark è un controllo di **correttezza**:
 
 - Riferimenti incrociati interrotti
-- Riferimenti non definiti a collegamenti / note a piè di pagina
+- Riferimenti non definiti a collegamenti (i riferimenti alle note a piè di pagina non vengono controllati)
 - Blocchi di codice non chiusi
 - Tabelle con conteggio colonne non corrispondente
 - Livelli di intestazione che saltano (h1 → h3)
@@ -50,14 +50,14 @@ Per l'imposizione dello stile, usa uno strumento separato come `prettier --check
 
 | Trigger | Azione |
 |---|---|
-| `Cmd + Shift + L` (macOS) / `Ctrl + Shift + L` (Win/Linux) | Esegui il lint sul documento attivo |
-| **Strumenti → Controlla Markdown** | Identico alla scorciatoia |
+| `Alt + Mod + V` | Esegui il lint sul documento attivo |
+| **Vista → Controlla Markdown** | Identico alla scorciatoia |
 | `F2` | Vai alla diagnostica successiva |
 | `Shift + F2` | Vai alla diagnostica precedente |
 
 Per i file markdown con percorsi di file, il controllo dell'esistenza dei collegamenti viene eseguito automaticamente insieme alle regole sincrone — vedi [Controllo collegamenti](/it/guide/link-check).
 
-Per i file YAML, gli errori di analisi appaiono in tempo reale nel margine mentre digiti, e la stessa scorciatoia `Cmd-Shift-L` popola il badge e la navigazione F2.
+Per i file YAML, gli errori di analisi appaiono in tempo reale nel margine mentre digiti, e la stessa scorciatoia `Alt + Mod + V` popola il badge e la navigazione F2.
 
 ## Impostazioni
 
@@ -65,7 +65,7 @@ Il motore di lint ha un singolo interruttore esposto all'utente:
 
 - **Impostazioni → Markdown → Abilita markdown lint** — attiva o disattiva interamente il motore
 
-Quando è disabilitato, la scorciatoia diventa un'operazione vuota e nessuna diagnostica appare nel margine.
+Quando è disabilitato, la scorciatoia diventa un'operazione vuota e nessuna diagnostica appare nell'editor.
 
 ## Vedi anche
 

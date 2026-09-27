@@ -428,7 +428,7 @@ capo, così l'IA non può mai registrarti in silenzio. Finché non lo consenti, 
 `needsApproval`; una volta fatto, VMark arma uno shim di cattura dormiente nel mondo della pagina e
 inizia a registrare i **clic e le modifiche ai campi** che esegui. `stop` restituisce
 `{source, inputs, eventCount}` — il `source` è testo del workflow che puoi salvare o passare
-direttamente a [`workflow_run`](#workflow-run).
+direttamente a [`workflow_run`](#workflow-run-workflow-cancel).
 
 La registrazione è **priva di valori per costruzione**, e non è un filtro che si fida della pagina:
 nulla di ciò che digiti viene mai catturato. Ogni campo di testo diventa una variabile `{input}` con
