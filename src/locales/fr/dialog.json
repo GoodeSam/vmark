@@ -261,5 +261,14 @@
   "error.title": "Erreur",
   "error.saveMediaFailed": "Échec de l’enregistrement du fichier multimédia : {{error}}",
   "resetShortcuts.title": "Réinitialiser les raccourcis",
-  "resetSettings.title": "Réinitialiser les réglages"
+  "resetSettings.title": "Réinitialiser les réglages",
+  "exportError.lockBusy": "Une autre exportation écrit déjà dans {{destination}}. Si aucune autre exportation n’est en cours, supprimez {{lock}} et réessayez.",
+  "exportError.takenOver": "L’exportation vers {{destination}} n’a pas été publiée : une autre exportation a pris le contrôle du dossier pendant qu’elle s’exécutait. Rien n’a été modifié à la destination.",
+  "exportError.notAFile": "{{path}} est un dossier, pas un fichier que cette exportation peut remplacer. Déplacez-le ou renommez-le, ou exportez vers un autre dossier.",
+  "exportError.publishFailed": "Impossible de publier l’exportation vers {{destination}} : {{reason}}. {{rollback}}",
+  "exportError.rollbackFilesNotRestored": "Ces fichiers n’ont pas pu être restaurés : {{files}}.",
+  "exportError.rollbackFoldersLeft": "Vos fichiers ont été restaurés, mais ces dossiers créés par l’exportation sont toujours là : {{folders}}.",
+  "exportError.rollbackRestored": "Rien d’autre n’a été modifié : le dossier a retrouvé son contenu précédent.",
+  "exportError.backupKeptAt": "{{path}} (son contenu précédent est conservé dans {{backup}} : {{reason}})",
+  "exportError.backupGone": "{{path}} (sa sauvegarde dans {{backup}} a aussi disparu : {{reason}})"
 }

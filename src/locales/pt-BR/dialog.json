@@ -261,5 +261,14 @@
   "error.title": "Erro",
   "error.saveMediaFailed": "Falha ao salvar o arquivo de mídia: {{error}}",
   "resetShortcuts.title": "Redefinir atalhos",
-  "resetSettings.title": "Redefinir configurações"
+  "resetSettings.title": "Redefinir configurações",
+  "exportError.lockBusy": "Outra exportação já está gravando em {{destination}}. Se nenhuma outra exportação estiver em andamento, exclua {{lock}} e tente novamente.",
+  "exportError.takenOver": "A exportação para {{destination}} não foi publicada: outra exportação assumiu a pasta enquanto esta era executada. Nada foi alterado no destino.",
+  "exportError.notAFile": "{{path}} é uma pasta, não um arquivo que esta exportação possa substituir. Mova-a ou renomeie-a, ou exporte para outra pasta.",
+  "exportError.publishFailed": "Não foi possível publicar a exportação para {{destination}}: {{reason}}. {{rollback}}",
+  "exportError.rollbackFilesNotRestored": "Não foi possível restaurar estes arquivos: {{files}}.",
+  "exportError.rollbackFoldersLeft": "Seus arquivos foram restaurados, mas estas pastas criadas pela exportação ainda estão lá: {{folders}}.",
+  "exportError.rollbackRestored": "Nada mais foi alterado: a pasta foi restaurada ao conteúdo anterior.",
+  "exportError.backupKeptAt": "{{path}} (o conteúdo anterior está guardado em {{backup}}: {{reason}})",
+  "exportError.backupGone": "{{path}} (o backup em {{backup}} também desapareceu: {{reason}})"
 }

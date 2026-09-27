@@ -261,5 +261,14 @@
   "error.title": "Error",
   "error.saveMediaFailed": "No se pudo guardar el archivo multimedia: {{error}}",
   "resetShortcuts.title": "Restablecer atajos",
-  "resetSettings.title": "Restablecer ajustes"
+  "resetSettings.title": "Restablecer ajustes",
+  "exportError.lockBusy": "Otra exportación ya está escribiendo en {{destination}}. Si no hay ninguna otra exportación en curso, elimina {{lock}} e inténtalo de nuevo.",
+  "exportError.takenOver": "La exportación a {{destination}} no se publicó: otra exportación tomó el control de la carpeta mientras esta se ejecutaba. No se cambió nada en el destino.",
+  "exportError.notAFile": "{{path}} es una carpeta, no un archivo que esta exportación pueda reemplazar. Muévela o cámbiale el nombre, o exporta a otra carpeta.",
+  "exportError.publishFailed": "No se pudo publicar la exportación a {{destination}}: {{reason}}. {{rollback}}",
+  "exportError.rollbackFilesNotRestored": "No se pudieron restaurar estos archivos: {{files}}.",
+  "exportError.rollbackFoldersLeft": "Tus archivos se restauraron, pero estas carpetas creadas por la exportación siguen ahí: {{folders}}.",
+  "exportError.rollbackRestored": "No se cambió nada más: la carpeta se restauró a su contenido anterior.",
+  "exportError.backupKeptAt": "{{path}} (su contenido anterior se conserva en {{backup}}: {{reason}})",
+  "exportError.backupGone": "{{path}} (su copia de seguridad en {{backup}} también ha desaparecido: {{reason}})"
 }

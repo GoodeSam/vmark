@@ -261,5 +261,14 @@
   "error.title": "Fehler",
   "error.saveMediaFailed": "Mediendatei konnte nicht gespeichert werden: {{error}}",
   "resetShortcuts.title": "Kurzbefehle zurücksetzen",
-  "resetSettings.title": "Einstellungen zurücksetzen"
+  "resetSettings.title": "Einstellungen zurücksetzen",
+  "exportError.lockBusy": "Ein anderer Export schreibt bereits nach {{destination}}. Wenn kein anderer Export läuft, löschen Sie {{lock}} und versuchen Sie es erneut.",
+  "exportError.takenOver": "Der Export nach {{destination}} wurde nicht veröffentlicht: Ein anderer Export hat den Ordner übernommen, während dieser lief. Am Ziel wurde nichts verändert.",
+  "exportError.notAFile": "{{path}} ist ein Ordner und keine Datei, die dieser Export ersetzen darf. Verschieben oder benennen Sie ihn um, oder exportieren Sie in einen anderen Ordner.",
+  "exportError.publishFailed": "Der Export nach {{destination}} konnte nicht veröffentlicht werden: {{reason}}. {{rollback}}",
+  "exportError.rollbackFilesNotRestored": "Diese Dateien konnten nicht wiederhergestellt werden: {{files}}.",
+  "exportError.rollbackFoldersLeft": "Ihre Dateien wurden wiederhergestellt, aber diese vom Export angelegten Ordner sind noch vorhanden: {{folders}}.",
+  "exportError.rollbackRestored": "Sonst wurde nichts verändert – der Ordner wurde auf seinen vorherigen Inhalt zurückgesetzt.",
+  "exportError.backupKeptAt": "{{path}} (der vorherige Inhalt liegt unter {{backup}}: {{reason}})",
+  "exportError.backupGone": "{{path}} (auch die Sicherung unter {{backup}} fehlt: {{reason}})"
 }

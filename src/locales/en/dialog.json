@@ -261,5 +261,14 @@
   "error.title": "Error",
   "error.saveMediaFailed": "Failed to save media file: {{error}}",
   "resetShortcuts.title": "Reset Shortcuts",
-  "resetSettings.title": "Reset Settings"
+  "resetSettings.title": "Reset Settings",
+  "exportError.lockBusy": "Another export is already writing to {{destination}}. If no other export is running, delete {{lock}} and try again.",
+  "exportError.takenOver": "Export to {{destination}} was not published: another export took over the folder while this one was running. Nothing at the destination was changed.",
+  "exportError.notAFile": "{{path}} is a directory, not a file this export may replace. Move or rename it, or export to a different folder.",
+  "exportError.publishFailed": "Export to {{destination}} could not be published: {{reason}}. {{rollback}}",
+  "exportError.rollbackFilesNotRestored": "These files could not be restored: {{files}}.",
+  "exportError.rollbackFoldersLeft": "Your files were restored, but these folders the export created are still there: {{folders}}.",
+  "exportError.rollbackRestored": "Nothing else was changed — the folder was restored to its previous contents.",
+  "exportError.backupKeptAt": "{{path}} (its previous contents are kept at {{backup}}: {{reason}})",
+  "exportError.backupGone": "{{path}} (its backup at {{backup}} is gone too: {{reason}})"
 }
