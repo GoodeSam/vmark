@@ -1,5 +1,5 @@
 /**
- * Purpose: Renders the workflow's diagnostic list above the canvas. The
+ * Purpose: Renders the workflow's diagnostic list atop the forms panel. The
  *   parser writes `workflow.diagnostics[]`; WorkflowEditorPanel appends
  *   actionlint's rows (`useActionlintDiagnostics`, setting-gated) and
  *   passes the merged list in. Nothing else surfaces either source.

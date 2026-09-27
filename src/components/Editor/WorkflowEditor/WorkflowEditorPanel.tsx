@@ -1,13 +1,15 @@
 /**
  * Purpose: Container for the structured workflow editor surface. Sits
- *   below the @xyflow/react canvas in the side panel and shows:
+ *   below the @xyflow/react canvas in the workbench (the yaml split pane's
+ *   right side, `GhaWorkflowWorkbench`) and shows:
  *
  *     1. SaveControls bar (top, always visible).
  *     2. DiagnosticsBanner — the parser's `workflow.diagnostics[]` merged
  *        with actionlint's rows from `useActionlintDiagnostics` (gated by
  *        `advanced.workflowActionlint`, async, never delaying the parser's).
  *     3. Add-job control, PermissionsForm, ConcurrencyForm, and the
- *        TriggerForm read-only summary.
+ *        TriggerForm (mapping-shaped event filters editable; cron shown
+ *        read-only as English).
  *     4. Either a JobForm (if a job is selected) or a StepForm (if a
  *        step within a job is selected) or a "select a job" hint.
  *

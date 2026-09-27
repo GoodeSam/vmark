@@ -8,7 +8,7 @@
 //!   - Path sandboxing via `sandbox::validate_path` for all file I/O
 //!   - Resource limits: max 1000 files, 10MB per file, 100MB total in read-folder
 //!   - Event emission failures are logged, not silently dropped
-//!   - Unimplemented step types (genie, webhook) return Err, not fake Ok
+//!   - `genie/*` steps run via `genie_step`; `webhook/*` returns Err, not fake Ok
 //!   - Returns Err when any step fails (not Ok with silent failure)
 //!   - Env substitution uses regex for embedded `${VAR}` patterns
 //!   - Cancellation checked before each step via shared AtomicBool
