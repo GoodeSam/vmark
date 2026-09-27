@@ -159,3 +159,116 @@ fn cjk_content_and_path_survive_the_write_and_the_error_path() {
     let value = serde_json::to_value(&err).expect("serialize");
     assert_eq!(value["detail"]["dir"], json!(gone.to_string_lossy()));
 }
+
+// -- WI-LX1.1: the workspace-grant list is not a document ---------------------
+//
+// `atomic_write_file` writes any absolute path the webview names, so it could
+// write roots of a script's choosing into `workspace-grants.json` and have
+// them granted at the next launch. Both generic writers refuse the list —
+// by its own name, through a link to it, and through a linked folder — with a
+// typed `permission-denied`, and leave it untouched. Gated like every
+// mock-runtime suite in the crate (tauri's `test` feature is off on Windows).
+#[cfg(not(target_os = "windows"))]
+mod grant_list {
+    use std::path::{Path, PathBuf};
+    use std::time::Duration;
+
+    use super::super::{atomic_write_file, create_file_exclusive};
+    use crate::command_error::{CommandError, ErrorCode};
+    use crate::workspace_grants::{restore_from, WorkspaceGrants, GRANTS_FILE};
+
+    const FORGED: &str = r#"["vmark-workspace-grants/1","/"]"#;
+
+    fn app_with_list() -> (
+        tauri::App<tauri::test::MockRuntime>,
+        tempfile::TempDir,
+        PathBuf,
+    ) {
+        let app = tauri::test::mock_builder()
+            .plugin(tauri_plugin_fs::init())
+            .manage(WorkspaceGrants::default())
+            .build(tauri::test::mock_context(tauri::test::noop_assets()))
+            .expect("build mock app");
+        let data = tempfile::tempdir().expect("app data");
+        let list = data.path().join(GRANTS_FILE);
+        restore_from(app.handle(), list.clone(), Duration::from_secs(5));
+        (app, data, list)
+    }
+
+    fn write(app: &tauri::App<tauri::test::MockRuntime>, path: &Path) -> Result<(), CommandError> {
+        tauri::async_runtime::block_on(atomic_write_file(
+            app.handle().clone(),
+            path.to_str().expect("utf-8").to_owned(),
+            FORGED.to_owned(),
+        ))
+    }
+
+    fn assert_refused(result: Result<(), CommandError>) {
+        let err = result.expect_err("the grant list is written by VMark alone");
+        assert_eq!(err.code(), ErrorCode::PermissionDenied);
+        assert_eq!(err.i18n_key(), Some("errors.workspaceAccess.listProtected"));
+    }
+
+    #[test]
+    fn a_save_onto_the_list_is_refused_and_leaves_it_untouched() {
+        let (app, _data, list) = app_with_list();
+        let before = std::fs::read(&list).expect("created at launch");
+
+        assert_refused(write(&app, &list));
+
+        assert_eq!(std::fs::read(&list).expect("still there"), before);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_save_through_a_link_to_the_list_is_refused() {
+        let (app, _data, list) = app_with_list();
+        let before = std::fs::read(&list).expect("created at launch");
+        let docs = tempfile::tempdir().expect("docs");
+        let link = docs.path().join("note.md");
+        std::os::unix::fs::symlink(&list, &link).expect("link");
+
+        assert_refused(write(&app, &link));
+
+        assert_eq!(std::fs::read(&list).expect("still there"), before);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_save_through_a_linked_folder_is_refused() {
+        let (app, data, list) = app_with_list();
+        let before = std::fs::read(&list).expect("created at launch");
+        let docs = tempfile::tempdir().expect("docs");
+        let alias = docs.path().join("alias");
+        std::os::unix::fs::symlink(data.path(), &alias).expect("link");
+
+        assert_refused(write(&app, &alias.join(GRANTS_FILE)));
+
+        assert_eq!(std::fs::read(&list).expect("still there"), before);
+    }
+
+    #[test]
+    fn a_save_beside_the_list_still_works() {
+        let (app, data, _list) = app_with_list();
+        let note = data.path().join("note.md");
+
+        write(&app, &note).expect("an ordinary document");
+
+        assert_eq!(std::fs::read_to_string(&note).expect("written"), FORGED);
+    }
+
+    #[test]
+    fn claiming_the_list_name_is_refused() {
+        let (app, _data, list) = app_with_list();
+        std::fs::remove_file(&list).expect("start with no list");
+
+        let result = tauri::async_runtime::block_on(create_file_exclusive(
+            app.handle().clone(),
+            list.to_str().expect("utf-8").to_owned(),
+        ));
+
+        let err = result.expect_err("the grant list is created by VMark alone");
+        assert_eq!(err.code(), ErrorCode::PermissionDenied);
+        assert!(!list.exists(), "nothing was created");
+    }
+}

@@ -211,7 +211,6 @@
   "common.pin": "Anheften",
   "common.pinTooltip": "Diese Benachrichtigung offen halten",
   "common.unpinTooltip": "Angeheftet — manuell schließen",
-  "openWorkspaceFolder.title": "Arbeitsbereichsordner öffnen",
   "openWorkspace.approval.title": "Ordner als Arbeitsbereich öffnen?",
   "openWorkspace.approval.body": "Der KI-Assistent möchte diesen Ordner als Arbeitsbereich öffnen. Damit erhält er Zugriff auf den Dateibaum des Ordners:",
   "openWorkspace.approval.approve": "Arbeitsbereich öffnen",

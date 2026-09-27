@@ -211,7 +211,6 @@
   "common.pin": "ピン留め",
   "common.pinTooltip": "この通知を開いたままにする",
   "common.unpinTooltip": "ピン留め中 — 手動で閉じる",
-  "openWorkspaceFolder.title": "ワークスペースフォルダーを開く",
   "openWorkspace.approval.title": "フォルダをワークスペースとして開きますか?",
   "openWorkspace.approval.body": "AI アシスタントがこのフォルダをワークスペースとして開く許可を求めています。許可するとフォルダのファイルツリーへのアクセスを与えることになります:",
   "openWorkspace.approval.approve": "ワークスペースを開く",

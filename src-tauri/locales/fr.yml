@@ -405,6 +405,16 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "L’accès au trousseau a été refusé. Autorisez VMark dans l’invite du trousseau ou accordez-lui l’accès dans Trousseaux d’accès, puis réessayez."
 
+  # === Autorisations des espaces de travail (workspace_grants/commands.rs, WI-LX1.1) ===
+  workspaceAccess.notGranted: "VMark n’a pas accès à « %{path} ». Choisissez le dossier avec Fichier → Ouvrir un espace de travail... pour l’autoriser."
+  workspaceAccess.pickerBusy: "Une boîte de dialogue de dossier est déjà ouverte"
+  workspaceAccess.listProtected: "Seul VMark peut modifier sa liste des dossiers qu’il est autorisé à ouvrir"
+
+# WI-LX1.1 — the folder picker Rust shows for workspace access
+workspaceAccess:
+  pickTitle: "Ouvrir le dossier de l’espace de travail"
+  confirmTitle: "Autoriser VMark à ouvrir ce dossier"
+
 window:
   settings.title: "Réglages"
   pdfExport.title: "Exporter en PDF"

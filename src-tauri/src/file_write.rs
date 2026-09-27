@@ -17,6 +17,11 @@
 //! sync. It is now `code: "not-found"` with the directory in `detail.dir`, and
 //! every message here resolves through `t!` instead of being raw English that
 //! `lint:i18n` could not see.
+//!
+//! WI-LX1.1: both commands let the webview name a path, so both refuse the
+//! workspace-grant list — the folders re-granted at the next launch.
+//!
+//! @coordinates-with workspace_grants/protect.rs — what counts as the list
 
 use crate::command_error::{CommandError, ErrorCode};
 use crate::localized_error;
@@ -140,14 +145,41 @@ fn save_failure(error: crate::atomic_replace::AtomicReplaceError) -> CommandErro
     }
 }
 
+/// Refuse a write that would land on the workspace-grant list (WI-LX1.1), by
+/// the path as named AND by the referent a save through it would replace.
+///
+/// These are the only generic writers that let the webview name a path, so
+/// they are what stood between a script and the list of folders re-granted at
+/// the next launch. A resolution failure is not decided here: the write itself
+/// reports it.
+fn refuse_grant_list<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    target: &std::path::Path,
+) -> Result<(), CommandError> {
+    crate::workspace_grants::refuse_list_write(app, target)?;
+    match crate::atomic_replace::resolve_link_target(target) {
+        Ok(referent) if referent != target => {
+            crate::workspace_grants::refuse_list_write(app, &referent)
+        }
+        _ => Ok(()),
+    }
+}
+
 /// Atomic file write using temp file + rename (async Tauri command variant).
 ///
 /// Prevents data loss on crash by writing to a temporary file in the same
 /// directory, flushing to disk, then atomically renaming over the target.
+/// Refuses the workspace-grant list (`refuse_grant_list`).
 #[tauri::command]
-pub async fn atomic_write_file(path: String, content: String) -> Result<(), CommandError> {
+pub async fn atomic_write_file<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    path: String,
+    content: String,
+) -> Result<(), CommandError> {
     tokio::task::spawn_blocking(move || {
-        atomic_write_file_sync(std::path::Path::new(&path), &content)
+        let target = std::path::Path::new(&path);
+        refuse_grant_list(&app, target)?;
+        atomic_write_file_sync(target, &content)
     })
     .await
     .map_err(|e| {
@@ -177,17 +209,27 @@ pub async fn atomic_write_file(path: String, content: String) -> Result<(), Comm
 /// The empty file it leaves behind is the reservation. The caller writes the
 /// real contents over it through the ordinary save path, which is an overwrite
 /// of a file this batch owns.
+///
+/// Refuses the workspace-grant list: an empty claim there would make the list
+/// unreadable. `create_new` never follows a link, so the name is all there is.
 #[tauri::command]
-pub async fn create_file_exclusive(path: String) -> Result<bool, CommandError> {
-    tokio::task::spawn_blocking(move || create_file_exclusive_sync(std::path::Path::new(&path)))
-        .await
-        .map_err(|e| {
-            localized_error!(
-                ErrorCode::Internal,
-                "errors.save.taskFailed",
-                detail = e.to_string()
-            )
-        })?
+pub async fn create_file_exclusive<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    path: String,
+) -> Result<bool, CommandError> {
+    tokio::task::spawn_blocking(move || {
+        let target = std::path::Path::new(&path);
+        crate::workspace_grants::refuse_list_write(&app, target)?;
+        create_file_exclusive_sync(target)
+    })
+    .await
+    .map_err(|e| {
+        localized_error!(
+            ErrorCode::Internal,
+            "errors.save.taskFailed",
+            detail = e.to_string()
+        )
+    })?
 }
 
 /// Synchronous core of [`create_file_exclusive`], so it is testable without a

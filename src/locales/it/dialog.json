@@ -211,7 +211,6 @@
   "common.pin": "Appunta",
   "common.pinTooltip": "Mantieni aperto questo avviso",
   "common.unpinTooltip": "Appuntato — chiudi manualmente",
-  "openWorkspaceFolder.title": "Apri cartella dell'area di lavoro",
   "openWorkspace.approval.title": "Aprire la cartella come area di lavoro?",
   "openWorkspace.approval.body": "L'assistente IA chiede di aprire questa cartella come area di lavoro, il che gli concede l'accesso all'albero dei file della cartella:",
   "openWorkspace.approval.approve": "Apri area di lavoro",

@@ -38,7 +38,6 @@
   "fileNotFound.message": "This file could not be opened. It may have been moved or deleted.\n\nRemove from recent files?",
   "workspaceNotFound.title": "Workspace Not Found",
   "workspaceNotFound.message": "This workspace folder could not be found. It may have been moved or deleted.\n\nRemove from recent workspaces?",
-  "openWorkspaceFolder.title": "Open Workspace Folder",
   "unsavedDocument.title": "Unsaved Document",
   "unsavedDocument.message": "Please save the document first to change images.",
   "unsavedDocument.messageCopyPath": "Document must be saved to copy image path.",

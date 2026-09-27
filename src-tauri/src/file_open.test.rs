@@ -137,3 +137,69 @@ fn partition_multi_workspace_files_feed_grouping() {
     assert_eq!(groups["/ws1"], vec!["/ws1/a.md"]);
     assert_eq!(groups["/ws2"], vec!["/ws2/b.md"]);
 }
+
+// -- WI-LX1.1: a folder opened from Finder is a folder the user chose -------
+//
+// It is granted recursively and recorded exactly like a folder-picker choice,
+// so the workspace window can read its tree and a later launch re-grants it.
+// Before this, a Finder folder outside the static scope opened a window that
+// could read nothing in it. Gated like every mock-runtime suite in the crate.
+#[cfg(not(target_os = "windows"))]
+mod finder_directory {
+    use tauri::Manager;
+    use tauri_plugin_fs::FsExt;
+
+    use super::super::open_finder_directory;
+    use crate::workspace_grants::WorkspaceGrants;
+
+    fn mock_app() -> tauri::App<tauri::test::MockRuntime> {
+        tauri::test::mock_builder()
+            .plugin(tauri_plugin_fs::init())
+            .manage(WorkspaceGrants::default())
+            .build(tauri::test::mock_context(tauri::test::noop_assets()))
+            .expect("build mock app")
+    }
+
+    #[test]
+    fn a_folder_from_finder_is_granted_recorded_and_opened() {
+        let app = mock_app();
+        let dir = tempfile::tempdir().expect("tempdir");
+        std::fs::create_dir(dir.path().join("sub")).expect("mkdir");
+        let nested = dir.path().join("sub").join("note.md");
+        std::fs::write(&nested, b"# hi").expect("write");
+        let root = dir.path().canonicalize().expect("canonical");
+        assert!(!app.fs_scope().is_allowed(&nested));
+
+        open_finder_directory(app.handle(), dir.path().to_str().expect("utf-8"));
+
+        assert!(app.fs_scope().is_allowed(&nested), "the tree is readable");
+        assert!(
+            app.asset_protocol_scope().is_allowed(&nested),
+            "and its media renders"
+        );
+        assert!(app
+            .state::<WorkspaceGrants>()
+            .covers(root.to_str().expect("utf-8")));
+        let windows = app.webview_windows();
+        assert_eq!(windows.len(), 1, "one workspace window");
+        let url = windows.values().next().expect("window").url().expect("url");
+        assert!(
+            url.query().is_some_and(|q| q.contains("workspaceRoot=")),
+            "the window is scoped to the folder: {url}"
+        );
+    }
+
+    #[test]
+    fn a_folder_that_vanished_opens_and_grants_nothing() {
+        let app = mock_app();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let gone = dir.path().join("gone");
+
+        open_finder_directory(app.handle(), gone.to_str().expect("utf-8"));
+
+        assert!(app.webview_windows().is_empty());
+        assert!(!app
+            .state::<WorkspaceGrants>()
+            .covers(gone.to_str().expect("utf-8")));
+    }
+}

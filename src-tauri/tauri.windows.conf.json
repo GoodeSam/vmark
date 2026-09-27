@@ -1,0 +1,18 @@
+{
+  "app": {
+    "security": {
+      "assetProtocol": {
+        "scope": [
+          "$HOME/**",
+          "/Volumes/**",
+          "/mnt/**",
+          "/media/**",
+          "C:\\**",
+          "D:\\**",
+          "E:\\**",
+          "F:\\**"
+        ]
+      }
+    }
+  }
+}

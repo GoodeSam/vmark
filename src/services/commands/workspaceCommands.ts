@@ -22,9 +22,9 @@
  * @coordinates-with services/workspaces/closeWorkspaceInstance.ts — the rail-on close
  * @coordinates-with components/WorkspaceRail/workspaceRailHandlers.ts — the rail's own Close, same path
  * @coordinates-with services/workspaces/openWorkspaceByPath.ts — the shared open sequence and its guard key
+ * @coordinates-with services/workspaces/workspaceAccess.ts — the Rust folder picker (grants + records the pick)
  */
 
-import { open } from "@tauri-apps/plugin-dialog";
 import { registerCommands } from "./CommandBus";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import {
@@ -41,6 +41,7 @@ import {
   openWorkspaceByPath,
   WORKSPACE_TRANSITION_GUARD,
 } from "@/services/workspaces/openWorkspaceByPath";
+import { pickWorkspaceFolder } from "@/services/workspaces/workspaceAccess";
 import { workspaceError } from "@/utils/debug";
 import { reportCommandFailure } from "./commandFailure";
 import i18n from "@/i18n";
@@ -65,40 +66,20 @@ function activeRailWorkspaceInstanceId(windowLabel: string): string | null {
 }
 
 /**
- * The folder picker's options — a CONFIGURATION, not control flow (audit #951).
+ * File → Open Workspace: pick a folder, then run the shared open sequence.
  *
- * `recursive: true` is the load-bearing one (#1252): grant the whole tree, not
- * just the top level. The dialog plugin extends the fs scope with
- * `allow_directory(path, options.recursive)`, which pushes `path/*` when false
- * and `path/**` when true. Without it a workspace's SUBDIRECTORIES are out of
- * scope and every file in them fails with `forbidden path: …`. It only shows up
- * off the home drive: capabilities/default.json covers `$HOME/**`,
- * `/Volumes/**`, `/mnt/**` and `/media/**`, which masks the gap on macOS and
- * Linux, while on Windows `$HOME` is `C:\Users\<name>` and a workspace on
- * `G:\` is covered by nothing.
- *
- * A function, not a constant: the title is resolved through i18n at call time,
- * so it follows a language change.
+ * The picker is the one Rust shows (WI-LX1.1). Rust grants the pick
+ * RECURSIVELY (#1252 — a non-recursive grant leaves every subfolder out of
+ * scope) and RECORDS it, so the next launch, session restore and Open Recent
+ * re-grant it. The plugin dialog this replaced granted for the session only.
+ * The title is Rust's too (`workspaceAccess.pickTitle`, follows the app locale).
  */
-function workspacePickerOptions(): Parameters<typeof open>[0] {
-  return {
-    directory: true,
-    multiple: false,
-    recursive: true,
-    canCreateDirectories: true,
-    title: i18n.t("dialog:openWorkspaceFolder.title"),
-  };
-}
-
-/** File → Open Workspace: pick a folder, then run the shared open sequence. */
 async function openWorkspaceFolder(windowLabel: string): Promise<void> {
   // Reentry guard around the dialog AND the open sequence: rapid repeated
   // activation must not stack folder pickers or race workspace restoration.
   await withReentryGuard(windowLabel, WORKSPACE_TRANSITION_GUARD, async () => {
     try {
-      const selected = await open(workspacePickerOptions());
-      if (!selected) return;
-      const path = typeof selected === "string" ? selected : selected[0];
+      const path = await pickWorkspaceFolder();
       if (!path) return;
       // Shared sequence (also used by the open_workspace MCP handler).
       await openWorkspaceByPath(path, { windowLabel });

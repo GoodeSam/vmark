@@ -77,6 +77,20 @@ describe("openWorkspaceByPath", () => {
     });
   });
 
+  // WI-LX1.1 — Rust now refuses a folder the user never chose. That is the
+  // ORDINARY answer for one under `$HOME`, which the static scope already
+  // reads, so the refusal must neither stop the open nor be reported.
+  it("opens a folder Rust declines to grant, without reporting an error", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockInvoke.mockRejectedValueOnce({ code: "permission-denied", message: "not granted" } as never);
+
+    await expect(openWorkspaceByPath("/Users/me/notes")).resolves.toBe(true);
+
+    expect(openWorkspaceWithConfig).toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
   it("still opens the workspace when the scope grant fails", async () => {
     // Best-effort: the static scope already covers the common case, so a failed
     // grant must not turn a working open into a hard failure.

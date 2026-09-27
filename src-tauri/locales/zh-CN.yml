@@ -405,6 +405,16 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "钥匙串访问被拒绝。请在钥匙串提示中允许 VMark，或在“钥匙串访问”中授予访问权限，然后重试。"
 
+  # === 工作区访问授权 (workspace_grants/commands.rs, WI-LX1.1) ===
+  workspaceAccess.notGranted: "VMark 尚未获得访问“%{path}”的权限。请通过 文件 → 打开工作区... 选择该文件夹以授予权限。"
+  workspaceAccess.pickerBusy: "已有一个文件夹对话框处于打开状态"
+  workspaceAccess.listProtected: "VMark 可打开的文件夹列表只能由 VMark 自身修改"
+
+# WI-LX1.1 — the folder picker Rust shows for workspace access
+workspaceAccess:
+  pickTitle: "打开工作区文件夹"
+  confirmTitle: "允许 VMark 打开此文件夹"
+
 window:
   settings.title: "设置"
   pdfExport.title: "导出 PDF"

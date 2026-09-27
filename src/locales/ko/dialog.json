@@ -211,7 +211,6 @@
   "common.pin": "고정",
   "common.pinTooltip": "이 알림을 계속 표시",
   "common.unpinTooltip": "고정됨 — 수동으로 닫기",
-  "openWorkspaceFolder.title": "작업 공간 폴더 열기",
   "openWorkspace.approval.title": "폴더를 워크스페이스로 열까요?",
   "openWorkspace.approval.body": "AI 어시스턴트가 이 폴더를 워크스페이스로 열도록 요청하고 있습니다. 허용하면 폴더의 파일 트리에 접근할 수 있게 됩니다:",
   "openWorkspace.approval.approve": "워크스페이스 열기",

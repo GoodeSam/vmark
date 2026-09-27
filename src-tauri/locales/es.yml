@@ -405,6 +405,16 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "Se denegó el acceso al llavero. Permite VMark en el aviso del llavero o concédele acceso en Acceso a Llaveros y vuelve a intentarlo."
 
+  # === Permisos de espacios de trabajo (workspace_grants/commands.rs, WI-LX1.1) ===
+  workspaceAccess.notGranted: "VMark no tiene acceso a «%{path}». Elige la carpeta con Archivo → Abrir espacio de trabajo... para permitirlo."
+  workspaceAccess.pickerBusy: "Ya hay un diálogo de carpetas abierto"
+  workspaceAccess.listProtected: "Solo VMark puede cambiar su propia lista de carpetas que tiene permitido abrir"
+
+# WI-LX1.1 — the folder picker Rust shows for workspace access
+workspaceAccess:
+  pickTitle: "Abrir carpeta del espacio de trabajo"
+  confirmTitle: "Permitir que VMark abra esta carpeta"
+
 window:
   settings.title: "Ajustes"
   pdfExport.title: "Exportar PDF"

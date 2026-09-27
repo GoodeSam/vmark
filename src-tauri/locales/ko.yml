@@ -405,6 +405,16 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "키체인 접근이 거부되었습니다. 키체인 안내 창에서 VMark를 허용하거나 ‘키체인 접근’에서 접근 권한을 부여한 뒤 다시 시도하세요."
 
+  # === 워크스페이스 접근 권한 (workspace_grants/commands.rs, WI-LX1.1) ===
+  workspaceAccess.notGranted: "VMark에 “%{path}”에 대한 접근 권한이 없습니다. 파일 → 워크스페이스 열기...에서 폴더를 선택해 허용하세요."
+  workspaceAccess.pickerBusy: "폴더 선택 대화상자가 이미 열려 있습니다"
+  workspaceAccess.listProtected: "VMark가 열 수 있는 폴더 목록은 VMark만 변경할 수 있습니다"
+
+# WI-LX1.1 — the folder picker Rust shows for workspace access
+workspaceAccess:
+  pickTitle: "워크스페이스 폴더 열기"
+  confirmTitle: "VMark가 이 폴더를 열도록 허용"
+
 window:
   settings.title: "설정"
   pdfExport.title: "PDF 내보내기"

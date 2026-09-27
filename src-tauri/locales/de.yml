@@ -405,6 +405,16 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "Der Zugriff auf den Schlüsselbund wurde verweigert. Erlauben Sie VMark in der Schlüsselbund-Abfrage oder gewähren Sie den Zugriff in der Schlüsselbundverwaltung, und versuchen Sie es erneut."
 
+  # === Arbeitsbereich-Freigaben (workspace_grants/commands.rs, WI-LX1.1) ===
+  workspaceAccess.notGranted: "VMark hat keinen Zugriff auf „%{path}“. Wählen Sie den Ordner über Datei → Arbeitsbereich öffnen..., um ihn freizugeben."
+  workspaceAccess.pickerBusy: "Ein Ordnerdialog ist bereits geöffnet"
+  workspaceAccess.listProtected: "Die Liste der Ordner, die VMark öffnen darf, kann nur VMark selbst ändern"
+
+# WI-LX1.1 — the folder picker Rust shows for workspace access
+workspaceAccess:
+  pickTitle: "Arbeitsbereich-Ordner öffnen"
+  confirmTitle: "VMark das Öffnen dieses Ordners erlauben"
+
 window:
   settings.title: "Einstellungen"
   pdfExport.title: "PDF exportieren"

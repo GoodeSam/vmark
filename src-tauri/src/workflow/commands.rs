@@ -111,6 +111,12 @@ pub async fn run_workflow<R: tauri::Runtime>(
     // `?` from here drops `admission`, which clears the id with the flag, so
     // an early return can never leave a stale id behind.
     let execution_id = execution_id_for(execution_id)?;
+    // A root that contains app data would let a save-file step rewrite the
+    // workspace-grant list (WI-LX1.1); refuse before anything is claimed.
+    crate::workspace_grants::refuse_root_containing_list(
+        &app,
+        std::path::Path::new(&workspace_root),
+    )?;
     let (workflow, workspace, admission) =
         admit_run(&state, &yaml, &workspace_root, &execution_id)?;
 

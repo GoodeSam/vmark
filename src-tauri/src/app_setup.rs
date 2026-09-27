@@ -11,6 +11,9 @@
 //!     the frontend: its webview dies without running its own teardown. That
 //!     covers its file watcher, its PTY sessions and its MCP bridge workspace
 //!     registration.
+//!   - Recorded workspace grants (`workspace_grants`) are re-issued during setup,
+//!     before any window exists, so a restored session never reads a root the
+//!     fs scope does not yet cover. The wait is bounded.
 //!   - `machine_id_hash()` generates a stable anonymous device identifier via
 //!     SHA-256(hostname + OS + arch), sent as `X-Machine-Id` header on update checks.
 
@@ -46,6 +49,10 @@ pub(crate) fn machine_id_hash() -> String {
 /// individually readable and the builder chain stays declarative.
 pub(crate) fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     app.manage(pty::PtyState::default());
+
+    // WI-LX1.1: re-grant the workspace roots the user chose in earlier
+    // sessions before any window can read from them (bounded wait).
+    crate::workspace_grants::restore_at_launch(app.handle());
 
     // Coherence layer: per-installation writer identity (spec §2.2) +
     // per-workspace kernel registry. A writer-id load failure falls back

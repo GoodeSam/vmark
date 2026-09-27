@@ -10,7 +10,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockExists = vi.fn();
 const mockAsk = vi.fn();
-const mockOpenPicker = vi.fn();
+// WI-LX1.1 — the menu's folder picker is Rust's (`pick_workspace_folder`); the
+// plugin dialog's `open` is mocked only so nothing reaches a real dialog.
+const mockPickFolder = vi.fn();
+const mockDialogOpen = vi.fn();
 const mockInvoke = vi.fn();
 const mockOpenWorkspaceWithConfig = vi.fn();
 const mockRestoreWorkspaceTabs = vi.fn();
@@ -24,7 +27,7 @@ vi.mock("@tauri-apps/plugin-fs", () => ({
 }));
 vi.mock("@tauri-apps/plugin-dialog", () => ({
   ask: (...a: unknown[]) => mockAsk(...a),
-  open: (...a: unknown[]) => mockOpenPicker(...a),
+  open: (...a: unknown[]) => mockDialogOpen(...a),
 }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => mockInvoke(...a) }));
 vi.mock("@/services/workspaces/openWorkspaceWithConfig", () => ({
@@ -54,14 +57,20 @@ const realGetDocument = useDocumentStore.getState().getDocument;
 
 beforeEach(() => {
   _resetCommandBus();
-  [mockExists, mockStat, mockAsk, mockOpenPicker, mockInvoke, mockOpenWorkspaceWithConfig,
+  [mockExists, mockStat, mockAsk, mockPickFolder, mockDialogOpen, mockInvoke, mockOpenWorkspaceWithConfig,
     mockRestoreWorkspaceTabs, mockToastError, mockPersistWorkspaceSession]
     .forEach((m) => m.mockReset());
   mockExists.mockResolvedValue(true);
   mockStat.mockResolvedValue({ isDirectory: true });
   mockOpenWorkspaceWithConfig.mockResolvedValue(null);
   mockRestoreWorkspaceTabs.mockResolvedValue(0);
-  mockInvoke.mockResolvedValue(undefined);
+  // Rust's access answer for a folder the user chose before: the canonical
+  // root. Every other command resolves to nothing.
+  mockInvoke.mockImplementation(async (cmd: string, args?: { path?: string }) => {
+    if (cmd === "allow_workspace_access") return args?.path;
+    if (cmd === "pick_workspace_folder") return mockPickFolder(args);
+    return undefined;
+  });
   mockPersistWorkspaceSession.mockResolvedValue(undefined);
   useRecentWorkspacesStore.setState({ workspaces: [{ path: "/repo" }] } as never);
   useTabStore.setState({
@@ -142,7 +151,7 @@ describe("workspace.openRecent", () => {
   it("is skipped while a workspace open is already in flight in the same window", async () => {
     registerWorkspaceCommands();
     let resolvePicker!: (value: string | null) => void;
-    mockOpenPicker.mockImplementation(
+    mockPickFolder.mockImplementation(
       () => new Promise<string | null>((resolve) => { resolvePicker = resolve; }),
     );
 
@@ -166,7 +175,7 @@ describe("workspace.openRecent", () => {
   it("does not block a workspace open in a different window", async () => {
     registerWorkspaceCommands();
     let resolvePicker!: (value: string | null) => void;
-    mockOpenPicker.mockImplementation(
+    mockPickFolder.mockImplementation(
       () => new Promise<string | null>((resolve) => { resolvePicker = resolve; }),
     );
 
@@ -264,5 +273,104 @@ describe("workspace.openRecent delegates the accepted transition", () => {
     expect(useRecentWorkspacesStore.getState().workspaces).toContainEqual(
       expect.objectContaining({ path: "/repo" }),
     );
+  });
+});
+
+// WI-LX1.1 — Rust decides whether a recents entry may be granted. The entry is
+// webview data, so it is never granted on its own say-so: a folder the user did
+// not choose (in the picker, from Finder, or recorded from those) and that the
+// static scope cannot read goes back through the picker, opened AT that folder.
+describe("workspace.openRecent asks Rust for access first (WI-LX1.1)", () => {
+  const refused = { code: "permission-denied", message: "not granted" };
+  const commandsCalled = () => mockInvoke.mock.calls.map((call) => call[0]);
+
+  it("asks for access before probing the folder", async () => {
+    await executeCommand("workspace.openRecent", "/repo", { windowLabel: "main" });
+
+    expect(mockInvoke).toHaveBeenCalledWith("allow_workspace_access", { path: "/repo" });
+    expect(mockInvoke.mock.invocationCallOrder[0]).toBeLessThan(
+      mockExists.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("offers removal without probing when Rust says the folder is gone", async () => {
+    mockInvoke.mockRejectedValueOnce({ code: "not-found", message: "gone" });
+    mockAsk.mockResolvedValue(true);
+
+    await executeCommand("workspace.openRecent", "/repo", { windowLabel: "main" });
+
+    expect(useRecentWorkspacesStore.getState().workspaces).toEqual([]);
+    expect(mockExists).not.toHaveBeenCalled();
+    expect(mockOpenWorkspaceWithConfig).not.toHaveBeenCalled();
+  });
+
+  it("opens a folder the static scope already reads, with no picker", async () => {
+    mockInvoke.mockRejectedValueOnce(refused);
+    mockExists.mockResolvedValue(true);
+
+    await executeCommand("workspace.openRecent", "/repo", { windowLabel: "main" });
+
+    expect(commandsCalled()).not.toContain("pick_workspace_folder");
+    expect(mockOpenWorkspaceWithConfig).toHaveBeenCalledWith("/repo", { windowLabel: "main" });
+  });
+
+  it("sends an unreadable, unchosen folder through the picker and opens the pick", async () => {
+    mockInvoke.mockImplementation(async (cmd: string) => {
+      if (cmd === "allow_workspace_access") throw refused;
+      if (cmd === "pick_workspace_folder") return "/private/opt/repo";
+      return undefined;
+    });
+    mockExists.mockRejectedValueOnce(new Error("forbidden path: /opt/repo"));
+
+    await executeCommand("workspace.openRecent", "/opt/repo", { windowLabel: "main" });
+
+    expect(mockInvoke).toHaveBeenCalledWith("pick_workspace_folder", { defaultPath: "/opt/repo" });
+    expect(mockOpenWorkspaceWithConfig).toHaveBeenCalledWith("/private/opt/repo", {
+      windowLabel: "main",
+    });
+  });
+
+  it.each([
+    ["the user cancels the picker", async () => null],
+    ["a picker is already open", async () => { throw { code: "conflict", message: "busy" }; }],
+  ])("opens nothing and offers no removal when %s", async (_label, pick) => {
+    mockInvoke.mockImplementation(async (cmd: string) => {
+      if (cmd === "allow_workspace_access") throw refused;
+      if (cmd === "pick_workspace_folder") return pick();
+      return undefined;
+    });
+    mockExists.mockRejectedValue(new Error("forbidden path: /opt/repo"));
+
+    await executeCommand("workspace.openRecent", "/repo", { windowLabel: "main" });
+
+    expect(mockOpenWorkspaceWithConfig).not.toHaveBeenCalled();
+    expect(mockAsk).not.toHaveBeenCalled();
+    expect(useRecentWorkspacesStore.getState().workspaces).toEqual([{ path: "/repo" }]);
+  });
+
+  it("hands the picked folder, not the stale entry, to a new window when tabs are dirty", async () => {
+    useTabStore.setState({
+      tabs: { main: [{ id: "t1", filePath: "/x.md" }] },
+      activeTabId: { main: "t1" },
+      getTabsByWindow: () => [{ id: "t1", filePath: "/x.md" }],
+    } as never);
+    useDocumentStore.setState({
+      documents: { t1: { isDirty: true } },
+      getDocument: () => ({ isDirty: true }),
+    } as never);
+    mockAsk.mockResolvedValue(true);
+    mockInvoke.mockImplementation(async (cmd: string) => {
+      if (cmd === "allow_workspace_access") throw refused;
+      if (cmd === "pick_workspace_folder") return "/private/opt/repo";
+      return undefined;
+    });
+    mockExists.mockRejectedValueOnce(new Error("forbidden path: /opt/repo"));
+
+    await executeCommand("workspace.openRecent", "/opt/repo", { windowLabel: "main" });
+
+    expect(mockInvoke).toHaveBeenCalledWith("open_workspace_in_new_window", {
+      workspaceRoot: "/private/opt/repo",
+      filePath: null,
+    });
   });
 });

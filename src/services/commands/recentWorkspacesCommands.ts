@@ -12,7 +12,12 @@
  * error boundary, so a throw anywhere inside it escaped the command instead of
  * being logged and reported as "did not open".
  *
+ * Access comes first (WI-LX1.1): the entry is webview data, so Rust grants it
+ * only if the user chose that folder before. A folder the static scope cannot
+ * read, and nobody chose, goes back through the folder picker opened AT it.
+ *
  * @coordinates-with services/workspaces/openWorkspaceByPath.ts — the shared transition
+ * @coordinates-with services/workspaces/workspaceAccess.ts — the access question and the picker
  * @module services/commands/recentWorkspacesCommands
  */
 
@@ -32,6 +37,10 @@ import {
   openWorkspaceByPath,
 } from "@/services/workspaces/openWorkspaceByPath";
 import { confirmAction } from "@/services/dialogs/confirmAction";
+import {
+  pickWorkspaceFolder,
+  resolveWorkspaceAccess,
+} from "@/services/workspaces/workspaceAccess";
 
 type Ctx = { windowLabel?: string };
 
@@ -56,6 +65,42 @@ async function recentWorkspaceIsPresent(workspacePath: string): Promise<boolean>
   } catch (error) {
     workspaceError("Could not probe recent workspace:", error);
     return true;
+  }
+}
+
+/** Which folder this Open Recent goes on to open, if any. */
+type RecentTarget =
+  | { kind: "open"; path: string }
+  | { kind: "missing" }
+  | { kind: "cancelled" };
+
+/**
+ * Ask Rust for access to a recents entry, and settle what to open (WI-LX1.1).
+ *
+ * Granted, already readable, or unverifiable → the entry itself (an IPC
+ * failure is not evidence the folder is gone; the open surfaces real errors).
+ * Gone → `missing`. Unchosen and unreadable → the picker, opened at the entry:
+ * the folder the user picks is what opens, and a cancel opens nothing.
+ */
+async function recentWorkspaceTarget(workspacePath: string): Promise<RecentTarget> {
+  const access = await resolveWorkspaceAccess(workspacePath);
+  switch (access.kind) {
+    case "missing":
+      return { kind: "missing" };
+    case "needs-confirmation":
+      try {
+        const picked = await pickWorkspaceFolder({ defaultPath: workspacePath });
+        return picked ? { kind: "open", path: picked } : { kind: "cancelled" };
+      } catch (error) {
+        workspaceError("Could not open the folder dialog:", error);
+        return { kind: "cancelled" };
+      }
+    case "unverified":
+      workspaceError("Could not check access to recent workspace:", access.error);
+      return { kind: "open", path: workspacePath };
+    case "granted":
+    case "readable":
+      return { kind: "open", path: workspacePath };
   }
 }
 
@@ -120,19 +165,17 @@ function buildRecentWorkspacesCommandSpecs(): CommandDefinition[] {
       // Shares the workspace-transition guard with workspace.openFolder /
       // workspace.close — a per-command key would let two workspace opens race.
       await withReentryGuard(windowLabel, WORKSPACE_TRANSITION_GUARD, async () => {
-        // #1252 / audit #936 — the fs-scope grant comes BEFORE the probe, the
-        // same order `openWorkspaceByPath` uses. Grants are in-memory and do
-        // not survive a restart, so a recents entry outside the static scope
+        // #1252 / audit #936 — access comes BEFORE the probe. Grants do not
+        // survive a restart, so a recents entry outside the static scope
         // (`G:\` on Windows, `/opt` on macOS) made `exists()` REJECT with
         // "forbidden path"; that rejection escaped the command and the menu
-        // item did nothing at all, with no message. The transition grants
-        // again — the grant is idempotent, and neither caller may assume the
+        // item did nothing at all, with no message. The transition re-grants
+        // too — the grant is idempotent, and neither caller may assume the
         // other ran.
-        await invoke("allow_workspace_access", { path: workspacePath }).catch((error) => {
-          workspaceError("Failed to grant workspace fs scope:", error);
-        });
+        const target = await recentWorkspaceTarget(workspacePath);
+        if (target.kind === "cancelled") return;
 
-        if (!(await recentWorkspaceIsPresent(workspacePath))) {
+        if (target.kind === "missing" || !(await recentWorkspaceIsPresent(target.path))) {
           const remove = await confirmAction({
             title: i18n.t("dialog:workspaceNotFound.title"),
             message: i18n.t("dialog:workspaceNotFound.message"),
@@ -160,13 +203,13 @@ function buildRecentWorkspacesCommandSpecs(): CommandDefinition[] {
             kind: "warning",
             cancelLabel: i18n.t("dialog:unsavedChanges.openInNewWindowCancel"),
           });
-          if (confirmed) await openRecentWorkspaceInNewWindow(workspacePath);
+          if (confirmed) await openRecentWorkspaceInNewWindow(target.path);
           return;
         }
 
         // The shared transition — config, sidebar, recents, tab restore, split
         // restore — under the guard this command already holds.
-        await openWorkspaceByPath(workspacePath, { windowLabel });
+        await openWorkspaceByPath(target.path, { windowLabel });
       });
     },
   });

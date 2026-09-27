@@ -211,7 +211,6 @@
   "common.pin": "Fixar",
   "common.pinTooltip": "Manter este aviso aberto",
   "common.unpinTooltip": "Fixado — fechar manualmente",
-  "openWorkspaceFolder.title": "Abrir pasta do espaço de trabalho",
   "openWorkspace.approval.title": "Abrir pasta como espaço de trabalho?",
   "openWorkspace.approval.body": "O assistente de IA está pedindo para abrir esta pasta como espaço de trabalho, o que lhe dá acesso à árvore de arquivos da pasta:",
   "openWorkspace.approval.approve": "Abrir espaço de trabalho",

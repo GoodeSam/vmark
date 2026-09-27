@@ -71,6 +71,7 @@ mod webview_edit;
 mod window_manager;
 pub mod workflow;
 mod workspace;
+mod workspace_grants; // WI-LX1.1 Rust-owned workspace grants (picker, Finder, recorded roots)
 mod workspace_transfer;
 mod workspace_validation;
 
@@ -140,6 +141,9 @@ fn manage_state<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         // #1419: the close-to-tray preference. Starts disabled — a push from the
         // webview that has not landed leaves the old close behaviour in force.
         .manage(close_to_tray::CloseToTrayState::default())
+        // WI-LX1.1: the workspace roots the user chose. Loaded from app data
+        // and re-granted in `setup_app`; picks made before that are merged.
+        .manage(workspace_grants::WorkspaceGrants::default())
 }
 
 /// Build and run the Tauri application with all plugins, commands, and event handlers.

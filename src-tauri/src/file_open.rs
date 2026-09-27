@@ -9,6 +9,8 @@
 //! over the 300-line limit, which the size gate correctly refused.
 //!
 //! Key decisions:
+//!   - A folder opened from Finder is a folder the user chose: it is granted
+//!     and recorded through `workspace_grants` before its window opens.
 //!   - File opens from Finder are queued in `FILE_OPEN_STATE` until the frontend
 //!     signals readiness, solving a cold-start race condition. Only files with a
 //!     registered extension are accepted; others are skipped. Hot opens (app
@@ -159,17 +161,37 @@ pub(crate) fn handle_finder_opened(app: &tauri::AppHandle, urls: Vec<tauri::Url>
         log::warn!("[Finder] Skipping unsupported open request: {}", skipped);
     }
     for dir in &opened.dirs {
-        log::info!("[Finder] Opening directory: {}", dir);
-        if let Err(e) = window_manager::create_document_window(app, None, Some(dir)) {
-            log::error!(
-                "[Finder] Failed to create window for directory {}: {}",
-                dir,
-                e
-            );
-        }
+        open_finder_directory(app, dir);
     }
 
     route_file_opens(app, opened.files);
+}
+
+/// Open a folder handed over by Finder as a workspace window (WI-LX1.1).
+///
+/// Opening a folder in VMark from Finder IS the user choosing it, so it is
+/// granted recursively and recorded like a folder-picker choice before the
+/// window can read it — without that, a folder outside the static scope opened
+/// a window that could read nothing in it. The window gets the canonical root
+/// the grant judged (#250); a folder that vanished since the partition opens
+/// nothing.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))] // production caller is the macOS Opened handler
+pub(crate) fn open_finder_directory<R: tauri::Runtime>(app: &tauri::AppHandle<R>, dir: &str) {
+    let root = match crate::workspace_grants::grant_chosen_root(app, std::path::Path::new(dir)) {
+        Ok(root) => root,
+        Err(e) => {
+            log::error!("[Finder] Not opening directory {}: {}", dir, e.message());
+            return;
+        }
+    };
+    log::info!("[Finder] Opening directory: {}", root);
+    if let Err(e) = window_manager::create_document_window(app, None, Some(&root)) {
+        log::error!(
+            "[Finder] Failed to create window for directory {}: {}",
+            root,
+            e
+        );
+    }
 }
 
 /// Route already-filtered file paths to a ready document window, queueing them

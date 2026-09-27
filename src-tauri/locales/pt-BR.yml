@@ -405,6 +405,16 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "O acesso às chaves foi negado. Permita o VMark no aviso das chaves ou conceda o acesso no app Acesso às Chaves e tente novamente."
 
+  # === Permissões de espaços de trabalho (workspace_grants/commands.rs, WI-LX1.1) ===
+  workspaceAccess.notGranted: "O VMark não tem acesso a “%{path}”. Escolha a pasta em Arquivo → Abrir espaço de trabalho... para permitir."
+  workspaceAccess.pickerBusy: "Já há uma caixa de diálogo de pasta aberta"
+  workspaceAccess.listProtected: "Somente o próprio VMark pode alterar a lista de pastas que ele tem permissão para abrir"
+
+# WI-LX1.1 — the folder picker Rust shows for workspace access
+workspaceAccess:
+  pickTitle: "Abrir pasta do espaço de trabalho"
+  confirmTitle: "Permitir que o VMark abra esta pasta"
+
 window:
   settings.title: "Configurações"
   pdfExport.title: "Exportar PDF"

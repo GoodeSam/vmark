@@ -211,7 +211,6 @@
   "common.pin": "釘住",
   "common.pinTooltip": "保持此通知開啟",
   "common.unpinTooltip": "已釘住 — 手動關閉",
-  "openWorkspaceFolder.title": "開啟工作區資料夾",
   "openWorkspace.approval.title": "將資料夾作為工作區開啟?",
   "openWorkspace.approval.body": "AI 助理請求將此資料夾作為工作區開啟,這將授予它存取該資料夾檔案樹的權限:",
   "openWorkspace.approval.approve": "開啟工作區",

@@ -15,6 +15,12 @@
  *      guard responds BUSY without consuming; an internal open failure fails
  *      closed (never a false success). The window is the one this request runs
  *      in (getCurrentWindowLabel), not a client-supplied label.
+ *   4. Before consuming, Rust is asked for access (WI-LX1.1). The approval
+ *      dialog is webview UI, so it cannot make Rust grant a folder: one nobody
+ *      chose and the static scope cannot read is confirmed in the folder
+ *      picker Rust shows, opened AT it. That cannot be waited for here, so the
+ *      retry fails now, the one-shot SURVIVES, and the retry after the pick
+ *      opens. An access check that cannot run fails closed.
  *
  * Validation goes through the Rust `validate_workspace_dir` command, NOT a
  * webview `stat` — this is a boundary-EXPANDING operation that can't use the
@@ -28,7 +34,8 @@
  *
  * @coordinates-with stores/workspaceApprovalStore.ts — the one-shot store
  * @coordinates-with services/workspaces/openWorkspaceByPath.ts — the shared open sequence
- * @coordinates-with src-tauri/src/workspace.rs — validate_workspace_dir command
+ * @coordinates-with services/workspaces/workspaceAccess.ts — Rust access check + picker
+ * @coordinates-with src-tauri/src/workspace_validation.rs — validate_workspace_dir command
  * @module services/mcpBridge/v2/workspaceOpenFolder
  */
 import { invoke } from "@tauri-apps/api/core";
@@ -36,6 +43,10 @@ import {
   openWorkspaceByPath,
   WORKSPACE_TRANSITION_GUARD,
 } from "@/services/workspaces/openWorkspaceByPath";
+import {
+  requestWorkspaceConfirmation,
+  resolveWorkspaceAccess,
+} from "@/services/workspaces/workspaceAccess";
 import { useWorkspaceApprovalStore } from "@/stores/workspaceApprovalStore";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { withReentryGuard } from "@/utils/reentryGuard";
@@ -123,6 +134,31 @@ export async function handleWorkspaceOpenWorkspace(
     // skip the open while we have already spent the grant, reporting a success
     // that never happened (Codex M4).
     if (approvals.hasOneShot(canonicalPath, windowLabel, clientId)) {
+      // WI-LX1.1 — access BEFORE the one-shot is spent (flow step 4).
+      const access = await resolveWorkspaceAccess(canonicalPath);
+      if (access.kind === "needs-confirmation") {
+        requestWorkspaceConfirmation(canonicalPath);
+        await structuredError(id, {
+          error: "APPROVAL_REQUIRED",
+          message: `VMark opened a folder dialog at ${canonicalPath}. The user must choose that folder there before it can open as a workspace. Ask them to, then retry.`,
+        });
+        return;
+      }
+      if (access.kind === "missing") {
+        await structuredError(id, {
+          error: "INVALID_PATH",
+          message: `${canonicalPath} is no longer a folder.`,
+        });
+        return;
+      }
+      if (access.kind === "unverified") {
+        await structuredError(id, {
+          error: "INTERNAL",
+          message: `Could not check access to ${canonicalPath}: ${commandErrorMessage(access.error)}`,
+        });
+        return;
+      }
+
       const outcome = await withReentryGuard(
         windowLabel,
         WORKSPACE_TRANSITION_GUARD,

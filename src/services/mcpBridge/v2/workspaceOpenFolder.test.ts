@@ -12,6 +12,9 @@ const openWorkspaceByPath = vi.fn(async () => true);
 const withReentryGuard = vi.fn(async <T>(_l: string, _k: string, fn: () => Promise<T>) => fn());
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invokeMock(...(a as [string, { path: string }])) }));
+// The access check's readability probe (services/workspaces/workspaceAccess).
+const existsMock = vi.fn(async () => true);
+vi.mock("@tauri-apps/plugin-fs", () => ({ exists: (...a: unknown[]) => existsMock(...(a as [])) }));
 vi.mock("@/services/mcpBridge/utils", () => ({
   respond: async (r: Record<string, unknown>) => { responses.push(r); },
 }));
@@ -36,6 +39,7 @@ beforeEach(() => {
   responses.length = 0;
   vi.clearAllMocks();
   invokeMock.mockImplementation(async (_cmd: string, args: { path: string }) => args.path);
+  existsMock.mockResolvedValue(true);
   useWorkspaceApprovalStore.setState({ pending: [], oneShots: [] });
 });
 
@@ -135,6 +139,95 @@ describe("handleWorkspaceOpenWorkspace", () => {
 
     expect(responses[0].success).toBe(false);
     expect(String(responses[0].error)).toContain("RESOURCE_EXHAUSTED");
+  });
+});
+
+// WI-LX1.1 — the in-app approval is a webview dialog, so it cannot by itself
+// make Rust grant a folder. A folder nobody chose and the static scope cannot
+// read is confirmed in the folder picker Rust shows, opened AT the folder. The
+// MCP transport cannot wait for a person, so the retry fails now and the
+// one-shot SURVIVES for the retry after the user confirms.
+describe("open_workspace confirms an ungranted folder in the picker (WI-LX1.1)", () => {
+  const refused = { code: "permission-denied", message: "not granted" };
+
+  async function approve(path = "/proj"): Promise<void> {
+    await handleWorkspaceOpenWorkspace("id1", { folderPath: path });
+    useWorkspaceApprovalStore.getState().resolveApproval("id1", "approve");
+    responses.length = 0;
+  }
+
+  function rustAnswers(allow: () => Promise<unknown>): void {
+    invokeMock.mockImplementation(async (cmd: string, args: { path: string }) => {
+      if (cmd === "allow_workspace_access") return allow() as Promise<string>;
+      if (cmd === "pick_workspace_folder") return new Promise<string>(() => {}); // user still deciding
+      return args.path;
+    });
+  }
+
+  it("opens the picker at the folder, keeps the one-shot, and opens nothing yet", async () => {
+    await approve();
+    rustAnswers(async () => { throw refused; });
+    existsMock.mockRejectedValue(new Error("forbidden path: /proj"));
+
+    await handleWorkspaceOpenWorkspace("id2", { folderPath: "/proj" });
+
+    expect(invokeMock).toHaveBeenCalledWith("pick_workspace_folder", { defaultPath: "/proj" });
+    expect(openWorkspaceByPath).not.toHaveBeenCalled();
+    expect(responses[0].success).toBe(false);
+    expect(String(responses[0].error)).toContain("APPROVAL_REQUIRED");
+    expect(String(responses[0].error)).toContain("folder dialog");
+    // No approval envelope: the sidecar would replace this message with the
+    // generic "ask the user to approve" text, which is not what is needed now.
+    expect(responses[0].data).toBeUndefined();
+    expect(useWorkspaceApprovalStore.getState().oneShots).toHaveLength(1);
+  });
+
+  it("opens on the retry after the user picked the folder", async () => {
+    await approve();
+    rustAnswers(async () => { throw refused; });
+    existsMock.mockRejectedValue(new Error("forbidden path: /proj"));
+    await handleWorkspaceOpenWorkspace("id2", { folderPath: "/proj" });
+    responses.length = 0;
+
+    // The pick made Rust record the folder; now it grants it.
+    rustAnswers(async () => "/proj");
+    await handleWorkspaceOpenWorkspace("id3", { folderPath: "/proj" });
+
+    expect(openWorkspaceByPath).toHaveBeenCalledWith("/proj", { windowLabel: "main" });
+    expect(responses[0].success).toBe(true);
+    expect(useWorkspaceApprovalStore.getState().oneShots).toHaveLength(0);
+  });
+
+  it("opens a folder the static scope already reads, with no picker", async () => {
+    await approve();
+    rustAnswers(async () => { throw refused; });
+    existsMock.mockResolvedValue(true);
+
+    await handleWorkspaceOpenWorkspace("id2", { folderPath: "/proj" });
+
+    expect(invokeMock.mock.calls.map((c) => c[0])).not.toContain("pick_workspace_folder");
+    expect(responses[0].success).toBe(true);
+  });
+
+  it("fails closed, keeping the one-shot, when access cannot be checked", async () => {
+    await approve();
+    rustAnswers(async () => { throw new Error("ipc down"); });
+
+    await handleWorkspaceOpenWorkspace("id2", { folderPath: "/proj" });
+
+    expect(openWorkspaceByPath).not.toHaveBeenCalled();
+    expect(String(responses[0].error)).toContain("INTERNAL");
+    expect(useWorkspaceApprovalStore.getState().oneShots).toHaveLength(1);
+  });
+
+  it("reports a folder that vanished since approval as INVALID_PATH", async () => {
+    await approve();
+    rustAnswers(async () => { throw { code: "not-found", message: "gone" }; });
+
+    await handleWorkspaceOpenWorkspace("id2", { folderPath: "/proj" });
+
+    expect(openWorkspaceByPath).not.toHaveBeenCalled();
+    expect(String(responses[0].error)).toContain("INVALID_PATH");
   });
 });
 
