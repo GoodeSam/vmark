@@ -155,5 +155,18 @@
   "form.job.add.submit": "追加",
   "form.job.add.duplicate": "この ID のジョブはすでに存在します",
   "form.job.add.invalid": "先頭は英字またはアンダースコア、以降は英数字・ハイフン・アンダースコアが使えます",
-  "diagnosticsBanner.actionlintTimedOut": "actionlint が時間内に応答しなかったため、待機を打ち切りました"
+  "diagnosticsBanner.actionlintTimedOut": "actionlint が時間内に応答しなかったため、待機を打ち切りました",
+  "form.concurrency.label": "同時実行",
+  "form.concurrency.group": "グループ",
+  "form.concurrency.cancelInProgress": "実行中をキャンセル",
+  "form.concurrency.expressionLocked": "（式 — ソースで編集）",
+  "form.job.delete.label": "ジョブを削除",
+  "form.job.steps.add": "ステップを追加",
+  "form.job.steps.delete": "ステップを削除",
+  "form.job.steps.moveUp": "ステップを上へ移動",
+  "form.job.steps.moveDown": "ステップを下へ移動",
+  "form.permissions.label": "権限",
+  "form.permissions.default": "デフォルト",
+  "form.permissions.custom": "カスタム（スコープごと）",
+  "form.permissions.unset": "（未設定）"
 }

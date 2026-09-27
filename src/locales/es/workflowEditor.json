@@ -155,5 +155,18 @@
   "form.job.add.submit": "Añadir",
   "form.job.add.duplicate": "Ya existe un trabajo con este ID",
   "form.job.add.invalid": "Empieza con una letra o un guion bajo, seguido de letras, dígitos, guiones o guiones bajos",
-  "diagnosticsBanner.actionlintTimedOut": "actionlint no respondió a tiempo; VMark dejó de esperarlo"
+  "diagnosticsBanner.actionlintTimedOut": "actionlint no respondió a tiempo; VMark dejó de esperarlo",
+  "form.concurrency.label": "Concurrencia",
+  "form.concurrency.group": "Grupo",
+  "form.concurrency.cancelInProgress": "Cancelar en curso",
+  "form.concurrency.expressionLocked": "(expresión — editar en el código fuente)",
+  "form.job.delete.label": "Eliminar trabajo",
+  "form.job.steps.add": "Añadir paso",
+  "form.job.steps.delete": "Eliminar paso",
+  "form.job.steps.moveUp": "Subir paso",
+  "form.job.steps.moveDown": "Bajar paso",
+  "form.permissions.label": "Permisos",
+  "form.permissions.default": "Predeterminado",
+  "form.permissions.custom": "Personalizado (por ámbito)",
+  "form.permissions.unset": "(sin definir)"
 }

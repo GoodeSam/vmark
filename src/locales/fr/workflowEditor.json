@@ -155,5 +155,18 @@
   "form.job.add.submit": "Ajouter",
   "form.job.add.duplicate": "Un job portant cet identifiant existe déjà",
   "form.job.add.invalid": "Commencez par une lettre ou un tiret bas, puis des lettres, chiffres, tirets ou tirets bas",
-  "diagnosticsBanner.actionlintTimedOut": "actionlint n’a pas répondu à temps ; VMark a cessé de l’attendre"
+  "diagnosticsBanner.actionlintTimedOut": "actionlint n’a pas répondu à temps ; VMark a cessé de l’attendre",
+  "form.concurrency.label": "Concurrence",
+  "form.concurrency.group": "Groupe",
+  "form.concurrency.cancelInProgress": "Annuler en cours",
+  "form.concurrency.expressionLocked": "(expression — modifier dans le source)",
+  "form.job.delete.label": "Supprimer le job",
+  "form.job.steps.add": "Ajouter une étape",
+  "form.job.steps.delete": "Supprimer l’étape",
+  "form.job.steps.moveUp": "Monter l’étape",
+  "form.job.steps.moveDown": "Descendre l’étape",
+  "form.permissions.label": "Permissions",
+  "form.permissions.default": "Par défaut",
+  "form.permissions.custom": "Personnalisé (par portée)",
+  "form.permissions.unset": "(non défini)"
 }

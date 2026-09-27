@@ -155,5 +155,18 @@
   "form.job.add.submit": "Hinzufügen",
   "form.job.add.duplicate": "Ein Job mit dieser ID existiert bereits",
   "form.job.add.invalid": "Beginne mit einem Buchstaben oder Unterstrich, danach Buchstaben, Ziffern, Bindestriche oder Unterstriche",
-  "diagnosticsBanner.actionlintTimedOut": "actionlint hat nicht rechtzeitig geantwortet; VMark wartet nicht länger darauf"
+  "diagnosticsBanner.actionlintTimedOut": "actionlint hat nicht rechtzeitig geantwortet; VMark wartet nicht länger darauf",
+  "form.concurrency.label": "Parallelität",
+  "form.concurrency.group": "Gruppe",
+  "form.concurrency.cancelInProgress": "Laufende abbrechen",
+  "form.concurrency.expressionLocked": "(Ausdruck — im Quelltext bearbeiten)",
+  "form.job.delete.label": "Job löschen",
+  "form.job.steps.add": "Schritt hinzufügen",
+  "form.job.steps.delete": "Schritt löschen",
+  "form.job.steps.moveUp": "Schritt nach oben",
+  "form.job.steps.moveDown": "Schritt nach unten",
+  "form.permissions.label": "Berechtigungen",
+  "form.permissions.default": "Standard",
+  "form.permissions.custom": "Benutzerdefiniert (pro Bereich)",
+  "form.permissions.unset": "(nicht gesetzt)"
 }

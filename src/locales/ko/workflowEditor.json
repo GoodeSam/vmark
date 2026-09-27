@@ -155,5 +155,18 @@
   "form.job.add.submit": "추가",
   "form.job.add.duplicate": "이 ID를 가진 작업이 이미 있습니다",
   "form.job.add.invalid": "영문자나 밑줄로 시작하고 이후에는 영문자, 숫자, 하이픈, 밑줄을 사용하세요",
-  "diagnosticsBanner.actionlintTimedOut": "actionlint가 제때 응답하지 않아 대기를 중단했습니다"
+  "diagnosticsBanner.actionlintTimedOut": "actionlint가 제때 응답하지 않아 대기를 중단했습니다",
+  "form.concurrency.label": "동시성",
+  "form.concurrency.group": "그룹",
+  "form.concurrency.cancelInProgress": "진행 중 취소",
+  "form.concurrency.expressionLocked": "(표현식 — 소스에서 편집)",
+  "form.job.delete.label": "작업 삭제",
+  "form.job.steps.add": "단계 추가",
+  "form.job.steps.delete": "단계 삭제",
+  "form.job.steps.moveUp": "단계를 위로 이동",
+  "form.job.steps.moveDown": "단계를 아래로 이동",
+  "form.permissions.label": "권한",
+  "form.permissions.default": "기본값",
+  "form.permissions.custom": "사용자 지정(범위별)",
+  "form.permissions.unset": "(설정 안 됨)"
 }
