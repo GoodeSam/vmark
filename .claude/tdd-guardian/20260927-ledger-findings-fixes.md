@@ -6,7 +6,7 @@ mode: "full-plan"
 
 # Ledger findings fixes
 
-**Status:** IN PROGRESS on branch `fix/feature-ledger-findings`.
+**Status:** DONE 2026-09-27 on branch `fix/feature-ledger-findings`. All 12 work items linked (`bash scripts/check-wi-linkage.sh`); `pnpm check:all`, `cargo test`, `cargo clippy -D warnings`, `cargo fmt --check` and `scripts/check-cross-target.sh` green. Not yet exercised in a running app: the Rust folder picker, Restore Files, and Run/Cancel on a `.yml` workflow.
 **Evidence:** `.claude/feature-ledger.md` §"Open findings" (verified at `12c98051e`).
 **Namespace:** `WI-LX<phase>.<n>`.
 **Maintainer decisions (2026-09-27):** YAML engine — keep in every build behind `advanced.workflowEngine` and make it work (re-verdict recorded in rule 60 §12); `asset://` — narrow to the fs scope plus runtime grants; workspace grants — Rust-owned.
