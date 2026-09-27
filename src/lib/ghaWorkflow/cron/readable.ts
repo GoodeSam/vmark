@@ -1,8 +1,8 @@
 /**
- * Purpose: Render a GitHub Actions schedule.cron expression as a
- *   human-readable English summary, plus flag schedules that GHA
- *   throttles silently (under-5-minute interval) per actionlint
- *   policy.
+ * Purpose: Break a GitHub Actions schedule.cron expression into
+ *   structured parts callers translate (`form.trigger.cron.*`), plus flag
+ *   schedules that GHA throttles silently (under-5-minute interval) per
+ *   actionlint policy.
  *
  *   GHA cron syntax is the standard POSIX 5-field form:
  *     minute (0-59) | hour (0-23) | day-of-month (1-31) |

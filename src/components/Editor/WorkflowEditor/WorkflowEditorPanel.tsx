@@ -9,7 +9,7 @@
  *        `advanced.workflowActionlint`, async, never delaying the parser's).
  *     3. Add-job control, PermissionsForm, ConcurrencyForm, and the
  *        TriggerForm (mapping-shaped event filters editable; cron shown
- *        read-only as English).
+ *        read-only as a translated summary).
  *     4. Either a JobForm (if a job is selected) or a StepForm (if a
  *        step within a job is selected) or a "select a job" hint.
  *
