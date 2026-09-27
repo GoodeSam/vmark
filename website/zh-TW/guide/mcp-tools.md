@@ -355,7 +355,7 @@ VMark 對 AI 助理開放**九個複合 MCP 工具**：`session`、`workspace`�
 
 在 AI 擁有的分頁上，把**你自己的操作**記錄成可重播的工作流程。參數：`tabId?`、`recordOp`（`"start"` 或 `"stop"`），以及 `site?`（所記錄工作流程的 front-matter 網站 id；預設為 `recording`）。
 
-`start` 受 `record` 權限的**同意把關**，而該權限——與 `execute_js` 和 `session` 一樣——**絕非常駐授權**：每一次記錄都會重新徵求你的同意，因此 AI 永遠無法在你不知情下記錄你。在你允許之前，`start` 會回傳 `needsApproval`；一旦你允許，VMark 就會啟用一段休眠的 page-world 擷取墊片，並開始記錄你執行的**點擊與欄位編輯**。`stop` 會回傳 `{source, inputs, eventCount}`——其中 `source` 是工作流程文字，你可以將它儲存，或直接交給 [`workflow_run`](#workflow-run)。
+`start` 受 `record` 權限的**同意把關**，而該權限——與 `execute_js` 和 `session` 一樣——**絕非常駐授權**：每一次記錄都會重新徵求你的同意，因此 AI 永遠無法在你不知情下記錄你。在你允許之前，`start` 會回傳 `needsApproval`；一旦你允許，VMark 就會啟用一段休眠的 page-world 擷取墊片，並開始記錄你執行的**點擊與欄位編輯**。`stop` 會回傳 `{source, inputs, eventCount}`——其中 `source` 是工作流程文字，你可以將它儲存，或直接交給 [`workflow_run`](#workflow-run-workflow-cancel)。
 
 這份記錄**在設計上即不含任何值**，而且這並不是一道信任頁面的過濾器：你所輸入的任何內容都絕不會被擷取。每個文字欄位都會變成一個具名的 `{input}` 變數（其值在重播時才提供，絕不記錄）；而**密碼或一次性驗證碼欄位**則會變成一個 `confirm:` 步驟——一道你在重播時親手完成的人工關卡——因此祕密甚至不會被參數化；而且每個 URL 都會被削減到只剩 origin + path，讓查詢字串中的權杖無法留存。所記錄的是你所碰觸的**定位器**（ARIA role + accessible name），絕非它們的資料。記錄會跟著你跨越頁面導覽，並且有其上限（每頁 200 個事件、每個工作階段 1,000 個）。
 

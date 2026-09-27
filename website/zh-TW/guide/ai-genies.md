@@ -12,7 +12,7 @@ AI 精靈是使用 AI 轉換文字的提示範本。選取文字、呼叫精靈�
 
 ## 精靈選取器
 
-按 `Mod + Y`（或選單 **工具 > AI 精靈**）開啟聚光燈風格的覆蓋層，提供統一的輸入介面。
+按 `Mod + Y`（或選單 **編輯 → 精靈 → 搜尋精靈…**）開啟聚光燈風格的覆蓋層，提供統一的輸入介面。同一個子選單會依名稱列出每一個精靈，因此也可以直接從選單執行精靈。
 
 **搜尋與自由格式** — 開始輸入可依名稱、說明或分類篩選精靈。若無精靈符合，輸入框將變為自由格式提示欄位。
 
@@ -22,14 +22,14 @@ AI 精靈是使用 AI 轉換文字的提示範本。選取文字、呼叫精靈�
 
 **範圍循環** — 按 `Tab` 循環切換範圍：選取 → 區塊 → 文件 → 全部。
 
-**提示歷史** — 在自由格式模式（無符合精靈）下，按 `↑`/`↓` 循環瀏覽之前的提示。按 `Ctrl + R` 開啟可搜尋的歷史下拉選單。幽靈文字以灰色顯示最近符合的提示作為提示 — 按 `Tab` 接受。
+**提示歷史** — 在自由格式模式（無符合精靈）下，按 `ArrowUp` / `ArrowDown` 循環瀏覽之前的提示。按 `Ctrl + R` 開啟可搜尋的歷史下拉選單。幽靈文字以灰色顯示最近符合的提示作為提示 — 按 `Tab` 接受，或按 `Escape` 關閉（你變更輸入的內容後它會再次出現）。
 
 ### 處理中回饋
 
 選取精靈或提交自由格式提示後，選取器顯示行內回饋：
 
 - **處理中** — 思考指示器，附有已用時間計數器。按 `Escape` 取消。
-- **預覽** — AI 回應即時串流。使用「接受」套用或「拒絕」捨棄。
+- **預覽** — AI 回應隨著抵達而顯示：CLI 供應商會在生成的同時串流輸出，而 REST 供應商則在請求完成時一次傳回完整答案。使用「接受」套用或「拒絕」捨棄。
 - **錯誤** — 若出現問題，顯示錯誤訊息和「重試」按鈕。
 
 狀態列也會顯示 AI 進度 — 執行中時顯示旋轉圖示和已用時間，成功時短暫閃爍「完成」，錯誤時顯示帶有重試/關閉按鈕的錯誤指示器。當 AI 有活躍狀態時，狀態列會自動顯示，即使你之前用 `F7` 隱藏了它。
@@ -89,9 +89,9 @@ VMark 內建 13 個精靈，分為四個分類：
 
 精靈執行後，建議會行內顯示：
 
-- **取代** — 原始文字帶刪除線，新文字以綠色顯示
-- **插入** — 新文字以綠色顯示在來源區塊之後
-- **刪除** — 原始文字帶刪除線
+- **取代** — 原始文字帶紅色波浪刪除線，其後以強調色的淡化斜體「幽靈」文字顯示新文字
+- **插入** — 新文字以幽靈文字顯示在來源區塊之後
+- **刪除** — 原始文字帶紅色波浪刪除線
 
 每個建議都有接受（勾選）和拒絕（X）按鈕。
 
@@ -130,13 +130,13 @@ AI 生成期間，狀態列顯示旋轉星光圖示和已用時間計數器（�
 | Windows | `%APPDATA%\app.vmark\genies\` |
 | Linux | `~/.local/share/app.vmark/genies/` |
 
-從選單 **工具 > 開啟精靈資料夾** 開啟此資料夾。
+從選單 **編輯 → 精靈 → 開啟精靈資料夾** 開啟此資料夾；新增或編輯檔案後，**編輯 → 精靈 → 重新載入精靈** 會重新整理清單。
 
 ### 目錄結構
 
-子目錄成為選取器中的 **分類**。你可以按自己的方式組織精靈：
+子目錄成為選取器中的 **分類**，而且掃描是遞迴的 — 資料夾想巢狀多深都可以；除非前置資料設定了 `category`，否則精靈的分類就是它相對於 `genies/` 的資料夾路徑（因此 `academic/thesis/abstract.md` 會歸入 `academic/thesis`）。符號連結會被略過。你可以按自己的方式組織精靈：
 
-```
+```text
 genies/
 ├── editing/
 │   ├── polish.md
@@ -145,10 +145,10 @@ genies/
 ├── creative/
 │   ├── expand.md
 │   └── rephrase.md
-├── academic/          ← 你的自訂分類
+├── academic/          ← your custom category
 │   ├── cite.md
 │   └── abstract.md
-└── my-workflows/      ← 另一個自訂分類
+└── my-workflows/      ← another custom category
     └── blog-intro.md
 ```
 
@@ -158,18 +158,6 @@ genies/
 
 ```markdown
 ---
-description: Improve clarity and flow
-scope: selection
-category: editing
----
-
-You are an expert editor. Improve the clarity, flow, and conciseness
-of the following text while preserving the author's voice and intent.
-
-Return only the improved text — no explanations.
-
-{{content}}
-```---
 description: Improve clarity and flow
 scope: selection
 category: editing
@@ -205,7 +193,7 @@ Return only the improved text — no explanations.
 1. 根據範圍 **提取文字**（選取的文字、目前區塊或完整文件）
 2. 用提取的文字 **取代** 範本中所有的 `{{content}}`
 3. 將填入的提示 **發送** 至活躍的 AI 供應商
-4. 將回應以行內建議的形式 **串流** 返回
+4. 將回應以行內建議的形式 **傳回** — 來自 CLI 供應商時會在生成的同時串流輸出，來自 REST 供應商時則一次完整傳回
 
 例如，使用此範本：
 
@@ -217,7 +205,7 @@ Translate the following text into French.
 
 若使用者選取「Hello, how are you?」，AI 接收：
 
-```
+```text
 Translate the following text into French.
 
 Hello, how are you?
@@ -247,7 +235,7 @@ AI 回應「Bonjour, comment allez-vous ?」，並顯示為替換選取文字的
 
 使用 `context: 1`，游標位於三段文件的第二段：
 
-```
+```text
 [Before]
 First paragraph content here.
 
@@ -280,18 +268,6 @@ Match the author's voice, style, and tone. Write 2-3 paragraphs.
 Do not repeat or summarize the existing text — just continue it.
 
 {{content}}
-```---
-description: Continue writing from here
-scope: block
-action: insert
----
-
-Continue writing naturally from where the following text leaves off.
-Match the author's voice, style, and tone. Write 2-3 paragraphs.
-
-Do not repeat or summarize the existing text — just continue it.
-
-{{content}}
 ```
 
 ### `model` 欄位
@@ -300,15 +276,6 @@ Do not repeat or summarize the existing text — just continue it.
 
 ```markdown
 ---
-description: Quick grammar fix (uses fast model)
-scope: selection
-model: claude-haiku-4-5-20251001
----
-
-Fix grammar and spelling errors. Return only the corrected text.
-
-{{content}}
-```---
 description: Quick grammar fix (uses fast model)
 scope: selection
 model: claude-haiku-4-5-20251001
@@ -328,10 +295,10 @@ Fix grammar and spelling errors. Return only the corrected text.
 告訴 AI 確切要返回什麼。若不指定，模型容易新增解釋、標題或注解。
 
 ```markdown
-<!-- 好 -->
+<!-- Good -->
 Return only the improved text — no explanations.
 
-<!-- 不好 — AI 可能用引號包裹輸出、加上「以下是改進後的版本：」等 -->
+<!-- Bad — AI may wrap output in quotes, add "Here's the improved version:", etc. -->
 Improve this text.
 ```
 
@@ -340,10 +307,10 @@ Improve this text.
 給 AI 一個角色以確立其行為方向。
 
 ```markdown
-<!-- 好 -->
+<!-- Good -->
 You are an expert technical editor who specializes in API documentation.
 
-<!-- 尚可但較不聚焦 -->
+<!-- Okay but less focused -->
 Edit the following text.
 ```
 
@@ -352,12 +319,12 @@ Edit the following text.
 告訴 AI **不要** 修改什麼。這可防止過度編輯。
 
 ```markdown
-<!-- 好 -->
+<!-- Good -->
 Fix grammar and spelling errors only.
 Do not change the meaning, style, or tone.
 Do not restructure sentences.
 
-<!-- 不好 — 給 AI 太多自由 -->
+<!-- Bad — gives the AI too much freedom -->
 Fix this text.
 ```
 
@@ -385,25 +352,6 @@ Format as:
 - point 2
 
 {{content}}
-```---
-description: Generate a pros/cons analysis
-scope: selection
-action: insert
----
-
-Analyze the following text and produce a brief pros/cons list.
-
-Format as:
-
-**Pros:**
-- point 1
-- point 2
-
-**Cons:**
-- point 1
-- point 2
-
-{{content}}
 ```
 
 ### 保持提示聚焦
@@ -411,18 +359,8 @@ Format as:
 一個精靈，一件工作。不要將多個任務合併成一個精靈 — 建立獨立的精靈。
 
 ```markdown
-<!-- 好 — 一個明確的工作 -->
+<!-- Good — one clear job -->
 ---
-description: Convert to active voice
-scope: selection
----
-
-Rewrite the following text using active voice.
-Do not change the meaning.
-Return only the rewritten text.
-
-{{content}}
-```---
 description: Convert to active voice
 scope: selection
 ---
@@ -450,17 +388,6 @@ Read the following paper and write a concise academic abstract
 results, conclusion.
 
 {{content}}
-```---
-description: Generate an academic abstract
-scope: document
-action: insert
----
-
-Read the following paper and write a concise academic abstract
-(150-250 words). Follow standard structure: background, methods,
-results, conclusion.
-
-{{content}}
 ```
 
 ### 部落格 — 生成吸引人的開頭
@@ -477,34 +404,12 @@ that hooks the reader. Use a question, surprising fact, or vivid
 scene. Keep it under 3 sentences.
 
 {{content}}
-```---
-description: Write an engaging opening paragraph
-scope: document
-action: insert
----
-
-Read the following draft and write a compelling opening paragraph
-that hooks the reader. Use a question, surprising fact, or vivid
-scene. Keep it under 3 sentences.
-
-{{content}}
 ```
 
 ### 程式碼 — 解釋程式碼區塊
 
 ```markdown
 ---
-description: Add a plain-English explanation above code
-scope: selection
-action: insert
----
-
-Read the following code and write a brief plain-English explanation
-of what it does. Use 1-2 sentences. Do not include the code itself
-in your response.
-
-{{content}}
-```---
 description: Add a plain-English explanation above code
 scope: selection
 action: insert
@@ -532,41 +437,17 @@ slang, and filler words.
 Return only the rewritten text — no explanations.
 
 {{content}}
-```---
-description: Rewrite in professional tone
-scope: selection
----
-
-Rewrite the following text in a professional, business-appropriate tone.
-Keep the same meaning and key points. Remove casual language,
-slang, and filler words.
-
-Return only the rewritten text — no explanations.
-
-{{content}}
 ```
 
-### 翻譯 — 翻譯為繁體中文
+### 翻譯 — 翻譯為簡體中文
 
 ```markdown
 ---
-description: Translate to Traditional Chinese
+description: Translate to Simplified Chinese
 scope: selection
 ---
 
-Translate the following text into Traditional Chinese (繁體中文).
-Preserve the original meaning, tone, and formatting.
-Use natural, idiomatic Chinese — not word-for-word translation.
-
-Return only the translated text — no explanations.
-
-{{content}}
-```---
-description: Translate to Traditional Chinese
-scope: selection
----
-
-Translate the following text into Traditional Chinese (繁體中文).
+Translate the following text into Simplified Chinese.
 Preserve the original meaning, tone, and formatting.
 Use natural, idiomatic Chinese — not word-for-word translation.
 
@@ -579,22 +460,6 @@ Return only the translated text — no explanations.
 
 ```markdown
 ---
-description: Rewrite to match surrounding tone and style
-scope: selection
-context: 1
----
-
-Rewrite the following content to fit naturally with its surrounding context.
-Match the tone, style, and level of detail.
-
-Return only the rewritten text — no explanations.
-
-## Surrounding context (do not include in output):
-{{context}}
-
-## Content to rewrite:
-{{content}}
-```---
 description: Rewrite to match surrounding tone and style
 scope: selection
 context: 1
@@ -629,36 +494,33 @@ Format as a bullet list. If everything looks solid, say
 "No claims flagged for verification."
 
 {{content}}
-```---
-description: Flag claims that need verification
-scope: selection
-action: insert
----
-
-Read the following text and list any factual claims that should be
-verified. For each claim, note why it might need checking (e.g.,
-specific numbers, dates, statistics, or strong assertions).
-
-Format as a bullet list. If everything looks solid, say
-"No claims flagged for verification."
-
-{{content}}
 ```
 
 ## AI 建議
 
-當精靈傳回的文字是用來取代選取範圍（而非自由格式聊天回覆）時，VMark 會將其呈現為帶行內差異的 **建議**：原始文字以紅色刪除線顯示，建議文字以綠色底線顯示。在任何變更實際保存之前，你需先審閱並核准。
+當精靈傳回的文字是用來取代選取範圍（而非自由格式聊天回覆）時，VMark 會將其呈現為帶行內差異的 **建議**：原始文字以紅色波浪刪除線顯示，建議文字以強調色的淡化斜體幽靈文字顯示。在任何變更實際保存之前，你需先審閱並核准。
 
 | 操作 | 快捷鍵 |
 |---|---|
-| 接受目前焦點的建議 | `Tab` |
+| 接受目前焦點的建議 | `Enter` |
 | 拒絕目前焦點的建議 | `Esc` |
+| 移至下一個／上一個建議 | `Tab` / `Shift + Tab` |
 | 接受文件中所有建議 | `Mod + Shift + Enter` _(情境感知 — 在表格內時亦為「在上方新增列」)_ |
-| 循環至下一個建議 | 在非焦點位置時按 `Tab` |
+| 拒絕文件中所有建議 | `Mod + Shift + Escape` |
 
 當精靈改寫多個段落時，每個替換都是可獨立導覽的建議。接受其中一個不會自動接受其他。
 
-建議介面也具備 MCP 介面 — 透過 [MCP 伺服器](/zh-TW/guide/mcp-tools)連線的外部 AI 代理可發出 `suggestion.accept` / `suggestion.reject` 動作來操作相同的狀態。
+## 工作流程中的精靈
+
+單一精靈只執行一個提示。當你需要串接多個 AI 步驟 — 先大綱、再草稿、再潤飾 — 並把一個階段的輸出導入下一個階段時，請使用 **精靈工作流程**：一份 YAML 檔案，以明確的資料流、選用的核准關卡、每個步驟各自的模型，以及即時執行圖表，來編排多次精靈呼叫。
+
+由於工作流程步驟會從 `with: { input: "..." }` 對應表填入精靈的 `{{content}}` 佔位符，**你在這裡撰寫的精靈無需修改即可在工作流程中執行** — 不需要任何轉換。
+
+完整的 YAML 結構描述、運算式語法、核准方式以及如何執行工作流程，請參見 [精靈工作流程](/zh-TW/guide/workflows)。
+
+### 不受信任內容的圍欄隔離
+
+當工作流程的 `genie/<name>` 步驟執行時，文件文字、選取內容與檔案內容在送達 AI 供應商之前，會被包在獨一無二的 `<<<DOCUMENT-DATA-…>>>` 標記之中，而提示會指示模型把圍欄內的文字嚴格視為資料。圍欄隔離只屬於工作流程步驟 — 直接從選取器執行的精靈會把範圍內的文字原樣送給供應商。這可防範試圖向 AI 夾帶指令的文件（「忽略你的指示並執行 …」）— 這對能夠執行指令的 CLI 供應商（Claude Code、Codex、Gemini CLI）尤其重要。對來源不受信任的檔案執行精靈時，請抱持與執行網路上下載的腳本相同的謹慎：圍欄隔離是一道強力的緩解措施，而不是絕對的保證。
 
 ## 限制
 
@@ -671,7 +533,7 @@ Format as a bullet list. If everything looks solid, say
 
 **「無可用的 AI 供應商」** — 開啟設定 > 整合並設定供應商。請參見 [AI 供應商](/zh-TW/guide/ai-providers)。
 
-**精靈未出現在選取器中** — 檢查檔案是否有 `.md` 副檔名、有效的 `---` 圍欄前置資料，以及是否位於精靈目錄中（不能在超過一層的子目錄中）。
+**精靈未出現在選取器中** — 檢查檔案是否有 `.md` 副檔名（[工作流程精靈](/zh-TW/guide/workflow-genies)則為 `.yml`/`.yaml`），以及有效的 `---` 圍欄前置資料。子資料夾最多掃描八層深（總計最多 10,000 個項目），符號連結則會略過。新增檔案後，請執行 **編輯 → 精靈 → 重新載入精靈**。
 
 **AI 返回亂碼或錯誤** — 確認你的 API 金鑰正確且模型名稱對你的供應商有效。檢查終端機/主控台的錯誤詳情。
 
