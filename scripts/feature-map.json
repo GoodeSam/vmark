@@ -29,7 +29,7 @@
     "deliberately absent — it has no user-facing surface to strengthen, and giving",
     "it a row would dilute every ranking the ledger produces.",
     "",
-    "COMPANION: `dev-docs/feature-ledger.md` is the hand-inspected, qualitative",
+    "COMPANION: `.claude/feature-ledger.md` is the hand-inspected, qualitative",
     "ledger (what each feature does, how it is reached and gated, what is unwired",
     "or stale). The generated table cites the same feature NAMES used here, so",
     "renaming a row here is a rename there too. `flagDefault` is now VERIFIED",
@@ -62,7 +62,6 @@
         "src/plugins/editorPlugins.tiptap.ts",
         "src/plugins/editorPlugins",
         "src/plugins/sourceContextDetection",
-        "src/plugins/sourcePeekInline",
         "src/stores/sourcePeekStore.ts",
         "src/stores/editorStore.ts",
         "src/stores/selectSourceEditing.ts",
@@ -88,7 +87,24 @@
         "src/stores/__tests__/sourcePeekStore.test.ts",
         "src/stores/selectSourceEditing.test.ts",
         "src/hooks/useTabModeSync.test.ts",
-        "src/hooks/useMarkdownSplitDefault.test.ts"
+        "src/hooks/useMarkdownSplitDefault.test.ts",
+        "src/utils/cursorSync",
+        "src/types/cursorSync.ts",
+        "src/types/cursorContext.ts",
+        "src/hooks/useSourceEditorContentSync.ts",
+        "src/hooks/useSourceEditorSync.ts",
+        "src/hooks/useSourcePaneFocus.ts",
+        "src/hooks/useTiptapSettingsSync.ts",
+        "src/hooks/useTiptapUnmountFlush.ts",
+        "src/hooks/useWysiwygFlusherRegistration.ts",
+        "src/utils/wysiwygFlush.ts",
+        "src/utils/editorText.ts",
+        "src/utils/sourceSelection.ts",
+        "src/components/Editor/index.ts",
+        "src/plugins/undoIntegrity",
+        "src/utils/tableParser.ts",
+        "src/utils/stringWidth.ts",
+        "src/utils/wordSegmentation.ts"
       ],
       "flag": "markdown.splitViewByDefault",
       "flagDefault": false,
@@ -116,7 +132,12 @@
       "name": "Find & replace (in-document)",
       "paths": [
         "src/components/FindBar",
-        "src/plugins/search"
+        "src/plugins/search",
+        "src/hooks/useSearchCommands.ts",
+        "src/hooks/useSourceEditorSearch.ts",
+        "src/utils/sourceEditorSearch.ts",
+        "src/services/search/seedFindFromSelection.ts",
+        "src/utils/debouncedSearchCount.ts"
       ],
       "flag": "markdown.enableRegexSearch",
       "flagDefault": true,
@@ -169,10 +190,8 @@
         "src/services/lint",
         "src/components/StatusBar/LintBadge.tsx",
         "src/services/commands/lintCommands.ts",
-        "src/pages/settings/DocumentToolsSettings.tsx",
         "src/components/StatusBar/LintBadge.test.tsx",
-        "src/services/commands/lintCommands.test.ts",
-        "src/pages/settings/DocumentToolsSettings.test.tsx"
+        "src/services/commands/lintCommands.test.ts"
       ],
       "flag": "markdown.lintEnabled",
       "flagDefault": true,
@@ -211,7 +230,14 @@
         "src/plugins/subSuperscript",
         "src/plugins/markInputRules",
         "src/plugins/inlineCodeBoundary",
-        "src/plugins/syntaxReveal"
+        "src/plugins/syntaxReveal",
+        "src/utils/textTransformations.ts",
+        "src/utils/caseTransformations.ts",
+        "src/utils/markdownLinkPatterns.ts",
+        "src/utils/markdownUrl.ts",
+        "src/utils/headingSlug.ts",
+        "src/utils/stripInlineMarkdown.ts",
+        "src/utils/markdownCodeMask.ts"
       ],
       "flag": null,
       "flagDefault": null,
@@ -239,7 +265,8 @@
       "name": "Tables",
       "paths": [
         "src/plugins/tableUI",
-        "src/plugins/tableScroll"
+        "src/plugins/tableScroll",
+        "src/components/Editor/alignedTableNodes.ts"
       ],
       "flag": "markdown.tableFitToWidth",
       "flagDefault": false,
@@ -276,7 +303,12 @@
     {
       "name": "SVG graphics",
       "paths": [
-        "src/plugins/svg"
+        "src/plugins/svg",
+        "src/utils/svgSanitize.ts",
+        "src/utils/svgResourcePolicy.ts",
+        "src/utils/svgToPng.ts",
+        "src/utils/styleSafety.ts",
+        "src/utils/cssNormalize.ts"
       ],
       "flag": "formats.diagrams",
       "flagDefault": false,
@@ -288,7 +320,6 @@
         "src/plugins/latex",
         "src/plugins/mathPreview",
         "src/plugins/mathPopup",
-        "src/plugins/sourceMathPopup",
         "src/stores/blockMathEditingStore.ts",
         "src/stores/__tests__/blockMathEditingStore.test.ts"
       ],
@@ -327,7 +358,22 @@
         "src/hooks/useImageContextMenu.test.ts",
         "src/hooks/useImageDragDrop.test.ts",
         "src/components/Editor/ImageContextMenu.test.tsx",
-        "src-tauri/src/live_docs.test.rs"
+        "src-tauri/src/live_docs.test.rs",
+        "src/utils/imageHash.ts",
+        "src/utils/imagePathDetection.ts",
+        "src/utils/imageReferenceScanner.ts",
+        "src/utils/imageReferences.ts",
+        "src/utils/imageUtils.ts",
+        "src/utils/mediaExtensions.ts",
+        "src/utils/mediaPathDetection.ts",
+        "src/utils/multiImageParsing.ts",
+        "src/utils/videoProviderRegistry.ts",
+        "src/utils/vimeoUrlParser.ts",
+        "src/utils/youtubeUrlParser.ts",
+        "src/utils/referenceIdentity.ts",
+        "src/types/image.ts",
+        "src/components/Editor/DropZoneIndicator.tsx",
+        "src/hooks/useLiveDocsResponder.ts"
       ],
       "flag": null,
       "flagDefault": null,
@@ -365,7 +411,9 @@
         "src/stores/footnotePopupStore.test.ts",
         "src/stores/mathPopupStore.test.ts",
         "src/stores/sourceMathPopupStore.test.ts",
-        "src/components/Editor/__tests__/HeadingPicker.test.tsx"
+        "src/components/Editor/__tests__/HeadingPicker.test.tsx",
+        "src/utils/popupComponents.ts",
+        "src/utils/popupPosition.ts"
       ],
       "flag": null,
       "flagDefault": null,
@@ -379,7 +427,14 @@
         "src/plugins/markdownPaste",
         "src/plugins/codePaste",
         "src/plugins/markdownCopy",
-        "src/plugins/textDragDrop"
+        "src/plugins/textDragDrop",
+        "src/utils/cleanPastedMarkdown.ts",
+        "src/utils/codeDetection.ts",
+        "src/utils/codeDetection",
+        "src/utils/htmlToMarkdown.ts",
+        "src/utils/markdownPasteDetection.ts",
+        "src/utils/pasteUtils.ts",
+        "src/types/turndown-plugin-gfm.d.ts"
       ],
       "flag": "markdown.pasteMode",
       "flagDefault": "smart",
@@ -414,7 +469,8 @@
         "src/components/Editor/UniversalToolbar",
         "src/plugins/formatToolbar",
         "src/plugins/toolbarActions",
-        "src/plugins/toolbarContext"
+        "src/plugins/toolbarContext",
+        "src/hooks/useUniversalToolbar.ts"
       ],
       "flag": null,
       "flagDefault": null,
@@ -523,7 +579,12 @@
         "src/hooks/useWindowTitle.test.ts",
         "src/utils/tabStripOverflow.test.ts",
         "src/utils/tabCycling.test.ts",
-        "src-tauri/src/menu_events_windows.test.rs"
+        "src-tauri/src/menu_events_windows.test.rs",
+        "src/types/tabTransfer.ts",
+        "src/types/workspaceTransfer.ts",
+        "src/utils/transferLineMetadata.ts",
+        "src/utils/windowLabels.ts",
+        "src/utils/displayFileName.ts"
       ],
       "flag": null,
       "flagDefault": null,
@@ -574,7 +635,9 @@
         "src/stores/recentsStore.test.ts",
         "src/hooks/useRecentFilesSync.test.ts",
         "src/services/commands/recentFilesCommands.test.ts",
-        "src/services/commands/recentWorkspacesCommands.test.ts"
+        "src/services/commands/recentWorkspacesCommands.test.ts",
+        "src/stores/workspaceStorePersist.ts",
+        "src-tauri/src/workspace_grants"
       ],
       "flag": null,
       "flagDefault": null,
@@ -585,7 +648,8 @@
       "paths": [
         "src/components/WorkspaceRail",
         "src/services/featureFlags/workspaceRailFeatureFlag.ts",
-        "src/services/featureFlags/workspaceRailFeatureFlag.test.ts"
+        "src/services/featureFlags/workspaceRailFeatureFlag.test.ts",
+        "src/utils/workspaceRailGlyphs.ts"
       ],
       "flag": "general.workspaceRailMode",
       "flagDefault": false,
@@ -594,7 +658,8 @@
     {
       "name": "Document history / snapshots",
       "paths": [
-        "src/services/history"
+        "src/services/history",
+        "src/utils/historyTypes.ts"
       ],
       "flag": "general.historyEnabled",
       "flagDefault": true,
@@ -665,7 +730,15 @@
         "src/stores/documentStore.test.ts",
         "src/hooks/useDocumentState.test.tsx",
         "src-tauri/src/link_target.test.rs",
-        "src-tauri/src/fs_scope.test.rs"
+        "src-tauri/src/fs_scope.test.rs",
+        "src/utils/linebreakDetection.ts",
+        "src/utils/linebreaks.ts",
+        "src/utils/defaultSaveFolder.ts",
+        "src/services/dialogs/largeFilePrompts.ts",
+        "src-tauri/src/atomic_persist.rs",
+        "src-tauri/src/bounded_read.rs",
+        "src-tauri/src/canonical_path.rs",
+        "src/utils/ingestOrigin.ts"
       ],
       "flag": "general.autoSaveEnabled",
       "flagDefault": true,
@@ -693,7 +766,9 @@
     {
       "name": "Pandoc export",
       "paths": [
-        "src-tauri/src/pandoc"
+        "src-tauri/src/pandoc",
+        "src/pages/settings/DocumentToolsSettings.tsx",
+        "src/pages/settings/DocumentToolsSettings.test.tsx"
       ],
       "flag": null,
       "flagDefault": null,
@@ -724,7 +799,8 @@
         "src/pages/settings/terminalSettingsHelpers.test.ts",
         "src/stores/uiStore/terminalSlice.scope.test.ts",
         "src/stores/uiStore/terminalScopeActions.test.ts",
-        "src/stores/uiStore/terminalScopeSelectors.test.ts"
+        "src/stores/uiStore/terminalScopeSelectors.test.ts",
+        "src/utils/terminalSurface.ts"
       ],
       "flag": null,
       "flagDefault": null,
@@ -760,7 +836,8 @@
         "src/stores/browserHistoryStore.test.ts",
         "src/stores/tabStoreBrowser.test.ts",
         "src/hooks/useBrowserOccluder.test.ts",
-        "src/services/commands/browserCommands.test.ts"
+        "src/services/commands/browserCommands.test.ts",
+        "src/services/workflow"
       ],
       "flag": "browser.enabled",
       "flagDefault": true,
@@ -791,7 +868,8 @@
         "src/hooks/usePromptHistory.comprehensive.test.ts",
         "src/hooks/usePromptHistory.test.ts",
         "src/hooks/useAiProviderSync.test.ts",
-        "src/services/commands/genieCommands.test.ts"
+        "src/services/commands/genieCommands.test.ts",
+        "src/services/promptHistory"
       ],
       "flag": null,
       "flagDefault": null,
@@ -838,7 +916,8 @@
         "src/hooks/useMcpAutoStart.test.ts",
         "src/hooks/__tests__/useMcpClients.test.ts",
         "src/hooks/__tests__/useMcpHealthCheck.test.tsx",
-        "src/utils/mcpBridgePathPolicy.test.ts"
+        "src/utils/mcpBridgePathPolicy.test.ts",
+        "src-tauri/src/mcp_server_health.rs"
       ],
       "flag": null,
       "flagDefault": null,
@@ -911,17 +990,19 @@
         "src/stores/contentServerStore.ts",
         "src/hooks/useContentServer.ts",
         "src/stores/contentServerStore.test.ts",
-        "src/hooks/useContentServer.test.ts"
+        "src/hooks/useContentServer.test.ts",
+        "src/hooks/useContentServerSupervisor.ts",
+        "src/hooks/useContentServerWorkspaceSync.ts",
+        "src/hooks/useSlidevControls.ts"
       ],
-      "flag": null,
-      "flagDefault": null,
+      "flag": "advanced.developerMode",
+      "flagDefault": false,
       "doc": "website/guide/knowledge-base.md"
     },
     {
       "name": "Workflow engine (bespoke YAML)",
       "paths": [
         "src/lib/workflow",
-        "src/services/workflow",
         "src/plugins/workflowPreview",
         "src/components/WorkflowApproval",
         "src/stores/workflowStore.ts",
@@ -931,7 +1012,15 @@
         "src-tauri/resources/workflows",
         "src/stores/workflowStore.test.ts",
         "src/hooks/useWorkflowExecution.test.tsx",
-        "src/services/featureFlags/workflowFeatureFlag.test.ts"
+        "src/services/featureFlags/workflowFeatureFlag.test.ts",
+        "src/stores/workflowApprovalSlice.ts",
+        "src/stores/workflowPreviewSlice.ts",
+        "src/stores/workflowViewSlice.ts",
+        "src/services/workflow/providerPayload.ts",
+        "src/services/workflow/workflowEnginePolicySync.ts",
+        "src/plugins/codemirror/sourceWorkflowPreview.ts",
+        "src/services/workflow/providerPayload.test.ts",
+        "src/services/workflow/workflowEnginePolicySync.test.ts"
       ],
       "flag": "advanced.workflowEngine",
       "flagDefault": false,
@@ -951,7 +1040,6 @@
         "src/plugins/codemirror/sourceWorkflowCompletion.ts",
         "src/plugins/codemirror/sourceWorkflowCursorSync.ts",
         "src/plugins/codemirror/sourceWorkflowGoto.ts",
-        "src/plugins/codemirror/sourceWorkflowPreview.ts",
         "src/plugins/codemirror/workflowPort.ts",
         "src/lib/formats/adapters/yamlWorkflowExtensions.ts",
         "src/lib/formats/adapters/yamlWorkflowRenderer.tsx",
@@ -964,7 +1052,11 @@
         "src/plugins/codemirror/workflowPort.test.ts",
         "src/lib/formats/adapters/yamlWorkflowExtensions.test.ts",
         "src/lib/formats/adapters/yamlWorkflowRenderer.test.tsx",
-        "src/plugins/codePreview/renderers/renderWorkflowPreview.test.ts"
+        "src/plugins/codePreview/renderers/renderWorkflowPreview.test.ts",
+        "src/services/workflow/saveGhaWorkflowDocument.ts",
+        "src/stores/workflowEditQueue.ts",
+        "src/stores/workflowSerialize.ts",
+        "src/services/workflow/saveGhaWorkflowDocument.test.ts"
       ],
       "doc": "website/guide/workflow-viewer.md"
     },
@@ -1011,7 +1103,12 @@
         "src/hooks/useIsDarkTheme.test.ts",
         "src/hooks/useSystemAppearanceWatcher.test.ts",
         "src/stores/systemAppearanceStore.test.ts",
-        "src/utils/fontStacks.test.ts"
+        "src/utils/fontStacks.test.ts",
+        "src-tauri/src/system_fonts.rs",
+        "src/hooks/useSystemFontFamilies.ts",
+        "src/utils/customFont.ts",
+        "src/utils/fontOptions.ts",
+        "src/utils/motion.ts"
       ],
       "flag": null,
       "flagDefault": null,
@@ -1048,7 +1145,9 @@
         "src-tauri/src/menu/accelerators.test.rs",
         "src/stores/settingsStore/shortcutDefinitions.test.ts",
         "src/hooks/useKeybindingRouter.test.ts",
-        "src/hooks/useShortcutsSync.test.ts"
+        "src/hooks/useShortcutsSync.test.ts",
+        "src/utils/shortcutMatch.ts",
+        "src/utils/tooltipWithShortcut.ts"
       ],
       "flag": null,
       "flagDefault": null,
@@ -1138,7 +1237,10 @@
         "src-tauri/src/text_substitution.test.rs",
         "src-tauri/src/webview_edit.test.rs",
         "src-tauri/src/single_instance.test.rs",
-        "src/utils/platform.test.ts"
+        "src/utils/platform.test.ts",
+        "src-tauri/src/close_to_tray",
+        "src/hooks/useCloseToTraySync.ts",
+        "src-tauri/src/session_bus.rs"
       ],
       "flag": null,
       "flagDefault": null,
@@ -1204,7 +1306,9 @@
         "src/stores/paneStore.test.ts",
         "src/stores/workspacePaneLayoutsStore.test.ts",
         "src/services/navigation/toggleSplitDocuments.test.ts",
-        "src/services/persistence/splitLayoutPersistence.test.ts"
+        "src/services/persistence/splitLayoutPersistence.test.ts",
+        "src/hooks/useFocusedPaneTiptapRegistration.ts",
+        "src/hooks/useIsFocusedPane.ts"
       ],
       "doc": "website/guide/tab-navigation.md"
     },
@@ -1247,7 +1351,8 @@
         "src/plugins/editorContextMenu",
         "src/stores/editorContextMenuStore.ts",
         "src/components/Editor/EditorContextMenu",
-        "src/stores/__tests__/editorContextMenuStore.test.ts"
+        "src/stores/__tests__/editorContextMenuStore.test.ts",
+        "src/types/editorContextMenu.ts"
       ],
       "doc": "website/guide/features.md"
     },
@@ -1314,8 +1419,43 @@
         "src-tauri/src/lib.test.rs",
         "src-tauri/src/command_error.test.rs",
         "src-tauri/src/command_error_from.test.rs",
-        "src/services/commands/commandError.test.ts"
+        "src/services/commands/commandError.test.ts",
+        "src-tauri/src/app_plugins.rs",
+        "src/services/runtimeWiring.ts",
+        "src/vite-env.d.ts"
       ]
     }
-  ]
+  ],
+  "infrastructure": {
+    "//": "Shared plumbing with no user-facing surface of its own (the GRANULARITY RULE above). Declared, not inferred: a file here was looked at and judged infrastructure, while a file nowhere fails scripts/check-feature-map.mjs. Move a path to a feature the moment it gains a user-facing role.",
+    "paths": [
+      "src/utils/debug.ts",
+      "src/utils/debug",
+      "src/utils/perfLog.ts",
+      "src/utils/devDebugHandle.ts",
+      "src-tauri/src/automation_port.rs",
+      "src/utils/debounce.ts",
+      "src/utils/deepMerge.ts",
+      "src/utils/lruCache.ts",
+      "src/utils/structuralEqual.ts",
+      "src/utils/reentryGuard.ts",
+      "src/utils/safeUnlisten.ts",
+      "src/utils/voidAsync.ts",
+      "src/utils/stringifyUnknown.ts",
+      "src/utils/errorMessage.ts",
+      "src/utils/binary.ts",
+      "src/utils/pathUtils.ts",
+      "src/utils/paths",
+      "src/utils/appName.ts",
+      "src/utils/dateUtils.ts",
+      "src/utils/focusGuard.ts",
+      "src/utils/rovingTabFocus.ts",
+      "src/utils/icons.tsx",
+      "src/utils/iconSizes.ts",
+      "src/lib/utils.ts",
+      "src/hooks/useDismissOnOutsideOrEscape.ts",
+      "src/services/dialogs/confirmAction.ts",
+      "src/services/dialogs/errorDialog.ts"
+    ]
+  }
 }
