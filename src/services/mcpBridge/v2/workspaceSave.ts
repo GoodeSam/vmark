@@ -4,7 +4,7 @@
  * there so dispatch imports are unchanged.
  *
  * @coordinates-with workspace.ts — sibling workspace handlers
- * @coordinates-with services/coherence/captureFunnel.ts — inferred MCP capture (WI-1.6)
+ * @coordinates-with services/coherence/mcpCapture.ts — inferred MCP capture under the capture policy (WI-1.6, WI-LX1.4)
  * @module services/mcpBridge/v2/workspaceSave
  */
 
@@ -12,7 +12,7 @@ import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
 import { registerPendingSave, clearPendingSave } from "@/utils/pendingSaves";
-import { captureMcpWrite } from "@/services/coherence/captureFunnel";
+import { captureMcpWrite } from "@/services/coherence/mcpCapture";
 import { checkBridgePath } from "@/services/mcpBridge/bridgePathGuard";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { respond } from "@/services/mcpBridge/utils";

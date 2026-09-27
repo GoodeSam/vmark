@@ -6,16 +6,24 @@
 //! actually feed it — reachable reads become `direct` inputs; unrelated
 //! reads never pollute the edge set (spec §7). Fire-and-forget: capture
 //! failures log and never fail the workflow step.
+//!
+//! The capture honours `general.coherenceCaptureOnSave` (WI-LX1.4) like every
+//! other write path: `run_workflow` carries the run's `CapturePolicy` into
+//! `WorkflowRunnerState`, and `capture_with_policy` applies it — with the
+//! setting off and no ledger, a save-file step creates no `.vmark/` and stamps
+//! nothing. A run that carried no policy is treated as off.
 
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 
 use tauri::{AppHandle, Manager, Runtime};
 
-use crate::coherence::capture::{capture, CaptureInputSpec, CaptureRequest};
+use crate::coherence::capture::{CaptureInputSpec, CaptureRequest};
+use crate::coherence::capture_policy::{capture_with_policy, CapturePolicy};
 use crate::coherence::commands::CoherenceState;
 use crate::coherence::state::WorkspaceKernel;
 use crate::coherence::types::{Agent, AgentType, Confidence, InputRole, Intent};
+use crate::workflow::state::WorkflowRunnerState;
 
 /// One step's dataflow-relevant slice: (derived id, uses, raw `with`).
 pub type StepSlice = (String, String, HashMap<String, String>);
@@ -152,7 +160,9 @@ fn agent_for(steps: &[StepSlice], reachable: &HashSet<String>) -> Agent {
     }
 }
 
-/// Capture one successful save-file step into a workspace kernel.
+/// Capture one successful save-file step into a workspace kernel, under the
+/// run's capture policy.
+#[allow(clippy::too_many_arguments)]
 pub fn capture_save_file(
     kernel: &mut WorkspaceKernel,
     workspace_root: &Path,
@@ -161,6 +171,7 @@ pub fn capture_save_file(
     input_paths: &[String],
     step_id: &str,
     agent: Agent,
+    policy: CapturePolicy,
 ) -> Result<(), String> {
     // Coherence keys objects on a NORMALIZED workspace-relative path, so a
     // raw `with.path` cannot be handed to it as written (audit #514).
@@ -183,7 +194,7 @@ pub fn capture_save_file(
             kind: crate::coherence::edge_kind::OriginEdgeKind::Dependency,
         })
         .collect();
-    capture(
+    capture_with_policy(
         kernel,
         CaptureRequest {
             path: target.unwrap_or_else(|| rel_path.to_string()),
@@ -199,8 +210,28 @@ pub fn capture_save_file(
             rewrite_identity: true,
             idem: None,
         },
+        policy,
     )
     .map(|_| ())
+}
+
+impl WorkflowRunnerState {
+    /// Record the capture policy of the run `run_workflow` just admitted. Runs
+    /// are one at a time app-wide, so the admitted run's policy is the only one.
+    pub(super) fn set_capture_policy(&self, policy: CapturePolicy) {
+        *self
+            .capture_policy
+            .lock()
+            .unwrap_or_else(|p| p.into_inner()) = policy;
+    }
+
+    /// The policy a save-file capture applies; `TrackedOnly` until a run sets it.
+    pub(super) fn capture_policy(&self) -> CapturePolicy {
+        *self
+            .capture_policy
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+    }
 }
 
 /// Runner-facing entry: runs off-thread but is AWAITED by the runner
@@ -217,6 +248,9 @@ pub async fn capture_save_file_ordered<R: Runtime>(
     let Some(_state) = app.try_state::<CoherenceState>() else {
         return; // coherence unavailable — degrade silently
     };
+    let policy = app
+        .try_state::<WorkflowRunnerState>()
+        .map_or(CapturePolicy::TrackedOnly, |s| s.capture_policy());
     let app = app.clone();
     let root = workspace_root.to_path_buf();
     let task = tauri::async_runtime::spawn_blocking(move || {
@@ -243,6 +277,7 @@ pub async fn capture_save_file_ordered<R: Runtime>(
             &inputs,
             &step_id,
             agent,
+            policy,
         ) {
             log::warn!("coherence: workflow capture failed (step untouched): {e}");
         }

@@ -95,7 +95,10 @@ export interface GeneralSettings {
   autoSaveEnabled: boolean;
   autoSaveInterval: number; // seconds
   /**
-   * Track document provenance (the coherence layer) on save. OFF by default:
+   * "Stamp identity block on save" (the coherence layer). Governs EVERY write
+   * path — human save, MCP, genie, AI suggestion, history restore, new file —
+   * through one Rust choke point (`src-tauri/src/coherence/capture_policy.rs`).
+   * OFF by default:
    * capturing assigns a Semantic Object identity, which REWRITES the file to
    * insert a `vmark:` frontmatter block (prepending one if absent) and creates
    * `.vmark/` in the workspace. Modifying a user's markdown is opt-in — it must

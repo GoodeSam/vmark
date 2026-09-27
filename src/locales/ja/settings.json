@@ -759,7 +759,7 @@
   "advanced.embeddedBrowser.label": "埋め込みブラウザ",
   "advanced.embeddedBrowser.description": "実験的なアプリ内Webブラウザを有効にします。コマンドパレットに「新しいブラウザタブ」を追加します。",
   "files.coherenceCapture.label": "保存時に識別ブロックを書き込む",
-  "files.coherenceCapture.description": "保存時にファイルのフロントマターへ `vmark:` の識別ブロックを挿入し、ワークスペースに .vmark フォルダーを作成できるようにします。これにより整合性レイヤーがディスク上のドキュメントを追跡できます。AI と MCP の書き込みは、この設定に関係なく、ワークスペースの台帳が存在すれば記録されます",
+  "files.coherenceCapture.description": "ファイルのフロントマターへ `vmark:` の識別ブロックを挿入し、ワークスペースに .vmark フォルダーを作成できるようにします。これにより整合性レイヤーがドキュメントを追跡できます。保存、AI と MCP による編集、以前のバージョンへの復元、新規ファイルなど、すべての書き込みに適用されます。オフの場合は識別ブロックを挿入せず、.vmark フォルダーも作成しません。すでに .vmark があるワークスペースでは、追跡中のドキュメントへの変更が引き続き記録されます",
   "shortcuts.capture.unsupported": "このキーの組み合わせはサポートされていません。別の組み合わせをお試しください。",
   "coherence.group": "整合性",
   "coherence.checkTau.label": "意味チェックの確信度",

@@ -3,6 +3,7 @@
 // direct inputs) and end-to-end capture into a workspace kernel.
 
 use super::*;
+use crate::coherence::capture_policy::CapturePolicy;
 use crate::coherence::state::WorkspaceKernel;
 use crate::coherence::types::WriterId;
 
@@ -122,6 +123,7 @@ fn capture_save_file_records_transformation_with_edges() {
             kind: AgentType::Model,
             id: Some("workflow-genie".into()),
         },
+        CapturePolicy::Adopt,
     )
     .unwrap();
 
@@ -163,6 +165,7 @@ fn self_referential_save_target_is_not_its_own_input() {
             kind: AgentType::Model,
             id: Some("workflow-genie".into()),
         },
+        CapturePolicy::Adopt,
     )
     .unwrap();
     let entries = kernel.ledger().read_all().unwrap().entries;
@@ -318,4 +321,82 @@ fn a_genie_step_the_save_does_not_depend_on_does_not_claim_its_content() {
     let reachable = reachable_from(&steps, "save");
     assert!(!reachable.contains("aside"));
     assert_eq!(agent_for(&steps, &reachable).kind, AgentType::External);
+}
+
+// ── WI-LX1.4: the save-file capture honours `general.coherenceCaptureOnSave` ──
+//
+// The workflow runner was the last write path still calling the always-stamp
+// `capture()`. The setting reaches it as the run's `CapturePolicy`, carried by
+// `run_workflow`; these pin what the capture does under each.
+
+fn model_agent() -> Agent {
+    Agent {
+        kind: AgentType::Model,
+        id: Some("workflow-genie".into()),
+    }
+}
+
+#[test]
+fn tracked_only_save_in_a_fresh_workspace_creates_no_ledger_and_stamps_nothing() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut kernel = WorkspaceKernel::open(dir.path(), WriterId(uuid::Uuid::from_u128(3))).unwrap();
+    std::fs::write(dir.path().join("elena.md"), "elena\n").unwrap();
+    std::fs::write(dir.path().join("out.md"), "generated\n").unwrap();
+
+    capture_save_file(
+        &mut kernel,
+        dir.path(),
+        "out.md",
+        "generated\n",
+        &["elena.md".to_string()],
+        "save",
+        model_agent(),
+        CapturePolicy::TrackedOnly,
+    )
+    .unwrap();
+
+    assert!(
+        !dir.path().join(".vmark").exists(),
+        "setting off + no ledger: .vmark/ must not be created"
+    );
+    assert_eq!(
+        std::fs::read_to_string(dir.path().join("out.md")).unwrap(),
+        "generated\n",
+        "the output is not stamped"
+    );
+    assert_eq!(
+        std::fs::read_to_string(dir.path().join("elena.md")).unwrap(),
+        "elena\n",
+        "the input is not stamped"
+    );
+}
+
+#[test]
+fn adopt_save_in_a_fresh_workspace_creates_the_ledger_and_stamps_the_output() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut kernel = WorkspaceKernel::open(dir.path(), WriterId(uuid::Uuid::from_u128(4))).unwrap();
+    std::fs::write(dir.path().join("out.md"), "generated\n").unwrap();
+
+    capture_save_file(
+        &mut kernel,
+        dir.path(),
+        "out.md",
+        "generated\n",
+        &[],
+        "save",
+        model_agent(),
+        CapturePolicy::Adopt,
+    )
+    .unwrap();
+
+    assert!(
+        dir.path().join(".vmark").exists(),
+        "setting on: the ledger is created"
+    );
+    assert!(
+        std::fs::read_to_string(dir.path().join("out.md"))
+            .unwrap()
+            .contains("vmark:"),
+        "setting on: the output carries an identity block"
+    );
 }

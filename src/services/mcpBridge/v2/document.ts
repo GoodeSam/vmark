@@ -1,6 +1,5 @@
 /**
- * Purpose: `vmark.document.{read, write, transform}` handlers — the
- *   read/write spine of the pruned MCP surface.
+ * Purpose: `vmark.document.{read, write, transform}` handlers — the read/write spine of the pruned MCP surface.
  *
  *   `read` returns full content + a revision token. `write` replaces
  *   full content (optimistic-concurrency-protected via expected_revision)
@@ -34,12 +33,13 @@
  * @coordinates-with utils/markdownPipeline/index.ts — parseMarkdown / serializeMarkdown
  * @coordinates-with stores/documentStore.ts — content + dirty state
  * @coordinates-with stores/tabStore.ts — tab → window resolution
+ * @coordinates-with services/coherence/mcpCapture.ts — MCP read/write capture under the capture policy (WI-LX1.4)
  * @module services/mcpBridge/v2/document
  */
 
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { registerPendingSave, clearPendingSave } from "@/utils/pendingSaves";
-import { captureMcpWrite, recordMcpRead } from "@/services/coherence/captureFunnel";
+import { captureMcpWrite, recordMcpRead } from "@/services/coherence/mcpCapture";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
 import { useEditorStore } from "@/stores/editorStore";

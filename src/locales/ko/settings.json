@@ -759,7 +759,7 @@
   "advanced.embeddedBrowser.label": "내장 브라우저",
   "advanced.embeddedBrowser.description": "실험적인 앱 내 웹 브라우저를 활성화합니다. 명령 팔레트에 '새 브라우저 탭'을 추가합니다.",
   "files.coherenceCapture.label": "저장 시 식별 블록 기록",
-  "files.coherenceCapture.description": "저장할 때 파일 프런트매터에 `vmark:` 식별 블록을 넣고 작업 공간에 .vmark 폴더를 만들 수 있게 하여, 일관성 레이어가 디스크의 문서를 추적할 수 있게 합니다. AI와 MCP의 쓰기는 이 설정과 관계없이 작업 공간 원장이 있으면 기록됩니다",
+  "files.coherenceCapture.description": "파일 프런트매터에 `vmark:` 식별 블록을 넣고 작업 공간에 .vmark 폴더를 만들 수 있게 하여, 일관성 레이어가 문서를 추적할 수 있게 합니다. 저장, AI와 MCP 편집, 이전 버전 복원, 새 파일 등 모든 쓰기에 적용됩니다. 끄면 식별 블록을 넣지 않고 .vmark 폴더도 만들지 않으며, 이미 .vmark가 있는 작업 공간은 추적 중인 문서의 변경을 계속 기록합니다",
   "shortcuts.capture.unsupported": "이 키 조합은 지원되지 않습니다. 다른 조합을 사용해 보세요.",
   "coherence.group": "일관성",
   "coherence.checkTau.label": "의미 검사 신뢰도",

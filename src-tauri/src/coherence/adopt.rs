@@ -21,20 +21,36 @@ pub fn adopt_from_disk(
     rel_path: &str,
 ) -> Result<(ObjectId, RevisionId), String> {
     // R1 (7th-review 6R-1): read-heads → build → append atomic under the lock.
-    kernel.with_write_lock(|kernel| adopt_from_disk_locked(kernel, rel_path))
+    kernel
+        .with_write_lock(|kernel| adopt_from_disk_locked(kernel, rel_path, true))?
+        .ok_or_else(|| format!("adoption declined for {rel_path}"))
+}
+
+/// Adopt an on-disk file ONLY if it already carries its own `vmark:` block —
+/// never rewriting it (capture-on-save OFF, WI-LX1.4). `None` = the file has no
+/// identity, and nothing was written anywhere.
+pub fn adopt_identified_from_disk(
+    kernel: &mut WorkspaceKernel,
+    rel_path: &str,
+) -> Result<Option<(ObjectId, RevisionId)>, String> {
+    kernel.with_write_lock(|kernel| adopt_from_disk_locked(kernel, rel_path, false))
 }
 
 fn adopt_from_disk_locked(
     kernel: &mut WorkspaceKernel,
     rel_path: &str,
-) -> Result<(ObjectId, RevisionId), String> {
-    kernel.ensure_initialized()?;
+    may_stamp: bool,
+) -> Result<Option<(ObjectId, RevisionId)>, String> {
     let abs = super::paths::resolve_workspace_rel(kernel.root(), rel_path)?;
     let bytes =
         std::fs::read(&abs).map_err(|e| format!("input file unreadable ({rel_path}): {e}"))?;
     let text = String::from_utf8(bytes)
         .map_err(|_| format!("input file is not UTF-8 text ({rel_path})"))?;
     let text = super::canonical::canonicalize_text(&text);
+    if !may_stamp && read_identity(&text).is_none() {
+        return Ok(None); // decided before any side effect, `.vmark/` included
+    }
+    kernel.ensure_initialized()?;
     let (content, identity) = match read_identity(&text) {
         Some(fi) => (text, fi),
         None => {
@@ -54,14 +70,14 @@ fn adopt_from_disk_locked(
         .index()
         .revision_by_content(&identity.id, &content_hash)?
     {
-        return Ok((identity.id, existing));
+        return Ok(Some((identity.id, existing)));
     }
     let parents = kernel.index().heads(&identity.id)?;
     let revision = RevisionId::compute(&content_hash, &parents);
     kernel.snapshots().put_text(&content)?;
     let env = observed_external_entry(kernel, identity.id, &revision, &content_hash, parents);
     kernel.append_and_apply(&env)?;
-    Ok((identity.id, revision))
+    Ok(Some((identity.id, revision)))
 }
 
 /// Build an observed-external transformation (R9: honest empty inputs,

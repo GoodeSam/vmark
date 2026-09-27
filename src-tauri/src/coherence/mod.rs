@@ -20,6 +20,7 @@ pub mod anchors;
 pub mod canonical;
 pub mod capture;
 pub mod capture_input;
+pub mod capture_policy;
 pub mod cas;
 pub mod check_commands;
 pub mod checker;

@@ -759,7 +759,7 @@
   "advanced.embeddedBrowser.label": "Eingebetteter Browser",
   "advanced.embeddedBrowser.description": "Aktiviert den experimentellen In-App-Webbrowser. Fügt „Neuer Browser-Tab“ zur Befehlspalette hinzu.",
   "files.coherenceCapture.label": "Identitätsblock beim Speichern einfügen",
-  "files.coherenceCapture.description": "Erlaubt einem Speichervorgang, einen `vmark:`-Identitätsblock in das Frontmatter der Datei einzufügen und einen .vmark-Ordner im Arbeitsbereich anzulegen, damit die Kohärenz-Ebene das Dokument von der Festplatte aus verfolgen kann. KI- und MCP-Schreibvorgänge werden erfasst, sobald ein Arbeitsbereichs-Ledger existiert — unabhängig von dieser Einstellung",
+  "files.coherenceCapture.description": "Erlaubt VMark, einen `vmark:`-Identitätsblock in das Frontmatter einer Datei einzufügen und einen .vmark-Ordner im Arbeitsbereich anzulegen, damit die Kohärenz-Ebene das Dokument verfolgen kann. Das gilt für jeden Schreibvorgang — Speichern, KI- und MCP-Bearbeitungen, das Zurücksetzen auf frühere Versionen und neue Dateien. Wenn aus, wird nichts eingefügt und kein .vmark-Ordner angelegt; ein Arbeitsbereich, der bereits einen hat, zeichnet weiterhin Änderungen an den Dokumenten auf, die er schon verfolgt",
   "shortcuts.capture.unsupported": "Diese Tastenkombination wird nicht unterstützt. Versuchen Sie eine andere.",
   "coherence.group": "Kohärenz",
   "coherence.checkTau.label": "Konfidenz der semantischen Prüfung",

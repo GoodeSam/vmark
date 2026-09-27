@@ -5,12 +5,15 @@
 //! file atomically — hash unchanged by §3.3), snapshots, resolves and
 //! VALIDATES input revisions (no silent fallback), and appends the
 //! transformation. Uncaptured input files are adopted on the fly so first
-//! generations still record complete input sets (spec §9.4).
+//! generations still record complete input sets (spec §9.4). With
+//! capture-on-save OFF (`capture_policy.rs`, WI-LX1.4) nothing is created,
+//! adopted-by-stamping or rewritten; see `capture_with_policy`.
 
 use uuid::Uuid;
 
 use super::canonical::text_content_hash;
-use super::capture_input::resolve_input;
+use super::capture_input::resolve_inputs;
+use super::capture_policy::CapturePolicy;
 use super::frontmatter::{assign_identity, read_identity};
 use super::state::WorkspaceKernel;
 use super::types::{
@@ -87,13 +90,16 @@ pub fn capture(
     // R1 (7th-review 6R-1): the whole read-heads → build-transformation → append
     // runs under the workspace lock, so a concurrent commit that moved this
     // object's head can't leave us appending a stale-parent sibling.
-    kernel.with_write_lock(|kernel| capture_locked(kernel, req))
+    let receipt =
+        kernel.with_write_lock(|kernel| capture_locked(kernel, req, CapturePolicy::Adopt))?;
+    receipt.ok_or_else(|| "capture declined under the adopt policy".to_string())
 }
 
-fn capture_locked(
+pub(super) fn capture_locked(
     kernel: &mut WorkspaceKernel,
     req: CaptureRequest,
-) -> Result<CaptureReceipt, String> {
+    policy: CapturePolicy,
+) -> Result<Option<CaptureReceipt>, String> {
     if req.confidence == Confidence::Unknown {
         return Err("confidence=unknown is scan-only (spec §8)".into());
     }
@@ -129,6 +135,11 @@ fn capture_locked(
     }
     // IPC boundary guard (audit R1): reject traversal before any effect.
     super::paths::resolve_workspace_rel(kernel.root(), &req.path)?;
+    // Policy gate BEFORE the first side effect (WI-LX1.4). Re-checked under the
+    // lock; `TrackedOnly` also declines a document the ledger does not track.
+    if !policy.admits(kernel) || !super::capture_policy::admits_output(kernel, &req, policy)? {
+        return Ok(None);
+    }
     kernel.ensure_initialized()?;
     // Canonical form up front (spec §3.1; audit R14): CRLF content from
     // external clients parses and hashes identically to LF, and any
@@ -178,7 +189,7 @@ fn capture_locked(
                 }
                 None => assign_identity(&req.content, None),
             };
-            if req.rewrite_identity {
+            if req.rewrite_identity && policy.may_stamp() {
                 let abs = super::paths::resolve_workspace_rel(kernel.root(), &req.path)?;
                 let parent = abs
                     .parent()
@@ -210,19 +221,17 @@ fn capture_locked(
     // event even when the content converges (audit R3): its edges matter.
     if let ([only], true) = (parents.as_slice(), req.inputs.is_empty()) {
         if kernel.index().content_hash_of(&identity.id, only)? == Some(content_hash.clone()) {
-            return Ok(CaptureReceipt {
+            return Ok(Some(CaptureReceipt {
                 object: identity.id,
                 revision: only.clone(),
                 entry_id: None,
                 content_with_identity: rewritten,
-            });
+            }));
         }
     }
 
-    let mut inputs = Vec::with_capacity(req.inputs.len());
-    for spec in &req.inputs {
-        inputs.push(resolve_input(kernel, spec)?);
-    }
+    let (inputs, confidence) =
+        resolve_inputs(kernel, &req.inputs, policy.may_stamp(), req.confidence)?;
 
     let revision = RevisionId::compute(&content_hash, &parents);
     kernel.snapshots().put_text(&content)?;
@@ -236,7 +245,7 @@ fn capture_locked(
         }],
         agent: req.agent,
         intent: req.intent,
-        confidence: req.confidence,
+        confidence,
     };
     let mut env = Envelope::create(
         "transformation",
@@ -264,12 +273,12 @@ fn capture_locked(
         }
         kernel.index_mut().set_disk_lag(&identity.id, &lag)?;
     }
-    Ok(CaptureReceipt {
+    Ok(Some(CaptureReceipt {
         object: identity.id,
         revision,
         entry_id: Some(entry_id),
         content_with_identity: rewritten,
-    })
+    }))
 }
 
 // Adoption, observed-external synthesis, and registry maintenance live

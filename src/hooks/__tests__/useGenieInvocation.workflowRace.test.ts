@@ -51,6 +51,7 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { useAiProviderStore } from "@/stores/aiStore";
 import { useUIStore } from "@/stores/uiStore";
+import { currentCapturePolicy } from "@/services/coherence/capturePolicy";
 
 function workflowGenie(): GenieDefinition {
   return {
@@ -97,6 +98,10 @@ describe("useGenieInvocation — workflow execution-id race (WI-0.3)", () => {
     // ...and it is the same id passed to run_workflow.
     const runCall = mockInvoke.mock.calls.find((c) => c[0] === "run_workflow");
     expect((runCall?.[1] as { executionId?: string })?.executionId).toBe(id);
+    // WI-LX1.4 — the capture-on-save setting travels with the run.
+    expect((runCall?.[1] as { capturePolicy?: string })?.capturePolicy).toBe(
+      currentCapturePolicy(),
+    );
 
     // A step-update arrives while invoke is still pending, via the real
     // listener. With the id already registered it is attributed (not dropped).

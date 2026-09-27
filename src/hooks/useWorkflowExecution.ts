@@ -32,6 +32,7 @@
  * @coordinates-with services/workflow/providerPayload.ts — the shared run_workflow provider block
  * @coordinates-with stores/workflowStore.ts — writes executionId + stepStatuses, surfaces pending approvals
  * @coordinates-with src-tauri/src/workflow/commands.rs — invoke targets
+ * @coordinates-with services/coherence/capturePolicy.ts — the capture policy each run carries (WI-LX1.4)
  * @module hooks/useWorkflowExecution
  */
 
@@ -41,6 +42,7 @@ import { useCallback, useEffect, useRef } from "react";
 
 import { workflowError } from "@/utils/debug";
 import { workflowProviderPayload } from "@/services/workflow/providerPayload";
+import { currentCapturePolicy } from "@/services/coherence/capturePolicy";
 import {
   useWorkflowStore,
   type ApprovalRequestPayload,
@@ -221,6 +223,8 @@ export function useWorkflowExecution() {
           workspaceRoot,
           provider: providerPayload,
           executionId: id,
+          // The capture-on-save setting for this run's save-file steps (WI-LX1.4).
+          capturePolicy: currentCapturePolicy(),
         });
         return returnedId;
       } catch (err) {

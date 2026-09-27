@@ -28,6 +28,7 @@ pub(super) use state_cancel::{decide_cancel, CancelDecision};
 
 use super::approval::ApprovalRegistry;
 use super::recent_ids::RecentExecutionIds;
+use crate::coherence::capture_policy::CapturePolicy;
 use crate::command_error::CommandError;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -131,6 +132,9 @@ pub struct WorkflowRunnerState {
     admission: Mutex<()>,
     /// The ids recent runs carried, so a caller cannot reuse one (#264).
     recent_ids: RecentExecutionIds,
+    /// The admitted run's `general.coherenceCaptureOnSave` (WI-LX1.4); its
+    /// accessors sit in `coherence_capture.rs`, beside the one reader.
+    pub(super) capture_policy: Mutex<CapturePolicy>,
 }
 
 impl Default for WorkflowRunnerState {
@@ -144,6 +148,7 @@ impl Default for WorkflowRunnerState {
             current_execution: Arc::new(Mutex::new(None)),
             admission: Mutex::new(()),
             recent_ids: RecentExecutionIds::default(),
+            capture_policy: Mutex::new(CapturePolicy::TrackedOnly),
         }
     }
 }

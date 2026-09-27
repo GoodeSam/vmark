@@ -17,16 +17,20 @@ use crate::command_error::CommandError;
 
 use serde_json::json;
 
-use super::capture::{capture, CaptureReceipt, CaptureRequest};
+use super::capture::{CaptureReceipt, CaptureRequest};
+use super::capture_policy::{capture_with_policy, scan_on_change, CapturePolicy};
 use super::index_query::EdgeRow;
-use super::scan::{scan_workspace, ScanReport};
+use super::scan::ScanReport;
 
+/// `Ok(None)` = declined by `policy` (capture-on-save off and nothing to follow
+/// — see `capture_policy.rs`); nothing was written.
 #[tauri::command]
 pub async fn coherence_capture(
     state: tauri::State<'_, CoherenceState>,
     workspace_root: String,
     request: CaptureRequest,
-) -> Result<CaptureReceipt, CommandError> {
+    policy: CapturePolicy,
+) -> Result<Option<CaptureReceipt>, CommandError> {
     let kernel = state
         .registry
         .kernel_for(std::path::Path::new(&workspace_root), state.writer)
@@ -35,7 +39,8 @@ pub async fn coherence_capture(
     // `capture` validates the REQUEST before any side effect (8R-9: input caps,
     // `confidence=unknown` is scan-only, unknown object), so a rejected argument
     // is the dominant caller-actionable failure.
-    capture(&mut kernel, request).map_err(|e| classify_write(&kernel, rejected_argument, e))
+    capture_with_policy(&mut kernel, request, policy)
+        .map_err(|e| classify_write(&kernel, rejected_argument, e))
 }
 
 #[tauri::command]
@@ -122,6 +127,7 @@ pub async fn coherence_head(
 pub async fn coherence_scan(
     state: tauri::State<'_, CoherenceState>,
     workspace_root: String,
+    policy: CapturePolicy,
 ) -> Result<ScanReport, CommandError> {
     let kernel = state
         .registry
@@ -131,5 +137,6 @@ pub async fn coherence_scan(
     // A scan walks the workspace and appends its findings; a failure is the
     // environment (unreadable tree, ledger) rather than the caller's argument,
     // which is only a workspace root the registry already accepted.
-    scan_workspace(&mut kernel).map_err(|e| classify_write(&kernel, ledger_unavailable, e))
+    // Watcher-driven, so it obeys the capture-on-save setting (WI-LX1.4).
+    scan_on_change(&mut kernel, policy).map_err(|e| classify_write(&kernel, ledger_unavailable, e))
 }

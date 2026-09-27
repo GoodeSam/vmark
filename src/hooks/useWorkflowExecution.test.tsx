@@ -44,6 +44,7 @@ vi.mock("@tauri-apps/api/event", () => ({
 import { useWorkflowExecution } from "./useWorkflowExecution";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { useAiProviderStore } from "@/stores/aiStore";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 const initialWorkflowState = useWorkflowStore.getState();
 const initialAiProviderState = useAiProviderStore.getState();
@@ -360,6 +361,25 @@ describe("useWorkflowExecution — start() provider payload (coverage)", () => {
       endpoint: "https://api.anthropic.com",
       cliPath: null,
     });
+  });
+
+  // WI-LX1.4 — the capture-on-save setting reaches the runner's save-file
+  // captures, read at the moment of the start.
+  it.each([
+    [true, "adopt"],
+    [false, "tracked-only"],
+  ])("sends capturePolicy for coherenceCaptureOnSave=%s", async (on, policy) => {
+    useSettingsStore.setState({
+      general: { ...useSettingsStore.getState().general, coherenceCaptureOnSave: on },
+    });
+    invokeMock.mockResolvedValueOnce("server-id");
+    const { result } = renderHook(() => useWorkflowExecution());
+    await waitForListeners();
+
+    await result.current.start({ yaml: "name: x", workspaceRoot: "/w" });
+
+    const call = invokeMock.mock.calls.find((c) => c[0] === "run_workflow");
+    expect((call?.[1] as { capturePolicy?: unknown }).capturePolicy).toBe(policy);
   });
 
   it("sends provider=null when no provider is active", async () => {

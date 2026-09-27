@@ -759,7 +759,7 @@
   "advanced.embeddedBrowser.label": "Embedded browser",
   "advanced.embeddedBrowser.description": "Enable the experimental in-app web browser. Adds “New Browser Tab” to the command palette.",
   "files.coherenceCapture.label": "Stamp identity block on save",
-  "files.coherenceCapture.description": "Lets a save insert a `vmark:` identity block into the file's frontmatter and create a .vmark folder in the workspace, so the coherence layer can track the document from disk. AI and MCP writes are captured once a workspace ledger exists, whether or not this is on",
+  "files.coherenceCapture.description": "Lets VMark insert a `vmark:` identity block into a file's frontmatter and create a .vmark folder in the workspace, so the coherence layer can track the document. This covers every write — saves, AI and MCP edits, version restores and new files. When off, nothing is stamped and no .vmark folder is created; a workspace that already has one keeps recording changes to the documents it already tracks",
   "shortcuts.capture.unsupported": "This key combination isn't supported. Try another.",
   "coherence.group": "Coherence",
   "coherence.checkTau.label": "Semantic check confidence",

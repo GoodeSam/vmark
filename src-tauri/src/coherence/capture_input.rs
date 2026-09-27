@@ -6,24 +6,59 @@
 //! @coordinates-with capture.rs — the module this was split from
 //! @module coherence/capture_input
 
-use super::adopt::adopt_from_disk;
+use super::adopt::{adopt_from_disk, adopt_identified_from_disk};
 use super::capture::CaptureInputSpec;
 
 use super::state::WorkspaceKernel;
-use super::types::InputRef;
+use super::types::{Confidence, InputRef};
+
+/// Resolve every input of a capture. An input `resolve_input` declined (it
+/// would have had to be stamped) is dropped, and an `exact` capture whose input
+/// set is therefore known to be incomplete is lowered to `inferred` (WI-LX1.4).
+pub(super) fn resolve_inputs(
+    kernel: &mut WorkspaceKernel,
+    specs: &[CaptureInputSpec],
+    may_stamp: bool,
+    confidence: Confidence,
+) -> Result<(Vec<InputRef>, Confidence), String> {
+    let mut inputs = Vec::with_capacity(specs.len());
+    let mut dropped = false;
+    for spec in specs {
+        match resolve_input(kernel, spec, may_stamp)? {
+            Some(input) => inputs.push(input),
+            None => dropped = true,
+        }
+    }
+    let confidence = if dropped && confidence == Confidence::Exact {
+        Confidence::Inferred
+    } else {
+        confidence
+    };
+    Ok((inputs, confidence))
+}
 
 /// Resolve one input spec per the plan contract: caller revision wins but
 /// is validated (object membership — reject on mismatch, no fallback);
 /// otherwise current head; uncaptured input files are adopted.
-pub(super) fn resolve_input(
+///
+/// `may_stamp = false` (capture-on-save OFF, WI-LX1.4): an uncaptured input is
+/// adopted only when its file already carries a `vmark:` block. One that would
+/// have to be stamped is left alone and reported as `None` — the caller drops
+/// it and lowers the capture's confidence.
+fn resolve_input(
     kernel: &mut WorkspaceKernel,
     spec: &CaptureInputSpec,
-) -> Result<InputRef, String> {
+    may_stamp: bool,
+) -> Result<Option<InputRef>, String> {
     let object = match (spec.object_id, &spec.path) {
         (Some(id), _) => id,
         (None, Some(path)) => match kernel.index().registry_state()?.object_at.get(path) {
             Some(id) => *id,
-            None => adopt_from_disk(kernel, path)?.0,
+            None if may_stamp => adopt_from_disk(kernel, path)?.0,
+            None => match adopt_identified_from_disk(kernel, path)? {
+                Some((id, _)) => id,
+                None => return Ok(None),
+            },
         },
         (None, None) => return Err("input needs a path or an object_id".into()),
     };
@@ -52,12 +87,12 @@ pub(super) fn resolve_input(
             }
         }
     };
-    Ok(InputRef {
+    Ok(Some(InputRef {
         object,
         revision,
         role: spec.role,
         // Carry the spec's kind (defaults to dependency); Extract-Canon is the
         // only path that sets conformance today (Phase 4).
         kind: spec.kind,
-    })
+    }))
 }

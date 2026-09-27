@@ -361,6 +361,7 @@ mod through_the_command {
             root(&ws).to_string(),
             None,
             Some("run-a".into()),
+            None,
             app.state(),
         )
         .await
@@ -396,6 +397,7 @@ mod through_the_command {
                 root(&ws).to_string(),
                 None,
                 Some(id.to_string()),
+                None,
                 app.state(),
             )
         };
@@ -428,6 +430,7 @@ mod through_the_command {
             root(&ws).to_string(),
             None,
             Some("../../evil".into()),
+            None,
             app.state(),
         )
         .await
@@ -454,6 +457,7 @@ mod through_the_command {
             root(&ws).to_string(),
             None,
             None,
+            None,
             app.state(),
         )
         .await
@@ -464,6 +468,38 @@ mod through_the_command {
             .state::<WorkflowRunnerState>()
             .running
             .load(Ordering::SeqCst));
+    }
+
+    /// WI-LX1.4 — the run carries the caller's capture policy to its save-file
+    /// captures; a caller that sends none gets the setting-OFF behaviour.
+    #[tokio::test]
+    async fn the_run_records_the_callers_capture_policy_and_defaults_to_off() {
+        use crate::coherence::capture_policy::CapturePolicy;
+        let app = mock_app(engine_on());
+        let ws = workspace();
+        let start = |id: &str, policy: Option<CapturePolicy>| {
+            run_workflow(
+                app.handle().clone(),
+                VALID.into(),
+                HashMap::new(),
+                root(&ws).to_string(),
+                None,
+                Some(id.to_string()),
+                policy,
+                app.state(),
+            )
+        };
+
+        start("run-adopt", Some(CapturePolicy::Adopt))
+            .await
+            .expect("starts");
+        let state = app.state::<WorkflowRunnerState>();
+        assert_eq!(state.capture_policy(), CapturePolicy::Adopt);
+        wait_until_idle(&app).await;
+
+        start("run-unset", None).await.expect("starts");
+        assert_eq!(state.capture_policy(), CapturePolicy::TrackedOnly);
+        wait_until_idle(&app).await;
     }
 
     /// No caller id: the command mints one, returns it, and it is the id the
@@ -478,6 +514,7 @@ mod through_the_command {
             VALID.into(),
             HashMap::new(),
             root(&ws).to_string(),
+            None,
             None,
             None,
             app.state(),

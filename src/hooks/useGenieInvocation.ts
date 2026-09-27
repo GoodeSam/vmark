@@ -29,6 +29,7 @@
  * @coordinates-with genieInvocation/streamRunner.ts — provider validation + streaming
  * @coordinates-with genieInvocation/cancelRequest.ts — asks Rust to stop the provider on cancel
  * @coordinates-with services/workflow/providerPayload.ts — the shared run_workflow provider block
+ * @coordinates-with services/coherence/capturePolicy.ts — the capture policy a workflow genie's run carries (WI-LX1.4)
  * @coordinates-with genieInvocation/extraction.ts — scope extraction + templating
  * @coordinates-with stores/aiStore/suggestion.ts — stores the suggestion for accept/reject
  * @coordinates-with stores/aiStore/genies.ts — provides genie definitions and templates
@@ -60,6 +61,7 @@ import {
   workflowProviderPayload,
   type WorkflowProviderPayload,
 } from "@/services/workflow/providerPayload";
+import { currentCapturePolicy } from "@/services/coherence/capturePolicy";
 
 /**
  * Register an execution id, then run the workflow under it.
@@ -94,7 +96,14 @@ async function dispatchWorkflow(
   if (useWorkflowStore.getState().preview.executionId !== null) return "already-running";
   useWorkflowStore.getState().setExecution(id);
   try {
-    await invoke<string>("run_workflow", { yaml, env: {}, workspaceRoot, provider, executionId: id });
+    await invoke<string>("run_workflow", {
+      yaml,
+      env: {},
+      workspaceRoot,
+      provider,
+      executionId: id,
+      capturePolicy: currentCapturePolicy(), // WI-LX1.4
+    });
   } catch (err) {
     const store = useWorkflowStore.getState();
     if (store.preview.executionId === id) store.setExecution(null);
