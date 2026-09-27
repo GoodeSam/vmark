@@ -7,7 +7,9 @@
 // Cheap by design — the shape check parses YAML lazily (via a regex
 // pre-filter) so callers can run it on every keystroke.
 
-const PATH_RE = /(^|\/)\.github\/workflows\/[^/]+\.ya?ml$/;
+// Either separator: a "/"-only pattern missed `C:\repo\.github\workflows\ci.yml`,
+// so a malformed workflow opened on Windows lost the degraded workbench view.
+const PATH_RE = /(^|[\\/])\.github[\\/]workflows[\\/][^\\/]+\.ya?ml$/;
 
 /**
  * Path-only check. Cheap; doesn't read the file content. Use this for
