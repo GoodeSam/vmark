@@ -57,6 +57,7 @@ export const en = {
             { text: "AI Genies", link: "/guide/ai-genies" },
             { text: "Coherence & Breakdown View", link: "/guide/coherence" },
             { text: "Genie Workflows", link: "/guide/workflows" },
+            { text: "Workflow Genies", link: "/guide/workflow-genies" },
             { text: "AI Providers", link: "/guide/ai-providers" },
             { text: "MCP Setup", link: "/guide/mcp-setup" },
             { text: "MCP Tools Reference", link: "/guide/mcp-tools" },

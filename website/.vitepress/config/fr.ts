@@ -17,6 +17,7 @@ export const fr = {
           text: "Guide",
           items: [
             { text: "Démarrage rapide", link: "/fr/guide/" },
+            { text: "Formats pris en charge", link: "/fr/guide/formats" },
             { text: "Fonctionnalités", link: "/fr/guide/features" },
             { text: "Fichiers volumineux", link: "/fr/guide/large-files" },
             {
@@ -68,9 +69,18 @@ export const fr = {
               text: "Terminal intégré",
               link: "/fr/guide/terminal",
             },
+            { text: "Navigateur intégré", link: "/fr/guide/browser" },
+            {
+              text: "Base de connaissances et Slidev",
+              link: "/fr/guide/knowledge-base",
+            },
             {
               text: "Gestion de l'espace de travail",
               link: "/fr/guide/workspace-management",
+            },
+            {
+              text: "Barre des espaces de travail",
+              link: "/fr/guide/workspace-rail",
             },
             {
               text: "Formatage CJK",
@@ -81,6 +91,7 @@ export const fr = {
               text: "Cohérence et vue Détail",
               link: "/fr/guide/coherence",
             },
+            { text: "Workflows Genie", link: "/fr/guide/workflows" },
             {
               text: "Genies de workflow",
               link: "/fr/guide/workflow-genies",

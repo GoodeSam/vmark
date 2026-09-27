@@ -17,7 +17,12 @@ export const ptBR = {
           text: "Guia",
           items: [
             { text: "Primeiros passos", link: "/pt-BR/guide/" },
+            { text: "Formatos Suportados", link: "/pt-BR/guide/formats" },
             { text: "Funcionalidades", link: "/pt-BR/guide/features" },
+            {
+              text: "Arquivos grandes",
+              link: "/pt-BR/guide/large-files",
+            },
             {
               text: "Exportar e imprimir",
               link: "/pt-BR/guide/export",
@@ -50,6 +55,10 @@ export const ptBR = {
               text: "Mapas mentais Markmap",
               link: "/pt-BR/guide/markmap",
             },
+            {
+              text: "Visualizador de Workflows",
+              link: "/pt-BR/guide/workflow-viewer",
+            },
             { text: "Gráficos SVG", link: "/pt-BR/guide/svg" },
             {
               text: "Mídia (vídeo/áudio)",
@@ -63,17 +72,18 @@ export const ptBR = {
               text: "Terminal integrado",
               link: "/pt-BR/guide/terminal",
             },
+            { text: "Navegador integrado", link: "/pt-BR/guide/browser" },
+            {
+              text: "Base de conhecimento e Slidev",
+              link: "/pt-BR/guide/knowledge-base",
+            },
             {
               text: "Gerenciamento de workspace",
               link: "/pt-BR/guide/workspace-management",
             },
             {
-              text: "Arquivos grandes",
-              link: "/pt-BR/guide/large-files",
-            },
-            {
-              text: "Visualizador de Workflows",
-              link: "/pt-BR/guide/workflow-viewer",
+              text: "Barra de espaços de trabalho",
+              link: "/pt-BR/guide/workspace-rail",
             },
             {
               text: "Formatação CJK",
@@ -83,6 +93,10 @@ export const ptBR = {
             {
               text: "Coerência e visão de detalhamento",
               link: "/pt-BR/guide/coherence",
+            },
+            {
+              text: "Workflows de Genie",
+              link: "/pt-BR/guide/workflows",
             },
             {
               text: "Genies de Workflow",

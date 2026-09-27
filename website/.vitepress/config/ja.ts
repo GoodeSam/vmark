@@ -17,6 +17,7 @@ export const ja = {
           text: "ガイド",
           items: [
             { text: "はじめに", link: "/ja/guide/" },
+            { text: "サポートされるフォーマット", link: "/ja/guide/formats" },
             { text: "機能", link: "/ja/guide/features" },
             { text: "大きなファイル", link: "/ja/guide/large-files" },
             { text: "エクスポートと印刷", link: "/ja/guide/export" },
@@ -65,16 +66,20 @@ export const ja = {
               text: "統合ターミナル",
               link: "/ja/guide/terminal",
             },
+            { text: "組み込みブラウザ", link: "/ja/guide/browser" },
+            { text: "ナレッジベースと Slidev", link: "/ja/guide/knowledge-base" },
             {
               text: "ワークスペース管理",
               link: "/ja/guide/workspace-management",
             },
+            { text: "ワークスペースレール", link: "/ja/guide/workspace-rail" },
             {
               text: "CJK フォーマット",
               link: "/ja/guide/cjk-formatting",
             },
             { text: "AI ジーニー", link: "/ja/guide/ai-genies" },
             { text: "整合性と内訳ビュー", link: "/ja/guide/coherence" },
+            { text: "Genie ワークフロー", link: "/ja/guide/workflows" },
             { text: "ワークフロージーニー", link: "/ja/guide/workflow-genies" },
             {
               text: "AI プロバイダー",

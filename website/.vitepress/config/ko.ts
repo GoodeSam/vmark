@@ -17,6 +17,7 @@ export const ko = {
           text: "가이드",
           items: [
             { text: "시작하기", link: "/ko/guide/" },
+            { text: "지원 형식", link: "/ko/guide/formats" },
             { text: "기능", link: "/ko/guide/features" },
             { text: "대용량 파일", link: "/ko/guide/large-files" },
             { text: "내보내기 및 인쇄", link: "/ko/guide/export" },
@@ -65,10 +66,13 @@ export const ko = {
               text: "통합 터미널",
               link: "/ko/guide/terminal",
             },
+            { text: "내장 브라우저", link: "/ko/guide/browser" },
+            { text: "지식 베이스 및 Slidev", link: "/ko/guide/knowledge-base" },
             {
               text: "워크스페이스 관리",
               link: "/ko/guide/workspace-management",
             },
+            { text: "워크스페이스 레일", link: "/ko/guide/workspace-rail" },
             {
               text: "CJK 서식",
               link: "/ko/guide/cjk-formatting",
@@ -78,6 +82,7 @@ export const ko = {
               text: "정합성 및 내역 뷰",
               link: "/ko/guide/coherence",
             },
+            { text: "지니 워크플로", link: "/ko/guide/workflows" },
             {
               text: "워크플로 지니",
               link: "/ko/guide/workflow-genies",

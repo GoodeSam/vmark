@@ -17,7 +17,12 @@ export const es = {
           text: "Guía",
           items: [
             { text: "Primeros pasos", link: "/es/guide/" },
+            { text: "Formatos Compatibles", link: "/es/guide/formats" },
             { text: "Características", link: "/es/guide/features" },
+            {
+              text: "Archivos grandes",
+              link: "/es/guide/large-files",
+            },
             {
               text: "Exportar e imprimir",
               link: "/es/guide/export",
@@ -50,6 +55,10 @@ export const es = {
               text: "Mapas mentales Markmap",
               link: "/es/guide/markmap",
             },
+            {
+              text: "Visor de flujos de trabajo",
+              link: "/es/guide/workflow-viewer",
+            },
             { text: "Gráficos SVG", link: "/es/guide/svg" },
             {
               text: "Medios (vídeo/audio)",
@@ -63,17 +72,18 @@ export const es = {
               text: "Terminal integrada",
               link: "/es/guide/terminal",
             },
+            { text: "Navegador integrado", link: "/es/guide/browser" },
+            {
+              text: "Base de conocimiento y Slidev",
+              link: "/es/guide/knowledge-base",
+            },
             {
               text: "Gestión de espacios de trabajo",
               link: "/es/guide/workspace-management",
             },
             {
-              text: "Archivos grandes",
-              link: "/es/guide/large-files",
-            },
-            {
-              text: "Visor de flujos de trabajo",
-              link: "/es/guide/workflow-viewer",
+              text: "Barra de espacios de trabajo",
+              link: "/es/guide/workspace-rail",
             },
             {
               text: "Formato CJK",
@@ -84,6 +94,7 @@ export const es = {
               text: "Coherencia y vista de desglose",
               link: "/es/guide/coherence",
             },
+            { text: "Flujos de trabajo de Genie", link: "/es/guide/workflows" },
             { text: "Genies de flujo de trabajo", link: "/es/guide/workflow-genies" },
             {
               text: "Proveedores de IA",

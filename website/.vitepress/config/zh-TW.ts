@@ -17,14 +17,11 @@ export const zhTW = {
           text: "指南",
           items: [
             { text: "快速上手", link: "/zh-TW/guide/" },
+            { text: "支援的格式", link: "/zh-TW/guide/formats" },
             { text: "功能特性", link: "/zh-TW/guide/features" },
+            { text: "大型檔案", link: "/zh-TW/guide/large-files" },
             { text: "匯出與列印", link: "/zh-TW/guide/export" },
             { text: "鍵盤快捷鍵", link: "/zh-TW/guide/shortcuts" },
-            { text: "大型檔案", link: "/zh-TW/guide/large-files" },
-            {
-              text: "GitHub Actions 工作流程檢視器",
-              link: "/zh-TW/guide/workflow-viewer",
-            },
             {
               text: "智慧分頁導覽",
               link: "/zh-TW/guide/tab-navigation",
@@ -46,6 +43,10 @@ export const zhTW = {
               text: "Markmap 心智圖",
               link: "/zh-TW/guide/markmap",
             },
+            {
+              text: "GitHub Actions 工作流程檢視器",
+              link: "/zh-TW/guide/workflow-viewer",
+            },
             { text: "SVG 圖形", link: "/zh-TW/guide/svg" },
             {
               text: "媒體（影片/音訊）",
@@ -59,10 +60,13 @@ export const zhTW = {
               text: "整合終端機",
               link: "/zh-TW/guide/terminal",
             },
+            { text: "內嵌瀏覽器", link: "/zh-TW/guide/browser" },
+            { text: "知識庫與 Slidev", link: "/zh-TW/guide/knowledge-base" },
             {
               text: "工作區管理",
               link: "/zh-TW/guide/workspace-management",
             },
+            { text: "工作區導軌", link: "/zh-TW/guide/workspace-rail" },
             {
               text: "中日韓排版",
               link: "/zh-TW/guide/cjk-formatting",
@@ -72,6 +76,7 @@ export const zhTW = {
               text: "一致性與明細檢視",
               link: "/zh-TW/guide/coherence",
             },
+            { text: "精靈工作流程", link: "/zh-TW/guide/workflows" },
             {
               text: "工作流程精靈",
               link: "/zh-TW/guide/workflow-genies",

@@ -17,6 +17,7 @@ export const zhCN = {
           text: "指南",
           items: [
             { text: "快速上手", link: "/zh-CN/guide/" },
+            { text: "支持的格式", link: "/zh-CN/guide/formats" },
             { text: "功能特性", link: "/zh-CN/guide/features" },
             { text: "大文件", link: "/zh-CN/guide/large-files" },
             { text: "导出与打印", link: "/zh-CN/guide/export" },
@@ -59,16 +60,20 @@ export const zhCN = {
               text: "集成终端",
               link: "/zh-CN/guide/terminal",
             },
+            { text: "内置浏览器", link: "/zh-CN/guide/browser" },
+            { text: "知识库与 Slidev", link: "/zh-CN/guide/knowledge-base" },
             {
               text: "工作区管理",
               link: "/zh-CN/guide/workspace-management",
             },
+            { text: "工作区导轨", link: "/zh-CN/guide/workspace-rail" },
             {
               text: "中日韩排版",
               link: "/zh-CN/guide/cjk-formatting",
             },
             { text: "AI 精灵", link: "/zh-CN/guide/ai-genies" },
             { text: "一致性与明细视图", link: "/zh-CN/guide/coherence" },
+            { text: "Genie 工作流", link: "/zh-CN/guide/workflows" },
             { text: "工作流精灵", link: "/zh-CN/guide/workflow-genies" },
             {
               text: "AI 服务商",

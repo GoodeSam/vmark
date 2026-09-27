@@ -17,6 +17,7 @@ export const de = {
           text: "Anleitung",
           items: [
             { text: "Erste Schritte", link: "/de/guide/" },
+            { text: "Unterstützte Formate", link: "/de/guide/formats" },
             { text: "Funktionen", link: "/de/guide/features" },
             { text: "Große Dateien", link: "/de/guide/large-files" },
             {
@@ -68,10 +69,16 @@ export const de = {
               text: "Integriertes Terminal",
               link: "/de/guide/terminal",
             },
+            { text: "Integrierter Browser", link: "/de/guide/browser" },
+            {
+              text: "Wissensdatenbank & Slidev",
+              link: "/de/guide/knowledge-base",
+            },
             {
               text: "Arbeitsbereichsverwaltung",
               link: "/de/guide/workspace-management",
             },
+            { text: "Workspace-Leiste", link: "/de/guide/workspace-rail" },
             {
               text: "CJK-Formatierung",
               link: "/de/guide/cjk-formatting",
@@ -81,6 +88,7 @@ export const de = {
               text: "Kohärenz & Aufschlüsselungsansicht",
               link: "/de/guide/coherence",
             },
+            { text: "Genie-Workflows", link: "/de/guide/workflows" },
             {
               text: "Workflow-Genies",
               link: "/de/guide/workflow-genies",
