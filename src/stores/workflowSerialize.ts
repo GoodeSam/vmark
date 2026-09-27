@@ -85,11 +85,14 @@ export function serializeWithPatches(
   }
   try {
     for (const patch of patches) applyPatch(doc, patch);
-    const yaml = resolvePreserve(preserveFormatting)
+    const text = resolvePreserve(preserveFormatting)
       ? stringifyCst(doc)
       : yamlStringify(doc.toJS({ maxAliasCount: MAX_YAML_ALIAS_COUNT }), {
           ...WORKFLOW_YAML_STRINGIFY_OPTIONS,
         });
+    // The stringifiers write LF. A CRLF file keeps CRLF (WI-LX2.4): otherwise
+    // every save rewrote every line, and a no-op edit reported `applied`.
+    const yaml = originalYaml.includes("\r\n") ? text.replace(/\r?\n/g, "\r\n") : text;
     return yaml === originalYaml ? { status: "unchanged" } : { status: "applied", yaml };
   } catch (error) {
     return { status: "apply-failed", detail: errorDetail(error) };
