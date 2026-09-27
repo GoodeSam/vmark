@@ -28,6 +28,8 @@
   "panel.exportMermaid": "Copy as Mermaid",
   "panel.exportMermaidLossy": "Mermaid export omits run status, action icons, custom badges, and matrix expansion details.",
   "panel.exportSvgLossy": "SVG export uses foreignObject; for native vector primitives, export as PNG instead.",
+  "panel.layout.leftToRight": "Lay out left to right",
+  "panel.layout.topToBottom": "Lay out top to bottom",
   "panel.aria.jobPrefix": "Job {{name}}",
   "panel.aria.runsOn": "runs on {{runner}}",
   "panel.aria.stepCount": "{{count}} steps",

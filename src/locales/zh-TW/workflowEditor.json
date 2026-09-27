@@ -24,6 +24,8 @@
   "panel.exportMermaid": "複製為 Mermaid",
   "panel.exportMermaidLossy": "Mermaid 匯出會省略執行狀態、Action 圖示、自訂徽章以及矩陣展開的細節。",
   "panel.exportSvgLossy": "SVG 匯出使用 foreignObject;若需原生向量圖元,請改為匯出 PNG。",
+  "panel.layout.leftToRight": "由左至右排列",
+  "panel.layout.topToBottom": "由上至下排列",
   "panel.matrix.expand": "展開矩陣({count} 種組合)",
   "panel.matrix.collapse": "收合矩陣",
   "panel.matrix.dynamic": "動態矩陣",

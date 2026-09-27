@@ -24,6 +24,8 @@
   "panel.exportMermaid": "Mermaid としてコピー",
   "panel.exportMermaidLossy": "Mermaid エクスポートでは、実行ステータス、アクションのアイコン、カスタムバッジ、マトリックス展開の詳細が省略されます。",
   "panel.exportSvgLossy": "SVG エクスポートは foreignObject を使用します。ネイティブなベクター要素が必要な場合は PNG でエクスポートしてください。",
+  "panel.layout.leftToRight": "左から右に配置",
+  "panel.layout.topToBottom": "上から下に配置",
   "panel.matrix.expand": "マトリックスを展開({count} 通り)",
   "panel.matrix.collapse": "マトリックスを折りたたむ",
   "panel.matrix.dynamic": "動的マトリックス",

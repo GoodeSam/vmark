@@ -150,12 +150,10 @@ export function JobNode(props: JobNodeProps): ReactElement {
       {/* Edge attachment points. Without these, xyflow has nowhere to
           route edges from the toGraph IR, and the dependency arrows
           between jobs disappear. Hidden visually via CSS — they're
-          structural only. Layout direction is TD so target is top,
-          source is bottom; LR mode re-uses these and just rotates
-          edges, which xyflow handles internally. */}
+          structural only. Their sides follow the layout direction. */}
       <Handle
         type="target"
-        position={Position.Top}
+        position={props.targetPosition ?? Position.Top}
         isConnectable={false}
         className="gha-job-node__handle"
       />
@@ -250,7 +248,7 @@ export function JobNode(props: JobNodeProps): ReactElement {
       )}
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={props.sourcePosition ?? Position.Bottom}
         isConnectable={false}
         className="gha-job-node__handle"
       />

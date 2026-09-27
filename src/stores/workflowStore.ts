@@ -89,7 +89,6 @@ interface WorkflowStoreActions {
   selectJob: (jobId: string) => void;
   selectStep: (jobId: string, stepId: string) => void;
   clearSelection: () => void;
-  toggleMatrix: (jobId: string) => void;
   setLayoutDirection: (dir: LayoutDirection) => void;
   resetView: () => void;
 
@@ -191,9 +190,8 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => {
     selectJob: (jobId) => updateView((s) => view.selectJob(s, jobId)),
     selectStep: (jobId, stepId) => updateView((s) => view.selectStep(s, jobId, stepId)),
     clearSelection: () => updateView(view.clearSelection),
-    toggleMatrix: (jobId) => updateView((s) => view.toggleMatrix(s, jobId)),
     setLayoutDirection: (dir) => updateView((s) => view.setLayoutDirection(s, dir)),
-    resetView: () => set({ view: view.resetView() }),
+    resetView: () => updateView(view.resetView),
 
     /* edit slice */
     queuePatch: (patch) =>

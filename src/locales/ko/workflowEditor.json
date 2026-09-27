@@ -24,6 +24,8 @@
   "panel.exportMermaid": "Mermaid로 복사",
   "panel.exportMermaidLossy": "Mermaid 내보내기는 실행 상태, 액션 아이콘, 사용자 지정 배지, 매트릭스 확장 세부 정보를 생략합니다.",
   "panel.exportSvgLossy": "SVG 내보내기는 foreignObject를 사용합니다. 네이티브 벡터 요소가 필요하면 PNG로 내보내세요.",
+  "panel.layout.leftToRight": "왼쪽에서 오른쪽으로 배치",
+  "panel.layout.topToBottom": "위에서 아래로 배치",
   "panel.matrix.expand": "매트릭스 펼치기({count}개 조합)",
   "panel.matrix.collapse": "매트릭스 접기",
   "panel.matrix.dynamic": "동적 매트릭스",

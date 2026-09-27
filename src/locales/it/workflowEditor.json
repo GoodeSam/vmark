@@ -24,6 +24,8 @@
   "panel.exportMermaid": "Copia come Mermaid",
   "panel.exportMermaidLossy": "L'esportazione Mermaid omette lo stato di esecuzione, le icone delle azioni, i badge personalizzati e i dettagli di espansione della matrice.",
   "panel.exportSvgLossy": "L'esportazione SVG usa foreignObject; per primitive vettoriali native, esporta invece come PNG.",
+  "panel.layout.leftToRight": "Disponi da sinistra a destra",
+  "panel.layout.topToBottom": "Disponi dall'alto in basso",
   "panel.matrix.expand": "Espandi la matrice ({count} combinazioni)",
   "panel.matrix.collapse": "Comprimi la matrice",
   "panel.matrix.dynamic": "Matrice dinamica",

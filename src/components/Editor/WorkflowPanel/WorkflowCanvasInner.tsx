@@ -17,6 +17,12 @@
  *     identity on every render (the "Maximum update depth exceeded"
  *     loop documented in the size-limit comment for the eager App
  *     entry). This file holds those constants now.
+ *   - The control strip carries a top-down / left-to-right toggle
+ *     (WI-LX2.4) — the store's `setLayoutDirection` had no caller, so the
+ *     canvas was always top-down. Long `needs:` chains read better across
+ *     a wide pane (preview-only mode). Each node gets the handle sides for
+ *     the direction, so its edges attach where the layout put its
+ *     neighbours.
  *
  * @coordinates-with src/components/Editor/WorkflowPanel/WorkflowCanvas.tsx
  *   — lazy-loads this module.
@@ -24,9 +30,13 @@
  */
 
 import { useCallback, useMemo, type ReactElement } from "react";
+import { useTranslation } from "react-i18next";
+import { ArrowDown, ArrowRight } from "lucide-react";
 import {
   Background,
+  ControlButton,
   Controls,
+  Position,
   ReactFlow,
   ReactFlowProvider,
   type Node,
@@ -35,7 +45,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import type { WorkflowIR } from "@/lib/ghaWorkflow/types";
 import { toGraph, type JobNodeData } from "@/lib/ghaWorkflow/render/toGraph";
-import { applyLayout } from "@/lib/ghaWorkflow/render/layout";
+import { applyLayout, type LayoutDirection } from "@/lib/ghaWorkflow/render/layout";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { JobNode } from "./JobNode";
 
@@ -45,21 +55,41 @@ import { JobNode } from "./JobNode";
 // JobNodeData or the node-type contract is now a compile error.
 const NODE_TYPES: NodeTypes = { job: JobNode };
 const PRO_OPTIONS = { hideAttribution: true } as const;
+/** Lucide draws strokes; xyflow's control CSS fills svgs, which would fill the arrowheads. */
+const ICON_STYLE = { fill: "none" } as const;
+
+/** Which sides a node's edges attach to, per layout direction. */
+const HANDLE_SIDES: Record<LayoutDirection, { targetPosition: Position; sourcePosition: Position }> = {
+  TD: { targetPosition: Position.Top, sourcePosition: Position.Bottom },
+  BT: { targetPosition: Position.Bottom, sourcePosition: Position.Top },
+  LR: { targetPosition: Position.Left, sourcePosition: Position.Right },
+  RL: { targetPosition: Position.Right, sourcePosition: Position.Left },
+};
 
 interface WorkflowCanvasInnerProps {
   workflow: WorkflowIR;
 }
 
 function CanvasInner({ workflow }: WorkflowCanvasInnerProps): ReactElement {
+  const { t } = useTranslation("workflowEditor");
   const direction = useWorkflowStore((s) => s.view.layoutDirection);
 
   const { nodes, edges } = useMemo(() => {
     const graph = toGraph(workflow);
-    return applyLayout(graph.nodes, graph.edges, { direction });
+    const laid = applyLayout(graph.nodes, graph.edges, { direction });
+    const sides = HANDLE_SIDES[direction];
+    return { nodes: laid.nodes.map((n) => ({ ...n, ...sides })), edges: laid.edges };
   }, [workflow, direction]);
 
   const onPaneClick = useCallback(() => {
     useWorkflowStore.getState().clearSelection();
+  }, []);
+
+  const horizontal = direction === "LR";
+  const toggleLabel = horizontal ? t("panel.layout.topToBottom") : t("panel.layout.leftToRight");
+  const onToggleLayout = useCallback(() => {
+    const current = useWorkflowStore.getState().view.layoutDirection;
+    useWorkflowStore.getState().setLayoutDirection(current === "LR" ? "TD" : "LR");
   }, []);
 
   return (
@@ -74,7 +104,15 @@ function CanvasInner({ workflow }: WorkflowCanvasInnerProps): ReactElement {
       onPaneClick={onPaneClick}
     >
       <Background />
-      <Controls />
+      <Controls>
+        <ControlButton onClick={onToggleLayout} aria-label={toggleLabel} title={toggleLabel}>
+          {horizontal ? (
+            <ArrowDown size={14} style={ICON_STYLE} />
+          ) : (
+            <ArrowRight size={14} style={ICON_STYLE} />
+          )}
+        </ControlButton>
+      </Controls>
     </ReactFlow>
   );
 }

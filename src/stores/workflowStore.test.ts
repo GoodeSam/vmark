@@ -14,6 +14,9 @@ beforeEach(() => {
   useWorkflowStore.getState().resetGha();
   useWorkflowStore.getState().resetPreview();
   useWorkflowStore.getState().resetView();
+  // resetView keeps the direction on purpose (a reading preference), so a
+  // test that changes it must not leak it into the next one.
+  useWorkflowStore.getState().setLayoutDirection("TD");
   useWorkflowStore.getState().resetEdit();
   useWorkflowStore.getState().resetApproval();
 });
@@ -121,7 +124,6 @@ describe("view slice", () => {
     const s = useWorkflowStore.getState().view;
     expect(s.selectedJobId).toBeNull();
     expect(s.selectedStepId).toBeNull();
-    expect(s.expandedMatrices.size).toBe(0);
     expect(s.layoutDirection).toBe("TD");
   });
 
@@ -145,15 +147,16 @@ describe("view slice", () => {
     expect(useWorkflowStore.getState().view.selectedStepId).toBeNull();
   });
 
-  it("toggleMatrix adds then removes", () => {
-    useWorkflowStore.getState().toggleMatrix("j1");
-    expect(useWorkflowStore.getState().view.expandedMatrices.has("j1")).toBe(true);
-    useWorkflowStore.getState().toggleMatrix("j1");
-    expect(useWorkflowStore.getState().view.expandedMatrices.has("j1")).toBe(false);
-  });
-
   it("setLayoutDirection", () => {
     useWorkflowStore.getState().setLayoutDirection("LR");
+    expect(useWorkflowStore.getState().view.layoutDirection).toBe("LR");
+  });
+
+  it("resetView keeps the layout direction the user chose (WI-LX2.4)", () => {
+    useWorkflowStore.getState().setLayoutDirection("LR");
+    useWorkflowStore.getState().selectJob("a");
+    useWorkflowStore.getState().resetView();
+    expect(useWorkflowStore.getState().view.selectedJobId).toBeNull();
     expect(useWorkflowStore.getState().view.layoutDirection).toBe("LR");
   });
 });
