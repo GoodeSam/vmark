@@ -1,3 +1,13 @@
+---
+paths:
+  - "**/*.css"
+  - "src/**/*.tsx"
+  - "src/theme/**"
+  - "src/styles/**"
+  - "src/hooks/useTheme.ts"
+  - "src/shell/**"
+---
+
 # 31 - Design Tokens
 
 Reference for CSS custom properties. Always use tokens over hardcoded values.
@@ -269,46 +279,7 @@ Icon SVG sizes (conventions, not tokens):
 | `--cjk-letter-spacing` | CJK character spacing | `0.05em` |
 | `--editor-width` | Max editor content width | `50em` |
 
-**A monospace font stack must be MEASURED, never assumed (#1334).** Reach for
-`verifiedMonoStack()` from `src/services/fonts/`, not `resolveMonoFontStack()`,
-anywhere the result feeds a character grid — the terminal, code blocks, Source
-mode.
-
-The CSS cascade is supposed to skip a family that is not installed. On
-WebKitGTK under a CJK locale it does not: fontconfig returns a best match for
-**any** family name rather than reporting no match, WebKit accepts it, and the
-cascade stops at the unmatched head family instead of reaching the generic
-behind it. Measured on Ubuntu 24.04.4 + `fonts-noto-cjk`, `'W' × 32` vs
-`'i' × 32` (how xterm.js sizes its cell):
-
-| stack | `LANG=C` | `LANG=zh_CN.UTF-8` |
-|---|---|---|
-| `"No Such Family XYZ", monospace` | 8 / 8 | **11 / 4 — proportional** |
-| `"JetBrains Mono", monospace` (absent) | 8 / 8 | **11 / 4 — proportional** |
-| `monospace` | 8 / 8 | 7 / 7 |
-
-`verifiedMonoStack` drops leading families until the remainder measures
-monospace — performing the cascade step the engine skipped — so an installed
-font is kept and an absent one degrades. Measured on the repro host: **9 of 16
-mono settings were broken before it, 0 after**, and it is a no-op under
-`LANG=C`.
-
-**Two plausible-sounding explanations for this bug were refuted by
-measurement**, so do not re-derive them: it is not that `ui-monospace` is
-unimplemented on GTK and "wins" the cascade (in a list it is skipped like any
-absent family), and it is not the GTK UI font shadowing the stack (setting
-`gtk-font-name` changes nothing). `ui-monospace` is still kept out of the Linux
-tail in `src/utils/fontStacks.ts` as hygiene — it means nothing there — while
-remaining on macOS, where it is the only way to reach SF Mono (`"SF Mono"` and
-`SFMono-Regular` do not match by family name; the real family is the hidden
-`.SF NS Mono`).
-
-**A font test that measures real fonts asserts nothing on a machine without the
-trigger.** The first guard written for this bug did exactly that and passed on
-macOS and on CI's Linux WebKit while the bug was live. `verifiedMonoStack`'s
-unit test injects the measurement, and its WebKit test constructs the failure
-with `sans-serif` — a generic that always resolves and is always proportional —
-so it can fail on any engine.
+**Monospace stacks for character grids** (terminal, code blocks, Source mode): use `verifiedMonoStack()` from `src/services/fonts/`, never `resolveMonoFontStack()`. WebKitGTK under CJK locales does not skip absent families (#1334); the module header has the measurements.
 
 **Note:** These tokens have static defaults in `:root` for print/SSR, but are dynamically updated by `useTheme.ts` based on user settings. For example, `--editor-line-height` defaults to `1.6` in CSS, but the user-facing default is `1.8` (set in `settingsStore.ts` as "Relaxed" and applied dynamically by `useTheme.ts`).
 
@@ -347,86 +318,11 @@ so it can fail on any engine.
 | `--settings-nav-width` | Settings nav column width (read by Settings.tsx AND SettingsNav) | `13rem` |
 | `--table-border-color` | Table borders | `#d5d4d4` |
 
-**Every `--shell-*`, `--traffic-lights-*`, `--workspace-rail-width` and `--bar-height` row above is written by `shellChromeVars()`, not by CSS.** The `:root` values
-are static defaults; `App.tsx` overrides them on the shell root from
-`src/shell/shellChrome.ts` (`WORKSPACE_RAIL_WIDTH`, re-exported by
-`components/WorkspaceRail`, and `SHELL_TOP_INSET`), which stays the source
-of truth because the same numbers also feed layout arithmetic in TS —
-`shellSideWidth()` in that module is the one definition of the chrome left of
-the editor, shared by `App.tsx` and the terminal's sizing. The two
-`--traffic-lights-*` values come from `src/shell/trafficLights.ts`.
-Change the TS constant, not the CSS.
-The `:root` declaration exists so consumers that use the var **without a
-fallback** — `title-bar.css` does — still resolve if the shell root has not
-applied its override yet.
-
-**`--shell-top-inset` is `0px` off macOS, and that is the point (#1296).**
-The chrome strip is mounted, and the traffic lights sit inside the webview, only
-where the app overlays the native title bar (`usesOverlayTitleBar()`, true on
-macOS alone). The sidebar spacer and the workspace rail's top padding each
-hardcoded `28px`, so on Windows and Linux both opened with a gap clearing
-buttons that are not there. Consume the var; never write a literal again.
-
-**It is `CHROME_HEIGHT` on macOS, not the height of the lights — the strip is
-the binding constraint.** `.title-bar` is `position: absolute; left: 0; right: 0`
-over the WHOLE shell and carries `data-tauri-drag-region` on its own root, so it
-takes the pointer everywhere it paints, the sidebar and the rail included. At
-the old `28` against a 40px strip the sidebar's header buttons ran 36→64px and
-their **top 4px were un-clickable**, and a window-drag handle instead. Measured,
-not inferred: screenshot at 2×, active button fill y 36.0→63.5pt, strip 0→40pt.
-The same 12px stepped the sidebar's first row above the editor's, since the
-primary column reserves the full `CHROME_HEIGHT`.
-
-`SHELL_TOP_INSET` is therefore `Math.max(CHROME_HEIGHT, TRAFFIC_LIGHTS_CLEARANCE)`
-— either input can bind, and today the strip is taller. That `max` has already
-earned its keep: moving the buttons onto Finder's line took the clearance from
-23 to 33 and this number did not move.
-
-### The window controls are described in `shell/trafficLights.ts`
-
-Everything about them derives from ONE value — `TRAFFIC_LIGHT_POSITION`, what
-`tauri.conf.json` asks AppKit for — so a change to the position carries the
-clearances with it:
-
-| Derived | Value | From |
-|---|---|---|
-| top edge, below the window top | 19pt | `y − 9`, AppKit's standard titlebar inset |
-| optical centre (`--traffic-lights-centre`) | 26pt | top + half of the 14pt button |
-| downward clearance | 33pt | top + 14pt |
-| sideways reach | 78.5pt | `x` + the 59.5pt cluster span |
-| `--traffic-lights-zone` | 82pt | reach + 3.5pt of air |
-
-**Why 19/19 and not AppKit's default.** Measured against a live Finder window,
-VMark's buttons sat exactly **10.00pt up and 10.00pt left** of where every
-native window puts them — on all four measures, so the whole cluster was jammed
-into the corner. Finder insets 19pt from both edges, centre 25.75pt (the 0.25 is
-antialiasing on a 14pt circle; paper-one measured Finder's centre at 25.8pt
-independently). `{x: 19, y: 28}` reproduces it.
-
-**Take TWO measurements before believing a mapping.** A single reading fits
-`top = y − 9` and `top = 29 − y` equally well and they disagree about which way
-the axis runs; paper-one shipped the wrong sign off one point.
-
-**Three surfaces declare the position and no compiler joins them:**
-`tauri.conf.json` (the main window only), `window_manager/mod.rs` (every window
-built at RUNTIME — those do not inherit the config's window entry, so a
-settings or document window would keep the old position), and
-`trafficLights.ts`. `src/shell/trafficLights.test.ts` reads all three and fails
-if they disagree, and also fails if the inset is raised without the zone — the
-half-change paper-one warns about.
-
-**It needs the `macos-private-api` cargo feature**, without which the position
-is ignored SILENTLY. The feature must be spelled out literally in `Cargo.toml`'s
-`tauri` dependency line; tauri-build reads that array as manifest text. It also
-bars the Mac App Store, which costs nothing while VMark ships Developer ID DMGs.
+**Shell chrome vars are written by `shellChromeVars()`** (`src/shell/shellChrome.ts`), not CSS. The `:root` values are fallbacks; change the TS constant. Consume `--shell-top-inset` (0 off macOS), never a literal. Traffic-light geometry derives from `TRAFFIC_LIGHT_POSITION` in `src/shell/trafficLights.ts`, declared in three places (`tauri.conf.json`, `window_manager/mod.rs`, `trafficLights.ts`) that `trafficLights.test.ts` keeps in sync; it needs the `macos-private-api` cargo feature.
 
 ## Browser Chrome Tokens
 
-A browser frame has to be a **true neutral**. A tinted frame around arbitrary web
-content reads as wrong — paper's warm grey `#eeeded`, mint and sepia all do it —
-which is why every real browser uses neutral chrome. So the browser surface does
-not use the theme's colours; it uses this family, which is white in light themes
-and dark in dark ones.
+The browser frame is a true neutral — white in light themes, dark in dark ones — never theme-tinted.
 
 | Token | Light | Dark (`.dark-theme`) |
 |---|---|---|
@@ -442,22 +338,7 @@ and dark in dark ones.
 | `--browser-accent-bg` | `#e8f0fe` | `rgba(88,166,255,.12)` |
 | `--browser-accent-primary` | `#1a73e8` | `#58a6ff` |
 
-**Do not consume these directly.** `shell/app-shell.css` SHADOWS the global names
-onto them under `.browser-workspace-active`, so a descendant writes
-`var(--bg-color)` as usual and resolves to the browser palette when a browser tab
-is focused. That indirection is why 54 consumer sites across four files needed no
-change when the dark branch was added. Adding a `--browser-*` read to a component
-bypasses the scoping and will apply the browser palette everywhere.
-
-**The terminal is the exception, and it is not CSS.** xterm.js paints a canvas
-from a JS `ITheme`, so no custom property reaches it — the chrome went neutral
-while the terminal stayed the tinted theme colour, a seam down the full height of
-the window. `theme/terminalThemeForBrowser.ts` applies the same rule in JS,
-collapsing the terminal to the `white` or `night` theme by `isDark`. The two
-neutrals are chosen so the match is **exact**: `--browser-bg-color` equals
-`white.color.bg.primary` (`#FFFFFF`) and `night.color.bg.primary` (`#23262b`)
-respectively, and `terminalThemeForBrowser.test.ts` pins that equality. Change one
-side and you must change the other.
+Do not consume `--browser-*` directly: `shell/app-shell.css` shadows the global names onto them under `.browser-workspace-active`. The terminal (xterm canvas) follows via `theme/terminalThemeForBrowser.ts`; its test pins the neutral backgrounds equal to `white`/`night`.
 
 ## Focus Mode Tokens
 
@@ -517,25 +398,14 @@ VMark's token system has **two layers**, both defined in `src/styles/index.css`:
 
 ## Tokenize value vs. tokenize intent
 
-Before replacing a literal with a token, the question is **not** "does a token with this value exist?" — it's "does the CSS *property* match the token's purpose?"
+Pick a token by the CSS property's purpose, not by value coincidence (`4px` padding is not `--radius-sm`). Never run `/ui-tokenize:fix` here; treat `/ui-tokenize:audit` output as candidates only.
 
-The `ui-tokenize` plugin (`/ui-tokenize:audit`, `/ui-tokenize:fix`) matches on **value coincidence**, not property semantics. Empirically, ≥0.85-confidence suggestions from the audit are wrong about **58% of the time**: it suggests `--radius-sm` for any `4px`, `--list-indent` for any `16px`, `--cjk-letter-spacing` for any `1px`, etc. — regardless of whether the property is `border-radius`, `padding`, `gap`, `top`, or anything else.
-
-**Operating rules:**
-- **Never run `/ui-tokenize:fix` on this repo.** It will silently insert wrong tokens.
-- **Treat audit suggestions as candidates, not answers.** Verify property → token mapping for every change.
-- **Property-token mapping** (use this, not the audit's first suggestion):
-  | CSS property | Use |
-  |---|---|
-  | `border-radius` | `--radius-*` |
-  | `padding`, `margin`, `gap` | `--spacing-*` (or `--popup-padding` in popups) |
-  | `width`/`height` of icon buttons | `--icon-size-*` |
-  | `font-size` (UI text) | currently no static token; either keep literal or define a new one |
-  | `top`/`left`/`right`/`bottom` (positioning) | usually keep literal (focus offsets, dot indicators) |
-- **TS/TSX has no token consumer system.** Suggestions like `tokens.media.youtube` refer to a system that doesn't exist. Components consume tokens via CSS classes only.
-- **The audit's `#NNN` regex matches GitHub issue references** in code comments (e.g. `// fix for (#823)`). Treat short pure-numeric hex matches in `.ts`/`.tsx` as noise.
-
-The `.tokenize/ignore` file in the project root encodes the structural exclusions (export bundle, token-definer files, syntax-highlight palettes, fixtures).
+| CSS property | Use |
+|---|---|
+| `border-radius` | `--radius-*` |
+| `padding`, `margin`, `gap` | `--spacing-*` (or `--popup-padding` in popups) |
+| `width`/`height` of icon buttons | `--icon-size-*` |
+| `top`/`left`/`right`/`bottom` | usually literal |
 
 ## Visual QA
 

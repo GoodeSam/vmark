@@ -1,3 +1,10 @@
+---
+paths:
+  - "src/**"
+  - "src-tauri/src/**"
+  - "website/**"
+---
+
 # 21 - Website Documentation Sync
 
 When making changes that affect user-facing behavior, update the corresponding website documentation.

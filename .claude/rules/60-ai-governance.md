@@ -1,549 +1,131 @@
+---
+paths:
+  - "dev-docs/plans/**"
+  - ".claude/tdd-guardian/**"
+  - ".claude/hooks/**"
+  - ".githooks/**"
+  - ".github/**"
+  - "scripts/check-*-phase.sh"
+  - "scripts/check-wi-linkage.sh"
+  - "scripts/check-new-deps.sh"
+  - "scripts/check-baseline-ratchet.mjs"
+  - "scripts/baselineRatchetManifest.mjs"
+  - "scripts/check-change-size.mjs"
+  - "scripts/check-tag-green.sh"
+---
+
 # 60 - AI Governance
 
-Rules for keeping AI-assisted implementation honest across long-running
-multi-phase work. Background and field practices: see
-`dev-docs/grills/ai-governance-2026-05.md`.
+Rules for keeping AI-assisted, multi-phase work honest. The pre-cleanup long
+form (incident history, measurements) is `git show 12c98051e:.claude/rules/60-ai-governance.md`.
 
 ## 1. Plan files are the contract
 
-Long-running features (>1 day, >5 files) must have a plan named
-`YYYYMMDD-name.md`. Plans contain ADRs, work items (`WI-N.M`), and a
-Definition of Done per phase. Implementation references the plan; the plan
-does not chase implementation.
-
-**There are two plan homes, and the choice is about who must be able to read
-it** (WI-AF5.2, 2026-08-09):
+Long-running features (>1 day, >5 files) need a plan `YYYYMMDD-name.md` with
+ADRs, work items (`WI-N.M`) and a Definition of Done per phase.
 
 | Home | Tracked? | Use when |
 |---|---|---|
-| `dev-docs/plans/` | **no** — gitignored (`.gitignore:8`) | the plan is maintainer-local: exploration, deferred work, anything a fresh clone need not see |
-| `.claude/tdd-guardian/` | **yes** | the plan must ship with the repo — because CI, a DoD script, or a future reader of the history depends on it |
+| `dev-docs/plans/` | no (gitignored) | maintainer-local plans |
+| `.claude/tdd-guardian/` | yes | CI, a DoD script, or future readers depend on it |
 
-This rule used to name `dev-docs/plans/` alone, which made the two largest plans
-in this repository permanent violations: `plan-20260803-161713.md` and its
-follow-up are tracked in `.claude/tdd-guardian/` precisely so the reasoning
-behind 652 files of change survives in the repository. "Complying" would have
-meant moving a tracked plan into a gitignored directory — deleting it from the
-repo to satisfy a rule about where plans live. **A rule that would destroy the
-artifact it governs is the thing that is wrong**, so the rule changed.
-
-Note the consequence for §2: `dev-docs/` is gitignored, so a linkage check
-against a plan there can only ever run on a maintainer machine. A plan whose
-work items CI must verify belongs in the tracked home.
-
-**Namespace the work items when a plan will coexist with others.** `WI-1.2` is
-not unique across plans, and §2's test-header linkage searches the whole
-repository — so one plan's `WI-5.2` is "linked" by a test citing a completely
-different plan's `WI-5.2`. Observed live on 2026-08-09: a 19-item plan reported
-every item linked while none were implemented. Use a distinct phase segment
-(`WI-AF1.2`, `WI-VC0.1`, `WI-SOC.2`); the grammar accepts them and this is what
-that support is for.
+Namespace WI-IDs when plans coexist (`WI-AF1.2`, `WI-VC0.1`): linkage searches
+the whole repo, so a bare `WI-5.2` is satisfied by any plan's `WI-5.2`.
 
 ## 2. Work items must be linked
 
-Every WI in a "complete" phase must be traceable in **either** a commit
-message **or** a top-of-file comment in its test file:
+Every WI in a complete phase is linked by a commit tag `feat(scope): … (WI-1.2)`
+or a test-file header `// WI-1.2 — <description>`. Prose mentions do not count.
+Verify: `bash scripts/check-wi-linkage.sh <plan-file> [--phase=N]`.
 
-| Linkage path | Format |
-|---|---|
-| Commit message | `feat(scope): <change> (WI-1.2)` |
-| Test header | `// WI-1.2 — <one-line description>` |
+## 3. Phase boundaries are gated by scripts
 
-Verify with: `bash scripts/check-wi-linkage.sh <plan-file> [--phase=N]`.
-
-## 3. Phase boundaries are gated by scripts, not prose
-
-Each plan phase has machine-checkable Definition of Done. For the
-GitHub Actions workflow viewer plan:
-`bash scripts/check-gha-phase.sh <phase-number>` must exit 0 before the
-plan's Status header ticks to the next phase.
-
-When you start a new long-running plan, copy `scripts/check-gha-phase.sh`
-as a template and fill in per-phase assertions.
+Each phase has a machine-checkable DoD script (template:
+`scripts/check-gha-phase.sh`) that must exit 0 before the plan advances.
 
 ## 4. New dependencies are reviewed for hallucination
 
-LLMs hallucinate package names at 5-22% rate (USENIX 2025), with active
-slopsquatting attacks. Every PR that adds an npm dependency to ANY
-manifest (root, `server/mcp/`, `website/`) runs
-`scripts/check-new-deps.sh` in CI. The script parses the dependency
-objects (not diff lines), fails closed on metadata errors, and flags
-packages that:
-- Don't exist on npm (or can't be queried)
-- Were created less than 30 days ago
-- Have fewer than 1000 weekly downloads
-
-A flagged package isn't necessarily wrong, but it requires explicit
-acknowledgment in the PR description before merge.
-
-Rust dependencies are covered by `cargo audit` in CI (RUSTSEC advisories)
-plus Dependabot's `cargo` ecosystem — crates.io has no equivalent
-hallucination-age heuristic wired up; adding a crate still warrants a
-manual look at its repository and download count.
+`scripts/check-new-deps.sh` (CI, every npm manifest) flags packages that do not
+exist, are <30 days old, or have <1000 weekly downloads. A flagged package needs
+explicit acknowledgment in the PR description. New crates: check the repository
+and download count by hand (`cargo audit` + Dependabot cover advisories).
 
 ## 5. Test-first is hook-enforced for high-risk paths
 
-For paths under active multi-phase development, a Claude Code PreToolUse
-hook in `.claude/hooks/` blocks `Write`/`Edit` on production source
-files unless a sibling `*.test.ts` exists. This is structural enforcement
-of `.claude/rules/10-tdd.md`, not a replacement for it.
-
-Currently scoped to:
-
-| Feature | Paths |
-|---|---|
-| GHA workflow viewer | `src/lib/ghaWorkflow/**`, `src/components/Editor/WorkflowPanel/**`, `src/components/Editor/WorkflowEditor/**` |
-| Bespoke workflow engine | `src/lib/workflow/**`, `src/plugins/workflowPreview/**`, `src/components/WorkflowApproval/**`, `src/stores/workflowStore.ts`, and `src/services/workflow/workflowEnginePolicySync.ts` (the flag push) |
-| Source-pane workflow extensions | `src/plugins/codemirror/` modules whose name matches `*[Ww]orkflow*` or `*Gha*` (covers `sourceGhaIrSync.ts`; the guard's test globs the directory so a new workflow module cannot silently escape) |
-| Embedded browser | `src/lib/browser/**`, `src/lib/sites/**`, `src/components/Browser/**`, `src/services/browser/**`, `src/services/workflow/**` (the browser's workflow RUN engine — executor, registry, approvals, recorder session; WI-NB6/NB7 — not the YAML engine, despite the directory name), `src/stores/browserApprovalStore.ts` |
-| Browser automation (MCP handlers) | `src/services/mcpBridge/v2/browser*` |
-
-Allow-list within scope: `*.test.ts(x)`, `types.ts`, `*.d.ts`, `*.css`.
-
-To extend the scope to a new feature path, edit the `SCOPED` array in
-`.claude/hooks/gha-tdd-guard.mjs` (rename or add a parallel hook for
-larger features).
-
-**Every scoped path must exist, and the hook's own test asserts it.** Until
-WI-19 the array named `src/lib/workflowRouting/**`, `src/plugins/githubWorkflow/**`,
-`src/stores/workflowViewStore.ts`, `src/stores/workflowEditStore.ts` and
-`src/stores/webWorkflowStore.ts` — none of which had existed for months — while
-the shipped workflow-engine frontend (`src/lib/workflow/`,
-`src/plugins/workflowPreview/`, `src/stores/workflowStore.ts`) was outside the
-scope entirely, and the MCP browser handlers had moved `hooks/` → `services/`
-in WI-10 without the pattern following. A guard aimed at deleted paths reports
-the same green as a guard that works. `gha-tdd-guard.test.mjs` now pins both
-directions: an untested probe inside each real scope is blocked, and each
-removed path is NOT — so a resurrected name has to be re-scoped deliberately
-rather than inherited.
+`.claude/hooks/gha-tdd-guard.mjs` blocks `Write`/`Edit` on scoped production
+files without a sibling test (allowed: `*.test.ts(x)`, `types.ts`, `*.d.ts`,
+`*.css`). Scope lives in the hook's `SCOPED` array; its test asserts every
+scoped path exists. Extend the array to cover a new high-risk feature.
 
 ## 6. Cross-model review at risk points
 
-Use `/cc-suite:review-plan` against any plan exceeding ~500 lines or
-spanning >3 phases before starting Phase 1. Codex (different training data,
-different blind spots) catches package-name hallucinations and API
-assumptions that a single-model review will miss. This is mandatory for
-plans that introduce new external dependencies.
+Plans >~500 lines or >3 phases, or that add external dependencies, get
+`/cc-suite:review-plan` (Codex) before Phase 1.
 
 ## 7. Spike before commit on high-risk technology choices
 
-When a plan ADR rests on an unverified assumption about an external library,
-a Phase 0 spike (under `dev-docs/grills/<feature>/`) must validate the
-assumption with a runnable probe before any other phase commits. The
-GitHub Actions workflow viewer plan's Phase 0 (4 spikes, 100% PASS) is the
-template.
+An ADR resting on an unverified library assumption needs a Phase 0 spike under
+`dev-docs/grills/<feature>/` with a runnable probe.
 
 ## 8. Subagent context isolation
 
-Every frontier model degrades from ~300k tokens (Chroma 2025), well below
-the 1M ceiling. For verbose tasks (search, audit, research), dispatch a
-subagent rather than letting the main thread accumulate context. Use:
-
-| Task class | Subagent |
-|---|---|
-| Open-ended search across the codebase | `Explore` |
-| Multi-source web research | `coding-researcher` |
-| Independent plan/code review | `cc-suite:review-plan`, `auditor` |
-| Implementation of a single scoped WI | `execution-agent` or `implementer` |
-
-Aggressive `/clear` between unrelated tasks; new session per phase.
+Dispatch verbose search/audit/research to subagents (`Explore`,
+`coding-researcher`, `auditor`, `execution-agent`) rather than filling the main
+thread. New session per phase.
 
 ## 9. Don't bypass; ask
 
-If a hook or gate blocks legitimate work, fix the gate rather than skip
-it. `--no-verify` on `git commit` or `git push`, removing the hook from
-`.claude/settings.json`, or changing the WI-linkage script's regex are all
-forbidden without explicit user authorization. Document the bypass reason
-if granted.
+`--no-verify`, removing a hook from `.claude/settings.json`, or changing the
+WI-linkage regex requires explicit user authorization. Fix the gate instead, and
+document any granted bypass.
 
 ## 10. `main` and release tags are gated at push time
 
-CI (`.github/workflows/ci.yml`) runs `pnpm check:all` and exposes the
-required `frontend` check, which gates **PR merges**. It does **not** gate
-**direct pushes** to `main`: `on: push` CI runs *after* the commit already
-landed, and a repo owner can push straight to `main` (a local
-`git merge --no-ff`, or `/bump … and release`) with bypass permission. That
-is how the content-server merge (`e2a0dffe`) reached `main` with a red gate —
-knip, the actionRegistry contract test, and function coverage were all
-failing, mutually masked, and nothing blocked the push.
-
-The structural fix was a versioned `pre-push` hook (`.githooks/pre-push`)
-that re-ran the full local gate — a Windows cross-target compile check
-(`scripts/check-cross-target.sh` — host-only cargo can't see
-`cfg(target_os)` breakage; the v0.8.26 release push hit that class 4× in a
-row), then `cargo fmt … --check` and
-`cargo clippy … --all-targets -- -D warnings` (the same rustfmt + lint CI's
-`rust-test` job runs — BOTH a clippy `-D warnings` violation AND a whole-module
-rustfmt drift in `src/browser/*` reached `main` red because `pnpm check:all` is
-frontend-only and runs neither; CI's Format check is Linux-only, so the macOS
-leg never caught the drift), and finally `pnpm check:all` — on every
-`main`/`v*` push. Once the residual control below made the remote itself
-authoritative for `main`, the hook was reworked (WI-7, 2026-08-03; §9 —
-fixing the gate, not bypassing it) from proxy to property:
-
-- **Tag leg (`v*`)** — the real gate, since branch protection cannot gate
-  tag pushes: the hook runs `scripts/check-tag-green.sh <tagged commit>`,
-  a seconds-fast `gh api …/check-runs` verification that the required
-  checks (`frontend`, `rust`) are `completed`+`success` on the exact SHA
-  the tag names. Latest run per check name wins (re-run-to-green passes);
-  pending, failed, or missing checks refuse the push; `gh` missing, a
-  network error, or malformed JSON also refuse (fail closed) — never a
-  silent pass.
-- **Main leg** — informational only: branch protection rejects any direct
-  push of a commit its required checks have not passed, so a local re-check
-  would duplicate the remote and spuriously block legitimate fast-forward
-  pushes (a fresh merge commit's own `on: push` runs have not started yet).
-- **`VMARK_OFFLINE_GATE=1`** — runs the full legacy local gate above
-  instead, for both legs, when gh/network is unavailable. The cross check
-  soft-skips (warning, not block) when the mingw-w64 toolchain isn't
-  installed — CI stays the authoritative cross-platform gate; the fmt and
-  clippy gates are hard blocks. Timing for both modes lives in the hook's
-  header — the single authoritative claim; docs reference it rather than
-  restating numbers.
-
-Feature-branch pushes are not gated locally.
-The hook is enabled by `git config core.hooksPath .githooks`, which the root
-`package.json` `prepare` script applies on `pnpm install` (no husky
-dependency). Overriding it (`git push --no-verify`) falls under §9.
-
-**CI is `pull_request`-only, and `strict: true` is what makes that safe
-(2026-08-05).** `ci.yml` used to trigger on `push: [main]` as well, so every
-change was verified TWICE against byte-identical trees. Measured on v0.9.28:
-PR head `635b7dd7` and merge commit `7e89a426` both had tree `0e15a780`. The
-duplicate cost ~57 runner-minutes per change and — worse — it gated releases,
-because `check-tag-green.sh` reads check-runs on the tagged commit and so sat
-waiting ~22 min for a re-run to reconfirm bytes CI had already passed.
-
-Three pieces now hold the property "every commit on `main` was verified as the
-exact tree it is", and **all three are load-bearing** — removing any one
-reintroduces a real hole:
-
-1. **`strict: true`** on the required checks (added 2026-08-05). The PR branch
-   must contain main's tip before merging, so the merge commit's tree equals
-   the PR head's, and the PR's run tested precisely what lands. Without it, a
-   PR verified against a stale `main` could land a combination nothing tested —
-   and there is no longer a push-triggered run to catch it. **If this is ever
-   turned off, restore `push: [main]` in `ci.yml` in the same change.**
-2. **`enforce_admins: true` + required `frontend`/`rust`** — nothing reaches
-   `main` outside that path, including for the repo owner.
-3. **`check-tag-green.sh` resolves an identical-tree ancestor.** A merge commit
-   has no check-runs of its own now, so the gate walks (bounded) to a commit
-   with an IDENTICAL TREE and requires the real green checks there. Tree
-   equality, not ancestry, is the argument — "some ancestor passed" would be
-   meaningless, and `scripts/check-tag-green.test.mjs` pins the refusal of a
-   green ancestor whose tree differs. With no `git` on PATH the candidate list
-   collapses to the tagged commit alone, i.e. the older, STRICTER behaviour —
-   degradation can only tighten this gate, never loosen it.
-
-Do NOT "fix" a slow release by making the gate accept a status that CI could
-have stamped for free; the point is that it verifies a real test result.
-
-To inspect or revert the strictness:
-```bash
-gh api repos/xiaolai/vmark/branches/main/protection --jq .required_status_checks.strict
-```
-
-**Residual control — ENABLED 2026-07-27.** The hook was never the whole story:
-`main` had required status checks (`frontend`, `rust`) but `enforce_admins:
-false`, so an owner push sailed past them with
-`remote: Bypassed rule violations for refs/heads/main`. The v0.9.15 push did
-exactly that, and CI then went red on a Windows-only test assertion the local
-gate cannot see (`check-cross-target.sh` COMPILES for Windows; it does not run
-the suite there).
-
-`main` now carries:
-- required status checks `frontend` + `rust`,
-- `enforce_admins: true` — admins are subject to them,
-- a pull request required before merging, with
-  `required_approving_review_count: 0` so a solo maintainer can self-merge once
-  the checks are green,
-- deletions blocked, and force-push blocked by the separate `main-no-force-push`
-  ruleset (`bypass_actors: []`, `current_user_can_bypass: "never"`).
-
-**Consequence for releases:** a direct `git push origin main` of a new commit is
-now REJECTED — required checks cannot have passed on a commit the remote has
-never seen. The bump must go through a PR; see `40-version-bump.md`. Tag pushes
-are unaffected, so the release trigger is unchanged.
-
-To inspect or revert:
-```bash
-gh api repos/xiaolai/vmark/branches/main/protection
-gh api -X DELETE repos/xiaolai/vmark/branches/main/protection   # removes it entirely
-```
-
-### Why CI runs when the local gate is green
-
-This gets re-derived every few months, so: the instinct that duplicate
-verification is waste is **correct**, and it has already been acted on — CI used
-to trigger on `push: [main]` as well as `pull_request`, verifying byte-identical
-trees twice at ~57 runner-minutes per change. That was deleted (2026-08-05). The
-remaining CI run is not a second copy of the local one.
-
-**The three-platform local build does not exist on this machine.**
-
-| Platform | What local tooling actually does |
-|---|---|
-| macOS ARM | compiles **and runs** (`cargo test`, `cargo clippy`) |
-| Windows | **cross-compiles only** (`scripts/check-cross-target.sh`) — no tests run |
-| Linux | **nothing** — the script's header says so explicitly |
-
-Also: **`pnpm check:all` never invokes cargo at all** — no npm script mentions
-it. "The local gate is green" means the *frontend* is green, plus whatever Rust
-commands were run by hand, on one platform.
-
-**Compiling is not running, and v0.9.30 paid for the difference.** Local
-`check:all` was green and the Windows cross-check passed; CI's Windows leg then
-found four real defects across four rounds, of which **two were invisible to any
-compile-time check** — a POSIX directory `fsync` that failed 108 tests because
-Windows cannot `File::open()` a directory, and a path probe laxer than
-production. Compilation cannot see either.
-
-The right response to "CI is slow" is to move left what *can* move left, not to
-delete what cannot. That already happened too: `check-cross-target.sh` now runs
-`cargo clippy` with CI's flags instead of `cargo check`, so the third defect's
-class is catchable locally in ~1 minute rather than ~20.
-
-**And CI green is a verifiable fact where local green is a claim.** Nothing
-attaches a local run to a commit, and nobody else can check it.
-`enforce_admins: true` plus the required checks mean nothing reaches `main`
-without CI green on that exact SHA, and `check-tag-green.sh` later *verifies*
-that via `gh api`. v0.9.15 shipped a Windows-only failure through an admin
-bypass, which is why `enforce_admins` was turned on.
-
-Rule of thumb: **move what can move left; never verify identical bytes twice.**
+- `main`: branch protection with required `frontend` + `rust`,
+  `enforce_admins: true`, PR required (0 approvals), no force-push. Direct
+  pushes of new commits are rejected — releases go through a PR (rule 40).
+- CI is `pull_request`-only. `strict: true` (branch must contain main's tip) is
+  what makes that safe; **if `strict` is ever turned off, restore
+  `push: [main]` in `ci.yml` in the same change.**
+- `v*` tags: `.githooks/pre-push` runs `scripts/check-tag-green.sh`, which
+  requires green `frontend` + `rust` on the tagged commit or an ancestor with an
+  IDENTICAL tree. Fails closed. `VMARK_OFFLINE_GATE=1` runs the full local gate
+  (cross-target check, `cargo fmt --check`, clippy, `check:all`) instead.
+- Local green is not CI green: local tooling runs Rust only on macOS, merely
+  compiles for Windows, and does nothing for Linux; `check:all` never runs
+  cargo. Never make the tag gate accept a status CI did not actually produce.
 
 ## 11. Committed baselines are re-checked against the merge base
 
-Every ratcheting gate (`file-size`, `knip`, `bespoke-buttons`,
-`extension-budget`, `command-errors`, `store-coupling`, `i18n`,
-`mock-boundaries`, `shell-slots`, `merge-drops`, dependency-cruiser
-known-violations) compares the tree against its baseline **in the same
-commit**. On its own that is self-attestation: raise the number and change the
-code together and every gate reports green. With
-`required_approving_review_count: 0`, no human review structurally stands
-between that and `main`.
+`scripts/check-baseline-ratchet.mjs` (CI only, fails closed without a base ref)
+re-reads every ratcheting baseline at the merge base. Adding a baseline means
+registering it in the manifest in the same change. Prefer identity baselines
+over counts. A genuine re-measurement uses a manifest `allowRaise` entry with a
+reason; it goes stale once merged and must then be deleted.
 
-`scripts/check-baseline-ratchet.mjs` closes it for all of them. A manifest
-inside the script names every baseline and how its loosening is defined —
-`scalar`, `per-key-count`, `identity`, or a named `custom` comparator — and CI
-re-reads each one at the **merge base**, history the PR cannot have written.
-Two-way staleness is enforced in both directions: a baseline-shaped file on
-disk that is not in the manifest fails, and a manifest entry whose file is gone
-fails. **Registering a new baseline in the manifest is part of adding it**, not
-a follow-up.
+## 12. Dark-feature verdicts
 
-Prefer **identity** baselines over counts wherever the checker can emit them: a
-count permits a like-for-like swap (drop one violation, add a different one,
-total unchanged, gate silent) — the defect this gate exists to kill.
-
-Two properties worth knowing before it surprises you:
-
-- **It is a CI-tier gate, deliberately absent from `pnpm check:all`.** The
-  comparison needs a base ref, which a local checkout cannot guarantee
-  (detached HEAD, stale remote, shallow clone, no network). It runs on
-  `pull_request` in `ci.yml` and **fails closed** when the base ref cannot be
-  resolved — it never skips. Run it by hand with
-  `node scripts/check-baseline-ratchet.mjs origin/main`.
-- **A genuine re-measurement uses `allowRaise`, which expires.** When a gate is
-  rebuilt and the new number is honestly higher (WI-8 replaced 17 plugin-wide
-  dependency-cruiser licenses with 74 individually frozen edges), a manifest
-  `allowRaise` entry permits exactly that one from→to, requires a stated
-  reason, and **fails as stale** once the base already carries the raised
-  value. The PR after the re-measurement lands must delete it.
-
-## 12. Dark-feature verdicts (proposed by WI-19, awaiting maintainer ratification)
-
-Two of the three largest investments in this codebase — the embedded browser
-(~17.7k LOC) and the workflow system (~17.8k LOC) — ship default-off. A feature
-that is neither on nor deleted accrues cost in both directions: it is carried by
-every refactor, every dependency bump and every gate, and it earns nothing. Each
-paragraph below is a recommendation grounded in what the code shows today
-(completeness, test coverage, guard state), not a decision. **The maintainer
-ratifies or overrides; until then these are proposals.** Each carries a dated
-exit criterion, because "we'll decide later" is how a dark feature becomes
-permanent.
-
-**Knowledge Base / content-server runtime — D1 RESOLVED AS OPTION (c),
-DEVELOPER-MODE-ONLY (maintainer decision, 2026-09-18, issue #1425).**
-
-The plan's D1 offered three ways out of "a feature shipped without its runtime":
-(a) bundle the content-server dist and require the user to have `node`,
-(b) bundle Node plus the vendored dependency payload and sign it, or (c) mark
-the feature developer-mode-only until a runtime story exists. **(c) is the
-decision**, and the cost of deferring it is now measured rather than
-hypothetical: `#1425` is a user reporting the dead end as a *Linux packaging
-fault*. It is not one. `BUNDLED_CLI_RESOURCE` is `None`, nothing in any build
-produces a `cli.js`, the ADR-2 provisioning path has no production caller, and
-`release-smoke.yml` **asserts `cli=missing` on every macOS release** — so the
-feature could not start on the primary platform either. The in-app copy said
-"not included in this build", which reads as "this platform's build" and is what
-pointed the reporter at the wrong cause.
-
-WI-FL1.1 made the failure honest, which was the right first step and not
-sufficient: an honest explanation still requires the user to find the feature,
-try it, and be told no. The entry points — the View menu item, the palette
-command, `Ctrl + Shift + 4` and, transitively, Slidev preview/export — are now
-hidden unless `advanced.developerMode` is on, through the same
-hidden-not-greyed mechanism the browser's "New Browser Tab" item already used
-(`menu::conditional_items`, generalized from `browser_menu_item.rs` at its
-second instance). One predicate, `knowledgeBaseAvailableHere`, backs the
-palette's `when`, the shortcut and the native item, so they cannot disagree.
-
-Two consequences settled deliberately. The panel CLOSES when the setting goes
-off, because it has no close button of its own — every way to dismiss it runs
-through the same gated command, so leaving it open would strand a dock nothing
-could dismiss (`KnowledgeBaseOverlay.test.tsx` pins it). A RUNNING server is not
-stopped: turning the setting back on reaches its Stop button, and `quit.rs`
-kills content servers at exit regardless, so the recoverable state is preferred
-over a side effect the user did not ask for. And it is not a deletion —
-`resolve_cli`, the probe and the panel are unchanged, so option (b) remains a
-flag flip plus a build step rather than a rewrite. **Re-open D1 when a runtime
-story exists**; the release-smoke assertion is the thing that will have to flip
-from `cli=missing` to `cli=ready` in the same change.
-
-**Embedded browser — SHIPPED ON BY DEFAULT (maintainer decision, 2026-08-15).
-This supersedes the KEEP-DARK recommendation below, which is retained because
-the reasoning it records is still the reasoning a reader needs.**
-
-`browser.enabled` now defaults to `true` (`src/stores/settingsStore/defaults.ts`),
-and `showDevSection` defaults to `true` with it, because Advanced hosts the OFF
-switch and a default-on feature whose only off switch was an undocumented
-`Ctrl+Option+Cmd+D` chord is not switchable in any meaningful sense. The dated
-2026-11-01 criterion below was resolved early, in favour of shipping, without
-the Windows/Linux surface it asked for; the feature therefore ships **macOS-only
-and on**, with every other platform's native surface still an explicit
-unsupported stub.
-
-What did NOT change, and is what keeps the exposure bounded: the AI posture
-defaults (`aiSession: "sandbox"`, `aiAllowLoopback: false`), the SSRF/LAN
-destination policy, the approval flow, the origin grants, the policy epochs, and
-the guard scope in §5. The setting is PUSHED to Rust as `browser_ai_policy`, so
-default-on opens the AI/MCP browser path at bootstrap and not merely the UI —
-that is the substantive consequence of this decision and the thing to re-examine
-first if it is revisited.
-
-The superseded recommendation, for the record: *KEEP DARK, exit criterion
-2026-11-01.* This is the most finished of the three and the only one with real
-backend enforcement: the AI commands are `CommandError`-typed, every refusal has
-a test naming its `code` (`browser/ai_guards.test.rs`), the SSRF/LAN destination
-policy is adversarially tested down to legacy IPv4 spellings, and the approval
-flow, origin grants and policy epochs all exist and are pinned. What is missing
-is not code but evidence: it is macOS-only by construction, the website called
-it "an early, OPT-IN feature", and nothing in the repo recorded a single user
-having turned it on. The recommendation was to leave `browser.enabled` off, keep
-the guard scope, and set a dated decision point: by **2026-11-01**, either a
-Windows/Linux surface exists (making default-on defensible) or the feature is
-extracted behind a cargo feature so a build that does not want it does not pay
-for it. The stated risk of shipping on was that it makes the SSRF policy a
-default-exposed attack surface on the primary platform in exchange for a
-capability no one had asked for. **That risk was accepted, not refuted** — if
-this is ever reverted, this paragraph is the argument to re-read.
-
-**Workflow VIEWER — SHIP ON BY DEFAULT (partly already true), exit criterion
-2026-09-15.** The GitHub Actions surface is the healthiest thing in this review:
-27 of 29 modules in `src/lib/ghaWorkflow/` carry sibling tests, `WorkflowPanel/`
-and `WorkflowEditor/` are at 100% file-level test coverage, and it has real
-users' files to work on — every repo that uses CI has `.github/workflows/*.yml`.
-It is also *already* on by default in its main form: the yaml adapter registers
-the `gha-workflow` schema renderer unconditionally, so opening a workflow file
-gives you the workbench with no flag at all. What was gated was the source-pane
-help — expression completion, cursor↔canvas sync, `uses:` goto-def — and it was
-gated behind an *execution engine* flag, which is why WI-19 split it into
-`advanced.workflowViewer`. The recommendation is to flip that flag's default to
-`true` once one release has shipped with the split (so the migration has run
-everywhere) — by **2026-09-15**. The risk is small and bounded: these extensions
-are read-only, they no-op on non-YAML files, and the workbench they assist is
-already unconditional.
-
-**Workflow VIEWER — outcome (2026-09-07).** Done ahead of the 2026-09-15 date,
-and the flag is gone rather than flipped: `advanced.workflowViewer` gated only
-the markdown assembly's `viewer: yaml` extensions and hid the YAML-formatting
-control, so the split left nothing worth a switch. Those extensions are now
-unconditional (the engine gate is untouched), the formatting control is a plain
-Developer Tools row, and `migrateRemoveWorkflowViewer` drops persisted values;
-`migrateSplitWorkflowFlags`, which re-created the flag from the engine flag on
-every load, is retired with it (feature-ledger plan, WI-FL2.6).
-
-**Workflow ENGINE — EXTRACT, exit criterion 2026-10-01.** The bespoke YAML
-runner is the weakest case of the three and the one with the most machinery per
-unit of demonstrated demand. It executes a workflow language VMark invented,
-spawns AI providers, writes files, and takes filesystem snapshots — and until
-WI-19 the Rust side did none of that behind a flag check, so anything that could
-reach the IPC boundary ran it regardless of the setting. Its frontend is thinner
-than the viewer's (`src/plugins/workflowPreview/WorkflowPreview.tsx` gained its
-first test, `__tests__/WorkflowPreview.test.tsx`, only in 2026-08), it duplicates a
-capability the AI genies already provide for the single-step case, and its
-"language" competes with the GitHub Actions syntax the viewer half of the same
-feature already speaks fluently. The recommendation is
-**extract**: move the runner (`src-tauri/src/workflow/`, `src/lib/workflow/`,
-`src/plugins/workflowPreview/`, `src/components/WorkflowApproval/`) behind a
-cargo feature plus a build-time frontend flag by **2026-10-01**, so a default
-build carries neither the code nor its dependency surface. If, by that date,
-usage evidence argues for keeping it in-tree, the fallback is to keep it dark
-with the WI-19 backend gate — which is now real enforcement rather than a hidden
-button — and re-review at the next architecture pass. Deleting it outright is
-not proposed: `run_workflow` is what genie workflows dispatch through, so
-removal is a migration, not a deletion.
-
-**What the WI-19 gate does and does not claim (audit 20260803 §4).** Both
-flags reach Rust the same way: the webview PUSHES them
-(`workflow_engine_policy`, `browser_ai_policy`) because settings live in
-localStorage, which Rust cannot read. That makes each an unauthenticated
-boolean IPC setter, and reviewers keep re-flagging it as "bypassable". The
-verdict is that it is not a weakness, because of what the gate is for. It
-buys one property: a **UI-less path** — the MCP bridge, a second window, a
-replayed invoke — cannot execute a dark feature the user switched off. It
-claims nothing against a caller that can already invoke Tauri commands in
-this process: such a caller runs at the app's own privilege, is inside the
-trust boundary by definition, and could call `run_workflow` directly if the
-flag were not consulted at all. Persisting the flag Rust-side would move the
-toggle, not the boundary, and would add a second source of truth for a
-setting the frontend owns. Do not "fix" this by rebuilding persistence.
-
-The one thing the gate must NOT do is refuse to *stop* things. Gating
-`cancel_workflow` and `respond_workflow_approval` made a running workflow
-unstoppable by the user who had just turned the feature off — the panel with
-the cancel button disappeared and the command started returning
-`feature-disabled`. Only commands that START work are gated; the `false`
-transition of the setter now also asks any in-flight run to stop.
-`workflow/guards.test.rs` pins both halves against the real source.
+- **Knowledge Base / content-server runtime**: developer-mode-only (maintainer
+  decision 2026-09-18, #1425). Entry points are hidden unless
+  `advanced.developerMode` via `knowledgeBaseAvailableHere`. Re-open when a
+  runtime is bundled; `release-smoke.yml`'s `cli=missing` assertion flips then.
+- **Embedded browser**: on by default, macOS-only (maintainer decision
+  2026-08-15). AI posture defaults (`aiSession: "sandbox"`,
+  `aiAllowLoopback: false`), the SSRF policy, approvals and origin grants stay
+  as they are; `browser_ai_policy` is pushed to Rust at bootstrap.
+- **Workflow viewer**: unconditional; the `advanced.workflowViewer` flag is
+  removed.
+- **Workflow engine**: recommended EXTRACT behind a cargo feature + build-time
+  frontend flag by 2026-10-01, else keep dark behind the WI-19 backend gate.
+  `run_workflow` backs genie workflows, so removal is a migration.
+- The pushed policy flags (`workflow_engine_policy`, `browser_ai_policy`) only
+  stop UI-less paths from running a disabled feature; they are not a security
+  boundary. Only commands that START work are gated — cancel/approval commands
+  must keep working when the feature is turned off.
 
 ## 13. Change size is a decision, not an accident
 
-`scripts/check-change-size.mjs` (PR tier, in `ci.yml` beside `check-new-deps.sh`
-and the baseline ratchet) measures the diff against the merge base. Over either
-threshold in `scripts/change-size-policy.json`, the PR body must carry a
-`CHANGE-SIZE-ACK:` line saying why the change is that size.
-
-**Be precise about what this buys, because overselling it would be the exact
-fiction the rest of this file exists to delete.** `main` requires
-`required_approving_review_count: 0`, so the acknowledgement is added by the
-same person who wrote the PR. **It is a forcing function, not a control.** It
-prevents nothing; it converts an unremarked accident into a recorded decision
-and puts the number where a human and a future audit can see it. Anyone
-determined to land a large change still can — and sometimes should.
-
-The thresholds are 150 files / 10,000 lines: the **measured p90** of 149 merges
-into `main` (p50 is 10 files / 328 lines). They are not a taste judgement, and
-an earlier draft that guessed 80/3,500 would have fired on roughly a quarter of
-all work — which is how a gate becomes noise and then gets routed around.
-Re-measure before changing them, and record the new distribution in the policy
-file.
-
-Generated, vendored and maintainer-local paths are excluded, so a lockfile
-refresh cannot look like a rewrite.
-
-It **fails closed**: an unresolvable base ref, a missing PR number, or an
-unreadable body over threshold is exit 64, never a pass. An under-threshold
-change never consults the API at all, so a small PR does not depend on network
-reachability. The body is read live through `gh api` rather than from the event
-payload, because `pull_request` declares no `types:` and therefore does not fire
-on body edits — without that, a token added after a red check would never take
-effect and the documented remedy would not work.
-
-**Why it exists.** The 2026-08-03 architecture review landed as ONE commit of
-652 files (+33,935/−6,466) against its own plan's "no big-bang commit"
-criterion, and nothing objected because nothing was watching. The follow-up plan
-then stacked four phases on one branch before this gate existed to notice —
-which is the same drift at one twentieth the scale, and the reason the rule is
-written as a signal rather than a prohibition.
+`scripts/check-change-size.mjs` (PR tier) requires a `CHANGE-SIZE-ACK:` line in
+the PR body when a diff exceeds the thresholds in
+`scripts/change-size-policy.json` (measured p90: 150 files / 10,000 lines). It
+is a forcing function, not a control. Re-measure before changing thresholds.
