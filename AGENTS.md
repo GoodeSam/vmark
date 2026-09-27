@@ -64,6 +64,7 @@ Each script's header explains its rules and exemption markers.
 - `lint:theme-contrast`, `lint:ui-consistency`, `lint:bespoke-buttons`, `lint:design-tokens` — UI gates; see `.claude/rules/3*.md`.
 - `lint:command-errors` — new Rust commands return `CommandError`; see `.claude/rules/50-codebase-conventions.md`.
 - `lint:store-coupling` — plugins must not import app stores/services/hooks/components; see `.claude/rules/00-engineering-principles.md`.
+- `lint:feature-map` — every production source file is owned by exactly one feature in `scripts/feature-map.json` (or its `infrastructure.paths`). A new module must be assigned in the same change. It also joins the tracked ledger `.claude/feature-ledger.md` to the map (every block names a feature, every cited path exists) — when a feature ships, moves or dies, edit its block in the same change. `pnpm gen:feature-ledger` regenerates the untracked `dev-docs/feature-metrics.md`.
 - `lint:rust-deps` (`cargo machete`) runs in CI, not `check:all`.
 - Markdown parser hostile-input cost is linear: fast paths in `parser/fastPaths/`, `pnpm` patches in `patches/` (a Dependabot bump of micromark or mdast-util-to-markdown fails install until the patch is re-made — that is intended), and `pathologicalScaling.test.ts`.
 
@@ -82,7 +83,7 @@ Each script's header explains its rules and exemption markers.
 - Menus: `menu_events.rs` emits `menu:{id}` generically; `menu/localized.rs` `create_localized_menu` is the single builder (labels in `src-tauri/locales/en.yml`). Every menu item needs a real SF Symbol in `macos_menu.rs` `MENU_ICONS`.
 - Shortcuts: see `.claude/rules/41-keyboard-shortcuts.md`.
 - Settings store uses plain `.subscribe()` with manual prev-value tracking, not `subscribeWithSelector`.
-- Tauri plugin: add to `Cargo.toml`, register `.plugin()` in `lib.rs`, add permission to `src-tauri/capabilities/default.json`.
+- Tauri plugin: add to `Cargo.toml`, register `.plugin()` in `src-tauri/src/app_plugins.rs`, add permission to `src-tauri/capabilities/default.json`.
 
 ## Styling (details in `.claude/rules/3*.md`)
 
