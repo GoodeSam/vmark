@@ -16,10 +16,13 @@
  *     their positions no longer describe the text, and the edit that made
  *     them stale has already scheduled a lint that presents fresh ones.
  *   - Reconcile, don't push: compare what CodeMirror shows with what it should
- *     show, and dispatch only on a difference. It runs on store changes AND
- *     after every transaction, because a lint result is installed a microtask
- *     after it is computed — a trust change inside that window was corrected
- *     and then overwritten by the queued install (review finding).
+ *     show, and dispatch only on a difference. It runs when this pane's trust
+ *     flips AND after each lint install (a transaction carrying effects),
+ *     because a result is installed a microtask after it is computed — a trust
+ *     change inside that window was corrected and then overwritten by the
+ *     queued install (review finding). Nothing else triggers it: re-presenting
+ *     every finding per cursor move or per edit in another tab was measurable
+ *     on large files.
  *
  * @coordinates-with sourcePaneExtensions.ts — records each lint's raw findings
  * @coordinates-with lib/formats/diagnosticPresentation.ts — the mapping
@@ -27,7 +30,7 @@
  */
 import { useEffect, useMemo, useState, type RefObject } from "react";
 import { EditorView } from "@codemirror/view";
-import type { Extension } from "@codemirror/state";
+import { Annotation, type Extension } from "@codemirror/state";
 import { forEachDiagnostic, setDiagnostics, type Diagnostic } from "@codemirror/lint";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useHtmlTrustStore } from "@/stores/htmlTrustStore";
@@ -35,6 +38,9 @@ import { presentDiagnostics } from "@/lib/formats/diagnosticPresentation";
 import { diagnosticToCodemirror, isDocumentTrusted, type RawLint } from "./sourcePaneExtensions";
 
 type Shown = Pick<Diagnostic, "from" | "to" | "severity" | "message">;
+
+/** Marks this hook's own corrective dispatch, so it does not re-check itself. */
+const reconciled = Annotation.define<true>();
 
 /** Order-independent identity of a diagnostic set, severity included. */
 function signature(diagnostics: readonly Shown[]): string {
@@ -52,6 +58,7 @@ class TrustSeverityController {
   private raw: RawLint | null = null;
   private tabId = "";
   private infoWhenTrusted: readonly string[] | undefined;
+  private pending = false;
 
   configure(tabId: string, infoWhenTrusted: readonly string[] | undefined): void {
     this.tabId = tabId;
@@ -62,27 +69,39 @@ class TrustSeverityController {
     this.raw = raw;
   };
 
+  /** Whether this pane's document is trusted right now (grant AND path). */
+  trustedNow(): boolean {
+    return isDocumentTrusted(useDocumentStore.getState().documents?.[this.tabId]?.filePath ?? null);
+  }
+
   /** Make what CodeMirror SHOWS match the raw findings presented for the
    *  current trust — a no-op when it already does, so it cannot loop. */
   readonly reconcile = (view: EditorView): void => {
     const info = this.infoWhenTrusted;
     const raw = this.raw;
     if (!info || info.length === 0 || !raw || raw.doc !== view.state.doc) return;
-    const trusted = isDocumentTrusted(useDocumentStore.getState().documents?.[this.tabId]?.filePath ?? null);
+    const trusted = this.trustedNow();
     const desired = presentDiagnostics(raw.diagnostics, info, trusted).map((d) => diagnosticToCodemirror(view.state.doc, d));
     const shown: Shown[] = [];
     forEachDiagnostic(view.state, (d, from, to) => shown.push({ from, to, severity: d.severity, message: d.message }));
     if (signature(shown) === signature(desired)) return;
-    view.dispatch(setDiagnostics(view.state, desired));
+    view.dispatch({ ...setDiagnostics(view.state, desired), annotations: reconciled.of(true) });
   };
 
   /** A lint result is installed a microtask after it is computed, so a trust
    *  change inside that window was corrected and then overwritten by the
    *  queued install. Re-checking after every transaction catches the install
    *  whenever it lands. Deferred: a listener may not dispatch mid-update. */
+  /*  Reconciling re-presents every finding, so it runs only when an answer can
+   *  have changed: an install is a transaction carrying the linter's
+   *  setDiagnostics effect — typing and cursor moves carry none — and a burst
+   *  of them coalesces into one check. */
   readonly extension: Extension = EditorView.updateListener.of((update) => {
-    if (update.transactions.length === 0) return;
+    const installs = update.transactions.some((tr) => tr.effects.length > 0 && !tr.annotation(reconciled));
+    if (this.pending || !installs) return;
+    this.pending = true;
     queueMicrotask(() => {
+      this.pending = false;
       // A pane torn down in the meantime has left the document.
       if (update.view.dom.isConnected) this.reconcile(update.view);
     });
@@ -108,7 +127,13 @@ export function useTrustedSeveritySync(
   useEffect(() => {
     controller.configure(tabId, infoWhenTrusted);
     if (!infoWhenTrusted || infoWhenTrusted.length === 0) return;
+    // The stores change on every edit in EVERY tab; only a change of THIS
+    // pane's trust (the grant, or its path) can change the answer.
+    let last = controller.trustedNow();
     const sync = () => {
+      const trusted = controller.trustedNow();
+      if (trusted === last) return;
+      last = trusted;
       const view = viewRef.current;
       if (view) controller.reconcile(view);
     };
