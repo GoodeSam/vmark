@@ -65,7 +65,9 @@ indicator, `ui-ok(float)` below). The baseline ratchets down only.
   feedback) carry `ui-ok(float): <why it may cover content>`.
 - Overlap is geometry, and static lint cannot prove its absence: chrome that
   shares a surface gets a `*.webkit.test.ts` asserting bounding boxes and
-  `elementFromPoint` in a real engine (`SplitPaneEditor/splitPaneLayout.webkit.test.ts`).
+  `elementFromPoint` in a real engine, rendering the PRODUCTION component — not
+  a hand-built copy of its DOM, which drifts (`SplitPaneFrame` +
+  `SplitPaneEditor/splitPaneLayout.webkit.test.tsx`).
 - New surfaces are mounted by editing App.tsx's `<AppShell>`; `lint:shell-slots`
   holds the identity list. Bundle related surfaces behind one mount
   (`CoherenceOverlays.tsx`) rather than appending names.
