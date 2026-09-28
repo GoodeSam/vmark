@@ -763,14 +763,36 @@ const INTERNAL_REFERENCE_PATTERNS: readonly (readonly [string, RegExp])[] = [
   ["sign-off", /\bsign[\s\-\u2010\u2011\u2013]?off\b/i],
 ];
 
+/** A reviewed legitimate match: the exact token that is fine, and why. */
+export interface ReferenceException {
+  token: string;
+  reason: string;
+}
+
 /**
- * Reviewed legitimate matches, keyed `<en file>:<key>` (every locale of that
- * key is exempt). A token alone cannot tell "(C4)" the envelope from "(C4)"
- * the decision id, or "#123" the colour from the issue — this is where the
- * reviewed answer lives. An entry must name a key that exists AND still
- * matches, or the gate fails: an exception cannot outlive its reason.
+ * Reviewed legitimate matches, keyed `<en file>:<key>`. A token alone cannot
+ * tell "(C4)" the envelope from "(C4)" the decision id, or "#123" the colour
+ * from the issue — this is where the reviewed answer lives. The exemption
+ * covers ONLY the approved token (in every locale of that key); anything else
+ * in the string is still caught. An entry whose token has left the English
+ * value is stale and fails: an exception cannot outlive its reason.
  */
-export const INTERNAL_REFERENCE_EXCEPTIONS: Readonly<Record<string, string>> = {};
+export const INTERNAL_REFERENCE_EXCEPTIONS: Readonly<Record<string, ReferenceException>> = {};
+
+/** Findings in `value` once the approved exception token is removed. */
+export function referenceFindingsExcept(value: string, exception: ReferenceException | undefined): string[] {
+  return internalReferenceFindings(exception ? value.split(exception.token).join(" ") : value);
+}
+
+/** Exception ids whose key is gone or whose token no longer appears in English. */
+export function staleReferenceExceptions(
+  enValues: Readonly<Record<string, string>>,
+  exceptions: Readonly<Record<string, ReferenceException>>,
+): string[] {
+  return Object.entries(exceptions)
+    .filter(([id, e]) => !(id in enValues) || !enValues[id].includes(e.token))
+    .map(([id]) => id);
+}
 
 /** The internal-reference patterns `value` contains, in pattern order. */
 export function internalReferenceFindings(value: string): string[] {
@@ -802,40 +824,84 @@ export function standaloneTextFindings(
     .map(([key]) => key);
 }
 
-/** The i18n key of a `t("key" | "ns:key", …)` call, without its namespace. */
-function translatedKey(node: ts.Node): string | null {
-  if (!ts.isCallExpression(node)) return null;
-  const callee = node.expression;
-  const isT = (ts.isIdentifier(callee) && callee.text === "t") ||
-    (ts.isPropertyAccessExpression(callee) && callee.name.text === "t");
-  const [first] = node.arguments;
-  if (!isT || !first || !ts.isStringLiteralLike(first)) return null;
-  const raw = first.text;
-  return raw.includes(":") ? raw.slice(raw.indexOf(":") + 1) : raw;
+/** Inline wrappers a fragment may sit in and still belong to its sentence. */
+const INLINE_TAGS = new Set(["span", "strong", "em", "b", "i", "code", "small", "bdi", "bdo", "mark"]);
+
+/** `{ns, key}` of a registered fragment id `editor.json:preview.errorAt`. */
+function fragmentRefs(fragments: Readonly<Record<string, string>>) {
+  return Object.keys(fragments).map((id) => {
+    const [file, key] = id.split(/:(.*)/s);
+    return { ns: file.replace(/\.json$/, ""), key };
+  });
+}
+
+/** The fragment a string key names, honouring an explicit `ns:` prefix. */
+function matchFragment(raw: string, refs: readonly { ns: string; key: string }[]) {
+  const colon = raw.indexOf(":");
+  const ns = colon === -1 ? null : raw.slice(0, colon);
+  const key = colon === -1 ? raw : raw.slice(colon + 1);
+  return refs.find((r) => r.key === key && (ns === null || ns === r.ns)) ?? null;
 }
 
 /**
- * JSX elements whose ONLY content is a registered fragment. Registering
- * "({{line}}:{{column}})" did not stop the defect it came from: restoring
- * <div role="status">{t("preview.errorAt", …)}</div> passed the key check.
+ * JSX where a registered fragment is the only content of its block: rendered
+ * alone rather than appended to a sentence. Matched on the KEY, whatever the
+ * translate function is called (`t`, an alias, `i18n.t`), and on
+ * `<Trans i18nKey>`. "Alone" is judged at the nearest non-inline element, so
+ * `Cannot render <span>{t(fragment)}</span>` belongs to its sentence while
+ * `<div role="status">{t(fragment)}</div>` — the "(6:1)" strip — does not.
  */
 export function fragmentUsageFindings(
   rel: string,
   text: string,
   fragments: Readonly<Record<string, string>>,
 ): string[] {
-  const fragmentKeys = new Set(Object.keys(fragments).map((id) => id.slice(id.indexOf(":") + 1)));
+  const refs = fragmentRefs(fragments);
   const sf = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const out: string[] = [];
+
+  const tagName = (el: ts.JsxElement) => el.openingElement.tagName.getText(sf);
+  const meaningful = (child: ts.JsxChild): boolean => {
+    if (ts.isJsxText(child)) return child.text.trim() !== "";
+    if (ts.isJsxExpression(child)) {
+      const e = child.expression;
+      if (!e) return false; // a comment
+      if (ts.isStringLiteralLike(e)) return e.text.trim() !== "";
+      return true;
+    }
+    return true;
+  };
+  const aloneIn = (el: ts.JsxElement, node: ts.Node) =>
+    !el.children.filter((c) => !(c.pos <= node.pos && node.end <= c.end)).some(meaningful);
+  const aloneInBlock = (node: ts.Node): boolean => {
+    // The outermost inline element seen: if the walk reaches the component's
+    // boundary without a block, THAT element is what gets rendered.
+    let outermost: ts.JsxElement | null = null;
+    for (let parent = node.parent; parent; parent = parent.parent) {
+      if (ts.isJsxElement(parent)) {
+        if (!INLINE_TAGS.has(tagName(parent))) return aloneIn(parent, node);
+        outermost = parent;
+        continue;
+      }
+      if (ts.isSourceFile(parent) || ts.isBlock(parent) || ts.isFunctionLike(parent)) break;
+    }
+    return outermost ? aloneIn(outermost, node) : false;
+  };
+
   const visit = (node: ts.Node) => {
-    if (ts.isJsxElement(node)) {
-      const meaningful = node.children.filter((c) => !(ts.isJsxText(c) && c.text.trim() === ""));
-      const only = meaningful.length === 1 ? meaningful[0] : null;
-      if (only && ts.isJsxExpression(only) && only.expression) {
-        const key = translatedKey(only.expression);
-        if (key && fragmentKeys.has(key)) out.push(`${rel}: ${key} rendered alone`);
+    let key: string | null = null;
+    if (ts.isCallExpression(node)) {
+      const [first] = node.arguments;
+      if (first && ts.isStringLiteralLike(first)) key = matchFragment(first.text, refs)?.key ?? null;
+    } else if (ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) {
+      for (const attr of node.attributes.properties) {
+        if (ts.isJsxAttribute(attr) && attr.name.getText(sf) === "i18nKey" && attr.initializer && ts.isStringLiteral(attr.initializer)) {
+          key = matchFragment(attr.initializer.text, refs)?.key ?? null;
+        }
       }
     }
+    const subject = ts.isJsxOpeningElement(node) ? node.parent : node;
+    if (key && aloneInBlock(subject)) out.push(`${rel}: ${key} rendered alone`);
     ts.forEachChild(node, visit);
   };
   visit(sf);
@@ -850,8 +916,8 @@ function checkInternalReferencesAndFragments(): boolean {
     if (!existsSync(dir) || !readdirSync(dir).length) continue;
     for (const file of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
       for (const [key, value] of flattenJsonValues(JSON.parse(readFileSync(join(dir, file), "utf8")))) {
-        if (`${file}:${key}` in INTERNAL_REFERENCE_EXCEPTIONS) continue;
-        for (const hit of internalReferenceFindings(value)) found.push(`${lang}/${file}:${key} (${hit}): ${value}`);
+        const exception = INTERNAL_REFERENCE_EXCEPTIONS[`${file}:${key}`];
+        for (const hit of referenceFindingsExcept(value, exception)) found.push(`${lang}/${file}:${key} (${hit}): ${value}`);
       }
     }
   }
@@ -876,12 +942,13 @@ function checkInternalReferencesAndFragments(): boolean {
     return !existsSync(path) || !flattenJsonValues(JSON.parse(readFileSync(path, "utf8"))).has(key);
   });
 
-  const staleExceptionIds = Object.keys(INTERNAL_REFERENCE_EXCEPTIONS).filter((id) => {
-    const [file, key] = id.split(/:(.*)/s);
-    const path = join(enDir, file);
-    const value = existsSync(path) ? flattenJsonValues(JSON.parse(readFileSync(path, "utf8"))).get(key) : undefined;
-    return value === undefined || internalReferenceFindings(value).length === 0;
-  });
+  const enValues: Record<string, string> = {};
+  for (const file of readdirSync(enDir).filter((f) => f.endsWith(".json"))) {
+    for (const [key, value] of flattenJsonValues(JSON.parse(readFileSync(join(enDir, file), "utf8")))) {
+      enValues[`${file}:${key}`] = value;
+    }
+  }
+  const staleExceptionIds = staleReferenceExceptions(enValues, INTERNAL_REFERENCE_EXCEPTIONS);
   const usage: string[] = [];
   const walk = (dir: string) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {

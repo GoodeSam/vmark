@@ -10,6 +10,8 @@ import {
   dialogLiteralFindings,
   fragmentUsageFindings,
   internalReferenceFindings,
+  referenceFindingsExcept,
+  staleReferenceExceptions,
   standaloneTextFindings,
   titleCaseViolations,
 } from "./check-i18n-keys";
@@ -160,5 +162,59 @@ describe("fragmentUsageFindings — a fragment never rendered alone", () => {
   it("recognizes the namespaced key form", () => {
     const tsx = `export const A = () => <span>{t("editor:preview.errorAt", { line: 1, column: 2 })}</span>;`;
     expect(fragmentUsageFindings("a.tsx", tsx, fragments)).toEqual(["a.tsx: preview.errorAt rendered alone"]);
+  });
+});
+
+describe("reference exceptions are scoped to the approved token (Codex second pass)", () => {
+  const exception = { token: "(C4)", reason: "envelope size, not a decision id" };
+
+  it("exempts only the approved token", () => {
+    expect(referenceFindingsExcept("Envelope (C4)", exception)).toEqual([]);
+    expect(referenceFindingsExcept("Enveloppe (C4)", exception)).toEqual([]);
+  });
+
+  it("still catches anything else in the same string", () => {
+    expect(referenceFindingsExcept("Envelope (C4) — TODO See #12", exception)).toEqual(["issue-ref", "TODO"]);
+  });
+
+  it("an exception whose token left the English value is stale", () => {
+    expect(staleReferenceExceptions({ "a.json:k": "Envelope C4" }, { "a.json:k": exception })).toEqual(["a.json:k"]);
+    expect(staleReferenceExceptions({ "a.json:k": "Envelope (C4)" }, { "a.json:k": exception })).toEqual([]);
+    expect(staleReferenceExceptions({}, { "a.json:gone": exception })).toEqual(["a.json:gone"]);
+  });
+});
+
+describe("fragmentUsageFindings — Codex second pass", () => {
+  const fragments = { "editor.json:preview.errorAt": "suffix" };
+  const flag = ["a.tsx: preview.errorAt rendered alone"];
+
+  it("catches an aliased translate function", () => {
+    const tsx = `export const A = () => { const { t: translate } = useTranslation(); return <div>{translate("preview.errorAt", { line: 1, column: 2 })}</div>; };`;
+    expect(fragmentUsageFindings("a.tsx", tsx, fragments)).toEqual(flag);
+  });
+
+  it("catches <Trans i18nKey> rendering a fragment alone", () => {
+    const tsx = `export const A = () => <div role="status"><Trans i18nKey="preview.errorAt" /></div>;`;
+    expect(fragmentUsageFindings("a.tsx", tsx, fragments)).toEqual(flag);
+  });
+
+  it("a comment beside the fragment is not a sentence", () => {
+    const tsx = `export const A = () => <div>{/* hint */}{t("preview.errorAt")}</div>;`;
+    expect(fragmentUsageFindings("a.tsx", tsx, fragments)).toEqual(flag);
+  });
+
+  it("accepts a fragment in an inline wrapper after its sentence", () => {
+    const tsx = `export const A = () => <div>Cannot render <span>{t("preview.errorAt")}</span></div>;`;
+    expect(fragmentUsageFindings("a.tsx", tsx, fragments)).toEqual([]);
+  });
+
+  it("accepts the adapters' conditional hint after 'Cannot render'", () => {
+    const tsx = `export const A = () => <div className="x"><span>{t("preview.cannotRender")}</span>{d && (<span className="hint">{" "}{t("preview.errorAt", { line: 1, column: 2 })}</span>)}</div>;`;
+    expect(fragmentUsageFindings("a.tsx", tsx, fragments)).toEqual([]);
+  });
+
+  it("does not match the same key in another namespace", () => {
+    const tsx = `export const A = () => <div>{t("other:preview.errorAt")}</div>;`;
+    expect(fragmentUsageFindings("a.tsx", tsx, fragments)).toEqual([]);
   });
 });
