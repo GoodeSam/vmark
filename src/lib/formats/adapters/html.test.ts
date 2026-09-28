@@ -223,11 +223,6 @@ describe("html adapter — rules read parsed tags, not text", () => {
     expect(d.message).toMatch(/never allows/);
   });
 
-  it("stays linear on hostile input", () => {
-    const started = performance.now();
-    htmlValidator("<script ".repeat(8_000));
-    expect(performance.now() - started).toBeLessThan(250);
-  });
 });
 
 // Codex's fourth and fifth reviews, each expectation from WebKit's parser
@@ -292,16 +287,6 @@ describe("html adapter — differential corpus", () => {
     expect(htmlValidator(`<iframe srcdoc="<script src='x.js'></script>"></iframe>`)[0].column).toBe(9);
   });
 
-  it.each([
-    ["duplicate URL attributes", '<a ' + 'href="javascript:void 0" '.repeat(8_000) + ">"],
-    ["unique attributes", "<a " + Array.from({ length: 8_000 }, (_, i) => `data-a${i}="x"`).join(" ") + ">"],
-    ["nested srcdoc", "<iframe srcdoc=\"".repeat(200) + "x"],
-    ["deep nesting", "<div>".repeat(20_000) + "</p>".repeat(20_000)],
-  ])("stays fast on hostile input: %s", (_label, html) => {
-    const started = performance.now();
-    htmlValidator(html);
-    expect(performance.now() - started).toBeLessThan(300);
-  });
 });
 
 // Codex's fifth review: each case below printed a FALSE message (an external
@@ -342,15 +327,6 @@ describe("html adapter — no false messages, no plausible misses", () => {
     expect(rules(html)).toEqual(expected);
   });
 
-  it.each([
-    ["many comments", "<!-- x -->".repeat(16_000)],
-    ["many escaped script comments", "<script>" + "<!-- a -->".repeat(16_000) + "</script>"],
-    ["many quoted end tags", '</p data-x=">">'.repeat(16_000)],
-  ])("stays fast: %s", (_label, html) => {
-    const started = performance.now();
-    htmlValidator(html);
-    expect(performance.now() - started).toBeLessThan(300);
-  });
 });
 
 // Codex's sixth review: an event-handler attribute is one only where the

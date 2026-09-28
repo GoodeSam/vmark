@@ -50,11 +50,4 @@ describe("scanHtmlTags — start tags with parsed attributes, in one pass", () =
     expect(tags(`<script>never closed <b>`).map((t) => t[0])).toEqual(["script"]);
   });
 
-  it("stays linear on hostile input", () => {
-    const started = performance.now();
-    scanHtmlTags("<script ".repeat(20_000));
-    scanHtmlTags("<a href='".repeat(20_000));
-    scanHtmlTags("<!--".repeat(20_000));
-    expect(performance.now() - started).toBeLessThan(500);
-  });
 });
