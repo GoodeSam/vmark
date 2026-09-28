@@ -162,7 +162,7 @@ Per ADR-4 in the multi-format plan, HTML preview rests on three independent laye
 2. **DOMPurify sanitization** runs first — strips `<script>`, `javascript:` URLs, inline event handlers, base-href tricks.
 3. **CSP `<meta>` injection** — `default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; base-uri 'none';` — restricts in-iframe resource loading.
 
-The validator surfaces script tags, `javascript:` URLs, and inline event handlers as warnings so you can see what's being blocked.
+The validator surfaces script tags, `javascript:` URLs, and inline event handlers as warnings so you can see what's being blocked. Once you [trust the file](#trusted-html-preview-opt-in) they run, so they are shown as information instead. The exception is an external script (`<script src="…">`): the preview never loads a script from a file or URL, trusted or not, so it stays a warning.
 
 The formal security sign-off for this preview is still pending, and the preview says so in a notice above the rendered page: **HTML preview is sandboxed but pending OWASP sign-off**. The three layers above are in place; the outstanding step is confirming them against the OWASP XSS payloads inside the running app's webview.
 

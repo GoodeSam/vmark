@@ -18,6 +18,7 @@
   "diagnostic.svg/xml-parse": "SVG: {{message}}",
   "diagnostic.svg/wrong-root": "SVG: o elemento raiz deve ser <svg>",
   "diagnostic.html/script-blocked": "Tag script detectada — bloqueada a menos que a pré-visualização confiável esteja ativada.",
+  "diagnostic.html/script-external": "Script externo — a pré-visualização nunca carrega scripts de um arquivo ou URL, nem mesmo a pré-visualização confiável.",
   "diagnostic.html/javascript-url": "URL javascript: detectada — bloqueada a menos que a pré-visualização confiável esteja ativada.",
   "diagnostic.html/inline-handler": "Manipulador de eventos embutido detectado — bloqueado a menos que a pré-visualização confiável esteja ativada.",
   "preview.cannotRender": "Não é possível renderizar a prévia — corrija os erros de sintaxe",

@@ -43,11 +43,27 @@ import type {
  * gutter prefers `diagnostic.<ruleId>` from the locale bundles, so any wording
  * change here has to be made there too or it is invisible.
  */
-const HTML_RULES: readonly { ruleId: string; pattern: RegExp; message: string }[] = [
+const HTML_RULES: readonly {
+  ruleId: string;
+  pattern: RegExp;
+  message: string;
+  /** Whether trusted preview RUNS what this rule reports (its CSP is
+   *  `script-src 'unsafe-inline'` with no URL source): if so, the finding is
+   *  information once the document is trusted. */
+  runsWhenTrusted: boolean;
+}[] = [
   {
     ruleId: "html/script-blocked",
-    pattern: /<script\b/gi,
+    // Inline script only: a `src` attribute makes it html/script-external.
+    pattern: /<script\b(?![^>]*\bsrc\s*=)/gi,
     message: "Script tag detected — blocked unless trusted preview is enabled.",
+    runsWhenTrusted: true,
+  },
+  {
+    ruleId: "html/script-external",
+    pattern: /<script\b(?=[^>]*\bsrc\s*=)/gi,
+    message: "External script — the preview never loads scripts from a file or URL, trusted or not.",
+    runsWhenTrusted: false,
   },
   {
     ruleId: "html/javascript-url",
@@ -56,12 +72,14 @@ const HTML_RULES: readonly { ruleId: string; pattern: RegExp; message: string }[
     pattern: /\b(?:href|src)[\s]*=[\s]*["']?[\s]*javascript:/gi,
     message:
       "javascript: URL detected — blocked unless trusted preview is enabled.",
+    runsWhenTrusted: true,
   },
   {
     ruleId: "html/inline-handler",
     pattern: /\son[a-z]+[\s]*=/gi,
     message:
       "Inline event handler detected — blocked unless trusted preview is enabled.",
+    runsWhenTrusted: true,
   },
 ];
 
@@ -131,9 +149,9 @@ export const htmlFormat: FormatConfig = {
     return html();
   },
   validator: htmlValidator,
-  // Every HTML_RULES finding is about content the sandboxed preview refuses to
-  // run; trusted preview runs it, so under trust each is information.
-  infoWhenTrusted: HTML_RULES.map((r) => r.ruleId),
+  // A finding is information under trust only if trusted preview actually
+  // runs what it reports — an external script never loads, trusted or not.
+  infoWhenTrusted: HTML_RULES.filter((r) => r.runsWhenTrusted).map((r) => r.ruleId),
   genericPreview: HtmlPreview,
   adapters: {
     saveDialogFilters: [{ nameI18nKey: "format.html", extensions: ["html", "htm"] }],

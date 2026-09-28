@@ -142,13 +142,36 @@ describe("html adapter", () => {
 });
 
 describe("htmlFormat.infoWhenTrusted — what a trusted document's findings mean", () => {
-  // Every HTML_RULES finding is about content the SANDBOXED preview refuses to
-  // run; once the user trusts the document, trusted preview runs it, so each
-  // must be listed. Adding a fourth rule without deciding this fails here.
-  it("lists exactly the rules the validator reports", () => {
-    const doc = `<script>x</script><a href="javascript:void 0">a</a><p onclick="y">p</p>`;
+  // Each rule decides whether trusted preview RUNS what it reports: inline
+  // script, javascript: URLs and inline handlers run under the trusted CSP
+  // (`script-src 'unsafe-inline'`); an external script never loads. A rule
+  // added without that decision fails here.
+  it("lists exactly the reported rules whose content runs when trusted", () => {
+    const doc = `<script>x</script><script src="a.js"></script><a href="javascript:void 0">a</a><p onclick="y">p</p>`;
     const reported = [...new Set(htmlValidator(doc).map((d) => d.ruleId))].sort();
-    expect([...(htmlFormat.infoWhenTrusted ?? [])].sort()).toEqual(reported);
-    expect(reported).toHaveLength(3);
+    expect(reported).toHaveLength(4);
+    expect([...(htmlFormat.infoWhenTrusted ?? [])].sort()).toEqual(reported.filter((r) => r !== "html/script-external"));
+  });
+});
+
+// Trusted preview's CSP is `script-src 'unsafe-inline'` with no URL source:
+// inline script runs, but `<script src=…>` — remote or relative — never loads,
+// trusted or not. So an external script is its own rule, and it stays a
+// warning when the file is trusted (lowering it would say "fine" about a
+// script that silently never runs).
+describe("html adapter — inline vs external script", () => {
+  it.each([
+    ['<script>1</script>', "html/script-blocked"],
+    ['<script type="module">1</script>', "html/script-blocked"],
+    ['<script src="app.js"></script>', "html/script-external"],
+    ['<script\n  src="https://cdn.example/x.js"></script>', "html/script-external"],
+    ["<script defer src='x.js'></script>", "html/script-external"],
+  ])("%j is %s", (html, ruleId) => {
+    expect(htmlValidator(html).map((d) => d.ruleId)).toEqual([ruleId]);
+  });
+
+  it("lowers inline script when trusted, but never an external one", () => {
+    expect(htmlFormat.infoWhenTrusted).toContain("html/script-blocked");
+    expect(htmlFormat.infoWhenTrusted).not.toContain("html/script-external");
   });
 });
