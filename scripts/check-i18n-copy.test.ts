@@ -328,4 +328,11 @@ describe("Codex fifth pass — fragments", () => {
     expect(probe(`<div><span>Cannot render</span> {t("preview.errorAt")}</div>`)).toEqual([]);
   });
 
+  it("site check reads an escaped key the parser decodes", () => {
+    const registry = { "editor.json:preview.errorAt": { where: "suffix", files: ["src/a.tsx"] } };
+    const files = { "src/a.tsx": `t("preview.errorAt")`, "src/b.tsx": `const x = t("preview.\\u0065rrorAt");` };
+    expect(fragmentSiteFindings(files, registry)).toEqual([
+      "src/b.tsx: uses fragment preview.errorAt, but its registration does not list this file",
+    ]);
+  });
 });

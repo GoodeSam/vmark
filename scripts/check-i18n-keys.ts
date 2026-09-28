@@ -1011,7 +1011,9 @@ export function fragmentSiteFindings(
     const [{ key }] = refs;
     const users = Object.entries(files)
       .filter(([rel, text]) => {
-        if (!text.includes(key)) return false;
+        // Cheap prefilter; an escaped spelling ("\u0065rrorAt") is decoded
+        // by the parser, so a file with escapes is always parsed.
+        if (!text.includes(key) && !/\\[ux]/.test(text)) return false;
         const kind = rel.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
         const sf = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, kind);
         let found = false;
