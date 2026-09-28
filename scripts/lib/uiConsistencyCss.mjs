@@ -287,10 +287,21 @@ function isSelectedSelector(selector) {
   return SELECTED_STATE.test(selector.replace(/:not\((?:[^()]|\([^()]*\))*\)/g, ""));
 }
 
-/** The last compound of a selector — the element the rule actually styles. */
+/**
+ * The last compound of a selector — the element the rule actually styles.
+ * Split on combinators at the top level only: the spaces in
+ * `[aria-selected = "true"]` or `:not(.a .b)` are not combinators.
+ */
 function targetCompound(selector) {
-  const parts = selector.split(/\s+|\s*[>+~]\s*/).filter(Boolean);
-  return parts[parts.length - 1] ?? selector;
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < selector.length; i += 1) {
+    const ch = selector[i];
+    if (ch === "(" || ch === "[") depth += 1;
+    else if (ch === ")" || ch === "]") depth -= 1;
+    else if (depth === 0 && /[\s>+~]/.test(ch)) start = i + 1;
+  }
+  return selector.slice(start) || selector;
 }
 
 /**
