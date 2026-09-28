@@ -1,4 +1,5 @@
 .find-bar {
+  /* ui-ok(float): layer owner — rule 32 z-table (FindBar, 100) */
   --find-bar-height: 38px; /* 5px padding + 28px row + 5px padding */
   position: absolute;
   bottom: 0;
@@ -99,7 +100,7 @@
 
 /* Active state: U-shaped underline */
 .find-bar-toggle.active {
-  color: var(--accent-primary);
+  color: var(--accent-primary); /* ui-ok(state): icon-only toggle — the icon is the indicator */
 }
 
 .find-bar-toggle.active::after {

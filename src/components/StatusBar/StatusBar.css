@@ -1,4 +1,5 @@
 .status-bar-container {
+  /* ui-ok(float): layer owner — rule 32 z-table (StatusBar, 100) */
   position: absolute;
   bottom: 0;
   left: 0;
@@ -486,6 +487,7 @@
    automation, with no styling of their own. */
 
 .tab-drag-ghost {
+  /* ui-ok(float): transient drag feedback — the tab ghost follows the pointer during a drag */
   /* ui-ok(overlay): drag preview that follows the pointer — not an overlay
      shell; it has no backdrop and no interaction */
   position: fixed;
@@ -726,7 +728,7 @@
 }
 
 .status-terminal.active {
-  color: var(--accent-primary);
+  color: var(--accent-primary); /* ui-ok(state): icon-only control — the icon is the indicator */
 }
 
 /* ========================================
@@ -757,7 +759,7 @@
 }
 
 .status-lock.active {
-  color: var(--accent-primary);
+  color: var(--accent-primary); /* ui-ok(state): icon-only control — the icon is the indicator */
 }
 
 /* Focus indicators for StatusBar buttons */

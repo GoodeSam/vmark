@@ -69,7 +69,7 @@
 /* Pinned (this window or globally): accent color + subtle fill so the active
    state reads at a glance. */
 .window-status-panel__pin[data-pinned] {
-  color: var(--accent-primary);
+  color: var(--accent-primary); /* ui-ok(state): icon-only pin button — the icon is the indicator */
   background: var(--accent-bg);
 }
 
@@ -119,9 +119,8 @@
   background: var(--accent-bg);
 }
 
-.window-status-panel__pin-item[aria-checked="true"] {
-  color: var(--accent-primary);
-}
+/* Checked rows keep their ink (rule 30, R6); the accent check icon below is
+ * the indicator. */
 
 .window-status-panel__pin-check {
   display: inline-flex;

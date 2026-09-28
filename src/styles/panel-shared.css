@@ -54,10 +54,12 @@
   cursor: var(--cursor-interactive, default); /* D7, platform-scoped (WI-UA15) */
 }
 
+/* Pressed: accent fill and border as the indicator; the label keeps its ink
+ * (rule 30, R6). */
 .vm-chip--toggle[aria-pressed="true"] {
   background: var(--accent-bg);
   border-color: var(--accent-primary);
-  color: var(--accent-primary);
+  color: var(--text-color);
 }
 
 .vm-chip--kbd {

@@ -225,8 +225,11 @@
   background: var(--bg-tertiary);
 }
 
+/* The current language is a selected list row: accent background, text
+ * keeps its ink (rule 30, R6). */
 .code-lang-dropdown .code-lang-item.active {
-  color: var(--accent-primary);
+  background: var(--accent-bg);
+  color: var(--text-color);
   font-weight: 500;
 }
 

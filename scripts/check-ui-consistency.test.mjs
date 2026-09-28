@@ -5,7 +5,7 @@ import { runChecks, compareBaseline } from "./check-ui-consistency.mjs";
 import { focusPaintedClasses, uiOkMarkers } from "./lib/uiConsistencyCss.mjs";
 
 const INDEX = `@theme inline { --text-sm: var(--font-size-base); --font-sans: var(--font-ui); --shadow-popup: var(--shadow-popup); }
-:root { --z-context-menu: 1000; --z-popup: 9999; --icon-size-sm: 22px; --font-size-sm: 12px; }
+:root { --z-resize-handle: 10; --z-bar: 100; --z-toolbar: 102; --z-context-menu: 1000; --z-popup: 9999; --icon-size-sm: 22px; --font-size-sm: 12px; }
 @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; } }`;
 
 /** Run the gate over in-memory fixtures. */
@@ -153,6 +153,88 @@ describe("C9 — state vocabulary", () => {
       "a.css": `.tab-pill.active { background: var(--bg-color); /* ui-ok(state): current-tab raised card */ }`,
     });
     expect(ids(card, "C9")).toEqual([]);
+  });
+});
+
+describe("C9 — selection keeps its ink (R6)", () => {
+  // Accent is for the selection's FILL and its icons/indicators; the label keeps
+  // --text-color. The background half of C9 never read `color:`, and its
+  // selected-state pattern missed BEM modifiers and ARIA states, so accent-ink
+  // selections shipped in the view-mode toggle, the pin list, the code-language
+  // list and the canonical .vm-chip--toggle.
+  it.each([
+    [".seg__btn--active", "BEM modifier"],
+    ['.pin-item[aria-checked="true"]', "aria-checked"],
+    ['.vm-chip--toggle[aria-pressed="true"]', "aria-pressed"],
+    ['.nav-link[aria-current="page"]', "aria-current"],
+    [".lang-item.active", "plain .active with no background"],
+    [".row.is-selected", ".is-* state"],
+  ])("flags accent-coloured text on %s (%s)", (selector) => {
+    const r = run({ "a.css": `${selector} { background: var(--accent-bg); color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([`a.css:${selector} (ink)`]);
+  });
+
+  it("also treats --primary-color as accent ink", () => {
+    const r = run({ "a.css": `.toc-item.active { color: var(--primary-color); }` });
+    expect(ids(r, "C9")).toEqual(["a.css:.toc-item.active (ink)"]);
+  });
+
+  it("accepts a selection that keeps --text-color", () => {
+    const r = run({ "a.css": `.seg__btn--active { background: var(--accent-bg); color: var(--text-color); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("accepts accent on the selection's icon or indicator", () => {
+    const r = run({
+      "a.css": `.item.active svg { color: var(--accent-primary); }
+        .item--active .item__icon { color: var(--accent-primary); }
+        .pin-item[aria-checked="true"] .pin-check { color: var(--accent-primary); }
+        .dropdown-item.active::before { color: var(--accent-primary); }`,
+    });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("accepts an icon-only control that says so with ui-ok(state)", () => {
+    const r = run({
+      "a.css": `.status-lock.active { color: var(--accent-primary); /* ui-ok(state): icon-only control — the glyph is the indicator */ }`,
+    });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("does not treat hover as a selection", () => {
+    const r = run({ "a.css": `.link:hover { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+});
+
+describe("C12 — nothing floats over content without a stated reason", () => {
+  // The split-pane view-mode toggle was `position: absolute` at --z-toolbar,
+  // pinned top-right OVER the panes — across the HTML trust bar, the read-only
+  // banner, source text. C4 only looks at `fixed` overlays at --z-context-menu
+  // and above, so nothing read it. Overlay families (popups, menus, dialogs)
+  // are what the layer is for; everything else on a layer at or above --z-bar
+  // must say why it may cover content.
+  it("flags an absolutely positioned control on the toolbar layer", () => {
+    const r = run({
+      "a.css": `.pane__mode-toggle { position: absolute; top: var(--space-2); right: var(--space-3); z-index: var(--z-toolbar); }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane__mode-toggle"]);
+  });
+
+  it("flags a fixed element on the bar layer", () => {
+    const r = run({ "a.css": `.floating-hint { position: fixed; bottom: 0; z-index: var(--z-bar); }` });
+    expect(ids(r, "C12")).toEqual(["a.css:.floating-hint"]);
+  });
+
+  it("accepts overlay families, low layers, in-flow elements and stated reasons", () => {
+    const r = run({
+      "a.css": `.link-popup { position: fixed; z-index: var(--z-popup); }
+        .vm-menu { position: fixed; z-index: var(--z-context-menu); }
+        .resize-grip { position: absolute; z-index: var(--z-resize-handle); }
+        .pane__header { position: relative; z-index: var(--z-toolbar); }
+        .status-bar-container { position: fixed; z-index: var(--z-bar); /* ui-ok(float): layer owner — rule 32 z-table (StatusBar) */ }`,
+    });
+    expect(ids(r, "C12")).toEqual([]);
   });
 });
 

@@ -4,7 +4,7 @@
  * CLI owns files, the baseline and the exit code.
  *
  * Shared exemption grammar: `/* ui-ok(<check>): <reason> *\/` INSIDE the rule
- * body, `<check>` ∈ overlay|target|state|font|icon|height|focus. A marker
+ * body, `<check>` ∈ overlay|target|state|font|icon|height|focus|float. A marker
  * with no reason (or punctuation only) is refused — the same rule as
  * `focus: caret-only` and `button-shape-ok`.
  *
@@ -14,7 +14,7 @@
  */
 import { cssRules, stripComments } from "./cssRules.mjs";
 
-const UI_OK_RE = /ui-ok\((overlay|target|state|font|icon|height|focus)\)\s*:\s*([^*]*)/g;
+const UI_OK_RE = /ui-ok\((overlay|target|state|font|icon|height|focus|float)\)\s*:\s*([^*]*)/g;
 
 /** Markers present in a rule's RAW body text (comments included). */
 export function uiOkMarkers(rawBody) {
@@ -217,9 +217,49 @@ const SANCTIONED = [
   /\.vm-btn|\.popup-icon-btn|\.universal-toolbar-btn|\.toolbar-btn/, // canonical controls own their states
 ];
 
+/**
+ * A selected / checked / pressed / current state, in every spelling the
+ * codebase uses: `.active`/`.selected`/`.is-*` classes, BEM `--active` style
+ * modifiers, ARIA and data-* state attributes, `:checked`.
+ */
+const SELECTED_STATE =
+  /\.(selected|active|checked|current|pressed)\b|\.is-[a-z-]+\b|--(active|selected|checked|current|pressed|on)\b|\[data-(active|selected|checked|pinned)[\]=]|\[aria-(selected|checked|pressed|current)|:checked\b/;
+/** Accent inks a selected LABEL must not take (R6: selection keeps its ink). */
+const ACCENT_INK = /(?:^|[;{])\s*color\s*:\s*var\((--accent-primary|--primary-color|--browser-accent-primary)\b/;
+/** Where accent ink IS the design: the selection's icon or indicator. */
+const INDICATOR_TARGET = /::?(before|after)\b|\bsvg\b|\bpath\b|[-_](icon|check|dot|glyph|indicator|chevron|caret)\b/;
+
+/**
+ * C9 (ink) — a selected label keeps --text-color (rule 30, R6).
+ *
+ * The background half below reads only `background`, and its selected-state
+ * pattern knew `.active`/`.selected` but not BEM modifiers or ARIA states — so
+ * `color: var(--accent-primary)` on a selected TEXT label passed everywhere,
+ * including the canonical `.vm-chip--toggle`. Icon-only controls, whose glyph
+ * IS the indicator, say so with `ui-ok(state): <reason>`.
+ */
+function checkSelectionInk(css, file, { problems }) {
+  const findings = [];
+  for (const rule of rulesWithMarkers(css)) {
+    if (/:hover|:focus/.test(rule.selector) && !SELECTED_STATE.test(rule.selector.replace(/:(hover|focus[-a-z]*)/g, ""))) continue;
+    if (!SELECTED_STATE.test(rule.selector)) continue;
+    if (INDICATOR_TARGET.test(rule.selector)) continue;
+    if (!ACCENT_INK.test(rule.body)) continue;
+    const { markers, problems: mp } = uiOkMarkers(rule.rawBody);
+    problems.push(...mp.map((p) => `${file}:${rule.selector}: ${p}`));
+    if (markers.has("state")) continue;
+    findings.push({
+      check: "C9",
+      id: `${file}:${rule.selector} (ink)`,
+      message: `${file}:${rule.line} ${rule.selector}: a selected label in accent ink — selection keeps its ink (rule 30, R6): var(--accent-bg) fill, color var(--text-color); accent goes on the icon/indicator. Icon-only control? ui-ok(state): <reason>.`,
+    });
+  }
+  return findings;
+}
+
 /** C9 — hover/active/selected backgrounds speak the state vocabulary. */
 export function checkStateVocabulary(css, file, { problems }) {
-  const findings = [];
+  const findings = checkSelectionInk(css, file, { problems });
   const seen = new Set();
   // R5 (WI-UI1.3) — tertiary is decorative/disabled ink: an ENABLED control
   // (`-btn|-toggle|-close` selector outside :disabled) may not rest at
@@ -268,6 +308,43 @@ export function checkStateVocabulary(css, file, { problems }) {
       check: "C9",
       id,
       message: `${file}:${rule.line} ${rule.selector} background: ${value} — ${want} (rule 30/32), or ui-ok(state): <reason>.`,
+    });
+  }
+  return findings;
+}
+
+/** Overlay families whose job IS to sit above content on a high layer. */
+const OVERLAY_FAMILY =
+  /popup|popover|menu|dropdown|tooltip|toast|overlay|backdrop|dialog|modal|picker|palette|finder|context|suggest|autocomplete|hover-card/i;
+
+/**
+ * C12 — nothing floats over content without a stated reason.
+ *
+ * The split-pane view-mode toggle was `position: absolute` at --z-toolbar,
+ * pinned top-right over the panes, where it lay across the HTML trust bar,
+ * the read-only banner and source text. C4 reads only `fixed` overlays at
+ * --z-context-menu and above, so no check looked at it. A positioned element
+ * on a layer at or above --z-bar is either an overlay family (what those
+ * layers are for), the layer's owner in rule 32's z-table, or something that
+ * covers content on purpose — the last two say so with ui-ok(float): <reason>.
+ */
+export function checkFloatingOverContent(css, file, tokens, { problems }) {
+  const findings = [];
+  const barLayer = resolveNumeric("var(--z-bar)", tokens) ?? 100;
+  for (const rule of rulesWithMarkers(css)) {
+    if (!/(?:^|[;{\s])position\s*:\s*(absolute|fixed)\b/.test(rule.body)) continue;
+    const z = /(?:^|[;{\s])z-index\s*:\s*([^;}]+)/.exec(rule.body);
+    if (!z) continue;
+    const layer = resolveNumeric(z[1], tokens);
+    if (layer === null || layer < barLayer) continue;
+    if (OVERLAY_FAMILY.test(rule.selector)) continue;
+    const { markers, problems: mp } = uiOkMarkers(rule.rawBody);
+    problems.push(...mp.map((p) => `${file}:${rule.selector}: ${p}`));
+    if (markers.has("float")) continue;
+    findings.push({
+      check: "C12",
+      id: `${file}:${rule.selector}`,
+      message: `${file}:${rule.line} ${rule.selector}: positioned at z-index ${layer} (>= --z-bar) — it can cover content. Put it in flow (a header row, a docked slot), or mark ui-ok(float): <why it may cover content> (rule 32).`,
     });
   }
   return findings;
