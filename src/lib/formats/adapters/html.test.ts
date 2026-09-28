@@ -254,19 +254,41 @@ describe("html adapter — differential corpus", () => {
     [`<svg><title><script src="x.js"></script></title></svg>`, [EXT]],
     [`<svg><script/><a xlink:href="javascript:void 0">go</a></svg>`, ["html/script-blocked", "html/javascript-url"]],
     [`<svg><title><textarea><script src="x.js"></script></textarea></title></svg>`, []],
+    // Data blocks are not scripts.
+    [`<script type="application/json">{"a":1}</script>`, []],
+    [`<script type="module">1</script>`, ["html/script-blocked"]],
+    [`<script type="text/javascript">1</script>`, ["html/script-blocked"]],
     // The first of duplicate attributes wins.
     [`<a href="x" href="javascript:void 0">go</a>`, []],
     [`<a onclick="a()" onclick="b()">go</a>`, ["html/inline-handler"]],
+    // javascript: only where a link navigates this frame; forms never submit.
+    [`<div href="javascript:void 0"></div>`, []],
+    [`<iframe src="javascript:void 0"></iframe>`, []],
+    [`<form action="javascript:void 0"><button>go</button></form>`, []],
+    [`<form><button formtarget="_top" formaction="javascript:void 0">go</button></form>`, []],
     // Character references in attribute values.
     [`<a href="java&#115;cript:void 0">go</a>`, ["html/javascript-url"]],
     [`<a href="javascript&colon;void 0">go</a>`, ["html/javascript-url"]],
     [`<a href="java&Tab;script:void 0">go</a>`, ["html/javascript-url"]],
+    // Target resolution as WebKit does it.
+    [`<template><base target="_top"></template><a href="javascript:void 0">go</a>`, ["html/javascript-url"]],
+    [`<base target><base target="_top"><a href="javascript:void 0">go</a>`, ["html/javascript-url"]],
+    [`<a target="&#95;self" href="javascript:void 0">go</a>`, ["html/javascript-url"]],
+    [`<a target="" href="javascript:void 0">go</a><base target="_top">`, ["html/javascript-url-navigation"]],
+    [`<a target=" _self " href="javascript:void 0">go</a>`, ["html/javascript-url-navigation"]],
+    // An embedded srcdoc document is checked too.
+    [`<iframe srcdoc="<script src='x.js'></script>"></iframe>`, [EXT]],
+    [`<iframe srcdoc="&lt;script&gt;1&lt;/script&gt;"></iframe>`, ["html/script-blocked"]],
   ])("%s → %j", (html, expected) => {
     expect(rules(html)).toEqual(expected);
   });
 
   it("positions a finding after a Unicode character correctly", () => {
     expect(htmlValidator(`İ<script src="x.js"></script>`)[0].column).toBe(2);
+  });
+
+  it("positions srcdoc findings at the srcdoc attribute", () => {
+    expect(htmlValidator(`<iframe srcdoc="<script src='x.js'></script>"></iframe>`)[0].column).toBe(9);
   });
 
   it.each([

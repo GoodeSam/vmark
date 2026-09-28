@@ -25,11 +25,7 @@ import type { Extension } from "@codemirror/state";
 import { registerFormat } from "../registry";
 import { HtmlPreview } from "./HtmlPreview";
 import { scanHtmlTags, type HtmlTag } from "./htmlTags";
-import type {
-  FormatConfig,
-  ValidationDiagnostic,
-  Validator,
-} from "../types";
+import type { FormatConfig, Validator } from "../types";
 
 /**
  * What the preview refuses to execute, and what to say about it.
@@ -45,31 +41,30 @@ import type {
  * Messages are worded for BOTH modes (#1273). They are also FALLBACKS: the
  * gutter prefers `diagnostic.<ruleId>` from the locale bundles, so any wording
  * change here has to be made there too or it is invisible. The rules read
- * parsed tags (htmlTags.ts), never raw text.
+ * parsed tags (htmlTags.ts, approximate and advisory), never raw text.
  */
 const HTML_RULES = {
-  "html/script-blocked": {
-    message: "Script tag detected — blocked unless trusted preview is enabled.",
-  },
-  "html/script-external": {
-    message: "External script — the preview never loads scripts from a file or URL, trusted or not.",
-  },
-  "html/javascript-url": {
-    message: "javascript: URL detected — blocked unless trusted preview is enabled.",
-  },
-  "html/javascript-url-navigation": {
-    message: "javascript: URL that opens another window or the top page — the preview never allows that, trusted or not.",
-  },
-  "html/inline-handler": {
-    message: "Inline event handler detected — blocked unless trusted preview is enabled.",
-  },
-} as const satisfies Record<string, { message: string }>;
+  "html/script-blocked": "Script tag detected — blocked unless trusted preview is enabled.",
+  "html/script-external": "External script — the preview never loads scripts from a file or URL, trusted or not.",
+  "html/javascript-url": "javascript: URL detected — blocked unless trusted preview is enabled.",
+  "html/javascript-url-navigation":
+    "javascript: URL that opens another window or the top page — the preview never allows that, trusted or not.",
+  "html/inline-handler": "Inline event handler detected — blocked unless trusted preview is enabled.",
+} as const;
 type HtmlRuleId = keyof typeof HTML_RULES;
 
-/** Attributes whose value is a URL a `javascript:` scheme would run. */
-const URL_ATTRIBUTES = new Set(["href", "src", "action", "formaction", "xlink:href"]);
-/** Elements whose `target` (or the document's `<base target>`) picks the window a URL runs in. */
-const TARGETED = new Set(["a", "area", "form"]);
+/** Script `type` values a browser executes; anything else is a data block. */
+const SCRIPT_TYPES = new Set([
+  "", "module", "text/javascript", "application/javascript", "text/ecmascript", "application/ecmascript",
+  "application/x-javascript", "application/x-ecmascript", "text/jscript", "text/livescript",
+  "text/x-javascript", "text/x-ecmascript", "text/javascript1.0", "text/javascript1.1", "text/javascript1.2",
+  "text/javascript1.3", "text/javascript1.4", "text/javascript1.5",
+]);
+/** Nested `srcdoc` documents are checked this many levels deep, at most. */
+const SRCDOC_DEPTH = 3;
+const SRCDOC_MAX_LENGTH = 1_000_000;
+
+const attrValue = (tag: HtmlTag, name: string) => tag.attrs.find((a) => a.name === name)?.value ?? null;
 
 /** A `javascript:` URL as a browser reads it: tabs and newlines removed, leading controls and spaces trimmed. */
 function isJavascriptUrl(value: string): boolean {
@@ -79,15 +74,59 @@ function isJavascriptUrl(value: string): boolean {
   return /^javascript:/i.test(url.slice(start));
 }
 
-/** Whether a target leaves the frame. The frame is sandboxed with allow-scripts
- *  only, so navigating the top page or opening a window is refused. */
-function leavesFrame(target: string | null): boolean {
-  if (target === null) return false;
-  const t = target.trim().toLowerCase();
-  return t !== "" && t !== "_self";
+/** Whether a link navigates this frame: its URL is a link's, not an image's
+ *  or a form's (the sandbox refuses form submission). */
+function linkUrl(tag: HtmlTag): { offset: number; value: string } | null {
+  const isLink = tag.namespace === "html" ? tag.name === "a" || tag.name === "area" : tag.namespace === "svg" && tag.name === "a";
+  if (!isLink) return null;
+  const attr = tag.attrs.find((a) => a.name === "href") ?? (tag.namespace === "svg" ? tag.attrs.find((a) => a.name === "xlink:href") : undefined);
+  return attr && attr.value !== null ? { offset: attr.offset, value: attr.value } : null;
 }
 
-const attrValue = (tag: HtmlTag, name: string) => tag.attrs.find((a) => a.name === name)?.value ?? null;
+/** The window a link opens in, as WebKit resolves it: its own non-empty
+ *  target, else the first document `<base>` carrying a target attribute. The
+ *  frame is sandboxed with allow-scripts only, so anything but itself is
+ *  refused. Names are compared exactly — " _self " is a window name. */
+function leavesFrame(tag: HtmlTag, baseTarget: string | null): boolean {
+  const own = attrValue(tag, "target");
+  const target = own !== null && own !== "" ? own : (baseTarget ?? "");
+  return target !== "" && target.toLowerCase() !== "_self";
+}
+
+/** The rule ids a document's tags produce, with the offset each belongs at. */
+function findings(content: string, depth: number): { ruleId: HtmlRuleId; offset: number }[] {
+  const out: { ruleId: HtmlRuleId; offset: number }[] = [];
+  const tags = scanHtmlTags(content);
+  // The first document <base> CARRYING a target attribute wins, even an empty one.
+  const base = tags.find((t) => t.name === "base" && t.namespace === "html" && !t.inTemplate && t.attrs.some((a) => a.name === "target"));
+  const baseTarget = base ? (attrValue(base, "target") ?? "") : null;
+  for (const tag of tags) {
+    if (tag.name === "script") {
+      const type = (attrValue(tag, "type") ?? "").trim().toLowerCase();
+      if (tag.namespace !== "html" || SCRIPT_TYPES.has(type)) {
+        // Any src — remote, relative or empty — means the element never runs
+        // inline code, and the trusted CSP allows no script URL.
+        out.push({ ruleId: tag.attrs.some((a) => a.name === "src") ? "html/script-external" : "html/script-blocked", offset: tag.offset });
+      }
+    }
+    for (const attr of tag.attrs) {
+      if (/^on[a-z]+$/.test(attr.name)) out.push({ ruleId: "html/inline-handler", offset: attr.offset });
+    }
+    const link = linkUrl(tag);
+    if (link && isJavascriptUrl(link.value)) {
+      out.push({ ruleId: leavesFrame(tag, baseTarget) ? "html/javascript-url-navigation" : "html/javascript-url", offset: link.offset });
+    }
+    // An iframe's srcdoc is a document of its own: its findings are reported
+    // at the attribute, and the nesting is bounded.
+    if (tag.name === "iframe" && tag.namespace === "html" && depth < SRCDOC_DEPTH) {
+      const srcdoc = tag.attrs.find((a) => a.name === "srcdoc");
+      if (srcdoc?.value && srcdoc.value.length <= SRCDOC_MAX_LENGTH) {
+        for (const inner of findings(srcdoc.value, depth + 1)) out.push({ ruleId: inner.ruleId, offset: srcdoc.offset });
+      }
+    }
+  }
+  return out;
+}
 
 /**
  * Offset → 1-based line/column, over the whole source.
@@ -117,35 +156,10 @@ function positionResolver(content: string) {
 export const htmlValidator: Validator = (content) => {
   if (content.length === 0) return [];
   const at = positionResolver(content);
-  const out: (ValidationDiagnostic & { offset: number })[] = [];
-  const report = (ruleId: HtmlRuleId, offset: number) => {
-    const { line, column } = at(offset);
-    out.push({ severity: "warning", line, column, message: HTML_RULES[ruleId].message, ruleId, offset });
-  };
-
-  // Rules read the parsed start tags: markup inside comments, CDATA or a
-  // script's own text is not markup, and a quoted value is one value.
-  const tags = scanHtmlTags(content);
-  const baseTag = tags.find((t) => t.name === "base" && attrValue(t, "target") !== null);
-  const baseTarget = baseTag ? attrValue(baseTag, "target") : null;
-  for (const tag of tags) {
-    if (tag.name === "script") {
-      // Any src — remote, relative or empty — means the element never runs
-      // inline code, and the trusted CSP allows no script URL.
-      report(tag.attrs.some((a) => a.name === "src") ? "html/script-external" : "html/script-blocked", tag.offset);
-    }
-    for (const attr of tag.attrs) {
-      if (/^on[a-z]+$/.test(attr.name)) report("html/inline-handler", attr.offset);
-      if (URL_ATTRIBUTES.has(attr.name) && attr.value !== null && isJavascriptUrl(attr.value)) {
-        const target = TARGETED.has(tag.name) ? (attrValue(tag, "target") ?? baseTarget) : null;
-        report(leavesFrame(target) ? "html/javascript-url-navigation" : "html/javascript-url", attr.offset);
-      }
-    }
-  }
-
-  // Document order, so the gutter reads top to bottom rather than grouped by rule.
-  out.sort((a, b) => a.offset - b.offset);
-  return out.map(({ offset: _offset, ...diagnostic }) => diagnostic);
+  return findings(content, 0)
+    // Document order, so the gutter reads top to bottom rather than grouped by rule.
+    .sort((a, b) => a.offset - b.offset)
+    .map(({ ruleId, offset }) => ({ severity: "warning" as const, ...at(offset), message: HTML_RULES[ruleId], ruleId }));
 };
 
 export const htmlFormat: FormatConfig = {
