@@ -352,3 +352,24 @@ describe("html adapter — no false messages, no plausible misses", () => {
     expect(performance.now() - started).toBeLessThan(300);
   });
 });
+
+// Codex's sixth review: an event-handler attribute is one only where the
+// platform defines it — window handlers on body/frameset, SVG animation
+// handlers on animation elements — and the list must cover real ones.
+describe("html adapter — event handlers in element context", () => {
+  const rules = (html: string) => htmlValidator(html).map((d) => d.ruleId);
+  const H = "html/inline-handler";
+
+  it.each([
+    [`<svg><animate attributeName="x" onbegin="a()" onrepeat="b()" onend="c()"/></svg>`, [H, H, H]],
+    [`<dialog oncommand="a()">x</dialog>`, [H]],
+    [`<div oncontentvisibilityautostatechange="a()">x</div>`, [H]],
+    [`<div onmessage="a()" onclick="b()">x</div>`, [H]],
+    [`<body onmessage="a()" onhashchange="b()"></body>`, [H, H]],
+    [`<div onhashchange="a()" onbeforeunload="b()"></div>`, []],
+    [`<div onbegin="a()"></div>`, []],
+    [`<svg><rect onbegin="a()" onclick="b()"/></svg>`, [H]],
+  ])("%s → %j", (html, expected) => {
+    expect(rules(html)).toEqual(expected);
+  });
+});

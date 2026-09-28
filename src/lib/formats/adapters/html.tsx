@@ -60,29 +60,43 @@ const SCRIPT_TYPES = new Set([
   "text/x-javascript", "text/x-ecmascript", "text/javascript1.0", "text/javascript1.1", "text/javascript1.2",
   "text/javascript1.3", "text/javascript1.4", "text/javascript1.5",
 ]);
-/** Event-handler content attributes the platform defines. Any other `on*`
- *  attribute is just an attribute: reporting it as a handler would be false. */
-const EVENT_HANDLERS = new Set(
-  (
-    "abort afterprint animationcancel animationend animationiteration animationstart auxclick beforecopy beforecut " +
-    "beforeinput beforematch beforepaste beforeprint beforetoggle beforeunload blur cancel canplay canplaythrough " +
-    "change click close contextlost contextmenu contextrestored copy cuechange cut dblclick drag dragend dragenter " +
-    "dragleave dragover dragstart drop durationchange emptied ended error focus focusin focusout formdata " +
-    "gesturechange gestureend gesturestart gotpointercapture hashchange input invalid keydown keypress keyup " +
-    "languagechange load loadeddata loadedmetadata loadstart lostpointercapture message messageerror mousedown " +
-    "mouseenter mouseleave mousemove mouseout mouseover mouseup mousewheel offline online orientationchange " +
-    "pagehide pagereveal pageshow pageswap paste pause play playing pointercancel pointerdown pointerenter " +
-    "pointerleave pointermove pointerout pointerover pointerup popstate progress ratechange rejectionhandled " +
-    "reset resize scroll scrollend search securitypolicyviolation seeked seeking select selectionchange " +
-    "selectstart slotchange stalled storage submit suspend timeupdate toggle touchcancel touchend touchmove " +
-    "touchstart transitioncancel transitionend transitionrun transitionstart unhandledrejection unload " +
-    "volumechange waiting webkitanimationend webkitanimationiteration webkitanimationstart " +
-    "webkitmouseforcechanged webkitmouseforcedown webkitmouseforceup webkitmouseforcewillbegin " +
-    "webkittransitionend wheel"
-  )
-    .split(" ")
-    .map((event) => `on${event}`),
+/** Event-handler attributes, by where the platform defines them. Any other
+ *  `on*` attribute is just an attribute: reporting it as a handler would be
+ *  false. The lists follow WebKit's; a platform event added later is not
+ *  reported until it is listed here. */
+const on = (events: string) => new Set(events.split(" ").map((event) => `on${event}`));
+/** Handlers every element accepts (GlobalEventHandlers and WebKit's own). */
+const GLOBAL_HANDLERS = on(
+  "abort animationcancel animationend animationiteration animationstart auxclick beforecopy beforecut " +
+    "beforeinput beforematch beforepaste beforetoggle blur cancel canplay canplaythrough change click close " +
+    "command contentvisibilityautostatechange contextlost contextmenu contextrestored copy cuechange cut " +
+    "dblclick drag dragend dragenter dragleave dragover dragstart drop durationchange emptied ended error focus " +
+    "focusin focusout formdata fullscreenchange fullscreenerror gesturechange gestureend gesturestart " +
+    "gotpointercapture input invalid keydown keypress keyup load loadeddata loadedmetadata loadstart " +
+    "lostpointercapture mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup mousewheel paste " +
+    "pause play playing pointercancel pointerdown pointerenter pointerleave pointermove pointerout pointerover " +
+    "pointerup progress ratechange reset resize scroll scrollend search securitypolicyviolation seeked seeking " +
+    "select selectionchange selectstart slotchange stalled submit suspend timeupdate toggle touchcancel touchend " +
+    "touchmove touchstart transitioncancel transitionend transitionrun transitionstart volumechange waiting " +
+    "webkitanimationend webkitanimationiteration webkitanimationstart webkitfullscreenchange " +
+    "webkitfullscreenerror webkitmouseforcechanged webkitmouseforcedown webkitmouseforceup " +
+    "webkitmouseforcewillbegin webkittransitionend wheel",
 );
+/** Window handlers: they exist only on <body> and <frameset>, which forward them. */
+const WINDOW_HANDLERS = on(
+  "afterprint beforeprint beforeunload hashchange languagechange message messageerror offline online " +
+    "orientationchange pagehide pagereveal pageshow pageswap popstate rejectionhandled storage " +
+    "unhandledrejection unload",
+);
+/** SVG animation elements' handlers. */
+const SVG_ANIMATION_HANDLERS = on("begin end repeat");
+const SVG_ANIMATIONS = new Set(["animate", "animatemotion", "animatetransform", "set", "discard"]);
+
+function isEventHandler(tag: HtmlTag, attrName: string): boolean {
+  if (GLOBAL_HANDLERS.has(attrName)) return true;
+  if (WINDOW_HANDLERS.has(attrName)) return tag.namespace === "html" && (tag.name === "body" || tag.name === "frameset");
+  return SVG_ANIMATION_HANDLERS.has(attrName) && tag.namespace === "svg" && SVG_ANIMATIONS.has(tag.name);
+}
 /** Nested `srcdoc` documents are checked this many levels deep, at most. */
 const SRCDOC_DEPTH = 3;
 const SRCDOC_MAX_LENGTH = 1_000_000;
@@ -136,7 +150,7 @@ function findings(content: string, depth: number): { ruleId: HtmlRuleId; offset:
       }
     }
     for (const attr of tag.attrs) {
-      if (EVENT_HANDLERS.has(attr.name)) out.push({ ruleId: "html/inline-handler", offset: attr.offset });
+      if (isEventHandler(tag, attr.name)) out.push({ ruleId: "html/inline-handler", offset: attr.offset });
     }
     const link = linkUrl(tag);
     if (link && isJavascriptUrl(link.value)) {
