@@ -24,6 +24,7 @@
 import type { Extension } from "@codemirror/state";
 import { registerFormat } from "../registry";
 import { HtmlPreview } from "./HtmlPreview";
+import { scanHtmlTags } from "./htmlTags";
 import type {
   FormatConfig,
   ValidationDiagnostic,
@@ -33,55 +34,48 @@ import type {
 /**
  * What the preview refuses to execute, and what to say about it.
  *
- * A table rather than three near-identical branches: they differed only by
- * regex, message and rule id, so every change had to be made three times and
- * a fourth rule meant a fourth copy.
+ * Each rule records whether trusted preview RUNS what it reports. The trusted
+ * frame's CSP is `script-src 'unsafe-inline'` with no URL source: inline
+ * script, inline handlers and `javascript:` URLs run; an external script
+ * never loads. `infoWhenTrusted`
+ * derives from this, so a new rule cannot skip the decision.
  *
- * Messages are worded for BOTH modes — the default preview blocks these and
- * trusted preview runs them, so a message naming only the sandbox is wrong for
- * a document the user has authorized (#1273). They are also FALLBACKS: the
- * gutter prefers `diagnostic.<ruleId>` from the locale bundles, so any wording
- * change here has to be made there too or it is invisible.
+ * Messages are worded for BOTH modes — a message naming only the sandbox is
+ * wrong for a document the user has authorized (#1273). They are also
+ * FALLBACKS: the gutter prefers `diagnostic.<ruleId>` from the locale bundles,
+ * so any wording change here has to be made there too or it is invisible.
+ * The rules read parsed tags (htmlTags.ts), never raw text.
  */
-const HTML_RULES: readonly {
-  ruleId: string;
-  pattern: RegExp;
-  message: string;
-  /** Whether trusted preview RUNS what this rule reports (its CSP is
-   *  `script-src 'unsafe-inline'` with no URL source): if so, the finding is
-   *  information once the document is trusted. */
-  runsWhenTrusted: boolean;
-}[] = [
-  {
-    ruleId: "html/script-blocked",
-    // Inline script only: a `src` attribute makes it html/script-external.
-    pattern: /<script\b(?![^>]*\bsrc\s*=)/gi,
+const HTML_RULES = {
+  "html/script-blocked": {
     message: "Script tag detected — blocked unless trusted preview is enabled.",
     runsWhenTrusted: true,
   },
-  {
-    ruleId: "html/script-external",
-    pattern: /<script\b(?=[^>]*\bsrc\s*=)/gi,
+  "html/script-external": {
     message: "External script — the preview never loads scripts from a file or URL, trusted or not.",
     runsWhenTrusted: false,
   },
-  {
-    ruleId: "html/javascript-url",
-    // `[\s\S]` rather than `\s`: the whitespace between an attribute name and
-    // its value may include newlines, and a line-at-a-time scan missed those.
-    pattern: /\b(?:href|src)[\s]*=[\s]*["']?[\s]*javascript:/gi,
-    message:
-      "javascript: URL detected — blocked unless trusted preview is enabled.",
+  "html/javascript-url": {
+    message: "javascript: URL detected — blocked unless trusted preview is enabled.",
     runsWhenTrusted: true,
   },
-  {
-    ruleId: "html/inline-handler",
-    pattern: /\son[a-z]+[\s]*=/gi,
-    message:
-      "Inline event handler detected — blocked unless trusted preview is enabled.",
+  "html/inline-handler": {
+    message: "Inline event handler detected — blocked unless trusted preview is enabled.",
     runsWhenTrusted: true,
   },
-];
+} as const satisfies Record<string, { message: string; runsWhenTrusted: boolean }>;
+type HtmlRuleId = keyof typeof HTML_RULES;
+
+/** Attributes whose value is a URL a `javascript:` scheme would run. */
+const URL_ATTRIBUTES = new Set(["href", "src", "action", "formaction", "xlink:href"]);
+
+/** A `javascript:` URL as a browser reads it: tabs and newlines removed, leading controls and spaces trimmed. */
+function isJavascriptUrl(value: string): boolean {
+  const url = value.replace(/[\t\n\r]/g, "");
+  let start = 0;
+  while (start < url.length && url.charCodeAt(start) <= 0x20) start += 1;
+  return /^javascript:/i.test(url.slice(start));
+}
 
 /**
  * Offset → 1-based line/column, over the whole source.
@@ -112,29 +106,28 @@ export const htmlValidator: Validator = (content) => {
   if (content.length === 0) return [];
   const at = positionResolver(content);
   const out: (ValidationDiagnostic & { offset: number })[] = [];
+  const report = (ruleId: HtmlRuleId, offset: number) => {
+    const { line, column } = at(offset);
+    out.push({ severity: "warning", line, column, message: HTML_RULES[ruleId].message, ruleId, offset });
+  };
 
-  for (const rule of HTML_RULES) {
-    // Fresh regex per scan: a module-level /g/ carries `lastIndex` between
-    // calls, so a shared one would skip matches on every second document.
-    const pattern = new RegExp(rule.pattern.source, rule.pattern.flags);
-    for (let m = pattern.exec(content); m !== null; m = pattern.exec(content)) {
-      const { line, column } = at(m.index);
-      out.push({
-        severity: "warning",
-        line,
-        column,
-        message: rule.message,
-        ruleId: rule.ruleId,
-        offset: m.index,
-      });
-      // A zero-length match would spin forever; none of the rules can produce
-      // one, but the guard costs nothing and the failure mode is a hang.
-      if (m.index === pattern.lastIndex) pattern.lastIndex++;
+  // Rules read the parsed start tags: markup inside comments, CDATA or a
+  // script's own text is not markup, and a quoted value is one value.
+  for (const tag of scanHtmlTags(content)) {
+    if (tag.name === "script") {
+      // Any src — remote, relative or empty — means the element never runs
+      // inline code, and the trusted CSP allows no script URL.
+      report(tag.attrs.some((a) => a.name === "src") ? "html/script-external" : "html/script-blocked", tag.offset);
+    }
+    for (const attr of tag.attrs) {
+      if (/^on[a-z]+$/.test(attr.name)) report("html/inline-handler", attr.offset);
+      if (URL_ATTRIBUTES.has(attr.name) && attr.value !== null && isJavascriptUrl(attr.value)) {
+        report("html/javascript-url", attr.offset);
+      }
     }
   }
 
-  // Document order, so the gutter reads top to bottom rather than grouped by
-  // whichever rule happened to be listed first.
+  // Document order, so the gutter reads top to bottom rather than grouped by rule.
   out.sort((a, b) => a.offset - b.offset);
   return out.map(({ offset: _offset, ...diagnostic }) => diagnostic);
 };
@@ -151,7 +144,7 @@ export const htmlFormat: FormatConfig = {
   validator: htmlValidator,
   // A finding is information under trust only if trusted preview actually
   // runs what it reports — an external script never loads, trusted or not.
-  infoWhenTrusted: HTML_RULES.filter((r) => r.runsWhenTrusted).map((r) => r.ruleId),
+  infoWhenTrusted: (Object.keys(HTML_RULES) as HtmlRuleId[]).filter((id) => HTML_RULES[id].runsWhenTrusted),
   genericPreview: HtmlPreview,
   adapters: {
     saveDialogFilters: [{ nameI18nKey: "format.html", extensions: ["html", "htm"] }],

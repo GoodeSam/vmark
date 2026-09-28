@@ -175,3 +175,36 @@ describe("html adapter — inline vs external script", () => {
     expect(htmlFormat.infoWhenTrusted).not.toContain("html/script-external");
   });
 });
+
+// Codex's third review: regex lookaheads could not see HTML structure. Each
+// input's expected rules follow what a browser parses (DOMParser) and what the
+// trusted frame actually runs.
+describe("html adapter — rules read parsed tags, not text", () => {
+  const rules = (html: string) => htmlValidator(html).map((d) => d.ruleId);
+
+  it.each([
+    [`<script data-src="app.js">1</script>`, ["html/script-blocked"]],
+    [`<script data-x="src=">1</script>`, ["html/script-blocked"]],
+    [`<script data-x="prefix src='x.js'">1</script>`, ["html/script-blocked"]],
+    [`<script data-x=">" src="app.js"></script>`, ["html/script-external"]],
+    [`<script src></script>`, ["html/script-external"]],
+    [`<!-- <script src="app.js"></script> -->`, []],
+    [`<svg><![CDATA[<script src="app.js"></script>]]></svg>`, []],
+    [`<script-foo src="app.js"></script-foo>`, []],
+    [`<scripts src="app.js"></scripts>`, []],
+    [`<script defer SRC = 'a.js' type="text/javascript"></script>`, ["html/script-external"]],
+    [`<script SRC="x.js"/>`, ["html/script-external"]],
+    [`<script/>`, ["html/script-blocked"]],
+    [`<p>the onion=layered prose</p>`, []],
+    [`<script>el.innerHTML = "<b onclick=x>"</script>`, ["html/script-blocked"]],
+  ])("%s → %j", (html, expected) => {
+    expect(rules(html)).toEqual(expected);
+  });
+
+
+  it("stays linear on hostile input", () => {
+    const started = performance.now();
+    htmlValidator("<script ".repeat(8_000));
+    expect(performance.now() - started).toBeLessThan(250);
+  });
+});
