@@ -65,10 +65,10 @@ Beide sind YAML, und VMark öffnet jede `.yml`- / `.yaml`-Datei in derselben get
 | Prüfung | GitHub-Actions-Workflow | VMark-Workflow |
 |---------|-------------------------|----------------|
 | Pfad unter `.github/workflows/` | Immer — dieser Ordner gehört GitHub | Nie |
-| `jobs:` auf oberster Ebene | Ja | Nie |
+| `on:` und `jobs:` auf oberster Ebene (außerhalb dieses Ordners sind beide nötig) | Ja | Nie |
 | `steps:` auf oberster Ebene, deren `uses:` `genie/`, `action/` oder `webhook/` nennt | Nie — seine Schritte liegen innerhalb eines Jobs | Ja |
 
-`on:` entscheidet nichts — beide Arten können es haben. Eine Datei mit `steps:` und `jobs:` auf oberster Ebene wird als GitHub Actions behandelt und nie ausgeführt. Eine Datei, die keiner der beiden Formen entspricht, ist einfaches YAML.
+Auch ein VMark-Workflow darf `on:` haben, aber nie `jobs:`: Eine Datei mit `jobs:` auf oberster Ebene wird nie ausgeführt. Außerhalb von `.github/workflows/` wird sie nur dann als GitHub Actions geöffnet, wenn sie auch `on:` auf oberster Ebene hat; andernfalls ist sie einfaches YAML, ebenso wie eine Datei, die keiner der beiden Formen entspricht.
 
 ::: info Wo das mitgelieferte Beispiel liegt
 Das Beispiel wird im App-Bundle ausgeliefert — `VMark.app/Contents/Resources/resources/workflows/examples/triage-and-translate.yml` unter macOS, anderswo im `resources`-Ordner der App — sowie im [Quell-Repository](https://github.com/xiaolai/vmark/blob/main/src-tauri/resources/workflows/examples/triage-and-translate.yml). Es wird nicht in Ihren Genies-Ordner kopiert: Um es als [Workflow-Genie](/de/guide/workflow-genies) auszuführen, kopieren Sie es selbst dorthin und bearbeiten den Ausgangstext.
@@ -257,7 +257,7 @@ Es läuft immer nur ein Workflow gleichzeitig in der gesamten App, nicht pro Fen
 
 Vor einem Lauf mit `action/save-file`-Schritten kopiert VMark jede Datei, die diese Schritte schreiben werden (bis zu 64 MB pro Datei und insgesamt 256 MB), in eine Sicherung in seinem App-Datenordner und vermerkt, welche davon noch nicht existieren. Kann die Sicherung nicht erstellt werden, wird der Workflow gar nicht ausgeführt.
 
-Wenn der Lauf endet, bietet die Symbolleiste **Dateien wiederherstellen** an. Nach Ihrer Bestätigung setzt VMark jede gesicherte Datei auf den Stand vor dem Lauf zurück und löscht die Dateien, die der Lauf erstellt hat. Änderungen, die seit dem Lauf an diesen Dateien vorgenommen wurden, gehen verloren, weshalb die Schaltfläche nur einmal angeboten wird. Eine Datei, die sich nicht wiederherstellen lässt — etwa weil ihr Ordner durch einen Link ersetzt wurde, der aus dem Arbeitsbereich hinausführt —, bleibt unverändert und wird in der Benachrichtigung mitgezählt. Die Wiederherstellung wird verweigert, solange ein Workflow läuft.
+Wenn der Lauf endet, bietet die Symbolleiste **Dateien wiederherstellen** an. Nach Ihrer Bestätigung setzt VMark jede gesicherte Datei auf den Stand vor dem Lauf zurück und löscht die Dateien, die der Lauf erstellt hat. Änderungen, die seit dem Lauf an diesen Dateien vorgenommen wurden, gehen verloren. Stellt die Wiederherstellung alle Dateien wieder her, verschwindet die Schaltfläche; musste sie Dateien überspringen, bleibt sie, damit Sie es erneut versuchen können. Eine Datei, die sich nicht wiederherstellen lässt — etwa weil ihr Ordner durch einen Link ersetzt wurde, der aus dem Arbeitsbereich hinausführt —, bleibt unverändert und wird in der Benachrichtigung mitgezählt. Die Wiederherstellung wird verweigert, solange ein Workflow läuft.
 
 ### Ablauf der Ausführung
 

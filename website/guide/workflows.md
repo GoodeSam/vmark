@@ -65,10 +65,10 @@ Both are YAML, and VMark opens every `.yml` / `.yaml` file in the same split vie
 | Check | GitHub Actions workflow | VMark workflow |
 |-------|-------------------------|----------------|
 | Path under `.github/workflows/` | Always — GitHub owns that folder | Never |
-| Top-level `jobs:` | Yes | Never |
+| Top-level `on:` and `jobs:` (outside that folder, both are needed) | Yes | Never |
 | Top-level `steps:` whose `uses:` names `genie/`, `action/` or `webhook/` | Never — its steps live inside a job | Yes |
 
-`on:` decides nothing — both kinds may have one. A file with both top-level `steps:` and `jobs:` is treated as GitHub Actions, never run. A file with neither shape is plain YAML.
+A VMark workflow may have an `on:` too, but never `jobs:`: a file with a top-level `jobs:` is never run. Outside `.github/workflows/`, it opens as GitHub Actions only when it also has a top-level `on:`; otherwise it is plain YAML, as is a file with neither shape.
 
 ::: info Where the bundled sample lives
 The sample ships inside the app bundle — `VMark.app/Contents/Resources/resources/workflows/examples/triage-and-translate.yml` on macOS, the app's `resources` folder elsewhere — and in the [source repository](https://github.com/xiaolai/vmark/blob/main/src-tauri/resources/workflows/examples/triage-and-translate.yml). It is not copied into your genies folder: to run it as a [workflow genie](/guide/workflow-genies), copy it there yourself and edit the seed text.
@@ -257,7 +257,7 @@ Only one workflow runs at a time across the whole app, not per window: while one
 
 Before a run that has `action/save-file` steps, VMark copies every file those steps will write (up to 64 MB per file and 256 MB in total) into a snapshot in its app-data folder, and notes which of them do not exist yet. If the snapshot cannot be taken, the workflow is not run at all.
 
-When the run ends, the toolbar offers **Restore Files**. After you confirm, VMark puts each snapshotted file back as it was before the run and deletes the files the run created. Edits made to those files since the run are lost, which is why the button is offered once. A file that cannot be restored — its folder was replaced by a link leading outside the workspace, say — is left as it is and counted in the notification. Restore is refused while any workflow is running.
+When the run ends, the toolbar offers **Restore Files**. After you confirm, VMark puts each snapshotted file back as it was before the run and deletes the files the run created. Edits made to those files since the run are lost. A restore that brings every file back removes the button; one that had to skip files keeps it, so you can retry them. A file that cannot be restored — its folder was replaced by a link leading outside the workspace, say — is left as it is and counted in the notification. Restore is refused while any workflow is running.
 
 ### Execution flow
 

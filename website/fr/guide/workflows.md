@@ -65,10 +65,10 @@ Les deux sont du YAML, et VMark ouvre tout fichier `.yml` / `.yaml` dans la mêm
 | Vérification | Workflow GitHub Actions | Workflow VMark |
 |--------------|-------------------------|----------------|
 | Chemin sous `.github/workflows/` | Toujours — ce dossier appartient à GitHub | Jamais |
-| `jobs:` de premier niveau | Oui | Jamais |
+| `on:` et `jobs:` de premier niveau (hors de ce dossier, les deux sont nécessaires) | Oui | Jamais |
 | `steps:` de premier niveau dont les `uses:` nomment `genie/`, `action/` ou `webhook/` | Jamais — ses étapes se trouvent dans un job | Oui |
 
-`on:` ne décide de rien — les deux types peuvent en avoir un. Un fichier comportant à la fois `steps:` et `jobs:` au premier niveau est traité comme du GitHub Actions et n'est jamais exécuté. Un fichier qui n'a aucune de ces deux formes est du YAML ordinaire.
+Un workflow VMark peut lui aussi avoir un `on:`, mais jamais de `jobs:` : un fichier comportant un `jobs:` de premier niveau n'est jamais exécuté. Hors de `.github/workflows/`, il ne s'ouvre comme du GitHub Actions que s'il a aussi un `on:` de premier niveau ; sinon, c'est du YAML ordinaire, tout comme un fichier qui n'a aucune de ces deux formes.
 
 ::: info Où se trouve l'exemple fourni
 L'exemple est livré dans le paquet de l'application — `VMark.app/Contents/Resources/resources/workflows/examples/triage-and-translate.yml` sur macOS, le dossier `resources` de l'application ailleurs — ainsi que dans le [dépôt source](https://github.com/xiaolai/vmark/blob/main/src-tauri/resources/workflows/examples/triage-and-translate.yml). Il n'est pas copié dans votre dossier de génies&nbsp;: pour l'exécuter comme [génie de workflow](/fr/guide/workflow-genies), copiez-le vous-même à cet endroit et modifiez le texte de départ.
@@ -257,7 +257,7 @@ Un seul workflow s'exécute à la fois dans toute l'application, et non par fen�
 
 Avant une exécution qui comporte des étapes `action/save-file`, VMark copie chaque fichier que ces étapes vont écrire (jusqu'à 64 Mo par fichier et 256 Mo au total) dans un instantané de son dossier de données d'application, et note ceux qui n'existent pas encore. Si l'instantané ne peut pas être pris, le workflow n'est pas exécuté du tout.
 
-À la fin de l'exécution, la barre d'outils propose **Restaurer les fichiers**. Après votre confirmation, VMark remet chaque fichier de l'instantané dans son état d'avant l'exécution et supprime les fichiers créés par l'exécution. Les modifications apportées à ces fichiers depuis l'exécution sont perdues, c'est pourquoi le bouton n'est proposé qu'une fois. Un fichier qui ne peut pas être restauré — parce que son dossier a été remplacé par un lien menant hors de l'espace de travail, par exemple — est laissé tel quel et comptabilisé dans la notification. La restauration est refusée tant qu'un workflow s'exécute.
+À la fin de l'exécution, la barre d'outils propose **Restaurer les fichiers**. Après votre confirmation, VMark remet chaque fichier de l'instantané dans son état d'avant l'exécution et supprime les fichiers créés par l'exécution. Les modifications apportées à ces fichiers depuis l'exécution sont perdues. Si la restauration récupère tous les fichiers, le bouton disparaît ; si elle a dû en ignorer, il reste proposé pour que vous puissiez réessayer. Un fichier qui ne peut pas être restauré — parce que son dossier a été remplacé par un lien menant hors de l'espace de travail, par exemple — est laissé tel quel et comptabilisé dans la notification. La restauration est refusée tant qu'un workflow s'exécute.
 
 ### Déroulement de l'exécution
 

@@ -65,10 +65,10 @@ Ambos são YAML, e o VMark abre todo arquivo `.yml` / `.yaml` na mesma visão di
 | Verificação | Workflow do GitHub Actions | Workflow do VMark |
 |-------|-------------------------|----------------|
 | Caminho sob `.github/workflows/` | Sempre — o GitHub é dono dessa pasta | Nunca |
-| `jobs:` no nível superior | Sim | Nunca |
+| `on:` e `jobs:` no nível superior (fora dessa pasta, os dois são necessários) | Sim | Nunca |
 | `steps:` no nível superior cujo `uses:` nomeia `genie/`, `action/` ou `webhook/` | Nunca — seus steps ficam dentro de um job | Sim |
 
-`on:` não decide nada — os dois tipos podem ter um. Um arquivo com `steps:` e `jobs:` no nível superior é tratado como GitHub Actions e nunca é executado. Um arquivo sem nenhum dos dois formatos é YAML comum.
+Um workflow do VMark também pode ter `on:`, mas nunca `jobs:`: um arquivo com `jobs:` no nível superior nunca é executado. Fora de `.github/workflows/`, ele só abre como GitHub Actions se também tiver `on:` no nível superior; caso contrário, é YAML comum, assim como um arquivo sem nenhum dos dois formatos.
 
 ::: info Onde fica o exemplo incluído
 O exemplo vem dentro do pacote do aplicativo — `VMark.app/Contents/Resources/resources/workflows/examples/triage-and-translate.yml` no macOS, a pasta `resources` do aplicativo nas outras plataformas — e no [repositório do código-fonte](https://github.com/xiaolai/vmark/blob/main/src-tauri/resources/workflows/examples/triage-and-translate.yml). Ele não é copiado para a sua pasta de genies: para executá-lo como um [genie de workflow](/pt-BR/guide/workflow-genies), copie-o para lá você mesmo e edite o texto inicial.
@@ -257,7 +257,7 @@ Apenas um workflow é executado por vez em todo o aplicativo, não por janela: e
 
 Antes de uma execução que tem etapas `action/save-file`, o VMark copia cada arquivo que essas etapas vão gravar (até 64 MB por arquivo e 256 MB no total) para um snapshot na sua pasta de dados do aplicativo, e anota quais deles ainda não existem. Se o snapshot não puder ser feito, o workflow não é executado.
 
-Quando a execução termina, a barra de ferramentas oferece **Restaurar arquivos**. Depois que você confirma, o VMark devolve cada arquivo do snapshot ao estado em que estava antes da execução e apaga os arquivos que a execução criou. As edições feitas nesses arquivos desde a execução são perdidas, e é por isso que o botão é oferecido uma única vez. Um arquivo que não pode ser restaurado — porque sua pasta foi substituída por um link que leva para fora do workspace, por exemplo — é deixado como está e contado na notificação. A restauração é recusada enquanto qualquer workflow estiver em execução.
+Quando a execução termina, a barra de ferramentas oferece **Restaurar arquivos**. Depois que você confirma, o VMark devolve cada arquivo do snapshot ao estado em que estava antes da execução e apaga os arquivos que a execução criou. As edições feitas nesses arquivos desde a execução são perdidas. Se a restauração recupera todos os arquivos, o botão desaparece; se precisou pular algum, ele continua disponível para você tentar de novo. Um arquivo que não pode ser restaurado — porque sua pasta foi substituída por um link que leva para fora do workspace, por exemplo — é deixado como está e contado na notificação. A restauração é recusada enquanto qualquer workflow estiver em execução.
 
 ### Fluxo de execução
 

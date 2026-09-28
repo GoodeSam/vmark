@@ -65,10 +65,10 @@ Ambos son YAML, y VMark abre todos los archivos `.yml` / `.yaml` en la misma vis
 | Comprobación | Flujo de trabajo de GitHub Actions | Flujo de trabajo de VMark |
 |--------------|------------------------------------|---------------------------|
 | Ruta bajo `.github/workflows/` | Siempre — esa carpeta es de GitHub | Nunca |
-| `jobs:` de nivel superior | Sí | Nunca |
+| `on:` y `jobs:` de nivel superior (fuera de esa carpeta hacen falta los dos) | Sí | Nunca |
 | `steps:` de nivel superior cuyo `uses:` nombra `genie/`, `action/` o `webhook/` | Nunca — sus steps viven dentro de un job | Sí |
 
-`on:` no decide nada — ambos tipos pueden tenerlo. Un archivo con `steps:` y `jobs:` de nivel superior a la vez se trata como GitHub Actions y nunca se ejecuta. Un archivo sin ninguna de las dos formas es YAML sin más.
+Un flujo de trabajo de VMark también puede tener `on:`, pero nunca `jobs:`: un archivo con `jobs:` de nivel superior nunca se ejecuta. Fuera de `.github/workflows/`, se abre como GitHub Actions solo si también tiene `on:` de nivel superior; si no, es YAML sin más, igual que un archivo sin ninguna de las dos formas.
 
 ::: info Dónde está el ejemplo incluido
 El ejemplo viene dentro del paquete de la aplicación — `VMark.app/Contents/Resources/resources/workflows/examples/triage-and-translate.yml` en macOS, la carpeta `resources` de la aplicación en los demás sistemas — y en el [repositorio de código fuente](https://github.com/xiaolai/vmark/blob/main/src-tauri/resources/workflows/examples/triage-and-translate.yml). No se copia a tu carpeta de genios: para ejecutarlo como [genio de flujo de trabajo](/es/guide/workflow-genies), cópialo allí tú mismo y edita el texto semilla.
@@ -257,7 +257,7 @@ Solo se ejecuta un flujo de trabajo a la vez en toda la aplicación, no por vent
 
 Antes de una ejecución que tiene pasos `action/save-file`, VMark copia cada archivo que esos pasos van a escribir (hasta 64 MB por archivo y 256 MB en total) en una instantánea dentro de su carpeta de datos de la aplicación, y anota cuáles de ellos aún no existen. Si no se puede tomar la instantánea, el flujo de trabajo no se ejecuta en absoluto.
 
-Cuando termina la ejecución, la barra de herramientas ofrece **Restaurar archivos**. Tras confirmar, VMark devuelve cada archivo de la instantánea al estado que tenía antes de la ejecución y elimina los archivos que creó la ejecución. Las ediciones hechas en esos archivos desde la ejecución se pierden, y por eso el botón se ofrece una sola vez. Un archivo que no se puede restaurar — por ejemplo, porque su carpeta se sustituyó por un enlace que lleva fuera del espacio de trabajo — se deja como está y se cuenta en la notificación. La restauración se rechaza mientras se está ejecutando cualquier flujo de trabajo.
+Cuando termina la ejecución, la barra de herramientas ofrece **Restaurar archivos**. Tras confirmar, VMark devuelve cada archivo de la instantánea al estado que tenía antes de la ejecución y elimina los archivos que creó la ejecución. Las ediciones hechas en esos archivos desde la ejecución se pierden. Si la restauración recupera todos los archivos, el botón desaparece; si tuvo que omitir alguno, se mantiene para que puedas reintentarlo. Un archivo que no se puede restaurar — por ejemplo, porque su carpeta se sustituyó por un enlace que lleva fuera del espacio de trabajo — se deja como está y se cuenta en la notificación. La restauración se rechaza mientras se está ejecutando cualquier flujo de trabajo.
 
 ### Flujo de ejecución
 

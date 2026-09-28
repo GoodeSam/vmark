@@ -65,10 +65,10 @@ Entrambi sono YAML, e VMark apre ogni file `.yml` / `.yaml` nella stessa vista d
 | Controllo | Workflow di GitHub Actions | Workflow di VMark |
 |-------|-------------------------|----------------|
 | Percorso sotto `.github/workflows/` | Sempre — quella cartella appartiene a GitHub | Mai |
-| `jobs:` di primo livello | Sì | Mai |
+| `on:` e `jobs:` di primo livello (fuori da quella cartella servono entrambi) | Sì | Mai |
 | `steps:` di primo livello il cui `uses:` nomina `genie/`, `action/` o `webhook/` | Mai — i suoi step stanno dentro un job | Sì |
 
-`on:` non decide nulla — entrambi i tipi possono averlo. Un file con sia `steps:` sia `jobs:` di primo livello viene trattato come GitHub Actions e non viene mai eseguito. Un file che non ha nessuna delle due forme è YAML semplice.
+Anche un workflow VMark può avere `on:`, ma mai `jobs:`: un file con `jobs:` di primo livello non viene mai eseguito. Fuori da `.github/workflows/`, si apre come GitHub Actions solo se ha anche `on:` di primo livello; altrimenti è YAML semplice, come un file che non ha nessuna delle due forme.
 
 ::: info Dove si trova l'esempio incluso
 L'esempio è distribuito all'interno del bundle dell'app — `VMark.app/Contents/Resources/resources/workflows/examples/triage-and-translate.yml` su macOS, nella cartella `resources` dell'app sugli altri sistemi — e nel [repository dei sorgenti](https://github.com/xiaolai/vmark/blob/main/src-tauri/resources/workflows/examples/triage-and-translate.yml). Non viene copiato nella tua cartella dei genie: per eseguirlo come [genie del workflow](/it/guide/workflow-genies), copialo lì tu stesso e modifica il testo iniziale.
@@ -257,7 +257,7 @@ Viene eseguito un solo workflow alla volta in tutta l'app, non per finestra: men
 
 Prima di un'esecuzione che contiene passaggi `action/save-file`, VMark copia ogni file che quei passaggi scriveranno (fino a 64 MB per file e 256 MB in totale) in uno snapshot nella propria cartella dei dati dell'app, e annota quali di essi non esistono ancora. Se non è possibile creare lo snapshot, il workflow non viene eseguito affatto.
 
-Al termine dell'esecuzione, la barra degli strumenti offre **Ripristina file**. Dopo la tua conferma, VMark rimette ogni file dello snapshot com'era prima dell'esecuzione ed elimina i file creati dall'esecuzione. Le modifiche apportate a quei file dopo l'esecuzione vanno perse, ed è per questo che il pulsante viene offerto una sola volta. Un file che non può essere ripristinato — ad esempio perché la sua cartella è stata sostituita da un collegamento che porta fuori dal workspace — viene lasciato com'è e conteggiato nella notifica. Il ripristino viene rifiutato mentre è in esecuzione un qualsiasi workflow.
+Al termine dell'esecuzione, la barra degli strumenti offre **Ripristina file**. Dopo la tua conferma, VMark rimette ogni file dello snapshot com'era prima dell'esecuzione ed elimina i file creati dall'esecuzione. Le modifiche apportate a quei file dopo l'esecuzione vanno perse. Se il ripristino recupera tutti i file, il pulsante scompare; se ha dovuto saltarne qualcuno, resta disponibile per riprovare. Un file che non può essere ripristinato — ad esempio perché la sua cartella è stata sostituita da un collegamento che porta fuori dal workspace — viene lasciato com'è e conteggiato nella notifica. Il ripristino viene rifiutato mentre è in esecuzione un qualsiasi workflow.
 
 ### Flusso di esecuzione
 
