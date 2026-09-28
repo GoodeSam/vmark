@@ -25,6 +25,7 @@
  * @coordinates-with stores/uiStore/searchSlice.ts — query, options, match navigation state
  * @coordinates-with FindBar.tsx — UI for find/replace controls
  * @coordinates-with sourceEditorSearch.ts — equivalent search for Source mode (CodeMirror)
+ * @coordinates-with utils/settledScroll.ts — lands a far match despite content-visibility (#1458)
  * @module plugins/search/tiptap
  */
 import { hostSearch } from "@/plugins/shared/hostSearch";
@@ -36,7 +37,7 @@ import { findMatchesInDoc, type Match } from "./findMatches";
 import { createQueryDebounce } from "./queryDebounce";
 import { createReplaceHandlers } from "./replaceActions";
 import "./search.css";
-import { scrollBehavior } from "@/utils/motion";
+import { scrollToSettled } from "@/utils/settledScroll";
 
 const searchPluginKey = new PluginKey("search");
 
@@ -235,10 +236,9 @@ export const searchExtension = Extension.create({
             const containerRect = scrollContainer.getBoundingClientRect();
 
             if (coords.top < containerRect.top || coords.bottom > containerRect.bottom) {
-              scrollContainer.scrollTo({
-                top: scrollContainer.scrollTop + coords.top - containerRect.top - containerRect.height / 3,
-                behavior: scrollBehavior(),
-              });
+              scrollToSettled(scrollContainer, () => (match.from <= editorView.state.doc.content.size
+                ? editorView.coordsAtPos(match.from).top - scrollContainer.getBoundingClientRect().top - containerRect.height / 3
+                : null), editorView.dom);
             }
           };
 

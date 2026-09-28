@@ -1121,13 +1121,12 @@ describe("aiSuggestion plugin integration", () => {
       viewResult.destroy!();
     });
 
-    it("focusChanged event scrolls to suggestion position", () => {
+    it("focusChanged event scrolls the editor's scroll container to the suggestion", () => {
       const mockScrollTo = vi.fn();
       const mockDom = document.createElement("div");
-      Object.defineProperty(mockDom, "getBoundingClientRect", {
-        value: () => ({ top: 0, bottom: 500, height: 500 }),
-      });
-      mockDom.scrollTo = mockScrollTo;
+      const scroller = Object.assign(document.createElement("div"), { className: "editor-content", scrollTo: mockScrollTo });
+      scroller.getBoundingClientRect = () => ({ top: 0, bottom: 500, height: 500 }) as DOMRect;
+      scroller.appendChild(mockDom);
 
       const state = createState("hello world");
       const mockView = {
@@ -1147,7 +1146,7 @@ describe("aiSuggestion plugin integration", () => {
       window.dispatchEvent(event);
 
       expect(mockView.coordsAtPos).toHaveBeenCalledWith(1);
-      expect(mockScrollTo).toHaveBeenCalled();
+      expect(mockScrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: -100 - 500 / 3 }));
 
       viewResult.destroy!();
     });
@@ -1199,10 +1198,9 @@ describe("aiSuggestion plugin integration", () => {
     it("focusChanged does not scroll when already visible", () => {
       const mockScrollTo = vi.fn();
       const mockDom = document.createElement("div");
-      Object.defineProperty(mockDom, "getBoundingClientRect", {
-        value: () => ({ top: 0, bottom: 500, height: 500 }),
-      });
-      mockDom.scrollTo = mockScrollTo;
+      const scroller = Object.assign(document.createElement("div"), { className: "editor-content", scrollTo: mockScrollTo });
+      scroller.getBoundingClientRect = () => ({ top: 0, bottom: 500, height: 500 }) as DOMRect;
+      scroller.appendChild(mockDom);
 
       const state = createState("hello world");
       const mockView = {

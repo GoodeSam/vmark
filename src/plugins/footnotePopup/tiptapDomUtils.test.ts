@@ -15,6 +15,7 @@ import {
   getFootnoteRefFromTarget,
   getFootnoteDefFromTarget,
 } from "./tiptapDomUtils";
+import { scrollBehavior } from "@/utils/motion";
 
 // Minimal schema with footnote nodes
 const schema = new Schema({
@@ -163,47 +164,46 @@ describe("scrollToPosition", () => {
     };
   });
 
-  it("scrolls to correct position based on coordinates", () => {
-    const mockView = {
-      coordsAtPos: vi.fn(() => ({ top: 300, left: 100, bottom: 320 })),
+  /** A view inside `scroller` (or detached, for null). */
+  function viewIn(scroller: unknown, coordsAtPos: ReturnType<typeof vi.fn>) {
+    return {
+      dom: { closest: vi.fn(() => scroller), firstElementChild: null },
+      state: { doc: { content: { size: 100 } } },
+      coordsAtPos,
     } as unknown as import("@tiptap/pm/view").EditorView;
+  }
 
-    vi.spyOn(document, "querySelector").mockReturnValue(
-      mockEditorContent as unknown as Element
-    );
+  it("scrolls the view's own scroll container to the position", () => {
+    const view = viewIn(mockEditorContent, vi.fn(() => ({ top: 300, left: 100, bottom: 320 })));
 
-    scrollToPosition(mockView, 10);
+    scrollToPosition(view, 10);
 
-    expect(mockView.coordsAtPos).toHaveBeenCalledWith(10);
+    expect(view.coordsAtPos).toHaveBeenCalledWith(10);
+    expect(view.dom.closest).toHaveBeenCalledWith(".editor-content");
     expect(mockEditorContent.scrollTo).toHaveBeenCalledWith({
       // 300 - 50 + 200 - 100 = 350
       top: 350,
-      behavior: "smooth",
+      behavior: scrollBehavior(),
     });
   });
 
   it("does nothing when coordsAtPos returns null-like", () => {
-    const mockView = {
-      coordsAtPos: vi.fn(() => null),
-    } as unknown as import("@tiptap/pm/view").EditorView;
+    const view = viewIn(mockEditorContent, vi.fn(() => null));
 
-    vi.spyOn(document, "querySelector").mockReturnValue(
-      mockEditorContent as unknown as Element
-    );
-
-    scrollToPosition(mockView, 10);
+    scrollToPosition(view, 10);
     expect(mockEditorContent.scrollTo).not.toHaveBeenCalled();
   });
 
-  it("does nothing when editor-content element is not found", () => {
-    const mockView = {
-      coordsAtPos: vi.fn(() => ({ top: 300 })),
-    } as unknown as import("@tiptap/pm/view").EditorView;
+  it("does nothing for a position past the end of the document", () => {
+    const coordsAtPos = vi.fn(() => ({ top: 300 }));
+    scrollToPosition(viewIn(mockEditorContent, coordsAtPos), 500);
+    expect(coordsAtPos).not.toHaveBeenCalled();
+    expect(mockEditorContent.scrollTo).not.toHaveBeenCalled();
+  });
 
-    vi.spyOn(document, "querySelector").mockReturnValue(null);
-
+  it("does nothing when the view is not inside an editor-content element", () => {
     // Should not throw
-    scrollToPosition(mockView, 10);
+    scrollToPosition(viewIn(null, vi.fn(() => ({ top: 300 }))), 10);
   });
 });
 

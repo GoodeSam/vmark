@@ -11,9 +11,12 @@
  *   - Click handler wraps Selection.near/domAtPos in try/catch — positions
  *     can be stale between the render and click event
  *   - update() guards node.type.name to reject non-toc node replacements
+ *   - Scrolls through settledScroll: on large documents content-visibility
+ *     moves the heading while a smooth scroll is in flight (#1458)
  *
  * @coordinates-with tiptap.ts — registers this NodeView for the `toc` node
  * @coordinates-with headingSlug.ts — extracts headings with stable IDs
+ * @coordinates-with utils/settledScroll.ts — lands the heading despite content-visibility
  * @module plugins/tableOfContents/TocNodeView
  */
 
@@ -23,7 +26,7 @@ import { Selection } from "@tiptap/pm/state";
 import type { EditorView, NodeView } from "@tiptap/pm/view";
 import { extractHeadingsWithIds, type HeadingWithId } from "@/utils/headingSlug";
 import { tocLog, tocWarn } from "@/utils/debug";
-import { scrollBehavior } from "@/utils/motion";
+import { scrollToSettled } from "@/utils/settledScroll";
 
 class TocNodeViewImpl implements NodeView {
   dom: HTMLElement;
@@ -152,14 +155,17 @@ class TocNodeViewImpl implements NodeView {
       return;
     }
 
-    // Scroll the heading DOM element into view
+    // Scroll the heading to the top of the editor's scroll container
     try {
       const domNode = this.view.domAtPos(pos + 1);
-      if (domNode?.node) {
-        const el = domNode.node instanceof HTMLElement
-          ? domNode.node
-          : domNode.node.parentElement;
-        el?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+      const el = domNode?.node instanceof HTMLElement ? domNode.node : domNode?.node.parentElement;
+      const scroller = this.view.dom.closest<HTMLElement>(".editor-content");
+      if (el && scroller) {
+        scrollToSettled(
+          scroller,
+          () => (el.isConnected ? el.getBoundingClientRect().top - scroller.getBoundingClientRect().top : null),
+          this.view.dom,
+        );
       }
     } catch {
       // domAtPos can throw for stale positions — selection already moved, scroll is best-effort
