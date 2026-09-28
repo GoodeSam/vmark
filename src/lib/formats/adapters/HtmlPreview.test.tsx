@@ -544,3 +544,22 @@ describe("switching documents in the same pane", () => {
     );
   });
 });
+
+describe("diagnostics are not echoed as a bare-coordinate strip", () => {
+  // The preview always renders HTML, so a diagnostic here is never "cannot
+  // render". The source pane's validation list already shows each one with
+  // its message, severity and a jump; the preview used to add a red "(6:1)"
+  // strip with neither — for a WARNING, under a "scripts enabled" banner.
+  it("renders no coordinate-only strip for a diagnostic", () => {
+    render(
+      <HtmlPreview
+        content={SCRIPTED}
+        liveContent={SCRIPTED}
+        path={PATH}
+        diagnostics={[{ severity: "warning", line: 6, column: 1, message: "Script tag detected", ruleId: "html/script-blocked" }]}
+      />,
+    );
+    expect(screen.queryByText("(6:1)")).toBeNull();
+    expect(document.querySelector(".html-preview__hint")).toBeNull();
+  });
+});

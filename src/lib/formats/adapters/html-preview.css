@@ -25,6 +25,18 @@
 /* Trust bar (#1273). Sits above the frame in both modes so the security state
  * of the preview is never something the user has to go looking for. */
 
+/* The sandboxed-preview notice sits directly above the trust bar and reads as
+ * its first line: same surface, ink and type. It had no styles at all, so it
+ * rendered as body text flush against the pane divider. */
+.html-preview__sign-off-pending {
+  flex: 0 0 auto;
+  padding: var(--space-1) var(--space-2) 0;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+}
+
 .html-preview__trust {
   flex: 0 0 auto;
   display: flex;
@@ -81,16 +93,6 @@
   width: 100%;
   margin: 0;
   color: var(--error-color);
-}
-
-.html-preview__hint {
-  flex: 0 0 auto;
-  padding: var(--space-1) var(--space-2);
-  background: var(--error-bg);
-  color: var(--error-color);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  border-bottom: var(--border-thin) solid var(--border-color);
 }
 
 .html-preview__iframe {
