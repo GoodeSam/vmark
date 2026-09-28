@@ -140,9 +140,13 @@ function leavesFrame(tag: HtmlTag, baseTarget: string | null): boolean {
   return target !== "" && target.toLowerCase() !== "_self";
 }
 
-/** The rule ids a document's tags produce, with the offset each belongs at. */
-function findings(content: string, depth: number): { ruleId: HtmlRuleId; offset: number }[] {
-  const out: { ruleId: HtmlRuleId; offset: number }[] = [];
+/**
+ * Emit a document's findings IN DOCUMENT ORDER: tags arrive in order, and each
+ * tag's findings are emitted at the tag, then per attribute in source order —
+ * so nothing needs sorting afterwards. `srcdoc` findings are emitted at the
+ * attribute (its document is its own), to a bounded depth.
+ */
+function findings(content: string, depth: number, emit: (ruleId: HtmlRuleId, offset: number) => void): void {
   const tags = scanHtmlTags(content);
   // The first document <base> CARRYING a target attribute wins, even an empty one.
   const base = tags.find((t) => t.name === "base" && t.namespace === "html" && !t.inTemplate && t.attrs.some((a) => a.name === "target"));
@@ -156,60 +160,56 @@ function findings(content: string, depth: number): { ruleId: HtmlRuleId; offset:
         // trusted CSP allows no script URL, so it never loads.
         const fileAttrs = tag.namespace === "html" ? ["src"] : ["href", "xlink:href"];
         const external = tag.attrs.some((a) => fileAttrs.includes(a.name));
-        out.push({ ruleId: external ? "html/script-external" : "html/script-blocked", offset: tag.offset });
+        emit(external ? "html/script-external" : "html/script-blocked", tag.offset);
       }
     }
-    for (const attr of tag.attrs) {
-      if (isEventHandler(tag, attr.name)) out.push({ ruleId: "html/inline-handler", offset: attr.offset });
-    }
     const link = linkUrl(tag);
-    if (link && isJavascriptUrl(link.value)) {
-      out.push({ ruleId: leavesFrame(tag, baseTarget) ? "html/javascript-url-navigation" : "html/javascript-url", offset: link.offset });
-    }
-    // An iframe's srcdoc is a document of its own: its findings are reported
-    // at the attribute, and the nesting is bounded.
-    if (tag.name === "iframe" && tag.namespace === "html" && depth < SRCDOC_DEPTH) {
-      const srcdoc = tag.attrs.find((a) => a.name === "srcdoc");
-      if (srcdoc?.value && srcdoc.value.length <= SRCDOC_MAX_LENGTH) {
-        for (const inner of findings(srcdoc.value, depth + 1)) out.push({ ruleId: inner.ruleId, offset: srcdoc.offset });
+    const linkRunsJavascript = link !== null && isJavascriptUrl(link.value);
+    const srcdocDepth = tag.name === "iframe" && tag.namespace === "html" && depth < SRCDOC_DEPTH;
+    for (const attr of tag.attrs) {
+      if (isEventHandler(tag, attr.name)) emit("html/inline-handler", attr.offset);
+      if (linkRunsJavascript && attr.offset === link.offset) {
+        emit(leavesFrame(tag, baseTarget) ? "html/javascript-url-navigation" : "html/javascript-url", attr.offset);
+      }
+      if (srcdocDepth && attr.name === "srcdoc" && attr.value && attr.value.length <= SRCDOC_MAX_LENGTH) {
+        findings(attr.value, depth + 1, (ruleId) => emit(ruleId, attr.offset));
       }
     }
   }
-  return out;
 }
 
 /**
- * Offset → 1-based line/column, over the whole source.
+ * Offset → 1-based line/column, for offsets that only move forward.
  *
  * The validator scans the complete document rather than line by line, because
  * splitting first defeats every pattern that may span a newline and forces
- * every column to be reported as 1. Line starts are computed once and binary
- * searched, so the scan stays linear in the document rather than quadratic.
+ * every column to be reported as 1. Findings arrive in document order, so one
+ * cursor walks the line starts once: linear overall.
  */
 function positionResolver(content: string) {
-  const lineStarts = [0];
-  for (let i = 0; i < content.length; i++) {
-    if (content[i] === "\n") lineStarts.push(i + 1);
-  }
+  let line = 1;
+  let lineStart = 0;
+  let scanned = 0;
   return (offset: number) => {
-    let lo = 0;
-    let hi = lineStarts.length - 1;
-    while (lo < hi) {
-      const mid = Math.ceil((lo + hi) / 2);
-      if (lineStarts[mid] <= offset) lo = mid;
-      else hi = mid - 1;
+    for (; scanned < offset; scanned += 1) {
+      if (content.charCodeAt(scanned) === 10) {
+        line += 1;
+        lineStart = scanned + 1;
+      }
     }
-    return { line: lo + 1, column: offset - lineStarts[lo] + 1 };
+    return { line, column: offset - lineStart + 1 };
   };
 }
 
 export const htmlValidator: Validator = (content) => {
   if (content.length === 0) return [];
   const at = positionResolver(content);
-  return findings(content, 0)
-    // Document order, so the gutter reads top to bottom rather than grouped by rule.
-    .sort((a, b) => a.offset - b.offset)
-    .map(({ ruleId, offset }) => ({ severity: "warning" as const, ...at(offset), message: HTML_RULES[ruleId], ruleId }));
+  const out: ReturnType<Validator> = [];
+  findings(content, 0, (ruleId, offset) => {
+    const { line, column } = at(offset);
+    out.push({ severity: "warning", line, column, message: HTML_RULES[ruleId], ruleId });
+  });
+  return out;
 };
 
 export const htmlFormat: FormatConfig = {

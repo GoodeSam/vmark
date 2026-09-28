@@ -88,6 +88,9 @@ export function scanHtmlTags(html: string): HtmlTag[] {
   const n = html.length;
   const out: HtmlTag[] = [];
   const stack: OpenElement[] = [];
+  /** How many of each name are open: an end tag for a name that is not open
+   *  (common in misnested markup) costs nothing instead of a stack search. */
+  const openCount = new Map<string, number>();
   let templates = 0;
 
   /** The namespace a child of the current element parses in. */
@@ -98,7 +101,9 @@ export function scanHtmlTags(html: string): HtmlTag[] {
   const popTo = (length: number) => {
     while (stack.length > length) {
       const gone = stack.pop();
-      if (gone?.name === "template" && gone.namespace === "html") templates -= 1;
+      if (!gone) break;
+      openCount.set(gone.name, (openCount.get(gone.name) ?? 1) - 1);
+      if (gone.name === "template" && gone.namespace === "html") templates -= 1;
     }
   };
   /** Index just past `needle` at or after `from`, or end of input. */
@@ -194,7 +199,7 @@ export function scanHtmlTags(html: string): HtmlTag[] {
       let j = lt + 2;
       while (j < n && !isNameEnd(html[j])) j += 1;
       const name = lower.slice(lt + 2, j);
-      for (let k = stack.length - 1; k >= Math.max(0, stack.length - STACK_SEARCH); k -= 1) {
+      for (let k = (openCount.get(name) ?? 0) > 0 ? stack.length - 1 : -1; k >= Math.max(0, stack.length - STACK_SEARCH); k -= 1) {
         if (stack[k].name === name) {
           popTo(k);
           break;
@@ -246,6 +251,7 @@ export function scanHtmlTags(html: string): HtmlTag[] {
       (namespace === "svg" && SVG_HTML_POINTS.has(name)) ||
       (namespace === "math" && (MATH_HTML_POINTS.has(name) || (name === "annotation-xml" && (encoding === "text/html" || encoding === "application/xhtml+xml"))));
     stack.push({ name, namespace, integration });
+    openCount.set(name, (openCount.get(name) ?? 0) + 1);
     if (name === "template" && namespace === "html") templates += 1;
   }
   return out;

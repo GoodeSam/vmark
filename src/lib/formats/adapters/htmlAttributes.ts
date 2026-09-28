@@ -52,7 +52,9 @@ export function decodeReferences(value: string): string {
 export function parseAttributes(html: string, lower: string, from: number) {
   const n = html.length;
   const attrs: HtmlAttribute[] = [];
-  const seen = new Set<string>();
+  // Duplicate detection: a direct scan while the list is short (most tags),
+  // a Set only past that — one Set per tag was most of the scanner's garbage.
+  let seen: Set<string> | null = null;
   let selfClosing = false;
   let j = from;
   while (j < n) {
@@ -87,8 +89,10 @@ export function parseAttributes(html: string, lower: string, from: number) {
         j = k;
       }
     }
-    if (!seen.has(name)) {
-      seen.add(name);
+    if (attrs.length === 8) seen = new Set(attrs.map((a) => a.name));
+    const duplicate = seen ? seen.has(name) : attrs.some((a) => a.name === name);
+    if (!duplicate) {
+      seen?.add(name);
       attrs.push({ name, value: value === null ? null : decodeReferences(value), offset: nameStart });
     }
   }
