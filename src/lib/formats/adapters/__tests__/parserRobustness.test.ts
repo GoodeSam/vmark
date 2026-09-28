@@ -42,11 +42,6 @@ const here = dirname(fileURLToPath(import.meta.url));
  * diagnostic on these — known parser-lib strictness, not adapter bugs.
  */
 const TOML_VALID_REJECTED: ReadonlySet<string> = new Set([
-  // smol-toml does not strip a UTF-8 BOM. VMark's editor ingress
-  // canonicalizes text (BOM-free) before validators run, so the case
-  // cannot occur through the app's own read path.
-  "valid/utf8-bom-01.toml",
-  "valid/utf8-bom-02.toml",
   // 64-bit integer edge: values around i64 bounds exceed JS safe-integer
   // precision and smol-toml refuses rather than silently rounding.
   "valid/integer/long.toml",
@@ -64,8 +59,7 @@ const TOML_INVALID_ACCEPTED: ReadonlySet<string> = new Set([
   "invalid/local-datetime/feb-29.toml",
   "invalid/local-datetime/feb-30.toml",
   // TOML 1.1-style leniency accepted by smol-toml: seconds optional,
-  // newlines/trailing comma in inline tables, control chars relaxed,
-  // extra string byte escapes.
+  // newlines/trailing comma in inline tables, extra string byte escapes.
   "invalid/datetime/no-secs.toml",
   "invalid/local-datetime/no-secs.toml",
   "invalid/local-time/no-secs.toml",
@@ -74,10 +68,6 @@ const TOML_INVALID_ACCEPTED: ReadonlySet<string> = new Set([
   "invalid/inline-table/linebreak-03.toml",
   "invalid/inline-table/linebreak-04.toml",
   "invalid/inline-table/trailing-comma.toml",
-  "invalid/control/linetab-number-01.toml",
-  "invalid/control/linetab-number-02.toml",
-  "invalid/control/linetab-number-03.toml",
-  "invalid/control/linetab-number-04.toml",
   "invalid/string/basic-byte-escapes.toml",
   "invalid/encoding/bad-codepoint.toml",
   // Byte-level invalid-UTF-8 cases cannot be represented as a JS string:
