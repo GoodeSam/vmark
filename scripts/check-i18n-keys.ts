@@ -916,10 +916,15 @@ export function fragmentUsageFindings(
     if (ts.isJsxFragment(e)) return e.children.some(meaningful);
     return true;
   };
+  // An intrinsic element (`<span>`, `<b/>`) is company only if it holds some;
+  // a component's output is unknown, so it counts.
+  const isIntrinsic = (tag: ts.JsxTagNameExpression) => ts.isIdentifier(tag) && /^[a-z]/.test(tag.text);
   const meaningful = (child: ts.JsxChild): boolean => {
     if (ts.isJsxText(child)) return child.text.trim() !== "";
     if (ts.isJsxExpression(child)) return child.expression ? rendersSomething(child.expression) : false;
     if (ts.isJsxFragment(child)) return child.children.some(meaningful);
+    if (ts.isJsxSelfClosingElement(child)) return !isIntrinsic(child.tagName);
+    if (ts.isJsxElement(child)) return !isIntrinsic(child.openingElement.tagName) || child.children.some(meaningful);
     return true;
   };
   const contains = (outer: ts.Node, inner: ts.Node) => outer.pos <= inner.pos && inner.end <= outer.end;

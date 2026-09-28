@@ -312,3 +312,20 @@ describe("fragmentSiteFindings — a fragment is used only where it is registere
     ]);
   });
 });
+
+describe("Codex fifth pass — fragments", () => {
+  const fragments = { "editor.json:preview.errorAt": "suffix" };
+  const probe = (jsx: string) => fragmentUsageFindings("a.tsx", `export const A = () => ${jsx};`, fragments);
+
+  it.each([[`<div><span>{null}</span>{t("preview.errorAt")}</div>`], [`<div><span /><b></b>{t("preview.errorAt")}</div>`]])(
+    "an empty wrapper element is no company: %s",
+    (jsx) => {
+      expect(probe(jsx)).toEqual(["a.tsx: preview.errorAt rendered alone"]);
+    },
+  );
+
+  it("a wrapper element holding text is company", () => {
+    expect(probe(`<div><span>Cannot render</span> {t("preview.errorAt")}</div>`)).toEqual([]);
+  });
+
+});
