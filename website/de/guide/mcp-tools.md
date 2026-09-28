@@ -133,6 +133,8 @@ Einen **Ordner** als aktiven Arbeitsbereich öffnen. Anders als `open` (eine ein
 
 **Freigabeablauf.** Der erste Aufruf gibt `{needsApproval: true}` zurück und blendet einen Zustimmungsdialog ein, der den *kanonischen* Ordnerpfad nennt (Symlinks aufgelöst). Der Assistent sollte den Benutzer fragen und dann **denselben Aufruf wiederholen**; sobald der Benutzer zustimmt, öffnet die Wiederholung den Ordner. Eine abgelehnte Anfrage schlägt weiter fehl, bis sie erneut freigegeben wird. Es gibt keine „Merken"-Option — jedes Öffnen wird einzeln freigegeben.
 
+**Ordnerzugriff.** Die Bestätigung im Dialog allein erlaubt VMark nicht, einen Ordner außerhalb der immer lesbaren Orte (Ihr Benutzerordner und eingebundene Laufwerke) zu lesen. Für einen solchen Ordner öffnet der bestätigte erneute Aufruf die Ordnerauswahl von VMark bei diesem Ordner und antwortet mit `APPROVAL_REQUIRED` — der Benutzer muss ihn dort auswählen; danach öffnet der nächste Aufruf ihn. Ist bereits ein anderer Ordnerdialog offen, wird nichts angezeigt und die Antwort lautet `BUSY` — die Bestätigung bleibt erhalten, also erneut versuchen, sobald der Benutzer diesen Dialog geschlossen hat. `BUSY` kommt auch, solange in diesem Fenster bereits ein Arbeitsbereichswechsel läuft.
+
 ### `save`
 
 Einen Tab unter seinem bestehenden Pfad speichern.
@@ -549,7 +551,8 @@ Es treten zwei Fehlerformen auf:
 | `INVALID_PATCH` | Hülle | `workflow.apply_patch` hat ein fehlerhaftes `patches`-Array erhalten |
 | `INVALID_TAB` | Hülle | `tabId` konnte nicht aufgelöst werden |
 | `INVALID_PATH` | Hülle | Ein `filePath` konnte nicht gelesen werden oder liegt außerhalb des Geltungsbereichs des offenen Arbeitsbereichs / Dokuments |
-| `APPROVAL_REQUIRED` | Hülle | `save_as` an einen neuen Ort, während **Änderungen automatisch genehmigen** aus ist |
+| `APPROVAL_REQUIRED` | Hülle | `save_as` an einen neuen Ort, während **Speichern an neuem Ort und Genie-Ergebnisse automatisch genehmigen** aus ist; oder `open_workspace` wartet auf die Bestätigung des Benutzers oder darauf, dass er den Ordner im Ordnerdialog von VMark auswählt |
+| `BUSY` | Hülle | `open_workspace` konnte nicht fortfahren: Ein anderer Ordnerdialog ist offen oder in diesem Fenster läuft ein Arbeitsbereichswechsel; die Bestätigung bleibt erhalten — erneut versuchen |
 | `NOT_WORKFLOW` | Hülle | `workflow.*` wurde auf einem Tab aufgerufen, der kein YAML-Workflow ist |
 | `READ_ONLY` | Hülle | Eine Mutation wurde auf einem schreibgeschützten Dokument versucht |
 | `NO_EDITOR` | Hülle | `selection.*` wurde aufgerufen, aber der fokussierte Tab hat keinen aktiven Editor |

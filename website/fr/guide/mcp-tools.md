@@ -149,6 +149,8 @@ même appel**&nbsp;; une fois que l'utilisateur approuve, le nouvel essai ouvre 
 Une requête refusée continue d'échouer jusqu'à ce qu'elle soit ré-approuvée. Il n'y a pas
 d'option «&nbsp;se souvenir&nbsp;» — chaque ouverture est approuvée individuellement.
 
+**Accès aux dossiers.** Approuver la boîte de dialogue ne suffit pas pour que VMark lise un dossier situé hors des emplacements qu'il peut toujours lire (votre dossier personnel et les volumes montés). Pour un tel dossier, la nouvelle tentative approuvée ouvre le sélecteur de dossiers de VMark sur ce dossier et répond `APPROVAL_REQUIRED`, en demandant à l'utilisateur de le choisir ; ensuite, la tentative suivante l'ouvre. Si une autre boîte de dialogue de dossier est déjà ouverte, rien n'est affiché et la réponse est `BUSY` — l'approbation est conservée, réessayez donc une fois cette boîte fermée. `BUSY` est aussi la réponse tant qu'un changement d'espace de travail est déjà en cours dans cette fenêtre.
+
 ### `save`
 
 Enregistrer un onglet vers son chemin existant.
@@ -740,7 +742,8 @@ Deux formes d'erreurs apparaissent&nbsp;:
 | `INVALID_PATCH` | enveloppe | `workflow.apply_patch` a reçu un tableau `patches` malformé |
 | `INVALID_TAB` | enveloppe | `tabId` n'a pas pu être résolu |
 | `INVALID_PATH` | enveloppe | Un `filePath` n'a pas pu être lu, ou se trouve hors de la portée de l'espace de travail ouvert / des documents |
-| `APPROVAL_REQUIRED` | enveloppe | `save_as` vers un nouvel emplacement alors que **Approuver automatiquement les modifications** est désactivé |
+| `APPROVAL_REQUIRED` | enveloppe | `save_as` vers un nouvel emplacement alors que **Approuver automatiquement les enregistrements vers un nouvel emplacement et les résultats des génies** est désactivé ; ou `open_workspace` attend l'approbation de l'utilisateur, ou qu'il choisisse le dossier dans le sélecteur de dossiers de VMark |
+| `BUSY` | enveloppe | `open_workspace` n'a pas pu continuer : une autre boîte de dialogue de dossier est ouverte, ou un changement d'espace de travail est en cours dans cette fenêtre ; l'approbation est conservée — réessayez |
 | `NOT_WORKFLOW` | enveloppe | `workflow.*` a été appelé sur un onglet non-YAML-workflow |
 | `READ_ONLY` | enveloppe | Une mutation a été tentée sur un document en lecture seule |
 | `NO_EDITOR` | enveloppe | `selection.*` a été appelé mais l'onglet focalisé n'a pas d'éditeur actif |
