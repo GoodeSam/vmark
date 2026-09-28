@@ -589,6 +589,11 @@ describe("Codex fourth pass — C12 and C9 probes", () => {
 });
 
 describe("Codex fifth pass — C9 probes", () => {
+  it("background: a sanctioned :is() alternative exempts only itself", () => {
+    const r = run({ "a.css": `:is(.row[aria-selected="true"], .menu-item:hover) { background: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([`a.css::is(.row[aria-selected="true"], .menu-item:hover)`]);
+  });
+
   it("background: a semantic token only as a var() fallback exempts nothing", () => {
     const r = run({ "a.css": `.row[aria-selected="true"] { background: var(--accent-primary, var(--error-color)); }` });
     expect(ids(r, "C9")).toEqual([`a.css:.row[aria-selected="true"]`]);

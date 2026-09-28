@@ -370,15 +370,25 @@ export function checkStateVocabulary(css, file, { problems }) {
     // Each selector in a list is judged on its own, with the same selected-
     // state reading as the ink half: BEM `--active`, ARIA and data-* states.
     for (const selector of splitSelectorList(rule.selector)) {
-      if (/::(before|after)/.test(selector)) continue; // indicators, not fills
-      const isHover = /:hover/.test(selector);
-      const isActivePseudo = /:active\b/.test(selector);
-      const isSelected = isSelectedSelector(selector);
-      if (!isHover && !isActivePseudo && !isSelected) continue;
-      if (SANCTIONED.some((re) => re.test(selector))) continue;
-      const vocab = isSelected ? SELECTED_VOCAB : isHover ? HOVER_VOCAB : ACTIVE_VOCAB;
-      if (vocab.some((t) => value.includes(`var(${t}`) || value.includes(`var(${t})`))) continue;
-      if (HOVER_VOCAB.concat(ACTIVE_VOCAB, SELECTED_VOCAB).some((t) => value.includes(t)) && !isSelected) continue;
+      // Each alternative of `:is()`/`:where()` is judged on its own: a
+      // sanctioned `.menu-item:hover` alternative exempts only itself, never a
+      // selected row grouped beside it.
+      const offending = expandMatches(selector)
+        .map((alt) => {
+          if (/::(before|after)/.test(alt)) return null; // indicators, not fills
+          const isHover = /:hover/.test(alt);
+          const isActivePseudo = /:active\b/.test(alt);
+          const isSelected = isSelectedSelector(alt);
+          if (!isHover && !isActivePseudo && !isSelected) return null;
+          if (SANCTIONED.some((re) => re.test(alt))) return null;
+          const vocab = isSelected ? SELECTED_VOCAB : isHover ? HOVER_VOCAB : ACTIVE_VOCAB;
+          if (vocab.some((t) => value.includes(`var(${t}`) || value.includes(`var(${t})`))) return null;
+          if (HOVER_VOCAB.concat(ACTIVE_VOCAB, SELECTED_VOCAB).some((t) => value.includes(t)) && !isSelected) return null;
+          return { isHover, isSelected };
+        })
+        .find(Boolean);
+      if (!offending) continue;
+      const { isHover, isSelected } = offending;
       if (!markers) {
         const parsed = uiOkMarkers(rule.rawBody);
         problems.push(...parsed.problems.map((p) => `${file}:${rule.selector}: ${p}`));
