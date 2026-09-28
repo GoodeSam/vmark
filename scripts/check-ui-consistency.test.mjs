@@ -553,6 +553,19 @@ describe("Codex fourth pass — C12 and C9 probes", () => {
     expect(ids(r, "C12")).toEqual(["a.css:.pane"]);
   });
 
+  it.each([
+    [`.pane { position: absolute; z-index: var(--z-toolbar) !important; }`],
+    [`.pane { position: absolute !important; position: static; z-index: var(--z-toolbar); }`],
+    [`.pane { position: absolute !important; z-index: var(--z-toolbar); } .pane { position: static; }`],
+  ])("C12: !important wins the cascade — floats: %s", (css) => {
+    expect(ids(run({ "a.css": css }), "C12")).toEqual(["a.css:.pane"]);
+  });
+
+  it("C12: an important static position keeps the element in flow", () => {
+    const r = run({ "a.css": `.pane { position: static !important; position: absolute; z-index: var(--z-toolbar); }` });
+    expect(ids(r, "C12")).toEqual([]);
+  });
+
   it("C12: scales on a stylesheet of many @media rules", () => {
     const css = Array.from(
       { length: 1600 },

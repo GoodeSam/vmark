@@ -381,8 +381,8 @@ const OVERLAY_FAMILY =
  * Judged PER SELECTOR, with `position` and `z-index` resolved through the
  * cascade of every rule in the file that names that selector: an overlay
  * neighbour in a selector list exempts nothing, splitting the two
- * declarations into separate rules does not hide the pair, and source order
- * and enclosing at-rules decide which declaration applies.
+ * declarations into separate rules does not hide the pair, and source order,
+ * `!important` and enclosing at-rules decide which declaration applies.
  * `calc(var(--z-x) ± n)` resolves.
  *
  * Known limitations — static text cannot settle these; rule 32's WebKit
@@ -405,8 +405,9 @@ export function checkFloatingOverContent(css, file, tokens, { problems }) {
     const path = contextAt(rule.index);
     if (path.some((p) => /^@(-\w+-)?keyframes\b/.test(p))) continue; // animation steps, not boxes
     const decls = [...rule.body.matchAll(/(?:^|[;{\s])(position|z-index)\s*:\s*([^;}]+)/g)].map((m) => {
-      const value = m[2].trim();
-      return { prop: m[1], value: m[1] === "z-index" ? resolveZ(value, tokens) : value };
+      const important = /!\s*important\s*$/i.test(m[2]);
+      const value = m[2].replace(/!\s*important\s*$/i, "").trim();
+      return { prop: m[1], important, value: m[1] === "z-index" ? resolveZ(value, tokens) : value };
     });
     if (decls.length === 0) continue;
     const { markers, problems: mp } = uiOkMarkers(rule.rawBody);
@@ -423,7 +424,8 @@ export function checkFloatingOverContent(css, file, tokens, { problems }) {
   for (const [selector, { line, events }] of bySelector) {
     if (OVERLAY_FAMILY.test(selector) || floatOk.has(selector)) continue;
     // The cascade, per context: in source order, apply every declaration whose
-    // context is this one or an ancestor of it. A later unconditional reset
+    // context is this one or an ancestor of it; an !important declaration
+    // beats a normal one whatever the order. A later unconditional reset
     // therefore overrides an earlier @media rule, and a nested @supports
     // z-index composes with its @media's position. Only this selector's own
     // contexts need evaluating: the contexts enclosing any point form one
@@ -433,6 +435,8 @@ export function checkFloatingOverContent(css, file, tokens, { problems }) {
       const st = {};
       for (const e of events) {
         if (!applies(e.key, target)) continue;
+        const current = st[e.prop];
+        if (current && current.important && !e.important) continue;
         st[e.prop] = e;
       }
       const position = st.position?.value;
