@@ -49,7 +49,10 @@ current state — `.active`, BEM `--active`, `[aria-checked|pressed|current|sele
 — may not colour its label with `--accent-primary`/`--primary-color`; accent goes
 on the fill and on icons/indicators. Exemptions: `ui-ok(<check>): <reason>`
 (reason required; `ui-ok(state)` for icon-only controls whose glyph IS the
-indicator, `ui-ok(float)` below). The baseline ratchets down only.
+indicator, or a checkbox box / switch track whose surface is; `ui-ok(float)`
+below). The background half reads the same state spellings; a semantic fill
+(`--error-*`, `--warning-*`, `--success-*`) is judged by its value. The baseline
+ratchets down only.
 
 ## Layout
 
@@ -81,6 +84,8 @@ indicator, `ui-ok(float)` below). The baseline ratchets down only.
   inside `EditorContainer`; position is computed from the selection.
 - Popup inputs: borderless, transparent, 12px, `--font-ui` (`--font-mono` for
   URLs/paths), focus = caret only (declared per rule 33).
+- Menu items (context menus, `.vm-menu`) hover with the platform idiom: the
+  accent fill (`--primary-color`) with a `--contrast-text` label.
 - Popup/toolbar icon buttons: transparent, `--hover-bg` on hover,
   `opacity: 0.4` disabled, focus = flat 2px bar (rule 33), 14px icons in
   popups, 18px in the toolbar. Cursor: `var(--cursor-interactive, default)`.

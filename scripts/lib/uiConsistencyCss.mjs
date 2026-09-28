@@ -208,14 +208,18 @@ export function checkTargets(css, file, tokens, { problems }) {
 const HOVER_VOCAB = ["--hover-bg", "--hover-bg-strong", "--bg-tertiary", "--subtle-bg", "--subtle-bg-hover"];
 const ACTIVE_VOCAB = ["--hover-bg-strong", "--accent-bg"];
 const SELECTED_VOCAB = ["--accent-bg"];
-/** Selector families rule 32 sanctions, with their citation. */
+/** Selector families whose state fills are sanctioned elsewhere, with where. */
 const SANCTIONED = [
-  /context-menu|-menu__item|menu-item/, // rule 32: context-menu items use --primary-color
-  /::-webkit-scrollbar/, // rule 32: scrollbar thumb
-  /resize-handle|divider/, // rule 32: resize handles
-  /danger|-error|delete/, // semantic danger states
+  /context-menu|-menu__item|menu-item/, // rule 32 "Popups": a hovered menu item takes the accent fill
+  /::-webkit-scrollbar/, // rule 32 "Other patterns": scrollbar thumb colours
+  /resize-handle|divider/, // resize handles light up on drag, not a selection
   /\.vm-btn|\.popup-icon-btn|\.universal-toolbar-btn|\.toolbar-btn/, // canonical controls own their states
 ];
+/**
+ * Semantic fills are judged by VALUE: a danger/success state may take its
+ * token. (A selector that merely SAYS "error" once exempted any fill at all.)
+ */
+const SEMANTIC_FILL = /var\(\s*--(?:error|danger|warning|success)[-\w]*/;
 
 /**
  * A selected / checked / pressed / current state, in every spelling the
@@ -252,6 +256,12 @@ function splitSelectorList(selector) {
   return out;
 }
 
+/** A selector in a selected state — `:not(...)` and explicit false excluded. */
+function isSelectedSelector(selector) {
+  // A state inside :not(...) is the OPPOSITE of a selection.
+  return SELECTED_STATE.test(selector.replace(/:not\((?:[^()]|\([^()]*\))*\)/g, ""));
+}
+
 /** The last compound of a selector — the element the rule actually styles. */
 function targetCompound(selector) {
   const parts = selector.split(/\s+|\s*[>+~]\s*/).filter(Boolean);
@@ -261,10 +271,11 @@ function targetCompound(selector) {
 /**
  * C9 (ink) — a selected label keeps --text-color (rule 30, R6).
  *
- * The background half below reads only `background`, and its selected-state
- * pattern knew `.active`/`.selected` but not BEM modifiers or ARIA states — so
- * `color: var(--accent-primary)` on a selected TEXT label passed everywhere,
- * including the canonical `.vm-chip--toggle`. Each selector in a list is
+ * The background half reads only `background`, so `color:
+ * var(--accent-primary)` on a selected TEXT label passed everywhere, including
+ * the canonical `.vm-chip--toggle`. Both halves read selection through
+ * `isSelectedSelector` — BEM modifiers, ARIA and data-* states, `:not()` and
+ * explicit false excluded — which the background half once lacked. Each selector in a list is
  * judged on its own; indicator words are read from its TARGET compound only
  * (an ancestor named `.list-check` does not make `.row.active` an icon).
  * Icon-only controls, whose glyph IS the indicator, say so with
@@ -278,10 +289,7 @@ function checkSelectionInk(css, file, { problems }) {
     problems.push(...mp.map((p) => `${file}:${rule.selector}: ${p}`));
     if (markers.has("state")) continue;
     for (const selector of splitSelectorList(rule.selector)) {
-      // A state inside :not(...) is the OPPOSITE of a selection.
-      const positive = selector.replace(/:not\((?:[^()]|\([^()]*\))*\)/g, "");
-      if (/:(hover|focus)/.test(positive) && !SELECTED_STATE.test(positive.replace(/:(hover|focus[-a-z]*)/g, ""))) continue;
-      if (!SELECTED_STATE.test(positive)) continue;
+      if (!isSelectedSelector(selector)) continue;
       if (INDICATOR_TARGET.test(targetCompound(selector)) || /::?(before|after)\b/.test(selector)) continue;
       findings.push({
         check: "C9",
@@ -314,37 +322,43 @@ export function checkStateVocabulary(css, file, { problems }) {
     });
   }
   for (const rule of rulesWithMarkers(css)) {
-    if (/::(before|after)/.test(rule.selector)) continue; // indicators, not fills
-    const isHover = /:hover/.test(rule.selector);
-    const isActivePseudo = /:active\b/.test(rule.selector);
-    const isSelected = /\.(selected|active|is-selected|is-active)\b|\[data-active[\]=]|\[aria-selected/.test(
-      rule.selector,
-    );
-    if (!isHover && !isActivePseudo && !isSelected) continue;
-    if (SANCTIONED.some((re) => re.test(rule.selector))) continue;
     const bg = /(?:^|[;{])\s*background(?:-color)?\s*:\s*([^;}]+)/.exec(rule.body);
     if (!bg) continue;
     const value = bg[1].trim();
-    if (/^(transparent|none|inherit|unset|initial)$/.test(value)) continue;
-    const vocab = isSelected ? SELECTED_VOCAB : isHover ? HOVER_VOCAB : ACTIVE_VOCAB;
-    if (vocab.some((t) => value.includes(`var(${t}`) || value.includes(`var(${t})`))) continue;
-    if (HOVER_VOCAB.concat(ACTIVE_VOCAB, SELECTED_VOCAB).some((t) => value.includes(t)) && !isSelected) continue;
-    const { markers, problems: mp } = uiOkMarkers(rule.rawBody);
-    problems.push(...mp.map((p) => `${file}:${rule.selector}: ${p}`));
-    if (markers.has("state")) continue;
-    const id = `${file}:${rule.selector}`;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    const want = isSelected
-      ? "selected rows use var(--accent-bg) (+ color var(--text-color))"
-      : isHover
-        ? "hover uses --hover-bg/--hover-bg-strong/--bg-tertiary/--subtle-bg"
-        : ":active uses --hover-bg-strong";
-    findings.push({
-      check: "C9",
-      id,
-      message: `${file}:${rule.line} ${rule.selector} background: ${value} — ${want} (rule 30/32), or ui-ok(state): <reason>.`,
-    });
+    if (/^(transparent|none|inherit|unset|initial)$/.test(value) || SEMANTIC_FILL.test(value)) continue;
+    let markers = null;
+    // Each selector in a list is judged on its own, with the same selected-
+    // state reading as the ink half: BEM `--active`, ARIA and data-* states.
+    for (const selector of splitSelectorList(rule.selector)) {
+      if (/::(before|after)/.test(selector)) continue; // indicators, not fills
+      const isHover = /:hover/.test(selector);
+      const isActivePseudo = /:active\b/.test(selector);
+      const isSelected = isSelectedSelector(selector);
+      if (!isHover && !isActivePseudo && !isSelected) continue;
+      if (SANCTIONED.some((re) => re.test(selector))) continue;
+      const vocab = isSelected ? SELECTED_VOCAB : isHover ? HOVER_VOCAB : ACTIVE_VOCAB;
+      if (vocab.some((t) => value.includes(`var(${t}`) || value.includes(`var(${t})`))) continue;
+      if (HOVER_VOCAB.concat(ACTIVE_VOCAB, SELECTED_VOCAB).some((t) => value.includes(t)) && !isSelected) continue;
+      if (!markers) {
+        const parsed = uiOkMarkers(rule.rawBody);
+        problems.push(...parsed.problems.map((p) => `${file}:${rule.selector}: ${p}`));
+        markers = parsed.markers;
+      }
+      if (markers.has("state")) break;
+      const id = `${file}:${selector}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const want = isSelected
+        ? "selected rows use var(--accent-bg) (+ color var(--text-color))"
+        : isHover
+          ? "hover uses --hover-bg/--hover-bg-strong/--bg-tertiary/--subtle-bg"
+          : ":active uses --hover-bg-strong";
+      findings.push({
+        check: "C9",
+        id,
+        message: `${file}:${rule.line} ${selector} background: ${value} — ${want} (rule 30/32), or ui-ok(state): <reason>.`,
+      });
+    }
   }
   return findings;
 }

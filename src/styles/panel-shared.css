@@ -90,6 +90,7 @@
 }
 
 .vm-switch[aria-checked="true"] {
+  /* ui-ok(state): the switch track IS the indicator, not a selected row */
   background: var(--accent-primary);
 }
 

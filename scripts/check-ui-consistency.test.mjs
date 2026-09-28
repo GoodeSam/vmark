@@ -154,6 +154,35 @@ describe("C9 — state vocabulary", () => {
     });
     expect(ids(card, "C9")).toEqual([]);
   });
+
+  it("reads every selected-state spelling the ink half reads (BEM, ARIA, data-*)", () => {
+    const r = run({
+      "a.css": `.toggle__btn--active { background: var(--accent-primary); }
+        .chip[aria-pressed="true"] { background: var(--hover-bg); }
+        .pin[aria-checked="true"] { background: var(--subtle-bg); }`,
+    });
+    expect(ids(r, "C9")).toEqual([
+      "a.css:.toggle__btn--active",
+      'a.css:.chip[aria-pressed="true"]',
+      'a.css:.pin[aria-checked="true"]',
+    ]);
+  });
+
+  it("does not read a state inside :not() or an explicit false as a selection", () => {
+    const r = run({
+      "a.css": `.row:not(.active):hover { background: var(--hover-bg); }
+        .row[aria-selected="false"]:hover { background: var(--hover-bg); }`,
+    });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("exempts a semantic danger fill by its VALUE, not by a selector that says error", () => {
+    const r = run({
+      "a.css": `.delete-row:hover { background: var(--error-bg); }
+        .row-error.active { background: var(--accent-primary); }`,
+    });
+    expect(ids(r, "C9")).toEqual(["a.css:.row-error.active"]);
+  });
 });
 
 describe("C9 — selection keeps its ink (R6)", () => {
