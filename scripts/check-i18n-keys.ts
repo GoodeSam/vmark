@@ -897,6 +897,14 @@ function matchFragment(raw: string, refs: readonly { ns: string; key: string }[]
  * `{null}`, `{false}`, `{undefined}` and comments render nothing and are no
  * company; a `<>` fragment is transparent; an attribute value is its own
  * context.
+ *
+ * Known limitation — reachability needs types. `a || b` / `a ?? b` render `a`
+ * when it is truthy / non-nullish and `b` otherwise, and which happens depends
+ * on `a`'s type. Syntax cannot know it, so the left side counts only when it
+ * DEFINITELY renders, and a fallback that renders counts even when the types
+ * make it unreachable (`flag ?? <span>text</span>`, dead code a type-aware
+ * `no-unnecessary-condition` would catch). The backstop is exact:
+ * `fragmentSiteFindings` pins every use to a registered file.
  */
 export function fragmentUsageFindings(
   rel: string,
