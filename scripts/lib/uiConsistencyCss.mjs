@@ -226,7 +226,7 @@ const SANCTIONED = [
  */
 const SELECTION_WORD = "selected|active|checked|current|pressed";
 const SELECTED_STATE = new RegExp(
-  `\\.(?:is-)?(?:${SELECTION_WORD})\\b(?!-)|--(?:${SELECTION_WORD}|on)\\b|\\[data-(?:active|selected|checked|pinned)(?:\\]|=(?!["']?false))|\\[aria-(?:selected|checked|pressed|current)(?:\\]|=(?!["']?false))|:checked\\b`,
+  `\\.(?:is-)?(?:${SELECTION_WORD})\\b(?!-)|--(?:${SELECTION_WORD}|on)\\b|\\[data-(?:active|selected|checked|pinned)\\s*(?:\\]|=\\s*(?!["']?false))|\\[aria-(?:selected|checked|pressed|current)\\s*(?:\\]|=\\s*(?!["']?false))|:checked\\b`,
 );
 /** Accent inks a selected LABEL must not take (R6: selection keeps its ink). */
 const ACCENT_INK = /(?:^|[;{\s])color\s*:\s*var\(\s*(--accent-primary|--primary-color|--browser-accent-primary)\b/;
@@ -278,8 +278,10 @@ function checkSelectionInk(css, file, { problems }) {
     problems.push(...mp.map((p) => `${file}:${rule.selector}: ${p}`));
     if (markers.has("state")) continue;
     for (const selector of splitSelectorList(rule.selector)) {
-      if (/:(hover|focus)/.test(selector) && !SELECTED_STATE.test(selector.replace(/:(hover|focus[-a-z]*)/g, ""))) continue;
-      if (!SELECTED_STATE.test(selector)) continue;
+      // A state inside :not(...) is the OPPOSITE of a selection.
+      const positive = selector.replace(/:not\((?:[^()]|\([^()]*\))*\)/g, "");
+      if (/:(hover|focus)/.test(positive) && !SELECTED_STATE.test(positive.replace(/:(hover|focus[-a-z]*)/g, ""))) continue;
+      if (!SELECTED_STATE.test(positive)) continue;
       if (INDICATOR_TARGET.test(targetCompound(selector)) || /::?(before|after)\b/.test(selector)) continue;
       findings.push({
         check: "C9",
@@ -369,34 +371,73 @@ const OVERLAY_FAMILY =
  */
 export function checkFloatingOverContent(css, file, tokens, { problems }) {
   const barLayer = resolveNumeric("var(--z-bar)", tokens) ?? 100;
-  /** selector -> { positioned, layer, line, floatOk } merged across the file. */
+  const contextAt = atRuleContexts(css);
+  /** selector -> { base: state, contexts: Map<prelude, state>, line, floatOk } */
   const bySelector = new Map();
   for (const rule of rulesWithMarkers(css)) {
-    const positioned = /(?:^|[;{\s])position\s*:\s*(absolute|fixed)\b/.test(rule.body);
+    const position = /(?:^|[;{\s])position\s*:\s*([a-z-]+)/.exec(rule.body)?.[1] ?? null;
     const z = /(?:^|[;{\s])z-index\s*:\s*([^;}]+)/.exec(rule.body);
-    if (!positioned && !z) continue;
+    if (position === null && !z) continue;
     const { markers, problems: mp } = uiOkMarkers(rule.rawBody);
     problems.push(...mp.map((p) => `${file}:${rule.selector}: ${p}`));
-    const layer = z ? resolveZ(z[1], tokens) : null;
+    const layer = z ? resolveZ(z[1], tokens) : undefined;
+    const context = contextAt(rule.index);
     for (const selector of splitSelectorList(rule.selector)) {
-      const entry = bySelector.get(selector) ?? { positioned: false, layer: null, line: rule.line, floatOk: false };
-      entry.positioned ||= positioned;
-      if (layer !== null) entry.layer = layer;
+      const entry = bySelector.get(selector) ?? { base: {}, contexts: new Map(), line: rule.line, floatOk: false };
+      const state = context === "" ? entry.base : entry.contexts.get(context) ?? {};
+      // The LAST declaration in a context is the one that applies.
+      if (position !== null) state.position = position;
+      if (layer !== undefined) state.layer = layer;
+      if (context !== "") entry.contexts.set(context, state);
       entry.floatOk ||= markers.has("float");
       bySelector.set(selector, entry);
     }
   }
+  const covers = (s) => (s.position === "absolute" || s.position === "fixed") && s.layer != null && s.layer >= barLayer;
   const findings = [];
   for (const [selector, e] of bySelector) {
-    if (!e.positioned || e.layer === null || e.layer < barLayer) continue;
     if (OVERLAY_FAMILY.test(selector) || e.floatOk) continue;
+    // The base rule applies everywhere; each @media/@supports context applies
+    // the base PLUS its own overrides. Any context in which it covers counts.
+    const effective = [e.base, ...[...e.contexts.values()].map((c) => ({ ...e.base, ...c }))];
+    const hit = effective.find(covers);
+    if (!hit) continue;
     findings.push({
       check: "C12",
       id: `${file}:${selector}`,
-      message: `${file}:${e.line} ${selector}: positioned at z-index ${e.layer} (>= --z-bar) — it can cover content. Put it in flow (a header row, a docked slot), or mark ui-ok(float): <why it may cover content> (rule 32).`,
+      message: `${file}:${e.line} ${selector}: positioned at z-index ${hit.layer} (>= --z-bar) — it can cover content. Put it in flow (a header row, a docked slot), or mark ui-ok(float): <why it may cover content> (rule 32).`,
     });
   }
   return findings;
+}
+
+/**
+ * index -> enclosing at-rule preludes ("" at top level), by brace matching on
+ * the comment-blanked text. cssRules reads flat text, so a rule inside
+ * `@media` comes back with the same selector as the base rule; C12 must not
+ * merge the two.
+ */
+function atRuleContexts(css) {
+  const text = css.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "));
+  const ranges = [];
+  const stack = [];
+  let segmentStart = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch === "{") {
+      const prelude = text.slice(segmentStart, i).trim();
+      stack.push({ prelude: prelude.startsWith("@") ? prelude.replace(/\s+/g, " ") : null, start: i });
+      segmentStart = i + 1;
+    } else if (ch === "}") {
+      const open = stack.pop();
+      if (open && open.prelude) ranges.push({ start: open.start, end: i, prelude: open.prelude });
+      segmentStart = i + 1;
+    } else if (ch === ";") {
+      segmentStart = i + 1;
+    }
+  }
+  return (index) =>
+    ranges.filter((r) => r.start < index && index < r.end).map((r) => r.prelude).join(" > ");
 }
 
 /** A z-index value to a number: a literal, a token, or calc(token ± n). */

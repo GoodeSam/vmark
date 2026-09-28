@@ -229,6 +229,17 @@ describe("C9 — selection keeps its ink (R6)", () => {
     expect(ids(r, "C9")).toEqual(["a.css:.list-check .row.active (ink)"]);
   });
 
+  // Codex second pass on #1465.
+  it("does not read a negated state as a selection", () => {
+    const r = run({ "a.css": `.row:not(.active) { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("reads an attribute state written with spaces around '='", () => {
+    const r = run({ "a.css": `.row[aria-selected = "true"] { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([`a.css:.row[aria-selected = "true"] (ink)`]);
+  });
+
   it("is not fooled by whitespace inside var()", () => {
     const r = run({ "a.css": `.row.active { color: var( --accent-primary ); }` });
     expect(ids(r, "C9")).toEqual(["a.css:.row.active (ink)"]);
@@ -272,6 +283,31 @@ describe("C12 — nothing floats over content without a stated reason", () => {
 
   it("resolves calc() around a z token", () => {
     const r = run({ "a.css": `.pane__toggle { position: absolute; z-index: calc(var(--z-toolbar) + 1); }` });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane__toggle"]);
+  });
+
+  // Codex second pass on #1465: contexts are not interchangeable, and the
+  // LAST declaration in a context is the one that applies.
+  it("keeps @media contexts apart: a wide-screen overlay is flagged even if narrow screens reset it", () => {
+    const r = run({
+      "a.css": `.pane { position: absolute; z-index: var(--z-toolbar); }
+        @media (max-width: 600px) { .pane { position: static; z-index: 1; } }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane"]);
+  });
+
+  it("uses the effective declaration: a later position: static wins", () => {
+    const r = run({
+      "a.css": `.pane { position: absolute; }
+        .pane { position: static; z-index: var(--z-toolbar); }`,
+    });
+    expect(ids(r, "C12")).toEqual([]);
+  });
+
+  it("flags an overlay that exists only inside an @media block", () => {
+    const r = run({
+      "a.css": `@media (min-width: 900px) { .pane__toggle { position: absolute; z-index: var(--z-toolbar); } }`,
+    });
     expect(ids(r, "C12")).toEqual(["a.css:.pane__toggle"]);
   });
 
