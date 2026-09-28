@@ -36,6 +36,17 @@ export function declaredValue(body, prop) {
   return found;
 }
 
+/**
+ * Braces inside quoted strings blanked, LENGTH-PRESERVING: `content: "}"` or
+ * `--label: "{"` would otherwise end or open a rule for the brace grammar.
+ * Used to FIND rules; the text handed back is sliced from the unblanked input.
+ */
+function blankStringBraces(css) {
+  // An unterminated string (no closing quote before the line ends) is left
+  // alone, as a browser's tokenizer ends it at the newline.
+  return css.replace(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, (str) => str.replace(/[{}]/g, " "));
+}
+
 /** 1-based line number of `index` within `text`. */
 export function lineOf(text, index) {
   return text.slice(0, index).split("\n").length;
@@ -48,15 +59,18 @@ export function lineOf(text, index) {
  */
 export function* cssRules(css) {
   const blanked = blankComments(css);
-  for (const m of blanked.matchAll(CSS_RULE_RE)) {
-    const rawSelector = m[1];
+  // Rules are FOUND on a copy with in-string braces blanked, and their text
+  // SLICED from `blanked`, so a string value reaches callers unaltered.
+  for (const m of blankStringBraces(blanked).matchAll(CSS_RULE_RE)) {
+    const rawSelector = blanked.slice(m.index, m.index + m[1].length);
     const offset = rawSelector.search(/\S/);
     const index = m.index + (offset === -1 ? 0 : offset);
+    const bodyIndex = m.index + m[1].length + 1;
     yield {
       selector: rawSelector.replace(/\s+/g, " ").trim(),
-      body: m[2],
+      body: blanked.slice(bodyIndex, bodyIndex + m[2].length),
       index,
-      bodyIndex: m.index + rawSelector.length + 1,
+      bodyIndex,
       line: lineOf(css, index),
     };
   }

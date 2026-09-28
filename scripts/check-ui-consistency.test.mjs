@@ -546,3 +546,10 @@ describe("focusPaintedClasses (C10's CSS half)", () => {
     expect(covered.has("b")).toBe(true);
   });
 });
+
+describe("Codex fourth pass — C12 and C9 probes", () => {
+  it("C12: a quoted brace inside the floating rule does not end it", () => {
+    const r = run({ "a.css": `.pane { --label: "}"; position: absolute; z-index: var(--z-toolbar); }` });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane"]);
+  });
+});
