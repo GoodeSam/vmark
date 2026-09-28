@@ -23,7 +23,7 @@
   "preview.cannotRender": "無法算繪預覽 — 請修正語法錯誤",
   "preview.errorAt": "({{line}}:{{column}})",
   "preview.workflowParseFailed": "工作流程解析失敗 — 請修正語法錯誤",
-  "preview.signOffPending": "HTML 預覽已沙箱化,但仍在等待 OWASP 審核簽署(WI-3.4)。",
+  "preview.signOffPending": "HTML 預覽已沙箱化。其安全審查仍在進行中。",
   "preview.htmlIframeTitle": "HTML 預覽",
   "preview.htmlTrustSafe": "安全預覽 — 指令碼已被封鎖",
   "preview.htmlTrustEnable": "啟用受信任預覽…",

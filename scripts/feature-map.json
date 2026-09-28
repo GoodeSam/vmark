@@ -1075,12 +1075,14 @@
         "src/services/commands/formatCommands.ts",
         "src-tauri/src/external_editor.rs",
         "src/utils/fileSizeThresholds.ts",
+        "src/utils/jsonErrorOffset.ts",
         "src-tauri/src/supported_files.test.rs",
         "src/pages/settings/FormatsSettings.test.tsx",
         "src/hooks/useFormatsUpgradeNudge.test.ts",
         "src/services/commands/formatCommands.test.ts",
         "src-tauri/src/external_editor.test.rs",
-        "src/utils/fileSizeThresholds.test.ts"
+        "src/utils/fileSizeThresholds.test.ts",
+        "src/utils/jsonErrorOffset.test.ts"
       ],
       "flag": "formats.dataFormats",
       "flagDefault": false,

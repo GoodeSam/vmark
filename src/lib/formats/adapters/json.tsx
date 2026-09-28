@@ -29,6 +29,7 @@ import type {
   Validator,
 } from "../types";
 import { errorMessage } from "@/utils/errorMessage";
+import { jsonErrorOffset } from "@/utils/jsonErrorOffset";
 
 function isJsonlPath(filePath?: string): boolean {
   return Boolean(filePath?.toLowerCase().endsWith(".jsonl"));
@@ -41,40 +42,25 @@ interface JsonParseError {
 }
 
 /**
- * Best-effort JSON parse-error → line/column extraction. JSON.parse
- * throws SyntaxError with messages that carry position info on V8,
- * Spider­Monkey, JSC. We parse the canonical "at position N" /
- * "(line N column M)" forms; otherwise fall back to line 1 col 1.
+ * JSON parse error → line/column/message, the same on every engine.
+ *
+ * The location comes from `jsonErrorOffset`, never from the engine's message:
+ * V8 appends "at position N", but JavaScriptCore — VMark's engine on macOS and
+ * Linux — reports no position at all, so reading the message put every
+ * production error at 1:1 while every Node-run test passed. JavaScriptCore
+ * also opens with "JSON Parse error:", which the "JSON: {{message}}" template
+ * would repeat, so that prefix is dropped.
  */
 function locateParseError(content: string, error: unknown): JsonParseError {
-  const message =
-    errorMessage(error);
-  // V8 form 1 (Node 22+): "... at position 23 (line 2 column 8)"
-  const lcMatch = message.match(/line\s+(\d+)\s+column\s+(\d+)/i);
-  if (lcMatch) {
-    return {
-      line: parseInt(lcMatch[1], 10),
-      column: parseInt(lcMatch[2], 10),
-      message,
-    };
-  }
-  // V8 form 2 (older Node): "... at position 23"
-  const posMatch = message.match(/position\s+(\d+)/i);
-  if (posMatch) {
-    const pos = parseInt(posMatch[1], 10);
-    let line = 1;
-    let column = 1;
-    for (let i = 0; i < pos && i < content.length; i++) {
-      if (content[i] === "\n") {
-        line++;
-        column = 1;
-      } else {
-        column++;
-      }
-    }
-    return { line, column, message };
-  }
-  return { line: 1, column: 1, message };
+  const message = errorMessage(error).replace(/^JSON Parse error:\s*/i, "");
+  const offset = jsonErrorOffset(content) ?? 0;
+  const before = content.slice(0, offset);
+  const lastNewline = before.lastIndexOf("\n");
+  return {
+    line: before.split("\n").length,
+    column: offset - lastNewline,
+    message,
+  };
 }
 
 /** JSON / JSONL validator. Returns one diagnostic per parse error. */
@@ -88,13 +74,12 @@ export const jsonValidator: Validator = (content, path) => {
       try {
         JSON.parse(raw);
       } catch (error) {
-        const message =
-          errorMessage(error);
+        const loc = locateParseError(raw, error);
         out.push({
           severity: "error",
           line: i + 1,
-          column: 1,
-          message,
+          column: loc.column,
+          message: loc.message,
           ruleId: "json/syntax",
         });
       }

@@ -29,7 +29,7 @@ Parsing is not the bottleneck — it is ProseMirror's view construction. Moving 
 
 ## Settings
 
-Open **Settings → Editor → Large files**:
+Open **Settings → Editor → Large Files**:
 
 - **Open files over 1 MB in Source mode automatically** *(on by default)* — turn off if you prefer WYSIWYG for files up to 5 MB, accepting the longer open time.
 - **Warn before opening files over 5 MB** *(on by default)* — turn off to skip the confirmation dialog for files between 5 MB and 50 MB. They will still open in Source mode.

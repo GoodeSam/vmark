@@ -43,15 +43,34 @@ them rather than copying CSS from here.
 `pnpm lint:ui-consistency` checks CSS and JSX: type scale (C3), overlay shells
 compose `.popup-container`/`.vm-overlay__panel`/`.vm-menu` (C4), `--font-sans`
 only under document selectors (C5), icon sizes (C7), ≥24px hit targets (C8),
-state vocabulary (C9), visible focus (C10), bar-height/z-index literals (C11).
-Exemptions: `ui-ok(<check>): <reason>` (reason required). The baseline ratchets
-down only.
+state vocabulary (C9), visible focus (C10), bar-height/z-index literals (C11),
+floating over content (C12). C9 also reads INK: a selected, checked, pressed or
+current state — `.active`, BEM `--active`, `[aria-checked|pressed|current|selected]`
+— may not colour its label with `--accent-primary`/`--primary-color`; accent goes
+on the fill and on icons/indicators. Exemptions: `ui-ok(<check>): <reason>`
+(reason required; `ui-ok(state)` for icon-only controls whose glyph IS the
+indicator, or a checkbox box / switch track whose surface is; `ui-ok(float)`
+below). The background half reads the same state spellings; a semantic fill
+(`--error-*`, `--warning-*`, `--success-*`) is judged by its value. The baseline
+ratchets down only.
 
 ## Layout
 
 - Full-height side panels dock in-flow via `EditorArea`'s `sidePanel` or
   `panel` slot; never `position: fixed` over the editor. Fixed is for small,
   transient cards, menus and modals.
+- A control that belongs to a pane goes in the pane's chrome, IN FLOW (a header
+  row, a docked slot) — never `position: absolute` over the pane's content. The
+  split-pane mode toggle floated over the panes and lay across the HTML trust
+  bar, the read-only banner and source text. C12 flags any positioned element at
+  or above `--z-bar` outside the overlay families; the legitimate ones (layer
+  owners in the z-table below, a control over a pannable canvas, transient drag
+  feedback) carry `ui-ok(float): <why it may cover content>`.
+- Overlap is geometry, and static lint cannot prove its absence: chrome that
+  shares a surface gets a `*.webkit.test.ts` asserting bounding boxes and
+  `elementFromPoint` in a real engine, rendering the PRODUCTION component — not
+  a hand-built copy of its DOM, which drifts (`SplitPaneFrame` +
+  `SplitPaneEditor/splitPaneLayout.webkit.test.tsx`).
 - New surfaces are mounted by editing App.tsx's `<AppShell>`; `lint:shell-slots`
   holds the identity list. Bundle related surfaces behind one mount
   (`CoherenceOverlays.tsx`) rather than appending names.
@@ -65,6 +84,8 @@ down only.
   inside `EditorContainer`; position is computed from the selection.
 - Popup inputs: borderless, transparent, 12px, `--font-ui` (`--font-mono` for
   URLs/paths), focus = caret only (declared per rule 33).
+- Menu items (context menus, `.vm-menu`) hover with the platform idiom: the
+  accent fill (`--primary-color`) with a `--contrast-text` label.
 - Popup/toolbar icon buttons: transparent, `--hover-bg` on hover,
   `opacity: 0.4` disabled, focus = flat 2px bar (rule 33), 14px icons in
   popups, 18px in the toolbar. Cursor: `var(--cursor-interactive, default)`.

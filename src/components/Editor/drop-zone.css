@@ -4,6 +4,7 @@
  */
 
 .drop-zone-indicator {
+  /* ui-ok(float): transient drag feedback — shown only while a file is dragged over the editor */
   position: absolute;
   inset: var(--space-2);
   z-index: var(--z-bar);

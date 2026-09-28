@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { globSync } from "node:fs";
+import { globSync, statSync } from "node:fs";
 
 const indexCss = readFileSync("src/styles/index.css", "utf8");
 
@@ -37,6 +37,7 @@ describe("global reduced-motion collapse (D9)", () => {
 
   it("no CSS file outside the resting-state allowlist declares its own block", () => {
     const offenders = globSync("src/**/*.css")
+      .filter((f) => statSync(f).isFile()) // a glob also matches directories
       .filter((f) => !ALLOWLIST.includes(f))
       .filter((f) => /@media\s*\(prefers-reduced-motion/.test(readFileSync(f, "utf8")));
     expect(offenders).toEqual([]);

@@ -53,9 +53,10 @@
    it is real 11–12px text, so it needs 4.5:1, and several rail colours do not
    reach that against the sidebar (e.g. --success-color is ~3.3:1 on white).
    The workspace colour lives on the decorative indicator, which carries no
-   information by itself. */
+   information by itself. That token is --text-color: selection keeps its ink
+   (rule 30, R6), the fill and the bar below mark the state. */
 .workspace-rail__item[aria-pressed="true"] {
-  color: var(--accent-primary);
+  color: var(--text-color);
   background: var(--accent-bg);
 }
 

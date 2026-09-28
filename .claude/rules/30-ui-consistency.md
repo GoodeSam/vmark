@@ -6,7 +6,10 @@ paths:
 
 # 30 - UI Consistency
 
-> See detailed specs in `dev-docs/design-system.md`.
+> The tracked `.claude/rules/3*.md` files are AUTHORITATIVE. `dev-docs/design-system.md`
+> is maintainer-local (gitignored) background; where it disagrees with a rule
+> here, the rule wins and the spec is the bug (its "toggled-on" row once
+> prescribed accent ink, contradicting R6 below).
 
 ## Core Principles
 

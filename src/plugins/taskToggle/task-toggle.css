@@ -61,6 +61,7 @@
 }
 
 .tiptap-editor .task-list-item input[type="checkbox"]:checked {
+  /* ui-ok(state): the checkbox box IS the indicator, not a selected row */
   background: var(--primary-color);
   border-color: var(--primary-color);
 }

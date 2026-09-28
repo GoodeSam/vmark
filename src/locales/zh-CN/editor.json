@@ -23,7 +23,7 @@
   "preview.cannotRender": "无法渲染预览 — 请修复语法错误",
   "preview.errorAt": "({{line}}:{{column}})",
   "preview.workflowParseFailed": "工作流解析失败 — 请修复语法错误",
-  "preview.signOffPending": "HTML 预览已沙盒化,但仍在等待 OWASP 审核签署(WI-3.4)。",
+  "preview.signOffPending": "HTML 预览已沙盒化。其安全审查仍在进行中。",
   "preview.htmlIframeTitle": "HTML 预览",
   "preview.htmlTrustSafe": "安全预览 — 脚本已被阻止",
   "preview.htmlTrustEnable": "启用受信任预览…",

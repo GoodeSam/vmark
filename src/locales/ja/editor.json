@@ -23,7 +23,7 @@
   "preview.cannotRender": "プレビューを表示できません — 構文エラーを修正してください",
   "preview.errorAt": "({{line}}:{{column}})",
   "preview.workflowParseFailed": "ワークフローの解析に失敗しました — 構文エラーを修正してください",
-  "preview.signOffPending": "HTML プレビューはサンドボックス化されていますが、OWASP の承認待ちです (WI-3.4)。",
+  "preview.signOffPending": "HTML プレビューはサンドボックス化されています。セキュリティ審査はまだ完了していません。",
   "preview.htmlIframeTitle": "HTML プレビュー",
   "preview.htmlTrustSafe": "安全なプレビュー — スクリプトはブロックされています",
   "preview.htmlTrustEnable": "信頼済みプレビューを有効にする…",

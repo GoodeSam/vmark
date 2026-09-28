@@ -72,7 +72,7 @@
 
 .source-peek-live-toggle.active {
   background: var(--accent-bg);
-  color: var(--accent-primary);
+  color: var(--accent-primary); /* ui-ok(state): icon-only toggle (eye) — the icon is the indicator */
 }
 
 .source-peek-live-toggle.active .icon-eye {

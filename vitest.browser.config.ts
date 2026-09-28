@@ -26,6 +26,13 @@ export default defineConfig({
       instances: [{ browser: "webkit" }],
     },
   },
+  // Pre-bundle what the tier imports so Vite never discovers a dependency
+  // mid-run: a discovery triggers a full reload, which emptied the DOM between
+  // render and measurement on a cold cache (the React-rendered geometry test,
+  // splitPaneLayout.webkit.test.tsx). CI always starts cold.
+  optimizeDeps: {
+    include: ["react", "react-dom", "react-dom/client", "react/jsx-dev-runtime", "react-i18next"],
+  },
   resolve: {
     alias: sourceAliases(import.meta.dirname),
   },

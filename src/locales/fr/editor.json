@@ -23,7 +23,7 @@
   "preview.cannotRender": "Impossible d'afficher l'aperçu — corrigez les erreurs de syntaxe",
   "preview.errorAt": "({{line}}:{{column}})",
   "preview.workflowParseFailed": "Échec de l'analyse du workflow — corrigez les erreurs de syntaxe",
-  "preview.signOffPending": "L'aperçu HTML est isolé mais en attente de validation OWASP (WI-3.4).",
+  "preview.signOffPending": "L'aperçu HTML est isolé. Son examen de sécurité est encore en cours.",
   "preview.htmlIframeTitle": "Aperçu HTML",
   "preview.htmlTrustSafe": "Aperçu sécurisé — les scripts sont bloqués",
   "preview.htmlTrustEnable": "Activer l’aperçu approuvé…",

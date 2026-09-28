@@ -11,6 +11,7 @@
  */
 
 .universal-toolbar {
+  /* ui-ok(float): layer owner — rule 32 z-table (Toolbar, 102) */
   --universal-toolbar-height: var(--bar-height);
 
   position: absolute;

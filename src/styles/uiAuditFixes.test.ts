@@ -52,8 +52,8 @@ describe("ui audit fixes (20260901)", () => {
   });
 
   it("WI-UA6: no uppercase label speaks a tracking other than --letter-spacing-caps", async () => {
-    const { globSync } = await import("node:fs");
-    const files = globSync("src/**/*.css");
+    const { globSync, statSync } = await import("node:fs");
+    const files = globSync("src/**/*.css").filter((f) => statSync(f).isFile()); // a glob also matches directories
     expect(files.length).toBeGreaterThan(50);
     for (const file of files) {
       const css = read(file);

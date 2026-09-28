@@ -717,10 +717,17 @@ function checkDialogLiterals(): boolean {
 // entry is removed (run with --update-copy to record wins). English only:
 // each locale has its own casing conventions.
 
-const TITLE_KEY = /^(menu|contextMenu|tabMenu|toolbar)\.|\.title$|[bB]utton/;
+// `*.group` / `*.group.<name>` are settings section headings — 19 of them
+// were Title Case and three were not, because this register did not list them.
+const TITLE_KEY = /^(menu|contextMenu|tabMenu|toolbar)\.|\.title$|[bB]utton|\.group(\.[A-Za-z]+)?$/;
 // ARIA labels are SPOKEN copy — sentence register regardless of their home key.
 const ARIA_KEY = /aria/i;
-const SENTENCE_KEY = /\.(label|description|empty|placeholder)$|^toast\./;
+const SENTENCE_KEY = /\.(label|description|empty|placeholder)$|Description$|^toast\./;
+
+/** Whether a key's value is a chrome noun, written in Title Case (rule 35). */
+export function titleRegister(key: string): boolean {
+  return TITLE_KEY.test(key) && !SENTENCE_KEY.test(key) && !ARIA_KEY.test(key);
+}
 const STOP_WORDS = new Set([
   "a", "an", "the", "and", "or", "nor", "but", "of", "to", "in", "on", "at",
   "for", "with", "as", "by", "from", "into", "onto", "per", "via", "vs",
@@ -735,9 +742,431 @@ export function titleCaseViolations(value: string): boolean {
   if (words.length === 0) return false;
   return words.some((w, i) => {
     if (/^[A-Z0-9]/.test(w)) return false;
+    // A lowercase start with an internal capital is a brand's own spelling
+    // (macOS, iCloud, iPhone), never an uncapitalised word.
+    if (/^[a-z]+[A-Z]/.test(w)) return false;
     if (i > 0 && STOP_WORDS.has(w.toLowerCase())) return false;
     return true;
   });
+}
+
+/**
+ * Internal identifiers that must never reach a user (rule 35).
+ *
+ * "HTML preview is sandboxed but pending OWASP sign-off (WI-3.4)." shipped in
+ * ten languages, beside an issue number in a shortcut description and a
+ * design-decision id in a tooltip: process notes and cross-references written
+ * for maintainers. Zero tolerance, no baseline — an identifier in copy is
+ * never right, so there is nothing to grandfather. Decision ids are matched by
+ * their prefixes (C, D, G, H, R, W) only: a generic "(A4)" is a paper size.
+ */
+const INTERNAL_REFERENCE_PATTERNS: readonly (readonly [string, RegExp])[] = [
+  ["WI-", /\bWI-[A-Z0-9]/],
+  ["ADR-", /\bADR-?\d/],
+  // Two or more digits: "#1" is a heading marker, "#12"/"#1081" an issue.
+  ["issue-ref", /(?<![\w&])#\d{2,}\b/],
+  // ASCII OR full-width parentheses — CJK copy writes "（D4）".
+  ["decision-id", /[(（][CDGHRW]\d{1,2}(?:\.\d+)?[)）]/],
+  ["OWASP", /\bOWASP\b/],
+  ["TODO", /\b(?:TODO|FIXME|TBD|XXX)\b/],
+  // Any hyphen, including the non-breaking U+2011, or none.
+  ["sign-off", /\bsign[\s\-\u2010\u2011\u2013]?off\b/i],
+];
+
+/** A reviewed legitimate match: the exact token that is fine, and why. */
+export interface ReferenceException {
+  token: string;
+  reason: string;
+}
+
+/**
+ * Reviewed legitimate matches, keyed `<en file>:<key>`. A token alone cannot
+ * tell "(C4)" the envelope from "(C4)" the decision id, or "#123" the colour
+ * from the issue — this is where the reviewed answer lives. The exemption
+ * covers ONLY the approved token (in every locale of that key); anything else
+ * in the string is still caught. An entry whose token has left the English
+ * value is stale and fails: an exception cannot outlive its reason.
+ */
+export const INTERNAL_REFERENCE_EXCEPTIONS: Readonly<Record<string, ReferenceException>> = {};
+
+/** Findings in `value` once the approved exception token is removed. */
+export function referenceFindingsExcept(value: string, exception: ReferenceException | undefined): string[] {
+  return internalReferenceFindings(exception ? value.split(exception.token).join(" ") : value);
+}
+
+/** Exception ids whose key is gone or whose token no longer appears in English. */
+export function staleReferenceExceptions(
+  enValues: Readonly<Record<string, string>>,
+  exceptions: Readonly<Record<string, ReferenceException>>,
+): string[] {
+  return Object.entries(exceptions)
+    .filter(([id, e]) => !(id in enValues) || !enValues[id].includes(e.token))
+    .map(([id]) => id);
+}
+
+/** The internal-reference patterns `value` contains, in pattern order. */
+export function internalReferenceFindings(value: string): string[] {
+  return INTERNAL_REFERENCE_PATTERNS.filter(([, re]) => re.test(value)).map(([name]) => name);
+}
+
+/**
+ * Strings that are only placeholders and punctuation — "({{line}}:{{column}})"
+ * — are FRAGMENTS: correct appended to a sentence, meaningless alone (it
+ * rendered as a red "(6:1)" strip). Each must be registered with where it is
+ * meant to appear, so using one alone is a decision someone wrote down.
+ */
+export interface FragmentRegistration {
+  /** Where the fragment is meant to appear. */
+  readonly where: string;
+  /** Every source file allowed to use it — each use is a reviewed decision. */
+  readonly files: readonly string[];
+}
+
+export const REGISTERED_FRAGMENTS: Readonly<Record<string, FragmentRegistration>> = {
+  "editor.json:preview.errorAt": {
+    where: "suffix after preview.cannotRender / preview.workflowParseFailed",
+    files: [
+      "src/lib/formats/adapters/cargoToml.tsx",
+      "src/lib/formats/adapters/json.tsx",
+      "src/lib/formats/adapters/mermaid.tsx",
+      "src/lib/formats/adapters/packageJson.tsx",
+      "src/lib/formats/adapters/pyprojectToml.tsx",
+      "src/lib/formats/adapters/svg.tsx",
+      "src/lib/formats/adapters/toml.tsx",
+      "src/lib/formats/adapters/yaml.tsx",
+      "src/lib/formats/adapters/yamlWorkflowRenderer.tsx",
+    ],
+  },
+  "statusbar.json:terminal.search.results": {
+    where: "match counter beside the terminal search field",
+    files: ["src/components/Terminal/TerminalSearchBar.tsx"],
+  },
+  "dialog.json:exportError.listItem": {
+    where: "the language's quote marks around one entry of an export-error list",
+    files: ["src/export/exportErrorMessages.ts"],
+  },
+};
+
+/** Keys of `values` that are wordless placeholder strings not in `fragments`. */
+export function standaloneTextFindings(
+  values: Readonly<Record<string, string>>,
+  fragments: Readonly<Record<string, unknown>>,
+): string[] {
+  return Object.entries(values)
+    .filter(([key, value]) => {
+      if (!value.includes("{{") || key in fragments) return false;
+      return !/\p{L}/u.test(value.replace(/\{\{[^}]*\}\}/g, ""));
+    })
+    .map(([key]) => key);
+}
+
+/** Inline wrappers a fragment may sit in and still belong to its sentence. */
+const INLINE_TAGS = new Set([
+  ...["span", "strong", "em", "b", "i", "u", "s", "code", "small", "mark", "bdi", "bdo"],
+  ...["a", "abbr", "cite", "q", "sub", "sup", "time", "label"],
+]);
+
+/** JSX attributes whose value is never displayed. */
+const NON_DISPLAY_ATTRIBUTE = /^(?:data-|key$|id$|className$|style$|ref$|htmlFor$|name$|type$|role$|tabIndex$|testid$)/;
+
+/** `{ns, key}` of a registered fragment id `editor.json:preview.errorAt`. */
+function fragmentRefs(fragments: Readonly<Record<string, unknown>>) {
+  return Object.keys(fragments).map((id) => {
+    const [file, key] = id.split(/:(.*)/s);
+    return { ns: file.replace(/\.json$/, ""), key };
+  });
+}
+
+/** The fragment a string key names, honouring an explicit `ns:` prefix. */
+function matchFragment(raw: string, refs: readonly { ns: string; key: string }[]) {
+  const colon = raw.indexOf(":");
+  const ns = colon === -1 ? null : raw.slice(0, colon);
+  const key = colon === -1 ? raw : raw.slice(colon + 1);
+  return refs.find((r) => r.key === key && (ns === null || ns === r.ns)) ?? null;
+}
+
+/**
+ * JSX where a registered fragment is the only content of its block: rendered
+ * alone rather than appended to a sentence. Matched on the KEY, whatever the
+ * translate function is called (`t`, an alias, `i18n.t`), and on
+ * `<Trans i18nKey>`. The walk from the fragment up to the nearest non-inline
+ * element looks for company at EVERY level — a sibling inside an inline
+ * wrapper, `"Cannot render " + t(fragment)`, a template literal's text — so
+ * `Cannot render <a>{t(fragment)}</a>` belongs to its sentence while
+ * `<div role="status">{t(fragment)}</div>` — the "(6:1)" strip — does not.
+ * `{null}`, `{false}`, `{undefined}` and comments render nothing and are no
+ * company; a `<>` fragment is transparent; an attribute value is its own
+ * context.
+ *
+ * Known limitation — reachability needs types. `a || b` / `a ?? b` render `a`
+ * when it is truthy / non-nullish and `b` otherwise, and which happens depends
+ * on `a`'s type. Syntax cannot know it, so the left side counts only when it
+ * DEFINITELY renders, and a fallback that renders counts even when the types
+ * make it unreachable (`flag ?? <span>text</span>`, dead code a type-aware
+ * `no-unnecessary-condition` would catch). The backstop is exact:
+ * `fragmentSiteFindings` pins every use to a registered file.
+ */
+export function fragmentUsageFindings(
+  rel: string,
+  text: string,
+  fragments: Readonly<Record<string, unknown>>,
+): string[] {
+  const refs = fragmentRefs(fragments);
+  const sf = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const out: string[] = [];
+
+  const tagName = (el: ts.JsxElement) => el.openingElement.tagName.getText(sf);
+  // What statically renders nothing: null/undefined/booleans (literals,
+  // `!x`, comparisons), `<></>`, and `&&`/`||`/`??`/`?:` whose every outcome
+  // is one of those.
+  const BOOLEAN_OPERATORS = new Set([
+    ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsEqualsToken,
+    ts.SyntaxKind.EqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsToken,
+    ts.SyntaxKind.LessThanToken, ts.SyntaxKind.LessThanEqualsToken,
+    ts.SyntaxKind.GreaterThanToken, ts.SyntaxKind.GreaterThanEqualsToken,
+    ts.SyntaxKind.InKeyword, ts.SyntaxKind.InstanceOfKeyword,
+  ]);
+  const rendersSomething = (e: ts.Expression): boolean => {
+    if (ts.isParenthesizedExpression(e)) return rendersSomething(e.expression);
+    if (ts.isStringLiteralLike(e)) return e.text.trim() !== "";
+    if (e.kind === ts.SyntaxKind.NullKeyword || e.kind === ts.SyntaxKind.TrueKeyword || e.kind === ts.SyntaxKind.FalseKeyword) return false;
+    if (ts.isIdentifier(e) && e.text === "undefined") return false;
+    if (ts.isPrefixUnaryExpression(e) && e.operator === ts.SyntaxKind.ExclamationToken) return false;
+    if (ts.isConditionalExpression(e)) return rendersSomething(e.whenTrue) || rendersSomething(e.whenFalse);
+    if (ts.isBinaryExpression(e)) {
+      const op = e.operatorToken.kind;
+      if (BOOLEAN_OPERATORS.has(op)) return false;
+      if (op === ts.SyntaxKind.AmpersandAmpersandToken) return rendersSomething(e.right);
+      if (op === ts.SyntaxKind.BarBarToken || op === ts.SyntaxKind.QuestionQuestionToken) {
+        // The left side renders only when it is truthy, and whether an
+        // identifier holds text or a flag needs the type checker. Fail
+        // closed: it is company only when it DEFINITELY renders.
+        return rendersSomething(e.right) || rendersDefinitely(e.left);
+      }
+    }
+    if (ts.isJsxFragment(e) || ts.isJsxElement(e) || ts.isJsxSelfClosingElement(e)) return meaningful(e);
+    return true;
+  };
+  // An intrinsic element (`<span>`, `<b/>`) is company only if it holds some;
+  // a component's output is unknown, so it counts, and a form control shows
+  // its value.
+  const isIntrinsic = (tag: ts.JsxTagNameExpression) =>
+    ts.isIdentifier(tag) && /^[a-z]/.test(tag.text) && !/^(input|textarea|select)$/.test(tag.text);
+  /** Renders visible content whatever its runtime value: text, a template, or JSX with content. */
+  const rendersDefinitely = (e: ts.Expression): boolean => {
+    if (ts.isParenthesizedExpression(e)) return rendersDefinitely(e.expression);
+    if (ts.isStringLiteralLike(e) || ts.isTemplateExpression(e) || ts.isJsxFragment(e) || ts.isJsxElement(e) || ts.isJsxSelfClosingElement(e)) {
+      return rendersSomething(e);
+    }
+    return false;
+  };
+  const meaningful = (child: ts.JsxChild): boolean => {
+    if (ts.isJsxText(child)) return child.text.trim() !== "";
+    if (ts.isJsxExpression(child)) return child.expression ? rendersSomething(child.expression) : false;
+    if (ts.isJsxFragment(child)) return child.children.some(meaningful);
+    if (ts.isJsxSelfClosingElement(child)) return !isIntrinsic(child.tagName);
+    if (ts.isJsxElement(child)) return !isIntrinsic(child.openingElement.tagName) || child.children.some(meaningful);
+    return true;
+  };
+  const contains = (outer: ts.Node, inner: ts.Node) => outer.pos <= inner.pos && inner.end <= outer.end;
+  /** Whether `parent` gives `child` (the step of the walk inside it) company. */
+  const hasCompany = (parent: ts.Node, child: ts.Node): boolean => {
+    if (ts.isJsxElement(parent) || ts.isJsxFragment(parent)) {
+      return parent.children.some((c) => !contains(c, child) && meaningful(c));
+    }
+    if (ts.isBinaryExpression(parent) && parent.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+      return rendersSomething(parent.left === child ? parent.right : parent.left);
+    }
+    if (
+      ts.isArrayLiteralExpression(parent) &&
+      ts.isPropertyAccessExpression(parent.parent) &&
+      parent.parent.name.text === "join" &&
+      ts.isCallExpression(parent.parent.parent)
+    ) {
+      return parent.elements.some((el) => el !== child && rendersSomething(el));
+    }
+    if (ts.isTemplateExpression(parent)) {
+      return (
+        parent.head.text.trim() !== "" ||
+        parent.templateSpans.some((span) => span.literal.text.trim() !== "" || (!contains(span, child) && rendersSomething(span.expression)))
+      );
+    }
+    return false;
+  };
+  const aloneInBlock = (node: ts.Node): boolean => {
+    // Inside JSX at all? If the walk reaches the component's boundary through
+    // only inline wrappers and `<>`, what they hold is what gets rendered.
+    let inJsx = ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node);
+    for (let child = node, parent = node.parent; parent; child = parent, parent = parent.parent) {
+      if (hasCompany(parent, child)) return false;
+      // An attribute value is its own context: shown if the attribute is
+      // (title, aria-label, alt, placeholder), never if it is not.
+      if (ts.isJsxAttribute(parent)) return !NON_DISPLAY_ATTRIBUTE.test(parent.name.getText(sf));
+      if (ts.isJsxElement(parent)) {
+        if (!INLINE_TAGS.has(tagName(parent))) return true;
+        inJsx = true;
+      } else if (ts.isJsxFragment(parent)) {
+        inJsx = true;
+      }
+      if (ts.isSourceFile(parent) || ts.isBlock(parent) || ts.isFunctionLike(parent)) break;
+    }
+    return inJsx;
+  };
+
+  const visit = (node: ts.Node) => {
+    let key: string | null = null;
+    if (ts.isCallExpression(node)) {
+      const [first] = node.arguments;
+      if (first && ts.isStringLiteralLike(first)) key = matchFragment(first.text, refs)?.key ?? null;
+    } else if (ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) {
+      for (const attr of node.attributes.properties) {
+        if (!ts.isJsxAttribute(attr) || attr.name.getText(sf) !== "i18nKey" || !attr.initializer) continue;
+        const init = attr.initializer;
+        const literal = ts.isJsxExpression(init) ? init.expression : init;
+        if (literal && ts.isStringLiteralLike(literal)) key = matchFragment(literal.text, refs)?.key ?? null;
+      }
+    }
+    const subject = ts.isJsxOpeningElement(node) ? node.parent : node;
+    if (key && aloneInBlock(subject)) out.push(`${rel}: ${key} rendered alone`);
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return out;
+}
+
+/**
+ * Each registered fragment is used ONLY in the files its registration lists:
+ * a use anywhere else — through a variable, a toast, a `.ts` helper, a key
+ * held in a constant — is a new decision about where the fragment appears,
+ * which the JSX walk above cannot follow. Exact, not heuristic: any string
+ * literal naming the key counts (namespace-aware). A listed file that stopped
+ * using the fragment is stale.
+ */
+export function fragmentSiteFindings(
+  files: Readonly<Record<string, string>>,
+  registry: Readonly<Record<string, FragmentRegistration>>,
+): string[] {
+  const out: string[] = [];
+  for (const [id, registration] of Object.entries(registry)) {
+    const refs = fragmentRefs({ [id]: registration });
+    const [{ key }] = refs;
+    const users = Object.entries(files)
+      .filter(([rel, text]) => {
+        // Cheap prefilter; an escaped spelling ("\u0065rrorAt") is decoded
+        // by the parser, so a file with escapes is always parsed.
+        if (!text.includes(key) && !/\\[ux]/.test(text)) return false;
+        const kind = rel.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+        const sf = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, kind);
+        let found = false;
+        const visit = (node: ts.Node) => {
+          if (found) return;
+          if (ts.isStringLiteralLike(node) && matchFragment(node.text, refs)) found = true;
+          else ts.forEachChild(node, visit);
+        };
+        visit(sf);
+        return found;
+      })
+      .map(([rel]) => rel);
+    for (const rel of users.filter((u) => !registration.files.includes(u))) {
+      out.push(`${rel}: uses fragment ${key}, but its registration does not list this file`);
+    }
+    for (const rel of registration.files.filter((f) => f in files && !users.includes(f))) {
+      out.push(`${rel}: registered for fragment ${key} but no longer uses it — delete it from the registration`);
+    }
+    for (const rel of registration.files.filter((f) => !(f in files))) {
+      out.push(`${rel}: registered for fragment ${key} but does not exist — delete it from the registration`);
+    }
+  }
+  return out;
+}
+
+function checkInternalReferencesAndFragments(): boolean {
+  const found: string[] = [];
+  const localesDir = join(ROOT, "src", "locales");
+  for (const lang of readdirSync(localesDir).filter((d) => !d.startsWith("__"))) {
+    const dir = join(localesDir, lang);
+    if (!existsSync(dir) || !readdirSync(dir).length) continue;
+    for (const file of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
+      for (const [key, value] of flattenJsonValues(JSON.parse(readFileSync(join(dir, file), "utf8")))) {
+        const exception = INTERNAL_REFERENCE_EXCEPTIONS[`${file}:${key}`];
+        for (const hit of referenceFindingsExcept(value, exception)) found.push(`${lang}/${file}:${key} (${hit}): ${value}`);
+      }
+    }
+  }
+  const ymlDir = join(ROOT, "src-tauri", "locales");
+  for (const file of readdirSync(ymlDir).filter((f) => f.endsWith(".yml"))) {
+    for (const [key, value] of flattenYamlValues(readFileSync(join(ymlDir, file), "utf8"))) {
+      for (const hit of internalReferenceFindings(value)) found.push(`${file}:${key} (${hit}): ${value}`);
+    }
+  }
+
+  const enDir = join(localesDir, "en");
+  const wordless: string[] = [];
+  for (const file of readdirSync(enDir).filter((f) => f.endsWith(".json"))) {
+    const values = Object.fromEntries(
+      [...flattenJsonValues(JSON.parse(readFileSync(join(enDir, file), "utf8")))].map(([k, v]) => [`${file}:${k}`, v]),
+    );
+    wordless.push(...standaloneTextFindings(values, REGISTERED_FRAGMENTS));
+  }
+  const staleFragments = Object.keys(REGISTERED_FRAGMENTS).filter((id) => {
+    const [file, key] = id.split(/:(.*)/s);
+    const path = join(enDir, file);
+    return !existsSync(path) || !flattenJsonValues(JSON.parse(readFileSync(path, "utf8"))).has(key);
+  });
+
+  const enValues: Record<string, string> = {};
+  for (const file of readdirSync(enDir).filter((f) => f.endsWith(".json"))) {
+    for (const [key, value] of flattenJsonValues(JSON.parse(readFileSync(join(enDir, file), "utf8")))) {
+      enValues[`${file}:${key}`] = value;
+    }
+  }
+  const staleExceptionIds = staleReferenceExceptions(enValues, INTERNAL_REFERENCE_EXCEPTIONS);
+  const usage: string[] = [];
+  const sources: Record<string, string> = {};
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== "__tests__" && entry.name !== "locales") walk(full);
+      } else if (/\.tsx?$/.test(entry.name) && !/\.(test|spec)\.tsx?$|\.d\.ts$/.test(entry.name)) {
+        sources[full.slice(ROOT.length + 1)] = readFileSync(full, "utf8");
+      }
+    }
+  };
+  walk(join(ROOT, "src"));
+  for (const [rel, text] of Object.entries(sources)) {
+    if (rel.endsWith(".tsx")) usage.push(...fragmentUsageFindings(rel, text, REGISTERED_FRAGMENTS));
+  }
+  const sites = fragmentSiteFindings(sources, REGISTERED_FRAGMENTS);
+
+  for (const f of found) console.error(`[FAIL]  internal reference in UI copy — ${f}`);
+  for (const e of staleExceptionIds) console.error(`[FAIL]  INTERNAL_REFERENCE_EXCEPTIONS lists ${e}, which no longer exists or no longer matches — delete the entry`);
+  for (const u of usage) console.error(`[FAIL]  ${u} — a fragment is appended to a sentence, never shown by itself`);
+  for (const u of sites) console.error(`[FAIL]  ${u} (REGISTERED_FRAGMENTS)`);
+  for (const w of wordless) console.error(`[FAIL]  ${w}: no words once placeholders are removed — reword it to stand alone, or register it in REGISTERED_FRAGMENTS with where it appears`);
+  for (const s2 of staleFragments) console.error(`[FAIL]  REGISTERED_FRAGMENTS lists ${s2}, which no longer exists — delete the entry`);
+  const ok = found.length === 0 && wordless.length === 0 && staleFragments.length === 0 &&
+    staleExceptionIds.length === 0 && usage.length === 0 && sites.length === 0;
+  if (ok) console.log("[OK]    no internal references in UI copy; every wordless string is a registered fragment");
+  return ok;
+}
+
+const CJK_CHAR = /[\u3000-\u303f\u3400-\u4dbf\u4e00-\u9fff\uff00-\uffef]/;
+
+/**
+ * English copy spaces its em-dashes ("word — word", AGENTS.md). `lint:emdash`
+ * reads Markdown only, so UI strings are checked here. A doubled `——` is CJK
+ * punctuation and a dash beside CJK text follows CJK rules; a placeholder
+ * brace counts as a word, since `{{name}}—copy` renders as one.
+ */
+export function emdashSpacingViolation(value: string): boolean {
+  for (let i = value.indexOf("—"); i !== -1; i = value.indexOf("—", i + 1)) {
+    const before = value[i - 1] ?? "";
+    const after = value[i + 1] ?? "";
+    if (before === "—" || after === "—" || CJK_CHAR.test(before) || CJK_CHAR.test(after)) continue;
+    if (/[\w}]/.test(before) || /[\w{]/.test(after)) return true;
+  }
+  return false;
 }
 
 /** Exported (with an injectable baseline path) so the fail-closed missing-
@@ -757,13 +1186,14 @@ export function checkCopyConventions(
       const value = raw;
       const id = (check: string) => `${file}:${key}:${check}`;
       if (value.includes("...")) found.push(id("ellipsis"));
+      if (emdashSpacingViolation(value)) found.push(id("emdash"));
       if (/\s->\s/.test(value)) found.push(id("arrow"));
       if (/Settings\s*>\s*[A-Z]/.test(value)) found.push(id("nav-arrow"));
       if (/"\{\{/.test(value) || /\}\}"/.test(value)) found.push(id("straight-quotes"));
       if (SENTENCE_KEY.test(key) && key.endsWith(".description") && /[.。]$/.test(value.trim()) && !/[.][.][.]|…$/.test(value.trim())) {
         found.push(id("trailing-period"));
       }
-      if (TITLE_KEY.test(key) && !SENTENCE_KEY.test(key) && !ARIA_KEY.test(key) && titleCaseViolations(value)) {
+      if (titleRegister(key) && titleCaseViolations(value)) {
         found.push(id("title-case"));
       }
     }
@@ -777,6 +1207,7 @@ export function checkCopyConventions(
     if (!m) return;
     const [, key, val] = m;
     if (val.includes("...")) found.push(`en.yml:${key}:ellipsis`);
+    if (emdashSpacingViolation(val)) found.push(`en.yml:${key}:emdash`);
     if (/Settings\s*>\s*[A-Z]/.test(val)) found.push(`en.yml:${key}:nav-arrow`);
     void i;
   });
@@ -844,8 +1275,9 @@ if (process.argv[1] && process.argv[1].endsWith("check-i18n-keys.ts")) {
   const valuesOk = checkUntranslatedValues(updateUntranslated);
   const dialogsOk = checkDialogLiterals();
   const copyOk = checkCopyConventions(updateCopy);
+  const referencesOk = checkInternalReferencesAndFragments();
 
-  if (jsonOk && yamlOk && valuesOk && dialogsOk && copyOk) {
+  if (jsonOk && yamlOk && valuesOk && dialogsOk && copyOk && referencesOk) {
     console.log("\nAll i18n checks passed.");
     process.exit(0);
   } else {

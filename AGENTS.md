@@ -91,7 +91,7 @@ Each script's header explains its rules and exemption markers.
 - Selected: `--accent-bg` background, `--text-color` text, `--accent-primary` icons.
 - Focus must be visible: flat 2px bar for buttons, bottom border for inputs; popup inputs are caret-only.
 - Editor popups live inside the editor container, not `document.body`.
-- English copy: spaces around em-dashes (`word — word`, enforced by `lint:emdash`).
+- English copy: spaces around em-dashes (`word — word`; `lint:emdash` checks Markdown, `lint:i18n` checks UI strings).
 
 ## Mermaid
 

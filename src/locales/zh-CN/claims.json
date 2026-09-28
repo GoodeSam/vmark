@@ -14,7 +14,7 @@
   "actions.retire": "终止",
   "actions.hide": "隐藏",
   "actions.show": "显示",
-  "promoteTitle": "提升为已确立 — 只有已确立的设定才能作为约束（D4）",
+  "promoteTitle": "提升为已确立 — 只有已确立的设定才能作为约束",
   "correctPlaceholder": "修正后的表述",
   "correctConfirm": "确认修正",
   "create.heading": "从选中内容新建设定",

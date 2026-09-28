@@ -23,7 +23,7 @@
   "preview.cannotRender": "Não é possível renderizar a prévia — corrija os erros de sintaxe",
   "preview.errorAt": "({{line}}:{{column}})",
   "preview.workflowParseFailed": "Falha ao analisar o fluxo de trabalho — corrija os erros de sintaxe",
-  "preview.signOffPending": "A prévia HTML é isolada, mas está aguardando a aprovação OWASP (WI-3.4).",
+  "preview.signOffPending": "A prévia HTML é isolada. A revisão de segurança ainda está em andamento.",
   "preview.htmlIframeTitle": "Prévia HTML",
   "preview.htmlTrustSafe": "Pré-visualização segura — os scripts estão bloqueados",
   "preview.htmlTrustEnable": "Ativar pré-visualização confiável…",

@@ -6,6 +6,7 @@
    reveal it. If the variable is ever missing the height collapses, which is
    visible at once, rather than silently freezing at a stale number. */
 .title-bar {
+  /* ui-ok(float): layer owner — rule 32 z-table (TitleBar, 100) */
   position: absolute;
   top: 0;
   left: 0;

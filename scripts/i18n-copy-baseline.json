@@ -23,7 +23,6 @@
     "settings.json:formats.dataFormats.description:trailing-period",
     "settings.json:formats.defaultViewMode.description:trailing-period",
     "settings.json:formats.externalEditor.description:trailing-period",
-    "settings.json:formats.htmlPreview.description:trailing-period",
     "settings.json:language.consecutivePunctuation.description:trailing-period",
     "settings.json:language.ellipsisNormalization.description:ellipsis",
     "settings.json:markdown.codeBlockLineNumbers.description:trailing-period",

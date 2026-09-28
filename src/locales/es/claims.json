@@ -14,7 +14,7 @@
   "actions.retire": "Retirar",
   "actions.hide": "Ocultar",
   "actions.show": "Mostrar",
-  "promoteTitle": "Pasar a establecida — solo las afirmaciones establecidas pueden restringir (D4)",
+  "promoteTitle": "Pasar a establecida — solo las afirmaciones establecidas pueden restringir",
   "correctPlaceholder": "Afirmación corregida",
   "correctConfirm": "Confirmar corrección",
   "create.heading": "Nueva afirmación a partir de la selección",

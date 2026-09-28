@@ -22,6 +22,11 @@
  * the frame is running — a remount, or a file trusted earlier in the session —
  * it says so rather than claiming currency. It still does not act.
  *
+ * Diagnostics are NOT echoed here. HTML always renders, so none is a "cannot
+ * render"; the source pane's validation list shows each with its message,
+ * severity and a jump. A strip here once showed a bare red "(6:1)" for a
+ * warning, under the "scripts enabled" banner.
+ *
  * This file renders those two modes. The trust lifecycle behind them — what
  * the frame is running, whether that is stale, and the guarded Enable / Reload
  * / Revoke actions — is `useHtmlTrust`.
@@ -76,11 +81,12 @@ function buildSandboxedSrcdoc(content: string): string {
   return `<!doctype html>${doc.documentElement.outerHTML}`;
 }
 
+// `diagnostics` is deliberately unused: HTML always renders, and the source
+// pane's validation list shows each diagnostic with its message and a jump.
 export function HtmlPreview({
   content,
   liveContent,
   path,
-  diagnostics,
 }: PreviewRendererProps) {
   const { t } = useTranslation("editor");
 
@@ -123,14 +129,6 @@ export function HtmlPreview({
         onRevoke={onRevoke}
         onReload={onReload}
       />
-      {diagnostics.length > 0 && (
-        <div className="html-preview__hint" role="status">
-          {t("preview.errorAt", {
-            line: diagnostics[0].line,
-            column: diagnostics[0].column,
-          })}
-        </div>
-      )}
       {empty ? (
         <div className="html-preview__empty-slot" data-testid="html-preview-empty" />
       ) : trusted && token ? (

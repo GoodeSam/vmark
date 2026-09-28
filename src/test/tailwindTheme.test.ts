@@ -7,7 +7,7 @@
  * sessions) and asserts each namespace VMark uses resolves onto a token.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync, globSync } from "node:fs";
+import { readFileSync, globSync, statSync } from "node:fs";
 
 const css = readFileSync("src/styles/index.css", "utf8");
 const themeBlock = (() => {
@@ -56,7 +56,9 @@ describe("@theme inline bridge (D1)", () => {
     // asserted the equality; this one asserts the escape hatch stays closed.
     const m = /--radius-sm:\s*([^;]+);/.exec(css);
     expect(m![1].trim()).toBe("3px");
-    for (const file of globSync("src/**/*.tsx")) {
+    // Files only: a failing WebKit test leaves `__screenshots__/<name>.tsx/`
+    // DIRECTORIES under src, which the glob also matches.
+    for (const file of globSync("src/**/*.tsx").filter((f) => statSync(f).isFile())) {
       const src = readFileSync(file, "utf8");
       expect(/\brounded\b(?!-)/.test(src), `${file} uses bare rounded (4px literal)`).toBe(false);
     }

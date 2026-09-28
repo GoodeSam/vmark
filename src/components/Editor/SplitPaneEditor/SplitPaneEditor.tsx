@@ -28,6 +28,7 @@ import { usePreviewModel } from "./usePreviewModel";
 import { ReadOnlyBanner } from "./ReadOnlyBanner";
 import { ValidationGutter } from "./ValidationGutter";
 import { ViewModeToggle } from "./ViewModeToggle";
+import { SplitPaneFrame } from "./SplitPaneFrame";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -38,7 +39,6 @@ import {
   type SplitViewMode,
   type ValidationDiagnostic,
 } from "@/lib/formats/types";
-import "./split-pane-editor.css";
 import { errorMessage } from "@/utils/errorMessage";
 
 export interface SplitPaneEditorProps {
@@ -191,45 +191,35 @@ export function SplitPaneEditor({ tabId, formatConfig }: SplitPaneEditorProps) {
   }, [filePath]);
 
   return (
-    <div
-      className="split-pane-editor"
-      role="group"
-      aria-label={t("splitPane.editorLabel", { format: formatConfig.id })}
-      data-format-id={formatConfig.id}
-      style={
-        {
-          // The CSS pairs `flex-grow: var(--f)` on the source with
-          // `flex-grow: calc(1 - var(--f))` on the preview, both with
-          // `flex-basis: 0`. A single-pane mode must therefore hand the whole
-          // share to the mounted pane: 1 when only the source shows, 0 when
-          // only the preview shows (1 would give the preview grow: 0 → a
-          // zero-width, invisible preview).
-          "--split-pane-source-fraction": String(
-            showResizeHandle ? fraction : showSource ? 1 : 0,
-          ),
-        } as React.CSSProperties
+    <SplitPaneFrame
+      ariaLabel={t("splitPane.editorLabel", { format: formatConfig.id })}
+      formatId={formatConfig.id}
+      // The CSS pairs `flex-grow: var(--f)` on the source with
+      // `flex-grow: calc(1 - var(--f))` on the preview, both with
+      // `flex-basis: 0`. A single-pane mode must therefore hand the whole
+      // share to the mounted pane: 1 when only the source shows, 0 when
+      // only the preview shows (1 would give the preview grow: 0 → a
+      // zero-width, invisible preview).
+      sourceFraction={showResizeHandle ? fraction : showSource ? 1 : 0}
+      banner={
+        showReadOnlyBanner ? (
+          <ReadOnlyBanner
+            formatNameI18nKey={formatConfig.nameI18nKey}
+            onEnableEditing={() =>
+              useTabStore.getState().setTabEditingEnabled(tabId, true)
+            }
+            onOpenExternal={filePath ? handleOpenExternal : undefined}
+          />
+        ) : undefined
       }
-    >
-      {showReadOnlyBanner && (
-        <ReadOnlyBanner
-          formatNameI18nKey={formatConfig.nameI18nKey}
-          onEnableEditing={() =>
-            useTabStore.getState().setTabEditingEnabled(tabId, true)
-          }
-          onOpenExternal={filePath ? handleOpenExternal : undefined}
-        />
-      )}
-      {hasPreview && (
-        <div className="split-pane-editor__mode-toggle">
+      header={
+        hasPreview ? (
           <ViewModeToggle mode={viewMode} onChange={handleViewModeChange} />
-        </div>
-      )}
-      {/* Row body: source | resize | preview. Separated from the banner so
-          the banner spans full width on top — the editor is a column, the
-          body is the row. */}
-      <div className="split-pane-editor__body">
-        {showSource && (
-          <div className="split-pane-editor__source">
+        ) : undefined
+      }
+      source={
+        showSource ? (
+          <>
             <SourcePane
               tabId={tabId}
               formatId={formatConfig.id}
@@ -241,9 +231,11 @@ export function SplitPaneEditor({ tabId, formatConfig }: SplitPaneEditorProps) {
             {diagnostics.length > 0 && (
               <ValidationGutter diagnostics={diagnostics} onJump={handleJump} />
             )}
-          </div>
-        )}
-        {showResizeHandle && (
+          </>
+        ) : undefined
+      }
+      resizeHandle={
+        showResizeHandle ? (
           <div
             className="split-pane-editor__resize-handle"
             role="separator"
@@ -255,19 +247,19 @@ export function SplitPaneEditor({ tabId, formatConfig }: SplitPaneEditorProps) {
             tabIndex={0}
             onKeyDown={onKeyDown}
           />
-        )}
-        {showPreview && Preview && (
-          <div className="split-pane-editor__preview">
-            <Preview
-              content={preview.content}
-              liveContent={preview.liveContent}
-              path={filePath}
-              diagnostics={preview.diagnostics}
-              tabId={tabId}
-            />
-          </div>
-        )}
-      </div>
-    </div>
+        ) : undefined
+      }
+      preview={
+        showPreview && Preview ? (
+          <Preview
+            content={preview.content}
+            liveContent={preview.liveContent}
+            path={filePath}
+            diagnostics={preview.diagnostics}
+            tabId={tabId}
+          />
+        ) : undefined
+      }
+    />
   );
 }

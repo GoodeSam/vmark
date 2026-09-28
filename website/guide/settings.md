@@ -309,7 +309,7 @@ Markdown, plain text, and YAML/YML are **always** registered — the calm defaul
 
 For the full list of formats and their previews, see [Supported Formats](/guide/formats).
 
-### Format support
+### Format Support
 
 | Toggle | Default | Enables |
 |---|---|---|
