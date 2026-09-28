@@ -11,6 +11,9 @@
  *     the browser allows; hex digits run on (`&#x73c` is U+073C).
  *   - Named references decode only from NAMED_REFERENCES and only when
  *     terminated by `;` — a listed subset, not the full table.
+ *   - Duplicate names are found by a direct scan while a tag has few
+ *     attributes, and by a Set only past eight: one Set per tag was most of
+ *     the scanner's garbage.
  *
  * @coordinates-with htmlTags.ts — the scanner that calls this
  * @module lib/formats/adapters/htmlAttributes

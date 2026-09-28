@@ -31,8 +31,9 @@
  *     so a quoted `>` never ends a tag. The first duplicate attribute wins.
  *   - Attribute values are decoded (htmlAttributes.ts).
  *   - A tag still open at end of input is dropped, as the browser drops it.
- *   - Linear: every search moves forward; an end tag looks at most
- *     STACK_SEARCH open elements back.
+ *   - Linear: every search moves forward; an end tag for a name that is not
+ *     open costs nothing (a count of open names), and otherwise looks at most
+ *     STACK_SEARCH open elements back. htmlScaling.test.ts asserts it.
  *
  * Known limits (approximate by design): the full named-reference table and
  * the tree builder's rarer transitions (adoption agency, table foster
