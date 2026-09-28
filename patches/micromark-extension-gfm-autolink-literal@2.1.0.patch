@@ -1,0 +1,121 @@
+diff --git a/dev/lib/syntax.js b/dev/lib/syntax.js
+index 904e27200ae4980183beda525d33feef70c2e7f7..f525e88a5525c29c8fe880cba610a4491073f9ee 100644
+--- a/dev/lib/syntax.js
++++ b/dev/lib/syntax.js
+@@ -952,7 +952,8 @@ function gfmAtext(code) {
+  */
+ function previousUnbalanced(events) {
+   let index = events.length
+-  let result = false
++  /** @type {{label: Event[1], index: number} | undefined} */
++  let found
+ 
+   while (index--) {
+     const token = events[index][1]
+@@ -961,23 +962,46 @@ function previousUnbalanced(events) {
+       (token.type === 'labelLink' || token.type === 'labelImage') &&
+       !token._balanced
+     ) {
+-      result = true
++      found = {label: token, index}
+       break
+     }
+ 
+     // If we’ve seen this token, and it was marked as not having any unbalanced
+     // bracket before it, we can exit.
+     if (token._gfmAutolinkLiteralWalkedInto) {
+-      result = false
++      break
++    }
++
++    // VMark patch (#1454): the walk above only remembered a "no". When an
++    // unclosed `[` WAS found, every later start walked all the way back to it
++    // again, so a paragraph of `[- - - …` cost O(n²). Remember the "yes" too,
++    // with the label's index: nothing between the label and this token can
++    // have changed since (only a later `]` rewrites events, and it would splice
++    // from the label itself), so the answer holds while the label is still at
++    // that index and still unbalanced. Otherwise, keep walking as before.
++    const memo = token._gfmAutolinkLiteralUnbalanced
++    if (
++      memo &&
++      events[memo.index] &&
++      events[memo.index][1] === memo.label &&
++      !memo.label._balanced
++    ) {
++      found = memo
+       break
+     }
+   }
+ 
+-  if (events.length > 0 && !result) {
+-    // Mark the last token as “walked into” w/o finding
+-    // anything.
+-    events[events.length - 1][1]._gfmAutolinkLiteralWalkedInto = true
++  if (events.length > 0) {
++    const last = events[events.length - 1][1]
++
++    if (found) {
++      last._gfmAutolinkLiteralUnbalanced = found
++    } else {
++      // Mark the last token as “walked into” w/o finding
++      // anything.
++      last._gfmAutolinkLiteralWalkedInto = true
++    }
+   }
+ 
+-  return result
++  return found !== undefined
+ }
+diff --git a/lib/syntax.js b/lib/syntax.js
+index dffbaf15146b34d3b3f634286629ccb148866f4c..04fe2d033afeb011429a41c66d61607fde7897a7 100644
+--- a/lib/syntax.js
++++ b/lib/syntax.js
+@@ -830,25 +830,40 @@ function gfmAtext(code) {
+  */
+ function previousUnbalanced(events) {
+   let index = events.length;
+-  let result = false;
++  /** @type {{label: Event[1], index: number} | undefined} */
++  let found;
+   while (index--) {
+     const token = events[index][1];
+     if ((token.type === 'labelLink' || token.type === 'labelImage') && !token._balanced) {
+-      result = true;
++      found = {
++        label: token,
++        index
++      };
+       break;
+     }
+ 
+     // If we’ve seen this token, and it was marked as not having any unbalanced
+     // bracket before it, we can exit.
+     if (token._gfmAutolinkLiteralWalkedInto) {
+-      result = false;
++      break;
++    }
++
++    // VMark patch (#1454): also remember a "yes" (see dev/lib/syntax.js).
++    const memo = token._gfmAutolinkLiteralUnbalanced;
++    if (memo && events[memo.index] && events[memo.index][1] === memo.label && !memo.label._balanced) {
++      found = memo;
+       break;
+     }
+   }
+-  if (events.length > 0 && !result) {
+-    // Mark the last token as “walked into” w/o finding
+-    // anything.
+-    events[events.length - 1][1]._gfmAutolinkLiteralWalkedInto = true;
++  if (events.length > 0) {
++    const last = events[events.length - 1][1];
++    if (found) {
++      last._gfmAutolinkLiteralUnbalanced = found;
++    } else {
++      // Mark the last token as “walked into” w/o finding
++      // anything.
++      last._gfmAutolinkLiteralWalkedInto = true;
++    }
+   }
+-  return result;
++  return found !== undefined;
+ }

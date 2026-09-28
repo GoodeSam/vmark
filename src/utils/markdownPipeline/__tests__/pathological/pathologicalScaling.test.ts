@@ -110,6 +110,17 @@ const CASES: ScalingCase[] = [
     large: 2400,
   },
   {
+    // Every `-` may start an email autolink literal, and each start asked
+    // "is there an unclosed `[` before me?" by walking back to it: the answer
+    // was only remembered when it was "no". An OSS-Fuzz corpus file of this
+    // shape (135 KB of it) held the weekly soak for minutes (#1454).
+    name: "autolink-starts-in-an-unclosed-label",
+    make: (n) => `[${"- ".repeat(n)}f]\n`,
+    small: 2000,
+    large: 16000,
+    parseOnly: true,
+  },
+  {
     // Every `_` closes and none opens: each used to walk back to the start.
     name: "emph-closers-without-openers",
     make: (n) => `${"a_ ".repeat(n)}\n`,

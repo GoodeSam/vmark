@@ -86,7 +86,37 @@ describe("maxContainerDepth", () => {
     // past every measured ceiling and must still return promptly.
     const started = Date.now();
     expect(maxContainerDepth(`${"> ".repeat(20000)}a\n`)).toBe(20000);
+    expect(maxContainerDepth(`${"- ".repeat(20000)}a\n`)).toBe(20000);
     expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it.each([
+    // A list item's content may open another list on the same line, so
+    // `- - - a` is three lists deep. Scoring it 1 let 4000 of them past the
+    // guard and into the stack overflow it exists to prevent.
+    ["- - - a", 3],
+    ["1. 2) + a", 3],
+    ["- > - > a", 4],
+    ["> - > - a", 4],
+    ["-   - a", 2],
+  ])("counts list markers chained on one line: %j", (line, depth) => {
+    expect(maxContainerDepth(`${line}\n`)).toBe(depth);
+  });
+
+  it.each([
+    // A thematic break is a leaf, not a list: `- - -` is a rule, however long.
+    ["- - -", 0],
+    ["* * * *", 0],
+    ["> - - -", 1],
+    ["+ - - -", 1],
+    ["1. * * *", 1],
+  ])("does not count a thematic break as nesting: %j", (line, depth) => {
+    expect(maxContainerDepth(`${line}\n`)).toBe(depth);
+  });
+
+  it("does not mistake a list item that merely starts with markers for a rule", () => {
+    expect(maxContainerDepth("- - - x\n")).toBe(3);
+    expect(maxContainerDepth("* *emphasis*\n")).toBe(1);
   });
 });
 
@@ -108,6 +138,20 @@ describe("checkNestingDepth", () => {
     expect(message).toContain(String(MAX_NESTING_DEPTH + 1));
     expect(message).toContain(String(MAX_NESTING_DEPTH));
     expect(message.toLowerCase()).toContain("nest");
+  });
+
+  it("refuses chained list markers past the limit, and accepts a rule of any length", () => {
+    const refusal = nestingRefusal(
+      (() => {
+        try {
+          parseMarkdown(testSchema, `${"- ".repeat(MAX_NESTING_DEPTH + 1)}a\n`);
+        } catch (e) {
+          return e;
+        }
+      })(),
+    );
+    expect(refusal).toEqual({ depth: MAX_NESTING_DEPTH + 1, limit: MAX_NESTING_DEPTH });
+    expect(() => checkNestingDepth(`${"- ".repeat(20000)}\n`)).not.toThrow();
   });
 
   it("sits far below the lowest measured crash ceiling", () => {
