@@ -16,7 +16,7 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden; /* Prevent horizontal overflow */
-  padding-bottom: var(--bar-height); /* clearance for status-bar/find-bar */
+  padding-bottom: var(--bar-height); /* breathing room below the last line — the bars sit in their own lane (EditorArea) */
   /* No horizontal padding - applied per-element so tables can span full width */
   transition: padding-bottom var(--duration-base) ease-out;
   /* Flexbox centering for narrow editor width settings */
