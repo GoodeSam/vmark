@@ -15,39 +15,37 @@
  * Key decisions:
  *   - Names fold ASCII only (`İ` stays one code unit), so offsets never shift.
  *   - Comments end at `-->` or `--!>`; `<!-->` and `<!--->` are whole
- *     comments. `<![CDATA[` (exact case) is CDATA only inside SVG or MathML;
- *     anywhere else it, like `<!…>`, `<?…>` and `</ …`, is a bogus comment
- *     ending at the first `>`.
- *   - A small open-element stack tracks the namespace (SVG, MathML, and their
- *     HTML integration points: foreignObject, desc, title, mi, mo, mn, ms,
- *     mtext) and `<template>`. HTML raw-text bodies (script, style, textarea,
- *     …) are skipped only in the HTML namespace; `<plaintext>` ends markup.
- *   - The first of duplicate attributes wins, as in the browser.
- *   - Attribute values are decoded: numeric character references and the
- *     named ones listed in NAMED_REFERENCES (terminated by `;`).
+ *     comments. `<![CDATA[` (exact case) is CDATA only when the current
+ *     element is SVG or MathML; anywhere else it, like `<!…>`, `<?…>` and
+ *     `</ …`, is a bogus comment ending at the first `>`.
+ *   - A small open-element stack tracks each element's namespace, whether it
+ *     is an HTML integration point (SVG foreignObject/desc/title, MathML
+ *     mi/mo/mn/ms/mtext, annotation-xml with an HTML encoding), and
+ *     `<template>`. The breakout tags (and font with color, face or size)
+ *     return foreign content to HTML.
+ *   - HTML raw-text bodies are skipped only in the HTML namespace. Script
+ *     bodies follow the script-data escape states (`<!--<script>` keeps a
+ *     `</script>` from closing). noscript is raw text: trusted preview runs
+ *     with scripting on. `<plaintext>` ends markup.
+ *   - Start tags, end tags and raw-text closers share one attribute parser,
+ *     so a quoted `>` never ends a tag. The first duplicate attribute wins.
+ *   - Attribute values are decoded (htmlAttributes.ts).
  *   - A tag still open at end of input is dropped, as the browser drops it.
  *   - Linear: every search moves forward; an end tag looks at most
  *     STACK_SEARCH open elements back.
  *
- * Known limits (approximate by design): script-data escape states
- * (`<!--` inside a script), the full named-reference table, the tree
- * builder's HTML "breakout" beyond the listed tags, and noscript, which is
- * raw text only when scripting is on.
+ * Known limits (approximate by design): the full named-reference table and
+ * the tree builder's rarer transitions (adoption agency, table foster
+ * parenting, misnested formatting elements).
  *
  * @coordinates-with html.tsx — the validator's rules read these tags
+ * @coordinates-with htmlAttributes.ts — the attribute parser and reference decoder
  * @module lib/formats/adapters/htmlTags
  */
 
-type Namespace = "html" | "svg" | "math";
+import { parseAttributes, isSpace, type HtmlAttribute } from "./htmlAttributes";
 
-interface HtmlAttribute {
-  /** ASCII-lower-cased attribute name. */
-  name: string;
-  /** The decoded value, or `null` for an attribute written without `=`. */
-  value: string | null;
-  /** Offset of the attribute name in the source. */
-  offset: number;
-}
+type Namespace = "html" | "svg" | "math";
 
 export interface HtmlTag {
   /** ASCII-lower-cased tag name. */
@@ -60,7 +58,14 @@ export interface HtmlTag {
   attrs: HtmlAttribute[];
 }
 
-const RAW_TEXT = new Set(["script", "style", "textarea", "title", "xmp", "iframe", "noembed", "noframes"]);
+interface OpenElement {
+  name: string;
+  namespace: Namespace;
+  /** Children of an HTML integration point parse as HTML. */
+  integration: boolean;
+}
+
+const RAW_TEXT = new Set(["style", "textarea", "title", "xmp", "iframe", "noembed", "noframes", "noscript"]);
 const VOID = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
 const SVG_HTML_POINTS = new Set(["foreignobject", "desc", "title"]);
 const MATH_HTML_POINTS = new Set(["mi", "mo", "mn", "ms", "mtext"]);
@@ -69,44 +74,26 @@ const BREAKOUT = new Set([
   ..."b big blockquote body br center code dd div dl dt em embed h1 h2 h3 h4 h5 h6 head hr i img li listing".split(" "),
   ..."menu meta nobr ol p pre ruby s small span strong strike sub sup table tt u ul var".split(" "),
 ]);
-const NAMED_REFERENCES: Readonly<Record<string, string>> = {
-  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", colon: ":", Tab: "\t", NewLine: "\n",
-  lowbar: "_", sol: "/", period: ".", lpar: "(", rpar: ")", semi: ";", nbsp: " ",
-};
 const STACK_SEARCH = 256;
 
-const isSpace = (c: string | undefined) => c === " " || c === "\t" || c === "\n" || c === "\r" || c === "\f";
 const isLetter = (c: string | undefined) => c !== undefined && ((c >= "a" && c <= "z") || (c >= "A" && c <= "Z"));
+/** Ends a tag name: what may follow `</script` for it to close the element. */
+const isNameEnd = (c: string | undefined) => c === undefined || isSpace(c) || c === "/" || c === ">";
 /** ASCII-only lower case: same length, so offsets carry over. */
 const asciiLower = (s: string) => s.replace(/[A-Z]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 32));
-
-/** Decode the character references this scanner supports (see NAMED_REFERENCES). */
-function decodeReferences(value: string): string {
-  if (!value.includes("&")) return value;
-  return value.replace(/&(#[xX][0-9a-fA-F]+|#[0-9]+|[A-Za-z]+);/g, (whole, ref: string) => {
-    if (ref.startsWith("#")) {
-      const code = ref[1] === "x" || ref[1] === "X" ? parseInt(ref.slice(2), 16) : parseInt(ref.slice(1), 10);
-      return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : "�";
-    }
-    return NAMED_REFERENCES[ref] ?? whole;
-  });
-}
 
 /** Every start tag in `html`, in document order. */
 export function scanHtmlTags(html: string): HtmlTag[] {
   const lower = asciiLower(html);
   const n = html.length;
   const out: HtmlTag[] = [];
-  const stack: { name: string; namespace: Namespace }[] = [];
+  const stack: OpenElement[] = [];
   let templates = 0;
 
   /** The namespace a child of the current element parses in. */
   const childNamespace = (): Namespace => {
     const top = stack[stack.length - 1];
-    if (!top) return "html";
-    if (top.namespace === "svg" && SVG_HTML_POINTS.has(top.name)) return "html";
-    if (top.namespace === "math" && MATH_HTML_POINTS.has(top.name)) return "html";
-    return top.namespace;
+    return !top || top.integration ? "html" : top.namespace;
   };
   const popTo = (length: number) => {
     while (stack.length > length) {
@@ -119,6 +106,50 @@ export function scanHtmlTags(html: string): HtmlTag[] {
     const at = lower.indexOf(needle, from);
     return at === -1 ? n : at + needle.length;
   };
+  /** Index after the end tag closing a raw-text element, or end of input. */
+  const skipRawText = (name: string, from: number) => {
+    const needle = `</${name}`;
+    for (let at = lower.indexOf(needle, from); at !== -1; at = lower.indexOf(needle, at + 1)) {
+      if (isNameEnd(lower[at + needle.length])) return parseAttributes(html, lower, at + needle.length).end;
+    }
+    return n;
+  };
+  /** Index after a script's end tag, following the script-data escape
+   *  states: after `<!--`, a nested `<script` keeps `</script` from closing
+   *  until `-->` or its own `</script`. One forward pass. */
+  const skipScriptData = (from: number) => {
+    let state: "data" | "escaped" | "double" = "data";
+    let i = from;
+    while (i < n) {
+      if (lower[i] === "-" && state !== "data" && lower.startsWith("-->", i)) {
+        state = "data";
+        i += 3;
+        continue;
+      }
+      if (lower[i] !== "<") {
+        i += 1;
+        continue;
+      }
+      if (lower.startsWith("<!--", i)) {
+        if (state === "data") state = "escaped";
+        i += 4;
+        continue;
+      }
+      if (lower.startsWith("</script", i) && isNameEnd(lower[i + 8])) {
+        if (state !== "double") return parseAttributes(html, lower, i + 8).end;
+        state = "escaped";
+        i += 8;
+        continue;
+      }
+      if (state === "escaped" && lower.startsWith("<script", i) && isNameEnd(lower[i + 7])) {
+        state = "double";
+        i += 7;
+        continue;
+      }
+      i += 1;
+    }
+    return n;
+  };
 
   let i = 0;
   while (i < n) {
@@ -129,13 +160,24 @@ export function scanHtmlTags(html: string): HtmlTag[] {
       if (html[lt + 4] === ">") i = lt + 5;
       else if (html.startsWith("->", lt + 4)) i = lt + 6;
       else {
-        const a = html.indexOf("-->", lt + 4);
-        const b = html.indexOf("--!>", lt + 4);
-        i = a === -1 && b === -1 ? n : a === -1 ? b + 4 : b === -1 || a < b ? a + 3 : b + 4;
+        // One forward search for "--", then "-->" or "--!>": each comment
+        // stops at its own end, so the whole scan stays linear.
+        i = n;
+        for (let d = html.indexOf("--", lt + 4); d !== -1; d = html.indexOf("--", d + 1)) {
+          if (html[d + 2] === ">") {
+            i = d + 3;
+            break;
+          }
+          if (html.startsWith("!>", d + 2)) {
+            i = d + 4;
+            break;
+          }
+        }
       }
       continue;
     }
-    if (html.startsWith("<![CDATA[", lt) && childNamespace() !== "html") {
+    const top = stack[stack.length - 1];
+    if (html.startsWith("<![CDATA[", lt) && top && top.namespace !== "html") {
       i = skipPast("]]>", lt + 9);
       continue;
     }
@@ -150,7 +192,7 @@ export function scanHtmlTags(html: string): HtmlTag[] {
         continue;
       }
       let j = lt + 2;
-      while (j < n && !isSpace(html[j]) && html[j] !== "/" && html[j] !== ">") j += 1;
+      while (j < n && !isNameEnd(html[j])) j += 1;
       const name = lower.slice(lt + 2, j);
       for (let k = stack.length - 1; k >= Math.max(0, stack.length - STACK_SEARCH); k -= 1) {
         if (stack[k].name === name) {
@@ -158,7 +200,7 @@ export function scanHtmlTags(html: string): HtmlTag[] {
           break;
         }
       }
-      i = skipPast(">", j);
+      i = parseAttributes(html, lower, j).end;
       continue;
     }
     if (!isLetter(next)) {
@@ -168,88 +210,43 @@ export function scanHtmlTags(html: string): HtmlTag[] {
 
     // Start tag.
     let j = lt + 1;
-    while (j < n && !isSpace(html[j]) && html[j] !== "/" && html[j] !== ">") j += 1;
+    while (j < n && !isNameEnd(html[j])) j += 1;
     const name = lower.slice(lt + 1, j);
-    const attrs: HtmlAttribute[] = [];
-    const seen = new Set<string>();
-    let selfClosing = false;
-    let closed = false;
-    while (j < n) {
-      while (j < n && isSpace(html[j])) j += 1;
-      if (html[j] === "/") {
-        j += 1;
-        if (html[j] === ">") selfClosing = true;
-        continue;
-      }
-      if (html[j] === ">") {
-        closed = true;
-        break;
-      }
-      if (j >= n) break;
-      const nameStart = j;
-      j += 1; // an attribute name may begin with `=` or a quote; take one char
-      while (j < n && !isSpace(html[j]) && html[j] !== "/" && html[j] !== ">" && html[j] !== "=") j += 1;
-      const attrName = lower.slice(nameStart, j);
-      let value: string | null = null;
-      let k = j;
-      while (k < n && isSpace(html[k])) k += 1;
-      if (html[k] === "=") {
-        k += 1;
-        while (k < n && isSpace(html[k])) k += 1;
-        const quote = html[k];
-        if (quote === '"' || quote === "'") {
-          const close = html.indexOf(quote, k + 1);
-          if (close === -1) {
-            j = n;
-            break;
-          }
-          value = html.slice(k + 1, close);
-          j = close + 1;
-        } else {
-          const start = k;
-          while (k < n && !isSpace(html[k]) && html[k] !== ">") k += 1;
-          value = html.slice(start, k);
-          j = k;
-        }
-      }
-      if (!seen.has(attrName)) {
-        seen.add(attrName);
-        attrs.push({ name: attrName, value: value === null ? null : decodeReferences(value), offset: nameStart });
-      }
-    }
+    const { attrs, selfClosing, closed, end } = parseAttributes(html, lower, j);
     // A tag still open at end of input is dropped, as the browser drops it.
     if (!closed) break;
-    i = j + 1;
+    i = end;
 
     let namespace = childNamespace();
-    if (namespace !== "html" && BREAKOUT.has(name)) {
+    const breaksOut =
+      BREAKOUT.has(name) || (name === "font" && attrs.some((a) => a.name === "color" || a.name === "face" || a.name === "size"));
+    if (namespace !== "html" && breaksOut) {
       while (stack.length > 0 && childNamespace() !== "html") popTo(stack.length - 1);
       namespace = "html";
     }
     if (namespace === "html" && (name === "svg" || name === "math")) namespace = name;
     out.push({ name, offset: lt, namespace, inTemplate: templates > 0, attrs });
 
-    if (namespace === "html" && name === "plaintext") break;
-    if (namespace === "html" && RAW_TEXT.has(name)) {
-      i = skipRawText(lower, name, i);
+    if (namespace === "html") {
+      if (name === "plaintext") break;
+      if (name === "script") {
+        i = skipScriptData(i);
+        continue;
+      }
+      if (RAW_TEXT.has(name)) {
+        i = skipRawText(name, i);
+        continue;
+      }
+      if (VOID.has(name)) continue;
+    } else if (selfClosing) {
       continue;
     }
-    if (namespace === "html" ? VOID.has(name) : selfClosing) continue;
-    stack.push({ name, namespace });
+    const encoding = (attrs.find((a) => a.name === "encoding")?.value ?? "").toLowerCase();
+    const integration =
+      (namespace === "svg" && SVG_HTML_POINTS.has(name)) ||
+      (namespace === "math" && (MATH_HTML_POINTS.has(name) || (name === "annotation-xml" && (encoding === "text/html" || encoding === "application/xhtml+xml"))));
+    stack.push({ name, namespace, integration });
     if (name === "template" && namespace === "html") templates += 1;
   }
   return out;
-}
-
-/** Index after the end tag closing a raw-text element opened before `from`. */
-function skipRawText(lower: string, name: string, from: number): number {
-  const needle = `</${name}`;
-  for (let at = lower.indexOf(needle, from); at !== -1; at = lower.indexOf(needle, at + 1)) {
-    const after = lower[at + needle.length];
-    if (after === undefined || after === ">" || after === "/" || isSpace(after)) {
-      const close = lower.indexOf(">", at);
-      return close === -1 ? lower.length : close + 1;
-    }
-  }
-  return lower.length;
 }

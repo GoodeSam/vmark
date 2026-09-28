@@ -302,3 +302,43 @@ describe("html adapter — differential corpus", () => {
     expect(performance.now() - started).toBeLessThan(300);
   });
 });
+
+// Codex's fifth review: each case below printed a FALSE message (an external
+// script that does not exist, a handler that is not one) or missed a real
+// finding. Expectations from WebKit's parser and the trusted frame.
+describe("html adapter — no false messages, no plausible misses", () => {
+  const rules = (html: string) => htmlValidator(html).map((d) => d.ruleId);
+  const EXT = "html/script-external";
+
+  it.each([
+    // Trusted preview runs with scripting on: noscript content is text.
+    [`<noscript><script src="x.js"></script></noscript>`, []],
+    // Script data escapes: after <!-- a nested <script> keeps </script> from closing.
+    [`<script><!--<script></script><script src="x.js"></script>`, ["html/script-blocked"]],
+    [`<script><!-- a --></script><script src="x.js"></script>`, ["html/script-blocked", EXT]],
+    // Foreign content: CDATA follows the current element; integration points; breakout.
+    [`<svg><title><![CDATA[><script src="x.js"></script>]]></title></svg>`, []],
+    [`<math><annotation-xml encoding="text/html"><textarea><script src="x.js"></script></textarea></annotation-xml></math>`, []],
+    [`<svg><font color=red><textarea><script src="x.js"></script></textarea></font></svg>`, []],
+    // A quoted ">" inside an end tag's attributes does not end the tag.
+    [`<textarea>x</textarea data-x="><script src='x.js'></script>">`, []],
+    [`<p>x</p data-x="><script src='x.js'></script>">`, []],
+    // A numeric reference needs no semicolon.
+    [`<a href="java&#115cript:void 0">go</a>`, ["html/javascript-url"]],
+    [`<a href="javascrip&#x74:void 0">go</a>`, ["html/javascript-url"]],
+    // Hex digits run on: &#x73c is U+073C, so this is not a javascript: URL.
+    [`<a href="java&#x73cript:void 0">go</a>`, []],
+  ])("%s → %j", (html, expected) => {
+    expect(rules(html)).toEqual(expected);
+  });
+
+  it.each([
+    ["many comments", "<!-- x -->".repeat(16_000)],
+    ["many escaped script comments", "<script>" + "<!-- a -->".repeat(16_000) + "</script>"],
+    ["many quoted end tags", '</p data-x=">">'.repeat(16_000)],
+  ])("stays fast: %s", (_label, html) => {
+    const started = performance.now();
+    htmlValidator(html);
+    expect(performance.now() - started).toBeLessThan(300);
+  });
+});
