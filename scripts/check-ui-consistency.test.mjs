@@ -316,6 +316,43 @@ describe("C12 — nothing floats over content without a stated reason", () => {
     expect(ids(r, "C12")).toEqual(["a.css:.pane__toggle"]);
   });
 
+  // Codex third pass on #1465 — the cascade, not a merge.
+  it("takes the LAST declaration within one rule", () => {
+    const r = run({ "a.css": `.pane { position: static; position: absolute; z-index: 1; z-index: var(--z-toolbar); }` });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane"]);
+  });
+
+  it("a later unconditional reset overrides an earlier @media rule", () => {
+    const r = run({
+      "a.css": `@media (min-width: 900px) { .pane { position: absolute; z-index: var(--z-toolbar); } }
+        .pane { position: static; }`,
+    });
+    expect(ids(r, "C12")).toEqual([]);
+  });
+
+  it("composes nested contexts: @media position + nested @supports z-index", () => {
+    const r = run({
+      "a.css": `@media (min-width: 900px) { .pane { position: absolute; } @supports (display: grid) { .pane { z-index: var(--z-toolbar); } } }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane"]);
+  });
+
+  it("is not derailed by braces inside strings", () => {
+    const r = run({
+      "a.css": `.a { content: "}"; } .b { background: url("x{y}.png"); }
+        .pane { position: absolute; z-index: var(--z-toolbar); }
+        @media (max-width: 600px) { .pane { position: static; } }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane"]);
+  });
+
+  it("ignores @keyframes steps", () => {
+    const r = run({
+      "a.css": `@keyframes slide { from { position: absolute; z-index: var(--z-toolbar); } to { position: absolute; z-index: var(--z-toolbar); } }`,
+    });
+    expect(ids(r, "C12")).toEqual([]);
+  });
+
   it("accepts overlay families, low layers, in-flow elements and stated reasons", () => {
     const r = run({
       "a.css": `.link-popup { position: fixed; z-index: var(--z-popup); }

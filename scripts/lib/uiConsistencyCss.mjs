@@ -372,50 +372,68 @@ const OVERLAY_FAMILY =
 export function checkFloatingOverContent(css, file, tokens, { problems }) {
   const barLayer = resolveNumeric("var(--z-bar)", tokens) ?? 100;
   const contextAt = atRuleContexts(css);
-  /** selector -> { base: state, contexts: Map<prelude, state>, line, floatOk } */
-  const bySelector = new Map();
+  /** Every position/z-index declaration, in source order, with its context path. */
+  const events = [];
+  const contexts = new Set([""]);
+  const floatOk = new Set();
+  const lines = new Map();
   for (const rule of rulesWithMarkers(css)) {
-    const position = /(?:^|[;{\s])position\s*:\s*([a-z-]+)/.exec(rule.body)?.[1] ?? null;
-    const z = /(?:^|[;{\s])z-index\s*:\s*([^;}]+)/.exec(rule.body);
-    if (position === null && !z) continue;
+    const path = contextAt(rule.index);
+    if (path.some((p) => /^@(-\w+-)?keyframes\b/.test(p))) continue; // animation steps, not boxes
+    const positions = [...rule.body.matchAll(/(?:^|[;{\s])position\s*:\s*([a-z-]+)/g)];
+    const zs = [...rule.body.matchAll(/(?:^|[;{\s])z-index\s*:\s*([^;}]+)/g)];
+    if (positions.length === 0 && zs.length === 0) continue;
     const { markers, problems: mp } = uiOkMarkers(rule.rawBody);
     problems.push(...mp.map((p) => `${file}:${rule.selector}: ${p}`));
-    const layer = z ? resolveZ(z[1], tokens) : undefined;
-    const context = contextAt(rule.index);
+    // Within one rule the LAST declaration of each property applies.
+    const position = positions.length ? positions[positions.length - 1][1] : undefined;
+    const layer = zs.length ? resolveZ(zs[zs.length - 1][1], tokens) : undefined;
+    const key = path.join(" > ");
+    contexts.add(key);
     for (const selector of splitSelectorList(rule.selector)) {
-      const entry = bySelector.get(selector) ?? { base: {}, contexts: new Map(), line: rule.line, floatOk: false };
-      const state = context === "" ? entry.base : entry.contexts.get(context) ?? {};
-      // The LAST declaration in a context is the one that applies.
-      if (position !== null) state.position = position;
-      if (layer !== undefined) state.layer = layer;
-      if (context !== "") entry.contexts.set(context, state);
-      entry.floatOk ||= markers.has("float");
-      bySelector.set(selector, entry);
+      events.push({ selector, key, position, layer });
+      if (markers.has("float")) floatOk.add(selector);
+      if (!lines.has(selector)) lines.set(selector, rule.line);
     }
   }
-  const covers = (s) => (s.position === "absolute" || s.position === "fixed") && s.layer != null && s.layer >= barLayer;
+  const applies = (eventKey, target) => eventKey === "" || target === eventKey || target.startsWith(`${eventKey} > `);
+  const covers = (st) => (st.position === "absolute" || st.position === "fixed") && st.layer != null && st.layer >= barLayer;
   const findings = [];
-  for (const [selector, e] of bySelector) {
-    if (OVERLAY_FAMILY.test(selector) || e.floatOk) continue;
-    // The base rule applies everywhere; each @media/@supports context applies
-    // the base PLUS its own overrides. Any context in which it covers counts.
-    const effective = [e.base, ...[...e.contexts.values()].map((c) => ({ ...e.base, ...c }))];
-    const hit = effective.find(covers);
+  for (const selector of new Set(events.map((e) => e.selector))) {
+    if (OVERLAY_FAMILY.test(selector) || floatOk.has(selector)) continue;
+    // The cascade, per context: in source order, apply every declaration whose
+    // context is this one or an ancestor of it. A later unconditional reset
+    // therefore overrides an earlier @media rule, and a nested @supports
+    // z-index composes with its @media's position.
+    let hit = null;
+    for (const target of contexts) {
+      const st = {};
+      for (const e of events) {
+        if (e.selector !== selector || !applies(e.key, target)) continue;
+        if (e.position !== undefined) st.position = e.position;
+        if (e.layer !== undefined) st.layer = e.layer;
+      }
+      if (covers(st)) {
+        hit = st;
+        break;
+      }
+    }
     if (!hit) continue;
     findings.push({
       check: "C12",
       id: `${file}:${selector}`,
-      message: `${file}:${e.line} ${selector}: positioned at z-index ${hit.layer} (>= --z-bar) — it can cover content. Put it in flow (a header row, a docked slot), or mark ui-ok(float): <why it may cover content> (rule 32).`,
+      message: `${file}:${lines.get(selector)} ${selector}: positioned at z-index ${hit.layer} (>= --z-bar) — it can cover content. Put it in flow (a header row, a docked slot), or mark ui-ok(float): <why it may cover content> (rule 32).`,
     });
   }
   return findings;
 }
 
 /**
- * index -> enclosing at-rule preludes ("" at top level), by brace matching on
- * the comment-blanked text. cssRules reads flat text, so a rule inside
- * `@media` comes back with the same selector as the base rule; C12 must not
- * merge the two.
+ * index -> enclosing at-rule preludes, outermost first ([] at top level), by
+ * brace matching on comment-blanked text with quoted strings skipped (a "}"
+ * inside `content: "}"` is not a brace). cssRules reads flat text, so a rule
+ * inside `@media` comes back with the same selector as the base rule; C12
+ * must not merge the two.
  */
 function atRuleContexts(css) {
   const text = css.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "));
@@ -424,6 +442,10 @@ function atRuleContexts(css) {
   let segmentStart = 0;
   for (let i = 0; i < text.length; i += 1) {
     const ch = text[i];
+    if (ch === '"' || ch === "'") {
+      for (i += 1; i < text.length && text[i] !== ch; i += 1) if (text[i] === "\\") i += 1;
+      continue;
+    }
     if (ch === "{") {
       const prelude = text.slice(segmentStart, i).trim();
       stack.push({ prelude: prelude.startsWith("@") ? prelude.replace(/\s+/g, " ") : null, start: i });
@@ -437,7 +459,10 @@ function atRuleContexts(css) {
     }
   }
   return (index) =>
-    ranges.filter((r) => r.start < index && index < r.end).map((r) => r.prelude).join(" > ");
+    ranges
+      .filter((r) => r.start < index && index < r.end)
+      .sort((a, b) => a.start - b.start)
+      .map((r) => r.prelude);
 }
 
 /** A z-index value to a number: a literal, a token, or calc(token ± n). */
