@@ -378,65 +378,75 @@ const OVERLAY_FAMILY =
  * layers are for), the layer's owner in rule 32's z-table, or something that
  * covers content on purpose — the last two say so with ui-ok(float): <reason>.
  *
- * Judged PER SELECTOR, with `position` and `z-index` merged across every rule
- * in the file that names that selector: an overlay neighbour in a selector
- * list exempts nothing, and splitting the two declarations into separate rules
- * does not hide the pair. `calc(var(--z-x) ± n)` resolves.
+ * Judged PER SELECTOR, with `position` and `z-index` resolved through the
+ * cascade of every rule in the file that names that selector: an overlay
+ * neighbour in a selector list exempts nothing, splitting the two
+ * declarations into separate rules does not hide the pair, and source order
+ * and enclosing at-rules decide which declaration applies.
+ * `calc(var(--z-x) ± n)` resolves.
+ *
+ * Known limitations — static text cannot settle these; rule 32's WebKit
+ * geometry tests are the check that can:
+ *   - Sibling at-rules are treated as exclusive. `@media (min-width)` giving
+ *     `position` and a separate `@media (min-height)` giving `z-index` both
+ *     apply on a large window, but telling that apart from a wide/narrow pair
+ *     means evaluating the queries.
+ *   - One file at a time. Declarations for one selector split across
+ *     stylesheets depend on load order, which the CSS does not state; rule 32
+ *     keeps each component's styles in one file.
  */
 export function checkFloatingOverContent(css, file, tokens, { problems }) {
   const barLayer = resolveNumeric("var(--z-bar)", tokens) ?? 100;
   const contextAt = atRuleContexts(css);
-  /** Every position/z-index declaration, in source order, with its context path. */
-  const events = [];
-  const contexts = new Set([""]);
+  /** selector -> its position/z-index declarations, in source order. */
+  const bySelector = new Map();
   const floatOk = new Set();
-  const lines = new Map();
   for (const rule of rulesWithMarkers(css)) {
     const path = contextAt(rule.index);
     if (path.some((p) => /^@(-\w+-)?keyframes\b/.test(p))) continue; // animation steps, not boxes
-    const positions = [...rule.body.matchAll(/(?:^|[;{\s])position\s*:\s*([a-z-]+)/g)];
-    const zs = [...rule.body.matchAll(/(?:^|[;{\s])z-index\s*:\s*([^;}]+)/g)];
-    if (positions.length === 0 && zs.length === 0) continue;
+    const decls = [...rule.body.matchAll(/(?:^|[;{\s])(position|z-index)\s*:\s*([^;}]+)/g)].map((m) => {
+      const value = m[2].trim();
+      return { prop: m[1], value: m[1] === "z-index" ? resolveZ(value, tokens) : value };
+    });
+    if (decls.length === 0) continue;
     const { markers, problems: mp } = uiOkMarkers(rule.rawBody);
     problems.push(...mp.map((p) => `${file}:${rule.selector}: ${p}`));
-    // Within one rule the LAST declaration of each property applies.
-    const position = positions.length ? positions[positions.length - 1][1] : undefined;
-    const layer = zs.length ? resolveZ(zs[zs.length - 1][1], tokens) : undefined;
     const key = path.join(" > ");
-    contexts.add(key);
     for (const selector of splitSelectorList(rule.selector)) {
-      events.push({ selector, key, position, layer });
+      if (!bySelector.has(selector)) bySelector.set(selector, { line: rule.line, events: [] });
+      bySelector.get(selector).events.push(...decls.map((d) => ({ ...d, key })));
       if (markers.has("float")) floatOk.add(selector);
-      if (!lines.has(selector)) lines.set(selector, rule.line);
     }
   }
   const applies = (eventKey, target) => eventKey === "" || target === eventKey || target.startsWith(`${eventKey} > `);
-  const covers = (st) => (st.position === "absolute" || st.position === "fixed") && st.layer != null && st.layer >= barLayer;
   const findings = [];
-  for (const selector of new Set(events.map((e) => e.selector))) {
+  for (const [selector, { line, events }] of bySelector) {
     if (OVERLAY_FAMILY.test(selector) || floatOk.has(selector)) continue;
     // The cascade, per context: in source order, apply every declaration whose
     // context is this one or an ancestor of it. A later unconditional reset
     // therefore overrides an earlier @media rule, and a nested @supports
-    // z-index composes with its @media's position.
+    // z-index composes with its @media's position. Only this selector's own
+    // contexts need evaluating: the contexts enclosing any point form one
+    // prefix chain, so every other point equals its deepest such context.
     let hit = null;
-    for (const target of contexts) {
+    for (const target of new Set(["", ...events.map((e) => e.key)])) {
       const st = {};
       for (const e of events) {
-        if (e.selector !== selector || !applies(e.key, target)) continue;
-        if (e.position !== undefined) st.position = e.position;
-        if (e.layer !== undefined) st.layer = e.layer;
+        if (!applies(e.key, target)) continue;
+        st[e.prop] = e;
       }
-      if (covers(st)) {
-        hit = st;
+      const position = st.position?.value;
+      const layer = st["z-index"]?.value;
+      if ((position === "absolute" || position === "fixed") && layer != null && layer >= barLayer) {
+        hit = layer;
         break;
       }
     }
-    if (!hit) continue;
+    if (hit === null) continue;
     findings.push({
       check: "C12",
       id: `${file}:${selector}`,
-      message: `${file}:${lines.get(selector)} ${selector}: positioned at z-index ${hit.layer} (>= --z-bar) — it can cover content. Put it in flow (a header row, a docked slot), or mark ui-ok(float): <why it may cover content> (rule 32).`,
+      message: `${file}:${line} ${selector}: positioned at z-index ${hit} (>= --z-bar) — it can cover content. Put it in flow (a header row, a docked slot), or mark ui-ok(float): <why it may cover content> (rule 32).`,
     });
   }
   return findings;

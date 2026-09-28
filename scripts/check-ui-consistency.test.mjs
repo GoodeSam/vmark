@@ -552,4 +552,14 @@ describe("Codex fourth pass — C12 and C9 probes", () => {
     const r = run({ "a.css": `.pane { --label: "}"; position: absolute; z-index: var(--z-toolbar); }` });
     expect(ids(r, "C12")).toEqual(["a.css:.pane"]);
   });
+
+  it("C12: scales on a stylesheet of many @media rules", () => {
+    const css = Array.from(
+      { length: 1600 },
+      (_, i) => `@media (min-width: ${i}px) { .p${i} { position: relative; z-index: var(--z-bar); } }`,
+    ).join("\n");
+    const started = performance.now();
+    expect(ids(run({ "a.css": css }), "C12")).toEqual([]);
+    expect(performance.now() - started).toBeLessThan(1500);
+  });
 });
