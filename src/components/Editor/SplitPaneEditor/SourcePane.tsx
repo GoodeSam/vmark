@@ -207,7 +207,9 @@ export function SourcePane({
 
     // Callbacks read via refs (see H3 comment above) are intentionally excluded
     // from this dep array so the editor doesn't remount on every parent render.
-  }, [tabId, formatId, readOnly, validator, loadLanguage, loadExtraExtensions]);
+    // focusedRef is a stable ref and trustedLint is memoized on the format's
+    // rule list, so neither remounts it.
+  }, [tabId, formatId, readOnly, validator, loadLanguage, loadExtraExtensions, focusedRef, trustedLint]);
 
   // Reconfigure the line-number gutter when the toggle flips. Kept out of
   // the mount effect so toggling never tears down the view (preserves undo
