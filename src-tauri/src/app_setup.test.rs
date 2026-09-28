@@ -85,7 +85,8 @@ fn the_machine_id_does_not_contain_the_raw_hostname() {
 /// What `restore_at_launch` itself does is tested in `workspace_grants`.
 #[test]
 fn setup_restores_workspace_grants_before_anything_else_starts() {
-    let source = include_str!("app_setup.rs");
+    // A Windows checkout has CRLF line endings; the searches below assume LF.
+    let source = include_str!("app_setup.rs").replace("\r\n", "\n");
     let start = source
         .find("pub(crate) fn setup_app(")
         .expect("setup_app exists");

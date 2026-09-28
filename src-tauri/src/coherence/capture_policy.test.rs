@@ -407,6 +407,10 @@ fn tracked_only_mixed_inputs_keep_resolvable_ones_in_order_and_drop_the_rest() {
     assert_eq!(read_file(dir.path(), "ided.md"), ided);
 }
 
+// Not on Windows: once initialized, a live kernel holds `.vmark/index.db` open
+// through SQLite, and Windows refuses to delete an open file — for the user as
+// much as for this test — so `.vmark/` cannot vanish under a live kernel there.
+#[cfg(not(target_os = "windows"))]
 #[test]
 fn tracked_only_declines_after_the_ledger_is_removed_under_a_live_kernel() {
     // #52 (stale positive): the kernel cached "initialized", the user then
@@ -472,6 +476,9 @@ fn tracked_only_reads_identity_through_crlf_line_endings() {
     assert_eq!(read_file(dir.path(), "windows.md"), text, "never rewritten");
 }
 
+// Not on Windows, for the reason on the test above: the open `index.db`
+// makes the deletion this test performs impossible there.
+#[cfg(not(target_os = "windows"))]
 #[test]
 fn tracked_only_lock_declines_when_the_ledger_vanishes_after_admission() {
     // #52, round 2: `.vmark/` deleted in the window between `admits` and the
