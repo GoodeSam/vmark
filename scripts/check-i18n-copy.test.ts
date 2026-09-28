@@ -336,3 +336,15 @@ describe("Codex fifth pass — fragments", () => {
     ]);
   });
 });
+
+describe("Codex sixth pass — fragments", () => {
+  const fragments = { "editor.json:preview.errorAt": "suffix" };
+  const probe = (jsx: string) => fragmentUsageFindings("a.tsx", `export const A = () => ${jsx};`, fragments);
+
+  it("an empty wrapper behind a condition is no company", () => {
+    expect(probe(`<div>{show && <span>{null}</span>}{t("preview.errorAt")}</div>`)).toEqual([
+      "a.tsx: preview.errorAt rendered alone",
+    ]);
+  });
+
+});

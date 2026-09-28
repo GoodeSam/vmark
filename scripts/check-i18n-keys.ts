@@ -913,7 +913,7 @@ export function fragmentUsageFindings(
         return rendersSomething(e.left) || rendersSomething(e.right);
       }
     }
-    if (ts.isJsxFragment(e)) return e.children.some(meaningful);
+    if (ts.isJsxFragment(e) || ts.isJsxElement(e) || ts.isJsxSelfClosingElement(e)) return meaningful(e);
     return true;
   };
   // An intrinsic element (`<span>`, `<b/>`) is company only if it holds some;
