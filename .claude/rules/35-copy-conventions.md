@@ -18,7 +18,7 @@ each locale follows its own conventions.
 
 | Register | Key pattern | Casing |
 |---|---|---|
-| Chrome nouns | `menu.*`, `contextMenu.*`, `tabMenu.*`, `toolbar.*`, `*.title`, `*button*` | Title Case (stop words lowercase; pronouns like "My" are capped; "All"/"Each" are significant) |
+| Chrome nouns | `menu.*`, `contextMenu.*`, `tabMenu.*`, `toolbar.*`, `*.title`, `*button*`, `*.group` / `*.group.<name>` (section headings) | Title Case (stop words lowercase; pronouns like "My" are capped; "All"/"Each" are significant; a brand keeps its own spelling: macOS, iCloud) |
 | Running copy | `*.label`, `*.description`, `*.empty`, `*.placeholder`, `toast.*` | Sentence case |
 
 ## Never in copy (zero tolerance — `lint:i18n`, `internalReferenceFindings`)

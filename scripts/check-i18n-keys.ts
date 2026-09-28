@@ -717,10 +717,17 @@ function checkDialogLiterals(): boolean {
 // entry is removed (run with --update-copy to record wins). English only:
 // each locale has its own casing conventions.
 
-const TITLE_KEY = /^(menu|contextMenu|tabMenu|toolbar)\.|\.title$|[bB]utton/;
+// `*.group` / `*.group.<name>` are settings section headings — 19 of them
+// were Title Case and three were not, because this register did not list them.
+const TITLE_KEY = /^(menu|contextMenu|tabMenu|toolbar)\.|\.title$|[bB]utton|\.group(\.[A-Za-z]+)?$/;
 // ARIA labels are SPOKEN copy — sentence register regardless of their home key.
 const ARIA_KEY = /aria/i;
-const SENTENCE_KEY = /\.(label|description|empty|placeholder)$|^toast\./;
+const SENTENCE_KEY = /\.(label|description|empty|placeholder)$|Description$|^toast\./;
+
+/** Whether a key's value is a chrome noun, written in Title Case (rule 35). */
+export function titleRegister(key: string): boolean {
+  return TITLE_KEY.test(key) && !SENTENCE_KEY.test(key) && !ARIA_KEY.test(key);
+}
 const STOP_WORDS = new Set([
   "a", "an", "the", "and", "or", "nor", "but", "of", "to", "in", "on", "at",
   "for", "with", "as", "by", "from", "into", "onto", "per", "via", "vs",
@@ -735,6 +742,9 @@ export function titleCaseViolations(value: string): boolean {
   if (words.length === 0) return false;
   return words.some((w, i) => {
     if (/^[A-Z0-9]/.test(w)) return false;
+    // A lowercase start with an internal capital is a brand's own spelling
+    // (macOS, iCloud, iPhone), never an uncapitalised word.
+    if (/^[a-z]+[A-Z]/.test(w)) return false;
     if (i > 0 && STOP_WORDS.has(w.toLowerCase())) return false;
     return true;
   });
@@ -1175,7 +1185,7 @@ export function checkCopyConventions(
       if (SENTENCE_KEY.test(key) && key.endsWith(".description") && /[.。]$/.test(value.trim()) && !/[.][.][.]|…$/.test(value.trim())) {
         found.push(id("trailing-period"));
       }
-      if (TITLE_KEY.test(key) && !SENTENCE_KEY.test(key) && !ARIA_KEY.test(key) && titleCaseViolations(value)) {
+      if (titleRegister(key) && titleCaseViolations(value)) {
         found.push(id("title-case"));
       }
     }

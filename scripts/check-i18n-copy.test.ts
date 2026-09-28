@@ -16,6 +16,7 @@ import {
   staleReferenceExceptions,
   standaloneTextFindings,
   titleCaseViolations,
+  titleRegister,
 } from "./check-i18n-keys";
 
 describe("emdashSpacingViolation — English copy spaces its em-dashes", () => {
@@ -43,6 +44,9 @@ describe("titleCaseViolations (R14)", () => {
     ["Copy on select", true],
     ["Keep my Changes", true],
     ["Reload all", true],
+    ["macOS", false],
+    ["Sync with iCloud", false],
+    ["Large files", true],
   ])("%s → violation=%s", (value, expected) => {
     expect(titleCaseViolations(value)).toBe(expected);
   });
@@ -370,4 +374,26 @@ describe("Codex seventh pass — fragments", () => {
       expect(probe(jsx)).toEqual([]);
     },
   );
+});
+
+describe("titleRegister — which keys are chrome nouns in Title Case", () => {
+  it.each([
+    ["formats.associations.group"],
+    ["appearance.group.focusMode"],
+    ["formats.group.support"],
+    ["menu.file"],
+    ["dialog.title"],
+    ["saveButton"],
+  ])("%s is a Title Case heading", (key) => {
+    expect(titleRegister(key)).toBe(true);
+  });
+
+  it.each([
+    ["formats.group.supportDescription"],
+    ["formats.associations.description"],
+    ["menu.fileAriaLabel"],
+    ["formats.defaultViewMode.label"],
+  ])("%s is running copy or spoken copy, not a heading", (key) => {
+    expect(titleRegister(key)).toBe(false);
+  });
 });
