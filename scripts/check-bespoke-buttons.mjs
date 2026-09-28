@@ -294,19 +294,20 @@ export function collectBespokeButtons(files, readFile = (p) => readFileSync(p, "
 }
 
 /**
- * Compare one measured count against its committed budget.
+ * Every (file, class) definition site, keyed `"<file> <class>"`.
  *
- * Extracted because the CLI below did this three times — once per budget — with
- * the integer check, the over-budget branch and the stale-budget branch copied
- * verbatim each time. Three copies of a two-way ratchet is three places for the
- * "never raise it" half to be dropped from.
- *
- * Returns `null` when the budget is held; otherwise `{ kind, message }` where
- * `kind` is `invalid` | `over` | `stale`. The caller supplies `overDetail`
- * because each budget names different things and points at a different remedy.
- *
- * @returns {{kind: "invalid"|"over"|"stale", message: string} | null}
+ * The by-name list is keyed by SITE, not by class: a listed name defined in a
+ * new file is a new bespoke implementation hiding behind an old exemption, and
+ * a class-keyed list let it through (Codex review of the named lists).
  */
+export function collectBespokeButtonSites(files, readFile = (p) => readFileSync(p, "utf8")) {
+  const sites = new Map(); // "<file> <class>" -> file
+  for (const file of files) {
+    for (const cls of collectBespokeButtons([file], readFile).keys()) sites.set(`${file} ${cls}`, file);
+  }
+  return sites;
+}
+
 /**
  * Compare the classes the code has against a named list that may only shrink.
  *
@@ -314,7 +315,10 @@ export function collectBespokeButtons(files, readFile = (p) => readFileSync(p, "
  * written — a swap is a new bespoke button whatever the total — so each
  * budget is the list of the classes themselves. A class not on the list
  * fails; a listed class the code no longer has is stale and must be deleted,
- * so the win is locked in. Returns null when the two match.
+ * so the win is locked in. One verdict for all three lists: three copies of
+ * a two-way ratchet are three places for the "never add" half to be dropped.
+ *
+ * @returns {{kind: "invalid"|"over"|"stale", message: string} | null}
  */
 export function identityVerdict({ key, allowed, found, noun, advice = "", describe = (name, info) => `  ${name}  (${info})` }) {
   const valid =
@@ -357,11 +361,12 @@ if (process.argv[1] && process.argv[1].endsWith("check-bespoke-buttons.mjs")) {
     process.exit(1);
   }
 
-  const found = collectBespokeButtons(walkCss(SRC_DIR));
+  const found = collectBespokeButtonSites(walkCss(SRC_DIR));
   const nameVerdict = identityVerdict({
     key: "bespokeButtonClasses",
     allowed: baseline.bespokeButtonClasses,
     found,
+    describe: (site) => `  ${site}`,
     noun: "bespoke button classes",
     advice:
       "   Use `.vm-btn` from src/styles/button-shared.css, or `.popup-icon-btn`" +

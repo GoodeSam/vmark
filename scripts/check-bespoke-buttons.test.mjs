@@ -5,6 +5,7 @@ import {
   buildTokenMap,
   canonicalTriple,
   collectBespokeButtons,
+  collectBespokeButtonSites,
   collectShapeDrift,
   identityVerdict,
   resolveValue,
@@ -299,5 +300,26 @@ describe("collectShapeDrift", () => {
     const [d] = found.get("thing__btn").diffs;
     expect(d.actual).toBe("var(--radius-md)");
     expect(d.expected).toBe("var(--radius-sm)");
+  });
+});
+
+// A listed name defined in a NEW file is a new bespoke implementation hiding
+// behind an old exemption: the by-name list is keyed by file and class, not
+// by class alone (Codex review of the named lists).
+describe("collectBespokeButtonSites — one entry per file that defines a class", () => {
+  const sources = {
+    "src/a/a.css": ".dialog-btn { padding: 1px; }",
+    "src/b/b.css": ".new-panel .dialog-btn { padding: 40px; } .vm-btn--x { padding: 0; }",
+  };
+  const sites = collectBespokeButtonSites(Object.keys(sources), (p) => sources[p]);
+
+  it("keys each definition by file and class", () => {
+    expect([...sites.keys()]).toEqual(["src/a/a.css .dialog-btn", "src/b/b.css .dialog-btn"]);
+  });
+
+  it("so reusing a listed name in another file is not on the list", () => {
+    const v = identityVerdict({ key: "k", allowed: ["src/a/a.css .dialog-btn"], found: sites, noun: "things" });
+    expect(v.kind).toBe("over");
+    expect(v.message).toContain("src/b/b.css .dialog-btn");
   });
 });
