@@ -243,7 +243,8 @@ describe("html adapter — differential corpus", () => {
     [`<!---><script src="x.js"></script>`, [EXT]],
     [`<!-- --!><script src="x.js"></script>`, [EXT]],
     [`<![CDATA[><script src="x.js"></script>`, [EXT]],
-    [`<svg><![cdata[><script src="x.js"></script>]]></svg>`, [EXT]],
+    // Lower-case "cdata" is not CDATA; the script is SVG's, whose src is inert.
+    [`<svg><![cdata[><script src="x.js"></script>]]></svg>`, ["html/script-blocked"]],
     // Unicode case folding must not shift offsets.
     [`İ<script src="x.js"></script>`, [EXT]],
     [`<p title="İ"></p><script src="x.js"></script>`, [EXT]],
@@ -311,6 +312,10 @@ describe("html adapter — no false messages, no plausible misses", () => {
   const EXT = "html/script-external";
 
   it.each([
+    // SVG scripts load from href / xlink:href; their src is inert.
+    [`<svg><script src="x.js">run()</script></svg>`, ["html/script-blocked"]],
+    [`<svg><script href="x.js"></script></svg>`, [EXT]],
+    [`<svg><script xlink:href="x.js"></script></svg>`, [EXT]],
     // Trusted preview runs with scripting on: noscript content is text.
     [`<noscript><script src="x.js"></script></noscript>`, []],
     // Script data escapes: after <!-- a nested <script> keeps </script> from closing.
@@ -320,6 +325,7 @@ describe("html adapter — no false messages, no plausible misses", () => {
     [`<svg><title><![CDATA[><script src="x.js"></script>]]></title></svg>`, []],
     [`<math><annotation-xml encoding="text/html"><textarea><script src="x.js"></script></textarea></annotation-xml></math>`, []],
     [`<svg><font color=red><textarea><script src="x.js"></script></textarea></font></svg>`, []],
+    [`<svg><font><script src="x.js"></script></font></svg>`, ["html/script-blocked"]],
     // A quoted ">" inside an end tag's attributes does not end the tag.
     [`<textarea>x</textarea data-x="><script src='x.js'></script>">`, []],
     [`<p>x</p data-x="><script src='x.js'></script>">`, []],
@@ -328,6 +334,10 @@ describe("html adapter — no false messages, no plausible misses", () => {
     [`<a href="javascrip&#x74:void 0">go</a>`, ["html/javascript-url"]],
     // Hex digits run on: &#x73c is U+073C, so this is not a javascript: URL.
     [`<a href="java&#x73cript:void 0">go</a>`, []],
+    // Only real event handler names are handlers.
+    [`<div onmadeupevent="x()"></div>`, []],
+    [`<div onclick="x()" onmadeupevent="y()"></div>`, ["html/inline-handler"]],
+    [`<body onload="x()"></body>`, ["html/inline-handler"]],
   ])("%s → %j", (html, expected) => {
     expect(rules(html)).toEqual(expected);
   });

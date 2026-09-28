@@ -60,6 +60,29 @@ const SCRIPT_TYPES = new Set([
   "text/x-javascript", "text/x-ecmascript", "text/javascript1.0", "text/javascript1.1", "text/javascript1.2",
   "text/javascript1.3", "text/javascript1.4", "text/javascript1.5",
 ]);
+/** Event-handler content attributes the platform defines. Any other `on*`
+ *  attribute is just an attribute: reporting it as a handler would be false. */
+const EVENT_HANDLERS = new Set(
+  (
+    "abort afterprint animationcancel animationend animationiteration animationstart auxclick beforecopy beforecut " +
+    "beforeinput beforematch beforepaste beforeprint beforetoggle beforeunload blur cancel canplay canplaythrough " +
+    "change click close contextlost contextmenu contextrestored copy cuechange cut dblclick drag dragend dragenter " +
+    "dragleave dragover dragstart drop durationchange emptied ended error focus focusin focusout formdata " +
+    "gesturechange gestureend gesturestart gotpointercapture hashchange input invalid keydown keypress keyup " +
+    "languagechange load loadeddata loadedmetadata loadstart lostpointercapture message messageerror mousedown " +
+    "mouseenter mouseleave mousemove mouseout mouseover mouseup mousewheel offline online orientationchange " +
+    "pagehide pagereveal pageshow pageswap paste pause play playing pointercancel pointerdown pointerenter " +
+    "pointerleave pointermove pointerout pointerover pointerup popstate progress ratechange rejectionhandled " +
+    "reset resize scroll scrollend search securitypolicyviolation seeked seeking select selectionchange " +
+    "selectstart slotchange stalled storage submit suspend timeupdate toggle touchcancel touchend touchmove " +
+    "touchstart transitioncancel transitionend transitionrun transitionstart unhandledrejection unload " +
+    "volumechange waiting webkitanimationend webkitanimationiteration webkitanimationstart " +
+    "webkitmouseforcechanged webkitmouseforcedown webkitmouseforceup webkitmouseforcewillbegin " +
+    "webkittransitionend wheel"
+  )
+    .split(" ")
+    .map((event) => `on${event}`),
+);
 /** Nested `srcdoc` documents are checked this many levels deep, at most. */
 const SRCDOC_DEPTH = 3;
 const SRCDOC_MAX_LENGTH = 1_000_000;
@@ -104,13 +127,16 @@ function findings(content: string, depth: number): { ruleId: HtmlRuleId; offset:
     if (tag.name === "script") {
       const type = (attrValue(tag, "type") ?? "").trim().toLowerCase();
       if (tag.namespace !== "html" || SCRIPT_TYPES.has(type)) {
-        // Any src — remote, relative or empty — means the element never runs
-        // inline code, and the trusted CSP allows no script URL.
-        out.push({ ruleId: tag.attrs.some((a) => a.name === "src") ? "html/script-external" : "html/script-blocked", offset: tag.offset });
+        // An external script names its file — src in HTML, href or xlink:href
+        // in SVG (whose src is inert) — and never runs its own text; the
+        // trusted CSP allows no script URL, so it never loads.
+        const fileAttrs = tag.namespace === "html" ? ["src"] : ["href", "xlink:href"];
+        const external = tag.attrs.some((a) => fileAttrs.includes(a.name));
+        out.push({ ruleId: external ? "html/script-external" : "html/script-blocked", offset: tag.offset });
       }
     }
     for (const attr of tag.attrs) {
-      if (/^on[a-z]+$/.test(attr.name)) out.push({ ruleId: "html/inline-handler", offset: attr.offset });
+      if (EVENT_HANDLERS.has(attr.name)) out.push({ ruleId: "html/inline-handler", offset: attr.offset });
     }
     const link = linkUrl(tag);
     if (link && isJavascriptUrl(link.value)) {
