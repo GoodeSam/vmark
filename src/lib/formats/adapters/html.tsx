@@ -34,41 +34,36 @@ import type {
 /**
  * What the preview refuses to execute, and what to say about it.
  *
- * Each rule records whether trusted preview RUNS what it reports. The trusted
- * frame's CSP is `script-src 'unsafe-inline'` with no URL source, sandboxed
- * with allow-scripts only: inline script, inline handlers and same-frame
- * `javascript:` URLs run; an external script never loads, and a `javascript:`
- * URL aimed at the top page or a new window never navigates. `infoWhenTrusted`
- * derives from this, so a new rule cannot skip the decision.
+ * Severity makes no claim about what runs. In the sandboxed preview every
+ * finding is a warning; once the user trusts the document, every finding is
+ * information (`infoWhenTrusted` lists them all), so none contradicts the
+ * "Trusted — scripts enabled" banner. Whether one particular construct runs
+ * depends on the page, and static detection cannot prove it (review): the
+ * facts that differ by construct — an external script never loads, a link to
+ * another window never navigates — are stated in the messages instead.
  *
- * Messages are worded for BOTH modes — a message naming only the sandbox is
- * wrong for a document the user has authorized (#1273). They are also
- * FALLBACKS: the gutter prefers `diagnostic.<ruleId>` from the locale bundles,
- * so any wording change here has to be made there too or it is invisible.
- * The rules read parsed tags (htmlTags.ts), never raw text.
+ * Messages are worded for BOTH modes (#1273). They are also FALLBACKS: the
+ * gutter prefers `diagnostic.<ruleId>` from the locale bundles, so any wording
+ * change here has to be made there too or it is invisible. The rules read
+ * parsed tags (htmlTags.ts), never raw text.
  */
 const HTML_RULES = {
   "html/script-blocked": {
     message: "Script tag detected — blocked unless trusted preview is enabled.",
-    runsWhenTrusted: true,
   },
   "html/script-external": {
     message: "External script — the preview never loads scripts from a file or URL, trusted or not.",
-    runsWhenTrusted: false,
   },
   "html/javascript-url": {
     message: "javascript: URL detected — blocked unless trusted preview is enabled.",
-    runsWhenTrusted: true,
   },
   "html/javascript-url-navigation": {
     message: "javascript: URL that opens another window or the top page — the preview never allows that, trusted or not.",
-    runsWhenTrusted: false,
   },
   "html/inline-handler": {
     message: "Inline event handler detected — blocked unless trusted preview is enabled.",
-    runsWhenTrusted: true,
   },
-} as const satisfies Record<string, { message: string; runsWhenTrusted: boolean }>;
+} as const satisfies Record<string, { message: string }>;
 type HtmlRuleId = keyof typeof HTML_RULES;
 
 /** Attributes whose value is a URL a `javascript:` scheme would run. */
@@ -163,9 +158,8 @@ export const htmlFormat: FormatConfig = {
     return html();
   },
   validator: htmlValidator,
-  // A finding is information under trust only if trusted preview actually
-  // runs what it reports — an external script never loads, trusted or not.
-  infoWhenTrusted: (Object.keys(HTML_RULES) as HtmlRuleId[]).filter((id) => HTML_RULES[id].runsWhenTrusted),
+  // Every finding is information once the document is trusted (see HTML_RULES).
+  infoWhenTrusted: Object.keys(HTML_RULES) as HtmlRuleId[],
   genericPreview: HtmlPreview,
   adapters: {
     saveDialogFilters: [{ nameI18nKey: "format.html", extensions: ["html", "htm"] }],

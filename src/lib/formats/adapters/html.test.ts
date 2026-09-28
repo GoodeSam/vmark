@@ -142,15 +142,17 @@ describe("html adapter", () => {
 });
 
 describe("htmlFormat.infoWhenTrusted — what a trusted document's findings mean", () => {
-  // Each rule decides whether trusted preview RUNS what it reports: inline
-  // script, javascript: URLs and inline handlers run under the trusted CSP
-  // (`script-src 'unsafe-inline'`); an external script never loads. A rule
-  // added without that decision fails here.
-  it("lists exactly the reported rules whose content runs when trusted", () => {
-    const doc = `<script>x</script><script src="a.js"></script><a href="javascript:void 0">a</a><p onclick="y">p</p>`;
+  // Under trust every HTML finding is information: none may contradict the
+  // "Trusted — scripts enabled" banner. Severity makes no claim that a given
+  // construct RUNS — static detection cannot prove that (review) — so the
+  // facts that differ by construct live in the messages instead.
+  it("lowers every rule the validator can report", () => {
+    const doc =
+      `<script>x</script><script src="a.js"></script><a href="javascript:void 0">a</a>` +
+      `<a target="_top" href="javascript:void 0">b</a><p onclick="y">p</p>`;
     const reported = [...new Set(htmlValidator(doc).map((d) => d.ruleId))].sort();
-    expect(reported).toHaveLength(4);
-    expect([...(htmlFormat.infoWhenTrusted ?? [])].sort()).toEqual(reported.filter((r) => r !== "html/script-external"));
+    expect(reported).toHaveLength(5);
+    expect([...(htmlFormat.infoWhenTrusted ?? [])].sort()).toEqual(reported);
   });
 });
 
@@ -170,9 +172,9 @@ describe("html adapter — inline vs external script", () => {
     expect(htmlValidator(html).map((d) => d.ruleId)).toEqual([ruleId]);
   });
 
-  it("lowers inline script when trusted, but never an external one", () => {
-    expect(htmlFormat.infoWhenTrusted).toContain("html/script-blocked");
-    expect(htmlFormat.infoWhenTrusted).not.toContain("html/script-external");
+  it("says in the message that an external script never loads, trusted or not", () => {
+    const [d] = htmlValidator('<script src="app.js"></script>');
+    expect(d.message).toMatch(/never loads/);
   });
 });
 
@@ -217,9 +219,9 @@ describe("html adapter — rules read parsed tags, not text", () => {
     expect(rules(html)).toEqual([ruleId]);
   });
 
-  it("never lowers a javascript: URL that navigates another window", () => {
-    expect(htmlFormat.infoWhenTrusted).toContain("html/javascript-url");
-    expect(htmlFormat.infoWhenTrusted).not.toContain("html/javascript-url-navigation");
+  it("says in the message that a link to another window never navigates", () => {
+    const [d] = htmlValidator('<a target="_top" href="javascript:void 0">x</a>');
+    expect(d.message).toMatch(/never allows/);
   });
 
   it("stays linear on hostile input", () => {
