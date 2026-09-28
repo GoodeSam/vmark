@@ -99,8 +99,11 @@ count() {
         return typeof node === "object" ? sum(node) : 0;
       }
       if (process.env.MODE === "records") {
-        return Array.isArray(node) ? node.length
-          : Object.keys(node).filter((k) => !isComment(k)).length;
+        // Records are an array or the keys of an object; anything else (a number
+        // where a list belongs) is unreadable, not zero records.
+        if (Array.isArray(node)) return node.length;
+        if (typeof node === "object") return Object.keys(node).filter((k) => !isComment(k)).length;
+        return "";
       }
       return typeof node === "number" ? node : "";
     };

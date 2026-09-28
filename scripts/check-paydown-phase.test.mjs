@@ -140,6 +140,16 @@ describe("a phase is done when the real baseline says so (ADR-1)", () => {
     expect(r.status).toBe(1);
     expect(r.stdout).toMatch(/unreadable/);
   });
+
+  // `records` counted Object.keys(88) — zero — so a list key holding a
+  // NUMBER certified the phase done (Codex review).
+  it("phase 4 reads a number where a list belongs as unreadable, never as zero records", () => {
+    const root = rootWith({});
+    write(root, "scripts/bespoke-buttons-baseline.json", JSON.stringify({ bespokeButtonClasses: 88, styledButtonClasses: 80 }));
+    const r = run(root, "4");
+    expect(r.status).toBe(1);
+    expect(r.stdout).toMatch(/unreadable/);
+  });
 });
 
 describe("partial progress does not round up", () => {
