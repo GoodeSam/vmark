@@ -347,4 +347,7 @@ describe("Codex sixth pass — fragments", () => {
     ]);
   });
 
+  it("a form control shows its value, so it is company", () => {
+    expect(probe(`<div><input value="Cannot render" readOnly />{t("preview.errorAt")}</div>`)).toEqual([]);
+  });
 });

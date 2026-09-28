@@ -917,8 +917,10 @@ export function fragmentUsageFindings(
     return true;
   };
   // An intrinsic element (`<span>`, `<b/>`) is company only if it holds some;
-  // a component's output is unknown, so it counts.
-  const isIntrinsic = (tag: ts.JsxTagNameExpression) => ts.isIdentifier(tag) && /^[a-z]/.test(tag.text);
+  // a component's output is unknown, so it counts, and a form control shows
+  // its value.
+  const isIntrinsic = (tag: ts.JsxTagNameExpression) =>
+    ts.isIdentifier(tag) && /^[a-z]/.test(tag.text) && !/^(input|textarea|select)$/.test(tag.text);
   const meaningful = (child: ts.JsxChild): boolean => {
     if (ts.isJsxText(child)) return child.text.trim() !== "";
     if (ts.isJsxExpression(child)) return child.expression ? rendersSomething(child.expression) : false;
