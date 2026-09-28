@@ -604,3 +604,13 @@ describe("Codex fifth pass — C9 probes", () => {
     expect(ids(r, "C9")).toEqual([]);
   });
 });
+
+describe("Codex sixth pass — C9 target reading", () => {
+  it.each([[`.row.selected:not(.row-icon .label)`], [`.row.selected:has(.row-icon)`]])(
+    "an icon named only inside :not()/:has() does not make %s an indicator",
+    (selector) => {
+      const r = run({ "a.css": `${selector} { color: var(--accent-primary); }` });
+      expect(ids(r, "C9")).toEqual([`a.css:${selector} (ink)`]);
+    },
+  );
+});

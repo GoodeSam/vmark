@@ -327,8 +327,13 @@ function checkSelectionInk(css, file, { problems }) {
     problems.push(...mp.map((p) => `${file}:${rule.selector}: ${p}`));
     if (markers.has("state")) continue;
     for (const selector of splitSelectorList(rule.selector)) {
+      // Indicator words count only where they name the styled element: an
+      // icon inside `:not(...)` or `:has(...)` is some OTHER element.
       const labels = expandMatches(selector).filter(
-        (alt) => isSelectedSelector(alt) && !INDICATOR_TARGET.test(targetCompound(alt)) && !/::?(before|after)\b/.test(alt),
+        (alt) =>
+          isSelectedSelector(alt) &&
+          !INDICATOR_TARGET.test(targetCompound(alt).replace(/:(?:not|has)\((?:[^()]|\([^()]*\))*\)/g, "")) &&
+          !/::?(before|after)\b/.test(alt),
       );
       if (labels.length === 0) continue;
       findings.push({
