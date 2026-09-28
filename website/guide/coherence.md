@@ -24,10 +24,13 @@ Nothing is ever auto-updated; you stay the editor-in-chief.
   JSONL; deleting the derived `index.db` loses nothing).
 - **A workspace that already has a ledger** — a `.vmark/` you created
   earlier, or one a collaborator committed — keeps recording writes to the
-  documents it already tracks even with the setting off. It stamps nothing
-  and starts tracking no new document; a document it does not yet track
-  is left out, and a write whose inputs are therefore incomplete is
-  recorded as `inferred` rather than `exact`.
+  documents it tracks even with the setting off. A document counts as
+  tracked when the ledger has recorded it before, or when the file already
+  carries its own `vmark:` identity — a tracked file you moved, copied in or
+  checked out; the ledger's own scan adopts exactly those. It stamps
+  nothing: a document without an identity is left out, and a write whose
+  inputs are therefore incomplete is recorded as `inferred` rather than
+  `exact`.
 - When an AI writes a document while reading others, those reads become
   **dependency edges**, pinned to the revision that was read. In-app
   instrumented paths record `exact` inputs; MCP writes honestly record an

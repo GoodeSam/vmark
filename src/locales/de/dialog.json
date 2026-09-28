@@ -270,5 +270,6 @@
   "exportError.rollbackFoldersLeft": "Ihre Dateien wurden wiederhergestellt, aber diese vom Export angelegten Ordner sind noch vorhanden: {{folders}}.",
   "exportError.rollbackRestored": "Sonst wurde nichts verändert – der Ordner wurde auf seinen vorherigen Inhalt zurückgesetzt.",
   "exportError.backupKeptAt": "{{path}} (der vorherige Inhalt liegt unter {{backup}}: {{reason}})",
-  "exportError.backupGone": "{{path}} (auch die Sicherung unter {{backup}} fehlt: {{reason}})"
+  "exportError.backupGone": "{{path}} (auch die Sicherung unter {{backup}} fehlt: {{reason}})",
+  "exportError.listItem": "„{{item}}“"
 }

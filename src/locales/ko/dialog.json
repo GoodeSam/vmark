@@ -270,5 +270,6 @@
   "exportError.rollbackFoldersLeft": "파일은 복원되었지만 내보내기가 만든 다음 폴더가 아직 남아 있습니다: {{folders}}.",
   "exportError.rollbackRestored": "그 밖에는 아무것도 변경되지 않았으며, 폴더는 이전 내용으로 복원되었습니다.",
   "exportError.backupKeptAt": "{{path}} (이전 내용은 {{backup}}에 보관되어 있습니다: {{reason}})",
-  "exportError.backupGone": "{{path}} ({{backup}}의 백업도 사라졌습니다: {{reason}})"
+  "exportError.backupGone": "{{path}} ({{backup}}의 백업도 사라졌습니다: {{reason}})",
+  "exportError.listItem": "“{{item}}”"
 }

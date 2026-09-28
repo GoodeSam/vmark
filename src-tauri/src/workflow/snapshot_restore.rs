@@ -11,24 +11,25 @@
 //!   - The root is the one the snapshot RECORDED (`SnapshotInfo::
 //!     workspace_root`), never a caller's. A snapshot without one predates
 //!     restore and is refused rather than guessed at.
-//!   - Every write goes through the anchored commit `action/save-file` uses
-//!     (`ensure_dir::create_parents_within` + `commit::
-//!     commit_inside_workspace`), so a parent swapped for an escaping symlink
-//!     is refused, not written through. A recorded path outside the root, or
-//!     one carrying `..`, is skipped — metadata is not trusted.
+//!   - Every write and delete goes through `snapshot_write.rs`, anchored to
+//!     the root held OPEN for the whole restore (#74, #75), so a parent — or
+//!     the root itself — swapped for an escaping link is refused, not written
+//!     or deleted through. A recorded path outside the root, or one carrying
+//!     `..`, is skipped — metadata is not trusted, and it is read bounded and
+//!     checked to name its own snapshot (#76, #77).
 //!   - Per-file failures are COUNTED, not fatal: an undo that stops at the
 //!     first bad file leaves the rest unrestored for no reason. The report
 //!     says how many were restored, deleted and skipped.
 //!
 //! @coordinates-with snapshots.rs — `SnapshotInfo`, `validate_id`, the re-export
 //! @coordinates-with snapshot_commands.rs — the Tauri commands
+//! @coordinates-with snapshot_write.rs — the anchored write and delete
 //! @module workflow::snapshot_restore
 
-use super::commit::commit_inside_workspace;
-use super::ensure_dir::create_parents_within;
 use super::snapshot_copy::MAX_SNAPSHOT_FILE_BYTES;
+use super::snapshot_write::{delete_created, write_back, HeldRoot};
 use super::snapshots::{validate_id, SnapshotInfo};
-use crate::bounded_read::read_regular_bounded;
+use crate::bounded_read::{read_regular_bounded, BoundedReadError};
 use crate::command_error::{CommandError, ErrorCode};
 use crate::localized_error;
 use serde::Serialize;
@@ -36,6 +37,10 @@ use std::path::{Component, Path, PathBuf};
 
 const MAX_SNAPSHOTS: usize = 50;
 const SNAPSHOTS_DIR: &str = "workflow-snapshots";
+/// Largest `metadata.json` a list or a restore reads (#76). A record names at
+/// most one path per save-file target of a run capped at 50 steps, so a real
+/// one is a few kilobytes; it sits in app data and is read as hostile.
+const MAX_METADATA_BYTES: u64 = 1024 * 1024;
 
 /// What the run panel needs to know about one snapshot.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -59,26 +64,58 @@ pub struct RestoreReport {
     pub skipped: usize,
 }
 
-async fn read_metadata(snapshot_dir: &Path) -> Result<SnapshotInfo, CommandError> {
-    let raw = tokio::fs::read_to_string(snapshot_dir.join("metadata.json"))
+/// Why a snapshot's record did not load.
+#[derive(Debug)]
+pub(super) enum MetadataError {
+    /// No `metadata.json`: not a snapshot, or one still being written.
+    Missing,
+    /// It is there and could not be read.
+    Unreadable(std::io::Error),
+    /// It was read and is not a record of THIS snapshot: over the cap, not a
+    /// regular file, not a `SnapshotInfo`, or naming another snapshot (#77).
+    Invalid(String),
+}
+
+impl std::fmt::Display for MetadataError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Missing => write!(f, "no metadata.json"),
+            Self::Unreadable(e) => write!(f, "metadata.json unreadable: {e}"),
+            Self::Invalid(why) => write!(f, "metadata.json invalid: {why}"),
+        }
+    }
+}
+
+/// The ONE loader list, restore and retention share (#76) — they used to
+/// read and parse separately, unbounded, and had already drifted on what a
+/// read failure means. Bounded, since the record sits in app data and is read
+/// as hostile; checked to name the directory it sits in (#77), or the panel
+/// could confirm one snapshot and restore another. The read is blocking, so
+/// it runs on the blocking pool like every `read_regular_bounded` caller.
+pub(super) async fn load_metadata(
+    snapshot_dir: &Path,
+    expected_id: &str,
+) -> Result<SnapshotInfo, MetadataError> {
+    let path = snapshot_dir.join("metadata.json");
+    let raw = tokio::task::spawn_blocking(move || read_regular_bounded(&path, MAX_METADATA_BYTES))
         .await
-        .map_err(|e| match e.kind() {
-            std::io::ErrorKind::NotFound => {
-                localized_error!(ErrorCode::NotFound, "errors.workflow.snapshotNotFound")
+        .map_err(|e| MetadataError::Unreadable(std::io::Error::other(e.to_string())))?
+        .map_err(|e| match e {
+            BoundedReadError::Io(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                MetadataError::Missing
             }
-            _ => localized_error!(
-                ErrorCode::Io,
-                "errors.workflow.snapshotUnreadable",
-                detail = e
-            ),
+            BoundedReadError::Io(e) => MetadataError::Unreadable(e),
+            other => MetadataError::Invalid(other.to_string()),
         })?;
-    serde_json::from_str(&raw).map_err(|e| {
-        localized_error!(
-            ErrorCode::InvalidInput,
-            "errors.workflow.snapshotUnreadable",
-            detail = e
-        )
-    })
+    let info: SnapshotInfo =
+        serde_json::from_slice(&raw).map_err(|e| MetadataError::Invalid(e.to_string()))?;
+    if info.id != expected_id {
+        return Err(MetadataError::Invalid(format!(
+            "the record names snapshot {:?}, not {expected_id:?}",
+            info.id
+        )));
+    }
+    Ok(info)
 }
 
 /// Put back every file `snapshot_id` preserved and delete the files the run
@@ -89,7 +126,23 @@ pub async fn restore_snapshot(
 ) -> Result<RestoreReport, CommandError> {
     validate_id(snapshot_id).map_err(CommandError::invalid_input)?;
     let snapshot_dir = app_data_dir.join(SNAPSHOTS_DIR).join(snapshot_id);
-    let info = read_metadata(&snapshot_dir).await?;
+    let info = load_metadata(&snapshot_dir, snapshot_id)
+        .await
+        .map_err(|e| match e {
+            MetadataError::Missing => {
+                localized_error!(ErrorCode::NotFound, "errors.workflow.snapshotNotFound")
+            }
+            MetadataError::Unreadable(e) => localized_error!(
+                ErrorCode::Io,
+                "errors.workflow.snapshotUnreadable",
+                detail = e
+            ),
+            MetadataError::Invalid(why) => localized_error!(
+                ErrorCode::InvalidInput,
+                "errors.workflow.snapshotUnreadable",
+                detail = why
+            ),
+        })?;
 
     let Some(recorded_root) = info.workspace_root.clone() else {
         return Err(localized_error!(
@@ -97,13 +150,19 @@ pub async fn restore_snapshot(
             "errors.workflow.snapshotNoWorkspace"
         ));
     };
-    let root = PathBuf::from(&recorded_root).canonicalize().map_err(|_| {
-        localized_error!(
-            ErrorCode::NotFound,
-            "errors.workflow.snapshotWorkspaceMissing",
-            path = recorded_root
-        )
-    })?;
+    // Resolved ONCE and held open for the whole restore (#74): every write and
+    // delete below proves containment against this directory, not its name.
+    let root = PathBuf::from(&recorded_root)
+        .canonicalize()
+        .map_err(|e| e.to_string())
+        .and_then(HeldRoot::open)
+        .map_err(|_| {
+            localized_error!(
+                ErrorCode::NotFound,
+                "errors.workflow.snapshotWorkspaceMissing",
+                path = recorded_root
+            )
+        })?;
 
     tokio::task::spawn_blocking(move || restore_blocking(&snapshot_dir, &info, &root))
         .await
@@ -126,7 +185,7 @@ fn contained(recorded: &str, root: &Path) -> Result<PathBuf, String> {
     }
 }
 
-fn restore_blocking(snapshot_dir: &Path, info: &SnapshotInfo, root: &Path) -> RestoreReport {
+fn restore_blocking(snapshot_dir: &Path, info: &SnapshotInfo, root: &HeldRoot) -> RestoreReport {
     let mut report = RestoreReport::default();
     for recorded in &info.files {
         match restore_one(snapshot_dir, recorded, root) {
@@ -138,7 +197,7 @@ fn restore_blocking(snapshot_dir: &Path, info: &SnapshotInfo, root: &Path) -> Re
         }
     }
     for recorded in &info.created_files {
-        match delete_created(recorded, root) {
+        match contained(recorded, root.path()).and_then(|target| delete_created(&target, root)) {
             Ok(true) => report.deleted += 1,
             Ok(false) => {}
             Err(reason) => {
@@ -150,46 +209,18 @@ fn restore_blocking(snapshot_dir: &Path, info: &SnapshotInfo, root: &Path) -> Re
     report
 }
 
-fn restore_one(snapshot_dir: &Path, recorded: &str, root: &Path) -> Result<(), String> {
-    let target = contained(recorded, root)?;
+fn restore_one(snapshot_dir: &Path, recorded: &str, root: &HeldRoot) -> Result<(), String> {
+    let target = contained(recorded, root.path())?;
     let relative = target
-        .strip_prefix(root)
+        .strip_prefix(root.path())
         .map_err(|_| "outside the snapshot's workspace".to_string())?;
     let bytes = read_regular_bounded(&snapshot_dir.join(relative), MAX_SNAPSHOT_FILE_BYTES)
         .map_err(|e| format!("snapshot copy unreadable: {e}"))?;
-    let parent = target
-        .parent()
-        .ok_or_else(|| "no parent directory".to_string())?;
-    create_parents_within(parent, root)?;
-    commit_inside_workspace(&target, root, &bytes)
+    write_back(&target, root, &bytes)
 }
 
-/// Delete a file the run created. `Ok(false)` when it is already gone. A path
-/// that is now a symlink or a directory is NOT the file the run made, and
-/// following a link would delete its target — so it is refused.
-fn delete_created(recorded: &str, root: &Path) -> Result<bool, String> {
-    let target = contained(recorded, root)?;
-    let meta = match std::fs::symlink_metadata(&target) {
-        Ok(meta) => meta,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(false),
-        Err(e) => return Err(e.to_string()),
-    };
-    if !meta.file_type().is_file() {
-        return Err("no longer a regular file".to_string());
-    }
-    let parent = target
-        .parent()
-        .and_then(|p| p.canonicalize().ok())
-        .ok_or_else(|| "parent directory unresolvable".to_string())?;
-    if !parent.starts_with(root) {
-        return Err("parent resolves outside the workspace".to_string());
-    }
-    std::fs::remove_file(&target)
-        .map(|()| true)
-        .map_err(|e| e.to_string())
-}
-
-/// Recent snapshots, newest first. A corrupt entry is logged and left out.
+/// Recent snapshots, newest first. A corrupt or unreadable entry is logged
+/// and left out; a directory with no record yet is left out silently.
 pub async fn list_snapshots(app_data_dir: &Path) -> Result<Vec<SnapshotSummary>, CommandError> {
     let snapshots_dir = app_data_dir.join(SNAPSHOTS_DIR);
     let mut dir = match tokio::fs::read_dir(&snapshots_dir).await {
@@ -200,11 +231,14 @@ pub async fn list_snapshots(app_data_dir: &Path) -> Result<Vec<SnapshotSummary>,
 
     let mut snapshots = Vec::new();
     while let Some(entry) = dir.next_entry().await.map_err(list_failed)? {
-        let meta_path = entry.path().join("metadata.json");
-        let Ok(raw) = tokio::fs::read_to_string(&meta_path).await else {
+        // A snapshot is a real directory named by its id; anything else in
+        // here (a stray file, a link) is not one.
+        let is_dir = entry.file_type().await.is_ok_and(|t| t.is_dir());
+        let name = entry.file_name();
+        let (true, Some(id)) = (is_dir, name.to_str()) else {
             continue;
         };
-        match serde_json::from_str::<SnapshotInfo>(&raw) {
+        match load_metadata(&entry.path(), id).await {
             Ok(info) => snapshots.push(SnapshotSummary {
                 file_count: info.files.len(),
                 created_count: info.created_files.len(),
@@ -212,7 +246,8 @@ pub async fn list_snapshots(app_data_dir: &Path) -> Result<Vec<SnapshotSummary>,
                 execution_id: info.execution_id,
                 timestamp: info.timestamp,
             }),
-            Err(e) => log::warn!("Corrupt snapshot metadata at {:?}: {}", meta_path, e),
+            Err(MetadataError::Missing) => {}
+            Err(e) => log::warn!("[workflow] not listing snapshot {id:?}: {e}"),
         }
     }
 

@@ -305,6 +305,7 @@ errors:
   workflow.snapshotWorkspaceMissing: "La cartella a cui appartiene questo snapshot non esiste più: %{path}"
   workflow.snapshotListFailed: "Impossibile elencare gli snapshot dei flussi di lavoro: %{detail}"
   workflow.restoreWhileRunning: "Un flusso di lavoro è in esecuzione. Attendere il completamento o annullarlo prima di ripristinare i file."
+  workflow.restoreSuperseded: "Dopo questa istantanea è stato eseguito un altro flusso di lavoro, quindi ripristinarla potrebbe annullarne le modifiche. Non è stato ripristinato nulla."
 
   # === Percorso di salvataggio (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "La cartella di questo file non esiste più: %{dir}"

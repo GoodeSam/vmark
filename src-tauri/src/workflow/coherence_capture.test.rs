@@ -114,16 +114,18 @@ fn capture_save_file_records_transformation_with_edges() {
 
     capture_save_file(
         &mut kernel,
-        dir.path(),
-        "out.md",
-        "generated\n",
-        &["elena.md".to_string()],
-        "save",
-        Agent {
-            kind: AgentType::Model,
-            id: Some("workflow-genie".into()),
+        SaveFileCapture {
+            workspace_root: dir.path(),
+            rel_path: "out.md",
+            content: "generated\n",
+            input_paths: &["elena.md".to_string()],
+            step_id: "save",
+            agent: Agent {
+                kind: AgentType::Model,
+                id: Some("workflow-genie".into()),
+            },
+            policy: CapturePolicy::Adopt,
         },
-        CapturePolicy::Adopt,
     )
     .unwrap();
 
@@ -156,16 +158,18 @@ fn self_referential_save_target_is_not_its_own_input() {
     std::fs::write(dir.path().join("out.md"), "x\n").unwrap();
     capture_save_file(
         &mut kernel,
-        dir.path(),
-        "out.md",
-        "x\n",
-        &["out.md".to_string()],
-        "save",
-        Agent {
-            kind: AgentType::Model,
-            id: Some("workflow-genie".into()),
+        SaveFileCapture {
+            workspace_root: dir.path(),
+            rel_path: "out.md",
+            content: "x\n",
+            input_paths: &["out.md".to_string()],
+            step_id: "save",
+            agent: Agent {
+                kind: AgentType::Model,
+                id: Some("workflow-genie".into()),
+            },
+            policy: CapturePolicy::Adopt,
         },
-        CapturePolicy::Adopt,
     )
     .unwrap();
     let entries = kernel.ledger().read_all().unwrap().entries;
@@ -345,13 +349,15 @@ fn tracked_only_save_in_a_fresh_workspace_creates_no_ledger_and_stamps_nothing()
 
     capture_save_file(
         &mut kernel,
-        dir.path(),
-        "out.md",
-        "generated\n",
-        &["elena.md".to_string()],
-        "save",
-        model_agent(),
-        CapturePolicy::TrackedOnly,
+        SaveFileCapture {
+            workspace_root: dir.path(),
+            rel_path: "out.md",
+            content: "generated\n",
+            input_paths: &["elena.md".to_string()],
+            step_id: "save",
+            agent: model_agent(),
+            policy: CapturePolicy::TrackedOnly,
+        },
     )
     .unwrap();
 
@@ -379,13 +385,15 @@ fn adopt_save_in_a_fresh_workspace_creates_the_ledger_and_stamps_the_output() {
 
     capture_save_file(
         &mut kernel,
-        dir.path(),
-        "out.md",
-        "generated\n",
-        &[],
-        "save",
-        model_agent(),
-        CapturePolicy::Adopt,
+        SaveFileCapture {
+            workspace_root: dir.path(),
+            rel_path: "out.md",
+            content: "generated\n",
+            input_paths: &[],
+            step_id: "save",
+            agent: model_agent(),
+            policy: CapturePolicy::Adopt,
+        },
     )
     .unwrap();
 

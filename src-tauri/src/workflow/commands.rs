@@ -120,14 +120,21 @@ pub async fn run_workflow<R: tauri::Runtime>(
     // an early return can never leave a stale id behind.
     let execution_id = execution_id_for(execution_id)?;
     // A root that contains app data would let a save-file step rewrite the
-    // workspace-grant list (WI-LX1.1); refuse before anything is claimed.
+    // workspace-grant list (WI-LX1.1). Refused before anything is claimed, so
+    // the ordinary refusal spends no execution id…
     crate::workspace_grants::refuse_root_containing_list(
         &app,
         std::path::Path::new(&workspace_root),
     )?;
     let (workflow, workspace, admission) =
         admit_run(&state, &yaml, &workspace_root, &execution_id)?;
-    state.set_capture_policy(capture_policy.unwrap_or(CapturePolicy::TrackedOnly));
+    // …and checked AGAIN on the ADMITTED root (#67): the one canonical
+    // `PathBuf` the snapshot, the runner and every step then use. The check
+    // above resolved the caller's string on its own, and a link retargeted in
+    // between could answer it differently; this is the check that binds. A
+    // refusal here drops `admission`, releasing the claim and the published id.
+    crate::workspace_grants::refuse_root_containing_list(&app, &workspace)?;
+    let capture_policy = capture_policy.unwrap_or(CapturePolicy::TrackedOnly);
 
     let genies_dir = prepare_run(&app, &state, &workflow, &workspace, &execution_id).await?;
 
@@ -147,6 +154,7 @@ pub async fn run_workflow<R: tauri::Runtime>(
             provider,
             genies_dir,
             approvals,
+            capture_policy,
         )
         .await
     });

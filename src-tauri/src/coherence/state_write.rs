@@ -17,7 +17,6 @@ use std::fs;
 
 use super::state::WorkspaceKernel;
 use super::types::Envelope;
-use super::workspace_files::{ensure_lock_ignore_rules, flock_exclusive};
 
 impl WorkspaceKernel {
     /// The single write path: durable ledger append, then index apply
@@ -179,20 +178,6 @@ impl WorkspaceKernel {
     pub fn refused_for_short_read(&self) -> bool {
         self.refused_for_short_read
     }
-    /// Open + exclusively `flock` the workspace lock file (re-review #1). The
-    /// lock is held for the returned File's lifetime (released on fd close). The
-    /// lock path is a permanently-ignored runtime file (never git-tracked, so a
-    /// checkout can't swap its inode while held). Non-Unix skips the OS lock
-    /// (best-effort; macOS/Linux are the gated platforms).
-    fn acquire_lock_file(&self) -> Result<fs::File, String> {
-        let vmark = self.root.join(".vmark");
-        fs::create_dir_all(&vmark).map_err(|e| format!("group lock dir: {e}"))?;
-        // The ignore rules land with the LOCK, not with initialization (#1285)
-        // — this path creates `.vmark/` before the op is adjudicated, and a
-        // rejected op leaves it behind.
-        ensure_lock_ignore_rules(&vmark)?;
-        flock_exclusive(&vmark)
-    }
     /// Run `f` holding the exclusive cross-process workspace lock across its WHOLE
     /// span (R1 — full pessimistic lock). EVERY mutating operation — a single
     /// accept, a group accept/recover, or any command that reads state and then
@@ -242,7 +227,18 @@ impl WorkspaceKernel {
         // entries a git operation has since removed would keep reporting the
         // old verdict forever.
         self.refused_for_short_read = false;
-        let _flock = self.acquire_lock_file()?;
+        let flock = self.acquire_lock_file()?;
+        self.run_locked(flock, f)
+    }
+
+    /// The body of a write transaction, entered holding `_flock` (released on
+    /// every exit path when it drops). Shared by `with_write_lock` and
+    /// `with_existing_write_lock` (`state_lock.rs`).
+    pub(super) fn run_locked<R>(
+        &mut self,
+        _flock: fs::File,
+        f: impl FnOnce(&mut Self) -> Result<R, String>,
+    ) -> Result<R, String> {
         // Reconcile UNCONDITIONALLY. The previous change-gated version compared a
         // cheap `(name, len, mtime, inode)` ledger fingerprint and rebuilt only on
         // a difference — but four independent audits each found a fresh way for

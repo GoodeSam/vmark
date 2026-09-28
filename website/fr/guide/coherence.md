@@ -24,11 +24,15 @@ artefacts aval pourraient désormais être obsolètes. Rien n'est jamais mis
   compatible git&nbsp;; supprimer l'`index.db` dérivé ne perd rien).
 - **Un espace de travail qui possède déjà un registre** — un `.vmark/`
   que vous avez créé plus tôt ou qu'un collaborateur a commité —
-  continue d'enregistrer les écritures sur les documents qu'il suit
-  déjà, même réglage désactivé. Il ne marque rien et ne commence à
-  suivre aucun nouveau document&nbsp;; un document qu'il ne suit pas
-  encore est laissé de côté, et une écriture dont les entrées sont de ce
-  fait incomplètes est consignée comme `inferred` plutôt que `exact`.
+  continue d'enregistrer les écritures sur les documents qu'il suit,
+  même réglage désactivé. Un document compte comme suivi quand le
+  registre l'a déjà enregistré, ou quand le fichier porte déjà sa
+  propre identité `vmark:` — un fichier suivi que vous avez déplacé,
+  copié dans l'espace de travail ou récupéré par un checkout&nbsp;; le
+  scan du registre lui-même adopte exactement ceux-là. Il ne marque
+  rien&nbsp;: un document sans identité est laissé de côté, et une
+  écriture dont les entrées sont de ce fait incomplètes est consignée
+  comme `inferred` plutôt que `exact`.
 - Quand une IA écrit un document en en lisant d'autres, ces lectures
   deviennent des **arêtes de dépendance**, épinglées à la révision exacte
   qui a été lue. Les chemins instrumentés dans l'application consignent

@@ -229,9 +229,9 @@ export async function handleDocumentRead(
         dirty: resolved.dirty,
       },
     });
-    // Coherence (WI-1.6): only a read the client actually RECEIVED joins
-    // the inferred input set of its next write (audit T6).
-    if (resolved.filePath) recordMcpRead(resolved.filePath);
+    // Coherence (WI-1.6): only a read the client actually RECEIVED joins the
+    // next write's inputs (audit T6), pinned to the content served (#133).
+    if (resolved.filePath) recordMcpRead(resolved.filePath, resolved.content, resolved.tabId);
   });
 }
 

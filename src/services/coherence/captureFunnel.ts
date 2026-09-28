@@ -64,7 +64,11 @@ export interface CaptureWriteArgs {
   /** The exact content written (plan contract — no disk re-read). */
   content: string;
   inputs?: CoherenceCaptureInput[];
-  agent: { type: "human" | "model" | "external"; id?: string };
+  /** Inputs that are still being resolved (MCP read pins). The capture takes
+   *  its place in the queue NOW and waits for these inside it, so a capture
+   *  issued later can never be recorded first. Replaces `inputs` when set. */
+  pendingInputs?: Promise<CoherenceCaptureInput[]>;
+  agent: { type: "human" | "model" | "external"; id?: string | undefined };
   intent: { kind: string; summary: string };
   /** Defaults to "exact" (in-app paths); MCP writes pass "inferred". */
   confidence?: "exact" | "inferred";
@@ -122,12 +126,13 @@ export async function captureWrite(
     const idem = crypto.randomUUID();
     const policy = currentCapturePolicy();
     return await enqueue(async () => {
+      const inputs = args.pendingInputs ? await args.pendingInputs : (args.inputs ?? []);
       const receipt = await invoke<CoherenceCaptureReceipt | null>("coherence_capture", {
         workspaceRoot: root,
         request: {
           path: rel,
           content: args.content,
-          inputs: args.inputs ?? [],
+          inputs,
           agent: args.agent,
           intent: args.intent,
           confidence: args.confidence ?? "exact",
@@ -154,45 +159,31 @@ export async function captureWrite(
  * suggestion accept). The kernel records the buffer revision WITHOUT
  * touching the file on disk (`rewrite_identity: false`); the next real
  * save is then a no-op capture unless the human edited further.
+ *
+ * Only the snapshot is specific to this path; the queue, idempotency key,
+ * policy and IPC are `captureWrite`'s, so the two contracts cannot drift.
  */
 export async function captureAiEdit(
   args: CaptureAiEditArgs
 ): Promise<CoherenceCaptureReceipt | null> {
-  try {
-    // Snapshot NOW (audit T3): the store is read synchronously at the
-    // apply site's call, so a rapid second apply or tab switch cannot
-    // change what this capture records.
-    const doc = useDocumentStore.getState().getDocument(args.tabId);
-    if (!doc?.filePath) return null; // untitled — adopted at first save
-    const root = useWorkspaceStore.getState().rootPath;
-    if (!root) return null;
-    const rel = workspaceRelativePath(root, doc.filePath);
-    if (!rel) return null;
-    const content = doc.content;
-    const filePath = doc.filePath;
-    const idem = crypto.randomUUID();
-    const policy = currentCapturePolicy();
-    void filePath;
-    return await enqueue(() =>
-      invoke<CoherenceCaptureReceipt | null>("coherence_capture", {
-        workspaceRoot: root,
-        request: {
-          path: rel,
-          content,
-          inputs: [{ path: rel, role: "direct" }],
-          agent: { type: "model", id: args.modelId },
-          intent: { kind: args.intentKind, summary: args.summary },
-          confidence: args.bufferWasDirty ? "inferred" : "exact",
-          rewrite_identity: false,
-          idem,
-        },
-        policy,
-      })
-    );
-  } catch (error) {
-    coherenceLog("AI-edit capture failed (edit unaffected):", error);
-    return null;
-  }
+  // Snapshot NOW (audit T3): the store is read synchronously at the
+  // apply site's call, so a rapid second apply or tab switch cannot
+  // change what this capture records.
+  const doc = useDocumentStore.getState().getDocument(args.tabId);
+  if (!doc?.filePath) return null; // untitled — adopted at first save
+  const root = useWorkspaceStore.getState().rootPath;
+  if (!root) return null;
+  const rel = workspaceRelativePath(root, doc.filePath);
+  if (!rel) return null;
+  return captureWrite({
+    absolutePath: doc.filePath,
+    content: doc.content,
+    inputs: [{ path: rel, role: "direct" }],
+    agent: { type: "model", id: args.modelId },
+    intent: { kind: args.intentKind, summary: args.summary },
+    confidence: args.bufferWasDirty ? "inferred" : "exact",
+    rewriteIdentity: false,
+  });
 }
 
 /**

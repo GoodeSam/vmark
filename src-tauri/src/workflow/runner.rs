@@ -225,8 +225,8 @@ fn spawn_cancel_bridge(
 
 /// Execute a parsed workflow with topological ordering and cancellation support.
 ///
-/// The `execution_id` is provided by the caller (commands.rs) so events can
-/// be emitted with the correct ID from the start.
+/// The caller (commands.rs) provides `execution_id`, so events carry it from
+/// the start, and `capture_policy`, which every save-file capture applies.
 ///
 /// `provider` and `genies_dir` are required for `genie/*` steps; `None`
 /// values cause genie steps to fail with a clear error rather than panic
@@ -243,6 +243,7 @@ pub async fn run_workflow_sequential<R: Runtime>(
     provider: Option<ProviderConfig>,
     genies_dir: Option<PathBuf>,
     approvals: Arc<ApprovalRegistry>,
+    capture_policy: crate::coherence::capture_policy::CapturePolicy,
 ) -> Result<String, String> {
     // Bridge the legacy AtomicBool cancel flag into a CancellationToken that
     // the AI provider stack can react to without polling.
@@ -515,9 +516,7 @@ pub async fn run_workflow_sequential<R: Runtime>(
 
         match result {
             Ok(step_outputs) => {
-                // Coherence (WI-1.6): a successful save-file write is a
-                // model transformation; trace its read-file inputs through
-                // the template graph. Fire-and-forget, never fails the step.
+                // Coherence (WI-1.6): capture under the run's policy, awaited (A11).
                 if step.uses == "action/save-file" {
                     if let (Some(rel), Some(content)) =
                         (resolved_params.get("path"), resolved_params.get("input"))
@@ -529,6 +528,7 @@ pub async fn run_workflow_sequential<R: Runtime>(
                             step_id.clone(),
                             rel.clone(),
                             content.clone(),
+                            capture_policy,
                         )
                         .await;
                     }

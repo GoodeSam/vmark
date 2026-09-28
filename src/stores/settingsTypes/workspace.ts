@@ -102,7 +102,11 @@ export interface GeneralSettings {
    * capturing assigns a Semantic Object identity, which REWRITES the file to
    * insert a `vmark:` frontmatter block (prepending one if absent) and creates
    * `.vmark/` in the workspace. Modifying a user's markdown is opt-in — it must
-   * never happen silently, least of all on autosave.
+   * never happen silently, least of all on autosave. When OFF, a workspace that
+   * already has a ledger keeps recording writes to the documents it TRACKS: one
+   * registered at its path, or one whose file already carries its own `vmark:`
+   * identity (a tracked file moved, copied in or checked out — the ledger's scan
+   * adopts exactly those). Nothing is stamped and `.vmark/` is never created.
    */
   coherenceCaptureOnSave: boolean;
   // Document history

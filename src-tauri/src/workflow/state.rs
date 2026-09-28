@@ -25,10 +25,12 @@
 #[path = "state_cancel.rs"]
 mod state_cancel;
 pub(super) use state_cancel::{decide_cancel, CancelDecision};
+/// A restore's claim on `running` (#71), split out at the same limit.
+#[path = "state_restore.rs"]
+mod state_restore;
 
 use super::approval::ApprovalRegistry;
 use super::recent_ids::RecentExecutionIds;
-use crate::coherence::capture_policy::CapturePolicy;
 use crate::command_error::CommandError;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -56,9 +58,10 @@ impl<R: Runtime> Drop for RunningGuard<R> {
 ///
 /// Every refusal between the two — bad YAML, a missing workspace, a failed
 /// snapshot — used to carry its own `running.store(false)`, six of them, and
-/// the seventh was in the command. Dropping this guard releases the flag and
-/// the published execution id; `commit` hands the flag to the runner task,
-/// whose `RunningGuard` releases it when the run ends.
+/// the seventh was in the command. Dropping this guard releases the flag, the
+/// published execution id AND its use (#91 — a start that never spawned
+/// carried no run); `commit` hands the flag to the runner task, whose
+/// `RunningGuard` releases it when the run ends.
 pub(super) struct AdmissionGuard<'a> {
     state: &'a WorkflowRunnerState,
     committed: bool,
@@ -68,6 +71,7 @@ impl AdmissionGuard<'_> {
     /// The run is spawned: the flag now belongs to its `RunningGuard`.
     pub(super) fn commit(mut self) {
         self.committed = true;
+        self.state.note_spawned();
     }
 }
 
@@ -82,7 +86,7 @@ impl std::fmt::Debug for AdmissionGuard<'_> {
 impl Drop for AdmissionGuard<'_> {
     fn drop(&mut self) {
         if !self.committed {
-            self.state.clear_running();
+            self.state.release_unspawned();
         }
     }
 }
@@ -132,9 +136,6 @@ pub struct WorkflowRunnerState {
     admission: Mutex<()>,
     /// The ids recent runs carried, so a caller cannot reuse one (#264).
     recent_ids: RecentExecutionIds,
-    /// The admitted run's `general.coherenceCaptureOnSave` (WI-LX1.4); its
-    /// accessors sit in `coherence_capture.rs`, beside the one reader.
-    pub(super) capture_policy: Mutex<CapturePolicy>,
 }
 
 impl Default for WorkflowRunnerState {
@@ -148,7 +149,6 @@ impl Default for WorkflowRunnerState {
             current_execution: Arc::new(Mutex::new(None)),
             admission: Mutex::new(()),
             recent_ids: RecentExecutionIds::default(),
-            capture_policy: Mutex::new(CapturePolicy::TrackedOnly),
         }
     }
 }
@@ -271,21 +271,24 @@ impl WorkflowRunnerState {
         decision
     }
 
-    /// Ask whatever is running to stop, without naming it. Returns whether
-    /// anything was running.
+    /// Ask whatever workflow is running to stop, without naming it. Returns
+    /// whether one was.
     ///
     /// Used by the `false` transition of `workflow_engine_policy`: switching
     /// the engine off should not leave a run going that the (now hidden) UI can
     /// no longer reach. Arming the flag while idle would be latched state the
-    /// next run has to remember to clear, so the `running` check is part of the
-    /// contract, not an optimization.
+    /// next run has to remember to clear, so the check is part of the contract.
+    /// It reads the PUBLISHED id, not `running` (#72): a snapshot restore holds
+    /// `running` too, publishes no id, and observes no cancel.
     pub(super) fn request_cancel_if_running(&self) -> bool {
-        if self.running.load(Ordering::SeqCst) {
+        let current = self
+            .current_execution
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        if current.is_some() {
             self.cancel_requested.store(true, Ordering::SeqCst);
-            true
-        } else {
-            false
         }
+        current.is_some()
     }
 }
 

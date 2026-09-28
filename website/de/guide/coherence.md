@@ -26,11 +26,14 @@ bleiben der Chefredakteur.
 - **Ein Arbeitsbereich, der bereits ein Ledger hat** — ein `.vmark/`,
   das Sie früher angelegt haben oder das ein Mitwirkender eingecheckt
   hat — zeichnet auch bei ausgeschalteter Einstellung weiterhin
-  Schreibvorgänge an den Dokumenten auf, die er bereits verfolgt. Er
-  fügt nichts ein und beginnt kein neues Dokument zu verfolgen; ein noch
-  nicht verfolgtes Dokument wird ausgelassen, und ein Schreibvorgang mit
-  dadurch unvollständigen Eingaben wird als `inferred` statt `exact`
-  erfasst.
+  Schreibvorgänge an den Dokumenten auf, die er verfolgt. Als verfolgt
+  gilt ein Dokument, wenn das Ledger es bereits aufgezeichnet hat oder
+  wenn die Datei schon eine eigene `vmark:`-Identität trägt — eine
+  verfolgte Datei, die Sie verschoben, hineinkopiert oder ausgecheckt
+  haben; genau diese übernimmt der eigene Scan des Ledgers. Er fügt
+  nichts ein: Ein Dokument ohne Identität wird ausgelassen, und ein
+  Schreibvorgang mit dadurch unvollständigen Eingaben wird als
+  `inferred` statt `exact` erfasst.
 - Wenn eine KI ein Dokument schreibt und dabei andere liest, werden diese
   Lesevorgänge zu **Abhängigkeitskanten**, fixiert auf die exakte
   Revision, die gelesen wurde. In der App instrumentierte Pfade

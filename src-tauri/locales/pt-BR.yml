@@ -305,6 +305,7 @@ errors:
   workflow.snapshotWorkspaceMissing: "A pasta a que este instantâneo pertence não existe mais: %{path}"
   workflow.snapshotListFailed: "Não foi possível listar os instantâneos de fluxos de trabalho: %{detail}"
   workflow.restoreWhileRunning: "Há um fluxo de trabalho em execução. Aguarde a conclusão ou cancele-o antes de restaurar arquivos."
+  workflow.restoreSuperseded: "Outro fluxo de trabalho foi executado depois deste instantâneo, então restaurá-lo poderia desfazer as alterações dele. Nada foi restaurado."
 
   # === Caminho de salvamento (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "A pasta deste arquivo não existe mais: %{dir}"

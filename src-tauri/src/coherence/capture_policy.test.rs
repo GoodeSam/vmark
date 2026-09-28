@@ -3,7 +3,8 @@
 // The setting reaches the kernel as a `CapturePolicy` on each request. Under
 // `TrackedOnly` (setting OFF) no write path may create `.vmark/` or stamp a
 // `vmark:` identity block into any file — the output OR an adopted input — and
-// an existing ledger keeps following only the documents it already tracks.
+// an existing ledger keeps following TRACKED documents only: registered at their
+// path, or carrying their own `vmark:` identity (capture_policy.rs module doc).
 // `Adopt` (setting ON) is the pre-existing behaviour, pinned so it cannot drift.
 
 use super::*;
@@ -166,7 +167,7 @@ fn tracked_only_ignores_identity_bearing_content_in_a_fresh_workspace() {
 // ── Existing ledger: follow what is tracked, adopt nothing new ──────────
 
 #[test]
-fn tracked_only_follows_a_tracked_document_without_stamping_it() {
+fn tracked_only_follows_a_registered_document_without_stamping_it() {
     let (dir, mut kernel) = workspace();
     write_file(dir.path(), "scene.md", "v1\n");
     let r1 = capture(&mut kernel, request("scene.md", "v1\n", true)).unwrap();
@@ -190,7 +191,7 @@ fn tracked_only_follows_a_tracked_document_without_stamping_it() {
 }
 
 #[test]
-fn tracked_only_skips_an_untracked_document_in_an_existing_ledger() {
+fn tracked_only_skips_an_identityless_unregistered_document_in_an_existing_ledger() {
     let (dir, mut kernel) = workspace();
     with_existing_ledger(dir.path(), &mut kernel);
     write_file(dir.path(), "fresh.md", "fresh\n");
@@ -207,7 +208,7 @@ fn tracked_only_skips_an_untracked_document_in_an_existing_ledger() {
 }
 
 #[test]
-fn tracked_only_records_a_document_that_already_carries_identity() {
+fn tracked_only_counts_a_document_carrying_its_own_identity_as_tracked() {
     let (dir, mut kernel) = workspace();
     with_existing_ledger(dir.path(), &mut kernel);
     let text = "---\nvmark:\n  id: 018f3c7a-9f2e-7cc1-b302-5e9d4a6b21c7\n---\nbody\n";
@@ -273,7 +274,7 @@ fn tracked_only_keeps_a_tracked_input_and_exact_confidence() {
 }
 
 #[test]
-fn tracked_only_adopts_an_identified_input_without_rewriting_it() {
+fn tracked_only_counts_an_identity_bearing_input_as_tracked_without_rewriting_it() {
     let (dir, mut kernel) = workspace();
     write_file(dir.path(), "ch1.md", "v1\n");
     capture(&mut kernel, request("ch1.md", "v1\n", true)).unwrap();
@@ -346,7 +347,7 @@ fn adopt_scan_in_a_fresh_workspace_still_adopts_identified_files() {
 }
 
 #[test]
-fn tracked_only_scan_runs_normally_once_a_ledger_exists() {
+fn tracked_only_scan_adopts_identity_bearing_files_once_a_ledger_exists() {
     let (dir, mut kernel) = workspace();
     with_existing_ledger(dir.path(), &mut kernel);
     let text = "---\nvmark:\n  id: 018f3c7a-9f2e-7cc1-b302-5e9d4a6b21cb\n---\nbody\n";
@@ -357,4 +358,146 @@ fn tracked_only_scan_runs_normally_once_a_ledger_exists() {
         "identity already on disk: adopting stamps nothing"
     );
     assert_eq!(read_file(dir.path(), "copied.md"), text);
+}
+
+// ── Audit-fix round 1 (findings #45, #50, #52, #54) ─────────────────────
+
+#[test]
+fn adopt_identified_declines_an_unidentified_file_without_creating_vmark() {
+    // #45: the `None` path must decide before the lock, whose acquisition
+    // creates `.vmark/`, its `.gitignore` and `group.lock`.
+    let (dir, mut kernel) = workspace();
+    write_file(dir.path(), "plain.md", "plain\n");
+    let r = crate::coherence::adopt::adopt_identified_from_disk(&mut kernel, "plain.md").unwrap();
+    assert!(r.is_none());
+    assert!(!dir.path().join(".vmark").exists(), "nothing created");
+    assert_eq!(read_file(dir.path(), "plain.md"), "plain\n");
+}
+
+#[test]
+fn tracked_only_mixed_inputs_keep_resolvable_ones_in_order_and_drop_the_rest() {
+    // #50: tracked + unidentified + identity-bearing inputs in one capture.
+    let (dir, mut kernel) = workspace();
+    write_file(dir.path(), "notes.md", "notes\n");
+    let notes = capture(&mut kernel, request("notes.md", "notes\n", true)).unwrap();
+    write_file(dir.path(), "ch1.md", "v1\n");
+    capture(&mut kernel, request("ch1.md", "v1\n", true)).unwrap();
+    write_file(dir.path(), "plain.md", "plain\n");
+    let ided = "---\nvmark:\n  id: 018f3c7a-9f2e-7cc1-b302-5e9d4a6b21cc\n---\nided\n";
+    write_file(dir.path(), "ided.md", ided);
+    write_file(dir.path(), "ch1.md", "v2\n");
+    let mut req = request("ch1.md", "v2\n", true);
+    req.inputs = vec![input("notes.md"), input("plain.md"), input("ided.md")];
+
+    let r = capture_with_policy(&mut kernel, req, CapturePolicy::TrackedOnly)
+        .unwrap()
+        .unwrap();
+    let t = transformation_of(&kernel, r.entry_id.unwrap());
+    let objects: Vec<String> = t.inputs.iter().map(|i| i.object.0.to_string()).collect();
+    assert_eq!(
+        objects,
+        vec![
+            notes.object.0.to_string(),
+            "018f3c7a-9f2e-7cc1-b302-5e9d4a6b21cc".to_string()
+        ],
+        "resolvable inputs retained in declaration order; the unidentified one dropped"
+    );
+    assert_eq!(t.confidence, Confidence::Inferred);
+    assert_eq!(read_file(dir.path(), "plain.md"), "plain\n");
+    assert_eq!(read_file(dir.path(), "ided.md"), ided);
+}
+
+#[test]
+fn tracked_only_declines_after_the_ledger_is_removed_under_a_live_kernel() {
+    // #52 (stale positive): the kernel cached "initialized", the user then
+    // deleted `.vmark/`. Setting OFF must not recreate it.
+    let (dir, mut kernel) = workspace();
+    with_existing_ledger(dir.path(), &mut kernel);
+    std::fs::remove_dir_all(dir.path().join(".vmark")).unwrap();
+    write_file(dir.path(), "seed.md", "seed edited\n");
+    let r = capture_with_policy(
+        &mut kernel,
+        request("seed.md", "seed edited\n", true),
+        CapturePolicy::TrackedOnly,
+    )
+    .unwrap();
+    assert!(r.is_none(), "no ledger on disk any more");
+    let scan = scan_on_change(&mut kernel, CapturePolicy::TrackedOnly).unwrap();
+    assert_eq!(scan.adopted + scan.external_edits, 0);
+    assert!(!dir.path().join(".vmark").exists(), ".vmark not recreated");
+}
+
+#[test]
+fn tracked_only_follows_a_ledger_another_process_created() {
+    // #52 (stale negative): this kernel opened a pristine workspace; another
+    // writer then initialized it and tracked `seed.md`.
+    let (dir, mut stale) = workspace();
+    let mut other = WorkspaceKernel::open(dir.path(), WriterId(uuid::Uuid::from_u128(8))).unwrap();
+    with_existing_ledger(dir.path(), &mut other);
+    assert!(!stale.is_initialized());
+    write_file(dir.path(), "seed.md", "seed v2\n");
+    let r = capture_with_policy(
+        &mut stale,
+        request("seed.md", "seed v2\n", true),
+        CapturePolicy::TrackedOnly,
+    )
+    .unwrap();
+    assert!(r.is_some(), "the tracked document is followed");
+    assert_eq!(
+        read_file(dir.path(), "seed.md"),
+        "seed v2\n",
+        "never stamped"
+    );
+}
+
+#[test]
+fn tracked_only_reads_identity_through_crlf_line_endings() {
+    // #54: identity admission must parse the CANONICAL form, as the capture
+    // itself does — a CRLF identity block is still an identity block.
+    let (dir, mut kernel) = workspace();
+    with_existing_ledger(dir.path(), &mut kernel);
+    let text = "---\r\nvmark:\r\n  id: 018f3c7a-9f2e-7cc1-b302-5e9d4a6b21cd\r\n---\r\nbody\r\n";
+    write_file(dir.path(), "windows.md", text);
+    let r = capture_with_policy(
+        &mut kernel,
+        request("windows.md", text, true),
+        CapturePolicy::TrackedOnly,
+    )
+    .unwrap()
+    .expect("identity-bearing CRLF content is tracked");
+    assert_eq!(
+        r.object.0.to_string(),
+        "018f3c7a-9f2e-7cc1-b302-5e9d4a6b21cd"
+    );
+    assert_eq!(read_file(dir.path(), "windows.md"), text, "never rewritten");
+}
+
+#[test]
+fn tracked_only_lock_declines_when_the_ledger_vanishes_after_admission() {
+    // #52, round 2: `.vmark/` deleted in the window between `admits` and the
+    // lock. This drives exactly the post-`admits` half of `capture_with_policy`
+    // and `scan_on_change`, deterministically: the lock itself must decline
+    // rather than recreate the directory.
+    let (dir, mut kernel) = workspace();
+    with_existing_ledger(dir.path(), &mut kernel);
+    assert!(CapturePolicy::TrackedOnly.admits(&kernel));
+    std::fs::remove_dir_all(dir.path().join(".vmark")).unwrap();
+
+    let req = request("seed.md", "seed edited\n", true);
+    let captured = locked(&mut kernel, CapturePolicy::TrackedOnly, |k| {
+        capture_locked(k, req, CapturePolicy::TrackedOnly)
+    })
+    .unwrap();
+    assert!(captured.is_none());
+    let scanned = locked(&mut kernel, CapturePolicy::TrackedOnly, scan_workspace).unwrap();
+    assert!(scanned.is_none());
+    assert!(!dir.path().join(".vmark").exists(), ".vmark not recreated");
+}
+
+#[test]
+fn existing_write_lock_on_a_pristine_workspace_creates_nothing() {
+    let (dir, mut kernel) = workspace();
+    let ran = kernel.with_existing_write_lock(|_| Ok(())).unwrap();
+    assert!(ran.is_none(), "declined: no .vmark to lock");
+    assert!(!dir.path().join(".vmark").exists());
 }

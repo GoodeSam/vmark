@@ -5,6 +5,7 @@
 
 use serde_json::json;
 
+use super::adopt_duplicate::refuse_live_duplicate;
 use super::canonical::text_content_hash;
 use super::frontmatter::{assign_identity, read_identity};
 use super::state::WorkspaceKernel;
@@ -33,7 +34,26 @@ pub fn adopt_identified_from_disk(
     kernel: &mut WorkspaceKernel,
     rel_path: &str,
 ) -> Result<Option<(ObjectId, RevisionId)>, String> {
+    // Decide BEFORE the lock: acquiring it creates `.vmark/`, its `.gitignore`
+    // and `group.lock`. Re-checked under the lock, where the file is re-read.
+    let (_, text) = read_canonical(kernel, rel_path)?;
+    if read_identity(&text).is_none() {
+        return Ok(None);
+    }
     kernel.with_write_lock(|kernel| adopt_from_disk_locked(kernel, rel_path, false))
+}
+
+/// The file at `rel_path`, resolved inside the workspace and canonicalized.
+fn read_canonical(
+    kernel: &WorkspaceKernel,
+    rel_path: &str,
+) -> Result<(std::path::PathBuf, String), String> {
+    let abs = super::paths::resolve_workspace_rel(kernel.root(), rel_path)?;
+    let bytes =
+        std::fs::read(&abs).map_err(|e| format!("input file unreadable ({rel_path}): {e}"))?;
+    let text = String::from_utf8(bytes)
+        .map_err(|_| format!("input file is not UTF-8 text ({rel_path})"))?;
+    Ok((abs, super::canonical::canonicalize_text(&text)))
 }
 
 fn adopt_from_disk_locked(
@@ -41,18 +61,16 @@ fn adopt_from_disk_locked(
     rel_path: &str,
     may_stamp: bool,
 ) -> Result<Option<(ObjectId, RevisionId)>, String> {
-    let abs = super::paths::resolve_workspace_rel(kernel.root(), rel_path)?;
-    let bytes =
-        std::fs::read(&abs).map_err(|e| format!("input file unreadable ({rel_path}): {e}"))?;
-    let text = String::from_utf8(bytes)
-        .map_err(|_| format!("input file is not UTF-8 text ({rel_path})"))?;
-    let text = super::canonical::canonicalize_text(&text);
+    let (abs, text) = read_canonical(kernel, rel_path)?;
     if !may_stamp && read_identity(&text).is_none() {
         return Ok(None); // decided before any side effect, `.vmark/` included
     }
     kernel.ensure_initialized()?;
     let (content, identity) = match read_identity(&text) {
-        Some(fi) => (text, fi),
+        Some(fi) => {
+            refuse_live_duplicate(kernel, fi.id, rel_path)?;
+            (text, fi)
+        }
         None => {
             let (content, fi) = assign_identity(&text, None);
             let parent = abs

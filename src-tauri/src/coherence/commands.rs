@@ -8,6 +8,7 @@ use serde_json::json;
 use super::command_types::now_rfc3339;
 pub use super::command_types::{actor_identity, CoherenceStatus, ResolveReceipt, ResolveRequest};
 use super::dag::Resolved;
+pub use super::head_pin::perform_head;
 use super::index_query::EdgeRow;
 use super::scan::scan_workspace;
 use super::state::{KernelRegistry, WorkspaceKernel};

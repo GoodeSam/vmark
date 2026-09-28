@@ -305,6 +305,7 @@ errors:
   workflow.snapshotWorkspaceMissing: "이 스냅샷이 속한 폴더가 더 이상 존재하지 않습니다: %{path}"
   workflow.snapshotListFailed: "워크플로 스냅샷 목록을 가져올 수 없습니다: %{detail}"
   workflow.restoreWhileRunning: "워크플로가 실행 중입니다. 파일을 복원하기 전에 완료될 때까지 기다리거나 취소하세요."
+  workflow.restoreSuperseded: "이 스냅샷 이후 다른 워크플로가 실행되어, 복원하면 그 변경 사항이 취소될 수 있습니다. 아무것도 복원하지 않았습니다."
 
   # === 저장 경로 (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "이 파일이 있던 폴더가 더 이상 존재하지 않습니다: %{dir}"

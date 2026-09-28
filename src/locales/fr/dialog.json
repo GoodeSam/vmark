@@ -270,5 +270,6 @@
   "exportError.rollbackFoldersLeft": "Vos fichiers ont été restaurés, mais ces dossiers créés par l’exportation sont toujours là : {{folders}}.",
   "exportError.rollbackRestored": "Rien d’autre n’a été modifié : le dossier a retrouvé son contenu précédent.",
   "exportError.backupKeptAt": "{{path}} (son contenu précédent est conservé dans {{backup}} : {{reason}})",
-  "exportError.backupGone": "{{path}} (sa sauvegarde dans {{backup}} a aussi disparu : {{reason}})"
+  "exportError.backupGone": "{{path}} (sa sauvegarde dans {{backup}} a aussi disparu : {{reason}})",
+  "exportError.listItem": "« {{item}} »"
 }

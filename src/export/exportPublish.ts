@@ -131,8 +131,8 @@ interface RollbackFailures {
  * there would report one failure twice.
  */
 function describeRollback({ files, dirs }: RollbackFailures): string {
-  if (files.length > 0) return messages.filesNotRestoredMessage(files.join(", "));
-  if (dirs.length > 0) return messages.foldersLeftMessage(dirs.join(", "));
+  if (files.length > 0) return messages.filesNotRestoredMessage(files);
+  if (dirs.length > 0) return messages.foldersLeftMessage(dirs);
   return messages.restoredMessage();
 }
 

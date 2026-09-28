@@ -305,6 +305,7 @@ errors:
   workflow.snapshotWorkspaceMissing: "La carpeta a la que pertenece esta instantánea ya no existe: %{path}"
   workflow.snapshotListFailed: "No se pudieron listar las instantáneas de flujos de trabajo: %{detail}"
   workflow.restoreWhileRunning: "Hay un flujo de trabajo en ejecución. Espere a que termine o cancélelo antes de restaurar archivos."
+  workflow.restoreSuperseded: "Otro flujo de trabajo se ejecutó después de esta instantánea, así que restaurarla podría deshacer sus cambios. No se restauró nada."
 
   # === Ruta de guardado (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "La carpeta de este archivo ya no existe: %{dir}"

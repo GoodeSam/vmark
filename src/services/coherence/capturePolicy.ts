@@ -5,15 +5,17 @@
  * `CapturePolicy` wire value. Every write-driven coherence IPC
  * (`coherence_capture`, the watcher's `coherence_scan`) carries it, and the
  * Rust kernel enforces it — so one setting governs every write path: human
- * save, MCP `document.write` / `workspace.save`, genie apply, accepted AI
- * suggestions, history restore and explorer new-file.
+ * save, MCP `document.write` / `workspace.save` / `workspace.save_as`, genie
+ * apply, accepted AI suggestions, history restore and explorer new-file.
  *
  * Key decisions:
  *   - Read at the moment of each write, not pushed at startup: there is no
  *     second copy of the setting that could lag the store.
  *   - `tracked-only` (setting OFF) never creates `.vmark/` and never stamps a
  *     `vmark:` block into any file; in a workspace whose ledger already exists
- *     it keeps recording writes to documents that ledger already tracks.
+ *     it keeps recording writes to TRACKED documents — registered at their
+ *     path, or carrying their own `vmark:` identity (a tracked file moved,
+ *     copied in or checked out). See capture_policy.rs for the definition.
  *     `adopt` (setting ON) may do both.
  *
  * @coordinates-with src-tauri/src/coherence/capture_policy.rs — the enforcement

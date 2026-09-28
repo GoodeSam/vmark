@@ -13,13 +13,12 @@ use uuid::Uuid;
 
 use super::canonical::text_content_hash;
 use super::capture_input::resolve_inputs;
+use super::capture_output::{output_identity, record_disk_lag};
 use super::capture_policy::CapturePolicy;
-use super::frontmatter::{assign_identity, read_identity};
 use super::state::WorkspaceKernel;
 use super::types::{
     Agent, Confidence, Envelope, InputRole, Intent, ObjectId, OutputRef, RevisionId, Transformation,
 };
-use crate::atomic_replace::atomic_replace;
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct CaptureInputSpec {
@@ -81,60 +80,30 @@ pub struct CaptureReceipt {
     pub content_with_identity: Option<String>,
 }
 
-/// Capture one write (spec §5.4.1). Ordering per the plan contract:
-/// content is already on disk; snapshot → ledger append → index apply.
+/// Capture one write (spec §5.4.1) under the `Adopt` policy. Test-only: every
+/// production path goes through `capture_with_policy`, which carries the user's
+/// capture-on-save setting; this is the setting-ON shorthand the suites use.
+#[cfg(test)]
 pub fn capture(
     kernel: &mut WorkspaceKernel,
     req: CaptureRequest,
 ) -> Result<CaptureReceipt, String> {
-    // R1 (7th-review 6R-1): the whole read-heads → build-transformation → append
-    // runs under the workspace lock, so a concurrent commit that moved this
-    // object's head can't leave us appending a stale-parent sibling.
     let receipt =
         kernel.with_write_lock(|kernel| capture_locked(kernel, req, CapturePolicy::Adopt))?;
     receipt.ok_or_else(|| "capture declined under the adopt policy".to_string())
 }
 
+/// Ordering per the plan contract: content is already on disk; snapshot →
+/// ledger append → index apply. Runs under the workspace lock (R1, 7th-review
+/// 6R-1): the whole read-heads → build-transformation → append is atomic, so a
+/// concurrent commit that moved this object's head can't leave us appending a
+/// stale-parent sibling.
 pub(super) fn capture_locked(
     kernel: &mut WorkspaceKernel,
     req: CaptureRequest,
     policy: CapturePolicy,
 ) -> Result<Option<CaptureReceipt>, String> {
-    if req.confidence == Confidence::Unknown {
-        return Err("confidence=unknown is scan-only (spec §8)".into());
-    }
-    // Size preflight BEFORE any side effect (8th-review 8R-9). The document
-    // content lives in the CAS, so what drives the ledger line's size is the input
-    // set and the intent strings. Unchecked, an oversized payload got as far as
-    // rewriting the file, appending a registration and staging CAS content, and
-    // only then failed the 16 MiB line cap — reporting a retryable error that
-    // could never succeed, with those side effects already durable. Reject up
-    // front instead: a bound that can only be violated is checked before the
-    // first side effect, never after.
-    if req.inputs.len() > MAX_CAPTURE_INPUTS {
-        return Err(format!(
-            "capture has {} inputs, over the {MAX_CAPTURE_INPUTS} cap",
-            req.inputs.len()
-        ));
-    }
-    let intent_bytes = req.intent.kind.len() + req.intent.summary.len();
-    if intent_bytes > MAX_CAPTURE_INTENT_BYTES {
-        return Err(format!(
-            "capture intent is {intent_bytes} bytes, over the {MAX_CAPTURE_INTENT_BYTES} cap"
-        ));
-    }
-    // 9th-review 8R-9: `agent.id` was uncapped, so a huge one still reached the
-    // ledger append after the side effects. Bound it, and bound the TOTAL
-    // serialized transformation as the catch-all — no field can now push the line
-    // past what the ledger will accept, so the failure is always preflight.
-    let agent_bytes = req.agent.id.as_deref().map_or(0, str::len);
-    if agent_bytes > MAX_CAPTURE_INTENT_BYTES {
-        return Err(format!(
-            "capture agent id is {agent_bytes} bytes, over the {MAX_CAPTURE_INTENT_BYTES} cap"
-        ));
-    }
-    // IPC boundary guard (audit R1): reject traversal before any effect.
-    super::paths::resolve_workspace_rel(kernel.root(), &req.path)?;
+    preflight(kernel, &req)?;
     // Policy gate BEFORE the first side effect (WI-LX1.4). Re-checked under the
     // lock; `TrackedOnly` also declines a document the ledger does not track.
     if !policy.admits(kernel) || !super::capture_policy::admits_output(kernel, &req, policy)? {
@@ -148,61 +117,7 @@ pub(super) fn capture_locked(
         content: super::canonical::canonicalize_text(&req.content),
         ..req
     };
-
-    // Identity: read from the content; for identity-less content REUSE the
-    // object registered at this path (editor buffers do not carry the
-    // identity block in-session — minting a fresh id per save would churn
-    // identity, §2.1/I3); only a genuinely unknown path mints a new id.
-    // Either way the file is rewritten atomically with the identity block.
-    let (content, identity, rewritten) = match read_identity(&req.content) {
-        Some(fi) => (req.content.clone(), fi, None),
-        None => {
-            let registry = kernel.index().registry_state()?;
-            let newly_adopted = !registry.object_at.contains_key(&req.path);
-            if newly_adopted && super::frontmatter::has_malformed_frontmatter(&req.content) {
-                let env = Envelope::create(
-                    "diagnostic",
-                    kernel.writer(),
-                    serde_json::json!({
-                        "code": "malformed-frontmatter",
-                        "message": "unterminated frontmatter fence — treated as content, identity block added above it (spec §2.1)",
-                        "path": req.path,
-                    }),
-                );
-                kernel.append_and_apply(&env)?;
-            }
-            let (content, fi) = match registry.object_at.get(&req.path) {
-                Some(existing) => {
-                    let schema = registry.schema_of.get(existing).cloned().flatten();
-                    let content = super::canonical::insert_identity(
-                        &req.content,
-                        &existing.0.to_string(),
-                        schema.as_deref(),
-                    );
-                    (
-                        content,
-                        super::frontmatter::FileIdentity {
-                            id: *existing,
-                            schema,
-                        },
-                    )
-                }
-                None => assign_identity(&req.content, None),
-            };
-            if req.rewrite_identity && policy.may_stamp() {
-                let abs = super::paths::resolve_workspace_rel(kernel.root(), &req.path)?;
-                let parent = abs
-                    .parent()
-                    .ok_or_else(|| format!("output path has no parent: {}", req.path))?
-                    .to_path_buf();
-                atomic_replace(&abs, &parent, content.as_bytes())
-                    .map_err(|e| format!("identity rewrite failed: {e:?}"))?;
-                (content.clone(), fi, Some(content))
-            } else {
-                (content, fi, None)
-            }
-        }
-    };
+    let (content, identity, rewritten) = output_identity(kernel, &req, policy)?;
 
     // Duplicate-ID capture hold (spec §2.1, audit R6): a held object is
     // read-only for capture until the human resolves the duplicate set.
@@ -221,6 +136,12 @@ pub(super) fn capture_locked(
     // event even when the content converges (audit R3): its edges matter.
     if let ([only], true) = (parents.as_slice(), req.inputs.is_empty()) {
         if kernel.index().content_hash_of(&identity.id, only)? == Some(content_hash.clone()) {
+            // A real disk write of the head content ends any live-buffer lag,
+            // no-op or not: left in place, a later external revert to the
+            // lagged parent would be skipped by the scan as "expected lag".
+            if req.rewrite_identity {
+                kernel.index_mut().clear_disk_lag(&identity.id)?;
+            }
             return Ok(Some(CaptureReceipt {
                 object: identity.id,
                 revision: only.clone(),
@@ -258,27 +179,54 @@ pub(super) fn capture_locked(
     let entry_id = env.id;
     kernel.append_and_apply(&env)?;
     kernel.index_mut().set_absent(&identity.id, false)?;
-    // Buffer-lag bookkeeping (spec §2.3 vs. the live-buffer design): with
-    // rewrite_identity=false the DISK legitimately still holds the parent
-    // content; record those hashes so scan skips exactly that state and
-    // nothing else (A → B → A external edits still mint).
-    if req.rewrite_identity {
-        kernel.index_mut().clear_disk_lag(&identity.id)?;
-    } else {
-        let mut lag = Vec::new();
-        for parent in &t.outputs[0].parents {
-            if let Some(h) = kernel.index().content_hash_of(&identity.id, parent)? {
-                lag.push(h);
-            }
-        }
-        kernel.index_mut().set_disk_lag(&identity.id, &lag)?;
-    }
+    record_disk_lag(
+        kernel,
+        &identity.id,
+        req.rewrite_identity,
+        &t.outputs[0].parents,
+    )?;
     Ok(Some(CaptureReceipt {
         object: identity.id,
         revision,
         entry_id: Some(entry_id),
         content_with_identity: rewritten,
     }))
+}
+
+/// Request validation BEFORE any side effect.
+///
+/// Size caps (8th-review 8R-9): the document content lives in the CAS, so what
+/// drives the ledger line's size is the input set and the intent strings.
+/// Unchecked, an oversized payload got as far as rewriting the file, appending a
+/// registration and staging CAS content, and only then failed the 16 MiB line
+/// cap — reporting a retryable error that could never succeed, with those side
+/// effects already durable. A bound that can only be violated is checked before
+/// the first side effect, never after. 9th-review 8R-9 added `agent.id`.
+fn preflight(kernel: &WorkspaceKernel, req: &CaptureRequest) -> Result<(), String> {
+    if req.confidence == Confidence::Unknown {
+        return Err("confidence=unknown is scan-only (spec §8)".into());
+    }
+    if req.inputs.len() > MAX_CAPTURE_INPUTS {
+        return Err(format!(
+            "capture has {} inputs, over the {MAX_CAPTURE_INPUTS} cap",
+            req.inputs.len()
+        ));
+    }
+    let intent_bytes = req.intent.kind.len() + req.intent.summary.len();
+    if intent_bytes > MAX_CAPTURE_INTENT_BYTES {
+        return Err(format!(
+            "capture intent is {intent_bytes} bytes, over the {MAX_CAPTURE_INTENT_BYTES} cap"
+        ));
+    }
+    let agent_bytes = req.agent.id.as_deref().map_or(0, str::len);
+    if agent_bytes > MAX_CAPTURE_INTENT_BYTES {
+        return Err(format!(
+            "capture agent id is {agent_bytes} bytes, over the {MAX_CAPTURE_INTENT_BYTES} cap"
+        ));
+    }
+    // IPC boundary guard (audit R1): reject traversal before any effect.
+    super::paths::resolve_workspace_rel(kernel.root(), &req.path)?;
+    Ok(())
 }
 
 // Adoption, observed-external synthesis, and registry maintenance live

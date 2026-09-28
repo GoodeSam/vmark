@@ -270,5 +270,6 @@
   "exportError.rollbackFoldersLeft": "I tuoi file sono stati ripristinati, ma queste cartelle create dall’esportazione sono ancora presenti: {{folders}}.",
   "exportError.rollbackRestored": "Nient’altro è stato modificato: la cartella è stata riportata al contenuto precedente.",
   "exportError.backupKeptAt": "{{path}} (il contenuto precedente è conservato in {{backup}}: {{reason}})",
-  "exportError.backupGone": "{{path}} (anche il backup in {{backup}} è scomparso: {{reason}})"
+  "exportError.backupGone": "{{path}} (anche il backup in {{backup}} è scomparso: {{reason}})",
+  "exportError.listItem": "«{{item}}»"
 }

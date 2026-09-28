@@ -305,6 +305,7 @@ errors:
   workflow.snapshotWorkspaceMissing: "此快照所屬的資料夾已不存在：%{path}"
   workflow.snapshotListFailed: "無法列出工作流程快照：%{detail}"
   workflow.restoreWhileRunning: "有工作流程正在執行。請等待完成或取消後再還原檔案。"
+  workflow.restoreSuperseded: "此快照之後又執行了其他工作流程，還原它可能會撤銷該次執行的變更。未還原任何內容。"
 
   # === 儲存路徑（file_write.rs，WI-14 CommandError）===
   save.parentMissing: "該檔案所在的資料夾已不存在：%{dir}"

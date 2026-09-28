@@ -305,6 +305,7 @@ errors:
   workflow.snapshotWorkspaceMissing: "Le dossier auquel appartient cet instantané n’existe plus : %{path}"
   workflow.snapshotListFailed: "Impossible de lister les instantanés de flux de travail : %{detail}"
   workflow.restoreWhileRunning: "Un flux de travail est en cours. Attendez qu’il se termine ou annulez-le avant de restaurer des fichiers."
+  workflow.restoreSuperseded: "Un autre flux de travail s’est exécuté depuis cet instantané ; le restaurer pourrait annuler ses modifications. Rien n’a été restauré."
 
   # === Chemin d'enregistrement (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "Le dossier de ce fichier n'existe plus : %{dir}"

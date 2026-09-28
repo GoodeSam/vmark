@@ -270,5 +270,6 @@
   "exportError.rollbackFoldersLeft": "ファイルは復元されましたが、エクスポートが作成した次のフォルダーが残っています：{{folders}}。",
   "exportError.rollbackRestored": "それ以外は何も変更されていません。フォルダーは以前の内容に復元されました。",
   "exportError.backupKeptAt": "{{path}}（以前の内容は {{backup}} に保管されています：{{reason}}）",
-  "exportError.backupGone": "{{path}}（{{backup}} のバックアップも失われています：{{reason}}）"
+  "exportError.backupGone": "{{path}}（{{backup}} のバックアップも失われています：{{reason}}）",
+  "exportError.listItem": "「{{item}}」"
 }

@@ -334,6 +334,120 @@ async fn a_parent_swapped_for_an_escaping_symlink_is_not_written_through() {
     assert!(!outside.path().join("a.md").exists());
 }
 
+/// #74 — the root is held OPEN for the whole restore. A root swapped for a
+/// link after the restore took hold of it redirects nothing: every write and
+/// delete proves containment against the directory held, not against whatever
+/// the recorded name resolves to by then.
+#[cfg(unix)]
+#[tokio::test]
+async fn a_root_swapped_for_a_link_mid_restore_redirects_nothing() {
+    let app_data = tempdir().unwrap();
+    let parent = tempdir().unwrap();
+    let ws = parent.path().join("ws");
+    std::fs::create_dir(&ws).unwrap();
+    let outside = tempdir().unwrap();
+    let file = ws_file(&ws, "a.md", "original");
+    let id = create_snapshot(app_data.path(), "held-1", &[file, ws.join("out.md")], &ws)
+        .await
+        .unwrap();
+    let info: SnapshotInfo =
+        serde_json::from_str(&std::fs::read_to_string(meta_path(app_data.path(), &id)).unwrap())
+            .unwrap();
+    let root = crate::workflow::snapshot_write::HeldRoot::open(ws.canonicalize().unwrap()).unwrap();
+
+    // The swap: the real root moves aside and a link to `outside` takes its name.
+    std::fs::rename(&ws, parent.path().join("ws-real")).unwrap();
+    std::os::unix::fs::symlink(outside.path(), &ws).unwrap();
+    std::fs::write(outside.path().join("out.md"), "victim").unwrap();
+
+    let snapshot_dir = app_data.path().join("workflow-snapshots").join(&id);
+    let report = restore_blocking(&snapshot_dir, &info, &root);
+
+    assert!(
+        !outside.path().join("a.md").exists(),
+        "nothing is written through the link"
+    );
+    assert_eq!(
+        std::fs::read_to_string(outside.path().join("out.md")).unwrap(),
+        "victim",
+        "nothing is deleted through the link"
+    );
+    assert_eq!((report.restored, report.deleted, report.skipped), (0, 0, 2));
+}
+
+// -- the record: one bounded loader, checked against where it sits (#76/#77) ---
+
+/// Rewrite `id`'s metadata through `edit`.
+fn edit_meta(app_data: &Path, id: &str, edit: impl FnOnce(&mut SnapshotInfo)) {
+    let meta = meta_path(app_data, id);
+    let mut info: SnapshotInfo =
+        serde_json::from_str(&std::fs::read_to_string(&meta).unwrap()).unwrap();
+    edit(&mut info);
+    std::fs::write(&meta, serde_json::to_string(&info).unwrap()).unwrap();
+}
+
+/// #77 — a record that names ANOTHER snapshot is not this one. The panel
+/// confirms the id it listed; restoring under a record that claims a different
+/// id would put back a run the user never chose.
+#[tokio::test]
+async fn a_record_naming_another_snapshot_is_refused_and_not_listed() {
+    let app_data = tempdir().unwrap();
+    let ws = tempdir().unwrap();
+    let file = ws_file(ws.path(), "a.md", "original");
+    let id = create_snapshot(
+        app_data.path(),
+        "own-1",
+        std::slice::from_ref(&file),
+        ws.path(),
+    )
+    .await
+    .unwrap();
+    std::fs::write(&file, "after the run").unwrap();
+    edit_meta(app_data.path(), &id, |info| {
+        info.id = "snap-someone-else".into()
+    });
+
+    let err = restore_snapshot(app_data.path(), &id).await.unwrap_err();
+    assert_eq!(err.code(), ErrorCode::InvalidInput);
+    assert_eq!(err.i18n_key(), Some("errors.workflow.snapshotUnreadable"));
+    assert_eq!(std::fs::read_to_string(&file).unwrap(), "after the run");
+    assert!(
+        list_snapshots(app_data.path()).await.unwrap().is_empty(),
+        "a record whose id is not its directory's is left out of the list"
+    );
+}
+
+/// #76 — the record is read as hostile, so it is read BOUNDED, by the one
+/// loader list and restore share. A record past the cap is refused by the
+/// restore and left out of the list, rather than read whole.
+#[tokio::test]
+async fn an_oversized_record_is_refused_and_not_listed() {
+    let app_data = tempdir().unwrap();
+    let ws = tempdir().unwrap();
+    let file = ws_file(ws.path(), "a.md", "original");
+    let id = create_snapshot(
+        app_data.path(),
+        "big-1",
+        std::slice::from_ref(&file),
+        ws.path(),
+    )
+    .await
+    .unwrap();
+    std::fs::write(&file, "after the run").unwrap();
+    // Still VALID JSON — only its size is wrong — so nothing but the bound
+    // can refuse it.
+    let meta = meta_path(app_data.path(), &id);
+    let mut raw = std::fs::read_to_string(&meta).unwrap();
+    raw.push_str(&" ".repeat(MAX_METADATA_BYTES as usize));
+    std::fs::write(&meta, raw).unwrap();
+
+    let err = restore_snapshot(app_data.path(), &id).await.unwrap_err();
+    assert_eq!(err.code(), ErrorCode::InvalidInput);
+    assert_eq!(err.i18n_key(), Some("errors.workflow.snapshotUnreadable"));
+    assert_eq!(std::fs::read_to_string(&file).unwrap(), "after the run");
+    assert!(list_snapshots(app_data.path()).await.unwrap().is_empty());
+}
+
 // -- list -----------------------------------------------------------------------
 
 #[tokio::test]

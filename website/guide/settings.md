@@ -241,7 +241,7 @@ The setting does not appear on macOS or Linux.
 | Setting | Description | Default | Options |
 |---------|-------------|---------|---------|
 | Enable auto-save | Automatically save files after editing | On | On / Off |
-| Stamp identity block on save | Let VMark insert a `vmark:` identity block into a file's frontmatter and create a `.vmark` folder in the workspace, so the coherence layer can track the document. Covers every write — saves, AI and MCP edits, version restores and new files. When off, nothing is stamped and no `.vmark` folder is created; a workspace that already has one keeps recording changes to the documents it already tracks. See [Coherence](/guide/coherence#how-it-works-30-seconds) | Off | On / Off |
+| Stamp identity block on save | Let VMark insert a `vmark:` identity block into a file's frontmatter and create a `.vmark` folder in the workspace, so the coherence layer can track the document. Covers every write — saves, AI and MCP edits, version restores and new files. When off, nothing is stamped and no `.vmark` folder is created; a workspace that already has one keeps recording changes to the documents it tracks — a document it has recorded before, or one that already carries its own `vmark:` identity, such as a tracked file you moved or checked out. See [Coherence](/guide/coherence#how-it-works-30-seconds) | Off | On / Off |
 | Save interval | Time between automatic saves. Only available when auto-save is enabled | 30 seconds | 10s, 30s, 1 min, 2 min, 5 min |
 | Keep document history | Track document versions for undo and recovery | On | On / Off |
 | Maximum versions | Number of history snapshots to keep per document | 50 versions | 10, 25, 50, 100 |

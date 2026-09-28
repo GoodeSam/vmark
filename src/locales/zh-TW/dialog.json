@@ -270,5 +270,6 @@
   "exportError.rollbackFoldersLeft": "你的檔案已還原，但匯出建立的以下資料夾仍然存在：{{folders}}。",
   "exportError.rollbackRestored": "其他內容皆未變更，資料夾已還原為先前的內容。",
   "exportError.backupKeptAt": "{{path}}（先前的內容保存在 {{backup}}：{{reason}}）",
-  "exportError.backupGone": "{{path}}（位於 {{backup}} 的備份也已遺失：{{reason}}）"
+  "exportError.backupGone": "{{path}}（位於 {{backup}} 的備份也已遺失：{{reason}}）",
+  "exportError.listItem": "「{{item}}」"
 }

@@ -306,6 +306,7 @@ errors:
   workflow.snapshotWorkspaceMissing: "The folder this snapshot belongs to no longer exists: %{path}"
   workflow.snapshotListFailed: "Could not list workflow snapshots: %{detail}"
   workflow.restoreWhileRunning: "A workflow is running. Wait for it to finish, or cancel it, before restoring files."
+  workflow.restoreSuperseded: "Another workflow has run since this snapshot was taken, so restoring it could undo that run's changes. Nothing was restored."
 
   # === Save path (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "The folder for this file no longer exists: %{dir}"

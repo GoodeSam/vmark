@@ -13,9 +13,13 @@
 //!     must still be able to put their files back.
 //!   - The id is the only argument. The root comes from the snapshot's own
 //!     record (`snapshot_restore.rs`), so a caller cannot redirect a restore.
+//!   - **A superseded snapshot is refused** (`conflict`, #108): once a later
+//!     run has spawned, it may have written files this snapshot predates, and
+//!     restoring would undo that work. Checked under the claim, so the check
+//!     and the restore are one step — the panel's own re-check cannot be.
 //!
 //! @coordinates-with snapshot_restore.rs — `restore_snapshot`, `list_snapshots`
-//! @coordinates-with state.rs — the `running` flag and the admission lock
+//! @coordinates-with state.rs — `claim_for_restore`, the flag and its lock
 //! @coordinates-with src/components/Editor/WorkflowPanel/workflowSnapshots.ts — the caller
 //! @module workflow::snapshot_commands
 
@@ -24,34 +28,7 @@ use super::state::WorkflowRunnerState;
 use crate::command_error::{CommandError, ErrorCode};
 use crate::localized_error;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::Ordering;
 use tauri::{AppHandle, Manager, State};
-
-/// The `running` flag, held by a restore. Dropping it releases the flag
-/// however the restore ends — success, refusal, or panic.
-pub(super) struct RestoreClaim<'a> {
-    state: &'a WorkflowRunnerState,
-}
-
-impl Drop for RestoreClaim<'_> {
-    fn drop(&mut self) {
-        self.state.clear_running();
-    }
-}
-
-/// Claim the runner for a restore, or refuse because a run holds it.
-pub(super) fn claim_for_restore(
-    state: &WorkflowRunnerState,
-) -> Result<RestoreClaim<'_>, CommandError> {
-    let _serial = state.admission_lock();
-    state
-        .running
-        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-        .map_err(|_| {
-            localized_error!(ErrorCode::Conflict, "errors.workflow.restoreWhileRunning")
-        })?;
-    Ok(RestoreClaim { state })
-}
 
 /// The command's body against the managed state alone, so the exclusion
 /// with a run is testable without a Tauri runtime.
@@ -60,7 +37,16 @@ pub(super) async fn restore_with_claim(
     app_data_dir: &Path,
     snapshot_id: &str,
 ) -> Result<RestoreReport, CommandError> {
-    let _claim = claim_for_restore(state)?;
+    let _claim = state.claim_for_restore().ok_or_else(|| {
+        localized_error!(ErrorCode::Conflict, "errors.workflow.restoreWhileRunning")
+    })?;
+    // Under the claim, so no run can spawn between this check and the writes.
+    if state.restore_superseded(snapshot_id) {
+        return Err(localized_error!(
+            ErrorCode::Conflict,
+            "errors.workflow.restoreSuperseded"
+        ));
+    }
     restore_snapshot(app_data_dir, snapshot_id).await
 }
 

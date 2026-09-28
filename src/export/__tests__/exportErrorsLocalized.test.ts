@@ -163,6 +163,9 @@ describe("export-folder errors are localized", () => {
 
     await rejection(stage.publish());
 
-    expect(paramsFor("dialog:exportError.rollbackFoldersLeft")).toEqual({ folders: `${DEST}/assets` });
+    expect(paramsFor("dialog:exportError.rollbackFoldersLeft").folders).toContain(
+      "⟦dialog:exportError.listItem⟧",
+    );
+    expect(paramsFor("dialog:exportError.listItem")).toEqual({ item: `${DEST}/assets` });
   });
 });
