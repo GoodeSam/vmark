@@ -51,18 +51,28 @@ module.exports = [
     // entry chunk. That is the trade — 4 kB of glue in exchange for 0.66 MB
     // off the cold-start closure — and it is the reason the headroom is 40%
     // rather than the file's usual 5%: more lazy boundaries mean more glue.
+    //
+    // 20 → 200 kB with vite 8.2.1 → 8.3.1: its Rolldown merges shared chunks
+    // into their importers, so the store/format/update-sync code the entry
+    // statically imported from side chunks (documentStore, formats,
+    // useUpdateSync, debounce, …) now lives IN it. Nothing new loads: the
+    // whole cold-start closure went 3.05 → 3.09 MiB (+1.3%, dependency
+    // bumps), and `pnpm lint:eager` now enforces that closure's total
+    // (MAX_EAGER_BYTES), which is the number launch cost actually follows.
+    // Actual 189.6 kB.
     name: "EAGER: entry",
     path: "dist/assets/entry-*.js",
-    limit: "20 kB",
+    limit: "200 kB",
     brotli: false,
   },
 
   {
     // React + react-dom + react-router. Preloaded by index.html.
-    // ~228 kB at last check.
+    // 240 → 270 kB: React 19.2 → 19.3, whose react-dom client build is
+    // ~30 kB larger minified (measured per module). Actual 256.9 kB.
     name: "EAGER: vendor-react",
     path: "dist/assets/vendor-react-*.js",
-    limit: "240 kB",
+    limit: "270 kB",
     brotli: false,
   },
   {
@@ -193,7 +203,12 @@ module.exports = [
     // rescan-per-event loop that pinned a core — landed the chunk 1.17 kB over.
     // Same discipline: the smallest raise that fits, so growth without a reason
     // still trips.
-    limit: "614 kB",
+    // 614 → 765 kB (vite 8.2.1 → 8.3.1): its Rolldown merges shared chunks
+    // into their importers, so side chunks App statically imported now live
+    // IN it — the same move that grew `entry`. The cold-start closure moved
+    // 3.05 → 3.09 MiB, and `pnpm lint:eager` enforces that total now.
+    // Actual 762.1 kB; smallest raise that fits, as above.
+    limit: "765 kB",
     brotli: false,
   },
 
@@ -227,9 +242,17 @@ module.exports = [
     // every window — Settings, PDF export — paid it at cold start. Budgeted
     // now that it is a chunk: unbudgeted is how weight migrates unnoticed.
     // ~188 kB at the split.
+    //
+    // 200 → 285 kB with vite 8.2.1 → 8.3.1 (its Rolldown merges shared chunks
+    // into their importers): 60 app modules the Source-mode CodeMirror
+    // plugins share with this surface now live IN this file instead of in
+    // side chunks it statically imported. What opening a markdown document
+    // loads (this chunk plus its static imports) went 2,876.6 → 2,894.4 kB,
+    // 78 → 35 files: +0.6%, from the dependency bumps, not the move.
+    // Actual 272.4 kB.
     name: "LAZY: markdownSurface",
     path: "dist/assets/markdownSurface-*.js",
-    limit: "200 kB",
+    limit: "285 kB",
     brotli: false,
   },
   {

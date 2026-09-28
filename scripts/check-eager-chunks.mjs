@@ -133,6 +133,28 @@ export function findLazyOnlyViolations(names, reachable, patterns = LAZY_ONLY_CH
  * cold-start even though Vite emits no modulepreload link for them.
  * `src/main.tsx` → `bootstrap()` → `await import("./App")`.
  */
+/**
+ * Byte budget for everything statically reachable at cold start.
+ *
+ * The per-chunk EAGER budgets in .size-limit.cjs cannot tell "more code" from
+ * "the same code in fewer files": vite 8.3 (rolldown 1.2.11) merged shared
+ * chunks into their importers, so `entry` went 14.6 → 185 kB while the
+ * closure went 3.05 → 3.09 MiB. This bounds what launch actually loads,
+ * whatever shape the bundler gives it. ~5% above the measured 3.09 MiB.
+ */
+export const MAX_EAGER_BYTES = Math.round(3.25 * 1024 * 1024);
+
+/** A failure message when `closureBytes` exceeds `max`, else null. */
+export function eagerBudgetViolation(closureBytes, max = MAX_EAGER_BYTES) {
+  if (closureBytes <= max) return null;
+  const mib = (n) => (n / 1024 / 1024).toFixed(2);
+  return (
+    `❌ Cold start statically loads ${mib(closureBytes)} MiB, over the ${mib(max)} MiB budget.\n` +
+    "Find what joined the entry's static closure with `pnpm size:why`; if the growth is\n" +
+    "intended, raise MAX_EAGER_BYTES and say what added the bytes."
+  );
+}
+
 export const BOOT_CHUNK_PATTERNS = [/^App-[^/]*\.js$/];
 
 /**
@@ -312,6 +334,11 @@ function main() {
   let closureBytes = 0;
   for (const chunk of reachable.keys()) {
     closureBytes += statSync(path.join(ASSETS, chunk)).size;
+  }
+  const overBudget = eagerBudgetViolation(closureBytes);
+  if (overBudget) {
+    console.error(overBudget);
+    process.exit(1);
   }
   console.log(
     `✅ Eager-chunk check passed (${reachable.size} chunks / ` +
