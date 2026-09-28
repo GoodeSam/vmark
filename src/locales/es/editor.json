@@ -20,6 +20,7 @@
   "diagnostic.html/script-blocked": "Etiqueta script detectada — bloqueada salvo que actives la vista previa de confianza.",
   "diagnostic.html/script-external": "Script externo — la vista previa nunca carga scripts desde un archivo o una URL, ni siquiera la vista previa de confianza.",
   "diagnostic.html/javascript-url": "URL javascript: detectada — bloqueada salvo que actives la vista previa de confianza.",
+  "diagnostic.html/javascript-url-navigation": "URL javascript: que abre otra ventana o la página superior — la vista previa nunca lo permite, ni siquiera la vista previa de confianza.",
   "diagnostic.html/inline-handler": "Controlador de eventos en línea detectado — bloqueado salvo que actives la vista previa de confianza.",
   "preview.cannotRender": "No se puede renderizar la vista previa — corrige los errores de sintaxis",
   "preview.errorAt": "({{line}}:{{column}})",

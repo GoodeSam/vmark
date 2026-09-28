@@ -20,6 +20,7 @@
   "diagnostic.html/script-blocked": "script 태그 감지 — 신뢰된 미리 보기를 활성화하지 않으면 차단됩니다.",
   "diagnostic.html/script-external": "외부 script — 미리 보기는 파일이나 URL에서 script를 불러오지 않습니다. 신뢰된 미리 보기에서도 마찬가지입니다.",
   "diagnostic.html/javascript-url": "javascript: URL 감지 — 신뢰된 미리 보기를 활성화하지 않으면 차단됩니다.",
+  "diagnostic.html/javascript-url-navigation": "다른 창이나 최상위 페이지를 여는 javascript: URL — 미리 보기에서는 허용되지 않습니다. 신뢰된 미리 보기에서도 마찬가지입니다.",
   "diagnostic.html/inline-handler": "인라인 이벤트 핸들러 감지 — 신뢰된 미리 보기를 활성화하지 않으면 차단됩니다.",
   "preview.cannotRender": "미리보기를 렌더링할 수 없습니다 — 구문 오류를 수정하세요",
   "preview.errorAt": "({{line}}:{{column}})",

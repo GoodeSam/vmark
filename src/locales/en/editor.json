@@ -20,6 +20,7 @@
   "diagnostic.html/script-blocked": "Script tag detected — blocked unless trusted preview is enabled.",
   "diagnostic.html/script-external": "External script — the preview never loads scripts from a file or URL, trusted or not.",
   "diagnostic.html/javascript-url": "javascript: URL detected — blocked unless trusted preview is enabled.",
+  "diagnostic.html/javascript-url-navigation": "javascript: URL that opens another window or the top page — the preview never allows that, trusted or not.",
   "diagnostic.html/inline-handler": "Inline event handler detected — blocked unless trusted preview is enabled.",
   "preview.cannotRender": "Cannot render preview — fix syntax errors",
   "preview.errorAt": "({{line}}:{{column}})",

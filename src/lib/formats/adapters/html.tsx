@@ -24,7 +24,7 @@
 import type { Extension } from "@codemirror/state";
 import { registerFormat } from "../registry";
 import { HtmlPreview } from "./HtmlPreview";
-import { scanHtmlTags } from "./htmlTags";
+import { scanHtmlTags, type HtmlTag } from "./htmlTags";
 import type {
   FormatConfig,
   ValidationDiagnostic,
@@ -35,9 +35,10 @@ import type {
  * What the preview refuses to execute, and what to say about it.
  *
  * Each rule records whether trusted preview RUNS what it reports. The trusted
- * frame's CSP is `script-src 'unsafe-inline'` with no URL source: inline
- * script, inline handlers and `javascript:` URLs run; an external script
- * never loads. `infoWhenTrusted`
+ * frame's CSP is `script-src 'unsafe-inline'` with no URL source, sandboxed
+ * with allow-scripts only: inline script, inline handlers and same-frame
+ * `javascript:` URLs run; an external script never loads, and a `javascript:`
+ * URL aimed at the top page or a new window never navigates. `infoWhenTrusted`
  * derives from this, so a new rule cannot skip the decision.
  *
  * Messages are worded for BOTH modes — a message naming only the sandbox is
@@ -59,6 +60,10 @@ const HTML_RULES = {
     message: "javascript: URL detected — blocked unless trusted preview is enabled.",
     runsWhenTrusted: true,
   },
+  "html/javascript-url-navigation": {
+    message: "javascript: URL that opens another window or the top page — the preview never allows that, trusted or not.",
+    runsWhenTrusted: false,
+  },
   "html/inline-handler": {
     message: "Inline event handler detected — blocked unless trusted preview is enabled.",
     runsWhenTrusted: true,
@@ -68,6 +73,8 @@ type HtmlRuleId = keyof typeof HTML_RULES;
 
 /** Attributes whose value is a URL a `javascript:` scheme would run. */
 const URL_ATTRIBUTES = new Set(["href", "src", "action", "formaction", "xlink:href"]);
+/** Elements whose `target` (or the document's `<base target>`) picks the window a URL runs in. */
+const TARGETED = new Set(["a", "area", "form"]);
 
 /** A `javascript:` URL as a browser reads it: tabs and newlines removed, leading controls and spaces trimmed. */
 function isJavascriptUrl(value: string): boolean {
@@ -76,6 +83,16 @@ function isJavascriptUrl(value: string): boolean {
   while (start < url.length && url.charCodeAt(start) <= 0x20) start += 1;
   return /^javascript:/i.test(url.slice(start));
 }
+
+/** Whether a target leaves the frame. The frame is sandboxed with allow-scripts
+ *  only, so navigating the top page or opening a window is refused. */
+function leavesFrame(target: string | null): boolean {
+  if (target === null) return false;
+  const t = target.trim().toLowerCase();
+  return t !== "" && t !== "_self";
+}
+
+const attrValue = (tag: HtmlTag, name: string) => tag.attrs.find((a) => a.name === name)?.value ?? null;
 
 /**
  * Offset → 1-based line/column, over the whole source.
@@ -113,7 +130,10 @@ export const htmlValidator: Validator = (content) => {
 
   // Rules read the parsed start tags: markup inside comments, CDATA or a
   // script's own text is not markup, and a quoted value is one value.
-  for (const tag of scanHtmlTags(content)) {
+  const tags = scanHtmlTags(content);
+  const baseTag = tags.find((t) => t.name === "base" && attrValue(t, "target") !== null);
+  const baseTarget = baseTag ? attrValue(baseTag, "target") : null;
+  for (const tag of tags) {
     if (tag.name === "script") {
       // Any src — remote, relative or empty — means the element never runs
       // inline code, and the trusted CSP allows no script URL.
@@ -122,7 +142,8 @@ export const htmlValidator: Validator = (content) => {
     for (const attr of tag.attrs) {
       if (/^on[a-z]+$/.test(attr.name)) report("html/inline-handler", attr.offset);
       if (URL_ATTRIBUTES.has(attr.name) && attr.value !== null && isJavascriptUrl(attr.value)) {
-        report("html/javascript-url", attr.offset);
+        const target = TARGETED.has(tag.name) ? (attrValue(tag, "target") ?? baseTarget) : null;
+        report(leavesFrame(target) ? "html/javascript-url-navigation" : "html/javascript-url", attr.offset);
       }
     }
   }

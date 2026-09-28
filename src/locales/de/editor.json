@@ -20,6 +20,7 @@
   "diagnostic.html/script-blocked": "Script-Tag erkannt — blockiert, sofern die vertrauenswürdige Vorschau nicht aktiviert ist.",
   "diagnostic.html/script-external": "Externes Script — die Vorschau lädt nie Scripts aus einer Datei oder URL, auch nicht als vertrauenswürdige Vorschau.",
   "diagnostic.html/javascript-url": "javascript:-URL erkannt — blockiert, sofern die vertrauenswürdige Vorschau nicht aktiviert ist.",
+  "diagnostic.html/javascript-url-navigation": "javascript:-URL, die ein anderes Fenster oder die oberste Seite öffnet — die Vorschau lässt das nie zu, auch nicht als vertrauenswürdige Vorschau.",
   "diagnostic.html/inline-handler": "Inline-Event-Handler erkannt — blockiert, sofern die vertrauenswürdige Vorschau nicht aktiviert ist.",
   "preview.cannotRender": "Vorschau kann nicht gerendert werden — beheben Sie die Syntaxfehler",
   "preview.errorAt": "({{line}}:{{column}})",

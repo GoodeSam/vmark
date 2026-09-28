@@ -20,6 +20,7 @@
   "diagnostic.html/script-blocked": "Tag script detectada — bloqueada a menos que a pré-visualização confiável esteja ativada.",
   "diagnostic.html/script-external": "Script externo — a pré-visualização nunca carrega scripts de um arquivo ou URL, nem mesmo a pré-visualização confiável.",
   "diagnostic.html/javascript-url": "URL javascript: detectada — bloqueada a menos que a pré-visualização confiável esteja ativada.",
+  "diagnostic.html/javascript-url-navigation": "URL javascript: que abre outra janela ou a página principal — a pré-visualização nunca permite isso, nem mesmo a pré-visualização confiável.",
   "diagnostic.html/inline-handler": "Manipulador de eventos embutido detectado — bloqueado a menos que a pré-visualização confiável esteja ativada.",
   "preview.cannotRender": "Não é possível renderizar a prévia — corrija os erros de sintaxe",
   "preview.errorAt": "({{line}}:{{column}})",

@@ -201,6 +201,26 @@ describe("html adapter — rules read parsed tags, not text", () => {
     expect(rules(html)).toEqual(expected);
   });
 
+  // The frame is sandboxed with allow-scripts only: a javascript: URL runs in
+  // the frame itself, but navigating the top page or a new window is blocked,
+  // trusted or not (verified in the running app).
+  it.each([
+    [`<a href="javascript:void 0">x</a>`, "html/javascript-url"],
+    [`<a target="_self" href="javascript:void 0">x</a>`, "html/javascript-url"],
+    [`<a target="_top" href="javascript:void 0">x</a>`, "html/javascript-url-navigation"],
+    [`<a target=_blank href="javascript:void 0">x</a>`, "html/javascript-url-navigation"],
+    [`<base target="_parent"><a href="javascript:void 0">x</a>`, "html/javascript-url-navigation"],
+    [`<form action="javascript:x()" target="_top"></form>`, "html/javascript-url-navigation"],
+    [`<a href=" java\tscript:void 0">x</a>`, "html/javascript-url"],
+    [`<a href="JavaScript:void 0">x</a>`, "html/javascript-url"],
+  ])("%s → %s", (html, ruleId) => {
+    expect(rules(html)).toEqual([ruleId]);
+  });
+
+  it("never lowers a javascript: URL that navigates another window", () => {
+    expect(htmlFormat.infoWhenTrusted).toContain("html/javascript-url");
+    expect(htmlFormat.infoWhenTrusted).not.toContain("html/javascript-url-navigation");
+  });
 
   it("stays linear on hostile input", () => {
     const started = performance.now();
