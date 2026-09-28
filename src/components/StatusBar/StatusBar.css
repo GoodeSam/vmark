@@ -177,12 +177,12 @@
 
 .status-tabs-wrap::before {
   left: 0;
-  background: linear-gradient(to right, var(--bg-secondary), transparent);
+  background: linear-gradient(to right, var(--bg-color), transparent);
 }
 
 .status-tabs-wrap::after {
   right: 0;
-  background: linear-gradient(to left, var(--bg-secondary), transparent);
+  background: linear-gradient(to left, var(--bg-color), transparent);
 }
 
 .status-tabs-wrap[data-can-scroll-left="true"]::before,
