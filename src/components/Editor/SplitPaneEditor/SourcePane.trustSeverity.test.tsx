@@ -131,3 +131,39 @@ describe("SourcePane trust-aware severity", () => {
     expect(dispatch).not.toHaveBeenCalled();
   });
 });
+
+// CodeMirror computes a lint result, then installs it a microtask later. A
+// trust or path change inside that window was corrected by the hook — and the
+// queued install then overwrote the correction with the old severity (Codex
+// review). mount() calls forceLinting(), so each change below lands inside it.
+describe("SourcePane trust-aware severity — a change while a lint is in flight", () => {
+  const settle = async () => {
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  };
+
+  it("grant during the lint ends at info", async () => {
+    const { view } = mount(A);
+    act(() => useHtmlTrustStore.getState().grant(A, TOKEN));
+    await settle();
+    await waitFor(() => expect(severities(view)).toEqual(["info"]));
+  });
+
+  it("revoke during the lint ends at warning", async () => {
+    useHtmlTrustStore.getState().grant(A, TOKEN);
+    const { view } = mount(A);
+    act(() => useHtmlTrustStore.getState().revoke(A));
+    await settle();
+    await waitFor(() => expect(severities(view)).toEqual(["warning"]));
+  });
+
+  it("Save As to an untrusted path during the lint ends at warning", async () => {
+    useHtmlTrustStore.getState().grant(A, TOKEN);
+    const { view } = mount(A);
+    act(() => useDocumentStore.getState().setFilePath(TAB, B));
+    await settle();
+    await waitFor(() => expect(severities(view)).toEqual(["warning"]));
+  });
+});

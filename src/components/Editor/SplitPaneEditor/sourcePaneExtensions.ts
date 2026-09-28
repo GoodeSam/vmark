@@ -144,6 +144,8 @@ export interface BuildExtensionsArgs {
   infoWhenTrusted?: readonly string[] | undefined;
   /** Receives each lint's raw findings for useTrustedSeveritySync. */
   onRawLint?: (raw: RawLint) => void;
+  /** useTrustedSeveritySync's re-check after every transaction. */
+  trustSeverity?: Extension;
 }
 
 /** Assemble the full base extension list for the SourcePane editor. */
@@ -160,6 +162,7 @@ export function buildSourcePaneExtensions(args: BuildExtensionsArgs): Extension[
     onDiagnostics,
     infoWhenTrusted,
     onRawLint,
+    trustSeverity,
   } = args;
 
   const extensions: Extension[] = [
@@ -196,6 +199,7 @@ export function buildSourcePaneExtensions(args: BuildExtensionsArgs): Extension[
 
   const validationLinter = buildValidationLinter(tabId, validator, onDiagnostics, infoWhenTrusted, onRawLint);
   if (validationLinter) extensions.push(validationLinter);
+  if (validationLinter && trustSeverity) extensions.push(trustSeverity);
   if (readOnly) extensions.push(EditorState.readOnly.of(true));
 
   return extensions;
