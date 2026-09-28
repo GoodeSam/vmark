@@ -29,7 +29,7 @@
  * @module components/Editor/WorkflowPanel/WorkflowCanvasInner
  */
 
-import { useCallback, useMemo, type ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowRight } from "lucide-react";
 import {
@@ -39,6 +39,7 @@ import {
   Position,
   ReactFlow,
   ReactFlowProvider,
+  useReactFlow,
   type Node,
   type NodeTypes,
 } from "@xyflow/react";
@@ -80,6 +81,17 @@ function CanvasInner({ workflow }: WorkflowCanvasInnerProps): ReactElement {
     const sides = HANDLE_SIDES[direction];
     return { nodes: laid.nodes.map((n) => ({ ...n, ...sides })), edges: laid.edges };
   }, [workflow, direction]);
+
+  // Refit after a direction change; the first layout is fitted by the prop.
+  // Deferred like WorkflowPreview's refit, so the moved nodes have committed.
+  const { fitView } = useReactFlow();
+  const fittedDirection = useRef(direction);
+  useEffect(() => {
+    if (fittedDirection.current === direction) return;
+    fittedDirection.current = direction;
+    const timer = setTimeout(() => void fitView({ padding: 0.1 }), 50);
+    return () => clearTimeout(timer);
+  }, [direction, fitView]);
 
   const onPaneClick = useCallback(() => {
     useWorkflowStore.getState().clearSelection();

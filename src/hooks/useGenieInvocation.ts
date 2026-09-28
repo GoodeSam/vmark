@@ -29,7 +29,7 @@
  * @coordinates-with genieInvocation/streamRunner.ts — provider validation + streaming
  * @coordinates-with genieInvocation/cancelRequest.ts — asks Rust to stop the provider on cancel
  * @coordinates-with services/workflow/providerPayload.ts — the shared run_workflow provider block
- * @coordinates-with services/coherence/capturePolicy.ts — the capture policy a workflow genie's run carries (WI-LX1.4)
+ * @coordinates-with services/workflow/dispatchWorkflowRun.ts — the shared run_workflow register/dispatch/rollback transaction
  * @coordinates-with genieInvocation/extraction.ts — scope extraction + templating
  * @coordinates-with stores/aiStore/suggestion.ts — stores the suggestion for accept/reject
  * @coordinates-with stores/aiStore/genies.ts — provides genie definitions and templates
@@ -57,66 +57,14 @@ import {
 } from "@/services/genieInvocation/extraction";
 import { runGenieStream, type RunGenieStreamOptions } from "@/services/genieInvocation/streamRunner";
 import { cancelGenieRequest } from "@/services/genieInvocation/cancelRequest";
-import {
-  workflowProviderPayload,
-  type WorkflowProviderPayload,
-} from "@/services/workflow/providerPayload";
-import { currentCapturePolicy } from "@/services/coherence/capturePolicy";
-
-/**
- * Register an execution id, then run the workflow under it.
- *
- * The id is generated and registered BEFORE invoking the runner (WI-0.3, C2):
- * a fast workflow can emit step-update/complete events before invoke()
- * resolves; if executionId were still unset when they arrived, they would be
- * processed against a null id and then wiped by a late setExecution — losing
- * progress / sticking on "running". Mirrors useWorkflowExecution.start. A
- * rejected dispatch rolls the registration back — only while the store still
- * holds THIS execution (audit #374): a workflow registered after this one must
- * not be wiped by its failure.
- *
- * The registration slot holds ONE run per window, so a second invocation is
- * refused rather than allowed to overwrite it (audit #728). Overwriting made
- * the live run's own events unroutable and cleared its progress, while BOTH
- * backend workflows carried on running.
- */
-async function dispatchWorkflow(
-  yaml: string,
-  workspaceRoot: string,
-  provider: WorkflowProviderPayload | null,
-): Promise<"dispatched" | "already-running"> {
-  const { invoke } = await import("@tauri-apps/api/core");
-  const { useWorkflowStore } = await import("@/stores/workflowStore");
-  const id =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  // Checked and claimed with no await between, so two clicks in one tick
-  // cannot both pass it.
-  if (useWorkflowStore.getState().preview.executionId !== null) return "already-running";
-  useWorkflowStore.getState().setExecution(id);
-  try {
-    await invoke<string>("run_workflow", {
-      yaml,
-      env: {},
-      workspaceRoot,
-      provider,
-      executionId: id,
-      capturePolicy: currentCapturePolicy(), // WI-LX1.4
-    });
-  } catch (err) {
-    const store = useWorkflowStore.getState();
-    if (store.preview.executionId === id) store.setExecution(null);
-    throw err;
-  }
-  return "dispatched";
-}
+import { workflowProviderPayload } from "@/services/workflow/providerPayload";
 
 /**
  * WI-7.1: workflow genies dispatch through run_workflow instead of
  * run_ai_prompt. The picker still shows them inline; invocation routes
- * the YAML body to the Rust runner. Provider resolution and the
- * register/dispatch/rollback step are the helpers above (audit #373).
+ * the YAML body to the Rust runner. The register/dispatch/rollback
+ * transaction is `dispatchWorkflowRun`, shared with the workflow panel —
+ * loaded lazily, like the workflow store it claims.
  */
 async function runWorkflowGenie(genie: GenieDefinition): Promise<void> {
   const hasProvider = await useAiProviderStore.getState().ensureProvider();
@@ -131,12 +79,13 @@ async function runWorkflowGenie(genie: GenieDefinition): Promise<void> {
       toast.error(i18n.t("dialog:toast.workflowNeedsWorkspace", "Open a workspace first"));
       return;
     }
-    const outcome = await dispatchWorkflow(
-      genie.template,
+    const { dispatchWorkflowRun } = await import("@/services/workflow/dispatchWorkflowRun");
+    const outcome = await dispatchWorkflowRun({
+      yaml: genie.template,
       workspaceRoot,
-      workflowProviderPayload(),
-    );
-    if (outcome === "already-running") {
+      provider: workflowProviderPayload(),
+    });
+    if (outcome.status === "already-running") {
       toast.error(i18n.t("dialog:toast.workflowAlreadyRunning"));
       return;
     }

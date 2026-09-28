@@ -11,7 +11,14 @@ import userEvent from "@testing-library/user-event";
 
 const invoke = vi.hoisted(() => vi.fn());
 vi.mock("@tauri-apps/api/core", () => ({ invoke }));
-vi.mock("@tauri-apps/api/event", () => ({ listen: async () => () => {} }));
+/** When set, `listen` waits on it — holds a start BEFORE it registers its run. */
+const listenGate = vi.hoisted(() => ({ pending: null as Promise<void> | null }));
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: async () => {
+    if (listenGate.pending) await listenGate.pending;
+    return () => {};
+  },
+}));
 const ask = vi.hoisted(() => vi.fn());
 vi.mock("@tauri-apps/plugin-dialog", () => ({ ask }));
 
@@ -24,6 +31,7 @@ vi.mock("@/plugins/workflowPreview/WorkflowPreview", () => ({
 }));
 
 import { WorkflowRunPanel } from "../WorkflowRunPanel";
+import { resetWorkflowEvents, retainWorkflowEvents } from "@/services/workflow/workflowRunEvents";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
@@ -53,7 +61,13 @@ beforeEach(() => {
   });
   ask.mockReset();
   previewProps.last = null;
+  listenGate.pending = null;
+  // The window's event owner (the approval dialog in the app); panels hold nothing.
+  resetWorkflowEvents();
+  retainWorkflowEvents();
 });
+
+const DOC = "name: demo\nsteps:\n  - uses: action/notify\n";
 
 function runButton() {
   return screen.getByRole("button", { name: "workflow:run.start" });
@@ -110,8 +124,7 @@ describe("WorkflowRunPanel", () => {
     );
     ask.mockResolvedValue(true);
     act(() => {
-      useWorkflowStore.getState().setExecution("r1");
-      useWorkflowStore.getState().bindRunToTab("r1", "tab-1");
+      useWorkflowStore.getState().setExecution("r1", { tabId: "tab-1", source: DOC });
       useWorkflowStore.getState().finishExecution("r1", "completed");
     });
     render(<WorkflowRunPanel tabId="tab-1" graph={GRAPH} parseError={null} />);
@@ -133,8 +146,7 @@ describe("WorkflowRunPanel", () => {
         : undefined,
     );
     act(() => {
-      useWorkflowStore.getState().setExecution("r1");
-      useWorkflowStore.getState().bindRunToTab("r1", "tab-other");
+      useWorkflowStore.getState().setExecution("r1", { tabId: "tab-other", source: DOC });
       useWorkflowStore.getState().finishExecution("r1", "completed");
     });
     render(<WorkflowRunPanel tabId="tab-1" graph={GRAPH} parseError={null} />);
@@ -143,11 +155,83 @@ describe("WorkflowRunPanel", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 
+  function clickNode(stepId: string) {
+    act(() => {
+      (previewProps.last?.onNodeClick as (id: string) => void)(stepId);
+    });
+  }
+
   it("clicking a node selects that step", async () => {
     render(<WorkflowRunPanel tabId="tab-1" graph={GRAPH} parseError={null} />);
+    clickNode("save");
+    expect(previewProps.last?.activeStepId).toBe("save");
+  });
+
+  // Audit fix-round #105: the selection was window-global, so a panel for
+  // another workflow highlighted ITS step that happened to share the id.
+  it("a step selected in one tab's panel is not highlighted in another tab's", () => {
+    const seen: Record<string, unknown> = {};
+    render(<WorkflowRunPanel tabId="tab-1" graph={GRAPH} parseError={null} />);
+    clickNode("save");
+    seen.first = previewProps.last?.activeStepId;
+    render(<WorkflowRunPanel tabId="tab-2" graph={GRAPH} parseError={null} />);
+    expect(seen.first).toBe("save");
+    expect(previewProps.last?.activeStepId).toBeNull();
+  });
+
+  // Round 2 (#105): the yaml adapter re-parses the graph locally on every
+  // edit and never told the store, so an edited workflow in the SAME tab
+  // inherited the old selection by step id. A selection belongs to the graph
+  // it was made on — as the markdown path's re-parse already clears it.
+  it("a re-parsed graph in the same tab does not inherit the selection", () => {
+    const { rerender } = render(<WorkflowRunPanel tabId="tab-1" graph={GRAPH} parseError={null} />);
+    clickNode("save");
+    expect(previewProps.last?.activeStepId).toBe("save");
+    rerender(<WorkflowRunPanel tabId="tab-1" graph={{ ...GRAPH }} parseError={null} />);
+    expect(previewProps.last?.activeStepId).toBeNull();
+  });
+
+  // Audit fix-round #102: before its run is registered, a start has nothing to
+  // cancel — the panel says it is starting and Cancel is not live.
+  it("while a start has not registered its run: says Starting and Cancel is disabled", async () => {
+    let release = () => {};
+    resetWorkflowEvents();
+    listenGate.pending = new Promise<void>((resolve) => (release = resolve));
+    retainWorkflowEvents(); // subscription in flight: a start waits before registering
+    render(<WorkflowRunPanel tabId="tab-1" graph={GRAPH} parseError={null} />);
+    await userEvent.click(runButton());
+    const cancel = screen.getByRole("button", { name: "workflow:run.cancel" });
+    expect(cancel).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("workflow:run.status.starting");
+
+    await act(async () => release());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "workflow:run.cancel" })).toBeEnabled(),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("workflow:run.status.running");
+  });
+
+  // Audit fix-round #103: Restore stayed enabled while its confirmation was
+  // open, so a second click opened a second dialog and a second restore.
+  it("Restore is disabled from the click on, through the confirmation", async () => {
+    invoke.mockImplementation(async (cmd: string) =>
+      cmd === "list_workflow_snapshots"
+        ? [{ id: "snap-r1", executionId: "r1", timestamp: 1, fileCount: 1, createdCount: 0 }]
+        : undefined,
+    );
+    let answer: (yes: boolean) => void = () => {};
+    ask.mockReturnValue(new Promise<boolean>((resolve) => (answer = resolve)));
     act(() => {
-      (previewProps.last?.onNodeClick as (id: string) => void)("save");
+      useWorkflowStore.getState().setExecution("r1", { tabId: "tab-1", source: DOC });
+      useWorkflowStore.getState().finishExecution("r1", "completed");
     });
-    expect(useWorkflowStore.getState().preview.activeStepId).toBe("save");
+    render(<WorkflowRunPanel tabId="tab-1" graph={GRAPH} parseError={null} />);
+    const restore = await screen.findByRole("button", { name: "workflow:restore.button" });
+    await userEvent.click(restore);
+    expect(restore).toBeDisabled();
+    await userEvent.click(restore);
+    expect(ask).toHaveBeenCalledTimes(1);
+    await act(async () => answer(false));
+    await waitFor(() => expect(restore).toBeEnabled());
   });
 });

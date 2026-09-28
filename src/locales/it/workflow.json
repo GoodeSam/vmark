@@ -10,7 +10,9 @@
   "run.needsWorkspace": "Apri una cartella per eseguire questo workflow",
   "run.busy": "È in esecuzione un altro workflow",
   "run.failedToStart": "Impossibile avviare il workflow",
+  "run.cancelFailed": "Impossibile annullare il workflow",
   "run.status.running": "In esecuzione…",
+  "run.status.starting": "Avvio…",
   "run.status.completed": "Completato",
   "run.status.failed": "Non riuscito",
   "run.status.cancelled": "Annullato",
@@ -25,5 +27,7 @@
   "restore.done": "File ripristinati allo stato precedente all'esecuzione",
   "restore.partial_one": "{{count}} file non è stato ripristinato ed è rimasto invariato",
   "restore.partial_other": "{{count}} file non sono stati ripristinati e sono rimasti invariati",
-  "restore.failed": "Impossibile ripristinare i file"
+  "restore.failed": "Impossibile ripristinare i file",
+  "restore.listFailed": "Impossibile individuare i file che questa esecuzione può ripristinare",
+  "restore.superseded": "Nel frattempo è stato eseguito un altro workflow, quindi questi file non sono stati ripristinati"
 }

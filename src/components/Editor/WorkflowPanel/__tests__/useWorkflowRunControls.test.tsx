@@ -11,14 +11,19 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke }));
 
 type Listener = (event: { payload: unknown }) => void;
 const listeners = vi.hoisted(() => new Map<string, Listener>());
+/** When set, `listen` waits on it — holds a start BEFORE it registers its run. */
+const listenGate = vi.hoisted(() => ({ pending: null as Promise<void> | null }));
 vi.mock("@tauri-apps/api/event", () => ({
   listen: async (name: string, handler: Listener) => {
+    if (listenGate.pending) await listenGate.pending;
     listeners.set(name, handler);
     return () => listeners.delete(name);
   },
 }));
 
 import { useWorkflowRunControls } from "../useWorkflowRunControls";
+import { resetWorkflowEvents, retainWorkflowEvents } from "@/services/workflow/workflowRunEvents";
+import { dispatchWorkflowRun } from "@/services/workflow/dispatchWorkflowRun";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
@@ -41,6 +46,11 @@ beforeEach(() => {
     cmd === "run_workflow" ? args?.executionId : undefined,
   );
   listeners.clear();
+  listenGate.pending = null;
+  // The window's event owner — the approval dialog in the app — holds the one
+  // subscription; the panels under test subscribe nothing themselves (#115).
+  resetWorkflowEvents();
+  retainWorkflowEvents();
   useWorkflowStore.setState(initialWorkflow, true);
   useDocumentStore.setState({
     documents: { "tab-a": { content: YAML_A }, "tab-b": { content: YAML_B } },
@@ -54,6 +64,16 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+/** Re-hold the window's subscription with `listen` gated, so a start waits
+ *  BEFORE it registers. Returns the gate's opener. */
+function holdSubscription(): () => void {
+  resetWorkflowEvents();
+  let open = () => {};
+  listenGate.pending = new Promise<void>((resolve) => (open = resolve));
+  retainWorkflowEvents();
+  return open;
+}
 
 describe("useWorkflowRunControls — starting a run", () => {
   it("runs THIS tab's document against the workspace root, whatever tab is active elsewhere", async () => {
@@ -109,6 +129,86 @@ describe("useWorkflowRunControls — starting a run", () => {
       result.current.cancel();
     });
     expect(invoke).toHaveBeenCalledWith("cancel_workflow", { executionId: id });
+  });
+
+  // Audit fix-round #102: `running` covers the start BEFORE its execution id
+  // is registered, and a Cancel clicked then did nothing at all — the run
+  // started anyway. Cancel is offered only once there is a run to cancel.
+  it("offers no Cancel until the start has registered its run", async () => {
+    const release = holdSubscription();
+    const { result } = renderHook(() => useWorkflowRunControls("tab-b"));
+    let started: Promise<void> = Promise.resolve();
+    act(() => {
+      started = result.current.run();
+    });
+    expect(result.current.running).toBe(true);
+    expect(useWorkflowStore.getState().preview.executionId).toBeNull();
+    expect(result.current.cancellable).toBe(false);
+
+    await act(async () => {
+      release();
+      await started;
+    });
+    expect(result.current.cancellable).toBe(true);
+  });
+
+  // Audit fix-round #116: every cancel failure was logged as a benign race, so
+  // a cancel the transport or backend lost left the run going with no word.
+  it("shows a cancel that failed, but not one refused because the run already ended", async () => {
+    const errorDetail = vi.spyOn(imeToast, "errorDetail").mockReturnValue("t" as never);
+    const { result } = renderHook(() => useWorkflowRunControls("tab-b"));
+    await act(async () => {
+      await result.current.run();
+    });
+    const lost = { code: "io", message: "pipe closed" };
+    invoke.mockImplementation(async (cmd: string) => {
+      if (cmd === "cancel_workflow") throw lost;
+      return undefined;
+    });
+    await act(async () => {
+      result.current.cancel();
+    });
+    await waitFor(() => expect(errorDetail).toHaveBeenCalledWith("workflow:run.cancelFailed", lost));
+
+    errorDetail.mockClear();
+    invoke.mockImplementation(async (cmd: string) => {
+      if (cmd === "cancel_workflow") throw { code: "not-found", message: "not running" };
+      return undefined;
+    });
+    await act(async () => {
+      result.current.cancel();
+    });
+    expect(errorDetail).not.toHaveBeenCalled();
+  });
+
+  // Audit fix-round #106: a finished run's statuses were painted over whatever
+  // the document said NOW, so an edited step sharing an old id showed the old
+  // step's success or failure. They are painted only over the text that ran.
+  it("paints the run's statuses only while the document is the text it ran", async () => {
+    const { result } = renderHook(() => useWorkflowRunControls("tab-b"));
+    await act(async () => {
+      await result.current.run();
+    });
+    const id = useWorkflowStore.getState().preview.executionId;
+    act(() => {
+      listeners.get("workflow:step-update")?.({
+        payload: { executionId: id, stepId: "copy", status: "success" },
+      });
+      listeners.get("workflow:complete")?.({ payload: { executionId: id, status: "completed" } });
+    });
+    expect(result.current.stepStatuses).toEqual({ copy: { status: "success" } });
+
+    act(() => {
+      useDocumentStore.setState({
+        documents: { "tab-b": { content: YAML_B.replace("copy", "move") } },
+      } as never);
+    });
+    expect(result.current.stepStatuses).toBeUndefined();
+
+    act(() => {
+      useDocumentStore.setState({ documents: { "tab-b": { content: YAML_B } } } as never);
+    });
+    expect(result.current.stepStatuses).toEqual({ copy: { status: "success" } });
   });
 });
 
@@ -183,5 +283,108 @@ describe("useWorkflowRunControls — a start the backend refuses", () => {
     await waitFor(() => expect(result.current.running).toBe(false));
     expect(useWorkflowStore.getState().preview.executionId).toBeNull();
     expect(result.current.owned).toBe(false);
+  });
+});
+
+// Audit 20260928 #113/#114 — ownership is registered WITH the run, so Cancel
+// can only ever reach this panel's own execution, and a panel that remounts
+// while its start is still in flight recognises the run as its own.
+describe("useWorkflowRunControls — ownership from registration (#113/#114)", () => {
+  it("competing starts: the panel that loses never offers a Cancel that reaches the winner's run", async () => {
+    const open = holdSubscription();
+    const a = renderHook(() => useWorkflowRunControls("tab-a"));
+    const b = renderHook(() => useWorkflowRunControls("tab-b"));
+    vi.spyOn(imeToast, "errorDetail").mockReturnValue("t" as never);
+
+    let startedB: Promise<void> = Promise.resolve();
+    let startedA: Promise<void> = Promise.resolve();
+    act(() => {
+      startedB = b.result.current.run(); // queued first: registers first
+      startedA = a.result.current.run();
+    });
+    // Both are waiting for the subscription; neither has registered.
+    expect(a.result.current.cancellable).toBe(false);
+    expect(b.result.current.cancellable).toBe(false);
+
+    await act(async () => {
+      open();
+      await Promise.all([startedA, startedB]);
+    });
+    const winner = useWorkflowStore.getState().preview.executionId;
+    expect(useWorkflowStore.getState().preview.runTabId).toBe("tab-b");
+    expect(b.result.current.cancellable).toBe(true);
+    expect(a.result.current.owned).toBe(false);
+    expect(a.result.current.cancellable).toBe(false);
+    expect(a.result.current.blockedReason).toBe("busy");
+
+    invoke.mockClear();
+    await act(async () => {
+      a.result.current.cancel();
+    });
+    expect(invoke).not.toHaveBeenCalledWith("cancel_workflow", expect.anything());
+
+    await act(async () => {
+      b.result.current.cancel();
+    });
+    expect(invoke).toHaveBeenCalledWith("cancel_workflow", { executionId: winner });
+  });
+
+  it("a genie's run registered mid-start is never this panel's to cancel", async () => {
+    const open = holdSubscription();
+    const panel = renderHook(() => useWorkflowRunControls("tab-a"));
+    vi.spyOn(imeToast, "errorDetail").mockReturnValue("t" as never);
+
+    let genie: Promise<unknown> = Promise.resolve();
+    let started: Promise<void> = Promise.resolve();
+    act(() => {
+      genie = dispatchWorkflowRun({ yaml: YAML_B, workspaceRoot: "/work", provider: null });
+      started = panel.result.current.run();
+    });
+    await act(async () => {
+      open();
+      await Promise.all([genie, started]);
+    });
+
+    expect(useWorkflowStore.getState().preview.executionId).not.toBeNull();
+    expect(useWorkflowStore.getState().preview.runTabId).toBeNull();
+    expect(panel.result.current.cancellable).toBe(false);
+    invoke.mockClear();
+    await act(async () => {
+      panel.result.current.cancel();
+    });
+    expect(invoke).not.toHaveBeenCalledWith("cancel_workflow", expect.anything());
+  });
+
+  it("a panel unmounted and remounted during a deferred start sees ITS run, and can cancel it", async () => {
+    let admit: (id: string) => void = () => {};
+    invoke.mockImplementation((cmd: string, args?: Record<string, unknown>) =>
+      cmd === "run_workflow"
+        ? new Promise<string>((resolve) => (admit = () => resolve(String(args?.executionId))))
+        : Promise.resolve(undefined),
+    );
+    const first = renderHook(() => useWorkflowRunControls("tab-a"));
+    let started: Promise<void> = Promise.resolve();
+    await act(async () => {
+      started = first.result.current.run();
+      await vi.waitFor(() => expect(runWorkflowCalls()).toHaveLength(1)); // snapshotting…
+    });
+    first.unmount();
+
+    const again = renderHook(() => useWorkflowRunControls("tab-a"));
+    const id = useWorkflowStore.getState().preview.executionId;
+    expect(again.result.current.owned).toBe(true);
+    expect(again.result.current.running).toBe(true);
+    expect(again.result.current.cancellable).toBe(true);
+    expect(again.result.current.blockedReason).toBeNull();
+
+    await act(async () => {
+      again.result.current.cancel();
+    });
+    expect(invoke).toHaveBeenCalledWith("cancel_workflow", { executionId: id });
+
+    await act(async () => {
+      admit(String(id));
+      await started;
+    });
   });
 });

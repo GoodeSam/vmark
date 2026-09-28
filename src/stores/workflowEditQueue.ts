@@ -65,62 +65,87 @@ export function patchTarget(patch: IRPatch): string {
   }
 }
 
+type StepShift = Extract<IRPatch, { kind: "step.insert" | "step.delete" | "step.move" }>;
+type StepEdit = Extract<IRPatch, { kind: "step.set" | "with.set" | "with.remove" }>;
+
 /** A patch that renumbers a job's steps: every one is its own operation. */
-function shiftsSteps(p: IRPatch): p is Extract<IRPatch, { kind: "step.insert" | "step.delete" | "step.move" }> {
+function shiftsSteps(p: IRPatch): p is StepShift {
   return p.kind === "step.insert" || p.kind === "step.delete" || p.kind === "step.move";
 }
 
-/** The job whose step INDICES `p` is written against, if it addresses a step. */
-function stepFrame(p: IRPatch): string | null {
-  switch (p.kind) {
-    case "step.set":
-    case "with.set":
-    case "with.remove":
-      return p.jobId;
-    default:
-      return null;
-  }
+/** A patch written against a step INDEX. */
+function isStepEdit(p: IRPatch): p is StepEdit {
+  return p.kind === "step.set" || p.kind === "with.set" || p.kind === "with.remove";
 }
 
 /**
- * Index of the last queued patch that renumbers `jobId`'s steps, or -1. A
- * step edit queued before it addressed a different step by the same index.
+ * Where the step at `index` (in the frame AFTER `shift`) stood before it, or
+ * `null` when `shift` is the insert that created it. Indices are taken at face
+ * value — the queue does not know the job's length, and the editor only ever
+ * emits in-range ones.
  */
-function lastShift(queue: readonly IRPatch[], jobId: string | null): number {
-  if (jobId === null) return -1;
-  for (let i = queue.length - 1; i >= 0; i--) {
-    const p = queue[i];
-    if (shiftsSteps(p) && p.jobId === jobId) return i;
+function indexBefore(shift: StepShift, index: number): number | null {
+  switch (shift.kind) {
+    case "step.insert":
+      if (index === shift.index) return null;
+      return index > shift.index ? index - 1 : index;
+    case "step.delete":
+      return index >= shift.stepIndex ? index + 1 : index;
+    case "step.move": {
+      const { fromIndex: from, toIndex: to } = shift;
+      if (index === to) return from;
+      if (from < to && index >= from && index < to) return index + 1;
+      if (from > to && index > to && index <= from) return index - 1;
+      return index;
+    }
   }
-  return -1;
 }
 
 /**
- * Append `next`, dropping any earlier patch that writes the same target —
- * within the same coordinate frame (WI-LX2.4). An insert, delete or move is
- * never collapsed: two deletes at index 0 delete two steps. And a step edit
- * only replaces an edit queued AFTER the last renumbering of that job; one
- * queued before it addressed whatever step then had that index.
+ * `queue` without every patch that writes `target`'s field — the ONE
+ * target-removal rule `dedupQueue` and `cancelTarget` share (audit 20260928
+ * #154). A step edit is matched by step IDENTITY (#153): walking back through
+ * the queue, the target's index is carried through each renumbering of its
+ * job, so an insert below it (which moves nothing) or a move there and back
+ * is crossed, while an edit to a different step that merely shares today's
+ * index is not. The walk stops at the insert that created the step.
+ */
+function withoutTarget(queue: readonly IRPatch[], target: IRPatch): IRPatch[] {
+  if (!isStepEdit(target)) {
+    const key = patchTarget(target);
+    return queue.filter((p) => patchTarget(p) !== key);
+  }
+  const dropped = new Set<number>();
+  let index: number | null = target.stepIndex;
+  for (let i = queue.length - 1; i >= 0 && index !== null; i--) {
+    const p = queue[i];
+    if (shiftsSteps(p)) {
+      if (p.jobId === target.jobId) index = indexBefore(p, index);
+    } else if (patchTarget(p) === patchTarget({ ...target, stepIndex: index })) {
+      dropped.add(i);
+    }
+  }
+  return queue.filter((_, i) => !dropped.has(i));
+}
+
+/**
+ * Append `next`, dropping any earlier patch that writes the same target
+ * (WI-LX2.4). An insert, delete or move is never collapsed: two deletes at
+ * index 0 delete two steps. A step edit replaces only an earlier edit to the
+ * SAME step, followed through the queue's renumberings (`withoutTarget`).
  */
 export function dedupQueue(queue: IRPatch[], next: IRPatch): IRPatch[] {
   if (shiftsSteps(next)) return [...queue, next];
-  const target = patchTarget(next);
-  const barrier = lastShift(queue, stepFrame(next));
-  const filtered = queue.filter((p, i) => i <= barrier || patchTarget(p) !== target);
-  filtered.push(next);
-  return filtered;
+  return [...withoutTarget(queue, next), next];
 }
 
 /**
- * Drop the queued edit(s) for `target` in the current frame — what a field
- * does when its value returns to the original. Edits queued before the last
- * renumbering of the job address another step and are kept. Same array back
- * when nothing matched.
+ * Drop the queued edit(s) for `target` — what a field does when its value
+ * returns to the original. Same step identity rule as `dedupQueue`. Same
+ * array back when nothing matched.
  */
 export function cancelTarget(queue: IRPatch[], target: IRPatch): IRPatch[] {
-  const key = patchTarget(target);
-  const barrier = lastShift(queue, stepFrame(target));
-  const next = queue.filter((p, i) => i <= barrier || patchTarget(p) !== key);
+  const next = withoutTarget(queue, target);
   return next.length === queue.length ? queue : next;
 }
 

@@ -10,7 +10,9 @@
   "run.needsWorkspace": "Open a folder to run this workflow",
   "run.busy": "Another workflow is running",
   "run.failedToStart": "The workflow could not start",
+  "run.cancelFailed": "The workflow could not be cancelled",
   "run.status.running": "Running…",
+  "run.status.starting": "Starting…",
   "run.status.completed": "Completed",
   "run.status.failed": "Failed",
   "run.status.cancelled": "Cancelled",
@@ -25,5 +27,7 @@
   "restore.done": "Files restored to their state before the run",
   "restore.partial_one": "{{count}} file could not be restored and was left as it is",
   "restore.partial_other": "{{count}} files could not be restored and were left as they are",
-  "restore.failed": "Could not restore the files"
+  "restore.failed": "Could not restore the files",
+  "restore.listFailed": "Could not look up the files this run can restore",
+  "restore.superseded": "Another workflow ran since, so these files were not restored"
 }

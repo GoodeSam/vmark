@@ -4,12 +4,14 @@
 // requires DOM extension globals; smoke-tests verify the slot wires the
 // document content + format and exposes the CodeMirror container.
 
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { act, render, screen, cleanup, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ViewPlugin } from "@codemirror/view";
 import type { FormatConfig } from "@/lib/formats/types";
 import { SourcePane } from "./SourcePane";
 import { useEditorStore } from "@/stores/editorStore";
+import { usePaneStore } from "@/stores/paneStore";
+import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 
 // Mutable mock state so individual tests can simulate async store
 // updates that arrive after the editor has mounted.
@@ -96,6 +98,29 @@ describe("SourcePane", () => {
     expect(active.activeSourceView?.dom).toBe(container.querySelector(".cm-editor"));
     unmount();
     expect(useEditorStore.getState().active.activeSourceView).toBeNull();
+  });
+
+  // Audit 20260928 #98 — the registration lasts only while the pane is
+  // focused: moving split focus to a pane with no source editor (a preview or
+  // media pane) must forget this view rather than leave it published.
+  it("forgets its view when split focus moves to another pane, and re-registers on return", () => {
+    const W = getCurrentWindowLabel();
+    useEditorStore.getState().clearActiveEditors();
+    usePaneStore.getState().openSplit(W, "other-tab");
+    usePaneStore.getState().setFocusedPane(W, "primary"); // this pane (no PaneProvider = primary)
+    const { container } = render(
+      <SourcePane tabId="tab-1" formatId="txt" formatConfig={txtConfig} />,
+    );
+    const dom = container.querySelector(".cm-editor");
+    expect(useEditorStore.getState().active.activeSourceView?.dom).toBe(dom);
+
+    act(() => usePaneStore.getState().setFocusedPane(W, "secondary"));
+    expect(useEditorStore.getState().active.activeSourceView).toBeNull();
+
+    act(() => usePaneStore.getState().setFocusedPane(W, "primary"));
+    expect(useEditorStore.getState().active.activeSourceView?.dom).toBe(dom);
+    expect(useEditorStore.getState().active.activeSourceTabId).toBe("tab-1");
+    usePaneStore.setState({ byWindow: {} });
   });
 
   it("renders a source-pane container", () => {

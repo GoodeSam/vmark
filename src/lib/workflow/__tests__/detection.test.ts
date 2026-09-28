@@ -77,8 +77,13 @@ describe("isEngineWorkflow", () => {
     expect(isEngineWorkflow("/x/config.yml", content)).toBe(false);
   });
 
-  it("still claims malformed YAML with the engine's shape, so the panel can show the parse error", () => {
-    expect(isEngineWorkflow(null, "name: [unclosed\nsteps:\n  - uses: genie/x\n")).toBe(true);
+  // Audit 20260928 round 2 (#123/#126): malformed YAML is never an engine
+  // workflow. A text scan of broken YAML cannot tell a step's own `uses:` from
+  // one nested in a flow value, so claiming it offered Run on a guess. A LIVE
+  // run whose file stops parsing keeps its Cancel through the yaml adapter's
+  // generic preview instead (#124).
+  it("never claims malformed YAML, whatever it looks like", () => {
+    expect(isEngineWorkflow(null, "name: [unclosed\nsteps:\n  - uses: genie/x\n")).toBe(false);
   });
 
   it("handles CRLF line endings", () => {
@@ -87,5 +92,39 @@ describe("isEngineWorkflow", () => {
 
   it("recognises a Windows path under .github\\workflows\\ as GitHub's", () => {
     expect(isEngineWorkflow("C:\\repo\\.github\\workflows\\triage.yml", ENGINE)).toBe(false);
+  });
+});
+
+// Audit 20260928 #123/#126/#127 — the classifier reads the STRUCTURE: only a
+// `uses:` that is a step's own key counts, and every YAML sequence form the
+// workflow parser accepts is recognised.
+describe("isEngineWorkflow — structure, not text (audit 20260928)", () => {
+  it.each([
+    ["a uses: under another top-level key", "steps:\n  - script: echo hi\nmetadata:\n  plugin:\n    uses: action/notify\n"],
+    ["a uses: inside a block scalar", "steps:\n  - script: |\n      uses: action/notify\n"],
+    ["a uses: nested under a step's with:", "steps:\n  - id: a\n    with:\n      uses: action/notify\n"],
+    ["top-level steps that is a mapping, not a list", "steps:\n  uses: action/notify\n"],
+  ])("rejects %s", (_label, content) => {
+    expect(isEngineWorkflow(null, content)).toBe(false);
+  });
+
+  it.each([
+    ["an indentationless sequence", "name: n\nsteps:\n- uses: action/notify\n"],
+    ["an indentationless sequence whose uses is not the first key", "name: n\nsteps:\n- id: a\n  uses: genie/x\n"],
+    ["a flow sequence", "name: n\nsteps: [{uses: action/notify}]\n"],
+    ["a flow sequence spanning lines", "name: n\nsteps: [\n  {id: a, uses: 'genie/x'},\n]\n"],
+  ])("accepts %s", (_label, content) => {
+    expect(isEngineWorkflow(null, content)).toBe(true);
+  });
+
+  it.each([
+    ["an indented step", "name: [unclosed\nsteps:\n  - id: a\n    uses: genie/x\n"],
+    ["an indentationless step", "name: [unclosed\nsteps:\n- uses: genie/x\n"],
+    ["a flow sequence on the steps line", "name: [unclosed\nsteps: [{uses: action/notify}]\n"],
+    ["a uses: nested in a flow value", "name: [unclosed\nsteps: [{script: {uses: action/notify}}]\n"],
+    ["a uses: in a step's flow with:", "name: [unclosed\nsteps:\n  - with: {uses: action/notify}\n"],
+    ["a duplicate key", "name: a\nname: b\nsteps:\n  - uses: action/notify\n"],
+  ])("never claims malformed YAML: %s", (_label, content) => {
+    expect(isEngineWorkflow(null, content)).toBe(false);
   });
 });

@@ -10,7 +10,9 @@
   "run.needsWorkspace": "Öffnen Sie einen Ordner, um diesen Workflow auszuführen",
   "run.busy": "Ein anderer Workflow läuft gerade",
   "run.failedToStart": "Der Workflow konnte nicht gestartet werden",
+  "run.cancelFailed": "Der Workflow konnte nicht abgebrochen werden",
   "run.status.running": "Läuft…",
+  "run.status.starting": "Wird gestartet…",
   "run.status.completed": "Abgeschlossen",
   "run.status.failed": "Fehlgeschlagen",
   "run.status.cancelled": "Abgebrochen",
@@ -25,5 +27,7 @@
   "restore.done": "Dateien auf den Stand vor dem Lauf zurückgesetzt",
   "restore.partial_one": "{{count}} Datei konnte nicht wiederhergestellt werden und blieb unverändert",
   "restore.partial_other": "{{count}} Dateien konnten nicht wiederhergestellt werden und blieben unverändert",
-  "restore.failed": "Die Dateien konnten nicht wiederhergestellt werden"
+  "restore.failed": "Die Dateien konnten nicht wiederhergestellt werden",
+  "restore.listFailed": "Die wiederherstellbaren Dateien dieses Laufs konnten nicht ermittelt werden",
+  "restore.superseded": "Seitdem lief ein anderer Workflow, daher wurden diese Dateien nicht wiederhergestellt"
 }

@@ -13,7 +13,16 @@
  * diagnostics banner's line jump, `JobNode`'s Escape, undo in source mode, the
  * IME guard — found no view, or a stale one from another document. It now
  * registers under its OWN tab (`options.tabId`) and skips the cursor context,
- * which is markdown-only (`options.cursorContext: false`).
+ * which is markdown-only (`options.cursorContext: false`) — and DROPS any
+ * markdown context another pane published, so the toolbar and context menu
+ * (which act on `source.editorView`) cannot format that pane's document while
+ * this one is focused.
+ *
+ * The registration lasts only while the pane is focused and visible (audit
+ * 20260928): focus moving to a pane with no source editor — a preview, a
+ * media viewer, a WYSIWYG pane — forgets this view by identity, as the Tiptap
+ * registration does, instead of leaving lint, IME and selection readers
+ * aimed at a document the user left.
  *
  * @coordinates-with stores/editorStore.ts — active source view + context
  * @coordinates-with hooks/useIsFocusedPane.ts — focus resolution
@@ -47,17 +56,29 @@ export function useSourcePaneFocus(
   const { tabId: ownTabId, cursorContext = true } = options;
 
   useEffect(() => {
-    if (hidden || !isFocusedPane) return;
     const view = viewRef.current;
     if (!view) return;
-    const tabId = ownTabId ?? useTabStore.getState().activeTabId[windowLabel] ?? undefined;
-    useEditorStore.getState().setActiveSourceView(view, tabId);
-    if (cursorContext) {
-      useEditorStore.getState().setSourceContext(computeSourceCursorContext(view), view);
+    if (hidden || !isFocusedPane) {
+      // By identity, not by undoing this effect's own registration: the view
+      // may have been registered by its creation effect (the first run here
+      // saw no view), and the pane that took focus may already own the slot.
+      useEditorStore.getState().clearSourceViewIfMatch(view);
+      return;
     }
+    const tabId = ownTabId ?? useTabStore.getState().activeTabId[windowLabel] ?? undefined;
+    activateSourceView(view, tabId, cursorContext);
   }, [isFocusedPane, hidden, windowLabel, viewRef, ownTabId, cursorContext]);
 
   return ref;
+}
+
+/** Publish `view` as the active source view — with its markdown cursor
+ *  context, or (non-markdown) with the previous pane's context dropped. */
+function activateSourceView(view: EditorView, tabId: string | undefined, cursorContext: boolean): void {
+  const store = useEditorStore.getState();
+  store.setActiveSourceView(view, tabId);
+  if (cursorContext) store.setSourceContext(computeSourceCursorContext(view), view);
+  else if (store.source.editorView !== null) store.clearSourceContext();
 }
 
 /**
@@ -67,6 +88,6 @@ export function useSourcePaneFocus(
  * pane may have taken over meanwhile.
  */
 export function bindSplitSourceView(view: EditorView, tabId: string, focused: boolean): () => void {
-  if (focused) useEditorStore.getState().setActiveSourceView(view, tabId);
+  if (focused) activateSourceView(view, tabId, false);
   return () => useEditorStore.getState().clearSourceViewIfMatch(view);
 }

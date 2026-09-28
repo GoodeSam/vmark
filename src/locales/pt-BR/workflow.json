@@ -10,7 +10,9 @@
   "run.needsWorkspace": "Abra uma pasta para executar este workflow",
   "run.busy": "Outro workflow está em execução",
   "run.failedToStart": "Não foi possível iniciar o workflow",
+  "run.cancelFailed": "Não foi possível cancelar o workflow",
   "run.status.running": "Em execução…",
+  "run.status.starting": "Iniciando…",
   "run.status.completed": "Concluído",
   "run.status.failed": "Falhou",
   "run.status.cancelled": "Cancelado",
@@ -25,5 +27,7 @@
   "restore.done": "Arquivos restaurados ao estado anterior à execução",
   "restore.partial_one": "{{count}} arquivo não pôde ser restaurado e ficou como estava",
   "restore.partial_other": "{{count}} arquivos não puderam ser restaurados e ficaram como estavam",
-  "restore.failed": "Não foi possível restaurar os arquivos"
+  "restore.failed": "Não foi possível restaurar os arquivos",
+  "restore.listFailed": "Não foi possível consultar os arquivos que esta execução pode restaurar",
+  "restore.superseded": "Outro workflow foi executado desde então, por isso estes arquivos não foram restaurados"
 }

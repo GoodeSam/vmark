@@ -38,14 +38,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+/** A count or timestamp as Rust sends it (`usize`/`u64`): a safe, non-negative
+ *  integer. `typeof "number"` alone admits NaN, Infinity, negatives and fractions. */
+function isCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
 function isSummary(value: unknown): value is SnapshotSummary {
   return (
     isRecord(value) &&
     typeof value.id === "string" &&
     typeof value.executionId === "string" &&
-    typeof value.timestamp === "number" &&
-    typeof value.fileCount === "number" &&
-    typeof value.createdCount === "number"
+    isCount(value.timestamp) &&
+    isCount(value.fileCount) &&
+    isCount(value.createdCount)
   );
 }
 
@@ -62,12 +68,7 @@ export async function findRunSnapshot(executionId: string): Promise<SnapshotSumm
 
 export async function restoreWorkflowSnapshot(snapshotId: string): Promise<RestoreReport> {
   const reply: unknown = await invoke("restore_workflow_snapshot", { snapshotId });
-  if (
-    isRecord(reply) &&
-    typeof reply.restored === "number" &&
-    typeof reply.deleted === "number" &&
-    typeof reply.skipped === "number"
-  ) {
+  if (isRecord(reply) && isCount(reply.restored) && isCount(reply.deleted) && isCount(reply.skipped)) {
     return { restored: reply.restored, deleted: reply.deleted, skipped: reply.skipped };
   }
   throw new Error("restore_workflow_snapshot returned a malformed restore report");

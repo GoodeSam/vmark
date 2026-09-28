@@ -41,7 +41,7 @@ import {
 import * as preview from "./workflowPreviewSlice";
 import * as view from "./workflowViewSlice";
 import * as approval from "./workflowApprovalSlice";
-import type { PreviewSlice, WorkflowRunOutcome } from "./workflowPreviewSlice";
+import type { PreviewSlice, RunOwner, WorkflowRunOutcome } from "./workflowPreviewSlice";
 import type { ViewSlice } from "./workflowViewSlice";
 import type { ApprovalRequestPayload, ApprovalSlice } from "./workflowApprovalSlice";
 import type { WorkflowIR } from "@/lib/ghaWorkflow/types";
@@ -72,15 +72,14 @@ interface WorkflowStoreActions {
   setGhaWorkflow: (tabId: string, workflow: WorkflowIR | null) => void;
   resetGha: () => void;
 
-  // preview slice (Genie/embedded workflow)
-  previewOpenPanel: () => void;
-  previewClosePanel: () => void;
-  previewTogglePanel: () => void;
-  setGraph: (graph: WorkflowGraph | null, error?: string) => void;
-  setActiveStepId: (stepId: string | null) => void;
-  setExecution: (id: string | null) => void;
-  /** Record which tab's panel started `executionId` (WI-LX2.1). */
-  bindRunToTab: (executionId: string, tabId: string) => void;
+  // preview slice — per-tab document preview (#129), and the window's run
+  previewOpenPanel: (tabId: string) => void;
+  previewClosePanel: (tabId: string) => void;
+  setGraph: (tabId: string, graph: WorkflowGraph | null, error?: string) => void;
+  /** Register a run — with the panel that started it, in one write (#113) — or roll it back. */
+  setExecution: (id: string | null, owner?: RunOwner) => void;
+  /** `executionId`'s snapshot was restored in full: never offer it again. */
+  markRunRestored: (executionId: string) => void;
   /** End a run, keeping its step statuses (audit #767); see the impl. */
   finishExecution: (executionId: string, outcome: WorkflowRunOutcome) => void;
   setStepStatus: (stepId: string, entry: StepStatusEntry) => void;
@@ -176,13 +175,11 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => {
     resetGha: () => set({ gha: initialGha }),
 
     /* preview slice — transitions in workflowPreviewSlice.ts */
-    previewOpenPanel: () => updatePreview((s) => preview.setPanelOpen(s, true)),
-    previewClosePanel: () => updatePreview((s) => preview.setPanelOpen(s, false)),
-    previewTogglePanel: () => updatePreview(preview.togglePanel),
-    setGraph: (graph, error) => updatePreview((s) => preview.setGraph(s, graph, error)),
-    setActiveStepId: (stepId) => updatePreview((s) => preview.setActiveStepId(s, stepId)),
-    setExecution: (id) => updatePreview((s) => preview.setExecution(s, id)),
-    bindRunToTab: (id, tabId) => updatePreview((s) => preview.bindRunToTab(s, id, tabId)),
+    previewOpenPanel: (tabId) => updatePreview((s) => preview.setPanelOpen(s, tabId, true)),
+    previewClosePanel: (tabId) => updatePreview((s) => preview.setPanelOpen(s, tabId, false)),
+    setGraph: (tabId, graph, error) => updatePreview((s) => preview.setGraph(s, tabId, graph, error)),
+    setExecution: (id, owner) => updatePreview((s) => preview.setExecution(s, id, owner)),
+    markRunRestored: (id) => updatePreview((s) => preview.markRunRestored(s, id)),
     finishExecution: (executionId, outcome) =>
       updatePreview((s) => preview.finishExecution(s, executionId, outcome)),
     setStepStatus: (stepId, entry) => updatePreview((s) => preview.setStepStatus(s, stepId, entry)),
@@ -281,4 +278,5 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => {
  *
  * Re-exported so the slice modules stay an implementation detail of the store:
  * `useWorkflowExecution` and the workflow panels import these names from here. */
-export type { WorkflowRunOutcome, PreviewSlice, ViewSlice, ApprovalRequestPayload };
+export type { WorkflowRunOutcome, PreviewSlice, RunOwner, ViewSlice, ApprovalRequestPayload };
+export { docPreview } from "./workflowPreviewSlice";

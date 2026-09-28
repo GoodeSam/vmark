@@ -30,6 +30,7 @@ import {
 } from "@/lib/ghaWorkflow/detection";
 import { isEngineWorkflow } from "@/lib/workflow/detection";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
 import { lintYaml } from "@/lib/lintEngine/yaml";
 import { registerFormat } from "../registry";
 import type {
@@ -163,15 +164,38 @@ function GhaWorkflowSchemaRenderer(props: PreviewRendererProps) {
  * always showed. Gated HERE, before the lazy import, so the panel's chunk is
  * never fetched for a user who has not turned the engine on; read reactively,
  * so flipping the setting swaps the pane without reopening the file.
+ *
+ * EXCEPT while this tab's run is live (audit 20260928 #124): switching the
+ * engine off reaches the backend asynchronously, and a lost push leaves the
+ * run going. The panel — and its Cancel — stays until the run ends, which is
+ * also what the backend does on acknowledging the disable. The generic preview
+ * keeps it too, for a run whose file stopped parsing mid-run.
  */
 const loadEngineWorkflowRenderer = () =>
   import("./yamlEngineRenderer").then((m) => ({
     default: m.EngineWorkflowSchemaRenderer,
   }));
 
+/** This tab owns the window's live workflow run. */
+function useLiveRunHere(tabId: string | null | undefined): boolean {
+  return useWorkflowStore(
+    (s) => tabId != null && s.preview.executionId !== null && s.preview.runTabId === tabId,
+  );
+}
+
 function EngineWorkflowSchemaRenderer(props: PreviewRendererProps) {
   const engineEnabled = useSettingsStore((s) => s.advanced.workflowEngine);
-  if (!engineEnabled) return <YamlTreePreview {...props} />;
+  const liveRunHere = useLiveRunHere(props.tabId);
+  if (!engineEnabled && !liveRunHere) return <YamlTreePreview {...props} />;
+  return <EngineRunPanel {...props} />;
+}
+
+/** Plain YAML — unless this tab's run is live, whose Cancel must stay reachable. */
+function YamlGenericPreview(props: PreviewRendererProps) {
+  return useLiveRunHere(props.tabId) ? <EngineRunPanel {...props} /> : <YamlTreePreview {...props} />;
+}
+
+function EngineRunPanel(props: PreviewRendererProps) {
   return (
     <RetryableLazy
       feature="VMark workflow engine"
@@ -239,7 +263,7 @@ export const yamlFormat: FormatConfig = {
   // plugins must not carry themselves (lint:store-coupling).
   loadExtraExtensions: loadWorkflowSourceExtensions,
   validator: yamlValidator,
-  genericPreview: YamlTreePreview,
+  genericPreview: YamlGenericPreview,
   schemaDetector: yamlSchemaDetector,
   schemaRenderers: {
     "gha-workflow": GhaWorkflowSchemaRenderer,

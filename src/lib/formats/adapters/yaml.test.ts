@@ -171,10 +171,28 @@ jobs:
       expect(yamlSchemaDetector("/ws/.github/workflows/triage.yml", ENGINE)).toBe("gha-workflow");
     });
 
-    it("claims malformed engine YAML too, so the run panel can show the parse error", () => {
+    // Round 2 (#123): malformed YAML is never offered Run — only the plain
+    // tree, which shows the parse error. A live run keeps Cancel elsewhere (#124).
+    it("never offers Run for malformed YAML, even engine-shaped", () => {
       expect(
         yamlSchemaDetector("/ws/flow.yml", "name: [x\nsteps:\n  - uses: action/notify\n"),
-      ).toBe("vmark-workflow");
+      ).toBeNull();
+      expect(
+        yamlSchemaDetector("/ws/flow.yml", "name: [x\nsteps: [{script: {uses: action/notify}}]\n"),
+      ).toBeNull();
+    });
+
+    // Audit 20260928 #123 — Run is offered on structure, not on a stray
+    // `uses:` anywhere in the file, and flow-style steps are recognised.
+    it("offers no Run panel for arbitrary YAML that merely mentions an engine uses: elsewhere", () => {
+      const content = "steps:\n  - script: echo\nmeta:\n  uses: action/notify\n";
+      expect(yamlSchemaDetector("/ws/config.yml", content)).toBeNull();
+    });
+
+    it("recognises flow-style engine steps", () => {
+      expect(yamlSchemaDetector("/ws/flow.yml", "name: n\nsteps: [{uses: action/notify}]\n")).toBe(
+        "vmark-workflow",
+      );
     });
   });
 

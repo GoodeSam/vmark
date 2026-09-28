@@ -5,6 +5,9 @@ import { parse as yamlParse } from "yaml";
 import type { IRPatch } from "@/lib/ghaWorkflow/save/mutators";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { serializeWithPatches, type WorkflowSerializeResult } from "./workflowSerialize";
+import { useDocumentStore } from "@/stores/documentStore";
+import { assertCanonicalEditorText } from "@/stores/documentStore/documentState";
+import { normalizeSaveContent } from "@/services/persistence/saveToPath";
 
 // ─── Fixtures ────────────────────────────────────────────────────────
 
@@ -298,16 +301,25 @@ describe("serializeWithPatches — apply-failed", () => {
   });
 });
 
-// WI-LX2.4 — a Windows-line-ending file keeps its line endings. The CST
-// stringifier writes LF, so every save rewrote every line of a CRLF file, and
-// a patch that changed nothing reported `applied` instead of `unchanged`.
-describe("serializeWithPatches — CRLF documents", () => {
+// Audit 20260928 #158/#159 — the serializer works in the EDITOR domain. Its
+// sole consumer hands it `documentStore` content (canonical: LF-only) and
+// writes its result back with `setEditorContent`, which refuses a carriage
+// return; the disk convention is restored by `saveToPath` from the document's
+// recorded `lineEnding`. A CRLF-emitting branch here re-implemented that
+// policy (and disagreed with it on a lone CR) and produced text the store
+// rejects.
+describe("serializeWithPatches — line endings (editor domain)", () => {
   const CRLF = PLAIN_YAML.replace(/\n/g, "\r\n");
 
-  it("writes the edit back with CRLF line endings", () => {
-    const yaml = expectApplied(serializeWithPatches(CRLF, [RENAME], true));
-    expect(yaml).toContain("name: Release\r\n");
-    expect(yaml.replace(/\r\n/g, "")).not.toContain("\n");
+  it.each([
+    ["CRLF, preserving formatting", CRLF, true],
+    ["CRLF, re-stringified", CRLF, false],
+    ["a lone CR", PLAIN_YAML.replace(/\n/g, "\r"), true],
+  ])("returns canonical LF-only text for %s input", (_label, input, preserve) => {
+    const yaml = expectApplied(serializeWithPatches(input, [RENAME], preserve));
+    expect(yaml).toContain("name: Release\n");
+    expect(yaml).not.toContain("\r");
+    expect(() => assertCanonicalEditorText(yaml, "test")).not.toThrow();
   });
 
   it("a patch that changes nothing on a CRLF file is `unchanged`", () => {
@@ -318,5 +330,19 @@ describe("serializeWithPatches — CRLF documents", () => {
   it("an LF file stays LF", () => {
     const yaml = expectApplied(serializeWithPatches(PLAIN_YAML, [RENAME], true));
     expect(yaml).not.toContain("\r");
+  });
+
+  it("a CRLF file on disk: the store accepts the result, and the save restores CRLF", () => {
+    const tabId = "crlf-workflow";
+    useDocumentStore.getState().ingestExternalContent(tabId, CRLF, "disk-open");
+    const doc = useDocumentStore.getState().getDocument(tabId)!;
+    expect(doc.lineEnding).toBe("crlf");
+
+    const yaml = expectApplied(serializeWithPatches(doc.content, [RENAME], true));
+    expect(() => useDocumentStore.getState().setEditorContent(tabId, yaml)).not.toThrow();
+    const onDisk = normalizeSaveContent(tabId, yaml).output;
+    expect(onDisk).toContain("name: Release\r\n");
+    expect(onDisk.replace(/\r\n/g, "")).not.toContain("\n");
+    useDocumentStore.getState().removeDocument(tabId);
   });
 });

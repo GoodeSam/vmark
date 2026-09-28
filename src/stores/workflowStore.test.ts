@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { useWorkflowStore } from "./workflowStore";
+import { docPreview, useWorkflowStore } from "./workflowStore";
 import type { IRPatch } from "@/lib/ghaWorkflow/save/mutators";
 
 beforeEach(() => {
@@ -77,27 +77,28 @@ describe("gha slice", () => {
 /* ────────────────────────── preview slice ─────────────────────────────── */
 
 describe("preview slice", () => {
-  it("starts with empty graph/status", () => {
+  it("starts with no document preview and no statuses", () => {
     const s = useWorkflowStore.getState().preview;
-    expect(s.panelOpen).toBe(false);
-    expect(s.graph).toBeNull();
+    expect(s.docs).toEqual({});
+    expect(docPreview(s, "tab-1")).toEqual({ panelOpen: false, graph: null, parseError: null });
     expect(s.stepStatuses).toEqual({});
   });
 
-  it("previewOpen/Close/Toggle panel leave the gha slice untouched", () => {
-    useWorkflowStore.getState().previewOpenPanel();
-    expect(useWorkflowStore.getState().preview.panelOpen).toBe(true);
+  it("previewOpen/Close panel act on ONE tab and leave the gha slice untouched (#129)", () => {
+    useWorkflowStore.getState().previewOpenPanel("tab-1");
+    expect(docPreview(useWorkflowStore.getState().preview, "tab-1").panelOpen).toBe(true);
+    expect(docPreview(useWorkflowStore.getState().preview, "tab-2").panelOpen).toBe(false);
+    useWorkflowStore.getState().previewClosePanel("tab-1");
+    expect(useWorkflowStore.getState().preview.docs).toEqual({});
     expect(useWorkflowStore.getState().gha.byTab).toEqual({});
   });
 
-  it("setGraph clears active step and statuses", () => {
-    useWorkflowStore.getState().setActiveStepId("s1");
+  it("setGraph keeps the run's statuses", () => {
     useWorkflowStore.getState().setStepStatus("s1", { status: "running" });
     useWorkflowStore
       .getState()
-      .setGraph({ name: "n", steps: [] } as never);
-    expect(useWorkflowStore.getState().preview.activeStepId).toBeNull();
-    expect(useWorkflowStore.getState().preview.stepStatuses).toEqual({});
+      .setGraph("tab-1", { name: "n", steps: [] } as never);
+    expect(useWorkflowStore.getState().preview.stepStatuses).toEqual({ s1: { status: "running" } });
   });
 
   it("setExecution resets statuses", () => {
@@ -107,12 +108,10 @@ describe("preview slice", () => {
     expect(useWorkflowStore.getState().preview.stepStatuses).toEqual({});
   });
 
-  it("bindRunToTab binds the tracked run to the tab that started it (WI-LX2.1)", () => {
-    useWorkflowStore.getState().setExecution("exec-1");
-    useWorkflowStore.getState().bindRunToTab("exec-other", "tab-1");
-    expect(useWorkflowStore.getState().preview.runTabId).toBeNull();
-    useWorkflowStore.getState().bindRunToTab("exec-1", "tab-1");
+  it("setExecution registers the run with the tab that started it (WI-LX2.1, #113)", () => {
+    useWorkflowStore.getState().setExecution("exec-1", { tabId: "tab-1", source: "y" });
     expect(useWorkflowStore.getState().preview.runTabId).toBe("tab-1");
+    expect(useWorkflowStore.getState().preview.runSource).toBe("y");
     useWorkflowStore.getState().finishExecution("exec-1", "completed");
     expect(useWorkflowStore.getState().preview.lastExecutionId).toBe("exec-1");
     expect(useWorkflowStore.getState().preview.runTabId).toBe("tab-1");
@@ -509,7 +508,7 @@ describe("setGraph during a run", () => {
   it("keeps executionId so the run can still be finished", () => {
     useWorkflowStore.getState().setExecution("exec-1");
 
-    useWorkflowStore.getState().setGraph({ name: "n", steps: [] } as never);
+    useWorkflowStore.getState().setGraph("tab-1", { name: "n", steps: [] } as never);
     expect(useWorkflowStore.getState().preview.executionId).toBe("exec-1");
 
     useWorkflowStore.getState().finishExecution("exec-1", "completed");

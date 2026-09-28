@@ -10,6 +10,9 @@
  * Shows: the toolbar (Run ▶ or Cancel ◼, a status line that says why Run is
  * off or how the last run ended, and Restore Files once this tab's run has
  * a snapshot to put back), then the live step graph or the parse error.
+ * Cancel stays disabled, and the status says Starting, until the start has
+ * registered a run to cancel. A step selected on the graph is selected in
+ * THIS panel only, and only on the graph it was selected on.
  *
  * @coordinates-with components/Editor/WorkflowPanel/useWorkflowRunControls.ts — run / cancel / ownership
  * @coordinates-with components/Editor/WorkflowPanel/useRunSnapshot.ts — Restore Files
@@ -18,9 +21,8 @@
  * @coordinates-with components/Editor/WorkflowPanel/WorkflowSidePanel.tsx — the side-panel mount
  * @module components/Editor/WorkflowPanel/WorkflowRunPanel
  */
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useWorkflowStore } from "@/stores/workflowStore";
 import { WorkflowPreview } from "@/plugins/workflowPreview/WorkflowPreview";
 import type { WorkflowGraph } from "@/lib/workflow/types";
 import { useWorkflowRunControls } from "./useWorkflowRunControls";
@@ -49,16 +51,23 @@ export function WorkflowRunPanel({ tabId, graph, parseError }: WorkflowRunPanelP
   const { t } = useTranslation(["workflow", "editor"]);
   const controls = useWorkflowRunControls(tabId);
   const { snapshot, restoring, restore } = useRunSnapshot(controls.owned);
-  const activeStepId = useWorkflowStore((s) => s.preview.activeStepId);
+  // The selection is THIS panel's, and belongs to the graph it was made on
+  // (#105): another tab's panel never shares it, and a re-parse — the yaml
+  // adapter's local one included — does not carry it onto an edited workflow.
+  const [selection, setSelection] = useState<{ stepId: string; graph: WorkflowGraph } | null>(null);
+  const activeStepId = selection !== null && selection.graph === graph ? selection.stepId : null;
 
-  const handleNodeClick = useCallback((stepId: string) => {
-    useWorkflowStore.getState().setActiveStepId(stepId);
-  }, []);
+  const handleNodeClick = useCallback(
+    (stepId: string) => {
+      if (graph) setSelection({ stepId, graph });
+    },
+    [graph],
+  );
 
   const canRun =
     tabId !== null && !!graph && !parseError && !controls.running && !controls.blockedReason;
   const status = controls.running
-    ? t("workflow:run.status.running")
+    ? t(controls.cancellable ? "workflow:run.status.running" : "workflow:run.status.starting")
     : controls.blockedReason
       ? t(BLOCKED_KEY[controls.blockedReason])
       : controls.outcome
@@ -73,6 +82,7 @@ export function WorkflowRunPanel({ tabId, graph, parseError }: WorkflowRunPanelP
             type="button"
             className="workflow-side-panel__btn workflow-side-panel__btn--cancel"
             onClick={controls.cancel}
+            disabled={!controls.cancellable}
             aria-label={t("workflow:run.cancel")}
             title={t("workflow:run.cancel")}
           >

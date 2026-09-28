@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { parseWorkflow, isWorkflowYaml, WorkflowParseError, WorkflowValidationError } from "../parser";
+import { isEngineWorkflow } from "../detection";
 
 // ============================================================================
 // Minimal Parsing
@@ -373,6 +374,25 @@ server:
 
   it("returns false for empty string", () => {
     expect(isWorkflowYaml("")).toBe(false);
+  });
+
+  // Audit 20260928 #125/#128 — one engine-workflow rule, not two. This
+  // heuristic used to accept any indented `uses:` (a GitHub action reference,
+  // a job's steps) and disagree with the yaml adapter's detector.
+  it.each([
+    ["a GitHub action reference", "name: n\nsteps:\n  - uses: actions/checkout@v4\n"],
+    ["a GitHub Actions workflow", "name: ci\non: push\njobs:\n  b:\n    steps:\n      - uses: action/notify\n"],
+    ["top-level steps AND jobs", "steps:\n  - uses: action/notify\njobs:\n  a: {}\n"],
+    ["a uses: under another top-level key", "steps:\n  - script: x\nmeta:\n  uses: action/x\n"],
+  ])("agrees with isEngineWorkflow: rejects %s", (_label, content) => {
+    expect(isWorkflowYaml(content)).toBe(false);
+    expect(isEngineWorkflow(null, content)).toBe(false);
+  });
+
+  it("agrees with isEngineWorkflow on an indentationless engine workflow", () => {
+    const content = "name: n\nsteps:\n- uses: action/notify\n";
+    expect(isWorkflowYaml(content)).toBe(true);
+    expect(isEngineWorkflow(null, content)).toBe(true);
   });
 
   it("returns false for YAML with steps but no uses", () => {

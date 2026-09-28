@@ -186,8 +186,8 @@ export function createSourceEditorExtensions(config: ExtensionConfig): Extension
     // branch, and since WI-13 it arrives through an import thunk — see
     // sourceLanguageBinding.ts for the compartment + fallback it composes.
     { id: "source.language", ext: formatLanguageExtension(filePath) },
-    // Workflow preview plugin for YAML files (parses YAML → workflowPreviewStore)
-    { id: "source.workflowPreview", ext: (engineFeatures ? sourceWorkflowPreviewExtensions : []) },
+    // Workflow preview for YAML files, into ITS tab's preview (#129)
+    { id: "source.workflowPreview", ext: (engineFeatures && tabId ? sourceWorkflowPreviewExtensions(tabId) : []) },
     // YAML parse-error linter (every YAML file, regardless of workflow
     // flag). Surfaces duplicate keys, unterminated strings, indentation
     // breaks via the CodeMirror gutter.

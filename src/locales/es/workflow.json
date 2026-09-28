@@ -10,7 +10,9 @@
   "run.needsWorkspace": "Abra una carpeta para ejecutar este flujo de trabajo",
   "run.busy": "Otro flujo de trabajo está en ejecución",
   "run.failedToStart": "No se pudo iniciar el flujo de trabajo",
+  "run.cancelFailed": "No se pudo cancelar el flujo de trabajo",
   "run.status.running": "En ejecución…",
+  "run.status.starting": "Iniciando…",
   "run.status.completed": "Completado",
   "run.status.failed": "Falló",
   "run.status.cancelled": "Cancelado",
@@ -25,5 +27,7 @@
   "restore.done": "Archivos restaurados a su estado anterior a la ejecución",
   "restore.partial_one": "{{count}} archivo no se pudo restaurar y se dejó como estaba",
   "restore.partial_other": "{{count}} archivos no se pudieron restaurar y se dejaron como estaban",
-  "restore.failed": "No se pudieron restaurar los archivos"
+  "restore.failed": "No se pudieron restaurar los archivos",
+  "restore.listFailed": "No se pudieron consultar los archivos que esta ejecución puede restaurar",
+  "restore.superseded": "Otro flujo de trabajo se ejecutó después, así que estos archivos no se restauraron"
 }

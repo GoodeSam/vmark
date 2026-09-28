@@ -571,3 +571,75 @@ describe("cancelTarget", () => {
     expect(cancelTarget(queue, renameA)).toBe(queue);
   });
 });
+
+// ─── Audit 20260928 #153: a renumbering re-addresses a step, it does not end it ───
+//
+// Every insert/delete/move used to be a hard barrier for the whole job, so an
+// edit to step 0 followed by an insert at the END — which moves nothing — could
+// no longer be cancelled: reverting the field left the stale edit queued, and
+// saving wrote a value the form no longer showed.
+
+describe("step identity through renumberings (audit 20260928)", () => {
+  const rename = (stepIndex: number, value: string): IRPatch => ({
+    kind: "step.set",
+    jobId: "build",
+    stepIndex,
+    path: "name",
+    value,
+  });
+  const insertAt = (index: number): IRPatch => ({ kind: "step.insert", jobId: "build", index, step: { run: "make" } });
+  const deleteAt = (stepIndex: number): IRPatch => ({ kind: "step.delete", jobId: "build", stepIndex });
+  const move = (fromIndex: number, toIndex: number): IRPatch => ({ kind: "step.move", jobId: "build", fromIndex, toIndex });
+
+  it("cancel crosses an insert BELOW the step (unaffected index)", () => {
+    expect(cancelTarget([rename(0, "X"), insertAt(5)], rename(0, "orig"))).toEqual([insertAt(5)]);
+  });
+
+  it("dedup crosses an insert below the step", () => {
+    expect(dedupQueue([rename(0, "A"), insertAt(5)], rename(0, "B"))).toEqual([insertAt(5), rename(0, "B")]);
+  });
+
+  it("follows the step down past an insert ABOVE it", () => {
+    // Step 0 became step 1 when a step was inserted at 0.
+    expect(cancelTarget([rename(0, "A"), insertAt(0)], rename(1, "orig"))).toEqual([insertAt(0)]);
+  });
+
+  it("follows the step up past a delete above it", () => {
+    // Step 2 became step 1 when step 0 was deleted.
+    expect(cancelTarget([rename(2, "A"), deleteAt(0)], rename(1, "orig"))).toEqual([deleteAt(0)]);
+  });
+
+  it("follows a step through a move, and through a round-trip move back", () => {
+    expect(dedupQueue([rename(0, "A"), move(0, 2)], rename(2, "B"))).toEqual([move(0, 2), rename(2, "B")]);
+    expect(cancelTarget([rename(0, "A"), move(0, 2), move(2, 0)], rename(0, "orig"))).toEqual([
+      move(0, 2),
+      move(2, 0),
+    ]);
+  });
+
+  it("a step displaced by a move is followed too", () => {
+    // move 0→2 over [a,b,c]: b (was 1) is now at 0.
+    expect(cancelTarget([rename(1, "A"), move(0, 2)], rename(0, "orig"))).toEqual([move(0, 2)]);
+  });
+
+  it("never matches an edit to a DIFFERENT step that now shares the index", () => {
+    // Step 1 was deleted; today's step 1 is yesterday's step 2.
+    expect(dedupQueue([rename(1, "A"), deleteAt(1)], rename(1, "B"))).toEqual([
+      rename(1, "A"),
+      deleteAt(1),
+      rename(1, "B"),
+    ]);
+  });
+
+  it("stops at the insert that CREATED the step: nothing earlier can address it", () => {
+    expect(cancelTarget([rename(1, "A"), insertAt(1), rename(1, "B")], rename(1, "orig"))).toEqual([
+      rename(1, "A"),
+      insertAt(1),
+    ]);
+  });
+
+  it("with-keys are followed the same way", () => {
+    const withAt = (stepIndex: number, value: string): IRPatch => ({ kind: "with.set", jobId: "build", stepIndex, key: "k", value });
+    expect(dedupQueue([withAt(0, "a"), insertAt(0)], withAt(1, "b"))).toEqual([insertAt(0), withAt(1, "b")]);
+  });
+});

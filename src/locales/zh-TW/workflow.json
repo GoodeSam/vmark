@@ -10,7 +10,9 @@
   "run.needsWorkspace": "請開啟一個資料夾以執行此工作流程",
   "run.busy": "另一個工作流程正在執行",
   "run.failedToStart": "工作流程無法啟動",
+  "run.cancelFailed": "無法取消工作流程",
   "run.status.running": "執行中…",
+  "run.status.starting": "正在啟動…",
   "run.status.completed": "已完成",
   "run.status.failed": "失敗",
   "run.status.cancelled": "已取消",
@@ -25,5 +27,7 @@
   "restore.done": "檔案已還原為執行前的狀態",
   "restore.partial_one": "{{count}} 個檔案無法還原，已保持原狀",
   "restore.partial_other": "{{count}} 個檔案無法還原，已保持原狀",
-  "restore.failed": "無法還原檔案"
+  "restore.failed": "無法還原檔案",
+  "restore.listFailed": "無法查詢此次執行可還原的檔案",
+  "restore.superseded": "此後又執行了其他工作流程，因此未還原這些檔案"
 }

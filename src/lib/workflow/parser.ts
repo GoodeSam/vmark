@@ -9,7 +9,7 @@
  *   - Source line tracking via manual line scanning (parse positions not used here)
  *   - Sequential edges auto-generated when `needs:` is absent
  *   - Circular dependency detection via DFS
- *   - `isWorkflowYaml()` is a fast heuristic (regex, no full parse)
+ *   - `isWorkflowYaml()` delegates to `detection.ts`, the one engine rule
  *
  * @module lib/workflow/parser
  */
@@ -25,6 +25,7 @@ import type {
   StepType,
 } from "./types";
 import { stringifyUnknown } from "@/utils/stringifyUnknown";
+import { isEngineWorkflow } from "./detection";
 
 // ============================================================================
 // Error Classes
@@ -408,11 +409,10 @@ export function parseWorkflow(yaml: string): WorkflowGraph {
 // ============================================================================
 
 /**
- * Fast heuristic: does this string look like a workflow YAML?
- * Checks for `steps:` with at least one `uses:` entry using regex.
- * Does NOT fully parse — safe for every keystroke.
+ * Does this string look like an engine workflow? The ONE rule lives in
+ * `detection.ts` (audit 20260928: this was a second, laxer regex that
+ * disagreed with it); with no path to consult, the content alone decides.
  */
 export function isWorkflowYaml(yaml: string): boolean {
-  if (!yaml || yaml.length < 10) return false;
-  return /^steps\s*:/m.test(yaml) && /^\s+-?\s*uses\s*:/m.test(yaml);
+  return isEngineWorkflow(null, yaml);
 }

@@ -10,7 +10,9 @@
   "run.needsWorkspace": "このワークフローを実行するにはフォルダーを開いてください",
   "run.busy": "別のワークフローが実行中です",
   "run.failedToStart": "ワークフローを開始できませんでした",
+  "run.cancelFailed": "ワークフローをキャンセルできませんでした",
   "run.status.running": "実行中…",
+  "run.status.starting": "開始中…",
   "run.status.completed": "完了",
   "run.status.failed": "失敗",
   "run.status.cancelled": "キャンセル済み",
@@ -25,5 +27,7 @@
   "restore.done": "ファイルを実行前の状態に戻しました",
   "restore.partial_one": "{{count}} 件のファイルを復元できず、そのままにしました",
   "restore.partial_other": "{{count}} 件のファイルを復元できず、そのままにしました",
-  "restore.failed": "ファイルを復元できませんでした"
+  "restore.failed": "ファイルを復元できませんでした",
+  "restore.listFailed": "この実行で復元できるファイルを確認できませんでした",
+  "restore.superseded": "その後に別のワークフローが実行されたため、これらのファイルは復元されませんでした"
 }

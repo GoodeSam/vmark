@@ -26,6 +26,7 @@ import {
 } from "@/lib/ghaWorkflow/save/cstParser";
 import { applyPatch, type IRPatch } from "@/lib/ghaWorkflow/save/mutators";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { canonicalizeLineEndings } from "@/utils/editorText";
 
 /** The per-document override, or the user's setting when it is unset. */
 function resolvePreserve(override: boolean | null): boolean {
@@ -67,16 +68,25 @@ export type WorkflowSerializeResult =
   /** A patch could not be applied, or serialization threw (alias bound, …). */
   | { status: "apply-failed"; detail: string };
 
-/** Apply `patches` to `originalYaml`, reporting exactly what happened. */
+/**
+ * Apply `patches` to `originalYaml`, reporting exactly what happened.
+ *
+ * EDITOR domain in and out (audit 20260928 #158/#159): the result goes back
+ * through `setEditorContent`, which accepts only canonical LF text, and the
+ * file's own line endings are restored by `saveToPath` from the document's
+ * recorded `lineEnding`. Input is canonicalised by the shared line-ending
+ * policy rather than a second one kept here.
+ */
 export function serializeWithPatches(
   originalYaml: string,
   patches: readonly IRPatch[],
   preserveFormatting: boolean | null,
 ): WorkflowSerializeResult {
   if (patches.length === 0) return { status: "no-patches" };
+  const canonical = canonicalizeLineEndings(originalYaml);
   let doc;
   try {
-    doc = parseAsCst(originalYaml);
+    doc = parseAsCst(canonical);
   } catch (error) {
     return { status: "parse-failed", detail: errorDetail(error) };
   }
@@ -85,15 +95,12 @@ export function serializeWithPatches(
   }
   try {
     for (const patch of patches) applyPatch(doc, patch);
-    const text = resolvePreserve(preserveFormatting)
+    const yaml = resolvePreserve(preserveFormatting)
       ? stringifyCst(doc)
       : yamlStringify(doc.toJS({ maxAliasCount: MAX_YAML_ALIAS_COUNT }), {
           ...WORKFLOW_YAML_STRINGIFY_OPTIONS,
         });
-    // The stringifiers write LF. A CRLF file keeps CRLF (WI-LX2.4): otherwise
-    // every save rewrote every line, and a no-op edit reported `applied`.
-    const yaml = originalYaml.includes("\r\n") ? text.replace(/\r?\n/g, "\r\n") : text;
-    return yaml === originalYaml ? { status: "unchanged" } : { status: "applied", yaml };
+    return yaml === canonical ? { status: "unchanged" } : { status: "applied", yaml };
   } catch (error) {
     return { status: "apply-failed", detail: errorDetail(error) };
   }

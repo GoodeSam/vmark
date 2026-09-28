@@ -7,19 +7,25 @@
  * parsing and feeds the result through `workflowPort` (the workflow store) so
  * the WorkflowSidePanel shows a live React Flow graph.
  *
- * Key decisions (WI-LX2.4):
+ * Key decisions (WI-LX2.4, audit 20260928 #129):
+ *   - Writes ITS tab's preview. The assembly passes the editor's `tabId`, and
+ *     every write names it: one unkeyed slot let two split-pane editors
+ *     overwrite each other on every re-parse, and either one's teardown
+ *     cleared the other's graph and closed its panel.
  *   - Parses the document it OPENS with. It used to wait for a `docChanged`
  *     update, so a workflow file opened as-is never showed its panel until the
  *     user typed.
- *   - Leaving the file clears the graph and closes the panel but does NOT
- *     reset the slice: `resetPreview` also dropped a live run's registration,
- *     and the run's events then stopped routing to anything.
+ *   - Leaving the file clears the graph and closes the panel but leaves the
+ *     RUN alone. Resetting the slice dropped a live run's registration, so its
+ *     events stopped routing; and `setGraph` keeps the run's step statuses, so
+ *     opening, re-parsing or leaving the file mid-run does not erase progress.
  *
  * @coordinates-with workflowPort.ts — the store port that receives graph/parseError (bound to stores/workflowStore.ts)
  * @coordinates-with parser.ts — parseWorkflow, isWorkflowYaml
  * @module plugins/codemirror/sourceWorkflowPreview
  */
 
+import type { Extension } from "@codemirror/state";
 import { ViewPlugin, type EditorView, type ViewUpdate } from "@codemirror/view";
 import { workflowPort } from "./workflowPort";
 import { parseWorkflow, isWorkflowYaml, WorkflowParseError, WorkflowValidationError } from "@/lib/workflow/parser";
@@ -32,7 +38,10 @@ class SourceWorkflowPreviewPlugin {
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private lastContent = "";
 
-  constructor(view: EditorView) {
+  constructor(
+    view: EditorView,
+    private readonly tabId: string,
+  ) {
     this.schedule(view.state.doc.toString());
   }
 
@@ -52,30 +61,26 @@ class SourceWorkflowPreviewPlugin {
   }
 
   private parseAndUpdate(content: string) {
+    const port = workflowPort().getState();
     if (!isWorkflowYaml(content)) {
-      workflowPort().getState().setGraph(null);
-      workflowPort().getState().previewClosePanel();
+      port.setGraph(this.tabId, null);
+      port.previewClosePanel(this.tabId);
       return;
     }
 
     try {
       const graph = parseWorkflow(content);
       workflowLog("Parsed workflow:", graph.name, `(${graph.steps.length} steps)`);
-      workflowPort().getState().setGraph(graph);
-      // Auto-open the panel if a valid workflow is detected
-      if (!workflowPort().getState().preview.panelOpen) {
-        workflowPort().getState().previewOpenPanel();
-      }
+      port.setGraph(this.tabId, graph);
+      // Auto-open the panel when a valid workflow is detected (idempotent).
+      port.previewOpenPanel(this.tabId);
     } catch (e) {
       if (e instanceof WorkflowParseError || e instanceof WorkflowValidationError) {
         workflowWarn("Workflow parse error:", e.message);
-        workflowPort().getState().setGraph(null, e.message);
+        port.setGraph(this.tabId, null, e.message);
       } else {
         workflowWarn("Unexpected parse error:", errorMessage(e));
-        workflowPort().getState().setGraph(
-          null,
-          errorMessage(e),
-        );
+        port.setGraph(this.tabId, null, errorMessage(e));
       }
     }
   }
@@ -84,13 +89,12 @@ class SourceWorkflowPreviewPlugin {
     if (this.debounceTimer) clearTimeout(this.debounceTimer);
     // Leaving the workflow file: no graph, no panel — and a live run keeps
     // its registration, so its events still route (see the header).
-    workflowPort().getState().setGraph(null);
-    workflowPort().getState().previewClosePanel();
+    workflowPort().getState().setGraph(this.tabId, null);
+    workflowPort().getState().previewClosePanel(this.tabId);
   }
 }
 
-function createSourceWorkflowPreviewPlugin() {
-  return ViewPlugin.fromClass(SourceWorkflowPreviewPlugin);
+/** The preview for the Source editor of `tabId`. */
+export function sourceWorkflowPreviewExtensions(tabId: string): Extension[] {
+  return [ViewPlugin.define((view) => new SourceWorkflowPreviewPlugin(view, tabId))];
 }
-
-export const sourceWorkflowPreviewExtensions = [createSourceWorkflowPreviewPlugin()];

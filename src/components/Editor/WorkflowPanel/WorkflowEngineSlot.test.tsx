@@ -40,25 +40,17 @@ function setFlags(patch: { workflowEngine?: boolean }) {
   });
 }
 
-/** Open the panel with a parsed graph, the state in which Run is offered. */
+/** Open tab-1's panel with a parsed graph, the state in which Run is offered. */
 function openPanelWithGraph() {
-  useWorkflowStore.setState({
-    preview: {
-      ...useWorkflowStore.getState().preview,
-      panelOpen: true,
-      graph: {
-        name: "demo",
-        triggers: [],
-        env: {},
-        defaults: {},
-        steps: [],
-        edges: [],
-      },
-      parseError: null,
-      executionId: null,
-      activeStepId: null,
-      stepStatuses: {},
-    },
+  useWorkflowStore.getState().resetPreview();
+  useWorkflowStore.getState().previewOpenPanel("tab-1");
+  useWorkflowStore.getState().setGraph("tab-1", {
+    name: "demo",
+    triggers: [],
+    env: {},
+    defaults: {},
+    steps: [],
+    edges: [],
   });
 }
 

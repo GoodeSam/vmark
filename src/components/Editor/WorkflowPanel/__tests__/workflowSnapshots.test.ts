@@ -27,6 +27,24 @@ describe("listWorkflowSnapshots", () => {
     await expect(listWorkflowSnapshots()).resolves.toEqual([SUMMARY]);
   });
 
+  // Audit fix-round #117: `typeof "number"` let NaN, Infinity, negatives,
+  // fractions and unsafe integers through — `NaN files will be put back`.
+  it.each([
+    ["NaN", Number.NaN],
+    ["Infinity", Number.POSITIVE_INFINITY],
+    ["a negative count", -1],
+    ["a fraction", 1.5],
+    ["an unsafe integer", Number.MAX_SAFE_INTEGER + 1],
+  ])("drops a summary whose count is %s", async (_label, bad) => {
+    invoke.mockResolvedValueOnce([
+      SUMMARY,
+      { ...SUMMARY, id: "f", fileCount: bad },
+      { ...SUMMARY, id: "c", createdCount: bad },
+      { ...SUMMARY, id: "t", timestamp: bad },
+    ]);
+    await expect(listWorkflowSnapshots()).resolves.toEqual([SUMMARY]);
+  });
+
   it("treats a non-array reply as no snapshots", async () => {
     invoke.mockResolvedValueOnce({ nope: true });
     await expect(listWorkflowSnapshots()).resolves.toEqual([]);
@@ -66,4 +84,12 @@ describe("restoreWorkflowSnapshot", () => {
     invoke.mockResolvedValueOnce({ restored: "2" });
     await expect(restoreWorkflowSnapshot("snap-r1")).rejects.toThrow(/restore report/);
   });
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, -1, 0.5, Number.MAX_SAFE_INTEGER + 1])(
+    "refuses a report carrying the count %s",
+    async (bad) => {
+      invoke.mockResolvedValueOnce({ restored: 1, deleted: 0, skipped: bad });
+      await expect(restoreWorkflowSnapshot("snap-r1")).rejects.toThrow(/restore report/);
+    },
+  );
 });
