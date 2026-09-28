@@ -28,7 +28,10 @@ numbers (`#1081`), decision/rule ids (`(D4)`, `(R6)`), `OWASP`, `sign-off`,
 `TODO`/`FIXME`. "HTML preview is sandboxed but pending OWASP sign-off (WI-3.4)."
 shipped to every user in ten languages. Say what it means for the USER ("its
 security review is still in progress"), or say nothing. Every locale is scanned,
-and there is no baseline: an identifier in copy is never right.
+full-width `（D4）` included, and there is no baseline. A token alone cannot tell
+"(C4)" the envelope from "(C4)" the decision id, or `#123` the colour from the
+issue: a legitimate match goes in `INTERNAL_REFERENCE_EXCEPTIONS` with its
+reason, and an entry whose key is gone or no longer matches fails.
 
 ## Strings must stand alone — or be registered fragments
 
@@ -36,7 +39,9 @@ A value with no words once `{{placeholders}}` are removed — `({{line}}:{{colum
 — is a FRAGMENT: right after "Cannot render", meaningless alone (it rendered as
 a red "(6:1)" strip). Register it in `REGISTERED_FRAGMENTS`
 (`scripts/check-i18n-keys.ts`) with where it appears; an unregistered wordless
-string fails, and a registration whose key is gone fails too.
+string fails, and a registration whose key is gone fails too. The TSX is scanned
+as well: a JSX element whose ONLY content is `t(<fragment>)` fails — the
+registry alone did not stop the "(6:1)" strip.
 
 Punctuation vocabulary:
 

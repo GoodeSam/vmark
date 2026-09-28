@@ -8,6 +8,7 @@ import { join } from "node:path";
 import {
   checkCopyConventions,
   dialogLiteralFindings,
+  fragmentUsageFindings,
   internalReferenceFindings,
   standaloneTextFindings,
   titleCaseViolations,
@@ -118,5 +119,46 @@ describe("standaloneTextFindings — a string that must work on its own", () => 
 
   it("accepts values with words, and symbol-only values without placeholders", () => {
     expect(standaloneTextFindings({ a: "{{count}} files", b: "…", c: "·" }, {})).toEqual([]);
+  });
+});
+
+describe("internalReferenceFindings — Codex review of #1465 (executed probes)", () => {
+  it.each([
+    ["確立済みに昇格 — 制約になれるのは確立済みの設定のみです（D4）", ["decision-id"]],
+    ["提升为已确立 — 只有已确立的设定才能作为约束（D4）", ["decision-id"]],
+    ["See #12 for details", ["issue-ref"]],
+    ["pending security sign\u2011off", ["sign-off"]],
+  ])("catches %j", (value, expected) => {
+    expect(internalReferenceFindings(value)).toEqual(expected);
+  });
+
+  // These MATCH by design — a token alone cannot tell "(C4)" the envelope from
+  // "(C4)" the decision id. Legitimate uses go in the reviewed exceptions list.
+  it.each([["Envelope size (C4)"], ["Use #123 as the colour"], ["Press (R2) to continue"]])(
+    "flags %j, so a legitimate use must be a reviewed exception",
+    (value) => {
+      expect(internalReferenceFindings(value).length).toBeGreaterThan(0);
+    },
+  );
+});
+
+describe("fragmentUsageFindings — a fragment never rendered alone", () => {
+  // The registry alone did not stop the original defect: restoring
+  // <div role="status">{t("preview.errorAt", …)}</div> still passed.
+  const fragments = { "editor.json:preview.errorAt": "suffix" };
+
+  it("flags a JSX element whose only content is a fragment", () => {
+    const tsx = `export const A = () => <div className="hint" role="status">{t("preview.errorAt", { line: 1, column: 2 })}</div>;`;
+    expect(fragmentUsageFindings("a.tsx", tsx, fragments)).toEqual(["a.tsx: preview.errorAt rendered alone"]);
+  });
+
+  it("accepts a fragment appended to a sentence", () => {
+    const tsx = `export const A = () => <div><span>{t("preview.cannotRender")}</span>{t("preview.errorAt", { line: 1, column: 2 })}</div>;`;
+    expect(fragmentUsageFindings("a.tsx", tsx, fragments)).toEqual([]);
+  });
+
+  it("recognizes the namespaced key form", () => {
+    const tsx = `export const A = () => <span>{t("editor:preview.errorAt", { line: 1, column: 2 })}</span>;`;
+    expect(fragmentUsageFindings("a.tsx", tsx, fragments)).toEqual(["a.tsx: preview.errorAt rendered alone"]);
   });
 });

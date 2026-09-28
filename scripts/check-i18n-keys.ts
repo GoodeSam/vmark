@@ -753,12 +753,24 @@ export function titleCaseViolations(value: string): boolean {
 const INTERNAL_REFERENCE_PATTERNS: readonly (readonly [string, RegExp])[] = [
   ["WI-", /\bWI-[A-Z0-9]/],
   ["ADR-", /\bADR-?\d/],
-  ["issue-ref", /#\d{3,}\b/],
-  ["decision-id", /\((?:[CDGHRW]\d{1,2}(?:\.\d+)?)\)/],
+  // Two or more digits: "#1" is a heading marker, "#12"/"#1081" an issue.
+  ["issue-ref", /(?<![\w&])#\d{2,}\b/],
+  // ASCII OR full-width parentheses — CJK copy writes "（D4）".
+  ["decision-id", /[(（][CDGHRW]\d{1,2}(?:\.\d+)?[)）]/],
   ["OWASP", /\bOWASP\b/],
   ["TODO", /\b(?:TODO|FIXME|TBD|XXX)\b/],
-  ["sign-off", /\bsign-?off\b/i],
+  // Any hyphen, including the non-breaking U+2011, or none.
+  ["sign-off", /\bsign[\s\-\u2010\u2011\u2013]?off\b/i],
 ];
+
+/**
+ * Reviewed legitimate matches, keyed `<en file>:<key>` (every locale of that
+ * key is exempt). A token alone cannot tell "(C4)" the envelope from "(C4)"
+ * the decision id, or "#123" the colour from the issue — this is where the
+ * reviewed answer lives. An entry must name a key that exists AND still
+ * matches, or the gate fails: an exception cannot outlive its reason.
+ */
+export const INTERNAL_REFERENCE_EXCEPTIONS: Readonly<Record<string, string>> = {};
 
 /** The internal-reference patterns `value` contains, in pattern order. */
 export function internalReferenceFindings(value: string): string[] {
@@ -790,6 +802,46 @@ export function standaloneTextFindings(
     .map(([key]) => key);
 }
 
+/** The i18n key of a `t("key" | "ns:key", …)` call, without its namespace. */
+function translatedKey(node: ts.Node): string | null {
+  if (!ts.isCallExpression(node)) return null;
+  const callee = node.expression;
+  const isT = (ts.isIdentifier(callee) && callee.text === "t") ||
+    (ts.isPropertyAccessExpression(callee) && callee.name.text === "t");
+  const [first] = node.arguments;
+  if (!isT || !first || !ts.isStringLiteralLike(first)) return null;
+  const raw = first.text;
+  return raw.includes(":") ? raw.slice(raw.indexOf(":") + 1) : raw;
+}
+
+/**
+ * JSX elements whose ONLY content is a registered fragment. Registering
+ * "({{line}}:{{column}})" did not stop the defect it came from: restoring
+ * <div role="status">{t("preview.errorAt", …)}</div> passed the key check.
+ */
+export function fragmentUsageFindings(
+  rel: string,
+  text: string,
+  fragments: Readonly<Record<string, string>>,
+): string[] {
+  const fragmentKeys = new Set(Object.keys(fragments).map((id) => id.slice(id.indexOf(":") + 1)));
+  const sf = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const out: string[] = [];
+  const visit = (node: ts.Node) => {
+    if (ts.isJsxElement(node)) {
+      const meaningful = node.children.filter((c) => !(ts.isJsxText(c) && c.text.trim() === ""));
+      const only = meaningful.length === 1 ? meaningful[0] : null;
+      if (only && ts.isJsxExpression(only) && only.expression) {
+        const key = translatedKey(only.expression);
+        if (key && fragmentKeys.has(key)) out.push(`${rel}: ${key} rendered alone`);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return out;
+}
+
 function checkInternalReferencesAndFragments(): boolean {
   const found: string[] = [];
   const localesDir = join(ROOT, "src", "locales");
@@ -798,6 +850,7 @@ function checkInternalReferencesAndFragments(): boolean {
     if (!existsSync(dir) || !readdirSync(dir).length) continue;
     for (const file of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
       for (const [key, value] of flattenJsonValues(JSON.parse(readFileSync(join(dir, file), "utf8")))) {
+        if (`${file}:${key}` in INTERNAL_REFERENCE_EXCEPTIONS) continue;
         for (const hit of internalReferenceFindings(value)) found.push(`${lang}/${file}:${key} (${hit}): ${value}`);
       }
     }
@@ -823,10 +876,31 @@ function checkInternalReferencesAndFragments(): boolean {
     return !existsSync(path) || !flattenJsonValues(JSON.parse(readFileSync(path, "utf8"))).has(key);
   });
 
+  const staleExceptionIds = Object.keys(INTERNAL_REFERENCE_EXCEPTIONS).filter((id) => {
+    const [file, key] = id.split(/:(.*)/s);
+    const path = join(enDir, file);
+    const value = existsSync(path) ? flattenJsonValues(JSON.parse(readFileSync(path, "utf8"))).get(key) : undefined;
+    return value === undefined || internalReferenceFindings(value).length === 0;
+  });
+  const usage: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith(".tsx") && !/\.test\.tsx$/.test(entry.name)) {
+        usage.push(...fragmentUsageFindings(full.slice(ROOT.length + 1), readFileSync(full, "utf8"), REGISTERED_FRAGMENTS));
+      }
+    }
+  };
+  walk(join(ROOT, "src"));
+
   for (const f of found) console.error(`[FAIL]  internal reference in UI copy — ${f}`);
+  for (const e of staleExceptionIds) console.error(`[FAIL]  INTERNAL_REFERENCE_EXCEPTIONS lists ${e}, which no longer exists or no longer matches — delete the entry`);
+  for (const u of usage) console.error(`[FAIL]  ${u} — a fragment is appended to a sentence, never shown by itself`);
   for (const w of wordless) console.error(`[FAIL]  ${w}: no words once placeholders are removed — reword it to stand alone, or register it in REGISTERED_FRAGMENTS with where it appears`);
   for (const s2 of staleFragments) console.error(`[FAIL]  REGISTERED_FRAGMENTS lists ${s2}, which no longer exists — delete the entry`);
-  const ok = found.length === 0 && wordless.length === 0 && staleFragments.length === 0;
+  const ok = found.length === 0 && wordless.length === 0 && staleFragments.length === 0 &&
+    staleExceptionIds.length === 0 && usage.length === 0;
   if (ok) console.log("[OK]    no internal references in UI copy; every wordless string is a registered fragment");
   return ok;
 }
