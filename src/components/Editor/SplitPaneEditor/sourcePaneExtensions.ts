@@ -11,7 +11,8 @@
  * @coordinates-with SourcePane.tsx — sole caller
  * @coordinates-with lib/formats/types — FormatConfig.validator contract
  * @coordinates-with lib/formats/diagnosticPresentation.ts — trust-aware severity
- * @coordinates-with useTrustedSeveritySync.ts — re-presents on trust/path change
+ * @coordinates-with useTrustedSeveritySync.ts — re-presents on trust/path change and
+ *   supplies `trustSeverity`, the listener that reconciles each installed lint
  * @module components/Editor/SplitPaneEditor/sourcePaneExtensions
  */
 import { Compartment, EditorState, type Extension, type Text } from "@codemirror/state";
