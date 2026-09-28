@@ -38,10 +38,12 @@ reason, and an entry whose key is gone or no longer matches fails.
 A value with no words once `{{placeholders}}` are removed — `({{line}}:{{column}})`
 — is a FRAGMENT: right after "Cannot render", meaningless alone (it rendered as
 a red "(6:1)" strip). Register it in `REGISTERED_FRAGMENTS`
-(`scripts/check-i18n-keys.ts`) with where it appears; an unregistered wordless
-string fails, and a registration whose key is gone fails too. The TSX is scanned
-as well: a JSX element whose ONLY content is `t(<fragment>)` fails — the
-registry alone did not stop the "(6:1)" strip.
+(`scripts/check-i18n-keys.ts`) with where it appears and the FILES allowed to use
+it; an unregistered wordless string fails, a registration whose key is gone fails,
+and a use in any unlisted file fails (a toast, a variable, a `.ts` helper — uses
+the JSX scan cannot follow). Within the listed files the JSX is scanned too: a
+block whose only rendered content is `t(<fragment>)` fails — the registry alone
+did not stop the "(6:1)" strip.
 
 Punctuation vocabulary:
 

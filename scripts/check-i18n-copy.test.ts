@@ -9,6 +9,7 @@ import {
   checkCopyConventions,
   dialogLiteralFindings,
   emdashSpacingViolation,
+  fragmentSiteFindings,
   fragmentUsageFindings,
   internalReferenceFindings,
   referenceFindingsExcept,
@@ -284,3 +285,30 @@ describe("fragmentUsageFindings — Codex fourth pass", () => {
   });
 });
 
+describe("fragmentSiteFindings — a fragment is used only where it is registered", () => {
+  const registry = { "editor.json:preview.errorAt": { where: "suffix", files: ["src/a.tsx"] } };
+
+  it("accepts a use in a registered file", () => {
+    expect(fragmentSiteFindings({ "src/a.tsx": `t("preview.errorAt")` }, registry)).toEqual([]);
+  });
+
+  it.each([
+    [`toast.error(t("preview.errorAt"));`],
+    [`const suffix = t("preview.errorAt");`],
+    [`const KEY = "editor:preview.errorAt";`],
+  ])("flags a use in an unregistered file: %s", (text) => {
+    expect(fragmentSiteFindings({ "src/a.tsx": `t("preview.errorAt")`, "src/b.ts": text }, registry)).toEqual([
+      "src/b.ts: uses fragment preview.errorAt, but its registration does not list this file",
+    ]);
+  });
+
+  it("ignores the same key in another namespace", () => {
+    expect(fragmentSiteFindings({ "src/a.tsx": `t("preview.errorAt")`, "src/b.ts": `t("other:preview.errorAt")` }, registry)).toEqual([]);
+  });
+
+  it("flags a registered file that no longer uses the fragment", () => {
+    expect(fragmentSiteFindings({ "src/a.tsx": `t("preview.cannotRender")` }, registry)).toEqual([
+      "src/a.tsx: registered for fragment preview.errorAt but no longer uses it — delete it from the registration",
+    ]);
+  });
+});

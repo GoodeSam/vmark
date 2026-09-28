@@ -805,10 +805,36 @@ export function internalReferenceFindings(value: string): string[] {
  * rendered as a red "(6:1)" strip). Each must be registered with where it is
  * meant to appear, so using one alone is a decision someone wrote down.
  */
-export const REGISTERED_FRAGMENTS: Readonly<Record<string, string>> = {
-  "editor.json:preview.errorAt": "suffix after preview.cannotRender / preview.workflowParseFailed",
-  "statusbar.json:terminal.search.results": "match counter beside the terminal search field",
-  "dialog.json:exportError.listItem": "the language's quote marks around one entry of an export-error list",
+export interface FragmentRegistration {
+  /** Where the fragment is meant to appear. */
+  readonly where: string;
+  /** Every source file allowed to use it — each use is a reviewed decision. */
+  readonly files: readonly string[];
+}
+
+export const REGISTERED_FRAGMENTS: Readonly<Record<string, FragmentRegistration>> = {
+  "editor.json:preview.errorAt": {
+    where: "suffix after preview.cannotRender / preview.workflowParseFailed",
+    files: [
+      "src/lib/formats/adapters/cargoToml.tsx",
+      "src/lib/formats/adapters/json.tsx",
+      "src/lib/formats/adapters/mermaid.tsx",
+      "src/lib/formats/adapters/packageJson.tsx",
+      "src/lib/formats/adapters/pyprojectToml.tsx",
+      "src/lib/formats/adapters/svg.tsx",
+      "src/lib/formats/adapters/toml.tsx",
+      "src/lib/formats/adapters/yaml.tsx",
+      "src/lib/formats/adapters/yamlWorkflowRenderer.tsx",
+    ],
+  },
+  "statusbar.json:terminal.search.results": {
+    where: "match counter beside the terminal search field",
+    files: ["src/components/Terminal/TerminalSearchBar.tsx"],
+  },
+  "dialog.json:exportError.listItem": {
+    where: "the language's quote marks around one entry of an export-error list",
+    files: ["src/export/exportErrorMessages.ts"],
+  },
 };
 
 /** Keys of `values` that are wordless placeholder strings not in `fragments`. */
@@ -962,6 +988,50 @@ export function fragmentUsageFindings(
   return out;
 }
 
+/**
+ * Each registered fragment is used ONLY in the files its registration lists:
+ * a use anywhere else — through a variable, a toast, a `.ts` helper, a key
+ * held in a constant — is a new decision about where the fragment appears,
+ * which the JSX walk above cannot follow. Exact, not heuristic: any string
+ * literal naming the key counts (namespace-aware). A listed file that stopped
+ * using the fragment is stale.
+ */
+export function fragmentSiteFindings(
+  files: Readonly<Record<string, string>>,
+  registry: Readonly<Record<string, FragmentRegistration>>,
+): string[] {
+  const out: string[] = [];
+  for (const [id, registration] of Object.entries(registry)) {
+    const refs = fragmentRefs({ [id]: registration });
+    const [{ key }] = refs;
+    const users = Object.entries(files)
+      .filter(([rel, text]) => {
+        if (!text.includes(key)) return false;
+        const kind = rel.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+        const sf = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, kind);
+        let found = false;
+        const visit = (node: ts.Node) => {
+          if (found) return;
+          if (ts.isStringLiteralLike(node) && matchFragment(node.text, refs)) found = true;
+          else ts.forEachChild(node, visit);
+        };
+        visit(sf);
+        return found;
+      })
+      .map(([rel]) => rel);
+    for (const rel of users.filter((u) => !registration.files.includes(u))) {
+      out.push(`${rel}: uses fragment ${key}, but its registration does not list this file`);
+    }
+    for (const rel of registration.files.filter((f) => f in files && !users.includes(f))) {
+      out.push(`${rel}: registered for fragment ${key} but no longer uses it — delete it from the registration`);
+    }
+    for (const rel of registration.files.filter((f) => !(f in files))) {
+      out.push(`${rel}: registered for fragment ${key} but does not exist — delete it from the registration`);
+    }
+  }
+  return out;
+}
+
 function checkInternalReferencesAndFragments(): boolean {
   const found: string[] = [];
   const localesDir = join(ROOT, "src", "locales");
@@ -1004,24 +1074,31 @@ function checkInternalReferencesAndFragments(): boolean {
   }
   const staleExceptionIds = staleReferenceExceptions(enValues, INTERNAL_REFERENCE_EXCEPTIONS);
   const usage: string[] = [];
+  const sources: Record<string, string> = {};
   const walk = (dir: string) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const full = join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (entry.name.endsWith(".tsx") && !/\.test\.tsx$/.test(entry.name)) {
-        usage.push(...fragmentUsageFindings(full.slice(ROOT.length + 1), readFileSync(full, "utf8"), REGISTERED_FRAGMENTS));
+      if (entry.isDirectory()) {
+        if (entry.name !== "__tests__" && entry.name !== "locales") walk(full);
+      } else if (/\.tsx?$/.test(entry.name) && !/\.(test|spec)\.tsx?$|\.d\.ts$/.test(entry.name)) {
+        sources[full.slice(ROOT.length + 1)] = readFileSync(full, "utf8");
       }
     }
   };
   walk(join(ROOT, "src"));
+  for (const [rel, text] of Object.entries(sources)) {
+    if (rel.endsWith(".tsx")) usage.push(...fragmentUsageFindings(rel, text, REGISTERED_FRAGMENTS));
+  }
+  const sites = fragmentSiteFindings(sources, REGISTERED_FRAGMENTS);
 
   for (const f of found) console.error(`[FAIL]  internal reference in UI copy — ${f}`);
   for (const e of staleExceptionIds) console.error(`[FAIL]  INTERNAL_REFERENCE_EXCEPTIONS lists ${e}, which no longer exists or no longer matches — delete the entry`);
   for (const u of usage) console.error(`[FAIL]  ${u} — a fragment is appended to a sentence, never shown by itself`);
+  for (const u of sites) console.error(`[FAIL]  ${u} (REGISTERED_FRAGMENTS)`);
   for (const w of wordless) console.error(`[FAIL]  ${w}: no words once placeholders are removed — reword it to stand alone, or register it in REGISTERED_FRAGMENTS with where it appears`);
   for (const s2 of staleFragments) console.error(`[FAIL]  REGISTERED_FRAGMENTS lists ${s2}, which no longer exists — delete the entry`);
   const ok = found.length === 0 && wordless.length === 0 && staleFragments.length === 0 &&
-    staleExceptionIds.length === 0 && usage.length === 0;
+    staleExceptionIds.length === 0 && usage.length === 0 && sites.length === 0;
   if (ok) console.log("[OK]    no internal references in UI copy; every wordless string is a registered fragment");
   return ok;
 }
