@@ -4,10 +4,12 @@
  * Purpose: Handles all image-related paste, drop, and file events in WYSIWYG mode —
  * clipboard images, file drops, file:// URLs, and multi-image paste from Finder.
  *
- * Pipeline: paste/drop event -> detect image content -> delegate to utils/insert/toast modules
+ * Pipeline: paste/drop event -> detect image content -> delegate to clipboard/utils/insert/toast modules
  *
  * Key decisions:
- *   - Highest priority in the paste chain (runs before smartPaste, markdownPaste, etc.)
+ *   - Registered AFTER smartPaste, markdownPaste, htmlPaste and codePaste. They
+ *     pass on a clipboard with no text, so a bare image (a screenshot) reaches
+ *     this handler; in smart mode htmlPaste takes an image copied WITH HTML
  *   - Images are always copied to the `.assets/` folder next to the document for portability
  *   - Multiple images (e.g., multi-select from Finder) are handled via parseMultiplePaths
  *   - Uses reentryGuard to prevent double-processing of clipboard events
@@ -20,11 +22,13 @@
  * @coordinates-with plugins/imageHandler/imageHandlerUtils.ts — shared utilities
  * @coordinates-with plugins/imageHandler/imageHandlerInsert.ts — image insertion
  * @coordinates-with plugins/imageHandler/imageHandlerToast.ts — toast UI
+ * @coordinates-with plugins/imageHandler/imageHandlerClipboard.ts — clipboard image paste
  * @module plugins/imageHandler/tiptap
  */
 
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey, Selection } from "@tiptap/pm/state";
+import type { Slice } from "@tiptap/pm/model";
 import type { EditorView } from "@tiptap/pm/view";
 import { message } from "@tauri-apps/plugin-dialog";
 import i18n from "@/i18n";
@@ -38,49 +42,22 @@ import { imageHandlerWarn, imageHandlerError } from "@/utils/debug";
 import { insertMultipleImages } from "./imageHandlerInsert";
 import { tryTextImagePaste } from "./imageHandlerToast";
 import {
+  findPastedBlobImageSrcs,
+  processClipboardImage,
+  processPastedBlobImages,
+  type ClipboardImageHost,
+} from "./imageHandlerClipboard";
+import {
   fileUrlToPath,
   isViewConnected,
   isImageFile,
-  generateClipboardImageFilename,
   generateDroppedImageFilename,
   getActiveFilePathForCurrentWindow,
   showUnsavedDocWarning,
 } from "./imageHandlerUtils";
 
 const imageHandlerPluginKey = new PluginKey("imageHandler");
-const CLIPBOARD_IMAGE_GUARD = "clipboard-image";
-
-async function processClipboardImage(view: EditorView, item: DataTransferItem): Promise<void> {
-  const windowLabel = getWindowLabel();
-
-  await withReentryGuard(windowLabel, CLIPBOARD_IMAGE_GUARD, async () => {
-    const filePath = getActiveFilePathForCurrentWindow();
-
-    if (!filePath) {
-      await showUnsavedDocWarning();
-      return;
-    }
-
-    const file = item.getAsFile();
-    if (!file) return;
-
-    const buffer = await file.arrayBuffer();
-    const imageData = new Uint8Array(buffer);
-    // Generate unique filename to avoid collisions
-    const filename = generateClipboardImageFilename(file.name || "image.png");
-
-    const relativePath = await saveImageToAssets(imageData, filename, filePath);
-
-    // Verify view is still connected
-    if (!isViewConnected(view)) {
-      imageHandlerWarn("View disconnected after saving image");
-      return;
-    }
-
-    insertBlockImageNode(view, relativePath);
-  });
-}
-
+const clipboardHost: ClipboardImageHost = { windowLabel: getWindowLabel, saveImageToAssets, insertBlockImageNode };
 const DROP_IMAGE_GUARD = "drop-image";
 
 /**
@@ -247,20 +224,27 @@ function handleDrop(view: EditorView, event: DragEvent, _slice: unknown, moved: 
   return false;
 }
 
-function handlePaste(view: EditorView, event: ClipboardEvent): boolean {
-  const items = event.clipboardData?.items;
-  if (!items) return false;
+function reportClipboardImageFailure(error: unknown): void {
+  imageHandlerError("Failed to process clipboard image:", error);
+  message(i18n.t("dialog:toast.failedToSaveClipboardImage"), { kind: "error" }).catch(imageHandlerError);
+}
 
+function handlePaste(view: EditorView, event: ClipboardEvent, slice: Slice): boolean {
   // First, check for binary image data (higher priority)
-  for (const item of items) {
+  for (const item of event.clipboardData?.items ?? []) {
     if (item.type.startsWith("image/")) {
       event.preventDefault();
-      processClipboardImage(view, item).catch((error) => {
-        imageHandlerError("Failed to process clipboard image:", error);
-        message(i18n.t("dialog:toast.failedToSaveClipboardImage"), { kind: "error" }).catch(imageHandlerError);
-      });
+      processClipboardImage(view, item, clipboardHost).catch(reportClipboardImageFailure);
       return true;
     }
+  }
+
+  // The engine withheld the image bytes and pasted a page blob instead (#1453)
+  const blobSrcs = findPastedBlobImageSrcs(slice, window.location.origin);
+  if (blobSrcs) {
+    event.preventDefault();
+    processPastedBlobImages(view, blobSrcs, clipboardHost).catch(reportClipboardImageFailure);
+    return true;
   }
 
   // Then, check for text that looks like an image path/URL

@@ -117,7 +117,7 @@
     "src/plugins/footnotePopup/__tests__/FootnotePopupView.test.ts": 1124,
     "src/plugins/footnotePopup/tiptap.test.ts": 1887,
     "src/plugins/formatToolbar/nodeActions.tiptap.test.ts": 1310,
-    "src/plugins/imageHandler/tiptap.test.ts": 1461,
+    "src/plugins/imageHandler/tiptap.test.ts": 1447,
     "src/plugins/imagePasteToast/__tests__/ImagePasteToastView.test.ts": 1093,
     "src/plugins/imagePreview/__tests__/ImagePreviewView.test.ts": 1400,
     "src/plugins/latex/__tests__/MathInlineNodeView.test.ts": 1198,
