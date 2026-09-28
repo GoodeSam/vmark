@@ -87,7 +87,10 @@ count() {
       const doc = JSON.parse(fs.readFileSync(`${process.env.ROOT}/${process.env.REL}`, "utf8"));
       const at = process.env.AT;
       const node = at ? at.split(".").reduce((a, k) => (a == null ? undefined : a[k]), doc) : doc;
-      if (node == null) return 0;
+      // A key that is not there is UNREADABLE, never zero: 0 satisfies every
+      // "at most" target, so a renamed key used to pass its phase silently.
+      if (node === undefined) return "";
+      if (node === null) return 0;
       if (process.env.MODE === "sum") {
         const sum = (o) => Object.entries(o).reduce(
           (n, [k, v]) => n + (isComment(k) ? 0
@@ -99,7 +102,7 @@ count() {
         return Array.isArray(node) ? node.length
           : Object.keys(node).filter((k) => !isComment(k)).length;
       }
-      return typeof node === "number" ? node : 0;
+      return typeof node === "number" ? node : "";
     };
     process.stdout.write(String(compute()));
   ' 2>/dev/null || echo ""

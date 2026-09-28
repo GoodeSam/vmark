@@ -131,6 +131,15 @@ describe("a phase is done when the real baseline says so (ADR-1)", () => {
     expect(run(rootWith({ named: 80, styled: 70 }), "4").status, "lowered").toBe(0);
   });
 
+  // The baseline's keys were renamed when its counts became named lists. The
+  // old reader returned 0 for a key it could not find — and 0 is "at most 87".
+  it("phase 4 reads a missing or wrongly-shaped key as unreadable, never as zero", () => {
+    const root = rootWith({});
+    write(root, "scripts/bespoke-buttons-baseline.json", JSON.stringify({ maxBespokeButtonClasses: 3, maxStyledButtonClasses: 3 }));
+    const r = run(root, "4");
+    expect(r.status).toBe(1);
+    expect(r.stdout).toMatch(/unreadable/);
+  });
 });
 
 describe("partial progress does not round up", () => {
