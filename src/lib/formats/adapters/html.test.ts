@@ -140,3 +140,236 @@ describe("html adapter", () => {
     });
   });
 });
+
+describe("htmlFormat.infoWhenTrusted — what a trusted document's findings mean", () => {
+  // Under trust every HTML finding is information: none may contradict the
+  // "Trusted — scripts enabled" banner. Severity makes no claim that a given
+  // construct RUNS — static detection cannot prove that (review) — so the
+  // facts that differ by construct live in the messages instead.
+  it("lowers every rule the validator can report", () => {
+    const doc =
+      `<script>x</script><script src="a.js"></script><a href="javascript:void 0">a</a>` +
+      `<a target="_top" href="javascript:void 0">b</a><p onclick="y">p</p>`;
+    const reported = [...new Set(htmlValidator(doc).map((d) => d.ruleId))].sort();
+    expect(reported).toHaveLength(5);
+    expect([...(htmlFormat.infoWhenTrusted ?? [])].sort()).toEqual(reported);
+  });
+});
+
+// Trusted preview's CSP is `script-src 'unsafe-inline'` with no URL source:
+// inline script runs, but `<script src=…>` — remote or relative — never loads,
+// trusted or not. So an external script is its own rule, and it stays a
+// warning when the file is trusted (lowering it would say "fine" about a
+// script that silently never runs).
+describe("html adapter — inline vs external script", () => {
+  it.each([
+    ['<script>1</script>', "html/script-blocked"],
+    ['<script type="module">1</script>', "html/script-blocked"],
+    ['<script src="app.js"></script>', "html/script-external"],
+    ['<script\n  src="https://cdn.example/x.js"></script>', "html/script-external"],
+    ["<script defer src='x.js'></script>", "html/script-external"],
+  ])("%j is %s", (html, ruleId) => {
+    expect(htmlValidator(html).map((d) => d.ruleId)).toEqual([ruleId]);
+  });
+
+  it("says in the message that an external script never loads, trusted or not", () => {
+    const [d] = htmlValidator('<script src="app.js"></script>');
+    expect(d.message).toMatch(/never loads/);
+  });
+});
+
+// Codex's third review: regex lookaheads could not see HTML structure. Each
+// input's expected rules follow what a browser parses (DOMParser) and what the
+// trusted frame actually runs.
+describe("html adapter — rules read parsed tags, not text", () => {
+  const rules = (html: string) => htmlValidator(html).map((d) => d.ruleId);
+
+  it.each([
+    [`<script data-src="app.js">1</script>`, ["html/script-blocked"]],
+    [`<script data-x="src=">1</script>`, ["html/script-blocked"]],
+    [`<script data-x="prefix src='x.js'">1</script>`, ["html/script-blocked"]],
+    [`<script data-x=">" src="app.js"></script>`, ["html/script-external"]],
+    [`<script src></script>`, ["html/script-external"]],
+    [`<!-- <script src="app.js"></script> -->`, []],
+    [`<svg><![CDATA[<script src="app.js"></script>]]></svg>`, []],
+    [`<script-foo src="app.js"></script-foo>`, []],
+    [`<scripts src="app.js"></scripts>`, []],
+    [`<script defer SRC = 'a.js' type="text/javascript"></script>`, ["html/script-external"]],
+    [`<script SRC="x.js"/>`, ["html/script-external"]],
+    [`<script/>`, ["html/script-blocked"]],
+    [`<p>the onion=layered prose</p>`, []],
+    [`<script>el.innerHTML = "<b onclick=x>"</script>`, ["html/script-blocked"]],
+  ])("%s → %j", (html, expected) => {
+    expect(rules(html)).toEqual(expected);
+  });
+
+  // The frame is sandboxed with allow-scripts only: a javascript: URL runs in
+  // the frame itself, but navigating the top page or a new window is blocked,
+  // trusted or not (verified in the running app).
+  it.each([
+    [`<a href="javascript:void 0">x</a>`, "html/javascript-url"],
+    [`<a target="_self" href="javascript:void 0">x</a>`, "html/javascript-url"],
+    [`<a target="_top" href="javascript:void 0">x</a>`, "html/javascript-url-navigation"],
+    [`<a target=_blank href="javascript:void 0">x</a>`, "html/javascript-url-navigation"],
+    [`<base target="_parent"><a href="javascript:void 0">x</a>`, "html/javascript-url-navigation"],
+    [`<a href=" java\tscript:void 0">x</a>`, "html/javascript-url"],
+    [`<a href="JavaScript:void 0">x</a>`, "html/javascript-url"],
+  ])("%s → %s", (html, ruleId) => {
+    expect(rules(html)).toEqual([ruleId]);
+  });
+
+  it("says in the message that a link to another window never navigates", () => {
+    const [d] = htmlValidator('<a target="_top" href="javascript:void 0">x</a>');
+    expect(d.message).toMatch(/never allows/);
+  });
+
+});
+
+// Codex's fourth and fifth reviews, each expectation from WebKit's parser
+// (DOMParser) or the trusted frame's behaviour. Detection is approximate and
+// advisory; these are the cases it must get right.
+describe("html adapter — differential corpus", () => {
+  const rules = (html: string) => htmlValidator(html).map((d) => d.ruleId);
+  const EXT = "html/script-external";
+
+  it.each([
+    // Comment and CDATA boundaries that hid real scripts.
+    [`<!--><script src="x.js"></script>`, [EXT]],
+    [`<!---><script src="x.js"></script>`, [EXT]],
+    [`<!-- --!><script src="x.js"></script>`, [EXT]],
+    [`<![CDATA[><script src="x.js"></script>`, [EXT]],
+    // Lower-case "cdata" is not CDATA; the script is SVG's, whose src is inert.
+    [`<svg><![cdata[><script src="x.js"></script>]]></svg>`, ["html/script-blocked"]],
+    // Unicode case folding must not shift offsets.
+    [`İ<script src="x.js"></script>`, [EXT]],
+    [`<p title="İ"></p><script src="x.js"></script>`, [EXT]],
+    // Not elements at all.
+    [`<plaintext><script src="x.js"></script>`, []],
+    [`<script src="x.js"`, []],
+    // SVG: HTML raw-text rules do not apply; its integration points do.
+    [`<svg><title><script src="x.js"></script></title></svg>`, [EXT]],
+    [`<svg><script/><a xlink:href="javascript:void 0">go</a></svg>`, ["html/script-blocked", "html/javascript-url"]],
+    [`<svg><title><textarea><script src="x.js"></script></textarea></title></svg>`, []],
+    // Data blocks are not scripts.
+    [`<script type="application/json">{"a":1}</script>`, []],
+    [`<script type="module">1</script>`, ["html/script-blocked"]],
+    [`<script type="text/javascript">1</script>`, ["html/script-blocked"]],
+    // The first of duplicate attributes wins.
+    [`<a href="x" href="javascript:void 0">go</a>`, []],
+    [`<a onclick="a()" onclick="b()">go</a>`, ["html/inline-handler"]],
+    // javascript: only where a link navigates this frame; forms never submit.
+    [`<div href="javascript:void 0"></div>`, []],
+    [`<iframe src="javascript:void 0"></iframe>`, []],
+    [`<form action="javascript:void 0"><button>go</button></form>`, []],
+    [`<form><button formtarget="_top" formaction="javascript:void 0">go</button></form>`, []],
+    // Character references in attribute values.
+    [`<a href="java&#115;cript:void 0">go</a>`, ["html/javascript-url"]],
+    [`<a href="javascript&colon;void 0">go</a>`, ["html/javascript-url"]],
+    [`<a href="java&Tab;script:void 0">go</a>`, ["html/javascript-url"]],
+    // Target resolution as WebKit does it.
+    [`<template><base target="_top"></template><a href="javascript:void 0">go</a>`, ["html/javascript-url"]],
+    [`<base target><base target="_top"><a href="javascript:void 0">go</a>`, ["html/javascript-url"]],
+    [`<a target="&#95;self" href="javascript:void 0">go</a>`, ["html/javascript-url"]],
+    [`<a target="" href="javascript:void 0">go</a><base target="_top">`, ["html/javascript-url-navigation"]],
+    [`<a target=" _self " href="javascript:void 0">go</a>`, ["html/javascript-url-navigation"]],
+    // An embedded srcdoc document is checked too.
+    [`<iframe srcdoc="<script src='x.js'></script>"></iframe>`, [EXT]],
+    [`<iframe srcdoc="&lt;script&gt;1&lt;/script&gt;"></iframe>`, ["html/script-blocked"]],
+  ])("%s → %j", (html, expected) => {
+    expect(rules(html)).toEqual(expected);
+  });
+
+  it("positions a finding after a Unicode character correctly", () => {
+    expect(htmlValidator(`İ<script src="x.js"></script>`)[0].column).toBe(2);
+  });
+
+  it("positions srcdoc findings at the srcdoc attribute", () => {
+    expect(htmlValidator(`<iframe srcdoc="<script src='x.js'></script>"></iframe>`)[0].column).toBe(9);
+  });
+
+});
+
+// Codex's fifth review: each case below printed a FALSE message (an external
+// script that does not exist, a handler that is not one) or missed a real
+// finding. Expectations from WebKit's parser and the trusted frame.
+describe("html adapter — no false messages, no plausible misses", () => {
+  const rules = (html: string) => htmlValidator(html).map((d) => d.ruleId);
+  const EXT = "html/script-external";
+
+  it.each([
+    // SVG scripts load from href / xlink:href; their src is inert.
+    [`<svg><script src="x.js">run()</script></svg>`, ["html/script-blocked"]],
+    [`<svg><script href="x.js"></script></svg>`, [EXT]],
+    [`<svg><script xlink:href="x.js"></script></svg>`, [EXT]],
+    // Trusted preview runs with scripting on: noscript content is text.
+    [`<noscript><script src="x.js"></script></noscript>`, []],
+    // Script data escapes: after <!-- a nested <script> keeps </script> from closing.
+    [`<script><!--<script></script><script src="x.js"></script>`, ["html/script-blocked"]],
+    [`<script><!-- a --></script><script src="x.js"></script>`, ["html/script-blocked", EXT]],
+    // Foreign content: CDATA follows the current element; integration points; breakout.
+    [`<svg><title><![CDATA[><script src="x.js"></script>]]></title></svg>`, []],
+    [`<math><annotation-xml encoding="text/html"><textarea><script src="x.js"></script></textarea></annotation-xml></math>`, []],
+    [`<svg><font color=red><textarea><script src="x.js"></script></textarea></font></svg>`, []],
+    [`<svg><font><script src="x.js"></script></font></svg>`, ["html/script-blocked"]],
+    // A quoted ">" inside an end tag's attributes does not end the tag.
+    [`<textarea>x</textarea data-x="><script src='x.js'></script>">`, []],
+    [`<p>x</p data-x="><script src='x.js'></script>">`, []],
+    // A numeric reference needs no semicolon.
+    [`<a href="java&#115cript:void 0">go</a>`, ["html/javascript-url"]],
+    [`<a href="javascrip&#x74:void 0">go</a>`, ["html/javascript-url"]],
+    // Hex digits run on: &#x73c is U+073C, so this is not a javascript: URL.
+    [`<a href="java&#x73cript:void 0">go</a>`, []],
+    // Only real event handler names are handlers.
+    [`<div onmadeupevent="x()"></div>`, []],
+    [`<div onclick="x()" onmadeupevent="y()"></div>`, ["html/inline-handler"]],
+    [`<body onload="x()"></body>`, ["html/inline-handler"]],
+  ])("%s → %j", (html, expected) => {
+    expect(rules(html)).toEqual(expected);
+  });
+
+});
+
+// Codex's sixth review: an event-handler attribute is one only where the
+// platform defines it — window handlers on body/frameset, SVG animation
+// handlers on animation elements — and the list must cover real ones.
+describe("html adapter — event handlers in element context", () => {
+  const rules = (html: string) => htmlValidator(html).map((d) => d.ruleId);
+  const H = "html/inline-handler";
+
+  it.each([
+    [`<svg><animate attributeName="x" onbegin="a()" onrepeat="b()" onend="c()"/></svg>`, [H, H, H]],
+    [`<dialog oncommand="a()">x</dialog>`, [H]],
+    [`<div oncontentvisibilityautostatechange="a()">x</div>`, [H]],
+    [`<div onmessage="a()" onclick="b()">x</div>`, [H]],
+    [`<body onmessage="a()" onhashchange="b()"></body>`, [H, H]],
+    [`<div onhashchange="a()" onbeforeunload="b()"></div>`, []],
+    [`<div onbegin="a()"></div>`, []],
+    [`<svg><rect onbegin="a()" onclick="b()"/></svg>`, [H]],
+  ])("%s → %j", (html, expected) => {
+    expect(rules(html)).toEqual(expected);
+  });
+});
+
+// Codex's seventh review, resolved from WebKit's own sources: GlobalEventHandlers
+// and its partial mixins, DocumentAndElementEventHandlers, the historical table
+// in HTMLElement::eventNameForEventHandlerAttribute, WindowEventHandlers (+Gamepad)
+// for body/frameset, and SVGAnimationElement.
+describe("html adapter — event handlers as WebKit maps them", () => {
+  const rules = (html: string) => htmlValidator(html).map((d) => d.ruleId);
+  const H = "html/inline-handler";
+
+  it.each([
+    [`<body ongamepadconnected="a()" ongamepaddisconnected="b()"></body>`, [H, H]],
+    [
+      `<video onwebkitpresentationmodechanged="a()" onwebkitplaybacktargetavailabilitychanged="b()" onwebkitcurrentplaybacktargetiswirelesschanged="c()" onwebkitneedkey="d()"></video>`,
+      [H, H, H, H],
+    ],
+    [`<img src="x.gif" onbeforeload="a()" onload="b()">`, [H, H]],
+    [`<input type="search" onsearch="a()"><canvas oncontextlost="b()" oncontextrestored="c()"></canvas>`, []],
+    [`<video onfullscreenchange="a()" onfullscreenerror="b()" onwebkitfullscreenchange="c()" onwebkitfullscreenerror="d()"></video>`, [H, H]],
+    [`<svg><discard onbegin="a()" onend="b()" onrepeat="c()"/></svg>`, []],
+    [`<svg><set onbegin="a()"/><animateTransform onend="b()"/></svg>`, [H, H]],
+  ])("%s → %j", (html, expected) => {
+    expect(rules(html)).toEqual(expected);
+  });
+});

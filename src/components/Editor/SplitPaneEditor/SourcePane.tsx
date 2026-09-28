@@ -21,7 +21,8 @@ import { detectSourceLanguage } from "@/lib/formats/sourceLanguage";
 // Side-effect import: ships the `.cm-hl-*` color rules (scoped to
 // `.source-editor`/`.source-pane`) used by the shared source theme.
 import "@/plugins/codemirror/source-syntax.css";
-import { buildSourcePaneExtensions } from "./sourcePaneExtensions";
+import { buildSourcePaneExtensions, reconfigureWhenLoaded } from "./sourcePaneExtensions";
+import { useTrustedSeveritySync } from "./useTrustedSeveritySync";
 import type {
   FormatConfig,
   ValidationDiagnostic,
@@ -52,6 +53,7 @@ export function SourcePane({
 }: SourcePaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const trustedLint = useTrustedSeveritySync(viewRef, tabId, formatConfig.infoWhenTrusted);
   // WI-LX2.4: the window's active source view while this pane is focused.
   const focusedRef = useSourcePaneFocus(viewRef, getCurrentWindowLabel(), false, { tabId, cursorContext: false });
   const languageCompartmentRef = useRef(new Compartment());
@@ -167,6 +169,7 @@ export function SourcePane({
         : undefined,
       persistOnUpdate,
       onDiagnostics: (diagnostics) => onDiagnosticsRef.current?.(diagnostics),
+      ...trustedLint,
     });
 
     const initial = useDocumentStore.getState().documents?.[tabId]?.content ?? "";
@@ -182,42 +185,17 @@ export function SourcePane({
     const releaseActiveView = bindSplitSourceView(view, tabId, focusedRef.current);
 
     let cancelled = false;
+    const isCancelled = () => cancelled;
     if (loadLanguage) {
-      void loadLanguage()
-        .then((lang) => {
-          /* v8 ignore next -- @preserve unmount race */
-          if (cancelled || !viewRef.current) return;
-          viewRef.current.dispatch({
-            effects: languageCompartmentRef.current.reconfigure(lang),
-          });
-        })
-        .catch(() => {
-          /* v8 ignore next 2 -- @preserve language pack failures fall back to plain text */
-          /* swallow — raw CodeMirror is the fallback */
-        });
+      reconfigureWhenLoaded(viewRef, languageCompartmentRef.current, loadLanguage, isCancelled);
     }
-
     if (loadExtraExtensions) {
       // filePath is read fresh here (not from the render-scope snapshot)
       // so the mount effect's dep list stays remount-free; the path a
       // format extension binds to is the one at editor-mount time.
-      void loadExtraExtensions({
-        tabId,
-        filePath:
-          useDocumentStore.getState().documents?.[tabId]?.filePath ?? null,
-        windowLabel: getCurrentWindowLabel(),
-      })
-        .then((extras) => {
-          /* v8 ignore next -- @preserve unmount race */
-          if (cancelled || !viewRef.current) return;
-          viewRef.current.dispatch({
-            effects: extrasCompartmentRef.current.reconfigure(extras),
-          });
-        })
-        .catch(() => {
-          /* v8 ignore next 2 -- @preserve extras are enhancements; the base editor works without them */
-          /* swallow — base editor remains functional */
-        });
+      const filePath = useDocumentStore.getState().documents?.[tabId]?.filePath ?? null;
+      const load = () => loadExtraExtensions({ tabId, filePath, windowLabel: getCurrentWindowLabel() });
+      reconfigureWhenLoaded(viewRef, extrasCompartmentRef.current, load, isCancelled);
     }
 
     return () => {
@@ -229,7 +207,9 @@ export function SourcePane({
 
     // Callbacks read via refs (see H3 comment above) are intentionally excluded
     // from this dep array so the editor doesn't remount on every parent render.
-  }, [tabId, formatId, readOnly, validator, loadLanguage, loadExtraExtensions]);
+    // focusedRef is a stable ref and trustedLint is memoized on the format's
+    // rule list, so neither remounts it.
+  }, [tabId, formatId, readOnly, validator, loadLanguage, loadExtraExtensions, focusedRef, trustedLint]);
 
   // Reconfigure the line-number gutter when the toggle flips. Kept out of
   // the mount effect so toggling never tears down the view (preserves undo

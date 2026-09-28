@@ -21,7 +21,7 @@ import { ruleTitle } from "@/lib/lintEngine";
 import "./validation-gutter.css";
 
 export interface ValidationGutterProps {
-  diagnostics: ValidationDiagnostic[];
+  diagnostics: readonly ValidationDiagnostic[];
   onJump?: (line: number, column: number) => void;
 }
 

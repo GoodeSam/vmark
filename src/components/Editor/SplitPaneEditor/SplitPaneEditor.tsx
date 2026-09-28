@@ -20,7 +20,7 @@
 // source. The split fraction is held in component state and clamped to
 // [0.2, 0.8].
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { SourcePane } from "./SourcePane";
@@ -32,6 +32,8 @@ import { SplitPaneFrame } from "./SplitPaneFrame";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useHtmlTrustStore } from "@/stores/htmlTrustStore";
+import { presentDiagnostics } from "@/lib/formats/diagnosticPresentation";
 import { imeToast as toast } from "@/services/ime/imeToast";
 import {
   isSplitViewMode,
@@ -93,6 +95,14 @@ export function SplitPaneEditor({ tabId, formatConfig }: SplitPaneEditorProps) {
   );
   const filePath = useDocumentStore(
     (state) => state.documents?.[tabId]?.filePath ?? null,
+  );
+  // The list presents findings through the same trust-aware mapping as
+  // CodeMirror's lint (lib/formats/diagnosticPresentation.ts); grant and path
+  // are both reactive, so Save As re-presents them too.
+  const trusted = useHtmlTrustStore((s) => s.tokenFor(filePath) !== null);
+  const shownDiagnostics = useMemo(
+    () => presentDiagnostics(diagnostics, formatConfig.infoWhenTrusted, trusted),
+    [diagnostics, formatConfig.infoWhenTrusted, trusted],
   );
   // WI-1A.13 — an explicit schema choice (set via setTabActiveSchemaId, and
   // restored verbatim by hot-exit so the pick survives a restart) outranks the
@@ -228,8 +238,8 @@ export function SplitPaneEditor({ tabId, formatConfig }: SplitPaneEditorProps) {
               onJumpHandleReady={handleJumpHandleReady}
               editingEnabled={editingEnabled}
             />
-            {diagnostics.length > 0 && (
-              <ValidationGutter diagnostics={diagnostics} onJump={handleJump} />
+            {shownDiagnostics.length > 0 && (
+              <ValidationGutter diagnostics={shownDiagnostics} onJump={handleJump} />
             )}
           </>
         ) : undefined
