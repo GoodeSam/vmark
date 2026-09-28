@@ -1,4 +1,4 @@
-
+import { guideSidebar } from "./guideSidebar";
 
 export const ko = {
   label: "한국어",
@@ -12,144 +12,56 @@ export const ko = {
     ],
 
     sidebar: {
-      "/ko/guide/": [
-        {
-          text: "가이드",
-          items: [
-            { text: "시작하기", link: "/ko/guide/" },
-            { text: "지원 형식", link: "/ko/guide/formats" },
-            { text: "기능", link: "/ko/guide/features" },
-            { text: "대용량 파일", link: "/ko/guide/large-files" },
-            { text: "내보내기 및 인쇄", link: "/ko/guide/export" },
-            {
-              text: "키보드 단축키",
-              link: "/ko/guide/shortcuts",
-            },
-            {
-              text: "스마트 탭 내비게이션",
-              link: "/ko/guide/tab-navigation",
-            },
-            {
-              text: "멀티 커서 편집",
-              link: "/ko/guide/multi-cursor",
-            },
-            {
-              text: "인라인 팝업",
-              link: "/ko/guide/popups",
-            },
-            {
-              text: "Mermaid 다이어그램",
-              link: "/ko/guide/mermaid",
-            },
-            {
-              text: "Graphviz 다이어그램",
-              link: "/ko/guide/graphviz",
-            },
-            {
-              text: "Markmap 마인드맵",
-              link: "/ko/guide/markmap",
-            },
-            {
-              text: "GitHub Actions 워크플로 뷰어",
-              link: "/ko/guide/workflow-viewer",
-            },
-            { text: "SVG 그래픽", link: "/ko/guide/svg" },
-            {
-              text: "미디어 (비디오/오디오)",
-              link: "/ko/guide/media-support",
-            },
-            {
-              text: "클라우드 호스팅 이미지",
-              link: "/ko/guide/cloud-images",
-            },
-            {
-              text: "통합 터미널",
-              link: "/ko/guide/terminal",
-            },
-            { text: "내장 브라우저", link: "/ko/guide/browser" },
-            { text: "지식 베이스 및 Slidev", link: "/ko/guide/knowledge-base" },
-            {
-              text: "워크스페이스 관리",
-              link: "/ko/guide/workspace-management",
-            },
-            { text: "워크스페이스 레일", link: "/ko/guide/workspace-rail" },
-            {
-              text: "CJK 서식",
-              link: "/ko/guide/cjk-formatting",
-            },
-            { text: "AI 지니", link: "/ko/guide/ai-genies" },
-            {
-              text: "정합성 및 내역 뷰",
-              link: "/ko/guide/coherence",
-            },
-            { text: "지니 워크플로", link: "/ko/guide/workflows" },
-            {
-              text: "워크플로 지니",
-              link: "/ko/guide/workflow-genies",
-            },
-            {
-              text: "AI 제공업체",
-              link: "/ko/guide/ai-providers",
-            },
-            { text: "MCP 설정", link: "/ko/guide/mcp-setup" },
-            {
-              text: "MCP 도구 참조",
-              link: "/ko/guide/mcp-tools",
-            },
-            { text: "Markdown 린트", link: "/ko/guide/lint" },
-            { text: "링크 검사", link: "/ko/guide/link-check" },
-            { text: "설정", link: "/ko/guide/settings" },
-            { text: "문제 해결", link: "/ko/guide/troubleshooting" },
-            { text: "개인정보 보호", link: "/ko/guide/privacy" },
-            { text: "라이선스", link: "/ko/guide/license" },
-          ],
+      "/ko/guide/": guideSidebar("/ko", {
+        sections: { guide: "가이드", usersAsDevelopers: "개발자로서의 사용자" },
+        pages: {
+          "": "시작하기",
+          "formats": "지원 형식",
+          "features": "기능",
+          "large-files": "대용량 파일",
+          "export": "내보내기 및 인쇄",
+          "shortcuts": "키보드 단축키",
+          "tab-navigation": "스마트 탭 내비게이션",
+          "multi-cursor": "멀티 커서 편집",
+          "popups": "인라인 팝업",
+          "mermaid": "Mermaid 다이어그램",
+          "graphviz": "Graphviz 다이어그램",
+          "markmap": "Markmap 마인드맵",
+          "workflow-viewer": "GitHub Actions 워크플로 뷰어",
+          "svg": "SVG 그래픽",
+          "media-support": "미디어 (비디오/오디오)",
+          "cloud-images": "클라우드 호스팅 이미지",
+          "terminal": "통합 터미널",
+          "browser": "내장 브라우저",
+          "knowledge-base": "지식 베이스 및 Slidev",
+          "workspace-management": "워크스페이스 관리",
+          "workspace-rail": "워크스페이스 레일",
+          "cjk-formatting": "CJK 서식",
+          "ai-genies": "AI 지니",
+          "coherence": "정합성 및 내역 뷰",
+          "workflows": "지니 워크플로",
+          "workflow-genies": "워크플로 지니",
+          "ai-providers": "AI 제공업체",
+          "mcp-setup": "MCP 설정",
+          "mcp-tools": "MCP 도구 참조",
+          "lint": "Markdown 린트",
+          "link-check": "링크 검사",
+          "settings": "설정",
+          "troubleshooting": "문제 해결",
+          "privacy": "개인정보 보호",
+          "license": "라이선스",
+          "users-as-developers/": "개요",
+          "users-as-developers/why-i-built-vmark": "VMark를 만든 이유",
+          "users-as-developers/what-are-indispensable": "AI가 대체할 수 없는 5가지 기술",
+          "users-as-developers/why-expensive-models-are-cheaper": "비싼 모델이 더 저렴한 이유",
+          "users-as-developers/subscription-vs-api": "구독 vs API 요금",
+          "users-as-developers/prompt-refinement": "영어 프롬프트가 더 효과적인 이유",
+          "users-as-developers/cross-model-verification": "교차 모델 검증",
+          "users-as-developers/why-issues-not-prs": "PR이 아닌 Issue를 올리는 이유",
+          "users-as-developers/cost-evaluation": "비용 및 공수 평가",
+          "users-as-developers/plugins-as-infrastructure": "인프라로서의 플러그인",
         },
-        {
-          text: "개발자로서의 사용자",
-          items: [
-            {
-              text: "개요",
-              link: "/ko/guide/users-as-developers/",
-            },
-            {
-              text: "VMark를 만든 이유",
-              link: "/ko/guide/users-as-developers/why-i-built-vmark",
-            },
-            {
-              text: "AI가 대체할 수 없는 5가지 기술",
-              link: "/ko/guide/users-as-developers/what-are-indispensable",
-            },
-            {
-              text: "비싼 모델이 더 저렴한 이유",
-              link: "/ko/guide/users-as-developers/why-expensive-models-are-cheaper",
-            },
-            {
-              text: "구독 vs API 요금",
-              link: "/ko/guide/users-as-developers/subscription-vs-api",
-            },
-            {
-              text: "영어 프롬프트가 더 효과적인 이유",
-              link: "/ko/guide/users-as-developers/prompt-refinement",
-            },
-            {
-              text: "교차 모델 검증",
-              link: "/ko/guide/users-as-developers/cross-model-verification",
-            },
-            {
-              text: "PR이 아닌 Issue를 올리는 이유",
-              link: "/ko/guide/users-as-developers/why-issues-not-prs",
-            },
-            {
-              text: "비용 및 공수 평가",
-              link: "/ko/guide/users-as-developers/cost-evaluation",
-            },
-            {
-              text: "인프라로서의 플러그인",
-              link: "/ko/guide/users-as-developers/plugins-as-infrastructure",
-            },
-          ],
-        },
-      ],
+      }),
     },
 
     footer: {

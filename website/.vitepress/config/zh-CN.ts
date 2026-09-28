@@ -1,4 +1,4 @@
-
+import { guideSidebar } from "./guideSidebar";
 
 export const zhCN = {
   label: "简体中文",
@@ -12,132 +12,56 @@ export const zhCN = {
     ],
 
     sidebar: {
-      "/zh-CN/guide/": [
-        {
-          text: "指南",
-          items: [
-            { text: "快速上手", link: "/zh-CN/guide/" },
-            { text: "支持的格式", link: "/zh-CN/guide/formats" },
-            { text: "功能特性", link: "/zh-CN/guide/features" },
-            { text: "大文件", link: "/zh-CN/guide/large-files" },
-            { text: "导出与打印", link: "/zh-CN/guide/export" },
-            { text: "键盘快捷键", link: "/zh-CN/guide/shortcuts" },
-            {
-              text: "智能标签页导航",
-              link: "/zh-CN/guide/tab-navigation",
-            },
-            {
-              text: "多光标编辑",
-              link: "/zh-CN/guide/multi-cursor",
-            },
-            { text: "内联弹窗", link: "/zh-CN/guide/popups" },
-            {
-              text: "Mermaid 图表",
-              link: "/zh-CN/guide/mermaid",
-            },
-            {
-              text: "Graphviz 图表",
-              link: "/zh-CN/guide/graphviz",
-            },
-            {
-              text: "Markmap 思维导图",
-              link: "/zh-CN/guide/markmap",
-            },
-            {
-              text: "GitHub Actions 工作流查看器",
-              link: "/zh-CN/guide/workflow-viewer",
-            },
-            { text: "SVG 图形", link: "/zh-CN/guide/svg" },
-            {
-              text: "媒体（视频/音频）",
-              link: "/zh-CN/guide/media-support",
-            },
-            {
-              text: "云端托管图片",
-              link: "/zh-CN/guide/cloud-images",
-            },
-            {
-              text: "集成终端",
-              link: "/zh-CN/guide/terminal",
-            },
-            { text: "内置浏览器", link: "/zh-CN/guide/browser" },
-            { text: "知识库与 Slidev", link: "/zh-CN/guide/knowledge-base" },
-            {
-              text: "工作区管理",
-              link: "/zh-CN/guide/workspace-management",
-            },
-            { text: "工作区导轨", link: "/zh-CN/guide/workspace-rail" },
-            {
-              text: "中日韩排版",
-              link: "/zh-CN/guide/cjk-formatting",
-            },
-            { text: "AI 精灵", link: "/zh-CN/guide/ai-genies" },
-            { text: "一致性与明细视图", link: "/zh-CN/guide/coherence" },
-            { text: "Genie 工作流", link: "/zh-CN/guide/workflows" },
-            { text: "工作流精灵", link: "/zh-CN/guide/workflow-genies" },
-            {
-              text: "AI 服务商",
-              link: "/zh-CN/guide/ai-providers",
-            },
-            { text: "MCP 设置", link: "/zh-CN/guide/mcp-setup" },
-            {
-              text: "MCP 工具参考",
-              link: "/zh-CN/guide/mcp-tools",
-            },
-            { text: "Markdown 检查", link: "/zh-CN/guide/lint" },
-            { text: "链接检查", link: "/zh-CN/guide/link-check" },
-            { text: "设置", link: "/zh-CN/guide/settings" },
-            { text: "故障排除", link: "/zh-CN/guide/troubleshooting" },
-            { text: "隐私政策", link: "/zh-CN/guide/privacy" },
-            { text: "许可证", link: "/zh-CN/guide/license" },
-          ],
+      "/zh-CN/guide/": guideSidebar("/zh-CN", {
+        sections: { guide: "指南", usersAsDevelopers: "用户即开发者" },
+        pages: {
+          "": "快速上手",
+          "formats": "支持的格式",
+          "features": "功能特性",
+          "large-files": "大文件",
+          "export": "导出与打印",
+          "shortcuts": "键盘快捷键",
+          "tab-navigation": "智能标签页导航",
+          "multi-cursor": "多光标编辑",
+          "popups": "内联弹窗",
+          "mermaid": "Mermaid 图表",
+          "graphviz": "Graphviz 图表",
+          "markmap": "Markmap 思维导图",
+          "workflow-viewer": "GitHub Actions 工作流查看器",
+          "svg": "SVG 图形",
+          "media-support": "媒体（视频/音频）",
+          "cloud-images": "云端托管图片",
+          "terminal": "集成终端",
+          "browser": "内置浏览器",
+          "knowledge-base": "知识库与 Slidev",
+          "workspace-management": "工作区管理",
+          "workspace-rail": "工作区导轨",
+          "cjk-formatting": "中日韩排版",
+          "ai-genies": "AI 精灵",
+          "coherence": "一致性与明细视图",
+          "workflows": "Genie 工作流",
+          "workflow-genies": "工作流精灵",
+          "ai-providers": "AI 服务商",
+          "mcp-setup": "MCP 设置",
+          "mcp-tools": "MCP 工具参考",
+          "lint": "Markdown 检查",
+          "link-check": "链接检查",
+          "settings": "设置",
+          "troubleshooting": "故障排除",
+          "privacy": "隐私政策",
+          "license": "许可证",
+          "users-as-developers/": "概览",
+          "users-as-developers/why-i-built-vmark": "我为什么开发 VMark",
+          "users-as-developers/what-are-indispensable": "AI 无法替代的五项技能",
+          "users-as-developers/why-expensive-models-are-cheaper": "为什么贵的模型反而更便宜",
+          "users-as-developers/subscription-vs-api": "订阅 vs API 定价",
+          "users-as-developers/prompt-refinement": "英文提示词效果更好",
+          "users-as-developers/cross-model-verification": "跨模型验证",
+          "users-as-developers/why-issues-not-prs": "为什么提 Issue 而非 PR",
+          "users-as-developers/cost-evaluation": "成本与工作量评估",
+          "users-as-developers/plugins-as-infrastructure": "插件即基础设施",
         },
-        {
-          text: "用户即开发者",
-          items: [
-            {
-              text: "概览",
-              link: "/zh-CN/guide/users-as-developers/",
-            },
-            {
-              text: "我为什么开发 VMark",
-              link: "/zh-CN/guide/users-as-developers/why-i-built-vmark",
-            },
-            {
-              text: "AI 无法替代的五项技能",
-              link: "/zh-CN/guide/users-as-developers/what-are-indispensable",
-            },
-            {
-              text: "为什么贵的模型反而更便宜",
-              link: "/zh-CN/guide/users-as-developers/why-expensive-models-are-cheaper",
-            },
-            {
-              text: "订阅 vs API 定价",
-              link: "/zh-CN/guide/users-as-developers/subscription-vs-api",
-            },
-            {
-              text: "英文提示词效果更好",
-              link: "/zh-CN/guide/users-as-developers/prompt-refinement",
-            },
-            {
-              text: "跨模型验证",
-              link: "/zh-CN/guide/users-as-developers/cross-model-verification",
-            },
-            {
-              text: "为什么提 Issue 而非 PR",
-              link: "/zh-CN/guide/users-as-developers/why-issues-not-prs",
-            },
-            {
-              text: "成本与工作量评估",
-              link: "/zh-CN/guide/users-as-developers/cost-evaluation",
-            },
-            {
-              text: "插件即基础设施",
-              link: "/zh-CN/guide/users-as-developers/plugins-as-infrastructure",
-            },
-          ],
-        },
-      ],
+      }),
     },
 
     footer: {

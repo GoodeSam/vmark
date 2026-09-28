@@ -1,4 +1,4 @@
-
+import { guideSidebar } from "./guideSidebar";
 
 export const fr = {
   label: "Français",
@@ -12,156 +12,56 @@ export const fr = {
     ],
 
     sidebar: {
-      "/fr/guide/": [
-        {
-          text: "Guide",
-          items: [
-            { text: "Démarrage rapide", link: "/fr/guide/" },
-            { text: "Formats pris en charge", link: "/fr/guide/formats" },
-            { text: "Fonctionnalités", link: "/fr/guide/features" },
-            { text: "Fichiers volumineux", link: "/fr/guide/large-files" },
-            {
-              text: "Exportation et impression",
-              link: "/fr/guide/export",
-            },
-            {
-              text: "Raccourcis clavier",
-              link: "/fr/guide/shortcuts",
-            },
-            {
-              text: "Navigation intelligente par onglets",
-              link: "/fr/guide/tab-navigation",
-            },
-            {
-              text: "Édition multicurseur",
-              link: "/fr/guide/multi-cursor",
-            },
-            {
-              text: "Popups en ligne",
-              link: "/fr/guide/popups",
-            },
-            {
-              text: "Diagrammes Mermaid",
-              link: "/fr/guide/mermaid",
-            },
-            {
-              text: "Diagrammes Graphviz",
-              link: "/fr/guide/graphviz",
-            },
-            {
-              text: "Cartes mentales Markmap",
-              link: "/fr/guide/markmap",
-            },
-            {
-              text: "Visualiseur de workflows GitHub Actions",
-              link: "/fr/guide/workflow-viewer",
-            },
-            { text: "Graphiques SVG", link: "/fr/guide/svg" },
-            {
-              text: "Médias (vidéo/audio)",
-              link: "/fr/guide/media-support",
-            },
-            {
-              text: "Images hébergées dans le cloud",
-              link: "/fr/guide/cloud-images",
-            },
-            {
-              text: "Terminal intégré",
-              link: "/fr/guide/terminal",
-            },
-            { text: "Navigateur intégré", link: "/fr/guide/browser" },
-            {
-              text: "Base de connaissances et Slidev",
-              link: "/fr/guide/knowledge-base",
-            },
-            {
-              text: "Gestion de l'espace de travail",
-              link: "/fr/guide/workspace-management",
-            },
-            {
-              text: "Barre des espaces de travail",
-              link: "/fr/guide/workspace-rail",
-            },
-            {
-              text: "Formatage CJK",
-              link: "/fr/guide/cjk-formatting",
-            },
-            { text: "AI Genies", link: "/fr/guide/ai-genies" },
-            {
-              text: "Cohérence et vue Détail",
-              link: "/fr/guide/coherence",
-            },
-            { text: "Workflows Genie", link: "/fr/guide/workflows" },
-            {
-              text: "Genies de workflow",
-              link: "/fr/guide/workflow-genies",
-            },
-            {
-              text: "Fournisseurs d'IA",
-              link: "/fr/guide/ai-providers",
-            },
-            {
-              text: "Configuration MCP",
-              link: "/fr/guide/mcp-setup",
-            },
-            {
-              text: "Référence des outils MCP",
-              link: "/fr/guide/mcp-tools",
-            },
-            { text: "Lint Markdown", link: "/fr/guide/lint" },
-            { text: "Vérification des liens", link: "/fr/guide/link-check" },
-            { text: "Paramètres", link: "/fr/guide/settings" },
-            { text: "Dépannage", link: "/fr/guide/troubleshooting" },
-            { text: "Confidentialité", link: "/fr/guide/privacy" },
-            { text: "Licence", link: "/fr/guide/license" },
-          ],
+      "/fr/guide/": guideSidebar("/fr", {
+        sections: { guide: "Guide", usersAsDevelopers: "Utilisateurs développeurs" },
+        pages: {
+          "": "Démarrage rapide",
+          "formats": "Formats pris en charge",
+          "features": "Fonctionnalités",
+          "large-files": "Fichiers volumineux",
+          "export": "Exportation et impression",
+          "shortcuts": "Raccourcis clavier",
+          "tab-navigation": "Navigation intelligente par onglets",
+          "multi-cursor": "Édition multicurseur",
+          "popups": "Popups en ligne",
+          "mermaid": "Diagrammes Mermaid",
+          "graphviz": "Diagrammes Graphviz",
+          "markmap": "Cartes mentales Markmap",
+          "workflow-viewer": "Visualiseur de workflows GitHub Actions",
+          "svg": "Graphiques SVG",
+          "media-support": "Médias (vidéo/audio)",
+          "cloud-images": "Images hébergées dans le cloud",
+          "terminal": "Terminal intégré",
+          "browser": "Navigateur intégré",
+          "knowledge-base": "Base de connaissances et Slidev",
+          "workspace-management": "Gestion de l'espace de travail",
+          "workspace-rail": "Barre des espaces de travail",
+          "cjk-formatting": "Formatage CJK",
+          "ai-genies": "AI Genies",
+          "coherence": "Cohérence et vue Détail",
+          "workflows": "Workflows Genie",
+          "workflow-genies": "Genies de workflow",
+          "ai-providers": "Fournisseurs d'IA",
+          "mcp-setup": "Configuration MCP",
+          "mcp-tools": "Référence des outils MCP",
+          "lint": "Lint Markdown",
+          "link-check": "Vérification des liens",
+          "settings": "Paramètres",
+          "troubleshooting": "Dépannage",
+          "privacy": "Confidentialité",
+          "license": "Licence",
+          "users-as-developers/": "Vue d'ensemble",
+          "users-as-developers/why-i-built-vmark": "Pourquoi j'ai créé VMark",
+          "users-as-developers/what-are-indispensable": "Cinq compétences que l'IA ne peut remplacer",
+          "users-as-developers/why-expensive-models-are-cheaper": "Pourquoi les modèles chers sont moins coûteux",
+          "users-as-developers/subscription-vs-api": "Abonnement vs tarification API",
+          "users-as-developers/prompt-refinement": "Les prompts en anglais fonctionnent mieux",
+          "users-as-developers/cross-model-verification": "Vérification inter-modèles",
+          "users-as-developers/why-issues-not-prs": "Pourquoi des Issues plutôt que des PRs",
+          "users-as-developers/cost-evaluation": "Évaluation des coûts et efforts",
+          "users-as-developers/plugins-as-infrastructure": "Les plugins comme infrastructure",
         },
-        {
-          text: "Utilisateurs développeurs",
-          items: [
-            {
-              text: "Vue d'ensemble",
-              link: "/fr/guide/users-as-developers/",
-            },
-            {
-              text: "Pourquoi j'ai créé VMark",
-              link: "/fr/guide/users-as-developers/why-i-built-vmark",
-            },
-            {
-              text: "Cinq compétences que l'IA ne peut remplacer",
-              link: "/fr/guide/users-as-developers/what-are-indispensable",
-            },
-            {
-              text: "Pourquoi les modèles chers sont moins coûteux",
-              link: "/fr/guide/users-as-developers/why-expensive-models-are-cheaper",
-            },
-            {
-              text: "Abonnement vs tarification API",
-              link: "/fr/guide/users-as-developers/subscription-vs-api",
-            },
-            {
-              text: "Les prompts en anglais fonctionnent mieux",
-              link: "/fr/guide/users-as-developers/prompt-refinement",
-            },
-            {
-              text: "Vérification inter-modèles",
-              link: "/fr/guide/users-as-developers/cross-model-verification",
-            },
-            {
-              text: "Pourquoi des Issues plutôt que des PRs",
-              link: "/fr/guide/users-as-developers/why-issues-not-prs",
-            },
-            {
-              text: "Évaluation des coûts et efforts",
-              link: "/fr/guide/users-as-developers/cost-evaluation",
-            },
-            {
-              text: "Les plugins comme infrastructure",
-              link: "/fr/guide/users-as-developers/plugins-as-infrastructure",
-            },
-          ],
-        },
-      ],
+      }),
     },
 
     footer: {
