@@ -21,7 +21,7 @@ import { detectSourceLanguage } from "@/lib/formats/sourceLanguage";
 // Side-effect import: ships the `.cm-hl-*` color rules (scoped to
 // `.source-editor`/`.source-pane`) used by the shared source theme.
 import "@/plugins/codemirror/source-syntax.css";
-import { buildSourcePaneExtensions } from "./sourcePaneExtensions";
+import { buildSourcePaneExtensions, reconfigureWhenLoaded } from "./sourcePaneExtensions";
 import type {
   FormatConfig,
   ValidationDiagnostic,
@@ -182,42 +182,17 @@ export function SourcePane({
     const releaseActiveView = bindSplitSourceView(view, tabId, focusedRef.current);
 
     let cancelled = false;
+    const isCancelled = () => cancelled;
     if (loadLanguage) {
-      void loadLanguage()
-        .then((lang) => {
-          /* v8 ignore next -- @preserve unmount race */
-          if (cancelled || !viewRef.current) return;
-          viewRef.current.dispatch({
-            effects: languageCompartmentRef.current.reconfigure(lang),
-          });
-        })
-        .catch(() => {
-          /* v8 ignore next 2 -- @preserve language pack failures fall back to plain text */
-          /* swallow — raw CodeMirror is the fallback */
-        });
+      reconfigureWhenLoaded(viewRef, languageCompartmentRef.current, loadLanguage, isCancelled);
     }
-
     if (loadExtraExtensions) {
       // filePath is read fresh here (not from the render-scope snapshot)
       // so the mount effect's dep list stays remount-free; the path a
       // format extension binds to is the one at editor-mount time.
-      void loadExtraExtensions({
-        tabId,
-        filePath:
-          useDocumentStore.getState().documents?.[tabId]?.filePath ?? null,
-        windowLabel: getCurrentWindowLabel(),
-      })
-        .then((extras) => {
-          /* v8 ignore next -- @preserve unmount race */
-          if (cancelled || !viewRef.current) return;
-          viewRef.current.dispatch({
-            effects: extrasCompartmentRef.current.reconfigure(extras),
-          });
-        })
-        .catch(() => {
-          /* v8 ignore next 2 -- @preserve extras are enhancements; the base editor works without them */
-          /* swallow — base editor remains functional */
-        });
+      const filePath = useDocumentStore.getState().documents?.[tabId]?.filePath ?? null;
+      const load = () => loadExtraExtensions({ tabId, filePath, windowLabel: getCurrentWindowLabel() });
+      reconfigureWhenLoaded(viewRef, extrasCompartmentRef.current, load, isCancelled);
     }
 
     return () => {

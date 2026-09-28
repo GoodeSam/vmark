@@ -3,7 +3,8 @@
  *
  * Purpose: Pure builders for SourcePane's CodeMirror wiring — the lint
  * extension (format.validator → gutter + hoisted diagnostics), the base
- * extension list, and the diagnostic-to-CodeMirror mapping. Extracted from
+ * extension list, the diagnostic-to-CodeMirror mapping, and the lazy
+ * compartment loader (language pack, per-format extras). Extracted from
  * SourcePane so its mount effect is a thin assembler. No React, no DOM —
  * unit-testable in isolation.
  *
@@ -26,6 +27,29 @@ import type { FormatConfig, ValidationDiagnostic } from "@/lib/formats/types";
 /** Map a format ValidationDiagnostic to a CodeMirror Diagnostic, clamping
  *  line/column to the doc's real range so an out-of-range report can't throw
  *  inside doc.line() and break linting. */
+/**
+ * Reconfigure `compartment` with what `load` resolves to — a lazily loaded
+ * language pack or per-format extras — unless the pane unmounted first. A
+ * failed load is swallowed: the base editor works without it.
+ */
+export function reconfigureWhenLoaded(
+  viewRef: { readonly current: EditorView | null },
+  compartment: Compartment,
+  load: () => Promise<Extension>,
+  isCancelled: () => boolean,
+): void {
+  void load()
+    .then((extension) => {
+      /* v8 ignore next -- @preserve unmount race */
+      if (isCancelled() || !viewRef.current) return;
+      viewRef.current.dispatch({ effects: compartment.reconfigure(extension) });
+    })
+    .catch(() => {
+      /* v8 ignore next 2 -- @preserve a failed pack falls back to the plain editor */
+      /* swallow — the base editor remains functional */
+    });
+}
+
 export function diagnosticToCodemirror(
   doc: {
     line: (n: number) => { from: number; to: number; length: number };
