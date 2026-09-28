@@ -208,6 +208,8 @@ impl Drop for Locked {
 mod list_protection {
     use std::time::Duration;
 
+    // Only the macOS assertion reads the fs scope; Linux clippy flags it otherwise.
+    #[cfg(target_os = "macos")]
     use tauri_plugin_fs::FsExt;
 
     use crate::command_error::ErrorCode;
