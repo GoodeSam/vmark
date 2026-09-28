@@ -72,7 +72,10 @@ function rootWith({ knip = 75, mergeDrops = 2, commandErrors = 99, mocks = 274, 
   write(
     root,
     "scripts/bespoke-buttons-baseline.json",
-    JSON.stringify({ maxBespokeButtonClasses: named, maxStyledButtonClasses: styled }),
+    JSON.stringify({
+      bespokeButtonClasses: Array.from({ length: named }, (_, i) => `named-${i}`),
+      styledButtonClasses: Array.from({ length: styled }, (_, i) => `styled-${i}`),
+    }),
   );
   return root;
 }
@@ -127,6 +130,7 @@ describe("a phase is done when the real baseline says so (ADR-1)", () => {
     expect(run(rootWith({}), "4").status).toBe(1);
     expect(run(rootWith({ named: 80, styled: 70 }), "4").status, "lowered").toBe(0);
   });
+
 });
 
 describe("partial progress does not round up", () => {

@@ -6,7 +6,7 @@ import {
   canonicalTriple,
   collectBespokeButtons,
   collectShapeDrift,
-  ratchetVerdict,
+  identityVerdict,
   resolveValue,
 } from "./check-bespoke-buttons.mjs";
 
@@ -138,37 +138,46 @@ describe("collectBespokeButtons — every class in the selector", () => {
 
 // Audit 20260815-163607 #8/#9. The CLI repeated this ratchet three times, once
 // per budget, and none of the branches were covered.
-describe("ratchetVerdict", () => {
-  const base = { key: "maxThings", noun: "things" };
+describe("identityVerdict", () => {
+  const base = { key: "things", noun: "bespoke things", advice: "   Use .vm-btn." };
+  const found = (...pairs) => new Map(pairs);
 
-  it("holds when the count equals the budget", () => {
-    expect(ratchetVerdict({ ...base, limit: 5, actual: 5 })).toBeNull();
+  it("holds when the code has exactly the listed classes", () => {
+    expect(identityVerdict({ ...base, allowed: ["a", "b"], found: found(["a", "x.css"], ["b", "y.css"]) })).toBeNull();
   });
 
-  it("fails OVER budget and refuses to suggest raising it", () => {
-    const v = ratchetVerdict({ ...base, limit: 5, actual: 6 });
+  // The count ratchet this replaced read 37/37 after one button was deleted
+  // and another written: a swap is a new bespoke button, whatever the total.
+  it("fails a SWAP that keeps the count, naming the new class and its file", () => {
+    const v = identityVerdict({ ...base, allowed: ["a", "b"], found: found(["a", "x.css"], ["c", "z.css"]) });
     expect(v.kind).toBe("over");
-    expect(v.message).toMatch(/6 things, budget is 5/);
-    expect(v.message).toMatch(/Do NOT raise the budget/);
+    expect(v.message).toContain("c  (z.css)");
+    expect(v.message).toMatch(/Do NOT add/);
+    expect(v.message).toContain("b");
   });
 
-  it("fails STALE below budget and names the number to write", () => {
-    const v = ratchetVerdict({ ...base, limit: 5, actual: 3 });
+  it("fails STALE when a listed class is gone, naming what to delete", () => {
+    const v = identityVerdict({ ...base, allowed: ["a", "b"], found: found(["a", "x.css"]) });
     expect(v.kind).toBe("stale");
-    expect(v.message).toMatch(/Lower `maxThings` to 3/);
+    expect(v.message).toMatch(/delete/i);
+    expect(v.message).toContain("b");
   });
 
-  // Fail closed: a missing or corrupted budget must not read as "held".
-  it.each([undefined, null, "5", 5.5, NaN])("rejects a non-integer budget (%s)", (limit) => {
-    const v = ratchetVerdict({ ...base, limit, actual: 5 });
+  it("formats each finding with the caller's describer", () => {
+    const v = identityVerdict({
+      ...base,
+      allowed: [],
+      found: found(["c", { file: "z.css", diffs: ["padding"] }]),
+      describe: (name, info) => `  .${name}  (${info.file}) ${info.diffs.join(",")}`,
+    });
+    expect(v.message).toContain(".c  (z.css) padding");
+  });
+
+  // Fail closed: a missing or corrupted list must not read as "held".
+  it.each([[undefined], [null], ["a"], [5], [[1]], [[""]], [["a", "a"]]])("rejects an invalid list (%j)", (allowed) => {
+    const v = identityVerdict({ ...base, allowed, found: found() });
     expect(v.kind).toBe("invalid");
-    expect(v.message).toMatch(/needs an integer `maxThings`/);
-  });
-
-  it("includes the caller's detail in the over-budget message only", () => {
-    const detail = "  .some-btn  (a.css)";
-    expect(ratchetVerdict({ ...base, limit: 1, actual: 2, overDetail: detail }).message).toContain(detail);
-    expect(ratchetVerdict({ ...base, limit: 3, actual: 2, overDetail: detail }).message).not.toContain(detail);
+    expect(v.message).toMatch(/`things`/);
   });
 });
 

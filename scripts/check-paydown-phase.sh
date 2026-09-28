@@ -150,8 +150,8 @@ phase_4() {
   # is BELOW the starting measurement. A phase that passed at 88/80 would
   # certify having done nothing.
   local named styled
-  named=$(count scripts/bespoke-buttons-baseline.json scalar maxBespokeButtonClasses)
-  styled=$(count scripts/bespoke-buttons-baseline.json scalar maxStyledButtonClasses)
+  named=$(count scripts/bespoke-buttons-baseline.json records bespokeButtonClasses)
+  styled=$(count scripts/bespoke-buttons-baseline.json records styledButtonClasses)
   at_most "bespoke button classes below the 88 starting point (WI-DP4.1)" "$named" 87
   at_most "styled button classes below the 80 starting point (WI-DP4.1)"  "$styled" 79
 }
