@@ -195,6 +195,13 @@
     "zustand": "^5.0.15"
   },
   "pnpm": {
+    "packageExtensions": {
+      "codemirror-lang-mermaid@0.5.0": {
+        "dependencies": {
+          "@lezer/common": "^1.2.0"
+        }
+      }
+    },
     "overrides": {
       "tar": ">=7.5.19 <8",
       "linkify-it": ">=5.0.2 <6",

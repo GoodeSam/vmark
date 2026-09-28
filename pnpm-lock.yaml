@@ -30,6 +30,8 @@ overrides:
   baseline-browser-mapping: '>=2.11.0 <3'
   smol-toml: '>=1.7.1 <2'
 
+packageExtensionsChecksum: sha256-j6KzacfxtzA89grrCZAX937S1T/9wEep8PH4pJAbI1Q=
+
 patchedDependencies:
   '@xterm/addon-webgl@0.19.0':
     hash: 2a8ed9defc9d2ed468561614c2b996a909092e55c4b115dc18189a233334f9a5
@@ -14859,6 +14861,7 @@ snapshots:
   codemirror-lang-mermaid@0.5.0:
     dependencies:
       '@codemirror/language': 6.12.4
+      '@lezer/common': 1.5.3
       '@lezer/highlight': 1.2.4
       '@lezer/lr': 1.4.10
 
