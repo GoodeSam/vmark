@@ -223,6 +223,18 @@ has_test_case no.test.ts; echo "after=$?"`;
     expect(v.after).toBe(1);
   });
 
+  it("never makes a caller's own `wait` block on the server", () => {
+    // bash 5.2 (Ubuntu CI) has a bare `wait` also wait for a LIVE process
+    // substitution; a server started as one never exits while the shell
+    // lives, so a DoD script that waited on its own jobs hung forever.
+    const body = `has_test_case yes.test.ts; echo "warm=$?"
+( true ) &
+wait; echo "waited=0"
+has_test_case no.test.ts; echo "after=$?"`;
+    const v = verdicts(runBody(body, { cwd: root }).out);
+    expect(v).toEqual({ warm: 0, waited: 0, after: 1 });
+  });
+
   it("answers correctly from a working directory whose name holds a carriage return, and stays in step afterwards", () => {
     const odd = path.join(root, "a\rb");
     mkdirSync(odd, { recursive: true });

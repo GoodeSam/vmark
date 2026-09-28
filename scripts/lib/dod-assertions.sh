@@ -133,15 +133,21 @@ _dod_start() {
   # FIFO: on macOS node never sees end-of-file on a FIFO stdin, so a FIFO-fed
   # server outlived every shell that started it. Over a pipe, the shell's exit
   # closes the descriptor and the server ends with it.
-  eval "exec ${in}> >(exec node \"\$DOD_SYNTAX\" --serve >\"\$d/out\" 2>/dev/null)"
-  _DOD_PID=$!; _DOD_IN="$in"
+  # node is BACKGROUNDED inside the substitution, which then exits at once:
+  # bash 5.2 has a bare `wait` also wait for a live process substitution, so a
+  # server running as one hung any caller that waited on its own jobs. `<&0`
+  # keeps the pipe as node's stdin (a background job would get /dev/null).
+  # Its pid is written beside the FIFO; the answered ping below proves node
+  # started, loaded and replied, long after that write.
+  eval "exec ${in}> >(node \"\$DOD_SYNTAX\" --serve <&0 >\"\$d/out\" 2>/dev/null & echo \$! >\"\$d/pid\")"
+  _DOD_IN="$in"
   eval "exec ${out}<\"\$d/out\""
   _DOD_OUT="$out"
-  rm -rf "$d"
   if ( printf '/\x1f--ping\n' ) >&"$_DOD_IN" 2>/dev/null && _dod_read_reply 60 && [[ "$_DOD_CODE" == 0 ]]; then
+    _DOD_PID="$(cat "$d/pid" 2>/dev/null)"; rm -rf "$d"
     _DOD_STATE=up; return 0
   fi
-  _dod_stop; return 1
+  rm -rf "$d"; _dod_stop; return 1
 }
 dod_syntax() {
   local a
