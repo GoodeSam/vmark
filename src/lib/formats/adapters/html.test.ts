@@ -373,3 +373,27 @@ describe("html adapter — event handlers in element context", () => {
     expect(rules(html)).toEqual(expected);
   });
 });
+
+// Codex's seventh review, resolved from WebKit's own sources: GlobalEventHandlers
+// and its partial mixins, DocumentAndElementEventHandlers, the historical table
+// in HTMLElement::eventNameForEventHandlerAttribute, WindowEventHandlers (+Gamepad)
+// for body/frameset, and SVGAnimationElement.
+describe("html adapter — event handlers as WebKit maps them", () => {
+  const rules = (html: string) => htmlValidator(html).map((d) => d.ruleId);
+  const H = "html/inline-handler";
+
+  it.each([
+    [`<body ongamepadconnected="a()" ongamepaddisconnected="b()"></body>`, [H, H]],
+    [
+      `<video onwebkitpresentationmodechanged="a()" onwebkitplaybacktargetavailabilitychanged="b()" onwebkitcurrentplaybacktargetiswirelesschanged="c()" onwebkitneedkey="d()"></video>`,
+      [H, H, H, H],
+    ],
+    [`<img src="x.gif" onbeforeload="a()" onload="b()">`, [H, H]],
+    [`<input type="search" onsearch="a()"><canvas oncontextlost="b()" oncontextrestored="c()"></canvas>`, []],
+    [`<video onfullscreenchange="a()" onfullscreenerror="b()" onwebkitfullscreenchange="c()" onwebkitfullscreenerror="d()"></video>`, [H, H]],
+    [`<svg><discard onbegin="a()" onend="b()" onrepeat="c()"/></svg>`, []],
+    [`<svg><set onbegin="a()"/><animateTransform onend="b()"/></svg>`, [H, H]],
+  ])("%s → %j", (html, expected) => {
+    expect(rules(html)).toEqual(expected);
+  });
+});

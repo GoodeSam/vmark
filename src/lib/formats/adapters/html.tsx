@@ -60,37 +60,47 @@ const SCRIPT_TYPES = new Set([
   "text/x-javascript", "text/x-ecmascript", "text/javascript1.0", "text/javascript1.1", "text/javascript1.2",
   "text/javascript1.3", "text/javascript1.4", "text/javascript1.5",
 ]);
-/** Event-handler attributes, by where the platform defines them. Any other
- *  `on*` attribute is just an attribute: reporting it as a handler would be
- *  false. The lists follow WebKit's; a platform event added later is not
- *  reported until it is listed here. */
+/** Event-handler attributes, taken from WebKit's sources: an `on*` attribute
+ *  not listed for its element is just an attribute, and reporting it as a
+ *  handler would be false. Refresh from those files when WebKit adds one. */
 const on = (events: string) => new Set(events.split(" ").map((event) => `on${event}`));
-/** Handlers every element accepts (GlobalEventHandlers and WebKit's own). */
+/** Every element: dom/GlobalEventHandlers.idl with its partial mixins
+ *  (+Selection, +PointerEvents, +CSSAnimations, +CSSTransitions),
+ *  DocumentAndElementEventHandlers.idl, and the historical table in
+ *  HTMLElement::eventNameForEventHandlerAttribute (html/HTMLElement.cpp). */
 const GLOBAL_HANDLERS = on(
-  "abort animationcancel animationend animationiteration animationstart auxclick beforecopy beforecut " +
-    "beforeinput beforematch beforepaste beforetoggle blur cancel canplay canplaythrough change click close " +
-    "command contentvisibilityautostatechange contextlost contextmenu contextrestored copy cuechange cut " +
-    "dblclick drag dragend dragenter dragleave dragover dragstart drop durationchange emptied ended error focus " +
-    "focusin focusout formdata fullscreenchange fullscreenerror gesturechange gestureend gesturestart " +
-    "gotpointercapture input invalid keydown keypress keyup load loadeddata loadedmetadata loadstart " +
-    "lostpointercapture mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup mousewheel paste " +
-    "pause play playing pointercancel pointerdown pointerenter pointerleave pointermove pointerout pointerover " +
-    "pointerup progress ratechange reset resize scroll scrollend search securitypolicyviolation seeked seeking " +
-    "select selectionchange selectstart slotchange stalled submit suspend timeupdate toggle touchcancel touchend " +
-    "touchmove touchstart transitioncancel transitionend transitionrun transitionstart volumechange waiting " +
-    "webkitanimationend webkitanimationiteration webkitanimationstart webkitfullscreenchange " +
-    "webkitfullscreenerror webkitmouseforcechanged webkitmouseforcedown webkitmouseforceup " +
-    "webkitmouseforcewillbegin webkittransitionend wheel",
+  // GlobalEventHandlers.idl
+  "abort auxclick beforeinput beforematch beforetoggle blur cancel canplay canplaythrough change click close " +
+    "command contentvisibilityautostatechange contextmenu copy cuechange cut dblclick drag dragend dragenter " +
+    "dragleave dragover dragstart drop durationchange emptied ended error focus formdata input invalid keydown " +
+    "keypress keyup load loadeddata loadedmetadata loadstart mousedown mouseenter mouseleave mousemove mouseout " +
+    "mouseover mouseup paste pause play playing progress ratechange reset resize scroll scrollend " +
+    "securitypolicyviolation seeked seeking select slotchange stalled submit suspend timeupdate toggle " +
+    "volumechange waiting webkitanimationend webkitanimationiteration webkitanimationstart webkittransitionend " +
+    "wheel mousewheel touchcancel touchend touchmove touchstart touchforcechange webkitmouseforcechanged " +
+    "webkitmouseforcedown webkitmouseforcewillbegin webkitmouseforceup " +
+    // partial mixins
+    "selectstart selectionchange gotpointercapture lostpointercapture pointerdown pointermove pointerup " +
+    "pointercancel pointerover pointerout pointerenter pointerleave animationstart animationiteration " +
+    "animationend animationcancel transitionrun transitionstart transitionend transitioncancel " +
+    // DocumentAndElementEventHandlers.idl
+    "beforecopy beforecut beforepaste " +
+    // HTMLElement.cpp historical table
+    "autocomplete autocompleteerror beforeload focusin focusout gesturechange gestureend gesturestart " +
+    "webkitbeginfullscreen webkitcurrentplaybacktargetiswirelesschanged webkitendfullscreen " +
+    "webkitfullscreenchange webkitfullscreenerror webkitkeyadded webkitkeyerror webkitkeymessage webkitneedkey " +
+    "webkitplaybacktargetavailabilitychanged webkitpresentationmodechanged",
 );
-/** Window handlers: they exist only on <body> and <frameset>, which forward them. */
+/** Only on <body> and <frameset>, which forward them to the window:
+ *  page/WindowEventHandlers.idl and Modules/gamepad/WindowEventHandlers+Gamepad.idl. */
 const WINDOW_HANDLERS = on(
-  "afterprint beforeprint beforeunload hashchange languagechange message messageerror offline online " +
-    "orientationchange pagehide pagereveal pageshow pageswap popstate rejectionhandled storage " +
-    "unhandledrejection unload",
+  "afterprint beforeprint beforeunload hashchange languagechange message messageerror offline online pagehide " +
+    "pagereveal pageshow pageswap popstate rejectionhandled storage unhandledrejection unload " +
+    "gamepadconnected gamepaddisconnected",
 );
-/** SVG animation elements' handlers. */
+/** svg/SVGAnimationElement.idl, on its elements (WebKit has no SVG discard element). */
 const SVG_ANIMATION_HANDLERS = on("begin end repeat");
-const SVG_ANIMATIONS = new Set(["animate", "animatemotion", "animatetransform", "set", "discard"]);
+const SVG_ANIMATIONS = new Set(["animate", "animatemotion", "animatetransform", "set"]);
 
 function isEventHandler(tag: HtmlTag, attrName: string): boolean {
   if (GLOBAL_HANDLERS.has(attrName)) return true;
