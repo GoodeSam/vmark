@@ -740,6 +740,97 @@ export function titleCaseViolations(value: string): boolean {
   });
 }
 
+/**
+ * Internal identifiers that must never reach a user (rule 35).
+ *
+ * "HTML preview is sandboxed but pending OWASP sign-off (WI-3.4)." shipped in
+ * ten languages, beside an issue number in a shortcut description and a
+ * design-decision id in a tooltip: process notes and cross-references written
+ * for maintainers. Zero tolerance, no baseline — an identifier in copy is
+ * never right, so there is nothing to grandfather. Decision ids are matched by
+ * their prefixes (C, D, G, H, R, W) only: a generic "(A4)" is a paper size.
+ */
+const INTERNAL_REFERENCE_PATTERNS: readonly (readonly [string, RegExp])[] = [
+  ["WI-", /\bWI-[A-Z0-9]/],
+  ["ADR-", /\bADR-?\d/],
+  ["issue-ref", /#\d{3,}\b/],
+  ["decision-id", /\((?:[CDGHRW]\d{1,2}(?:\.\d+)?)\)/],
+  ["OWASP", /\bOWASP\b/],
+  ["TODO", /\b(?:TODO|FIXME|TBD|XXX)\b/],
+  ["sign-off", /\bsign-?off\b/i],
+];
+
+/** The internal-reference patterns `value` contains, in pattern order. */
+export function internalReferenceFindings(value: string): string[] {
+  return INTERNAL_REFERENCE_PATTERNS.filter(([, re]) => re.test(value)).map(([name]) => name);
+}
+
+/**
+ * Strings that are only placeholders and punctuation — "({{line}}:{{column}})"
+ * — are FRAGMENTS: correct appended to a sentence, meaningless alone (it
+ * rendered as a red "(6:1)" strip). Each must be registered with where it is
+ * meant to appear, so using one alone is a decision someone wrote down.
+ */
+export const REGISTERED_FRAGMENTS: Readonly<Record<string, string>> = {
+  "editor.json:preview.errorAt": "suffix after preview.cannotRender / preview.workflowParseFailed",
+  "statusbar.json:terminal.search.results": "match counter beside the terminal search field",
+  "dialog.json:exportError.listItem": "the language's quote marks around one entry of an export-error list",
+};
+
+/** Keys of `values` that are wordless placeholder strings not in `fragments`. */
+export function standaloneTextFindings(
+  values: Readonly<Record<string, string>>,
+  fragments: Readonly<Record<string, string>>,
+): string[] {
+  return Object.entries(values)
+    .filter(([key, value]) => {
+      if (!value.includes("{{") || key in fragments) return false;
+      return !/\p{L}/u.test(value.replace(/\{\{[^}]*\}\}/g, ""));
+    })
+    .map(([key]) => key);
+}
+
+function checkInternalReferencesAndFragments(): boolean {
+  const found: string[] = [];
+  const localesDir = join(ROOT, "src", "locales");
+  for (const lang of readdirSync(localesDir).filter((d) => !d.startsWith("__"))) {
+    const dir = join(localesDir, lang);
+    if (!existsSync(dir) || !readdirSync(dir).length) continue;
+    for (const file of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
+      for (const [key, value] of flattenJsonValues(JSON.parse(readFileSync(join(dir, file), "utf8")))) {
+        for (const hit of internalReferenceFindings(value)) found.push(`${lang}/${file}:${key} (${hit}): ${value}`);
+      }
+    }
+  }
+  const ymlDir = join(ROOT, "src-tauri", "locales");
+  for (const file of readdirSync(ymlDir).filter((f) => f.endsWith(".yml"))) {
+    for (const [key, value] of flattenYamlValues(readFileSync(join(ymlDir, file), "utf8"))) {
+      for (const hit of internalReferenceFindings(value)) found.push(`${file}:${key} (${hit}): ${value}`);
+    }
+  }
+
+  const enDir = join(localesDir, "en");
+  const wordless: string[] = [];
+  for (const file of readdirSync(enDir).filter((f) => f.endsWith(".json"))) {
+    const values = Object.fromEntries(
+      [...flattenJsonValues(JSON.parse(readFileSync(join(enDir, file), "utf8")))].map(([k, v]) => [`${file}:${k}`, v]),
+    );
+    wordless.push(...standaloneTextFindings(values, REGISTERED_FRAGMENTS));
+  }
+  const staleFragments = Object.keys(REGISTERED_FRAGMENTS).filter((id) => {
+    const [file, key] = id.split(/:(.*)/s);
+    const path = join(enDir, file);
+    return !existsSync(path) || !flattenJsonValues(JSON.parse(readFileSync(path, "utf8"))).has(key);
+  });
+
+  for (const f of found) console.error(`[FAIL]  internal reference in UI copy — ${f}`);
+  for (const w of wordless) console.error(`[FAIL]  ${w}: no words once placeholders are removed — reword it to stand alone, or register it in REGISTERED_FRAGMENTS with where it appears`);
+  for (const s2 of staleFragments) console.error(`[FAIL]  REGISTERED_FRAGMENTS lists ${s2}, which no longer exists — delete the entry`);
+  const ok = found.length === 0 && wordless.length === 0 && staleFragments.length === 0;
+  if (ok) console.log("[OK]    no internal references in UI copy; every wordless string is a registered fragment");
+  return ok;
+}
+
 /** Exported (with an injectable baseline path) so the fail-closed missing-
  *  baseline behavior has a behavioral test — the scan itself reads the real
  *  locale tree either way. */
@@ -844,8 +935,9 @@ if (process.argv[1] && process.argv[1].endsWith("check-i18n-keys.ts")) {
   const valuesOk = checkUntranslatedValues(updateUntranslated);
   const dialogsOk = checkDialogLiterals();
   const copyOk = checkCopyConventions(updateCopy);
+  const referencesOk = checkInternalReferencesAndFragments();
 
-  if (jsonOk && yamlOk && valuesOk && dialogsOk && copyOk) {
+  if (jsonOk && yamlOk && valuesOk && dialogsOk && copyOk && referencesOk) {
     console.log("\nAll i18n checks passed.");
     process.exit(0);
   } else {

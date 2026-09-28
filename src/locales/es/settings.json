@@ -20,7 +20,7 @@
   "formats.diagrams.label": "Diagramas y SVG (Mermaid, SVG)",
   "formats.diagrams.description": "Abre .mmd y .svg con una representación en vivo saneada junto al código fuente.",
   "formats.htmlPreview.label": "Vista previa HTML",
-  "formats.htmlPreview.description": "Abre .html y .htm con una vista previa en iframe aislado (sandbox=\"\", DOMPurify, CSP). La aprobación OWASP está pendiente.",
+  "formats.htmlPreview.description": "Abre archivos .html y .htm en una vista previa aislada que bloquea los scripts (revisión de seguridad en curso)",
   "formats.codeViewers.label": "Visores de código",
   "formats.codeViewers.description": "Abre archivos .ts, .js, .py, .rs, .go, .css, .sh, .rb, .lua y similares en un visor con resaltado de sintaxis (solo lectura por defecto — haz clic en «Habilitar edición» para escribir).",
   "formats.defaultViewMode.label": "Modo de vista predeterminado",

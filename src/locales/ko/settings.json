@@ -20,7 +20,7 @@
   "formats.diagrams.label": "다이어그램 및 SVG(Mermaid, SVG)",
   "formats.diagrams.description": ".mmd와 .svg를 정제된 실시간 렌더링과 소스를 나란히 놓고 엽니다.",
   "formats.htmlPreview.label": "HTML 미리보기",
-  "formats.htmlPreview.description": ".html과 .htm을 샌드박스 iframe 미리보기로 엽니다(sandbox=\"\", DOMPurify, CSP). OWASP 승인은 아직 대기 중입니다.",
+  "formats.htmlPreview.description": ".html과 .htm 파일을 스크립트를 차단하는 샌드박스 미리보기로 엽니다(보안 검토 진행 중)",
   "formats.codeViewers.label": "코드 뷰어",
   "formats.codeViewers.description": ".ts, .js, .py, .rs, .go, .css, .sh, .rb, .lua 등의 파일을 구문 강조 뷰어로 엽니다(기본적으로 읽기 전용 — 입력하려면 '편집 활성화'를 클릭하세요).",
   "formats.defaultViewMode.label": "기본 보기 모드",

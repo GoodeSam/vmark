@@ -23,7 +23,7 @@
   "preview.cannotRender": "Impossibile visualizzare l'anteprima — correggi gli errori di sintassi",
   "preview.errorAt": "({{line}}:{{column}})",
   "preview.workflowParseFailed": "Analisi del flusso di lavoro non riuscita — correggi gli errori di sintassi",
-  "preview.signOffPending": "L'anteprima HTML è isolata ma in attesa dell'approvazione OWASP (WI-3.4).",
+  "preview.signOffPending": "L'anteprima HTML è isolata. La sua revisione di sicurezza è ancora in corso.",
   "preview.htmlIframeTitle": "Anteprima HTML",
   "preview.htmlTrustSafe": "Anteprima sicura — gli script sono bloccati",
   "preview.htmlTrustEnable": "Attiva anteprima attendibile…",

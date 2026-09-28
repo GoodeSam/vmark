@@ -21,6 +21,23 @@ each locale follows its own conventions.
 | Chrome nouns | `menu.*`, `contextMenu.*`, `tabMenu.*`, `toolbar.*`, `*.title`, `*button*` | Title Case (stop words lowercase; pronouns like "My" are capped; "All"/"Each" are significant) |
 | Running copy | `*.label`, `*.description`, `*.empty`, `*.placeholder`, `toast.*` | Sentence case |
 
+## Never in copy (zero tolerance — `lint:i18n`, `internalReferenceFindings`)
+
+Internal identifiers are for maintainers: work items (`WI-3.4`), ADRs, issue
+numbers (`#1081`), decision/rule ids (`(D4)`, `(R6)`), `OWASP`, `sign-off`,
+`TODO`/`FIXME`. "HTML preview is sandboxed but pending OWASP sign-off (WI-3.4)."
+shipped to every user in ten languages. Say what it means for the USER ("its
+security review is still in progress"), or say nothing. Every locale is scanned,
+and there is no baseline: an identifier in copy is never right.
+
+## Strings must stand alone — or be registered fragments
+
+A value with no words once `{{placeholders}}` are removed — `({{line}}:{{column}})`
+— is a FRAGMENT: right after "Cannot render", meaningless alone (it rendered as
+a red "(6:1)" strip). Register it in `REGISTERED_FRAGMENTS`
+(`scripts/check-i18n-keys.ts`) with where it appears; an unregistered wordless
+string fails, and a registration whose key is gone fails too.
+
 Punctuation vocabulary:
 
 - `…` never `...` (fixed repo-wide: 91 JSON values + 24 in `en.yml`).

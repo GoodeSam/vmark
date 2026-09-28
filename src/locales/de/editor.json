@@ -23,7 +23,7 @@
   "preview.cannotRender": "Vorschau kann nicht gerendert werden — beheben Sie die Syntaxfehler",
   "preview.errorAt": "({{line}}:{{column}})",
   "preview.workflowParseFailed": "Workflow konnte nicht geparst werden — beheben Sie die Syntaxfehler",
-  "preview.signOffPending": "Die HTML-Vorschau ist isoliert, die OWASP-Freigabe steht jedoch noch aus (WI-3.4).",
+  "preview.signOffPending": "Die HTML-Vorschau ist isoliert. Ihre Sicherheitsprüfung ist noch nicht abgeschlossen.",
   "preview.htmlIframeTitle": "HTML-Vorschau",
   "preview.htmlTrustSafe": "Sichere Vorschau — Skripte werden blockiert",
   "preview.htmlTrustEnable": "Vertrauenswürdige Vorschau aktivieren…",

@@ -23,7 +23,7 @@
   "preview.cannotRender": "Cannot render preview — fix syntax errors",
   "preview.errorAt": "({{line}}:{{column}})",
   "preview.workflowParseFailed": "Workflow parse failed — fix syntax errors",
-  "preview.signOffPending": "HTML preview is sandboxed but pending OWASP sign-off (WI-3.4).",
+  "preview.signOffPending": "HTML preview is sandboxed. Its security review is still in progress.",
   "preview.htmlIframeTitle": "HTML preview",
   "preview.htmlTrustSafe": "Safe preview — scripts are blocked",
   "preview.htmlTrustEnable": "Enable trusted preview…",

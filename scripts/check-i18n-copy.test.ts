@@ -5,7 +5,13 @@ import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkCopyConventions, dialogLiteralFindings, titleCaseViolations } from "./check-i18n-keys";
+import {
+  checkCopyConventions,
+  dialogLiteralFindings,
+  internalReferenceFindings,
+  standaloneTextFindings,
+  titleCaseViolations,
+} from "./check-i18n-keys";
 
 describe("titleCaseViolations (R14)", () => {
   it.each([
@@ -61,5 +67,56 @@ describe("checkCopyConventions baseline handling (fail closed)", () => {
     expect(existsSync(missing)).toBe(false);
     expect(checkCopyConventions(false, missing)).toBe(false);
     expect(existsSync(missing)).toBe(false); // and it must NOT have written one
+  });
+});
+
+describe("internalReferenceFindings — no internal identifiers in UI copy", () => {
+  // "HTML preview is sandboxed but pending OWASP sign-off (WI-3.4)." shipped to
+  // every user in ten languages; so did an issue number in a shortcut
+  // description and a design-decision id in a tooltip. Nothing looked.
+  it.each([
+    ["pending OWASP sign-off (WI-3.4).", ["WI-", "OWASP", "sign-off"]],
+    ["Open two documents side by side (#1081)", ["issue-ref"]],
+    ["only established claims can constrain (D4)", ["decision-id"]],
+    ["see ADR-013 for details", ["ADR-"]],
+    ["TODO: wire this up", ["TODO"]],
+    ["Selection keeps its ink (R6)", ["decision-id"]],
+  ])("flags %j", (value, expected) => {
+    expect(internalReferenceFindings(value)).toEqual(expected);
+  });
+
+  it.each([
+    "Paper size (A4)",
+    "Letter (8.5 × 11 in)",
+    "Heading 1 (#)",
+    "Version 2.1",
+    "Sign in to continue",
+    "{{count}} issues found",
+  ])("accepts ordinary copy: %j", (value) => {
+    expect(internalReferenceFindings(value)).toEqual([]);
+  });
+});
+
+describe("standaloneTextFindings — a string that must work on its own", () => {
+  // "({{line}}:{{column}})" is a SUFFIX, correct after "Cannot render", but it
+  // was also rendered alone — a red strip reading "(6:1)". A value with no
+  // words once placeholders go is a fragment, and must be registered as one.
+  it("flags a value with no words that is not a registered fragment", () => {
+    expect(standaloneTextFindings({ "preview.errorAt": "({{line}}:{{column}})" }, {})).toEqual([
+      "preview.errorAt",
+    ]);
+  });
+
+  it("accepts a registered fragment", () => {
+    expect(
+      standaloneTextFindings(
+        { "preview.errorAt": "({{line}}:{{column}})" },
+        { "preview.errorAt": "suffix after preview.cannotRender" },
+      ),
+    ).toEqual([]);
+  });
+
+  it("accepts values with words, and symbol-only values without placeholders", () => {
+    expect(standaloneTextFindings({ a: "{{count}} files", b: "…", c: "·" }, {})).toEqual([]);
   });
 });

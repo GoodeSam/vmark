@@ -14,7 +14,7 @@
   "actions.retire": "Clore",
   "actions.hide": "Masquer",
   "actions.show": "Afficher",
-  "promoteTitle": "Promouvoir en établie — seules les affirmations établies peuvent contraindre (D4)",
+  "promoteTitle": "Promouvoir en établie — seules les affirmations établies peuvent contraindre",
   "correctPlaceholder": "Affirmation corrigée",
   "correctConfirm": "Confirmer la correction",
   "create.heading": "Nouvelle affirmation depuis la sélection",

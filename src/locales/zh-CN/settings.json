@@ -20,7 +20,7 @@
   "formats.diagrams.label": "图表与 SVG(Mermaid、SVG)",
   "formats.diagrams.description": "以经过净化的实时渲染与源码并排打开 .mmd 和 .svg。",
   "formats.htmlPreview.label": "HTML 预览",
-  "formats.htmlPreview.description": "以沙盒化的 iframe 预览打开 .html 和 .htm(sandbox=\"\"、DOMPurify、CSP)。OWASP 审核签署仍在等待中。",
+  "formats.htmlPreview.description": "以阻止脚本的沙盒化预览打开 .html 和 .htm 文件（安全审查进行中）",
   "formats.codeViewers.label": "代码查看器",
   "formats.codeViewers.description": "以语法高亮查看器打开 .ts、.js、.py、.rs、.go、.css、.sh、.rb、.lua 及类似文件(默认只读 — 点击“启用编辑”即可输入)。",
   "formats.defaultViewMode.label": "默认视图模式",
