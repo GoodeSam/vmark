@@ -1,5 +1,8 @@
 .find-bar {
-  /* ui-ok(float): layer owner — rule 32 z-table (FindBar, 100) */
+  /* ui-ok(float): layer owner — rule 32 z-table (FindBar, 100). NOT yet shown
+     clear of content: the replace row, or wrapping at narrow widths, grows it
+     upward past its 40px lane, and the editor's bottom clearance is one bar
+     height. Under measurement (PR #1465 review, objection 6). */
   --find-bar-height: 38px; /* 5px padding + 28px row + 5px padding */
   position: absolute;
   bottom: 0;

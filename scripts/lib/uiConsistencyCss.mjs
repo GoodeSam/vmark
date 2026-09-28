@@ -219,15 +219,44 @@ const SANCTIONED = [
 
 /**
  * A selected / checked / pressed / current state, in every spelling the
- * codebase uses: `.active`/`.selected`/`.is-*` classes, BEM `--active` style
- * modifiers, ARIA and data-* state attributes, `:checked`.
+ * codebase uses: `.active`/`.selected`/`.is-selected`-style classes, BEM
+ * `--active` modifiers, ARIA and data-* state attributes, `:checked`. An
+ * attribute EXPLICITLY false (`[aria-selected="false"]`) is the opposite of a
+ * selection, and `.is-loading`-style classes are not selections at all.
  */
-const SELECTED_STATE =
-  /\.(selected|active|checked|current|pressed)\b|\.is-[a-z-]+\b|--(active|selected|checked|current|pressed|on)\b|\[data-(active|selected|checked|pinned)[\]=]|\[aria-(selected|checked|pressed|current)|:checked\b/;
+const SELECTION_WORD = "selected|active|checked|current|pressed";
+const SELECTED_STATE = new RegExp(
+  `\\.(?:is-)?(?:${SELECTION_WORD})\\b(?!-)|--(?:${SELECTION_WORD}|on)\\b|\\[data-(?:active|selected|checked|pinned)(?:\\]|=(?!["']?false))|\\[aria-(?:selected|checked|pressed|current)(?:\\]|=(?!["']?false))|:checked\\b`,
+);
 /** Accent inks a selected LABEL must not take (R6: selection keeps its ink). */
-const ACCENT_INK = /(?:^|[;{])\s*color\s*:\s*var\((--accent-primary|--primary-color|--browser-accent-primary)\b/;
-/** Where accent ink IS the design: the selection's icon or indicator. */
-const INDICATOR_TARGET = /::?(before|after)\b|\bsvg\b|\bpath\b|[-_](icon|check|dot|glyph|indicator|chevron|caret)\b/;
+const ACCENT_INK = /(?:^|[;{\s])color\s*:\s*var\(\s*(--accent-primary|--primary-color|--browser-accent-primary)\b/;
+/** Where accent ink IS the design: the selection's icon or indicator — read on the TARGET only. */
+const INDICATOR_TARGET = /::?(before|after)\b|^svg\b|^path\b|\s(svg|path)\b|[-_](icon|check|dot|glyph|indicator|chevron|caret)\b/;
+
+/** Split a selector list on top-level commas (not inside `()` or `[]`). */
+function splitSelectorList(selector) {
+  const out = [];
+  let depth = 0;
+  let current = "";
+  for (const ch of selector) {
+    if (ch === "(" || ch === "[") depth += 1;
+    else if (ch === ")" || ch === "]") depth -= 1;
+    if (ch === "," && depth === 0) {
+      out.push(current.trim());
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  if (current.trim()) out.push(current.trim());
+  return out;
+}
+
+/** The last compound of a selector — the element the rule actually styles. */
+function targetCompound(selector) {
+  const parts = selector.split(/\s+|\s*[>+~]\s*/).filter(Boolean);
+  return parts[parts.length - 1] ?? selector;
+}
 
 /**
  * C9 (ink) — a selected label keeps --text-color (rule 30, R6).
@@ -235,24 +264,29 @@ const INDICATOR_TARGET = /::?(before|after)\b|\bsvg\b|\bpath\b|[-_](icon|check|d
  * The background half below reads only `background`, and its selected-state
  * pattern knew `.active`/`.selected` but not BEM modifiers or ARIA states — so
  * `color: var(--accent-primary)` on a selected TEXT label passed everywhere,
- * including the canonical `.vm-chip--toggle`. Icon-only controls, whose glyph
- * IS the indicator, say so with `ui-ok(state): <reason>`.
+ * including the canonical `.vm-chip--toggle`. Each selector in a list is
+ * judged on its own; indicator words are read from its TARGET compound only
+ * (an ancestor named `.list-check` does not make `.row.active` an icon).
+ * Icon-only controls, whose glyph IS the indicator, say so with
+ * `ui-ok(state): <reason>`.
  */
 function checkSelectionInk(css, file, { problems }) {
   const findings = [];
   for (const rule of rulesWithMarkers(css)) {
-    if (/:hover|:focus/.test(rule.selector) && !SELECTED_STATE.test(rule.selector.replace(/:(hover|focus[-a-z]*)/g, ""))) continue;
-    if (!SELECTED_STATE.test(rule.selector)) continue;
-    if (INDICATOR_TARGET.test(rule.selector)) continue;
     if (!ACCENT_INK.test(rule.body)) continue;
     const { markers, problems: mp } = uiOkMarkers(rule.rawBody);
     problems.push(...mp.map((p) => `${file}:${rule.selector}: ${p}`));
     if (markers.has("state")) continue;
-    findings.push({
-      check: "C9",
-      id: `${file}:${rule.selector} (ink)`,
-      message: `${file}:${rule.line} ${rule.selector}: a selected label in accent ink — selection keeps its ink (rule 30, R6): var(--accent-bg) fill, color var(--text-color); accent goes on the icon/indicator. Icon-only control? ui-ok(state): <reason>.`,
-    });
+    for (const selector of splitSelectorList(rule.selector)) {
+      if (/:(hover|focus)/.test(selector) && !SELECTED_STATE.test(selector.replace(/:(hover|focus[-a-z]*)/g, ""))) continue;
+      if (!SELECTED_STATE.test(selector)) continue;
+      if (INDICATOR_TARGET.test(targetCompound(selector)) || /::?(before|after)\b/.test(selector)) continue;
+      findings.push({
+        check: "C9",
+        id: `${file}:${selector} (ink)`,
+        message: `${file}:${rule.line} ${selector}: a selected label in accent ink — selection keeps its ink (rule 30, R6): var(--accent-bg) fill, color var(--text-color); accent goes on the icon/indicator. Icon-only control? ui-ok(state): <reason>.`,
+      });
+    }
   }
   return findings;
 }
@@ -327,27 +361,53 @@ const OVERLAY_FAMILY =
  * on a layer at or above --z-bar is either an overlay family (what those
  * layers are for), the layer's owner in rule 32's z-table, or something that
  * covers content on purpose — the last two say so with ui-ok(float): <reason>.
+ *
+ * Judged PER SELECTOR, with `position` and `z-index` merged across every rule
+ * in the file that names that selector: an overlay neighbour in a selector
+ * list exempts nothing, and splitting the two declarations into separate rules
+ * does not hide the pair. `calc(var(--z-x) ± n)` resolves.
  */
 export function checkFloatingOverContent(css, file, tokens, { problems }) {
-  const findings = [];
   const barLayer = resolveNumeric("var(--z-bar)", tokens) ?? 100;
+  /** selector -> { positioned, layer, line, floatOk } merged across the file. */
+  const bySelector = new Map();
   for (const rule of rulesWithMarkers(css)) {
-    if (!/(?:^|[;{\s])position\s*:\s*(absolute|fixed)\b/.test(rule.body)) continue;
+    const positioned = /(?:^|[;{\s])position\s*:\s*(absolute|fixed)\b/.test(rule.body);
     const z = /(?:^|[;{\s])z-index\s*:\s*([^;}]+)/.exec(rule.body);
-    if (!z) continue;
-    const layer = resolveNumeric(z[1], tokens);
-    if (layer === null || layer < barLayer) continue;
-    if (OVERLAY_FAMILY.test(rule.selector)) continue;
+    if (!positioned && !z) continue;
     const { markers, problems: mp } = uiOkMarkers(rule.rawBody);
     problems.push(...mp.map((p) => `${file}:${rule.selector}: ${p}`));
-    if (markers.has("float")) continue;
+    const layer = z ? resolveZ(z[1], tokens) : null;
+    for (const selector of splitSelectorList(rule.selector)) {
+      const entry = bySelector.get(selector) ?? { positioned: false, layer: null, line: rule.line, floatOk: false };
+      entry.positioned ||= positioned;
+      if (layer !== null) entry.layer = layer;
+      entry.floatOk ||= markers.has("float");
+      bySelector.set(selector, entry);
+    }
+  }
+  const findings = [];
+  for (const [selector, e] of bySelector) {
+    if (!e.positioned || e.layer === null || e.layer < barLayer) continue;
+    if (OVERLAY_FAMILY.test(selector) || e.floatOk) continue;
     findings.push({
       check: "C12",
-      id: `${file}:${rule.selector}`,
-      message: `${file}:${rule.line} ${rule.selector}: positioned at z-index ${layer} (>= --z-bar) — it can cover content. Put it in flow (a header row, a docked slot), or mark ui-ok(float): <why it may cover content> (rule 32).`,
+      id: `${file}:${selector}`,
+      message: `${file}:${e.line} ${selector}: positioned at z-index ${e.layer} (>= --z-bar) — it can cover content. Put it in flow (a header row, a docked slot), or mark ui-ok(float): <why it may cover content> (rule 32).`,
     });
   }
   return findings;
+}
+
+/** A z-index value to a number: a literal, a token, or calc(token ± n). */
+function resolveZ(value, tokens) {
+  const direct = resolveNumeric(value, tokens);
+  if (direct !== null) return direct;
+  const calc = /^calc\(\s*var\(\s*(--[\w-]+)\s*\)\s*([+-])\s*(\d+)\s*\)$/.exec(value.trim());
+  if (!calc) return null;
+  const base = resolveNumeric(`var(${calc[1]})`, tokens);
+  if (base === null) return null;
+  return calc[2] === "+" ? base + Number(calc[3]) : base - Number(calc[3]);
 }
 
 /** C11 — bar-height literals and z-index literals outside index.css. */

@@ -205,6 +205,34 @@ describe("C9 — selection keeps its ink (R6)", () => {
     const r = run({ "a.css": `.link:hover { color: var(--accent-primary); }` });
     expect(ids(r, "C9")).toEqual([]);
   });
+
+  // Codex review of #1465 (executed probes): the first version read the WHOLE
+  // selector list at once, matched `-check` in an ancestor, required one
+  // spelling of var(), and treated explicit false and non-selection states as
+  // selections.
+  it.each([
+    ['.row[aria-selected="false"]'],
+    ['.nav[aria-current="false"]'],
+    [".row.is-loading"],
+  ])("ignores a state that is not a selection: %s", (selector) => {
+    const r = run({ "a.css": `${selector} { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("judges each selector in a list on its own", () => {
+    const r = run({ "a.css": `.row.active .label, .row.active svg { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual(["a.css:.row.active .label (ink)"]);
+  });
+
+  it("reads the TARGET for indicator words, not an ancestor", () => {
+    const r = run({ "a.css": `.list-check .row.active { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual(["a.css:.list-check .row.active (ink)"]);
+  });
+
+  it("is not fooled by whitespace inside var()", () => {
+    const r = run({ "a.css": `.row.active { color: var( --accent-primary ); }` });
+    expect(ids(r, "C9")).toEqual(["a.css:.row.active (ink)"]);
+  });
 });
 
 describe("C12 — nothing floats over content without a stated reason", () => {
@@ -224,6 +252,27 @@ describe("C12 — nothing floats over content without a stated reason", () => {
   it("flags a fixed element on the bar layer", () => {
     const r = run({ "a.css": `.floating-hint { position: fixed; bottom: 0; z-index: var(--z-bar); }` });
     expect(ids(r, "C12")).toEqual(["a.css:.floating-hint"]);
+  });
+
+  // Codex review of #1465 (executed probes).
+  it("judges each selector in a list on its own — an overlay neighbour exempts nothing", () => {
+    const r = run({
+      "a.css": `.pane__toggle, .help-tooltip { position: absolute; z-index: var(--z-toolbar); }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane__toggle"]);
+  });
+
+  it("joins position and z-index declared in separate rules for one selector", () => {
+    const r = run({
+      "a.css": `.pane__toggle { position: absolute; top: 0; right: 0; }
+        .pane__toggle { z-index: var(--z-toolbar); }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane__toggle"]);
+  });
+
+  it("resolves calc() around a z token", () => {
+    const r = run({ "a.css": `.pane__toggle { position: absolute; z-index: calc(var(--z-toolbar) + 1); }` });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane__toggle"]);
   });
 
   it("accepts overlay families, low layers, in-flow elements and stated reasons", () => {
