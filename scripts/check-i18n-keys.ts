@@ -814,7 +814,7 @@ export const REGISTERED_FRAGMENTS: Readonly<Record<string, string>> = {
 /** Keys of `values` that are wordless placeholder strings not in `fragments`. */
 export function standaloneTextFindings(
   values: Readonly<Record<string, string>>,
-  fragments: Readonly<Record<string, string>>,
+  fragments: Readonly<Record<string, unknown>>,
 ): string[] {
   return Object.entries(values)
     .filter(([key, value]) => {
@@ -830,8 +830,11 @@ const INLINE_TAGS = new Set([
   ...["a", "abbr", "cite", "q", "sub", "sup", "time", "label"],
 ]);
 
+/** JSX attributes whose value is never displayed. */
+const NON_DISPLAY_ATTRIBUTE = /^(?:data-|key$|id$|className$|style$|ref$|htmlFor$|name$|type$|role$|tabIndex$|testid$)/;
+
 /** `{ns, key}` of a registered fragment id `editor.json:preview.errorAt`. */
-function fragmentRefs(fragments: Readonly<Record<string, string>>) {
+function fragmentRefs(fragments: Readonly<Record<string, unknown>>) {
   return Object.keys(fragments).map((id) => {
     const [file, key] = id.split(/:(.*)/s);
     return { ns: file.replace(/\.json$/, ""), key };
@@ -862,22 +865,35 @@ function matchFragment(raw: string, refs: readonly { ns: string; key: string }[]
 export function fragmentUsageFindings(
   rel: string,
   text: string,
-  fragments: Readonly<Record<string, string>>,
+  fragments: Readonly<Record<string, unknown>>,
 ): string[] {
   const refs = fragmentRefs(fragments);
   const sf = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const out: string[] = [];
 
   const tagName = (el: ts.JsxElement) => el.openingElement.tagName.getText(sf);
+  // What statically renders nothing: null/undefined/booleans, `<></>`, and
+  // `&&`/`||`/`??`/`?:` whose every outcome is one of those.
   const rendersSomething = (e: ts.Expression): boolean => {
     if (ts.isParenthesizedExpression(e)) return rendersSomething(e.expression);
     if (ts.isStringLiteralLike(e)) return e.text.trim() !== "";
     if (e.kind === ts.SyntaxKind.NullKeyword || e.kind === ts.SyntaxKind.TrueKeyword || e.kind === ts.SyntaxKind.FalseKeyword) return false;
-    return !(ts.isIdentifier(e) && e.text === "undefined");
+    if (ts.isIdentifier(e) && e.text === "undefined") return false;
+    if (ts.isConditionalExpression(e)) return rendersSomething(e.whenTrue) || rendersSomething(e.whenFalse);
+    if (ts.isBinaryExpression(e)) {
+      const op = e.operatorToken.kind;
+      if (op === ts.SyntaxKind.AmpersandAmpersandToken) return rendersSomething(e.right);
+      if (op === ts.SyntaxKind.BarBarToken || op === ts.SyntaxKind.QuestionQuestionToken) {
+        return rendersSomething(e.left) || rendersSomething(e.right);
+      }
+    }
+    if (ts.isJsxFragment(e)) return e.children.some(meaningful);
+    return true;
   };
   const meaningful = (child: ts.JsxChild): boolean => {
     if (ts.isJsxText(child)) return child.text.trim() !== "";
     if (ts.isJsxExpression(child)) return child.expression ? rendersSomething(child.expression) : false;
+    if (ts.isJsxFragment(child)) return child.children.some(meaningful);
     return true;
   };
   const contains = (outer: ts.Node, inner: ts.Node) => outer.pos <= inner.pos && inner.end <= outer.end;
@@ -888,6 +904,14 @@ export function fragmentUsageFindings(
     }
     if (ts.isBinaryExpression(parent) && parent.operatorToken.kind === ts.SyntaxKind.PlusToken) {
       return rendersSomething(parent.left === child ? parent.right : parent.left);
+    }
+    if (
+      ts.isArrayLiteralExpression(parent) &&
+      ts.isPropertyAccessExpression(parent.parent) &&
+      parent.parent.name.text === "join" &&
+      ts.isCallExpression(parent.parent.parent)
+    ) {
+      return parent.elements.some((el) => el !== child && rendersSomething(el));
     }
     if (ts.isTemplateExpression(parent)) {
       return (
@@ -900,10 +924,12 @@ export function fragmentUsageFindings(
   const aloneInBlock = (node: ts.Node): boolean => {
     // Inside JSX at all? If the walk reaches the component's boundary through
     // only inline wrappers and `<>`, what they hold is what gets rendered.
-    let inJsx = false;
+    let inJsx = ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node);
     for (let child = node, parent = node.parent; parent; child = parent, parent = parent.parent) {
       if (hasCompany(parent, child)) return false;
-      if (ts.isJsxAttribute(parent)) return true;
+      // An attribute value is its own context: shown if the attribute is
+      // (title, aria-label, alt, placeholder), never if it is not.
+      if (ts.isJsxAttribute(parent)) return !NON_DISPLAY_ATTRIBUTE.test(parent.name.getText(sf));
       if (ts.isJsxElement(parent)) {
         if (!INLINE_TAGS.has(tagName(parent))) return true;
         inJsx = true;
@@ -922,9 +948,10 @@ export function fragmentUsageFindings(
       if (first && ts.isStringLiteralLike(first)) key = matchFragment(first.text, refs)?.key ?? null;
     } else if (ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) {
       for (const attr of node.attributes.properties) {
-        if (ts.isJsxAttribute(attr) && attr.name.getText(sf) === "i18nKey" && attr.initializer && ts.isStringLiteral(attr.initializer)) {
-          key = matchFragment(attr.initializer.text, refs)?.key ?? null;
-        }
+        if (!ts.isJsxAttribute(attr) || attr.name.getText(sf) !== "i18nKey" || !attr.initializer) continue;
+        const init = attr.initializer;
+        const literal = ts.isJsxExpression(init) ? init.expression : init;
+        if (literal && ts.isStringLiteralLike(literal)) key = matchFragment(literal.text, refs)?.key ?? null;
       }
     }
     const subject = ts.isJsxOpeningElement(node) ? node.parent : node;

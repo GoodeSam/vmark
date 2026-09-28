@@ -258,3 +258,29 @@ describe("fragmentUsageFindings — Codex third pass", () => {
     },
   );
 });
+
+describe("fragmentUsageFindings — Codex fourth pass", () => {
+  const fragments = { "editor.json:preview.errorAt": "suffix" };
+  const flag = ["a.tsx: preview.errorAt rendered alone"];
+  const probe = (jsx: string) => fragmentUsageFindings("a.tsx", `export const A = () => ${jsx};`, fragments);
+
+  it.each([
+    [`<div><></>{t("preview.errorAt")}</div>`],
+    [`<div>{true && null}{t("preview.errorAt")}</div>`],
+    [`<div>{ok ? null : false}{t("preview.errorAt")}</div>`],
+    [`<Trans i18nKey="preview.errorAt" />`],
+    [`<Trans i18nKey="preview.errorAt"></Trans>`],
+    [`<div><Trans i18nKey={"preview.errorAt"} /></div>`],
+  ])("flags: %s", (jsx) => {
+    expect(probe(jsx)).toEqual(flag);
+  });
+
+  it.each([
+    [`<div>{["Cannot render", t("preview.errorAt")].join(" ")}</div>`],
+    [`<div data-testid={t("preview.errorAt")}>Cannot render</div>`],
+    [`<div key={t("preview.errorAt")}>Cannot render</div>`],
+  ])("accepts: %s", (jsx) => {
+    expect(probe(jsx)).toEqual([]);
+  });
+});
+
