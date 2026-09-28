@@ -6,7 +6,7 @@
 //! roots (WI-LX1.2). Anything the user opens from outside them — a file from
 //! Finder or the CLI, a workspace on another drive — is granted here at runtime.
 //!
-//! Three properties of these grants drive every caller:
+//! Four properties of these grants drive every caller:
 //!   - they are IN-MEMORY and do not survive a restart, so a path must be
 //!     re-granted on every launch that opens it, not once when it is first
 //!     picked;

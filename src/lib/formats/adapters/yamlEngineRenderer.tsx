@@ -1,7 +1,7 @@
 /**
  * EngineWorkflowSchemaRenderer — the yaml adapter's `vmark-workflow` preview.
  *
- * Purpose: give a VMark engine workflow file (`name:` + top-level `steps:`
+ * Purpose: give a VMark engine workflow file (top-level `steps:`
  *   using `genie/`, `action/` or `webhook/` — see `lib/workflow/detection.ts`)
  *   the engine's Run/Cancel panel in the split pane's preview side. Before
  *   WI-LX2.1 that panel mounted only inside the MARKDOWN surface, and a `.yml`
@@ -10,9 +10,11 @@
  *
  *   Reached only through `React.lazy` from the adapter, for the same cold-start
  *   reason as `yamlWorkflowRenderer` (the adapter is always registered), and
- *   only while `advanced.workflowEngine` is on — the adapter's wrapper renders
- *   the plain YAML tree otherwise, so this chunk is never fetched for a user
- *   who has not asked for the engine.
+ *   only while `advanced.workflowEngine` is on or this tab's run is still live
+ *   (so its Cancel stays reachable, even from the generic preview of a file
+ *   that stopped parsing mid-run) — the adapter's wrapper renders the plain
+ *   YAML tree otherwise, so this chunk is never fetched for a user who has not
+ *   asked for the engine.
  *
  * Key decisions:
  *   - The graph comes from this component's own parse of the (deferred)

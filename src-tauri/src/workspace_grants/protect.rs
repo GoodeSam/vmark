@@ -40,7 +40,8 @@
 //!     (`workflow/commands.rs`) — and a root renamed and replaced by a link
 //!     after that is the workflow engine's to hold, not this module's.
 //!
-//! @coordinates-with file_write.rs — atomic_write_file, create_file_exclusive
+//! @coordinates-with file_write.rs — atomic_write_file
+//! @coordinates-with file_create.rs — create_file_exclusive
 //! @coordinates-with workflow/commands.rs — run_workflow refuses a root containing the list
 //! @coordinates-with workspace_grants/mod.rs — where the list file lives
 //! @module workspace_grants/protect

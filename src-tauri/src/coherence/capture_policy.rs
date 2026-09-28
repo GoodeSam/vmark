@@ -2,7 +2,8 @@
 //! (WI-LX1.4).
 //!
 //! Every write-driven entry into the kernel — the `coherence_capture` IPC (human
-//! save, MCP `document.write` / `workspace.save`, genie apply, accepted AI
+//! save, MCP `document.write` / `workspace.save` / `workspace.save_as`, genie
+//! apply, accepted AI
 //! suggestion, history restore, explorer new-file) and the watcher-driven
 //! `coherence_scan` — carries a `CapturePolicy`. The webview reads the setting
 //! at the moment of the write and sends it with the request, so there is no
