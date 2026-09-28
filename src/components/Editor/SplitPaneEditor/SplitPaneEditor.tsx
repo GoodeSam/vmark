@@ -220,7 +220,7 @@ export function SplitPaneEditor({ tabId, formatConfig }: SplitPaneEditorProps) {
         />
       )}
       {hasPreview && (
-        <div className="split-pane-editor__mode-toggle">
+        <div className="split-pane-editor__header">
           <ViewModeToggle mode={viewMode} onChange={handleViewModeChange} />
         </div>
       )}
