@@ -575,4 +575,15 @@ describe("Codex fourth pass — C12 and C9 probes", () => {
     expect(ids(run({ "a.css": css }), "C12")).toEqual([]);
     expect(performance.now() - started).toBeLessThan(1500);
   });
+
+  it.each([[":is"], [":where"]])("C9: an icon alternative inside %s() does not exempt the selected label", (fn) => {
+    const selector = `${fn}(.row.selected, .row-icon)`;
+    const r = run({ "a.css": `${selector} { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([`a.css:${selector} (ink)`]);
+  });
+
+  it("C9: a selected row's icon, reached through :is(), is still an indicator", () => {
+    const r = run({ "a.css": `.row:is(.selected, .active) .row-icon { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
 });

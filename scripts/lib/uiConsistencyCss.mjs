@@ -256,6 +256,31 @@ function splitSelectorList(selector) {
   return out;
 }
 
+/**
+ * A selector with its `:is()`/`:where()` groups expanded into the complex
+ * selectors they stand for: `:is(.row.selected, .row-icon)` is two selectors,
+ * and only one of them is an icon. Capped, since each group multiplies.
+ */
+function expandMatches(selector, budget = 64) {
+  const m = /:(?:is|where|matches|-webkit-any)\(/.exec(selector);
+  if (!m) return [selector];
+  let depth = 1;
+  let end = m.index + m[0].length;
+  for (; end < selector.length && depth > 0; end += 1) {
+    if (selector[end] === "(") depth += 1;
+    else if (selector[end] === ")") depth -= 1;
+  }
+  const inner = selector.slice(m.index + m[0].length, end - 1);
+  const out = [];
+  for (const alt of splitSelectorList(inner)) {
+    for (const expanded of expandMatches(selector.slice(0, m.index) + alt + selector.slice(end), budget)) {
+      if (out.length >= budget) return out;
+      out.push(expanded);
+    }
+  }
+  return out;
+}
+
 /** A selector in a selected state — `:not(...)` and explicit false excluded. */
 function isSelectedSelector(selector) {
   // A state inside :not(...) is the OPPOSITE of a selection.
@@ -289,8 +314,10 @@ function checkSelectionInk(css, file, { problems }) {
     problems.push(...mp.map((p) => `${file}:${rule.selector}: ${p}`));
     if (markers.has("state")) continue;
     for (const selector of splitSelectorList(rule.selector)) {
-      if (!isSelectedSelector(selector)) continue;
-      if (INDICATOR_TARGET.test(targetCompound(selector)) || /::?(before|after)\b/.test(selector)) continue;
+      const labels = expandMatches(selector).filter(
+        (alt) => isSelectedSelector(alt) && !INDICATOR_TARGET.test(targetCompound(alt)) && !/::?(before|after)\b/.test(alt),
+      );
+      if (labels.length === 0) continue;
       findings.push({
         check: "C9",
         id: `${file}:${selector} (ink)`,
