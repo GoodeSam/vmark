@@ -218,3 +218,26 @@ describe("fragmentUsageFindings — Codex second pass", () => {
     expect(fragmentUsageFindings("a.tsx", tsx, fragments)).toEqual([]);
   });
 });
+
+describe("fragmentUsageFindings — Codex third pass", () => {
+  const fragments = { "editor.json:preview.errorAt": "suffix" };
+  const flag = ["a.tsx: preview.errorAt rendered alone"];
+  const probe = (jsx: string) => fragmentUsageFindings("a.tsx", `export const A = () => ${jsx};`, fragments);
+
+  it.each([
+    [`<div><span>Cannot render {t("preview.errorAt")}</span></div>`],
+    [`<div>Cannot render <a>{t("preview.errorAt")}</a></div>`],
+    [`<div>Cannot render <u>{t("preview.errorAt")}</u></div>`],
+    [`<div>{ok ? "Cannot render " + t("preview.errorAt") : null}</div>`],
+    [`<Trans>{ok ? "Cannot render " + t("preview.errorAt") : null}</Trans>`],
+  ])("accepts a fragment that has its sentence: %s", (jsx) => {
+    expect(probe(jsx)).toEqual([]);
+  });
+
+  it.each([[`<>{t("preview.errorAt")}</>`], [`<div>{null}{t("preview.errorAt")}</div>`], [`<div>{false}{undefined}{t("preview.errorAt")}</div>`]])(
+    "flags a fragment whose only company renders nothing: %s",
+    (jsx) => {
+      expect(probe(jsx)).toEqual(flag);
+    },
+  );
+});

@@ -825,7 +825,10 @@ export function standaloneTextFindings(
 }
 
 /** Inline wrappers a fragment may sit in and still belong to its sentence. */
-const INLINE_TAGS = new Set(["span", "strong", "em", "b", "i", "code", "small", "bdi", "bdo", "mark"]);
+const INLINE_TAGS = new Set([
+  ...["span", "strong", "em", "b", "i", "u", "s", "code", "small", "mark", "bdi", "bdo"],
+  ...["a", "abbr", "cite", "q", "sub", "sup", "time", "label"],
+]);
 
 /** `{ns, key}` of a registered fragment id `editor.json:preview.errorAt`. */
 function fragmentRefs(fragments: Readonly<Record<string, string>>) {
@@ -847,9 +850,14 @@ function matchFragment(raw: string, refs: readonly { ns: string; key: string }[]
  * JSX where a registered fragment is the only content of its block: rendered
  * alone rather than appended to a sentence. Matched on the KEY, whatever the
  * translate function is called (`t`, an alias, `i18n.t`), and on
- * `<Trans i18nKey>`. "Alone" is judged at the nearest non-inline element, so
- * `Cannot render <span>{t(fragment)}</span>` belongs to its sentence while
+ * `<Trans i18nKey>`. The walk from the fragment up to the nearest non-inline
+ * element looks for company at EVERY level — a sibling inside an inline
+ * wrapper, `"Cannot render " + t(fragment)`, a template literal's text — so
+ * `Cannot render <a>{t(fragment)}</a>` belongs to its sentence while
  * `<div role="status">{t(fragment)}</div>` — the "(6:1)" strip — does not.
+ * `{null}`, `{false}`, `{undefined}` and comments render nothing and are no
+ * company; a `<>` fragment is transparent; an attribute value is its own
+ * context.
  */
 export function fragmentUsageFindings(
   rel: string,
@@ -861,31 +869,50 @@ export function fragmentUsageFindings(
   const out: string[] = [];
 
   const tagName = (el: ts.JsxElement) => el.openingElement.tagName.getText(sf);
+  const rendersSomething = (e: ts.Expression): boolean => {
+    if (ts.isParenthesizedExpression(e)) return rendersSomething(e.expression);
+    if (ts.isStringLiteralLike(e)) return e.text.trim() !== "";
+    if (e.kind === ts.SyntaxKind.NullKeyword || e.kind === ts.SyntaxKind.TrueKeyword || e.kind === ts.SyntaxKind.FalseKeyword) return false;
+    return !(ts.isIdentifier(e) && e.text === "undefined");
+  };
   const meaningful = (child: ts.JsxChild): boolean => {
     if (ts.isJsxText(child)) return child.text.trim() !== "";
-    if (ts.isJsxExpression(child)) {
-      const e = child.expression;
-      if (!e) return false; // a comment
-      if (ts.isStringLiteralLike(e)) return e.text.trim() !== "";
-      return true;
-    }
+    if (ts.isJsxExpression(child)) return child.expression ? rendersSomething(child.expression) : false;
     return true;
   };
-  const aloneIn = (el: ts.JsxElement, node: ts.Node) =>
-    !el.children.filter((c) => !(c.pos <= node.pos && node.end <= c.end)).some(meaningful);
+  const contains = (outer: ts.Node, inner: ts.Node) => outer.pos <= inner.pos && inner.end <= outer.end;
+  /** Whether `parent` gives `child` (the step of the walk inside it) company. */
+  const hasCompany = (parent: ts.Node, child: ts.Node): boolean => {
+    if (ts.isJsxElement(parent) || ts.isJsxFragment(parent)) {
+      return parent.children.some((c) => !contains(c, child) && meaningful(c));
+    }
+    if (ts.isBinaryExpression(parent) && parent.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+      return rendersSomething(parent.left === child ? parent.right : parent.left);
+    }
+    if (ts.isTemplateExpression(parent)) {
+      return (
+        parent.head.text.trim() !== "" ||
+        parent.templateSpans.some((span) => span.literal.text.trim() !== "" || (!contains(span, child) && rendersSomething(span.expression)))
+      );
+    }
+    return false;
+  };
   const aloneInBlock = (node: ts.Node): boolean => {
-    // The outermost inline element seen: if the walk reaches the component's
-    // boundary without a block, THAT element is what gets rendered.
-    let outermost: ts.JsxElement | null = null;
-    for (let parent = node.parent; parent; parent = parent.parent) {
+    // Inside JSX at all? If the walk reaches the component's boundary through
+    // only inline wrappers and `<>`, what they hold is what gets rendered.
+    let inJsx = false;
+    for (let child = node, parent = node.parent; parent; child = parent, parent = parent.parent) {
+      if (hasCompany(parent, child)) return false;
+      if (ts.isJsxAttribute(parent)) return true;
       if (ts.isJsxElement(parent)) {
-        if (!INLINE_TAGS.has(tagName(parent))) return aloneIn(parent, node);
-        outermost = parent;
-        continue;
+        if (!INLINE_TAGS.has(tagName(parent))) return true;
+        inJsx = true;
+      } else if (ts.isJsxFragment(parent)) {
+        inJsx = true;
       }
       if (ts.isSourceFile(parent) || ts.isBlock(parent) || ts.isFunctionLike(parent)) break;
     }
-    return outermost ? aloneIn(outermost, node) : false;
+    return inJsx;
   };
 
   const visit = (node: ts.Node) => {
