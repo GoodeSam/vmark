@@ -226,7 +226,7 @@ const SANCTIONED = [
  */
 const SELECTION_WORD = "selected|active|checked|current|pressed";
 const SELECTED_STATE = new RegExp(
-  `\\.(?:is-)?(?:${SELECTION_WORD})\\b(?!-)|--(?:${SELECTION_WORD}|on)\\b|\\[data-(?:active|selected|checked|pinned)\\s*(?:\\]|=\\s*(?!["']?false))|\\[aria-(?:selected|checked|pressed|current)\\s*(?:\\]|=\\s*(?!["']?false))|:checked\\b`,
+  `\\.(?:is-)?(?:${SELECTION_WORD})\\b(?!-)|--(?:${SELECTION_WORD}|on)\\b|\\[data-(?:active|selected|checked|pinned)\\s*(?:\\]|=(?!\\s*["']?\\s*false))|\\[aria-(?:selected|checked|pressed|current)\\s*(?:\\]|=(?!\\s*["']?\\s*false))|:checked\\b`,
 );
 /** Accent inks a selected LABEL must not take (R6: selection keeps its ink). */
 const ACCENT_INK = /(?:^|[;{\s])color\s*:\s*var\(\s*(--accent-primary|--primary-color|--browser-accent-primary)\b/;

@@ -240,6 +240,11 @@ describe("C9 — selection keeps its ink (R6)", () => {
     expect(ids(r, "C9")).toEqual([`a.css:.row[aria-selected = "true"] (ink)`]);
   });
 
+  it("reads a spaced FALSE attribute as not selected (third pass)", () => {
+    const r = run({ "a.css": `.row[aria-selected = "false"] { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
   it("is not fooled by whitespace inside var()", () => {
     const r = run({ "a.css": `.row.active { color: var( --accent-primary ); }` });
     expect(ids(r, "C9")).toEqual(["a.css:.row.active (ink)"]);
