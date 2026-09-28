@@ -43,8 +43,9 @@ describe("scanHtmlTags — start tags with parsed attributes, in one pass", () =
     expect(tags(`<SCRIPT>1</SCRIPT ><a href=x>`).map((t) => t[0])).toEqual(["script", "a"]);
   });
 
-  it("survives unterminated markup", () => {
-    expect(tags(`<a href="x`)).toEqual([["a", 0, [["href", "x"]]]]);
+  it("survives unterminated markup, dropping a tag still open at end of input as the browser does", () => {
+    expect(tags(`<a href="x`)).toEqual([]);
+    expect(tags(`<a href=x`)).toEqual([]);
     expect(tags(`<!-- never closed <script>`)).toEqual([]);
     expect(tags(`<script>never closed <b>`).map((t) => t[0])).toEqual(["script"]);
   });

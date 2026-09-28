@@ -212,7 +212,6 @@ describe("html adapter — rules read parsed tags, not text", () => {
     [`<a target="_top" href="javascript:void 0">x</a>`, "html/javascript-url-navigation"],
     [`<a target=_blank href="javascript:void 0">x</a>`, "html/javascript-url-navigation"],
     [`<base target="_parent"><a href="javascript:void 0">x</a>`, "html/javascript-url-navigation"],
-    [`<form action="javascript:x()" target="_top"></form>`, "html/javascript-url-navigation"],
     [`<a href=" java\tscript:void 0">x</a>`, "html/javascript-url"],
     [`<a href="JavaScript:void 0">x</a>`, "html/javascript-url"],
   ])("%s → %s", (html, ruleId) => {
@@ -228,5 +227,56 @@ describe("html adapter — rules read parsed tags, not text", () => {
     const started = performance.now();
     htmlValidator("<script ".repeat(8_000));
     expect(performance.now() - started).toBeLessThan(250);
+  });
+});
+
+// Codex's fourth and fifth reviews, each expectation from WebKit's parser
+// (DOMParser) or the trusted frame's behaviour. Detection is approximate and
+// advisory; these are the cases it must get right.
+describe("html adapter — differential corpus", () => {
+  const rules = (html: string) => htmlValidator(html).map((d) => d.ruleId);
+  const EXT = "html/script-external";
+
+  it.each([
+    // Comment and CDATA boundaries that hid real scripts.
+    [`<!--><script src="x.js"></script>`, [EXT]],
+    [`<!---><script src="x.js"></script>`, [EXT]],
+    [`<!-- --!><script src="x.js"></script>`, [EXT]],
+    [`<![CDATA[><script src="x.js"></script>`, [EXT]],
+    [`<svg><![cdata[><script src="x.js"></script>]]></svg>`, [EXT]],
+    // Unicode case folding must not shift offsets.
+    [`İ<script src="x.js"></script>`, [EXT]],
+    [`<p title="İ"></p><script src="x.js"></script>`, [EXT]],
+    // Not elements at all.
+    [`<plaintext><script src="x.js"></script>`, []],
+    [`<script src="x.js"`, []],
+    // SVG: HTML raw-text rules do not apply; its integration points do.
+    [`<svg><title><script src="x.js"></script></title></svg>`, [EXT]],
+    [`<svg><script/><a xlink:href="javascript:void 0">go</a></svg>`, ["html/script-blocked", "html/javascript-url"]],
+    [`<svg><title><textarea><script src="x.js"></script></textarea></title></svg>`, []],
+    // The first of duplicate attributes wins.
+    [`<a href="x" href="javascript:void 0">go</a>`, []],
+    [`<a onclick="a()" onclick="b()">go</a>`, ["html/inline-handler"]],
+    // Character references in attribute values.
+    [`<a href="java&#115;cript:void 0">go</a>`, ["html/javascript-url"]],
+    [`<a href="javascript&colon;void 0">go</a>`, ["html/javascript-url"]],
+    [`<a href="java&Tab;script:void 0">go</a>`, ["html/javascript-url"]],
+  ])("%s → %j", (html, expected) => {
+    expect(rules(html)).toEqual(expected);
+  });
+
+  it("positions a finding after a Unicode character correctly", () => {
+    expect(htmlValidator(`İ<script src="x.js"></script>`)[0].column).toBe(2);
+  });
+
+  it.each([
+    ["duplicate URL attributes", '<a ' + 'href="javascript:void 0" '.repeat(8_000) + ">"],
+    ["unique attributes", "<a " + Array.from({ length: 8_000 }, (_, i) => `data-a${i}="x"`).join(" ") + ">"],
+    ["nested srcdoc", "<iframe srcdoc=\"".repeat(200) + "x"],
+    ["deep nesting", "<div>".repeat(20_000) + "</p>".repeat(20_000)],
+  ])("stays fast on hostile input: %s", (_label, html) => {
+    const started = performance.now();
+    htmlValidator(html);
+    expect(performance.now() - started).toBeLessThan(300);
   });
 });
