@@ -59,6 +59,10 @@ export function lineOf(text, index) {
  */
 export function* cssRules(css) {
   const blanked = blankComments(css);
+  // Lines are counted incrementally: `lineOf` per rule re-splits the file
+  // from the start, quadratic in the file's length.
+  let line = 1;
+  let counted = 0;
   // Rules are FOUND on a copy with in-string braces blanked, and their text
   // SLICED from `blanked`, so a string value reaches callers unaltered.
   for (const m of blankStringBraces(blanked).matchAll(CSS_RULE_RE)) {
@@ -66,12 +70,13 @@ export function* cssRules(css) {
     const offset = rawSelector.search(/\S/);
     const index = m.index + (offset === -1 ? 0 : offset);
     const bodyIndex = m.index + m[1].length + 1;
+    for (; counted < index; counted += 1) if (css.charCodeAt(counted) === 10) line += 1;
     yield {
       selector: rawSelector.replace(/\s+/g, " ").trim(),
       body: blanked.slice(bodyIndex, bodyIndex + m[2].length),
       index,
       bodyIndex,
-      line: lineOf(css, index),
+      line,
     };
   }
 }
