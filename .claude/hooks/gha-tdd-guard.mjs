@@ -34,9 +34,9 @@
 //     - src/stores/workflowStore.ts and its slice modules (workflowEditQueue,
 //       workflowSerialize, workflowPreviewSlice, workflowViewSlice,
 //       workflowApprovalSlice — the store's transitions, WI-LX2.4)
-//     - src/lib/formats/adapters/yaml{Workflow,Engine}*.{ts,tsx} (the yaml
-//       adapter's workflow renderers and source extensions — the engine's
-//       Run/Cancel panel mounts from yamlEngineRenderer.tsx, WI-LX2.1)
+//     (the yaml adapter's workflow renderers, src/lib/formats/adapters/
+//      yaml{Workflow,Engine}*, are guarded by multi-format-tdd-guard.mjs,
+//      whose src/lib/formats/** scope applies the same rule)
 //
 //   Shared by both — the CodeMirror workflow extensions in the source pane
 //   (completion, cursor sync, goto-def are viewer; preview is engine; the GHA
@@ -173,9 +173,11 @@ const SCOPED = [
   // Named, not globbed: `workflow*Store.ts` would re-scope the dead
   // workflowViewStore/workflowEditStore names the hook's test pins as unscoped.
   /^src\/stores\/workflow(?:EditQueue|Serialize|PreviewSlice|ViewSlice|ApprovalSlice)\.ts$/,
-  // The yaml adapter's workflow modules: the GHA renderer + source extensions,
-  // and the engine's Run/Cancel renderer (WI-LX2.1).
-  /^src\/lib\/formats\/adapters\/yaml(?:Workflow|Engine)[^/]*\.tsx?$/,
+  // The yaml adapter's workflow modules (yamlWorkflow*, yamlEngine*) are NOT
+  // listed: they sit under src/lib/formats/, which multi-format-tdd-guard.mjs
+  // scopes whole with the identical sibling-test rule, so an entry here only
+  // ran the same check twice. gha-tdd-guard.test.mjs asserts the other guard
+  // blocks them.
 
   // ── Source-pane workflow extensions (viewer + engine) ──
   // Matches on `Workflow` or `Gha` ANYWHERE in the filename, not the

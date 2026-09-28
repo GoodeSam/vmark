@@ -22,7 +22,9 @@
  *   - scripts/mock-boundaries-baseline.json  -> internal-module mocking
  *   - .dependency-cruiser-known-violations.json -> layering debt
  *   - scripts/plugin-store-coupling-baseline.json -> plugin->host coupling
- *   - git log                                -> commits in window, last touch
+ *   - git log --name-status (whole history)  -> commits in window, last touch,
+ *                                               ledger freshness — through deletions
+ *                                               and renames (scripts/lib/featureHistory.mjs)
  *   - src/stores/settingsStore/defaults.ts   -> VERIFIES each spine flagDefault
  *
  * THERE IS NO ISSUE-COUNT COLUMN, AND ADDING ONE WOULD BE A MISTAKE. It is the
@@ -79,6 +81,11 @@
  * the files some test loaded and averaging those reports the tested fraction
  * as the feature's coverage.
  *
+ * FAILS CLOSED on the inputs the feature-map gate judges, by the gate's own
+ * rules: ambiguous or fully shadowed claims (`claimErrors`) and a ledger the
+ * gate refuses (`ledgerErrors`) stop generation, so this never renders counts
+ * or freshness from a spine or ledger `pnpm lint:feature-map` would reject.
+ *
  * Regenerate: `node scripts/gen-feature-ledger.mjs [--since=<git date>]`. Do
  * not hand-edit the output. Rendering lives in scripts/lib/featureLedgerRender.mjs.
  * Self-test: `scripts/gen-feature-ledger.test.mjs` (gates tier).
@@ -89,8 +96,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { renderLedger } from "./lib/featureLedgerRender.mjs";
-import { isTestFile, resolveOwners } from "./lib/featureOwnership.mjs";
-import { LEDGER_REL, parseLedger } from "./lib/featureLedgerDoc.mjs";
+import { CODE_EXTENSIONS, claimErrors, isCodeFile, isTestFile, resolveOwners } from "./lib/featureOwnership.mjs";
+import { LEDGER_REL, ledgerErrors, parseLedger } from "./lib/featureLedgerDoc.mjs";
+import { gitIn, ledgerProbes, repoFiles } from "./lib/featureMapInputs.mjs";
+import { LOG_ARGS, parseNameStatusLog, touchesByFeature } from "./lib/featureHistory.mjs";
 
 const OUTPUT_REL = "dev-docs/feature-metrics.md";
 const DEFAULTS_REL = "src/stores/settingsStore/defaults.ts";
@@ -320,11 +329,10 @@ export function spineErrors(root, spine, defaultsSource, runner = run) {
 // measure different things — `.js`/`.jsx`/`.mjs`/`.mts` were code to tokei
 // and invisible to `find` until audit 20260907 #70.
 const CODE_LANGS = new Set(["TypeScript", "Tsx", "JSX", "JavaScript", "Rust"]);
-/** Every extension those languages own — what `listFiles` enumerates as code. */
-export const CODE_EXTENSIONS = ["ts", "tsx", "mts", "cts", "js", "jsx", "mjs", "cjs", "rs"];
-const CODE_EXTENSION_RE = new RegExp(`\\.(?:${CODE_EXTENSIONS.join("|")})$`);
-/** One policy for "this is a code file", shared by every view of the inventory. */
-export const isCodeFile = (f) => CODE_EXTENSION_RE.test(f);
+// The extension list and the code-file test are the OWNERSHIP module's, not a
+// copy: inventory and ownership must describe one population, and two lists
+// could only ever agree by being kept in step by hand.
+export { CODE_EXTENSIONS, isCodeFile };
 
 /**
  * Spine paths as ONE non-overlapping set. `find`, tokei and `git log` all
@@ -509,18 +517,27 @@ export function featureCoverage(covSummary, eligible, root) {
 }
 
 /**
- * Commits touching `files`, counted by `git log` over an EXPLICIT file list.
- * An empty list is zero commits — `git log --` with no pathspec would count
- * every commit in the repository as this feature's.
+ * History as the Commits, Last touch and freshness columns need it: each
+ * feature's touching commits (through deletions and renames — see
+ * scripts/lib/featureHistory.mjs), the commits inside the churn window, and a
+ * memoised `sha..HEAD` set per verified commit.
  */
-function gitOver(args, files) {
-  return files.length === 0 ? "" : run("git", [...args, "--", ...files]).trim();
+function readHistory(spine, since, git) {
+  const touches = touchesByFeature(parseNameStatusLog(git(...LOG_ARGS)), spine);
+  const hashes = (...args) => new Set(git("rev-list", ...args).split("\n").filter(Boolean));
+  const inWindow = hashes(`--since=${since}`, "HEAD");
+  const ranges = new Map();
+  const sinceVerified = (sha) => {
+    if (!ranges.has(sha)) ranges.set(sha, hashes(`${sha}..HEAD`));
+    return ranges.get(sha);
+  };
+  return { touches, inWindow, sinceVerified };
 }
 
 /** One ledger row: every column joined or measured for one spine feature. */
 function measureFeature(f, ctx) {
   const paths = normalizePaths(f.paths);
-  const { src: srcFiles, test: testFiles, all: ownedAll } = ctx.inventory.get(f.name);
+  const { src: srcFiles, test: testFiles } = ctx.inventory.get(f.name);
   const owns = (file) => ctx.owner.get(file) === f.name;
   // Coupling units are bare plugin/module names ("codemirror", "toolbarActions"),
   // so match the LAST path segment rather than searching the whole string — a
@@ -528,14 +545,13 @@ function measureFeature(f, ctx) {
   const coup = Object.entries(ctx.couplingUnits)
     .filter(([unit]) => paths.some((p) => p.split("/").pop() === unit))
     .reduce((n, [, v]) => n + (typeof v === "number" ? v : Object.values(v || {}).reduce((a, b) => a + (b || 0), 0)), 0);
-  const commits = gitOver(["log", `--since=${ctx.since}`, "--oneline"], ownedAll);
-  const last = gitOver(["log", "-1", "--format=%ad", "--date=short"], ownedAll);
+  const touches = ctx.history.touches.get(f.name) ?? [];
   // Ledger freshness: commits to this feature's files since the OLDEST commit
   // any of its ledger blocks was verified against. `null` (printed `--`) when
   // no ledger is present or no block describes the feature.
   const shas = [...new Set((ctx.ledgerBlocks.get(f.name) ?? []).map((b) => b.verified).filter(Boolean))];
   const sinceLedger = shas.length === 0 ? null
-    : Math.max(...shas.map((sha) => { const out = gitOver(["log", "--oneline", `${sha}..HEAD`], ownedAll); return out ? out.split("\n").length : 0; }));
+    : Math.max(...shas.map((sha) => { const range = ctx.history.sinceVerified(sha); return touches.filter((t) => range.has(t.hash)).length; }));
   return {
     name: f.name, flag: f.flag, flagDefault: f.flagDefault, doc: f.doc,
     code: tokeiCode(srcFiles),
@@ -547,8 +563,8 @@ function measureFeature(f, ctx) {
     mocks: ctx.mockRecords.filter((r) => owns(r.file)).length,
     dep: ctx.depRecords.filter((r) => owns(r.from)).length,
     coup,
-    commits: commits ? commits.split("\n").length : 0,
-    last: last || "--",
+    commits: touches.filter((t) => ctx.history.inWindow.has(t.hash)).length,
+    last: touches[0]?.date ?? "--",
     blocks: (ctx.ledgerBlocks.get(f.name) ?? []).length,
     sinceLedger,
   };
@@ -562,36 +578,88 @@ function refuse(code, headline, lines, footer) {
   process.exit(code);
 }
 
+/** Stale-spine errors, then — on a spine of valid shape — ambiguous or fully shadowed claims over every code file in the tree. */
+function spineAndClaimErrors(root, spine, defaultsSource, files) {
+  const errors = spineErrors(root, spine, defaultsSource);
+  if (spineShapeErrors(spine).length) return errors;
+  return [...errors, ...claimErrors(spine, files.filter(isCodeFile))];
+}
+
+/**
+ * ONE inventory per feature, consumed by the coverage-provenance scan and by
+ * every measured column. SINGLE OWNERSHIP: a file under two claims (a folder
+ * and a file inside it) is measured once, for the most specific claim — the
+ * rule scripts/check-feature-map.mjs enforces. Without it 90 files were
+ * counted under two features.
+ */
+function ownedInventory(spine, runner = run) {
+  const raw = new Map(spine.features.map((f) => [f.name, featureInventory(normalizePaths(f.paths), runner)]));
+  const { owner } = resolveOwners(spine, [...new Set([...raw.values()].flatMap((v) => v.all))]);
+  const inventory = new Map([...raw].map(([name, v]) => {
+    const mine = (file) => owner.get(file) === name;
+    return [name, { all: v.all.filter(mine), code: v.code.filter(mine), src: v.src.filter(mine), test: v.test.filter(mine) }];
+  }));
+  return { inventory, owner };
+}
+
+/** The ledger's blocks grouped by spine feature; each block carries the commit its own area was verified at. */
+function ledgerBlocksByFeature(ledger) {
+  const out = new Map();
+  for (const b of ledger?.blocks ?? []) {
+    const name = b.fields.feature;
+    if (!name) continue;
+    if (!out.has(name)) out.set(name, []);
+    out.get(name).push(b);
+  }
+  return out;
+}
+
+/**
+ * COVERAGE PROVENANCE. Nothing ties coverage/coverage-summary.json to the tree
+ * it was measured on, so a summary from an older checkout was reported as this
+ * tree's coverage for as long as the filenames still matched (audit R2 #134).
+ * There is no commit stamp in the summary, so the check is the honest one
+ * available: if any measured source is NEWER than the summary, it did not
+ * measure this tree, and the columns say `--` rather than a number from
+ * somewhere else.
+ */
+function coverageForTree(root, inventory, summary) {
+  if (summary === null) return { covSummary: null, covStale: false };
+  const summaryAt = statSync(path.join(root, "coverage/coverage-summary.json")).mtimeMs;
+  const newest = [...inventory.values()].flatMap((files) => files.code).reduce((max, rel) => {
+    const st = statSync(path.join(root, rel), { throwIfNoEntry: false });
+    return st && st.mtimeMs > max ? st.mtimeMs : max;
+  }, 0);
+  return newest > summaryAt ? { covSummary: null, covStale: true } : { covSummary: summary, covStale: false };
+}
+
+/** A step that fails exits with `code` and the reason, never a stack trace. */
+function attempt(code, headline, step) {
+  try {
+    return step();
+  } catch (err) {
+    refuse(code, headline, [err instanceof Error ? (err.stderr ? String(err.stderr).trim() : err.message) : String(err)]);
+    return null; // unreachable — refuse() exits
+  }
+}
+
 function main() {
   const ROOT = process.cwd();
-  let args;
-  try {
-    args = parseArgs(process.argv.slice(2));
-  } catch (err) {
-    console.error(err.message);
-    process.exit(64);
-  }
+  const args = attempt(64, "Bad invocation:", () => parseArgs(process.argv.slice(2)));
   // A source that cannot be PARSED is named and refused, not thrown as a bare
   // SyntaxError whose stack points at readJson rather than at the file.
-  const read = (rel) => {
-    try {
-      return readJson(path.join(ROOT, rel), rel);
-    } catch (err) {
-      refuse(66, "A source this ledger joins is not readable:", [err.message]);
-      return null; // unreachable — refuse() exits
-    }
-  };
+  const read = (rel) => attempt(66, "A source this ledger joins is not readable:", () => readJson(path.join(ROOT, rel), rel));
   const spine = read("scripts/feature-map.json");
   if (!spine) refuse(64, "scripts/feature-map.json missing", []);
+  const git = gitIn(ROOT);
+  const files = attempt(66, "git cannot list this tree:", () => repoFiles(ROOT, git));
 
   const defaultsPath = path.join(ROOT, DEFAULTS_REL);
-  const errors = spineErrors(ROOT, spine, existsSync(defaultsPath) ? readFileSync(defaultsPath, "utf8") : null);
+  const errors = spineAndClaimErrors(ROOT, spine, existsSync(defaultsPath) ? readFileSync(defaultsPath, "utf8") : null, files);
   if (errors.length) {
     refuse(65, "feature-map.json is stale — the ledger refuses to generate:", errors,
       `${errors.length} stale entr${errors.length === 1 ? "y" : "ies"}. Fix the map, do not delete the row.`);
   }
-
-  // ---------------------------------------------------------------- joins
   const sources = joinSources({
     fileSize: read("scripts/file-size-baseline.json"),
     mockB: read("scripts/mock-boundaries-baseline.json"),
@@ -602,66 +670,24 @@ function main() {
     refuse(66, "A baseline is not the shape this join reads — its column would be all zeros, which reads as 'clean':", sources.problems,
       "Fix the parse. An all-zero column is a false all-clear.");
   }
-  // COVERAGE PROVENANCE. Nothing tied coverage/coverage-summary.json to the
-  // tree it was measured on, so a summary from an older checkout was reported
-  // as this tree's coverage for as long as the filenames still matched
-  // (audit R2 #134). There is no commit stamp in the summary, so the check is
-  // the honest one available: if any measured source is NEWER than the
-  // summary, it did not measure this tree, and the columns say `--` rather
-  // than a number from somewhere else.
-  // ONE inventory per feature, built here and consumed by both the
-  // coverage-provenance scan below and every measured column. The staleness
-  // scan used to re-enumerate every feature's tree for itself (audit R2 #125).
-  // SINGLE OWNERSHIP: a file under two claims (a folder and a file inside it)
-  // is measured once, for the most specific claim — the rule
-  // scripts/check-feature-map.mjs enforces. Without it 90 files were counted
-  // under two features and column totals could not be added up.
-  const rawInventory = new Map(spine.features.map((f) => [f.name, featureInventory(normalizePaths(f.paths))]));
-  const { owner } = resolveOwners(spine, [...new Set([...rawInventory.values()].flatMap((v) => v.all))]);
-  const inventory = new Map([...rawInventory].map(([name, v]) => {
-    const mine = (file) => owner.get(file) === name;
-    return [name, { all: v.all.filter(mine), code: v.code.filter(mine), src: v.src.filter(mine), test: v.test.filter(mine) }];
-  }));
-  // The qualitative ledger, when this machine has it: its blocks join the
-  // spine by feature name, each carrying the commit its area was verified at.
+  const { inventory, owner } = ownedInventory(spine);
+  // The qualitative ledger, when this machine has it — VALIDATED by the gate's
+  // own rules first: a ledger the gate refuses would render counts and
+  // freshness that read as authoritative.
   const ledgerPath = path.join(ROOT, LEDGER_REL);
   const ledger = existsSync(ledgerPath) ? parseLedger(readFileSync(ledgerPath, "utf8")) : null;
-  const ledgerBlocks = new Map();
-  if (ledger) {
-    const verifiedAt = new Map(ledger.areas.map((a) => [a.number, a.verified]));
-    for (const b of ledger.blocks) {
-      const name = b.fields.feature;
-      if (!name) continue;
-      if (!ledgerBlocks.has(name)) ledgerBlocks.set(name, []);
-      ledgerBlocks.get(name).push({ ...b, verified: verifiedAt.get(b.area) });
-    }
-  }
+  const ledgerProblems = ledger ? ledgerErrors(ledger, spine, ledgerProbes(ROOT, git, files)) : [];
+  if (ledgerProblems.length) refuse(65, `${LEDGER_REL} does not pass the feature-map gate — the ledger refuses to render it:`, ledgerProblems);
 
-  const covPath = path.join(ROOT, "coverage/coverage-summary.json");
-  let covSummary = read("coverage/coverage-summary.json");
-  let covStale = false;
-  if (covSummary !== null) {
-    const summaryAt = statSync(covPath).mtimeMs;
-    const newest = [...inventory.values()]
-      .flatMap((files) => files.code)
-      .reduce((max, rel) => {
-        const st = statSync(path.join(ROOT, rel), { throwIfNoEntry: false });
-        return st && st.mtimeMs > max ? st.mtimeMs : max;
-      }, 0);
-    covStale = newest > summaryAt;
-    if (covStale) covSummary = null;
-  }
-  const ctx = { root: ROOT, since: args.since, covSummary, inventory, owner, ledgerBlocks, ...sources };
-
-  let rows;
-  try {
-    rows = spine.features.map((f) => measureFeature(f, ctx));
-  } catch (err) {
-    refuse(67, "A measurement failed — the ledger refuses to print a number it did not measure:", [err.message]);
-  }
+  const { covSummary, covStale } = coverageForTree(ROOT, inventory, read("coverage/coverage-summary.json"));
+  const rows = attempt(67, "A measurement failed — the ledger refuses to print a number it did not measure:", () => {
+    const history = readHistory(spine, args.since, git);
+    const ctx = { root: ROOT, since: args.since, covSummary, inventory, owner, ledgerBlocks: ledgerBlocksByFeature(ledger), history, ...sources };
+    return spine.features.map((f) => measureFeature(f, ctx));
+  });
   rows.sort((a, b) => (b.code || 0) - (a.code || 0));
 
-  const covPresent = ctx.covSummary !== null;
+  const covPresent = covSummary !== null;
   mkdirSync(path.join(ROOT, "dev-docs"), { recursive: true });
   // Written through a sibling temporary file and RENAMED into place: a direct
   // write truncates first, so an interruption leaves a half-written ledger that

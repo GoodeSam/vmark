@@ -431,12 +431,18 @@ function runOnce(argv) {
  * Request: one line — the caller's cwd, then argv, joined by U+001F.
  * Reply: `O <line>` per stdout line, `E <line>` per stderr line, then
  * `X <exit code>`. Each request runs with the caller's cwd, so relative paths
- * resolve exactly as they would in a process started there.
+ * resolve exactly as they would in a process started there. The argv
+ * `--ping` alone is the readiness handshake: `X 0`, cwd untouched, so a
+ * caller learns the server is up before it trusts the stream with a probe.
  */
 async function serve() {
   const tagged = (tag, lines) => lines.flatMap((l) => String(l).split("\n")).map((l) => `${tag}\t${l}\n`).join("");
   for await (const line of createInterface({ input: process.stdin, crlfDelay: Infinity })) {
     const [cwd, ...argv] = line.split("\u001f");
+    if (argv.length === 1 && argv[0] === "--ping") {
+      process.stdout.write("X\t0\n");
+      continue;
+    }
     const out = [];
     const err = [];
     const { log, error } = console;

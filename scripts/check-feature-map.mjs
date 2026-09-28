@@ -15,26 +15,34 @@
  *      no baseline: on adoption every file was assigned.
  *   3. LEDGER (`.claude/feature-ledger.md`, tracked, REQUIRED): every block
  *      names a spine feature, every spine feature has a block, every path a
- *      block cites in `code`/`docs`/`tests` exists, and every area records the
- *      commit it was verified against. It lived in the gitignored `dev-docs/`
+ *      block cites in `code`/`rust`/`docs`/`tests` exists (a glob matches a
+ *      file), and every area records the commit it was verified against — one
+ *      that is an ancestor of HEAD. It lived in the gitignored `dev-docs/`
  *      until 2026-09-27, where CI could not see it; a missing ledger now fails. The first ledger was accurate on 2026-09-07 and
  *      nineteen releases stale by 2026-09-27, with no signal.
  *
+ * A spine of the wrong SHAPE is reported alone: every later check would be
+ * reasoning about a guess, and `null` used to crash the ownership pass with a
+ * TypeError instead of producing a finding.
+ *
  * Usage: node scripts/check-feature-map.mjs [--root=<dir>]
- *   exit 0 clean, 1 findings, 64 bad invocation, 66 unreadable input.
+ *   exit 0 clean, 1 findings, 64 bad invocation, 66 unreadable input — the
+ *   spine, the git file list, defaults.ts, the ledger, or a `find` the spine
+ *   validation runs. Each is named; none is a stack trace.
  *
  * @coordinates-with scripts/lib/featureOwnership.mjs — ownership resolution
  * @coordinates-with scripts/lib/featureLedgerDoc.mjs — ledger parsing and joins
  * @coordinates-with scripts/gen-feature-ledger.mjs — the spine validation reused here
+ * @coordinates-with scripts/lib/featureMapInputs.mjs — the file list and ledger probes
  * @coordinates-with scripts/check-feature-map.test.mjs — the self-test
  * @module scripts/check-feature-map
  */
 import { existsSync, readFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
-import { spineErrors } from "./gen-feature-ledger.mjs";
+import { spineErrors, spineShapeErrors } from "./gen-feature-ledger.mjs";
 import { claimErrors, isCodeFile, ownershipUniverse, resolveOwners } from "./lib/featureOwnership.mjs";
 import { LEDGER_REL, ledgerErrors, parseLedger } from "./lib/featureLedgerDoc.mjs";
+import { gitIn, ledgerProbes, repoFiles } from "./lib/featureMapInputs.mjs";
 
 const SPINE_REL = "scripts/feature-map.json";
 const DEFAULTS_REL = "src/stores/settingsStore/defaults.ts";
@@ -51,26 +59,37 @@ function parseArgs(argv) {
   return { root };
 }
 
-function main() {
-  const { root } = parseArgs(process.argv.slice(2));
-  const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
-
-  let spine;
+/** Read one input, or exit 66 NAMING it: an unreadable input is not a finding about the tree. */
+function input(what, read) {
   try {
-    spine = JSON.parse(readFileSync(path.join(root, SPINE_REL), "utf8"));
+    return read();
   } catch (err) {
-    console.error(`${SPINE_REL}: unreadable — ${err.message}`);
+    const why = err instanceof Error ? (err.stderr ? String(err.stderr).trim() : err.message) : String(err);
+    console.error(`${what}: unreadable — ${why.split("\n")[0]}`);
     process.exit(66);
   }
+}
+
+function report(errors) {
+  console.error(`Feature map: ${errors.length} finding${errors.length === 1 ? "" : "s"}\n`);
+  for (const e of errors) console.error(`  ${e}`);
+  process.exit(1);
+}
+
+function main() {
+  const { root } = parseArgs(process.argv.slice(2));
+  const git = gitIn(root);
+  const spine = input(SPINE_REL, () => JSON.parse(readFileSync(path.join(root, SPINE_REL), "utf8")));
   // Tracked plus untracked-not-ignored: a new file must fail before it is committed.
-  const files = git("ls-files", "-z", "--cached", "--others", "--exclude-standard")
-    .split("\0").filter((f) => f !== "" && existsSync(path.join(root, f)));
-  const codeFiles = files.filter(isCodeFile);
+  const files = input("git ls-files", () => repoFiles(root, git));
+  const shape = spineShapeErrors(spine);
+  if (shape.length) report(shape);
 
   const defaultsPath = path.join(root, DEFAULTS_REL);
+  const defaults = input(DEFAULTS_REL, () => (existsSync(defaultsPath) ? readFileSync(defaultsPath, "utf8") : null));
   const errors = [
-    ...spineErrors(root, spine, existsSync(defaultsPath) ? readFileSync(defaultsPath, "utf8") : null),
-    ...claimErrors(spine, codeFiles),
+    ...input("spine validation (find over the spine's paths)", () => spineErrors(root, spine, defaults)),
+    ...claimErrors(spine, files.filter(isCodeFile)),
   ];
   const universe = ownershipUniverse(files);
   const { unowned } = resolveOwners(spine, universe);
@@ -81,19 +100,12 @@ function main() {
   if (!existsSync(ledgerPath)) {
     errors.push(`${LEDGER_REL} is missing — the ledger is tracked and required`);
   } else {
-    const doc = parseLedger(readFileSync(ledgerPath, "utf8"));
-    const shaExists = (sha) => {
-      try { git("cat-file", "-e", `${sha}^{commit}`); return true; } catch { return false; }
-    };
-    errors.push(...ledgerErrors(doc, spine, { exists: (p) => existsSync(path.join(root, p)), shaExists }));
+    const doc = parseLedger(input(LEDGER_REL, () => readFileSync(ledgerPath, "utf8")));
+    errors.push(...ledgerErrors(doc, spine, ledgerProbes(root, git, files)));
     ledgerNote = `ledger: ${doc.blocks.length} blocks in ${doc.areas.length} areas joined to ${spine.features.length} features`;
   }
 
-  if (errors.length) {
-    console.error(`Feature map: ${errors.length} finding${errors.length === 1 ? "" : "s"}\n`);
-    for (const e of errors) console.error(`  ${e}`);
-    process.exit(1);
-  }
+  if (errors.length) report(errors);
   console.log(`✓ feature map: ${universe.length} production files, each with one owner`);
   console.log(`  ${ledgerNote}`);
 }

@@ -33,7 +33,9 @@
  *              { expected, reason }  a pinned doc value for a default the code
  *                           computes at runtime (the language auto-detect) or
  *                           keeps outside defaults.ts (per-workspace rows);
- *                           the reason is REQUIRED
+ *                           the reason is REQUIRED. A computed pin also names
+ *                           `key` and `computedBy` (the initialiser's source
+ *                           text), and the join checks both
  *              { notASetting: reason }  a documented row that is not a
  *                           persisted default at all (an action button, the
  *                           server's running state); the reason is REQUIRED
@@ -72,7 +74,15 @@ const HARD_BREAK = { preserve: "Preserve existing", twoSpaces: "Two spaces (Reco
 
 const settings = (row, key, render, heading) => ({ page: "settings", row, ...(heading ? { heading } : {}), key, render });
 const terminal = (row, key, render) => ({ page: "terminal", row, key, render });
-const pinned = (page, row, expected, reason) => ({ page, row, render: { expected, reason } });
+/**
+ * A doc value the join cannot derive. `computed` ties it to the defaults.ts
+ * key whose RUNTIME initialiser it describes — `{ key, by }`, `by` being that
+ * initialiser's source text — so the pin fails when the key goes away or
+ * stops being computed that way. Omit it for a row kept outside defaults.ts.
+ */
+const pinned = (page, row, expected, reason, computed) => ({
+  page, row, ...(computed ? { key: computed.key, computedBy: computed.by } : {}), render: { expected, reason },
+});
 const notASetting = (page, row, reason) => ({ page, row, render: { notASetting: reason } });
 
 /** One entry per documented Default row, in page order. See the header for the shape. */
@@ -149,7 +159,8 @@ export const ROW_MAP = [
   settings("HTML preview", "formats.htmlPreview", ON_OFF),
   settings("Code viewers", "formats.codeViewers", ON_OFF),
   // ── settings.md › Language (interface) ──────────────────────────────────
-  { page: "settings", row: "Interface language", key: "general.language", render: { expected: "System language", reason: "resolveInitialLanguage() picks the first shipped locale from navigator.languages; English only as fallback" } },
+  pinned("settings", "Interface language", "System language", "resolveInitialLanguage() picks the first shipped locale from navigator.languages; English only as fallback",
+    { key: "general.language", by: "resolveInitialLanguage()" }),
   // ── settings.md › Language (CJK formatting) ─────────────────────────────
   settings("Convert fullwidth letters/numbers", "cjkFormatting.fullwidthAlphanumeric", ON_OFF),
   settings("Normalize punctuation width", "cjkFormatting.fullwidthPunctuation", ON_OFF),

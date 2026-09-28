@@ -9,29 +9,32 @@
  * - URLs
  * - CJK text (different rules apply)
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+
+/** Directories never checked: generated output, vendored code, maintainer-local notes. */
+const SKIP_DIRS = new Set(["node_modules", "dist", ".vitepress", ".git", "target", "dev-docs"]);
 
 /**
- * Simple recursive glob for markdown files.
+ * The markdown files git would publish: tracked plus untracked-but-not-ignored
+ * — the population `check-no-nul-bytes.mjs` reads. A filesystem walk also read
+ * gitignored local files (a `.cc-suite/audits/` findings file, scratch notes)
+ * and failed a repository check on text that is not in the repository.
  */
-function findMarkdownFiles(dir, results = []) {
-  const entries = readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const fullPath = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      // Skip common excluded directories
-      if (["node_modules", "dist", ".vitepress", ".git", "target", "dev-docs"].includes(entry.name)) continue;
-      findMarkdownFiles(fullPath, results);
-    } else if (entry.isFile() && entry.name.endsWith(".md") && entry.name !== "CHANGELOG.md") {
-      results.push(fullPath);
-    }
-  }
-  return results;
+function findMarkdownFiles() {
+  const out = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "*.md"], {
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  return out
+    .split("\0")
+    .filter((f) => f !== "" && existsSync(f))
+    .filter((f) => !f.split("/").some((part) => SKIP_DIRS.has(part)))
+    .filter((f) => f.split("/").pop() !== "CHANGELOG.md");
 }
 
 const args = process.argv.slice(2);
-const files = args.length ? args : findMarkdownFiles(".");
+const files = args.length ? args : findMarkdownFiles();
 
 // Em-dash character
 const EM_DASH = "—";

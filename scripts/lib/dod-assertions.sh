@@ -73,42 +73,93 @@ DOD_SYNTAX="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/dod-syntax.mjs"
 # `dod-syntax.mjs --serve` per shell instead of a node per probe: loading the
 # TypeScript compiler costs ~0.36s, and a phase issues dozens of probes (the
 # feature-ledger phase 5 spent 11s starting processes, and its self-test took
-# eleven minutes). The server is started only by the top-level shell
-# (BASH_SUBSHELL 0), whose subshells inherit fds 7/8; a subshell with no server,
-# an argument the line protocol cannot carry, or a server that cannot start all
-# fall back to a fresh process, so the answer never depends on the transport.
-_DOD_READY=""
+# eleven minutes).
+#
+# The transport is one request/reply stream with no request ids, so it is
+# correct only while ONE process talks to it. Four rules keep it that way, and
+# each is a way it used to return a wrong answer (audit 2026-09-28):
+#   - Only the shell that started the server (BASH_SUBSHELL 0) uses it.
+#     Subshells inherit the descriptors, and a pipeline stage or background job
+#     runs CONCURRENTLY with its parent — two callers on one stream consumed
+#     each other's replies, or deadlocked. Every subshell takes a fresh process.
+#   - A working directory or argument holding LF, CR or U+001F cannot ride the
+#     line protocol (node's readline ends a line at a lone CR too); it takes a
+#     fresh process rather than splitting into two requests and leaving a
+#     stale reply to poison the next probe.
+#   - The server must answer a `--ping` before it is trusted, and one that dies
+#     is closed and never used again: that probe, and every later one, runs in
+#     a fresh process. Probes are read-only, so the retry is safe.
+#   - The descriptors are the first free ones at or above 10 (where bash's own
+#     `{var}` allocation starts — unavailable in the bash 3.2 macOS ships), not
+#     a fixed 7/8 that silently took over a caller's own.
+_DOD_STATE=""   # "" not tried · up · off (unavailable, or died: fresh processes from here on)
+_DOD_IN=""; _DOD_OUT=""; _DOD_PID=""; _DOD_CODE=""; _DOD_STDOUT=""; _DOD_STDERR=""
+_dod_free_fd() {
+  local fd="$1"
+  while (( fd < 250 )); do
+    if ! { true >&"$fd"; } 2>/dev/null; then echo "$fd"; return 0; fi
+    fd=$((fd + 1))
+  done
+  return 1
+}
+_dod_stop() {
+  [[ -n "$_DOD_IN" ]] && eval "exec ${_DOD_IN}>&-"
+  [[ -n "$_DOD_OUT" ]] && eval "exec ${_DOD_OUT}<&-"
+  _DOD_IN=""; _DOD_OUT=""; _DOD_STATE=off
+}
+# One reply, buffered until its `X` line so a server that dies mid-reply prints
+# nothing half-told. `$1` is a read timeout in seconds, or empty for none.
+_dod_read_reply() {
+  local line
+  _DOD_CODE=""; _DOD_STDOUT=""; _DOD_STDERR=""
+  while :; do
+    if [[ -n "$1" ]]; then IFS= read -r -t "$1" line <&"$_DOD_OUT" || return 1
+    else IFS= read -r line <&"$_DOD_OUT" || return 1; fi
+    case "$line" in
+      O$'\t'*) _DOD_STDOUT+="${line#??}"$'\n' ;;
+      E$'\t'*) _DOD_STDERR+="${line#??}"$'\n' ;;
+      X$'\t'*) _DOD_CODE="${line#??}"; return 0 ;;
+    esac
+  done
+}
 _dod_start() {
-  [[ "$BASH_SUBSHELL" -eq 0 ]] || return 1
-  local d
+  [[ "$BASH_SUBSHELL" -eq 0 && -z "$_DOD_STATE" ]] || return 1
+  _DOD_STATE=off   # until the handshake proves otherwise
+  local d in out
+  in="$(_dod_free_fd 10)" && out="$(_dod_free_fd $((in + 1)))" || return 1
   d="$(mktemp -d "${TMPDIR:-/tmp}/dod-serve.XXXXXX")" || return 1
   if ! mkfifo "$d/out"; then rm -rf "$d"; return 1; fi
   # Requests travel over an anonymous PIPE (process substitution), never a
   # FIFO: on macOS node never sees end-of-file on a FIFO stdin, so a FIFO-fed
   # server outlived every shell that started it. Over a pipe, the shell's exit
-  # closes fd 7 and the server ends with it.
-  exec 7> >(exec node "$DOD_SYNTAX" --serve >"$d/out" 2>/dev/null)
-  exec 8<"$d/out"
+  # closes the descriptor and the server ends with it.
+  eval "exec ${in}> >(exec node \"\$DOD_SYNTAX\" --serve >\"\$d/out\" 2>/dev/null)"
+  _DOD_PID=$!; _DOD_IN="$in"
+  eval "exec ${out}<\"\$d/out\""
+  _DOD_OUT="$out"
   rm -rf "$d"
-  _DOD_READY=1
+  if ( printf '/\x1f--ping\n' ) >&"$_DOD_IN" 2>/dev/null && _dod_read_reply 60 && [[ "$_DOD_CODE" == 0 ]]; then
+    _DOD_STATE=up; return 0
+  fi
+  _dod_stop; return 1
 }
 dod_syntax() {
-  local a line code=""
+  local a
+  case "$PWD" in *$'\n'*|*$'\r'*|*$'\x1f'*) node "$DOD_SYNTAX" "$@"; return ;; esac
   for a in "$@"; do
-    case "$a" in *$'\n'*|*$'\x1f'*) node "$DOD_SYNTAX" "$@"; return ;; esac
+    case "$a" in *$'\n'*|*$'\r'*|*$'\x1f'*) node "$DOD_SYNTAX" "$@"; return ;; esac
   done
-  if [[ -z "$_DOD_READY" ]] && ! _dod_start; then node "$DOD_SYNTAX" "$@"; return; fi
-  ( IFS=$'\x1f'; printf '%s\n' "$PWD"$'\x1f'"$*" ) >&7
-  while IFS= read -r line <&8; do
-    case "$line" in
-      O$'\t'*) printf '%s\n' "${line#??}" ;;
-      E$'\t'*) printf '%s\n' "${line#??}" >&2 ;;
-      X$'\t'*) code="${line#??}"; break ;;
-    esac
-  done
-  # A server that died mid-request is a loud failure, never a silent pass.
-  if [[ -z "$code" ]]; then echo "dod-syntax: --serve stopped answering" >&2; return 70; fi
-  return "$code"
+  if [[ "$BASH_SUBSHELL" -ne 0 ]]; then node "$DOD_SYNTAX" "$@"; return; fi
+  if [[ "$_DOD_STATE" != up ]] && ! _dod_start; then node "$DOD_SYNTAX" "$@"; return; fi
+  if ( IFS=$'\x1f'; printf '%s\n' "$PWD"$'\x1f'"$*" ) >&"$_DOD_IN" 2>/dev/null && _dod_read_reply ""; then
+    printf '%s' "$_DOD_STDOUT"; printf '%s' "$_DOD_STDERR" >&2
+    return "$_DOD_CODE"
+  fi
+  # A server that died is loud, and is never the answer: close it, and let a
+  # fresh process answer this probe and every later one.
+  echo "dod-syntax: --serve stopped answering; continuing with one process per probe" >&2
+  _dod_stop
+  node "$DOD_SYNTAX" "$@"
 }
 # A Rust test file cargo will compile: an ACTIVE `#[path = "<base>"]` attribute
 # in CODE (not inside a raw string), followed — other attributes only — by the
@@ -155,11 +206,14 @@ assert_ts_code_grep() {
 # decision still comes from the syntax probe, which is what tells a live
 # attribute from one inside a comment or a raw string — because spawning node
 # once per `.rs` in a directory of eighty is minutes, not seconds.
+# Also leaves the path in `_DOD_MOUNT`, so a caller can read it without a
+# command substitution — a subshell would not use the probe server.
 rust_mount_owner() {
   local file="$1" dir base cand; dir="$(dirname "$file")"; base="$(basename "$file")"
+  _DOD_MOUNT=""
   while IFS= read -r cand; do
     [[ -n "$cand" && "$cand" != "$file" ]] || continue
-    if rust_test_included "$cand" "$base"; then printf '%s\n' "$cand"; return 0; fi
+    if rust_test_included "$cand" "$base"; then _DOD_MOUNT="$cand"; printf '%s\n' "$cand"; return 0; fi
   done < <(grep -lF -- "\"$base\"" "$dir"/*.rs 2>/dev/null)
   return 1
 }
@@ -206,7 +260,7 @@ assert_test_file() {
       if [[ -f "${f%.test.rs}.rs" ]] && rust_test_included "${f%.test.rs}.rs" "$base"; then
         mod="${f%.test.rs}.rs"
       else
-        mod="$(rust_mount_owner "$f")"
+        rust_mount_owner "$f" >/dev/null; mod="$_DOD_MOUNT"
       fi
       if [[ -z "$mod" ]]; then
         fail "$label present but no .rs beside it includes it (an active #[path = \"$base\"] followed by mod …;)"

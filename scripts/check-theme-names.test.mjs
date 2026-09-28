@@ -57,6 +57,23 @@ describe("check-theme-names.sh", () => {
     }
   });
 
+  it("allows the tracked feature ledger by its EXACT path, and nothing that merely starts with it", () => {
+    const quoted = "- summary: ships `paper`, `night` and five more themes\n";
+    const ok = scratchRepo({ ".claude/feature-ledger.md": quoted });
+    const near = scratchRepo({ ".claude/feature-ledger.md.bak": quoted, ".claude/feature-ledger.mdx": quoted, ".claude/x/feature-ledger.md": quoted });
+    try {
+      expect(run(ok).status).toBe(0);
+      const res = run(near);
+      expect(res.status).toBe(1);
+      expect(res.stdout).toContain(".claude/feature-ledger.md.bak");
+      expect(res.stdout).toContain(".claude/feature-ledger.mdx");
+      expect(res.stdout).toContain(".claude/x/feature-ledger.md");
+    } finally {
+      rmSync(ok, { recursive: true, force: true });
+      rmSync(near, { recursive: true, force: true });
+    }
+  });
+
   it("ignores bare prose mentions — only QUOTED names count", () => {
     const dir = scratchRepo({ "src/components/Prose.ts": `// white space handling\n` });
     try {

@@ -396,6 +396,11 @@ describe("--serve answers each request exactly as a fresh process would", () => 
     expect(after.code).toBe(0);
   });
 
+  it("answers the readiness ping without touching the working directory", () => {
+    const res = spawnSync(process.execPath, [SCRIPT, "--serve"], { input: `/no/such/dir${US}--ping\n`, encoding: "utf8" });
+    expect(res.stdout).toBe("X\t0\n");
+  });
+
   it("agrees with a one-shot process on usage errors", () => {
     const [usage] = serve(dir, [["no-such-command"]]);
     const oneShot = spawnSync(process.execPath, [SCRIPT, "no-such-command"], { encoding: "utf8" });

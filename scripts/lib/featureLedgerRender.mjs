@@ -18,7 +18,7 @@
  * @coordinates-with scripts/gen-feature-ledger.mjs — measures the rows this renders
  * @module scripts/lib/featureLedgerRender
  */
-import { STATUS_TAGS } from "./featureLedgerDoc.mjs";
+import { STATUS_TAGS, citedPaths, statusTags } from "./featureLedgerDoc.mjs";
 
 /**
  * Every CommonMark line ending, not just LF and CRLF: a lone CR is one too,
@@ -103,8 +103,59 @@ const row = (r, covPresent) =>
   `| ${escapeCell(r.name)} | ${n(r.code)} | ${n(r.srcFiles)} | ${n(r.testFiles)} | ${ratio(r)} | ${coverageCell(r.cov, covPresent)} | ` +
   `${n(r.bigFiles)} | ${n(r.mocks)} | ${n(r.dep)} | ${n(r.coup)} | ${n(r.commits)} | ${escapeCell(r.last)} | ${flagCell(r)} |`;
 
-const tagsOf = (b) => (b.fields.status ?? "").split(",").map((t) => t.trim()).filter(Boolean);
+const tagsOf = (b) => statusTags(b.fields.status);
 const isNone = (v) => /^none\b/i.test((v ?? "").trim());
+/**
+ * A block cites a website page when its `docs` field cites a `website/…md`
+ * path. Testing for a leading `none` counted "none directly; see
+ * `website/guide/features.md`" as uncited and a block citing only
+ * `e2e/README.md` as cited — 13 wrong on the ledger that shipped.
+ */
+const citesWebsitePage = (b) => citedPaths(b.fields.docs ?? "").some((p) => /^website\/.+\.md$/.test(p));
+
+/** Block counts: total, per status tag, and the two coverage gaps. */
+function renderCounts(blocks) {
+  const count = (pred) => blocks.filter(pred).length;
+  const counts = [
+    ["Blocks", blocks.length],
+    ...STATUS_TAGS.map((t) => [`Status includes ${t}`, count((b) => tagsOf(b).includes(t))]),
+    ["No website page cited", count((b) => !citesWebsitePage(b))],
+    ["Tests: none", count((b) => isNone(b.fields.tests))],
+  ];
+  return `## Ledger counts
+
+Derived from the blocks of \`.claude/feature-ledger.md\`; a block may carry several tags.
+
+| Measure | Count |
+|---|--:|
+${counts.map(([k, v]) => `| ${escapeCell(k)} | ${n(v)} |`).join("\n")}
+`;
+}
+
+/** Commits since each feature's blocks were verified, most-changed first. */
+function renderFreshness(rows) {
+  const fresh = [...rows].sort((a, b) => (b.sinceLedger ?? -1) - (a.sinceLedger ?? -1));
+  return `## Ledger freshness
+
+Commits that touched a feature's files since the commit its ledger blocks were
+verified against. A non-zero count is not a defect; it is the list of blocks to
+re-read next. \`--\` means no block describes the feature.
+
+| Feature | Blocks | Commits since verified |
+|---|--:|--:|
+${fresh.map((r) => `| ${escapeCell(r.name)} | ${n(r.blocks)} | ${n(r.sinceLedger)} |`).join("\n")}
+`;
+}
+
+/** One line per block: where it lives, what it is, how it ships. */
+function renderIndex(blocks) {
+  return `## Ledger at a glance
+
+| Area | Feature | Block | Status | Gate |
+|--:|---|---|---|---|
+${blocks.map((b) => `| ${n(b.area)} | ${escapeCell(b.fields.feature ?? "--")} | ${escapeCell(b.title)} (${codeSpan(b.fields.id ?? "?")}) | ${escapeCell(tagsOf(b).join(", ") || "--")} | ${escapeCell(b.fields.gate ?? "--")} |`).join("\n")}
+`;
+}
 
 /**
  * The tables DERIVED from the hand-written ledger: counts, freshness and the
@@ -115,39 +166,7 @@ function renderLedgerSections(rows, ledger) {
   if (!ledger) {
     return "## Ledger\n\n`.claude/feature-ledger.md` is absent, so the ledger tables are not rendered.\n";
   }
-  const blocks = ledger.blocks;
-  const count = (pred) => blocks.filter(pred).length;
-  const counts = [
-    ["Blocks", blocks.length],
-    ...STATUS_TAGS.map((t) => [`Status includes ${t}`, count((b) => tagsOf(b).includes(t))]),
-    ["No website page cited", count((b) => isNone(b.fields.docs))],
-    ["Tests: none", count((b) => isNone(b.fields.tests))],
-  ];
-  const fresh = [...rows].sort((a, b) => (b.sinceLedger ?? -1) - (a.sinceLedger ?? -1));
-  return `## Ledger counts
-
-Derived from the blocks of \`.claude/feature-ledger.md\`; a block may carry several tags.
-
-| Measure | Count |
-|---|--:|
-${counts.map(([k, v]) => `| ${escapeCell(k)} | ${n(v)} |`).join("\n")}
-
-## Ledger freshness
-
-Commits that touched a feature's files since the commit its ledger blocks were
-verified against. A non-zero count is not a defect; it is the list of blocks to
-re-read next. \`--\` means no block describes the feature.
-
-| Feature | Blocks | Commits since verified |
-|---|--:|--:|
-${fresh.map((r) => `| ${escapeCell(r.name)} | ${n(r.blocks)} | ${n(r.sinceLedger)} |`).join("\n")}
-
-## Ledger at a glance
-
-| Area | Feature | Block | Status | Gate |
-|--:|---|---|---|---|
-${blocks.map((b) => `| ${n(b.area)} | ${escapeCell(b.fields.feature ?? "--")} | ${escapeCell(b.title)} (${codeSpan(b.fields.id ?? "?")}) | ${escapeCell(tagsOf(b).join(", ") || "--")} | ${escapeCell(b.fields.gate ?? "--")} |`).join("\n")}
-`;
+  return `${renderCounts(ledger.blocks)}\n${renderFreshness(rows)}\n${renderIndex(ledger.blocks)}`;
 }
 
 /** The whole generated document, from measured rows already sorted by code size. */
@@ -192,7 +211,11 @@ ${rows.map((r) => row(r, covPresent)).join("\n")}
 
 Each file is measured under exactly ONE feature — the most specific spine claim
 that covers it (\`scripts/check-feature-map.mjs\` enforces the same rule), so
-column totals add up. Files in \`infrastructure.paths\` belong to no row.
+Code, Src files, Test files, Oversized, Mocks and Layering add up across rows to
+the feature-owned total. Nothing else does: Test:code and Line cov are ratios,
+Last touch is a date, Coupling is joined by plugin name, and Commits counts
+history, where a commit that touches two features counts under both. Files in
+\`infrastructure.paths\` belong to no row, so no total includes them.
 
 ${renderLedgerSections(rows, ledger)}
 ## Undocumented features
