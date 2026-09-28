@@ -351,3 +351,23 @@ describe("Codex sixth pass — fragments", () => {
     expect(probe(`<div><input value="Cannot render" readOnly />{t("preview.errorAt")}</div>`)).toEqual([]);
   });
 });
+
+describe("Codex seventh pass — fragments", () => {
+  const fragments = { "editor.json:preview.errorAt": "suffix" };
+  const probe = (jsx: string) => fragmentUsageFindings("a.tsx", `export const A = () => ${jsx};`, fragments);
+
+  it.each([
+    [`<div>{show || <span>{null}</span>}{t("preview.errorAt")}</div>`],
+    [`<div>{!show || <span>{null}</span>}{t("preview.errorAt")}</div>`],
+    [`<div>{a === b}{t("preview.errorAt")}</div>`],
+  ])("a value that is only a boolean or an empty fallback is no company: %s", (jsx) => {
+    expect(probe(jsx)).toEqual(["a.tsx: preview.errorAt rendered alone"]);
+  });
+
+  it.each([[`<div>{label ?? "Cannot render"} {t("preview.errorAt")}</div>`], [`<div>{name || "Cannot render"} {t("preview.errorAt")}</div>`]])(
+    "a fallback that is text is company: %s",
+    (jsx) => {
+      expect(probe(jsx)).toEqual([]);
+    },
+  );
+});

@@ -898,19 +898,32 @@ export function fragmentUsageFindings(
   const out: string[] = [];
 
   const tagName = (el: ts.JsxElement) => el.openingElement.tagName.getText(sf);
-  // What statically renders nothing: null/undefined/booleans, `<></>`, and
-  // `&&`/`||`/`??`/`?:` whose every outcome is one of those.
+  // What statically renders nothing: null/undefined/booleans (literals,
+  // `!x`, comparisons), `<></>`, and `&&`/`||`/`??`/`?:` whose every outcome
+  // is one of those.
+  const BOOLEAN_OPERATORS = new Set([
+    ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsEqualsToken,
+    ts.SyntaxKind.EqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsToken,
+    ts.SyntaxKind.LessThanToken, ts.SyntaxKind.LessThanEqualsToken,
+    ts.SyntaxKind.GreaterThanToken, ts.SyntaxKind.GreaterThanEqualsToken,
+    ts.SyntaxKind.InKeyword, ts.SyntaxKind.InstanceOfKeyword,
+  ]);
   const rendersSomething = (e: ts.Expression): boolean => {
     if (ts.isParenthesizedExpression(e)) return rendersSomething(e.expression);
     if (ts.isStringLiteralLike(e)) return e.text.trim() !== "";
     if (e.kind === ts.SyntaxKind.NullKeyword || e.kind === ts.SyntaxKind.TrueKeyword || e.kind === ts.SyntaxKind.FalseKeyword) return false;
     if (ts.isIdentifier(e) && e.text === "undefined") return false;
+    if (ts.isPrefixUnaryExpression(e) && e.operator === ts.SyntaxKind.ExclamationToken) return false;
     if (ts.isConditionalExpression(e)) return rendersSomething(e.whenTrue) || rendersSomething(e.whenFalse);
     if (ts.isBinaryExpression(e)) {
       const op = e.operatorToken.kind;
+      if (BOOLEAN_OPERATORS.has(op)) return false;
       if (op === ts.SyntaxKind.AmpersandAmpersandToken) return rendersSomething(e.right);
       if (op === ts.SyntaxKind.BarBarToken || op === ts.SyntaxKind.QuestionQuestionToken) {
-        return rendersSomething(e.left) || rendersSomething(e.right);
+        // The left side renders only when it is truthy, and whether an
+        // identifier holds text or a flag needs the type checker. Fail
+        // closed: it is company only when it DEFINITELY renders.
+        return rendersSomething(e.right) || rendersDefinitely(e.left);
       }
     }
     if (ts.isJsxFragment(e) || ts.isJsxElement(e) || ts.isJsxSelfClosingElement(e)) return meaningful(e);
@@ -921,6 +934,14 @@ export function fragmentUsageFindings(
   // its value.
   const isIntrinsic = (tag: ts.JsxTagNameExpression) =>
     ts.isIdentifier(tag) && /^[a-z]/.test(tag.text) && !/^(input|textarea|select)$/.test(tag.text);
+  /** Renders visible content whatever its runtime value: text, a template, or JSX with content. */
+  const rendersDefinitely = (e: ts.Expression): boolean => {
+    if (ts.isParenthesizedExpression(e)) return rendersDefinitely(e.expression);
+    if (ts.isStringLiteralLike(e) || ts.isTemplateExpression(e) || ts.isJsxFragment(e) || ts.isJsxElement(e) || ts.isJsxSelfClosingElement(e)) {
+      return rendersSomething(e);
+    }
+    return false;
+  };
   const meaningful = (child: ts.JsxChild): boolean => {
     if (ts.isJsxText(child)) return child.text.trim() !== "";
     if (ts.isJsxExpression(child)) return child.expression ? rendersSomething(child.expression) : false;
