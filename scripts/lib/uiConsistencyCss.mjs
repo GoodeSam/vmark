@@ -217,9 +217,11 @@ const SANCTIONED = [
 ];
 /**
  * Semantic fills are judged by VALUE: a danger/success state may take its
- * token. (A selector that merely SAYS "error" once exempted any fill at all.)
+ * token. (A selector that merely SAYS "error" once exempted any fill at all;
+ * the token must be the value itself, not a `var()` fallback that never
+ * applies.)
  */
-const SEMANTIC_FILL = /var\(\s*--(?:error|danger|warning|success)[-\w]*/;
+const SEMANTIC_FILL = /^var\(\s*--(?:error|danger|warning|success)[-\w]*/;
 
 /**
  * A selected / checked / pressed / current state, in every spelling the
