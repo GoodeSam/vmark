@@ -1110,7 +1110,10 @@
         "src/hooks/useSystemFontFamilies.ts",
         "src/utils/customFont.ts",
         "src/utils/fontOptions.ts",
-        "src/utils/motion.ts"
+        "src/utils/motion.ts",
+        "src/utils/settledScroll.ts",
+        "src/utils/settledScroll.test.ts",
+        "src/utils/settledScroll.webkit.test.ts"
       ],
       "flag": null,
       "flagDefault": null,

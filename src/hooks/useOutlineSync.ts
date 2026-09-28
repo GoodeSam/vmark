@@ -5,12 +5,14 @@
  *   in the sidebar outline panel — bridges outline UI events to editor
  *   scroll position.
  *
- * Pipeline: Sidebar outline click → Tauri event "outline:navigate" →
+ * Pipeline: Sidebar outline click → Tauri event "outline:scroll-to-heading" →
  *   this hook → find nth heading in ProseMirror doc → scroll into view
  *
  * Key decisions:
  *   - Polls for editor readiness (100ms intervals, 5s max) for lazy-loaded editors
- *   - Scrolls heading to top of viewport using native DOM scrollIntoView
+ *   - Scrolls the heading to the top of the editor's scroll container through
+ *     settledScroll: on large documents content-visibility moves it while a
+ *     smooth scroll is in flight, which left the first click short (#1458)
  *   - Also handles sync from outline panel toggle via uiStore
  *   - Cursor tracking uses a 250ms debounce (not rAF) to coalesce bursts
  *   - Heading positions are cached in a WeakMap keyed by ProseMirror doc —
@@ -19,6 +21,7 @@
  *     instead of walking the full doc on every cursor move.
  *
  * @coordinates-with uiStore.ts — reads outline panel visibility
+ * @coordinates-with utils/settledScroll.ts — lands the heading despite content-visibility
  * @module hooks/useOutlineSync
  */
 
@@ -31,7 +34,8 @@ import { outlineSyncError } from "@/utils/debug";
 import { useUIStore } from "@/stores/uiStore";
 import { getTiptapEditorDom } from "@/services/editor/tiptapView";
 import { safeUnlisten } from "@/utils/safeUnlisten";
-import { scrollBehavior } from "@/utils/motion";
+import { findScrollContainer } from "@/services/editor/scrollPosition";
+import { scrollToSettled } from "@/utils/settledScroll";
 
 type EditorViewGetter = () => EditorView | null;
 
@@ -127,12 +131,19 @@ export function useOutlineSync(getEditorView: EditorViewGetter) {
             view.dispatch(tr);
             view.focus();
 
-            // Scroll heading to top of viewport using native DOM API
+            // Scroll the heading to the top of the editor's scroll container
             requestAnimationFrame(() => {
               const headingDOM = view.nodeDOM(pos);
-              if (headingDOM instanceof HTMLElement) {
-                headingDOM.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
-              }
+              if (!(headingDOM instanceof HTMLElement)) return;
+              const scroller = findScrollContainer(headingDOM);
+              if (!scroller) return;
+              scrollToSettled(
+                scroller,
+                () => (headingDOM.isConnected
+                  ? headingDOM.getBoundingClientRect().top - scroller.getBoundingClientRect().top
+                  : null),
+                view.dom,
+              );
             });
           }
         );
