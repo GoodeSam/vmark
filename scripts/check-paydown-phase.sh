@@ -79,6 +79,8 @@ count() {
   local rel="$1" mode="$2" at="${3:-}"
   [[ -f "$ROOT/$rel" ]] || { echo ""; return; }
   ROOT="$ROOT" REL="$rel" MODE="$mode" AT="$at" node -e '
+    // This body is single-quoted in bash: an apostrophe anywhere in it, even
+    // in a comment, ends the quote and breaks every phase.
     // No top-level `return` — node -e compiles the body as a script, where it is
     // a syntax error. Everything lives in a function that returns a value.
     const fs = require("fs");
