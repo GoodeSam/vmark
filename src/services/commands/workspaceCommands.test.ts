@@ -159,6 +159,28 @@ describe("workspace.openFolder (#1005)", () => {
     expect(mockOpenWorkspaceWithConfig).not.toHaveBeenCalled();
   });
 
+  // Audit F2 #143 — a refused picker used to be logged and nothing else, so
+  // File → Open Workspace simply did nothing. Rust's own message says why.
+  it.each([
+    ["another folder dialog is open", { code: "conflict", message: "A folder dialog is already open" }],
+    ["the picker call fails", new Error("ipc down")],
+  ])("tells the user when %s", async (_l, failure) => {
+    mockPickFolder.mockRejectedValue(failure);
+
+    await executeCommand("workspace.openFolder", {}, { windowLabel: "main" });
+
+    expect(mockToastError).toHaveBeenCalledTimes(1);
+    expect(mockToastError.mock.calls[0][0]).toMatch(/already open|ipc down/);
+  });
+
+  it("stays silent when the picker is cancelled", async () => {
+    mockPickFolder.mockResolvedValue(null);
+
+    await executeCommand("workspace.openFolder", {}, { windowLabel: "main" });
+
+    expect(mockToastError).not.toHaveBeenCalled();
+  });
+
   it("does nothing when the folder picker is cancelled", async () => {
     mockPickFolder.mockResolvedValue(null);
 

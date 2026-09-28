@@ -156,10 +156,15 @@ describe("open_workspace confirms an ungranted folder in the picker (WI-LX1.1)",
     responses.length = 0;
   }
 
-  function rustAnswers(allow: () => Promise<unknown>): void {
+  // Rust answers `request_workspace_confirmation` once the dialog is on
+  // screen; by default it is shown and the user is still deciding.
+  function rustAnswers(
+    allow: () => Promise<unknown>,
+    confirm: () => Promise<unknown> = async () => undefined,
+  ): void {
     invokeMock.mockImplementation(async (cmd: string, args: { path: string }) => {
       if (cmd === "allow_workspace_access") return allow() as Promise<string>;
-      if (cmd === "pick_workspace_folder") return new Promise<string>(() => {}); // user still deciding
+      if (cmd === "request_workspace_confirmation") return confirm() as Promise<string>;
       return args.path;
     });
   }
@@ -171,7 +176,7 @@ describe("open_workspace confirms an ungranted folder in the picker (WI-LX1.1)",
 
     await handleWorkspaceOpenWorkspace("id2", { folderPath: "/proj" });
 
-    expect(invokeMock).toHaveBeenCalledWith("pick_workspace_folder", { defaultPath: "/proj" });
+    expect(invokeMock).toHaveBeenCalledWith("request_workspace_confirmation", { path: "/proj" });
     expect(openWorkspaceByPath).not.toHaveBeenCalled();
     expect(responses[0].success).toBe(false);
     expect(String(responses[0].error)).toContain("APPROVAL_REQUIRED");
@@ -205,7 +210,7 @@ describe("open_workspace confirms an ungranted folder in the picker (WI-LX1.1)",
 
     await handleWorkspaceOpenWorkspace("id2", { folderPath: "/proj" });
 
-    expect(invokeMock.mock.calls.map((c) => c[0])).not.toContain("pick_workspace_folder");
+    expect(invokeMock.mock.calls.map((c) => c[0])).not.toContain("request_workspace_confirmation");
     expect(responses[0].success).toBe(true);
   });
 
@@ -217,6 +222,38 @@ describe("open_workspace confirms an ungranted folder in the picker (WI-LX1.1)",
 
     expect(openWorkspaceByPath).not.toHaveBeenCalled();
     expect(String(responses[0].error)).toContain("INTERNAL");
+    expect(useWorkspaceApprovalStore.getState().oneShots).toHaveLength(1);
+  });
+
+  // Audit F2 #146 — the handler used to fire the dialog blind and ALWAYS say
+  // it had opened one. With another dialog open, or a failed call, the client
+  // was told to wait for a dialog that was never shown.
+  it("says BUSY, not 'opened a dialog', while another folder dialog is open", async () => {
+    await approve();
+    rustAnswers(
+      async () => { throw refused; },
+      async () => { throw { code: "conflict", message: "A folder dialog is already open" }; },
+    );
+    existsMock.mockRejectedValue(new Error("forbidden path: /proj"));
+
+    await handleWorkspaceOpenWorkspace("id2", { folderPath: "/proj" });
+
+    expect(String(responses[0].error)).toContain("BUSY");
+    expect(String(responses[0].error)).not.toContain("opened a folder dialog");
+    expect(openWorkspaceByPath).not.toHaveBeenCalled();
+    expect(useWorkspaceApprovalStore.getState().oneShots).toHaveLength(1);
+  });
+
+  it("fails INTERNAL, keeping the one-shot, when the dialog could not be shown", async () => {
+    await approve();
+    rustAnswers(async () => { throw refused; }, async () => { throw new Error("ipc down"); });
+    existsMock.mockRejectedValue(new Error("forbidden path: /proj"));
+
+    await handleWorkspaceOpenWorkspace("id2", { folderPath: "/proj" });
+
+    expect(String(responses[0].error)).toContain("INTERNAL");
+    expect(String(responses[0].error)).toContain("ipc down");
+    expect(openWorkspaceByPath).not.toHaveBeenCalled();
     expect(useWorkspaceApprovalStore.getState().oneShots).toHaveLength(1);
   });
 

@@ -347,11 +347,11 @@ describe('useHotExitRestore', () => {
       const listenerCallback = mockListen.mock.calls[0]?.[1] as (() => Promise<void>) | undefined;
       expect(listenerCallback).toBeDefined();
 
-      // Simulate RESTORE_START event
-      await listenerCallback!();
+      // Simulate RESTORE_START event — fire-and-forget, as the real listener is
+      listenerCallback!();
 
+      await vi.waitFor(() => expect(mockRestoreWindowState).toHaveBeenCalledWith('main', state));
       expect(mockPullWindowStateWithRetry).toHaveBeenCalledWith('main');
-      expect(mockRestoreWindowState).toHaveBeenCalledWith('main', state);
     });
 
     it('should emit RESTORE_FAILED when secondary window has no state', async () => {

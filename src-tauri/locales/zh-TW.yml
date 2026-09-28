@@ -414,6 +414,7 @@ errors:
   # === 工作區存取授權 (workspace_grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "VMark 尚未獲得存取「%{path}」的權限。請透過 檔案 → 開啟工作區... 選擇該資料夾以授予權限。"
   workspaceAccess.pickerBusy: "已有一個資料夾對話框處於開啟狀態"
+  workspaceAccess.checkBusy: "VMark 仍在檢查對該資料夾的存取權限，請稍後再試"
   workspaceAccess.listProtected: "VMark 可開啟的資料夾清單只能由 VMark 本身修改"
 
 # WI-LX1.1 — the folder picker Rust shows for workspace access

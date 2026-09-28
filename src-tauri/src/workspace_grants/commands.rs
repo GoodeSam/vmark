@@ -1,26 +1,25 @@
-//! The webview's two workspace-grant commands (WI-LX1.1).
+//! The webview's re-grant command (WI-LX1.1): `allow_workspace_access`.
 //!
-//! Purpose: `allow_workspace_access` re-issues a grant the user already made;
-//! `pick_workspace_folder` is how the user makes one. Neither lets a script
-//! name a folder and receive it.
+//! Purpose: re-issue a grant the user already made — a recorded root, or a
+//! folder inside one — and refuse everything else without saying why. The
+//! folder pickers, which are how the user MAKES a grant, are `picker.rs`.
 //!
 //! Key decisions:
-//!   - Both are `async` and do their filesystem work on the blocking pool: a
-//!     non-`async` command runs on the thread that delivered the IPC message,
-//!     and `canonicalize` on a dead network mount blocks for the mount's
-//!     timeout (audit #470). The picker must be `async` regardless — a dialog
-//!     shown from a synchronous command would be driven from the IPC thread.
+//!   - `async`, with its filesystem work on the blocking pool: a non-`async`
+//!     command runs on the thread that delivered the IPC message, and
+//!     `canonicalize` on a dead network mount blocks for the mount's timeout
+//!     (audit #470). At most `MAX_CONCURRENT_CHECKS` checks resolve at once,
+//!     one per path, so a repeated call cannot drain the pool (#82).
 //!   - Going `async` removes the serialization the blocking IPC loop gave for
 //!     free (rule 50 §10). The check-then-act here is "is it recorded? then
 //!     grant": the list only grows except for oldest-first eviction, so a root
 //!     evicted between the two steps was recorded a moment earlier, and the
-//!     grant it gets is the one it already had. Two pickers are refused by an
-//!     atomic slot (`begin_picker`), not by a check followed by a set.
-//!   - The dialog glue is not unit-tested: MockRuntime cannot show a native
-//!     panel. Everything after the user's answer is `grant_chosen_root`, which
-//!     is (`mod.test.rs`).
+//!     grant it gets is the one it already had.
+//!   - No oracle (#83): see `authorize`.
 //!
-//! @coordinates-with workspace_grants/mod.rs — the state and `grant_chosen_root`
+//! @coordinates-with workspace_grants/mod.rs — the state and `canonical_dir`
+//! @coordinates-with workspace_grants/scope.rs — the grant itself
+//! @coordinates-with workspace_grants/picker.rs — the folder pickers
 //! @coordinates-with services/workspaces/workspaceAccess.ts — the only caller
 //! @module workspace_grants/commands
 
@@ -28,7 +27,7 @@ use std::path::{Path, PathBuf};
 
 use tauri::{AppHandle, Manager, Runtime};
 
-use super::{canonical_dir, grant_chosen_root, WorkspaceGrants};
+use super::{scope, WorkspaceGrants};
 use crate::command_error::{CommandError, ErrorCode};
 use crate::localized_error;
 
@@ -38,92 +37,105 @@ use crate::localized_error;
 ///
 /// Anything else is refused with `permission-denied` and extends nothing. A
 /// folder the static capability scope already covers (under `$HOME`, say)
-/// needs no grant; the caller tells the two apart by reading it.
+/// needs no grant; the caller tells the two apart by reading it. A grant that
+/// does not take is an `internal` error, never a root. At most
+/// `MAX_CONCURRENT_CHECKS` checks run at once, one per path (`begin_check`).
 #[tauri::command]
 pub async fn allow_workspace_access<R: Runtime>(
     app: AppHandle<R>,
     path: String,
 ) -> Result<String, CommandError> {
+    let raw = PathBuf::from(path);
+    if !raw.is_absolute() {
+        return Err(not_absolute(&raw));
+    }
+    let check = app.state::<WorkspaceGrants>().begin_check(&raw)?;
     tauri::async_runtime::spawn_blocking(move || {
-        let root = canonical_dir(Path::new(&path))?;
-        if !app.state::<WorkspaceGrants>().covers(&root) {
-            return Err(localized_error!(
-                ErrorCode::PermissionDenied,
-                "errors.workspaceAccess.notGranted",
-                path = root.as_str()
-            ));
-        }
-        crate::fs_scope::allow_fs_read_dir(&app, &root);
+        let _check = check;
+        let root = authorize(&app.state::<WorkspaceGrants>(), &raw)?;
+        scope::grant_workspace_scope(&app, &root)?;
         Ok(root)
     })
     .await
     .map_err(|e| CommandError::internal(format!("workspace access task failed: {e}")))?
 }
 
-/// Show the folder picker and grant + record what the user chooses. Returns the
-/// canonical folder, or `None` when the dialog was cancelled.
+fn not_absolute(raw: &Path) -> CommandError {
+    CommandError::invalid_input(format!("'{}' is not absolute", raw.display()))
+}
+
+/// The decision behind [`allow_workspace_access`], without an app: the
+/// canonical folder `raw` names, if it is a recorded root or inside one.
 ///
-/// `default_path` opens the dialog AT that folder, so confirming a requested
-/// folder (Open Recent, the `open_workspace` MCP tool) is one click on Open.
-#[tauri::command]
-pub async fn pick_workspace_folder<R: Runtime>(
-    app: AppHandle<R>,
-    window: tauri::Window<R>,
-    default_path: Option<String>,
-) -> Result<Option<String>, CommandError> {
-    use tauri_plugin_dialog::DialogExt;
-
-    let grants = app.state::<WorkspaceGrants>();
-    let Some(_flight) = grants.begin_picker() else {
-        return Err(localized_error!(
-            ErrorCode::Conflict,
-            "errors.workspaceAccess.pickerBusy"
-        ));
-    };
-
-    let start = default_path.map(PathBuf::from).filter(|p| p.is_absolute());
-    let title = if start.is_some() {
-        rust_i18n::t!("workspaceAccess.confirmTitle")
-    } else {
-        rust_i18n::t!("workspaceAccess.pickTitle")
-    };
-    let mut dialog = app
-        .dialog()
-        .file()
-        .set_title(title.to_string())
-        .set_can_create_directories(true);
-    #[cfg(any(windows, target_os = "macos"))]
-    {
-        dialog = dialog.set_parent(&window);
+/// NO ORACLE: every path outside the recorded roots is refused with the same
+/// error, naming the path as the caller spelled it — whether it exists, is a
+/// file, or is a link, and wherever the link points. Only inside a chosen tree,
+/// which the user has already opened to this window, is "gone" or "not a
+/// folder" reported. What remains observable is TIMING: the path is resolved
+/// before it is judged (a link's target decides), so a stale mount answers
+/// slowly — bounded by `begin_check`.
+pub(crate) fn authorize(grants: &WorkspaceGrants, raw: &Path) -> Result<String, CommandError> {
+    if !raw.is_absolute() {
+        return Err(not_absolute(raw));
     }
-    #[cfg(not(any(windows, target_os = "macos")))]
-    let _ = &window;
-    if let Some(start) = start {
-        dialog = dialog.set_directory(start);
-    }
-
-    let (answer, answered) = tokio::sync::oneshot::channel();
-    dialog.pick_folder(move |folder| {
-        let _ = answer.send(folder);
-    });
-    let Some(folder) = answered
-        .await
-        .map_err(|_| CommandError::internal("the folder dialog closed without an answer"))?
-    else {
-        return Ok(None);
+    let refused = || {
+        localized_error!(
+            ErrorCode::PermissionDenied,
+            "errors.workspaceAccess.notGranted",
+            path = raw.display()
+        )
     };
-    let picked = folder
-        .into_path()
-        .map_err(|e| CommandError::invalid_input(format!("unusable folder: {e}")))?;
+    match raw.canonicalize() {
+        Ok(real) => {
+            let root = crate::canonical_path::canonical_string(&real, "workspace folder")
+                .map_err(|_| refused())?;
+            if !grants.covers(&root) {
+                return Err(refused());
+            }
+            if !real.is_dir() {
+                return Err(CommandError::invalid_input(format!(
+                    "'{}' is not a folder",
+                    raw.display()
+                )));
+            }
+            Ok(root)
+        }
+        Err(e) if lies_inside_a_recorded_root(grants, raw) => Err(unresolvable(raw, &e)),
+        Err(_) => Err(refused()),
+    }
+}
 
-    // The slot stays held until the grant is recorded, so a second dialog cannot
-    // open between the answer and the record.
-    let handle = app.clone();
-    tauri::async_runtime::spawn_blocking(move || grant_chosen_root(&handle, &picked).map(Some))
-        .await
-        .map_err(|e| CommandError::internal(format!("workspace grant task failed: {e}")))?
+/// Would `raw`, which does not resolve, be inside a recorded root? Judged from
+/// its nearest ancestor that does resolve, so `/var/…` spellings of a
+/// `/private/var/…` root still count.
+fn lies_inside_a_recorded_root(grants: &WorkspaceGrants, raw: &Path) -> bool {
+    raw.ancestors()
+        .skip(1)
+        .find_map(|ancestor| {
+            let real = ancestor.canonicalize().ok()?;
+            let rest = raw.strip_prefix(ancestor).ok()?;
+            crate::canonical_path::canonical_string(&real.join(rest), "workspace folder").ok()
+        })
+        .is_some_and(|candidate| grants.covers(&candidate))
+}
+
+/// The honest class of a resolution failure inside a chosen tree.
+fn unresolvable(raw: &Path, e: &std::io::Error) -> CommandError {
+    let code = match e.kind() {
+        std::io::ErrorKind::NotFound => ErrorCode::NotFound,
+        std::io::ErrorKind::PermissionDenied => ErrorCode::PermissionDenied,
+        _ => ErrorCode::Io,
+    };
+    CommandError::new(
+        code,
+        format!("'{}' could not be resolved: {e}", raw.display()),
+    )
 }
 
 #[cfg(test)]
 #[path = "commands.test.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "commands_policy.test.rs"]
+mod policy_tests;

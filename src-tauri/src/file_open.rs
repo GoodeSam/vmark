@@ -11,6 +11,12 @@
 //! Key decisions:
 //!   - A folder opened from Finder is a folder the user chose: it is granted
 //!     and recorded through `workspace_grants` before its window opens.
+//!   - `RunEvent::Opened` arrives on the event loop, and handling it touches
+//!     the disk — classifying each URL, resolving and recording a folder, a
+//!     grant file fsync. On a stale network mount any of those blocks for the
+//!     mount's timeout, freezing every window, so the handler hands the whole
+//!     batch to the blocking pool (`off_event_loop`) and returns. Two batches
+//!     can then overlap; each routes its files atomically, as before.
 //!   - File opens from Finder are queued in `FILE_OPEN_STATE` until the frontend
 //!     signals readiness, solving a cold-start race condition. Only files with a
 //!     registered extension are accepted; others are skipped. Hot opens (app
@@ -107,6 +113,7 @@ pub(crate) fn handle_reopen(app: &tauri::AppHandle, has_visible_windows: bool) {
 
 /// Result of partitioning Finder `RunEvent::Opened` URLs into actionable
 /// paths. Pure data — the caller performs the side effects per bucket.
+#[cfg(any(target_os = "macos", test))]
 #[derive(Debug, Default, PartialEq)]
 pub(crate) struct OpenedPaths {
     /// Directories: opened immediately as workspace windows.
@@ -122,8 +129,9 @@ pub(crate) struct OpenedPaths {
 
 /// Partition opened URLs into directories / supported files / skipped, with
 /// the filesystem predicates injected so the decision logic is unit-testable.
-/// Order within each bucket follows the input order.
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))] // production caller is the macOS Opened handler
+/// Order within each bucket follows the input order. Compiled where it runs:
+/// the macOS Opened handler, and the tests.
+#[cfg(any(target_os = "macos", test))]
 pub(crate) fn partition_opened_urls(
     urls: Vec<tauri::Url>,
     is_dir: impl Fn(&std::path::Path) -> bool,
@@ -150,11 +158,25 @@ pub(crate) fn partition_opened_urls(
     out
 }
 
-/// Convert Finder `RunEvent::Opened` URLs into queued/emitted file opens.
-/// Directories open immediately; supported files are grouped by workspace root
-/// and routed through the atomic `FILE_OPEN_STATE` decision.
+/// Convert Finder `RunEvent::Opened` URLs into queued/emitted file opens, off
+/// the event loop (see module docs). Directories open immediately; supported
+/// files are grouped by workspace root and routed through the atomic
+/// `FILE_OPEN_STATE` decision.
 #[cfg(target_os = "macos")]
 pub(crate) fn handle_finder_opened(app: &tauri::AppHandle, urls: Vec<tauri::Url>) {
+    let app = app.clone();
+    off_event_loop(move || open_finder_urls(&app, urls));
+}
+
+/// Run `job` on the blocking pool and return at once: the caller is the event
+/// loop, which every window's input and every IPC reply waits on.
+#[cfg(any(target_os = "macos", all(test, not(target_os = "windows"))))]
+pub(crate) fn off_event_loop(job: impl FnOnce() + Send + 'static) {
+    drop(tauri::async_runtime::spawn_blocking(job));
+}
+
+#[cfg(target_os = "macos")]
+fn open_finder_urls(app: &tauri::AppHandle, urls: Vec<tauri::Url>) {
     let opened = partition_opened_urls(urls, |p| p.is_dir(), is_openable_supported);
 
     for skipped in &opened.skipped {
@@ -174,8 +196,9 @@ pub(crate) fn handle_finder_opened(app: &tauri::AppHandle, urls: Vec<tauri::Url>
 /// window can read it — without that, a folder outside the static scope opened
 /// a window that could read nothing in it. The window gets the canonical root
 /// the grant judged (#250); a folder that vanished since the partition opens
-/// nothing.
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))] // production caller is the macOS Opened handler
+/// nothing. Compiled where it runs: the macOS Opened handler, and the tests
+/// (which need MockRuntime, and so skip Windows).
+#[cfg(any(target_os = "macos", all(test, not(target_os = "windows"))))]
 pub(crate) fn open_finder_directory<R: tauri::Runtime>(app: &tauri::AppHandle<R>, dir: &str) {
     let root = match crate::workspace_grants::grant_chosen_root(app, std::path::Path::new(dir)) {
         Ok(root) => root,

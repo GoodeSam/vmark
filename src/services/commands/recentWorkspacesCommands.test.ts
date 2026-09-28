@@ -374,3 +374,100 @@ describe("workspace.openRecent asks Rust for access first (WI-LX1.1)", () => {
     });
   });
 });
+
+// Audit F2 — what Rust answers is what opens, and a failure the user did not
+// cause is reported to them rather than read as "cancelled" or "present".
+describe("workspace.openRecent acts on Rust's answer, and reports failures", () => {
+  const refused = { code: "permission-denied", message: "not granted" };
+
+  function rustAnswers(access: () => Promise<unknown>, pick?: () => Promise<unknown>): void {
+    mockInvoke.mockImplementation(async (cmd: string) => {
+      if (cmd === "allow_workspace_access") return access();
+      if (cmd === "pick_workspace_folder" && pick) return pick();
+      return undefined;
+    });
+  }
+
+  // Audit F2 #145 — one question to Rust per open, not one here and another
+  // inside the shared transition.
+  it("asks Rust for access exactly once per open", async () => {
+    rustAnswers(async () => "/repo");
+
+    await executeCommand("workspace.openRecent", "/repo", { windowLabel: "main" });
+
+    const asks = mockInvoke.mock.calls.filter(([cmd]) => cmd === "allow_workspace_access");
+    expect(asks).toHaveLength(1);
+    expect(mockOpenWorkspaceWithConfig).toHaveBeenCalled();
+  });
+
+  // #250: Rust judged the folder the entry RESOLVES to, and granted that. The
+  // canonical root is what opens — never the name it was asked about.
+  it("opens the canonical root Rust granted, not the entry's spelling", async () => {
+    rustAnswers(async () => "/private/repo");
+
+    await executeCommand("workspace.openRecent", "/repo", { windowLabel: "main" });
+
+    expect(mockOpenWorkspaceWithConfig).toHaveBeenCalledWith("/private/repo", {
+      windowLabel: "main",
+    });
+  });
+
+  describe("when the access check cannot run", () => {
+    beforeEach(() => rustAnswers(async () => { throw new Error("ipc down"); }));
+
+    it("opens a folder the static scope still reads", async () => {
+      mockExists.mockResolvedValue(true);
+
+      await executeCommand("workspace.openRecent", "/repo", { windowLabel: "main" });
+
+      expect(mockOpenWorkspaceWithConfig).toHaveBeenCalledWith("/repo", { windowLabel: "main" });
+      expect(mockToastError).not.toHaveBeenCalled();
+    });
+
+    it("offers removal for a folder the probe finds gone", async () => {
+      mockExists.mockResolvedValue(false);
+      mockAsk.mockResolvedValue(true);
+
+      await executeCommand("workspace.openRecent", "/repo", { windowLabel: "main" });
+
+      expect(mockOpenWorkspaceWithConfig).not.toHaveBeenCalled();
+      expect(useRecentWorkspacesStore.getState().workspaces).toEqual([]);
+    });
+
+    it.each([
+      ["outside every scope", "forbidden path: /opt/repo"],
+      ["unreadable for another reason", new Error("probe failed")],
+    ])("stops and says so for a folder %s — never installs an unreadable workspace", async (_l, probeError) => {
+      mockExists.mockRejectedValue(probeError);
+
+      await executeCommand("workspace.openRecent", "/opt/repo", { windowLabel: "main" });
+
+      expect(mockOpenWorkspaceWithConfig).not.toHaveBeenCalled();
+      expect(mockAsk).not.toHaveBeenCalled();
+      expect(mockToastError).toHaveBeenCalledTimes(1);
+      expect(useRecentWorkspacesStore.getState().workspaces).toEqual([{ path: "/repo" }]);
+    });
+  });
+
+  it.each([
+    ["another folder dialog is open", { code: "conflict", message: "A folder dialog is already open" }],
+    ["the picker call fails", new Error("ipc down")],
+  ])("tells the user when %s instead of doing nothing", async (_l, failure) => {
+    rustAnswers(async () => { throw refused; }, async () => { throw failure; });
+    mockExists.mockRejectedValue(new Error("forbidden path: /opt/repo"));
+
+    await executeCommand("workspace.openRecent", "/opt/repo", { windowLabel: "main" });
+
+    expect(mockOpenWorkspaceWithConfig).not.toHaveBeenCalled();
+    expect(mockToastError).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays silent when the user cancels the picker", async () => {
+    rustAnswers(async () => { throw refused; }, async () => null);
+    mockExists.mockRejectedValue(new Error("forbidden path: /opt/repo"));
+
+    await executeCommand("workspace.openRecent", "/opt/repo", { windowLabel: "main" });
+
+    expect(mockToastError).not.toHaveBeenCalled();
+  });
+});

@@ -414,6 +414,7 @@ errors:
   # === Arbeitsbereich-Freigaben (workspace_grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "VMark hat keinen Zugriff auf „%{path}“. Wählen Sie den Ordner über Datei → Arbeitsbereich öffnen..., um ihn freizugeben."
   workspaceAccess.pickerBusy: "Ein Ordnerdialog ist bereits geöffnet"
+  workspaceAccess.checkBusy: "VMark prüft den Zugriff auf diesen Ordner noch. Versuche es gleich noch einmal"
   workspaceAccess.listProtected: "Die Liste der Ordner, die VMark öffnen darf, kann nur VMark selbst ändern"
 
 # WI-LX1.1 — the folder picker Rust shows for workspace access

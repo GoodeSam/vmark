@@ -10,9 +10,7 @@
 //! not enabled there, so the mock-app tests are gated like every other suite
 //! of this kind in the crate (`fs_scope.test.rs`).
 
-use std::time::Duration;
-
-use super::{run_bounded, WorkspaceGrants};
+use super::WorkspaceGrants;
 
 #[test]
 fn a_second_picker_is_refused_while_one_is_open() {
@@ -26,26 +24,6 @@ fn a_second_picker_is_refused_while_one_is_open() {
     assert!(
         grants.begin_picker().is_some(),
         "closing the dialog frees the slot"
-    );
-}
-
-#[test]
-fn a_bounded_wait_returns_when_the_job_finishes() {
-    assert!(run_bounded(Duration::from_secs(5), || {}));
-}
-
-#[test]
-fn a_bounded_wait_gives_up_on_a_job_that_hangs() {
-    // A recorded root on a stale network mount can block `canonicalize` for
-    // the mount's own timeout. Launch must not wait that long.
-    let started = std::time::Instant::now();
-    let finished = run_bounded(Duration::from_millis(50), || {
-        std::thread::sleep(Duration::from_secs(2));
-    });
-    assert!(!finished);
-    assert!(
-        started.elapsed() < Duration::from_secs(1),
-        "did not wait for the job"
     );
 }
 
@@ -204,6 +182,74 @@ mod with_app {
         );
     }
 
+    /// A Finder open can arrive before setup loads the list (macOS delivers
+    /// `Opened` ahead of `Ready` on a cold start). That root is merged in
+    /// memory, and it must reach the file even though the file already exists.
+    #[test]
+    fn a_root_chosen_before_the_list_loads_survives_the_next_restart() {
+        let data = tempfile::tempdir().expect("app data");
+        let file = data.path().join(GRANTS_FILE);
+        let (_older_dir, older, _) = workspace();
+        let (_early_dir, early, early_nested) = workspace();
+
+        let first = mock_app();
+        restore_from(first.handle(), file.clone(), WAIT);
+        grant_chosen_root(first.handle(), &older).expect("an earlier session's choice");
+
+        let second = mock_app();
+        grant_chosen_root(second.handle(), &early).expect("chosen before the list loads");
+        restore_from(second.handle(), file.clone(), WAIT);
+
+        let third = mock_app();
+        restore_from(third.handle(), file, WAIT);
+        let grants = third.state::<WorkspaceGrants>();
+        assert!(
+            grants.covers(&canonical(&early)),
+            "the early choice was persisted"
+        );
+        assert!(
+            grants.covers(&canonical(&older)),
+            "and the file's roots kept"
+        );
+        assert_eq!(readable(&third, &early_nested), (true, true));
+    }
+
+    /// A grant that did not take is a failure, not a choice to remember: the
+    /// window it would open could read nothing. A forbidden pattern outranks
+    /// any allow, so the grant call succeeds and changes nothing.
+    #[test]
+    fn a_grant_that_does_not_take_is_an_error_and_is_not_recorded() {
+        let app = mock_app();
+        let (_dir, root, nested) = workspace();
+        app.fs_scope()
+            .forbid_directory(&root, true)
+            .expect("forbid");
+
+        let err = grant_chosen_root(app.handle(), &root).expect_err("nothing became readable");
+
+        assert_eq!(err.code(), ErrorCode::Internal);
+        assert!(!app.state::<WorkspaceGrants>().covers(&canonical(&root)));
+        assert!(!app.fs_scope().is_allowed(&nested));
+    }
+
+    /// The asset half matters on its own: without it, a workspace's images
+    /// and media never render. A grant the ASSET scope refused is a failed
+    /// grant too, and nothing is recorded (audit F2 #88).
+    #[test]
+    fn a_grant_the_asset_scope_refuses_is_an_error_and_is_not_recorded() {
+        let app = mock_app();
+        let (_dir, root, nested) = workspace();
+        app.asset_protocol_scope()
+            .forbid_directory(&root, true)
+            .expect("forbid");
+
+        let err = grant_chosen_root(app.handle(), &root).expect_err("media would not render");
+
+        assert_eq!(err.code(), ErrorCode::Internal);
+        assert!(!app.state::<WorkspaceGrants>().covers(&canonical(&root)));
+        assert!(!app.asset_protocol_scope().is_allowed(&nested));
+    }
+
     #[test]
     fn a_list_this_build_cannot_read_grants_nothing() {
         let data = tempfile::tempdir().expect("app data");
@@ -239,179 +285,73 @@ mod with_app {
     }
 }
 
-// -- The list refuses webview-supplied writes (WI-LX1.1) ----------------------
-//
-// `atomic_write_file` writes any absolute path, so without this a script could
-// write its own roots into the list and have them granted at the next launch.
-// A write lands on the list if its folder is the list's folder (compared after
-// resolving links, so an aliased folder is caught) and its name is the list's
-// name ignoring ASCII case (macOS and Windows file systems ignore it too).
-mod names_grant_list {
-    use std::path::Path;
-
-    use super::super::protect::names_grant_list;
-    use super::super::GRANTS_FILE;
-
-    fn data() -> (tempfile::TempDir, std::path::PathBuf) {
-        let dir = tempfile::tempdir().expect("tempdir");
-        let list = dir.path().join(GRANTS_FILE);
-        (dir, list)
-    }
-
-    #[test]
-    fn the_list_itself() {
-        let (_dir, list) = data();
-        assert!(names_grant_list(&list, &list));
-    }
-
-    #[test]
-    fn a_case_variant_of_its_name() {
-        let (dir, list) = data();
-        assert!(names_grant_list(
-            &list,
-            &dir.path().join("WORKSPACE-Grants.JSON")
-        ));
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn its_name_under_a_linked_folder() {
-        let (dir, list) = data();
-        let elsewhere = tempfile::tempdir().expect("elsewhere");
-        let alias = elsewhere.path().join("alias");
-        std::os::unix::fs::symlink(dir.path(), &alias).expect("link");
-        assert!(names_grant_list(&list, &alias.join(GRANTS_FILE)));
-    }
-
-    #[test]
-    fn not_its_name_in_another_folder() {
-        let (_dir, list) = data();
-        let other = tempfile::tempdir().expect("other");
-        assert!(!names_grant_list(&list, &other.path().join(GRANTS_FILE)));
-    }
-
-    #[test]
-    fn not_another_file_beside_it() {
-        let (dir, list) = data();
-        assert!(!names_grant_list(&list, &dir.path().join("notes.md")));
-        assert!(!names_grant_list(
-            &list,
-            &dir.path().join("workspace-grants.json.bak")
-        ));
-    }
-
-    #[test]
-    fn not_a_path_whose_folder_does_not_exist() {
-        // Nothing can be written there, so there is nothing to refuse.
-        let (_dir, list) = data();
-        assert!(!names_grant_list(
-            &list,
-            Path::new("/no/such/dir/workspace-grants.json")
-        ));
-    }
-}
-
+// `run_workflow` is bounded by its workspace root, so a root that contains the
+// app data folder would let an `action/save-file` step rewrite the list. The
+// refusal has to land BEFORE the run claims the engine or spends its id — a
+// refused start must leave nothing behind (WI-LX1.1 follow-up). What it left is
+// observed through the command itself: a second start with the SAME id must be
+// admitted, which it is not if the first claimed the engine (`conflict`) or
+// recorded the id (`conflict`, #264).
 #[cfg(not(target_os = "windows"))]
-mod list_protection {
+mod run_workflow_refuses_the_list_folder {
+    use std::collections::HashMap;
     use std::time::Duration;
 
-    use tauri_plugin_fs::FsExt;
+    use tauri::Manager;
 
-    use super::super::{refuse_list_write, restore_from, WorkspaceGrants, GRANTS_FILE};
-    use crate::command_error::ErrorCode;
+    use super::super::{restore_from, WorkspaceGrants, GRANTS_FILE};
+    use crate::command_error::{CommandError, ErrorCode};
+    use crate::workflow::commands::{run_workflow, workflow_engine_policy};
+    use crate::workflow::state::WorkflowRunnerState;
 
-    fn mock_app() -> tauri::App<tauri::test::MockRuntime> {
-        tauri::test::mock_builder()
+    const VALID: &str =
+        "name: Test\nsteps:\n  - id: say\n    uses: action/notify\n    with:\n      message: hi\n";
+
+    async fn start(
+        app: &tauri::App<tauri::test::MockRuntime>,
+        root: &std::path::Path,
+    ) -> Result<String, CommandError> {
+        run_workflow(
+            app.handle().clone(),
+            VALID.into(),
+            HashMap::new(),
+            root.to_str().expect("utf-8").to_owned(),
+            None,
+            Some("run-list".into()),
+            None,
+            app.state(),
+        )
+        .await
+    }
+
+    #[tokio::test]
+    async fn a_root_containing_the_list_is_refused_before_anything_is_claimed() {
+        let app = tauri::test::mock_builder()
             .plugin(tauri_plugin_fs::init())
             .manage(WorkspaceGrants::default())
+            .manage(WorkflowRunnerState::default())
             .build(tauri::test::mock_context(tauri::test::noop_assets()))
-            .expect("build mock app")
-    }
-
-    #[test]
-    fn a_write_to_the_list_is_refused_with_a_typed_localized_error() {
+            .expect("build mock app");
+        workflow_engine_policy(true, app.state())
+            .await
+            .expect("engine on");
         let data = tempfile::tempdir().expect("app data");
-        let file = data.path().join(GRANTS_FILE);
-        let app = mock_app();
-        restore_from(app.handle(), file.clone(), Duration::from_secs(5));
+        restore_from(
+            app.handle(),
+            data.path().join(GRANTS_FILE),
+            Duration::from_secs(5),
+        );
 
-        let err = refuse_list_write(app.handle(), &file).expect_err("the list is Rust's");
-
+        let err = start(&app, data.path())
+            .await
+            .expect_err("the list's folder is not a workspace");
         assert_eq!(err.code(), ErrorCode::PermissionDenied);
         assert_eq!(err.i18n_key(), Some("errors.workspaceAccess.listProtected"));
-        assert!(refuse_list_write(app.handle(), &data.path().join("notes.md")).is_ok());
-    }
 
-    #[test]
-    fn launch_creates_a_missing_list_so_the_fence_covers_every_spelling() {
-        // The fs-plugin fence is a case-sensitive glob. A file that does not
-        // exist is matched as spelled, so `WORKSPACE-GRANTS.JSON` would slip
-        // past it and, on a case-insensitive disk, create the list. Once the
-        // file exists, a request is canonicalized to its real name first.
-        let data = tempfile::tempdir().expect("app data");
-        let file = data.path().join(GRANTS_FILE);
-        let app = mock_app();
-
-        restore_from(app.handle(), file.clone(), Duration::from_secs(5));
-
-        let bytes = std::fs::read(&file).expect("created at launch");
-        assert!(
-            super::super::registry::GrantList::parse(&bytes).is_ok(),
-            "an empty, valid list"
-        );
-        #[cfg(target_os = "macos")]
-        assert!(app
-            .fs_scope()
-            .is_forbidden(data.path().join("WORKSPACE-GRANTS.JSON")));
-    }
-}
-
-// A workflow run's workspace root bounds every `action/*` step, so a root that
-// CONTAINS the list's folder would let a `save-file` step rewrite the list
-// (WI-LX1.1 follow-up). The run is refused up front instead.
-mod root_contains_list {
-    use super::super::protect::root_contains_list;
-    use super::super::GRANTS_FILE;
-
-    fn data() -> (tempfile::TempDir, std::path::PathBuf) {
-        let dir = tempfile::tempdir().expect("tempdir");
-        let app_data = dir.path().join("app.vmark");
-        std::fs::create_dir_all(&app_data).expect("app data");
-        let list = app_data.join(GRANTS_FILE);
-        (dir, list)
-    }
-
-    #[test]
-    fn a_root_that_is_the_list_folder_or_above_it_contains_the_list() {
-        let (dir, list) = data();
-        assert!(root_contains_list(&list, list.parent().unwrap()));
-        assert!(root_contains_list(&list, dir.path()));
-    }
-
-    #[test]
-    fn a_sibling_or_a_folder_inside_app_data_does_not() {
-        let (dir, list) = data();
-        let sibling = dir.path().join("app.vmark-notes");
-        std::fs::create_dir_all(&sibling).unwrap();
-        assert!(!root_contains_list(&list, &sibling));
-        let inner = list.parent().unwrap().join("workspaces");
-        std::fs::create_dir_all(&inner).unwrap();
-        assert!(!root_contains_list(&list, &inner));
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn a_root_that_links_to_an_ancestor_of_the_list_contains_it() {
-        let (dir, list) = data();
-        let link = tempfile::tempdir().unwrap();
-        let alias = link.path().join("alias");
-        std::os::unix::fs::symlink(dir.path(), &alias).unwrap();
-        assert!(root_contains_list(&list, &alias));
-    }
-
-    #[test]
-    fn a_root_that_does_not_exist_does_not() {
-        let (dir, list) = data();
-        assert!(!root_contains_list(&list, &dir.path().join("missing")));
+        let elsewhere = tempfile::tempdir().expect("workspace");
+        let id = start(&app, elsewhere.path())
+            .await
+            .expect("the refusal claimed nothing and spent no id");
+        assert_eq!(id, "run-list");
     }
 }

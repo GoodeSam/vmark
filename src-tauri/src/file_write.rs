@@ -18,30 +18,83 @@
 //! every message here resolves through `t!` instead of being raw English that
 //! `lint:i18n` could not see.
 //!
-//! WI-LX1.1: both commands let the webview name a path, so both refuse the
-//! workspace-grant list — the folders re-granted at the next launch.
+//! WI-LX1.1: this command and `file_create::create_file_exclusive` let the
+//! webview name a path, so both refuse the workspace-grant list — the folders
+//! re-granted at the next launch. The path is RESOLVED ONCE and the check runs
+//! on what it resolved to ([`WriteAt`]). On Unix the folder is then HELD open,
+//! judged by identity, and written through (`file_write_anchored.rs`), so a
+//! folder on the path swapped after the check cannot redirect the write. On
+//! Windows the write stays path-based; that module states the residual.
 //!
 //! @coordinates-with workspace_grants/protect.rs — what counts as the list
+//! @coordinates-with file_write_anchored.rs — the held-folder write (Unix)
+//! @coordinates-with file_create.rs — the exclusive create, same guard
 
 use crate::command_error::{CommandError, ErrorCode};
 use crate::localized_error;
 use serde_json::json;
 
-/// Synchronous core of `atomic_write_file`. Extracted so it can be unit-tested
-/// without spinning up a tokio runtime. Same semantics as the async wrapper.
-///
-/// Validation (path traversal, absolute path, missing parent) and the
-/// parent-directory sync are the frontend-specific parts; the actual
-/// temp-file, fsync and rename are `atomic_replace::atomic_replace`, shared
-/// with `app_paths::atomic_write_file`.
+#[cfg(unix)]
+#[path = "file_write_anchored.rs"]
+pub(crate) mod anchored;
+
+/// Where a checked write lands, as the list guard judges it: the resolved
+/// path, and on Unix the folder held open for the write itself.
+pub(crate) struct WriteAt<'a> {
+    path: &'a std::path::Path,
+    #[cfg(unix)]
+    held: &'a anchored::HeldDir,
+}
+
+impl<'a> WriteAt<'a> {
+    #[cfg(unix)]
+    pub(crate) fn new(path: &'a std::path::Path, held: &'a anchored::HeldDir) -> Self {
+        Self { path, held }
+    }
+
+    #[cfg(not(unix))]
+    pub(crate) fn new(path: &'a std::path::Path) -> Self {
+        Self { path }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn path(&self) -> &std::path::Path {
+        self.path
+    }
+
+    /// Refuse a write here that would land on the workspace-grant list: by
+    /// path, and on Unix by the held folder's identity — the check that binds.
+    pub(crate) fn refuse_grant_list<R: tauri::Runtime>(
+        &self,
+        app: &tauri::AppHandle<R>,
+    ) -> Result<(), CommandError> {
+        crate::workspace_grants::refuse_list_write(app, self.path)?;
+        #[cfg(unix)]
+        if let Some(name) = self.path.file_name() {
+            crate::workspace_grants::refuse_held_write(
+                app,
+                self.held.identity(),
+                name,
+                self.held.entry_identity(name),
+            )?;
+        }
+        Ok(())
+    }
+}
+
+/// [`write_checked`] with nothing to authorize — the write core's own
+/// behaviour, for tests that do not need an app.
+#[cfg(test)]
 pub(crate) fn atomic_write_file_sync(
     target: &std::path::Path,
     content: &str,
 ) -> Result<(), CommandError> {
-    use crate::atomic_replace::{atomic_replace, resolve_link_target};
+    write_checked(target, content, |_| Ok(()))
+}
 
-    // Defense-in-depth: reject path traversal to prevent writing outside
-    // intended directories if the webview is compromised.
+/// Refuse what no write command accepts: a `..` component (defense-in-depth,
+/// if the webview is compromised) or a relative path.
+pub(crate) fn reject_unsafe_target(target: &std::path::Path) -> Result<(), CommandError> {
     if target
         .components()
         .any(|c| c == std::path::Component::ParentDir)
@@ -51,47 +104,112 @@ pub(crate) fn atomic_write_file_sync(
             "errors.core.pathTraversal"
         ));
     }
-
     if !target.is_absolute() {
         return Err(localized_error!(
             ErrorCode::InvalidInput,
             "errors.core.pathNotAbsolute"
         ));
     }
+    Ok(())
+}
 
-    // Resolve the referent BEFORE choosing a directory. A save is a temp-file
-    // + rename, and renaming onto a symlink replaces the LINK — the alias
-    // stops being an alias and the real document keeps its old bytes, while
-    // the save reports success (audit 20260906, B2). The temp file has to be
-    // created in the REFERENT's directory too, or the rename crosses
-    // filesystems and stops being atomic.
+/// The write core: validate `target`, resolve it ONCE to its referent, let
+/// `authorize` judge where the write lands ([`WriteAt`]), and write exactly
+/// there — never resolving the name again, so a link swapped in at it is
+/// replaced by the rename, not followed.
+///
+/// The referent is resolved BEFORE choosing a directory. A save writes a temp
+/// file and renames it, and renaming onto a symlink replaces the LINK — the
+/// alias stops being an alias and the real document keeps its old bytes, while
+/// the save reports success (audit 20260906, B2). The temp file is created in
+/// the REFERENT's directory too, or the rename crosses filesystems.
+pub(crate) fn write_checked(
+    target: &std::path::Path,
+    content: &str,
+    authorize: impl FnOnce(&WriteAt<'_>) -> Result<(), CommandError>,
+) -> Result<(), CommandError> {
+    use crate::atomic_replace::resolve_link_target;
+
+    reject_unsafe_target(target)?;
     let resolved = resolve_link_target(target).map_err(link_failure)?;
-    let target = resolved.as_path();
-
-    let dir = target.parent().ok_or_else(|| {
-        localized_error!(ErrorCode::InvalidInput, "errors.save.noParentDirectory")
-    })?;
-
-    // Surface a structured error when the parent directory is gone (e.g.,
-    // renamed or deleted externally while the file was open). Without this
-    // explicit check, NamedTempFile leaks a raw "No such file or directory
-    // (os error 2)" with a tempfile name, which looks like VMark dropped a temp
-    // file. The frontend reads `code` + `detail.dir` to route the user into the
-    // Save As flow.
-    if !dir.is_dir() {
+    let (Some(dir), Some(name)) = (resolved.parent(), resolved.file_name()) else {
         return Err(localized_error!(
-            ErrorCode::NotFound,
-            "errors.save.parentMissing",
-            dir = dir.display()
-        )
-        .with_detail(json!({ "dir": dir.to_string_lossy() })));
+            ErrorCode::InvalidInput,
+            "errors.save.noParentDirectory"
+        ));
+    };
+    #[cfg(unix)]
+    {
+        // A structured error when the folder is gone (renamed or deleted while
+        // the file was open): the frontend reads `code` + `detail.dir` to route
+        // the user into Save As.
+        let held = anchored::HeldDir::open(dir).map_err(|e| match e.kind() {
+            std::io::ErrorKind::NotFound | std::io::ErrorKind::NotADirectory => parent_missing(dir),
+            _ => localized_error!(
+                ErrorCode::Io,
+                "errors.save.writeFailed",
+                detail = e.to_string()
+            ),
+        })?;
+        authorize(&WriteAt::new(&resolved, &held))?;
+        held.replace(name, content.as_bytes())
+            .map_err(|stage| stage_failure(dir, stage))
     }
+    #[cfg(not(unix))]
+    {
+        let _ = name;
+        authorize(&WriteAt::new(&resolved))?;
+        write_resolved(&resolved, dir, content)
+    }
+}
 
+/// The folder a save would land in is gone.
+pub(crate) fn parent_missing(dir: &std::path::Path) -> CommandError {
+    localized_error!(
+        ErrorCode::NotFound,
+        "errors.save.parentMissing",
+        dir = dir.display()
+    )
+    .with_detail(json!({ "dir": dir.to_string_lossy() }))
+}
+
+/// Localize a held-folder write failure with the same `detail.stage` the
+/// path-based core reports, so the frontend sees one error shape.
+#[cfg(unix)]
+fn stage_failure(dir: &std::path::Path, stage: anchored::Stage) -> CommandError {
+    use anchored::Stage;
+    let (stage, error) = match stage {
+        Stage::CreateTemp(e) => ("create-temp", e),
+        Stage::WriteTemp(e) => ("write-temp", e),
+        Stage::SyncTemp(e) => ("sync-temp", e),
+        Stage::Persist(e) => ("persist", e),
+    };
+    let mut detail = json!({ "kind": "atomic-replace", "stage": stage });
+    if stage == "create-temp" {
+        detail["parent"] = json!(dir.display().to_string());
+    }
+    localized_error!(
+        ErrorCode::Io,
+        "errors.save.writeFailed",
+        detail = error.to_string()
+    )
+    .with_detail(detail)
+}
+
+/// Write `target`, whose links are already resolved, through its path
+/// (Windows: no `openat`/`renameat` in std — see `file_write_anchored.rs`).
+#[cfg(not(unix))]
+fn write_resolved(
+    target: &std::path::Path,
+    dir: &std::path::Path,
+    content: &str,
+) -> Result<(), CommandError> {
+    use crate::atomic_replace::atomic_replace;
+    if !dir.is_dir() {
+        return Err(parent_missing(dir));
+    }
     atomic_replace(target, dir, content.as_bytes()).map_err(save_failure)?;
-
-    // Sync parent directory for crash safety. Best-effort (the file itself is
-    // already synced and persisted), but a failure here weakens the crash
-    // guarantee — surface it in the log instead of swallowing it.
+    // Best-effort: the file itself is already synced and persisted.
     if let Ok(dir_file) = std::fs::File::open(dir) {
         if let Err(e) = dir_file.sync_all() {
             log::warn!(
@@ -101,7 +219,6 @@ pub(crate) fn atomic_write_file_sync(
             );
         }
     }
-
     Ok(())
 }
 
@@ -113,12 +230,7 @@ pub(crate) fn atomic_write_file_sync(
 fn link_failure(error: crate::atomic_replace::LinkResolveError) -> CommandError {
     use crate::atomic_replace::LinkResolveError as E;
     match error {
-        E::ReferentParentMissing(dir) => localized_error!(
-            ErrorCode::NotFound,
-            "errors.save.parentMissing",
-            dir = dir.display()
-        )
-        .with_detail(json!({ "dir": dir.to_string_lossy() })),
+        E::ReferentParentMissing(dir) => parent_missing(&dir),
         E::TooManyLinks => localized_error!(ErrorCode::InvalidInput, "errors.save.symlinkLoop"),
         E::ReadLink(e) => localized_error!(
             ErrorCode::Io,
@@ -132,6 +244,7 @@ fn link_failure(error: crate::atomic_replace::LinkResolveError) -> CommandError 
 /// the `From` impl extracted. The user sees a translated sentence; the frontend
 /// still gets `detail.stage` to tell "the temp file could not be created" from
 /// "the rename over the target failed".
+#[cfg(not(unix))]
 fn save_failure(error: crate::atomic_replace::AtomicReplaceError) -> CommandError {
     let converted = CommandError::from(error);
     let localized = localized_error!(
@@ -145,31 +258,12 @@ fn save_failure(error: crate::atomic_replace::AtomicReplaceError) -> CommandErro
     }
 }
 
-/// Refuse a write that would land on the workspace-grant list (WI-LX1.1), by
-/// the path as named AND by the referent a save through it would replace.
-///
-/// These are the only generic writers that let the webview name a path, so
-/// they are what stood between a script and the list of folders re-granted at
-/// the next launch. A resolution failure is not decided here: the write itself
-/// reports it.
-fn refuse_grant_list<R: tauri::Runtime>(
-    app: &tauri::AppHandle<R>,
-    target: &std::path::Path,
-) -> Result<(), CommandError> {
-    crate::workspace_grants::refuse_list_write(app, target)?;
-    match crate::atomic_replace::resolve_link_target(target) {
-        Ok(referent) if referent != target => {
-            crate::workspace_grants::refuse_list_write(app, &referent)
-        }
-        _ => Ok(()),
-    }
-}
-
 /// Atomic file write using temp file + rename (async Tauri command variant).
 ///
 /// Prevents data loss on crash by writing to a temporary file in the same
 /// directory, flushing to disk, then atomically renaming over the target.
-/// Refuses the workspace-grant list (`refuse_grant_list`).
+/// Refuses the workspace-grant list, by the path as named AND by the referent
+/// the write then lands on (`write_checked`).
 #[tauri::command]
 pub async fn atomic_write_file<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
@@ -178,49 +272,8 @@ pub async fn atomic_write_file<R: tauri::Runtime>(
 ) -> Result<(), CommandError> {
     tokio::task::spawn_blocking(move || {
         let target = std::path::Path::new(&path);
-        refuse_grant_list(&app, target)?;
-        atomic_write_file_sync(target, &content)
-    })
-    .await
-    .map_err(|e| {
-        localized_error!(
-            ErrorCode::Internal,
-            "errors.save.taskFailed",
-            detail = e.to_string()
-        )
-    })?
-}
-
-/// Atomically claim `path` for a document that does not have one yet, without
-/// ever touching an existing file.
-///
-/// Returns `true` when this call created the (empty) file, `false` when
-/// something was already there.
-///
-/// Batch Save All used to build `folder/Untitled-1.md` and hand it straight to
-/// the ordinary overwrite writer, so choosing a folder that already contained
-/// that name silently replaced a document the user never opened (audit
-/// 20260906, F1). Checking existence first and then writing would only narrow
-/// the window, not close it: two windows saving concurrently, or anything else
-/// creating the file in between, still lose bytes. `create_new(true)` is
-/// `O_EXCL` / `CREATE_NEW`, so the claim and the test are one operation the
-/// kernel serializes.
-///
-/// The empty file it leaves behind is the reservation. The caller writes the
-/// real contents over it through the ordinary save path, which is an overwrite
-/// of a file this batch owns.
-///
-/// Refuses the workspace-grant list: an empty claim there would make the list
-/// unreadable. `create_new` never follows a link, so the name is all there is.
-#[tauri::command]
-pub async fn create_file_exclusive<R: tauri::Runtime>(
-    app: tauri::AppHandle<R>,
-    path: String,
-) -> Result<bool, CommandError> {
-    tokio::task::spawn_blocking(move || {
-        let target = std::path::Path::new(&path);
         crate::workspace_grants::refuse_list_write(&app, target)?;
-        create_file_exclusive_sync(target)
+        write_checked(target, &content, |at| at.refuse_grant_list(&app))
     })
     .await
     .map_err(|e| {
@@ -230,55 +283,6 @@ pub async fn create_file_exclusive<R: tauri::Runtime>(
             detail = e.to_string()
         )
     })?
-}
-
-/// Synchronous core of [`create_file_exclusive`], so it is testable without a
-/// tokio runtime. Carries the same traversal/absolute-path validation as the
-/// write command — this creates files, so it is the same trust boundary.
-pub(crate) fn create_file_exclusive_sync(target: &std::path::Path) -> Result<bool, CommandError> {
-    if target
-        .components()
-        .any(|c| c == std::path::Component::ParentDir)
-    {
-        return Err(localized_error!(
-            ErrorCode::InvalidInput,
-            "errors.core.pathTraversal"
-        ));
-    }
-
-    if !target.is_absolute() {
-        return Err(localized_error!(
-            ErrorCode::InvalidInput,
-            "errors.core.pathNotAbsolute"
-        ));
-    }
-
-    match std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(target)
-    {
-        Ok(_) => Ok(true),
-        // Already taken — including by a symlink, which `create_new` refuses
-        // rather than following. The caller moves to the next candidate name.
-        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => Ok(false),
-        Err(e) => {
-            let dir = target.parent().unwrap_or(target);
-            if e.kind() == std::io::ErrorKind::NotFound {
-                return Err(localized_error!(
-                    ErrorCode::NotFound,
-                    "errors.save.parentMissing",
-                    dir = dir.display()
-                )
-                .with_detail(json!({ "dir": dir.to_string_lossy() })));
-            }
-            Err(localized_error!(
-                ErrorCode::Io,
-                "errors.save.writeFailed",
-                detail = e.to_string()
-            ))
-        }
-    }
 }
 
 #[cfg(test)]

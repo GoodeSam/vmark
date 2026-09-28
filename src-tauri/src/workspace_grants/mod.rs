@@ -7,14 +7,17 @@
 //!
 //! Key decisions:
 //!   - A root is granted only when Rust can attribute it to the user: the
-//!     folder picker Rust shows (`pick_workspace_folder`), a folder opened
-//!     from Finder (`file_open.rs`), or a root recorded from one of those in
-//!     an earlier session. `allow_workspace_access` used to grant ANY path a
-//!     script handed it, `/` included; it now only re-issues a recorded root
-//!     (or a folder inside one) and refuses the rest.
+//!     folder picker Rust shows (`pick_workspace_folder`,
+//!     `request_workspace_confirmation`), a folder opened from Finder
+//!     (`file_open.rs`), or a root recorded from one of those in an earlier
+//!     session. `allow_workspace_access` used to grant ANY path a script handed
+//!     it, `/` included; it now only re-issues a recorded root (or a folder
+//!     inside one) and refuses the rest.
+//!   - A root is recorded only once its grant has TAKEN (`scope.rs`): a choice
+//!     the scope did not absorb would be re-issued every launch and open a
+//!     workspace that can read nothing.
 //!   - The record is `<app data>/workspace-grants.json`, written atomically and
-//!     re-granted at launch. Launch waits at most [`LAUNCH_REGRANT_WAIT`] for it,
-//!     so a recorded root on a stale mount cannot hang startup.
+//!     re-granted at launch (`launch.rs`), within a bounded wait.
 //!   - A recorded root is re-granted only if it still resolves to ITSELF. Tauri
 //!     also inserts the canonical form of a granted path, so re-granting a name
 //!     that has since become a link would grant the link's target (#250).
@@ -22,52 +25,79 @@
 //!     is fenced off it (the static scope covers `$HOME/**`, which holds the
 //!     app data directory on macOS and Windows), and the file is created at
 //!     launch so the fence also catches other spellings of its name;
-//!     `atomic_write_file` and `create_file_exclusive` refuse it
-//!     (`protect.rs`); and its array format is one the store plugin, which can
-//!     write any path but only a JSON object, cannot produce (`registry.rs`).
-//!     Not covered: a workflow `action/save-file` step whose workspace root is
-//!     the app data folder (the engine is off by default), and any process
-//!     running as the user — the terminal's shell, an AI provider CLI, anything
-//!     outside VMark — which can edit it like any other file. An edit takes
-//!     effect at the next launch.
+//!     `atomic_write_file` and `create_file_exclusive` refuse it, and
+//!     `run_workflow` refuses a root that contains it (`protect.rs`); and its
+//!     array format is one the store plugin, which can write any path but only
+//!     a JSON object, cannot produce (`registry.rs`). Not covered: any process
+//!     running as the user — the terminal's shell, an AI provider CLI,
+//!     anything outside VMark — which can edit it like any other file. An edit
+//!     takes effect at the next launch.
 //!
-//! @coordinates-with workspace_grants/commands.rs — the two webview commands
+//! @coordinates-with workspace_grants/commands.rs — the re-grant command
+//! @coordinates-with workspace_grants/picker.rs — the folder pickers
 //! @coordinates-with workspace_grants/registry.rs — the list and its file format
 //! @coordinates-with workspace_grants/protect.rs — refusing writes to the list
-//! @coordinates-with fs_scope.rs — `allow_fs_read_dir`, the grant itself
+//! @coordinates-with workspace_grants/scope.rs — the recursive grant itself
+//! @coordinates-with workspace_grants/launch.rs — re-granting at launch
 //! @coordinates-with file_open.rs — Finder folder opens
-//! @coordinates-with app_setup.rs — `restore_at_launch`
 //! @module workspace_grants
 
 pub mod commands;
+mod launch;
+pub mod picker;
 mod protect;
 mod registry;
+mod scope;
 
+pub(crate) use launch::restore_at_launch;
+// Its test callers run on MockRuntime, which Windows cannot start.
+#[cfg(all(test, not(target_os = "windows")))]
+pub(crate) use launch::restore_from;
+#[cfg(test)]
+pub(crate) use protect::names_grant_list;
+#[cfg(unix)]
+pub(crate) use protect::refuse_held_write;
 pub(crate) use protect::{refuse_list_write, refuse_root_containing_list};
 
+use std::collections::HashSet;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
-use std::time::Duration;
+use std::sync::{Arc, Mutex};
 
 use tauri::{AppHandle, Manager, Runtime};
 
 use crate::command_error::{CommandError, ErrorCode};
-use registry::GrantList;
+use registry::{GrantList, MAX_FILE_BYTES};
+
+/// Most access checks that may resolve a path at once.
+pub(crate) const MAX_CONCURRENT_CHECKS: usize = 4;
 
 /// File name of the recorded roots, in the app data directory.
 pub(crate) const GRANTS_FILE: &str = "workspace-grants.json";
-
-/// How long launch waits for recorded roots to be re-granted before it carries
-/// on. Local disks finish in microseconds; only an unreachable mount is slower,
-/// and that root is unreadable either way.
-const LAUNCH_REGRANT_WAIT: Duration = Duration::from_millis(500);
 
 /// The recorded roots and the one-dialog-at-a-time flag. Managed by Tauri.
 #[derive(Default)]
 pub struct WorkspaceGrants {
     state: Mutex<GrantState>,
-    picker_open: AtomicBool,
+    /// Shared with the [`PickerFlight`] that holds it, so a dialog whose answer
+    /// is awaited on a spawned task keeps the slot until that task is done.
+    picker_open: Arc<AtomicBool>,
+    /// Paths an access check is resolving right now ([`WorkspaceGrants::begin_check`]).
+    checks: Arc<Mutex<HashSet<PathBuf>>>,
+}
+
+/// Held while one access check runs; frees its place when dropped.
+pub(crate) struct CheckFlight {
+    checks: Arc<Mutex<HashSet<PathBuf>>>,
+    path: PathBuf,
+}
+
+impl Drop for CheckFlight {
+    fn drop(&mut self) {
+        let mut checks = self.checks.lock().unwrap_or_else(|p| p.into_inner());
+        checks.remove(&self.path);
+    }
 }
 
 #[derive(Default)]
@@ -79,9 +109,9 @@ struct GrantState {
 }
 
 /// Held while a folder dialog is open; releases the slot when dropped.
-pub(crate) struct PickerFlight<'a>(&'a AtomicBool);
+pub(crate) struct PickerFlight(Arc<AtomicBool>);
 
-impl Drop for PickerFlight<'_> {
+impl Drop for PickerFlight {
     fn drop(&mut self) {
         self.0.store(false, Ordering::Release);
     }
@@ -143,29 +173,71 @@ impl WorkspaceGrants {
     /// Adopt `file` as the list's home, folding what it holds in behind any
     /// root chosen earlier this session. An unreadable file contributes
     /// nothing and is replaced by the next choice.
+    ///
+    /// A root chosen before the load (a Finder open can precede setup) changes
+    /// the merged list, and nothing else would write it while the file exists
+    /// — `record` persisted nothing without a file, and `persist_if_missing`
+    /// skips an existing one — so the merge is written here.
     fn load(&self, file: PathBuf) {
-        let from_disk = match std::fs::read(&file) {
-            Ok(bytes) => GrantList::parse(&bytes).unwrap_or_else(|e| {
-                log::warn!("[workspace-grants] Ignoring {}: {e}", file.display());
-                GrantList::default()
-            }),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => GrantList::default(),
-            Err(e) => {
-                log::warn!("[workspace-grants] Could not read {}: {e}", file.display());
-                GrantList::default()
-            }
-        };
+        let from_disk = read_list(&file);
         let mut state = self.lock();
-        state.list.absorb(from_disk);
+        state.list.absorb(from_disk.clone());
+        if state.list != from_disk {
+            if let Err(e) = persist(&file, &state.list) {
+                log::error!("[workspace-grants] Could not save {}: {e}", file.display());
+            }
+        }
         state.file = Some(file);
     }
 
+    /// Claim a place to check `path`: refused with `conflict` while that path
+    /// is already being checked or [`MAX_CONCURRENT_CHECKS`] checks are
+    /// running. A check can hold a blocking thread for a dead mount's timeout,
+    /// so this is what keeps a repeated call from draining the pool.
+    pub(crate) fn begin_check(
+        &self,
+        path: impl Into<PathBuf>,
+    ) -> Result<CheckFlight, CommandError> {
+        let path = path.into();
+        let mut checks = self.checks.lock().unwrap_or_else(|p| p.into_inner());
+        if checks.len() >= MAX_CONCURRENT_CHECKS || !checks.insert(path.clone()) {
+            return Err(crate::localized_error!(
+                ErrorCode::Conflict,
+                "errors.workspaceAccess.checkBusy"
+            ));
+        }
+        Ok(CheckFlight {
+            checks: Arc::clone(&self.checks),
+            path,
+        })
+    }
+
     /// Claim the folder-dialog slot, or `None` while another dialog is open.
-    pub(crate) fn begin_picker(&self) -> Option<PickerFlight<'_>> {
+    pub(crate) fn begin_picker(&self) -> Option<PickerFlight> {
         self.picker_open
             .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
             .ok()
-            .map(|_| PickerFlight(&self.picker_open))
+            .map(|_| PickerFlight(Arc::clone(&self.picker_open)))
+    }
+}
+
+/// The list in `file`, or an empty one when there is none this build can read.
+/// At most [`MAX_FILE_BYTES`] + 1 bytes are read, so an oversized file costs
+/// no more memory than the limit before `parse` refuses it.
+fn read_list(file: &Path) -> GrantList {
+    let mut bytes = Vec::new();
+    let read = std::fs::File::open(file)
+        .and_then(|f| f.take(MAX_FILE_BYTES as u64 + 1).read_to_end(&mut bytes));
+    match read {
+        Ok(_) => GrantList::parse(&bytes).unwrap_or_else(|e| {
+            log::warn!("[workspace-grants] Ignoring {}: {e}", file.display());
+            GrantList::default()
+        }),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => GrantList::default(),
+        Err(e) => {
+            log::warn!("[workspace-grants] Could not read {}: {e}", file.display());
+            GrantList::default()
+        }
     }
 }
 
@@ -206,77 +278,16 @@ pub(crate) fn canonical_dir(raw: &Path) -> Result<String, CommandError> {
 }
 
 /// Grant `raw` because the USER chose it — the folder picker, or Finder — and
-/// record it so later launches re-grant it. Returns the canonical root.
+/// record it so later launches re-grant it. Returns the canonical root. A
+/// grant that did not take is an error, and nothing is recorded.
 pub(crate) fn grant_chosen_root<R: Runtime>(
     app: &AppHandle<R>,
     raw: &Path,
 ) -> Result<String, CommandError> {
     let root = canonical_dir(raw)?;
-    crate::fs_scope::allow_fs_read_dir(app, &root);
+    scope::grant_workspace_scope(app, &root)?;
     app.state::<WorkspaceGrants>().record(&root);
     Ok(root)
-}
-
-/// At launch: load the recorded roots and re-grant them (see module docs).
-pub(crate) fn restore_at_launch<R: Runtime>(app: &AppHandle<R>) {
-    match crate::app_paths::app_data_dir(app) {
-        Ok(dir) => restore_from(app, dir.join(GRANTS_FILE), LAUNCH_REGRANT_WAIT),
-        // Nothing can be re-granted, and choices this session stay in memory.
-        Err(e) => log::warn!("[workspace-grants] No app data directory: {e}"),
-    }
-}
-
-/// [`restore_at_launch`] against an explicit file and wait, for tests.
-pub(crate) fn restore_from<R: Runtime>(app: &AppHandle<R>, file: PathBuf, wait: Duration) {
-    use tauri_plugin_fs::FsExt;
-    if let Some(scope) = app.try_fs_scope() {
-        if let Err(e) = scope.forbid_file(&file) {
-            log::warn!("[workspace-grants] Could not fence {}: {e}", file.display());
-        }
-    }
-    let grants = app.state::<WorkspaceGrants>();
-    grants.load(file);
-    grants.persist_if_missing();
-    let roots = grants.roots();
-    if roots.is_empty() {
-        return;
-    }
-    let handle = app.clone();
-    if !run_bounded(wait, move || regrant(&handle, &roots)) {
-        log::warn!(
-            "[workspace-grants] Re-granting recorded roots is still running; launch continues"
-        );
-    }
-}
-
-/// Re-grant each recorded root that still resolves to itself.
-fn regrant<R: Runtime>(app: &AppHandle<R>, roots: &[String]) {
-    for root in roots {
-        match canonical_dir(Path::new(root)) {
-            Ok(now) if now == *root => crate::fs_scope::allow_fs_read_dir(app, root),
-            Ok(now) => {
-                log::warn!("[workspace-grants] {root:?} now resolves to {now:?}; not granted")
-            }
-            Err(e) => log::info!("[workspace-grants] {root:?} unavailable: {}", e.message()),
-        }
-    }
-}
-
-/// Run `job` on its own thread and wait up to `wait` for it. Returns whether it
-/// finished; if not, it keeps running and nothing waits for it.
-fn run_bounded(wait: Duration, job: impl FnOnce() + Send + 'static) -> bool {
-    let (done, finished) = std::sync::mpsc::channel();
-    let spawned = std::thread::Builder::new()
-        .name("workspace-regrant".into())
-        .spawn(move || {
-            job();
-            let _ = done.send(());
-        });
-    if let Err(e) = spawned {
-        log::error!("[workspace-grants] Could not start the re-grant thread: {e}");
-        return false;
-    }
-    finished.recv_timeout(wait).is_ok()
 }
 
 #[cfg(test)]

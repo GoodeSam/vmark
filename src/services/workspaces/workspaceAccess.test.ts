@@ -62,6 +62,36 @@ describe("resolveWorkspaceAccess", () => {
     });
   });
 
+  it("reads the scope refusal the way the fs plugin sends it: a bare string", async () => {
+    mockInvoke.mockRejectedValue(typed("permission-denied"));
+    mockExists.mockRejectedValue(
+      "forbidden path: /opt/proj, maybe it is not allowed on the scope for `allow-exists` permission in your capability file",
+    );
+    await expect(resolveWorkspaceAccess("/opt/proj")).resolves.toEqual({
+      kind: "needs-confirmation",
+    });
+  });
+
+  // The folder existed when Rust resolved it and is gone when the probe runs.
+  it("a refused folder the probe finds gone is missing, not readable", async () => {
+    mockInvoke.mockRejectedValue(typed("permission-denied"));
+    mockExists.mockResolvedValue(false);
+    await expect(resolveWorkspaceAccess("/Users/me/notes")).resolves.toEqual({ kind: "missing" });
+  });
+
+  // Only the scope refusal means "outside the scope". A probe that failed for
+  // any other reason (IPC down, an I/O error) answers nothing about the scope.
+  it.each([
+    ["an IPC failure", new Error("ipc down")],
+    ["an I/O error", "failed to check existence: Input/output error (os error 5)"],
+    ["nothing at all", undefined],
+  ])("a probe that fails with %s is unverified, not a request to confirm", async (_l, error) => {
+    mockInvoke.mockRejectedValue(typed("permission-denied"));
+    mockExists.mockRejectedValue(error);
+    const access = await resolveWorkspaceAccess("/opt/proj");
+    expect(access).toEqual({ kind: "unverified", error });
+  });
+
   it.each(["not-found", "invalid-input"])("a %s answer means the folder is gone", async (code) => {
     mockInvoke.mockRejectedValue(typed(code));
     await expect(resolveWorkspaceAccess("/gone")).resolves.toEqual({ kind: "missing" });
@@ -99,9 +129,12 @@ describe("pickWorkspaceFolder", () => {
     expect(mockInvoke).toHaveBeenCalledWith("pick_workspace_folder", { defaultPath: null });
   });
 
-  it("treats a malformed answer as a cancel", async () => {
-    mockInvoke.mockResolvedValue(42);
-    await expect(pickWorkspaceFolder()).resolves.toBeNull();
+  // Only `null` is a cancel. Anything else that is not a folder is Rust
+  // breaking its contract, and reading it as "the user changed their mind"
+  // would hide that — the caller reports a rejection instead.
+  it.each([42, "", {}, undefined])("rejects a malformed answer (%j)", async (answer) => {
+    mockInvoke.mockResolvedValue(answer);
+    await expect(pickWorkspaceFolder()).rejects.toThrow(/malformed/);
   });
 
   it("lets a failure reach the caller", async () => {
@@ -111,19 +144,29 @@ describe("pickWorkspaceFolder", () => {
 });
 
 describe("requestWorkspaceConfirmation", () => {
-  it("opens the picker without waiting for the user", async () => {
-    let answer!: (value: string | null) => void;
-    mockInvoke.mockReturnValue(new Promise((resolve) => { answer = resolve; }));
-    requestWorkspaceConfirmation("/opt/proj");
-    expect(mockInvoke).toHaveBeenCalledWith("pick_workspace_folder", { defaultPath: "/opt/proj" });
-    answer(null);
+  // Rust answers once the dialog is ON SCREEN (the transport cannot wait for
+  // the user), so the caller knows which of three things happened.
+  it("asks Rust to show the picker at the folder and reports it opened", async () => {
+    mockInvoke.mockResolvedValue(undefined);
+    await expect(requestWorkspaceConfirmation("/opt/proj")).resolves.toEqual({ kind: "opened" });
+    expect(mockInvoke).toHaveBeenCalledWith("request_workspace_confirmation", { path: "/opt/proj" });
   });
 
-  it("swallows a refusal (a dialog is already open)", async () => {
+  it("reports busy when another folder dialog is open", async () => {
     mockInvoke.mockRejectedValue(typed("conflict"));
-    expect(() => requestWorkspaceConfirmation("/opt/proj")).not.toThrow();
-    await Promise.resolve();
+    await expect(requestWorkspaceConfirmation("/opt/proj")).resolves.toEqual({ kind: "busy" });
   });
+
+  it.each([new Error("ipc down"), typed("invalid-input")])(
+    "reports any other failure with its error (%j)",
+    async (error) => {
+      mockInvoke.mockRejectedValue(error);
+      await expect(requestWorkspaceConfirmation("/opt/proj")).resolves.toEqual({
+        kind: "failed",
+        error,
+      });
+    },
+  );
 });
 
 describe("regrantWorkspaceAccess", () => {

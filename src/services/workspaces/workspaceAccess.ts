@@ -13,15 +13,22 @@
  *   - Rust answers only "was this chosen before?". Whether the static scope
  *     already reads the folder is MEASURED with one `exists()` probe, never
  *     modelled here: the capability globs (and their dot-file rule) are the
- *     fs plugin's to evaluate, and a hand copy would drift.
+ *     fs plugin's to evaluate, and a hand copy would drift. The probe has
+ *     three answers, not two: it reads the folder, finds it gone, or is
+ *     refused by the scope ("forbidden path" — the fs plugin's only signal,
+ *     pinned by `fs_scope.test.rs`). Any other failure answers nothing.
  *   - Anything that is not a clean typed answer is `unverified`, never read as
- *     permission. Callers decide how to degrade.
+ *     permission. Callers decide how to degrade. The same goes for the
+ *     picker: only `null` is a cancel.
  *   - Confirming a folder is the picker, opened AT that folder, so it is one
- *     click on Open. `requestWorkspaceConfirmation` does not wait for it: the
- *     MCP transport cannot hold a request open for a person.
+ *     click on Open. `requestWorkspaceConfirmation` does not wait for the
+ *     user — the MCP transport cannot hold a request open for a person — but
+ *     it does wait for Rust to say the dialog is SHOWN, so the caller can tell
+ *     that from "another dialog is open" and from a failure.
  *
- * @coordinates-with src-tauri/src/workspace_grants/commands.rs — allow_workspace_access, pick_workspace_folder
- * @coordinates-with services/workspaces/openWorkspaceByPath.ts — re-grants before reading
+ * @coordinates-with src-tauri/src/workspace_grants/commands.rs — allow_workspace_access, pick_workspace_folder, request_workspace_confirmation
+ * @coordinates-with contexts/WindowContext.tsx — a startup workspace waits for its grant
+ * @coordinates-with services/persistence/resilience/_hotExitRestore.ts — so do restored ones
  * @coordinates-with services/commands/workspaceCommands.ts — File → Open Workspace (the picker)
  * @coordinates-with services/commands/recentWorkspacesCommands.ts — Open Recent
  * @coordinates-with services/mcpBridge/v2/workspaceOpenFolder.ts — the open_workspace tool
@@ -45,14 +52,27 @@ export type WorkspaceAccess =
   /** No usable answer (IPC failure, unexpected code, malformed reply). */
   | { kind: "unverified"; error: unknown };
 
-/** Is `path` readable by the webview without a runtime grant? */
-async function readableWithoutGrant(path: string): Promise<boolean> {
+/** What one `exists()` probe says about reading `path` without a grant. */
+export type ProbeWithoutGrant =
+  | { kind: "readable" }
+  | { kind: "missing" }
+  /** The fs plugin refused the path: outside every scope. */
+  | { kind: "out-of-scope" }
+  /** The probe itself failed; it says nothing about the scope. */
+  | { kind: "failed"; error: unknown };
+
+/** The fs plugin's scope refusal: a bare "forbidden path: …" string. */
+function isScopeRefusal(error: unknown): boolean {
+  const message = typeof error === "string" ? error : error instanceof Error ? error.message : "";
+  return message.startsWith("forbidden path");
+}
+
+/** Can the webview read `path` without a runtime grant? One probe decides. */
+export async function probeWithoutGrant(path: string): Promise<ProbeWithoutGrant> {
   try {
-    await exists(path);
-    return true;
-  } catch {
-    // Out of scope rejects with "forbidden path"; an in-scope folder resolves.
-    return false;
+    return (await exists(path)) ? { kind: "readable" } : { kind: "missing" };
+  } catch (error) {
+    return isScopeRefusal(error) ? { kind: "out-of-scope" } : { kind: "failed", error };
   }
 }
 
@@ -65,9 +85,16 @@ export async function resolveWorkspaceAccess(path: string): Promise<WorkspaceAcc
     const code = parseCommandError(error)?.code;
     if (code === "not-found" || code === "invalid-input") return { kind: "missing" };
     if (code !== "permission-denied") return { kind: "unverified", error };
-    return (await readableWithoutGrant(path))
-      ? { kind: "readable" }
-      : { kind: "needs-confirmation" };
+    const probe = await probeWithoutGrant(path);
+    switch (probe.kind) {
+      case "readable":
+      case "missing":
+        return { kind: probe.kind };
+      case "out-of-scope":
+        return { kind: "needs-confirmation" };
+      case "failed":
+        return { kind: "unverified", error: probe.error };
+    }
   }
   if (typeof root !== "string" || root.length === 0) {
     return { kind: "unverified", error: new Error("allow_workspace_access returned no root") };
@@ -78,29 +105,44 @@ export async function resolveWorkspaceAccess(path: string): Promise<WorkspaceAcc
 /**
  * Show the folder picker Rust owns; Rust grants and records what the user
  * picks. Resolves to the canonical folder, or `null` when cancelled. Rejects
- * when a picker is already open (`conflict`) or the IPC fails.
+ * when a picker is already open (`conflict`), the IPC fails, or the answer is
+ * neither a folder nor `null`.
  */
 export async function pickWorkspaceFolder(
   options: { defaultPath?: string } = {},
 ): Promise<string | null> {
-  const picked = await invoke<string | null>("pick_workspace_folder", {
+  const picked: unknown = await invoke<string | null>("pick_workspace_folder", {
     defaultPath: options.defaultPath ?? null,
   });
-  return typeof picked === "string" && picked.length > 0 ? picked : null;
+  if (picked === null) return null;
+  if (typeof picked === "string" && picked.length > 0) return picked;
+  throw new Error(`pick_workspace_folder returned a malformed answer: ${JSON.stringify(picked)}`);
 }
 
+/** What asking the user to confirm a folder came to. */
+export type ConfirmationRequest =
+  | { kind: "opened" }
+  /** Another folder dialog is open; this one was not shown. */
+  | { kind: "busy" }
+  | { kind: "failed"; error: unknown };
+
 /**
- * Ask the user to confirm `path` in the picker, without waiting for them.
- * A refusal (another picker is open) or an IPC failure is logged, not thrown.
+ * Ask the user to confirm `path` in the picker, opened at it. Resolves once
+ * the dialog is on screen, without waiting for the user; Rust grants and
+ * records the folder if they choose it. Never throws.
  */
-export function requestWorkspaceConfirmation(path: string): void {
-  pickWorkspaceFolder({ defaultPath: path }).catch((error: unknown) => {
+export async function requestWorkspaceConfirmation(path: string): Promise<ConfirmationRequest> {
+  try {
+    await invoke("request_workspace_confirmation", { path });
+    return { kind: "opened" };
+  } catch (error) {
     if (parseCommandError(error)?.code === "conflict") {
       workspaceWarn("A folder dialog is already open; not opening another for", path);
-      return;
+      return { kind: "busy" };
     }
     workspaceError("Could not open the folder dialog:", error);
-  });
+    return { kind: "failed", error };
+  }
 }
 
 /**
@@ -116,4 +158,28 @@ export async function regrantWorkspaceAccess(path: string): Promise<void> {
       workspaceError("Could not re-grant workspace access:", error);
     }
   }
+}
+
+/**
+ * Re-issue the grant for each distinct root and wait for the answers — at most
+ * `waitMs`. One at a time: Rust bounds concurrent checks, and a root already
+ * granted at launch answers in microseconds. The bound is for a DEAD mount,
+ * whose check can hold for minutes; past it the caller goes on, and the grant
+ * still lands whenever Rust gets its answer. Never throws.
+ */
+export async function awaitWorkspaceGrants(
+  roots: Iterable<string>,
+  waitMs: number,
+): Promise<void> {
+  const unique = [...new Set(roots)];
+  if (unique.length === 0) return;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const all = (async () => {
+    for (const root of unique) await regrantWorkspaceAccess(root);
+  })();
+  const bound = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, waitMs);
+  });
+  await Promise.race([all, bound]);
+  clearTimeout(timer);
 }

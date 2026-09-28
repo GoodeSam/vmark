@@ -414,6 +414,7 @@ errors:
   # === ワークスペースのアクセス許可 (workspace_grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "VMark には「%{path}」へのアクセスが許可されていません。ファイル → ワークスペースを開く... でフォルダを選択して許可してください。"
   workspaceAccess.pickerBusy: "フォルダ選択ダイアログはすでに開いています"
+  workspaceAccess.checkBusy: "VMark はまだそのフォルダへのアクセスを確認しています。少し待ってからもう一度お試しください"
   workspaceAccess.listProtected: "VMark が開くことを許可されたフォルダの一覧は、VMark 自身しか変更できません"
 
 # WI-LX1.1 — the folder picker Rust shows for workspace access

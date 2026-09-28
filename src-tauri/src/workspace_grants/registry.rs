@@ -16,7 +16,10 @@
 //!     ever a JSON OBJECT (its cache, through `serde_json::to_vec_pretty`), so
 //!     nothing it writes parses as a list.
 //!   - Bounded at [`MAX_ROOTS`], oldest dropped, so a long-lived install does
-//!     not re-grant every folder it was ever shown.
+//!     not re-grant every folder it was ever shown. [`MAX_FILE_BYTES`] bounds
+//!     the PARSE: `MAX_ROOTS` caps what is kept only after serde has built
+//!     the whole array, so a file larger than any list this build writes is
+//!     refused before it is read into memory.
 //!
 //! @coordinates-with workspace_grants/mod.rs — owns the state and the file
 //! @module workspace_grants/registry
@@ -26,6 +29,10 @@ use std::path::Path;
 /// Most roots the list keeps. Far above the recent-workspaces menu, so a root
 /// the user can still reach from Open Recent is not evicted before it.
 pub(crate) const MAX_ROOTS: usize = 128;
+
+/// Largest file [`GrantList::parse`] reads. [`MAX_ROOTS`] roots of 8 KiB each
+/// (twice Linux's `PATH_MAX`) fit; a real list is a few kilobytes.
+pub(crate) const MAX_FILE_BYTES: usize = 1024 * 1024;
 
 /// First element of the on-disk array, naming the format and its version.
 /// Change it, and old builds refuse the new file (no grants) rather than
@@ -40,9 +47,16 @@ pub(crate) struct GrantList {
 
 impl GrantList {
     /// Read a list from the file's bytes, refusing anything it cannot vouch for:
-    /// the file must be an array led by [`FORMAT_MARKER`]; entries after it
-    /// that are not absolute path strings are dropped.
+    /// the file must be at most [`MAX_FILE_BYTES`] and an array led by
+    /// [`FORMAT_MARKER`]; entries after it that are not absolute path strings
+    /// are dropped.
     pub(crate) fn parse(bytes: &[u8]) -> Result<Self, String> {
+        if bytes.len() > MAX_FILE_BYTES {
+            return Err(format!(
+                "grant list is {} bytes, over the {MAX_FILE_BYTES}-byte limit",
+                bytes.len()
+            ));
+        }
         let disk: Vec<serde_json::Value> =
             serde_json::from_slice(bytes).map_err(|e| format!("unreadable grant list: {e}"))?;
         let mut entries = disk.into_iter();

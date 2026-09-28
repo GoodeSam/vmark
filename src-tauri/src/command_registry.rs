@@ -52,7 +52,8 @@ macro_rules! all_commands {
             coherence::commands_ipc::coherence_head,
             file_open::get_pending_file_opens,
             workspace_grants::commands::allow_workspace_access,
-            workspace_grants::commands::pick_workspace_folder,
+            workspace_grants::picker::pick_workspace_folder,
+            workspace_grants::picker::request_workspace_confirmation,
             asset_access::grant_asset_access,
             external_editor::open_in_external_editor,
             menu::update_recent_files,
@@ -151,7 +152,7 @@ macro_rules! all_commands {
             trusted_html::commands::trusted_html_publish,
             trusted_html::commands::trusted_html_revoke,
             file_write::atomic_write_file,
-            file_write::create_file_exclusive,
+            file_create::create_file_exclusive,
             webview_edit::trigger_webview_edit,
             #[cfg(debug_assertions)]
             browser::commands::browser_debug_native_tab_ids,

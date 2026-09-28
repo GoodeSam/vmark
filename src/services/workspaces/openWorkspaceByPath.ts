@@ -8,6 +8,12 @@
  * REQUIRES the caller to hold the per-window transition guard
  * (WORKSPACE_TRANSITION_GUARD) around this call (Codex F-08): the menu command
  * guards the dialog + this call together; the MCP handler guards this call.
+ *
+ * REQUIRES the caller to have settled ACCESS to `path` first (WI-LX1.1): every
+ * caller does — the picker grants what it returns, and Open Recent and the
+ * open_workspace MCP tool ask Rust (`resolveWorkspaceAccess`) and act on the
+ * answer. This used to re-grant as well, asking Rust twice per open (audit F2
+ * #145); a new caller that opens a folder it did not pick must ask first.
  * Running two transitions unguarded interleaves restore tabs/split into
  * whichever workspace lands last. Opening a workspace is safe with unsaved
  * changes — it does not close existing tabs, so dirty docs survive (#1005);
@@ -15,7 +21,8 @@
  *
  * @coordinates-with services/commands/workspaceCommands.ts — menu "Open Folder"
  * @coordinates-with services/commands/recentWorkspacesCommands.ts — "Open Recent"
- * @coordinates-with services/mcpBridge/v2/workspace.ts — open_workspace handler
+ * @coordinates-with services/mcpBridge/v2/workspaceOpenFolder.ts — open_workspace handler
+ * @coordinates-with services/workspaces/workspaceAccess.ts — how callers settle access
  * @module services/workspaces/openWorkspaceByPath
  */
 import { useUIStore } from "@/stores/uiStore";
@@ -23,7 +30,6 @@ import { useRecentWorkspacesStore } from "@/stores/workspaceStore";
 import { openWorkspaceWithConfig } from "@/services/workspaces/openWorkspaceWithConfig";
 import { restoreWorkspaceTabs, restoreSplitLayout } from "@/services/navigation/restoreWorkspaceTabs";
 import { documentPathsForRestore } from "@/services/persistence/sessionTabs";
-import { regrantWorkspaceAccess } from "@/services/workspaces/workspaceAccess";
 import { workspaceError } from "@/utils/debug";
 
 /**
@@ -49,14 +55,6 @@ export async function openWorkspaceByPath(
 ): Promise<boolean> {
   const windowLabel = options.windowLabel ?? "main";
   try {
-    // #1252 / WI-LX1.1 — re-issue the fs + asset grant BEFORE anything reads
-    // from the tree. Runtime grants do not survive a restart, and outside the
-    // static scope (`$HOME/**`, `/Volumes/**`, `/mnt/**`, `/media/**`, and
-    // `C:\` to `F:\` on Windows) nothing else reaches it. Rust grants only a
-    // folder the user chose (picker, Finder, or recorded from those); it
-    // refuses the rest, which is the ORDINARY answer for a folder the static
-    // scope already covers — so a refusal degrades, never aborts the open.
-    await regrantWorkspaceAccess(path);
     const existing = await openWorkspaceWithConfig(path, { windowLabel });
     useUIStore.getState().showSidebarWithView("files");
     useRecentWorkspacesStore.getState().addWorkspace(path);

@@ -17,7 +17,7 @@
 // dev-dependency), and these tests are cfg-gated to match. macOS/Linux
 // still exercise the scope-extension wiring end-to-end.
 #[cfg(not(target_os = "windows"))]
-use super::{allow_fs_read, allow_fs_read_dir};
+use super::allow_fs_read;
 #[cfg(not(target_os = "windows"))]
 use tauri::Manager;
 #[cfg(not(target_os = "windows"))]
@@ -64,51 +64,6 @@ fn allow_fs_read_extends_scope_so_read_is_permitted() {
     assert!(
         app.asset_protocol_scope().is_allowed(&file),
         "allow_fs_read must also extend the asset scope, or asset:// media 404s"
-    );
-}
-
-/// #1252 — a workspace root must be granted RECURSIVELY.
-///
-/// `allow_file` grants one path; a workspace needs its whole tree. Tauri's
-/// `allow_directory(path, recursive)` pushes `path/*` when false and `path/**`
-/// when true, so a non-recursive grant leaves every SUBDIRECTORY out of scope.
-///
-/// It only reproduces off the home drive: capabilities/default.json covers
-/// `$HOME/**`, `/Volumes/**`, `/mnt/**` and `/media/**`, which masks the gap on
-/// macOS and Linux. On Windows `$HOME` is `C:\Users\<name>`, so a workspace on
-/// `G:\` is covered by nothing at all.
-///
-/// Gated like every other mock-runtime test in this file: `tauri::test::
-/// MockRuntime` crashes the test binary at startup on windows-latest, so the
-/// import and `mock_app_with_fs` are both `cfg(not(windows))` — an ungated test
-/// referencing them does not fail at runtime, it fails to COMPILE, and only on
-/// Windows. The irony is not lost: a fix for a Windows bug, broken on Windows.
-#[cfg(not(target_os = "windows"))]
-#[test]
-fn allow_fs_read_dir_grants_nested_files() {
-    let dir = tempfile::tempdir().expect("tempdir");
-    let nested = dir.path().join("sub").join("deeper");
-    std::fs::create_dir_all(&nested).expect("mkdir");
-    let file = nested.join("note.md");
-    std::fs::write(&file, b"# hi").expect("write");
-
-    let app = mock_app_with_fs();
-    assert!(
-        !app.fs_scope().is_allowed(&file),
-        "mock fs scope should reject the nested path before extension"
-    );
-
-    assert!(!app.asset_protocol_scope().is_allowed(&file));
-
-    allow_fs_read_dir(app.handle(), dir.path().to_str().unwrap());
-
-    assert!(
-        app.fs_scope().is_allowed(&file),
-        "a workspace grant must reach files in SUBDIRECTORIES, not just the top level"
-    );
-    assert!(
-        app.asset_protocol_scope().is_allowed(&file),
-        "the RECURSIVE asset grant is what makes a workspace's nested images render"
     );
 }
 
@@ -239,4 +194,41 @@ fn a_filename_with_glob_metacharacters_still_grants() {
     let app = mock_app_with_fs();
     super::grant_fs_read(app.handle(), file.to_str().unwrap()).expect("escaped, so it grants");
     assert!(app.fs_scope().is_allowed(&file));
+}
+
+// -- confirm_grant_target: a grant resolves its name again (#250) ------------
+//
+// Tauri's `allow_*` resolve the given name a second time and also allow
+// whatever it resolves to then, so every caller that judged a target first
+// confirms afterwards that the name still resolves there. Pure: the second
+// resolution is injected. Nothing is revoked (see the function's docs).
+
+#[test]
+fn a_grant_whose_name_still_resolves_to_the_judged_target_is_confirmed() {
+    let result = super::confirm_grant_target(&"/work/proj", || Ok("/work/proj"));
+    assert_eq!(result, Ok(()));
+}
+
+#[test]
+fn a_name_that_moved_during_the_grant_is_a_failed_grant() {
+    let err = super::confirm_grant_target(&"/work/proj", || Ok("/etc"))
+        .expect_err("the grant covered a target nobody judged");
+    assert!(err.contains("/etc"), "{err}");
+}
+
+#[test]
+fn a_name_that_no_longer_resolves_is_a_failed_grant() {
+    let result = super::confirm_grant_target(&"/work/proj", || Err("gone".to_owned()));
+    assert_eq!(result, Err("gone".to_owned()));
+}
+
+/// `workspaceAccess.ts` tells "outside the scope" from every other failure of
+/// an `exists()` probe by the fs plugin's message, the only signal the plugin
+/// gives (its error serializes as a bare string). Pinned here so a plugin bump
+/// that rewords it fails a test instead of turning every out-of-scope folder
+/// into an unverifiable one.
+#[test]
+fn the_fs_plugin_still_reports_a_scope_refusal_as_forbidden_path() {
+    let err = tauri_plugin_fs::Error::PathForbidden(std::path::PathBuf::from("/opt/x"));
+    assert!(err.to_string().starts_with("forbidden path: "), "{err}");
 }

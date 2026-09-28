@@ -149,7 +149,7 @@ mod finder_directory {
     use tauri::Manager;
     use tauri_plugin_fs::FsExt;
 
-    use super::super::open_finder_directory;
+    use super::super::{off_event_loop, open_finder_directory};
     use crate::workspace_grants::WorkspaceGrants;
 
     fn mock_app() -> tauri::App<tauri::test::MockRuntime> {
@@ -201,5 +201,54 @@ mod finder_directory {
         assert!(!app
             .state::<WorkspaceGrants>()
             .covers(gone.to_str().expect("utf-8")));
+    }
+
+    /// `RunEvent::Opened` is handled on the event loop, and a stale network
+    /// mount blocks `canonicalize` (and the grant file's fsync) for the
+    /// mount's timeout. The handler hands the batch off and returns at once.
+    #[test]
+    fn the_event_loop_hands_the_work_off_and_returns_at_once() {
+        let (finished, done) = std::sync::mpsc::channel();
+        let started = std::time::Instant::now();
+
+        off_event_loop(move || {
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            finished.send(()).expect("receiver alive");
+        });
+
+        assert!(
+            started.elapsed() < std::time::Duration::from_millis(200),
+            "the caller did not wait for the slow work"
+        );
+        done.recv_timeout(std::time::Duration::from_secs(10))
+            .expect("the work still ran");
+    }
+
+    /// Off the event loop, a Finder folder is still granted, recorded, and
+    /// given its window — window creation from a worker is marshalled to the
+    /// main thread, as it is for every `async` command that opens one.
+    #[test]
+    fn a_folder_opened_off_the_event_loop_is_granted_and_gets_its_window() {
+        let app = mock_app();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let nested = dir.path().join("note.md");
+        std::fs::write(&nested, b"# hi").expect("write");
+        let root = dir.path().canonicalize().expect("canonical");
+        let handle = app.handle().clone();
+        let path = dir.path().to_str().expect("utf-8").to_owned();
+        let (finished, done) = std::sync::mpsc::channel();
+
+        off_event_loop(move || {
+            open_finder_directory(&handle, &path);
+            finished.send(()).expect("receiver alive");
+        });
+        done.recv_timeout(std::time::Duration::from_secs(10))
+            .expect("opened");
+
+        assert!(app.fs_scope().is_allowed(&nested));
+        assert!(app
+            .state::<WorkspaceGrants>()
+            .covers(root.to_str().expect("utf-8")));
+        assert_eq!(app.webview_windows().len(), 1);
     }
 }

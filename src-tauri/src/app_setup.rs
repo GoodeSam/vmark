@@ -11,9 +11,12 @@
 //!     the frontend: its webview dies without running its own teardown. That
 //!     covers its file watcher, its PTY sessions and its MCP bridge workspace
 //!     registration.
-//!   - Recorded workspace grants (`workspace_grants`) are re-issued during setup,
-//!     before any window exists, so a restored session never reads a root the
-//!     fs scope does not yet cover. The wait is bounded.
+//!   - Recorded workspace grants (`workspace_grants`) are re-issued during
+//!     setup. Tauri has already BUILT the configured `main` window by then, but
+//!     its page load and every IPC request are served on the main thread setup
+//!     is running on, so nothing can read before the grants are in. The wait is
+//!     bounded, and roots resolve concurrently: only a root still resolving at
+//!     the deadline (a stale mount) is granted late, and it is reported.
 //!   - `machine_id_hash()` generates a stable anonymous device identifier via
 //!     SHA-256(hostname + OS + arch), sent as `X-Machine-Id` header on update checks.
 
@@ -51,7 +54,8 @@ pub(crate) fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::
     app.manage(pty::PtyState::default());
 
     // WI-LX1.1: re-grant the workspace roots the user chose in earlier
-    // sessions before any window can read from them (bounded wait).
+    // sessions. FIRST, and on this thread: the main window exists already, but
+    // it cannot load or invoke anything until setup returns (bounded wait).
     crate::workspace_grants::restore_at_launch(app.handle());
 
     // Coherence layer: per-installation writer identity (spec §2.2) +

@@ -415,6 +415,7 @@ errors:
   # === Workspace grants (workspace_grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "VMark has not been given access to “%{path}”. Choose the folder with File → Open Workspace… to allow it."
   workspaceAccess.pickerBusy: "A folder dialog is already open"
+  workspaceAccess.checkBusy: "VMark is still checking access to that folder. Try again in a moment"
   workspaceAccess.listProtected: "VMark's list of folders it may open can only be changed by VMark itself"
 
 # WI-LX1.1 — the folder picker Rust shows for workspace access

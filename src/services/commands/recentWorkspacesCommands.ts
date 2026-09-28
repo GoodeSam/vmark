@@ -15,6 +15,9 @@
  * Access comes first (WI-LX1.1): the entry is webview data, so Rust grants it
  * only if the user chose that folder before. A folder the static scope cannot
  * read, and nobody chose, goes back through the folder picker opened AT it.
+ * What opens is what Rust judged — the canonical root it granted, or the pick
+ * — and a failure the user did not cause (the check could not run, the picker
+ * was refused) is reported to them, never read as a cancel or as "present".
  *
  * @coordinates-with services/workspaces/openWorkspaceByPath.ts — the shared transition
  * @coordinates-with services/workspaces/workspaceAccess.ts — the access question and the picker
@@ -39,8 +42,10 @@ import {
 import { confirmAction } from "@/services/dialogs/confirmAction";
 import {
   pickWorkspaceFolder,
+  probeWithoutGrant,
   resolveWorkspaceAccess,
 } from "@/services/workspaces/workspaceAccess";
+import { reportCommandFailure } from "./commandFailure";
 
 type Ctx = { windowLabel?: string };
 
@@ -72,19 +77,27 @@ async function recentWorkspaceIsPresent(workspacePath: string): Promise<boolean>
 type RecentTarget =
   | { kind: "open"; path: string }
   | { kind: "missing" }
-  | { kind: "cancelled" };
+  | { kind: "cancelled" }
+  /** Neither opened nor cancelled by the user: say why. */
+  | { kind: "failed"; error: unknown };
 
 /**
  * Ask Rust for access to a recents entry, and settle what to open (WI-LX1.1).
  *
- * Granted, already readable, or unverifiable → the entry itself (an IPC
- * failure is not evidence the folder is gone; the open surfaces real errors).
- * Gone → `missing`. Unchosen and unreadable → the picker, opened at the entry:
- * the folder the user picks is what opens, and a cancel opens nothing.
+ * Granted → the canonical root Rust judged (#250). Readable without a grant →
+ * the entry. Gone → `missing`. Unchosen and unreadable → the picker, opened at
+ * the entry: the folder the user picks is what opens, and a cancel opens
+ * nothing. When the check itself cannot run, only a successful probe of the
+ * static scope lets the open go ahead — a folder nothing can read would
+ * otherwise be installed as a workspace with no file tree.
  */
 async function recentWorkspaceTarget(workspacePath: string): Promise<RecentTarget> {
   const access = await resolveWorkspaceAccess(workspacePath);
   switch (access.kind) {
+    case "granted":
+      return { kind: "open", path: access.root };
+    case "readable":
+      return { kind: "open", path: workspacePath };
     case "missing":
       return { kind: "missing" };
     case "needs-confirmation":
@@ -92,15 +105,15 @@ async function recentWorkspaceTarget(workspacePath: string): Promise<RecentTarge
         const picked = await pickWorkspaceFolder({ defaultPath: workspacePath });
         return picked ? { kind: "open", path: picked } : { kind: "cancelled" };
       } catch (error) {
-        workspaceError("Could not open the folder dialog:", error);
-        return { kind: "cancelled" };
+        return { kind: "failed", error };
       }
-    case "unverified":
+    case "unverified": {
       workspaceError("Could not check access to recent workspace:", access.error);
-      return { kind: "open", path: workspacePath };
-    case "granted":
-    case "readable":
-      return { kind: "open", path: workspacePath };
+      const probe = await probeWithoutGrant(workspacePath);
+      if (probe.kind === "readable") return { kind: "open", path: workspacePath };
+      if (probe.kind === "missing") return { kind: "missing" };
+      return { kind: "failed", error: access.error };
+    }
   }
 }
 
@@ -174,6 +187,13 @@ function buildRecentWorkspacesCommandSpecs(): CommandDefinition[] {
         // other ran.
         const target = await recentWorkspaceTarget(workspacePath);
         if (target.kind === "cancelled") return;
+        if (target.kind === "failed") {
+          reportCommandFailure(target.error, {
+            label: "Could not open recent workspace:",
+            log: workspaceError,
+          });
+          return;
+        }
 
         if (target.kind === "missing" || !(await recentWorkspaceIsPresent(target.path))) {
           const remove = await confirmAction({

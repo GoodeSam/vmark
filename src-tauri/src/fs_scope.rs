@@ -15,14 +15,18 @@
 //!     needs the recursive form or its subdirectories stay out of scope;
 //!   - a runtime fs grant is NOT read-only: the fs plugin accepts a
 //!     runtime-granted path for every command the capability permits (write,
-//!     rename, remove). Which folders get the recursive grant is therefore
-//!     decided in `workspace_grants`, never by a webview-supplied path.
+//!     rename, remove). The recursive workspace grant therefore lives in
+//!     `workspace_grants/scope.rs`, private to the module that decides a root
+//!     was chosen, never here;
+//!   - Tauri resolves a granted name AGAIN while granting, and also allows
+//!     whatever it resolves to then (`confirm_grant_target`).
 //!
 //! Split out of `file_open.rs` when that file crossed the 300-line limit:
 //! granting scope is a separate concern from queueing Finder/CLI opens.
 //!
 //! @coordinates-with file_open.rs — queues the opens these grants make readable
-//! @coordinates-with workspace_grants/mod.rs — the only caller of the recursive grant
+//! @coordinates-with workspace_grants/scope.rs — the recursive workspace grant
+//! @coordinates-with asset_access.rs — the media grant, confirmed the same way
 
 use tauri::Manager;
 
@@ -93,27 +97,40 @@ pub(crate) fn grant_fs_read<R: tauri::Runtime>(
     }
 }
 
-/// Runtime-extend the fs + asset scopes for a DIRECTORY tree the user opened
-/// as a workspace (#1252). Callers are in `workspace_grants`, which decides
-/// that the user chose `path`.
+/// Confirm, after a grant, that a name still resolves to the target the caller
+/// judged (#250).
 ///
-/// `allow_fs_read` grants a single path, which is right for one opened file and
-/// wrong for a workspace: a non-recursive grant leaves every SUBDIRECTORY out
-/// of scope.
+/// `Scope::allow_file` / `allow_directory` resolve the name they are given
+/// AGAIN and also allow whatever it resolves to at that instant: tauri 2.11.5's
+/// `push_pattern` (`src/scope/fs.rs:92`) ends by inserting
+/// `canonicalize_parent(path)` (`:143`), and `allow_directory` (`:351`) and
+/// `allow_file` both go through it. A caller that resolved and judged the
+/// target a moment earlier is exposed to a swap in between. This resolves once
+/// more after the grant and reports a moved name as a FAILED grant, so the
+/// caller records nothing and opens nothing.
 ///
-/// Invisible on macOS and Linux, where the static scope already covers where
-/// users keep files. On Windows `windows.json` covers `C:\` to `F:\`, so a
-/// workspace on `G:\` or later, or on a network share, is covered by nothing
-/// and every file in it is refused with `forbidden path: …`. Best-effort:
-/// failures logged, not propagated.
-pub(crate) fn allow_fs_read_dir<R: tauri::Runtime>(app: &tauri::AppHandle<R>, path: &str) {
-    use tauri_plugin_fs::FsExt;
-    if let Err(e) = app.fs_scope().allow_directory(path, true) {
-        log::warn!("[fs-scope] Failed to allow directory '{}': {}", path, e);
+/// What it deliberately does NOT do is undo the stray grant. Tauri has no call
+/// that removes an allow pattern, and the only counter — a forbid pattern —
+/// outranks every allow, including ones the user made: a swap aimed at a
+/// workspace the user chose, or at a folder containing one, would have that
+/// workspace revoked. So the residual is stated, not papered over: after a
+/// swap that lands inside one grant call, the target stays readable (and, for
+/// the fs scope, writable) until the app restarts. It needs a rename of an
+/// EXISTING link into place during that call — no fs-plugin command creates
+/// one — and a swap undone before this check runs is invisible to any check
+/// made by name.
+pub(crate) fn confirm_grant_target<T: PartialEq + std::fmt::Debug>(
+    judged: &T,
+    resolve_again: impl FnOnce() -> Result<T, String>,
+) -> Result<(), String> {
+    let now = resolve_again()?;
+    if now == *judged {
+        return Ok(());
     }
-    if let Err(e) = app.asset_protocol_scope().allow_directory(path, true) {
-        log::warn!("[asset-scope] Failed to allow directory '{}': {}", path, e);
-    }
+    log::error!("[fs-scope] {judged:?} resolved to {now:?} while it was being granted");
+    Err(format!(
+        "{judged:?} resolved to {now:?} while it was being granted"
+    ))
 }
 
 #[cfg(test)]

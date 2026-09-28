@@ -33,6 +33,7 @@ pub mod command_error; // WI-14 crate-wide typed command error ({code, message, 
 mod content_search;
 mod content_server;
 mod external_editor;
+mod file_create;
 mod file_open;
 mod file_ops;
 mod file_tree;

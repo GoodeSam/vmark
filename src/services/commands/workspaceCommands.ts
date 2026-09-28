@@ -84,7 +84,10 @@ async function openWorkspaceFolder(windowLabel: string): Promise<void> {
       // Shared sequence (also used by the open_workspace MCP handler).
       await openWorkspaceByPath(path, { windowLabel });
     } catch (error) {
-      workspaceError("Failed to open folder:", error);
+      // A refused picker (another folder dialog is open) or a failed call:
+      // logging alone left the command doing nothing at all. Rust's own
+      // message — `pickerBusy` is localized — says why.
+      reportCommandFailure(error, { label: "Failed to open folder:", log: workspaceError });
     }
   });
 }

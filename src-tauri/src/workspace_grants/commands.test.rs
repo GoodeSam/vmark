@@ -93,19 +93,26 @@ fn the_filesystem_root_is_refused() {
     }
 }
 
+/// It names the folder as the CALLER spelled it — never the canonical form,
+/// which would tell a script where a link points (audit F2 #83).
 #[test]
-fn the_refusal_is_localized_and_names_the_folder() {
+fn the_refusal_is_localized_and_names_the_folder_as_asked() {
     let app = mock_app();
     let (_dir, root, _nested) = workspace();
+    let asked = root.to_str().unwrap();
 
-    let err = call(&app, root.to_str().unwrap()).expect_err("never chosen");
+    let err = call(&app, asked).expect_err("never chosen");
 
     assert_eq!(err.i18n_key(), Some("errors.workspaceAccess.notGranted"));
-    assert!(
-        err.message().contains(&canonical(&root)),
-        "got: {}",
-        err.message()
-    );
+    assert!(err.message().contains(asked), "got: {}", err.message());
+    if canonical(&root) != asked {
+        // macOS temp dirs: `/var/…` is a link to `/private/var/…`.
+        assert!(
+            !err.message().contains(&canonical(&root)),
+            "got: {}",
+            err.message()
+        );
+    }
 }
 
 #[test]
@@ -184,24 +191,78 @@ fn a_link_out_of_a_chosen_root_is_refused() {
     assert_eq!(readable(&app, &secret), (false, false));
 }
 
+/// Outside the chosen folders, "missing" and "a file" are the same refusal as
+/// any other (audit F2 #83); inside one, the real class is reported.
 #[test]
-fn a_missing_folder_is_not_found() {
+fn a_missing_folder_or_a_file_nobody_chose_is_refused_like_any_other() {
     let app = mock_app();
-    let (dir, _root, _nested) = workspace();
+    let (dir, _root, nested) = workspace();
 
-    let err = call(&app, dir.path().join("gone").to_str().unwrap()).expect_err("absent");
-
-    assert_eq!(err.code(), ErrorCode::NotFound);
+    for path in [dir.path().join("gone"), nested] {
+        let err = call(&app, path.to_str().unwrap()).expect_err("not chosen");
+        assert_eq!(
+            err.code(),
+            ErrorCode::PermissionDenied,
+            "{}",
+            path.display()
+        );
+    }
 }
 
 #[test]
-fn a_file_is_invalid_input() {
+fn inside_a_chosen_root_a_missing_folder_is_not_found_and_a_file_invalid() {
     let app = mock_app();
-    let (_dir, _root, nested) = workspace();
+    let (_dir, root, nested) = workspace();
+    record_only(&app, &root);
 
+    let err = call(&app, root.join("gone").to_str().unwrap()).expect_err("absent");
+    assert_eq!(err.code(), ErrorCode::NotFound);
     let err = call(&app, nested.to_str().unwrap()).expect_err("not a folder");
-
     assert_eq!(err.code(), ErrorCode::InvalidInput);
+}
+
+// -- Bounded checks (audit F2 #82) ---------------------------------------------
+//
+// Each check resolves a caller-named path on the blocking pool, and on a dead
+// network mount one resolution holds a thread for the mount's timeout. So at
+// most a few checks run at once, and a path already being checked is not
+// checked again: a script repeating a dead-mount path costs one thread, not
+// the pool. A refused check is `conflict`, answered at once.
+
+#[test]
+fn a_path_already_being_checked_is_refused_at_once() {
+    let app = mock_app();
+    let (_dir, root, _nested) = workspace();
+    let _in_flight = app
+        .state::<WorkspaceGrants>()
+        .begin_check(&root)
+        .expect("first check");
+
+    let err = call(&app, root.to_str().unwrap()).expect_err("already in flight");
+
+    assert_eq!(err.code(), ErrorCode::Conflict);
+    assert_eq!(err.i18n_key(), Some("errors.workspaceAccess.checkBusy"));
+}
+
+#[test]
+fn no_more_than_the_limit_run_at_once_and_a_finished_check_frees_its_place() {
+    let app = mock_app();
+    let (_dir, root, _nested) = workspace();
+    let grants = app.state::<WorkspaceGrants>();
+    let held: Vec<_> = (0..super::super::MAX_CONCURRENT_CHECKS)
+        .map(|i| {
+            grants
+                .begin_check(PathBuf::from(format!("/held/{i}")))
+                .expect("under the limit")
+        })
+        .collect();
+
+    let err = call(&app, root.to_str().unwrap()).expect_err("at the limit");
+    assert_eq!(err.code(), ErrorCode::Conflict);
+
+    drop(held);
+    let err = call(&app, root.to_str().unwrap()).expect_err("refused, but CHECKED");
+    assert_eq!(err.code(), ErrorCode::PermissionDenied);
 }
 
 #[test]
@@ -213,4 +274,21 @@ fn a_relative_path_is_invalid_input() {
     let err = call(&app, "some/relative/dir").expect_err("relative");
 
     assert_eq!(err.code(), ErrorCode::InvalidInput);
+}
+
+/// A re-grant that does not take is an error, not a root: the caller would open
+/// a workspace it cannot read. A forbidden pattern outranks any allow.
+#[test]
+fn a_chosen_root_whose_grant_does_not_take_is_an_error() {
+    let app = mock_app();
+    let (_dir, root, nested) = workspace();
+    record_only(&app, &root);
+    app.fs_scope()
+        .forbid_directory(&root, true)
+        .expect("forbid");
+
+    let err = call(&app, root.to_str().unwrap()).expect_err("nothing became readable");
+
+    assert_eq!(err.code(), ErrorCode::Internal);
+    assert!(!app.fs_scope().is_allowed(&nested));
 }

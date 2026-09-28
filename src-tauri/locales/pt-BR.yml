@@ -414,6 +414,7 @@ errors:
   # === Permissões de espaços de trabalho (workspace_grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "O VMark não tem acesso a “%{path}”. Escolha a pasta em Arquivo → Abrir espaço de trabalho... para permitir."
   workspaceAccess.pickerBusy: "Já há uma caixa de diálogo de pasta aberta"
+  workspaceAccess.checkBusy: "O VMark ainda está verificando o acesso a essa pasta. Tente novamente em instantes"
   workspaceAccess.listProtected: "Somente o próprio VMark pode alterar a lista de pastas que ele tem permissão para abrir"
 
 # WI-LX1.1 — the folder picker Rust shows for workspace access
