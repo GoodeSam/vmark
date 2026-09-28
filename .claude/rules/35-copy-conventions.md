@@ -10,7 +10,7 @@ The casing REGISTER comes from the key pattern, never guessed from the value.
 What `scripts/check-i18n-keys.ts` (`checkCopyConventions`) actually ENFORCES
 against `scripts/i18n-copy-baseline.json` (identity, ratchets down; record wins
 with `pnpm lint:i18n --update-copy`): Title Case on the chrome register, the
-punctuation vocabulary (`…`, `→`), and no trailing period on descriptions.
+punctuation vocabulary (`…`, `→`, spaced `—`), and no trailing period on descriptions.
 Sentence case on the running-copy register is CONVENTION ONLY — no mechanical
 sentence-case test survives acronyms and proper nouns without a baseline larger
 than the problem, so reviewers hold that line, not the gate. English only:
@@ -47,6 +47,7 @@ Punctuation vocabulary:
 
 - `…` never `...` (fixed repo-wide: 91 JSON values + 24 in `en.yml`).
 - `→` never `->`; navigation paths read `Settings → Integrations`, never `Settings > X`.
+- Em-dashes are spaced: `word — word`. A doubled `——` and a dash beside CJK text follow CJK rules.
 - Descriptions carry **no trailing period** (Q3). Multi-sentence descriptions
   are the baselined remainder — reword them or revisit Q3 before adding more.
 - Curly quotes around interpolations: `“{{name}}”`, never `"{{name}}"`.

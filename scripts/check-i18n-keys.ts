@@ -999,6 +999,24 @@ function checkInternalReferencesAndFragments(): boolean {
   return ok;
 }
 
+const CJK_CHAR = /[\u3000-\u303f\u3400-\u4dbf\u4e00-\u9fff\uff00-\uffef]/;
+
+/**
+ * English copy spaces its em-dashes ("word — word", AGENTS.md). `lint:emdash`
+ * reads Markdown only, so UI strings are checked here. A doubled `——` is CJK
+ * punctuation and a dash beside CJK text follows CJK rules; a placeholder
+ * brace counts as a word, since `{{name}}—copy` renders as one.
+ */
+export function emdashSpacingViolation(value: string): boolean {
+  for (let i = value.indexOf("—"); i !== -1; i = value.indexOf("—", i + 1)) {
+    const before = value[i - 1] ?? "";
+    const after = value[i + 1] ?? "";
+    if (before === "—" || after === "—" || CJK_CHAR.test(before) || CJK_CHAR.test(after)) continue;
+    if (/[\w}]/.test(before) || /[\w{]/.test(after)) return true;
+  }
+  return false;
+}
+
 /** Exported (with an injectable baseline path) so the fail-closed missing-
  *  baseline behavior has a behavioral test — the scan itself reads the real
  *  locale tree either way. */
@@ -1016,6 +1034,7 @@ export function checkCopyConventions(
       const value = raw;
       const id = (check: string) => `${file}:${key}:${check}`;
       if (value.includes("...")) found.push(id("ellipsis"));
+      if (emdashSpacingViolation(value)) found.push(id("emdash"));
       if (/\s->\s/.test(value)) found.push(id("arrow"));
       if (/Settings\s*>\s*[A-Z]/.test(value)) found.push(id("nav-arrow"));
       if (/"\{\{/.test(value) || /\}\}"/.test(value)) found.push(id("straight-quotes"));
@@ -1036,6 +1055,7 @@ export function checkCopyConventions(
     if (!m) return;
     const [, key, val] = m;
     if (val.includes("...")) found.push(`en.yml:${key}:ellipsis`);
+    if (emdashSpacingViolation(val)) found.push(`en.yml:${key}:emdash`);
     if (/Settings\s*>\s*[A-Z]/.test(val)) found.push(`en.yml:${key}:nav-arrow`);
     void i;
   });

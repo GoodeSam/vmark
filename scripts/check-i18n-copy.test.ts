@@ -8,6 +8,7 @@ import { join } from "node:path";
 import {
   checkCopyConventions,
   dialogLiteralFindings,
+  emdashSpacingViolation,
   fragmentUsageFindings,
   internalReferenceFindings,
   referenceFindingsExcept,
@@ -15,6 +16,22 @@ import {
   standaloneTextFindings,
   titleCaseViolations,
 } from "./check-i18n-keys";
+
+describe("emdashSpacingViolation — English copy spaces its em-dashes", () => {
+  it.each([["Sandboxed—scripts blocked"], ["Sandboxed —scripts"], ["Sandboxed— scripts"], ["{{name}}—copy"]])(
+    "flags an unspaced em-dash: %s",
+    (value) => {
+      expect(emdashSpacingViolation(value)).toBe(true);
+    },
+  );
+
+  it.each([["Sandboxed — scripts blocked"], ["-- → —— between CJK"], ["中文—中文"], ["Trailing —"], ["— leading"], [""]])(
+    "accepts spaced, doubled CJK, CJK-adjacent and edge dashes: %s",
+    (value) => {
+      expect(emdashSpacingViolation(value)).toBe(false);
+    },
+  );
+});
 
 describe("titleCaseViolations (R14)", () => {
   it.each([
