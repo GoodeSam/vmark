@@ -131,6 +131,9 @@ export const htmlFormat: FormatConfig = {
     return html();
   },
   validator: htmlValidator,
+  // Every HTML_RULES finding is about content the sandboxed preview refuses to
+  // run; trusted preview runs it, so under trust each is information.
+  infoWhenTrusted: HTML_RULES.map((r) => r.ruleId),
   genericPreview: HtmlPreview,
   adapters: {
     saveDialogFilters: [{ nameI18nKey: "format.html", extensions: ["html", "htm"] }],

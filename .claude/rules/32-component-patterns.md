@@ -92,6 +92,14 @@ ratchets down only.
 
 ## Other patterns
 
+- A finding's severity follows the state that gives it meaning. "Script tag
+  detected — blocked unless trusted preview is enabled" warns while the preview
+  blocks scripts and is information once the user trusted the file; shown as a
+  warning under "Trusted — scripts enabled" it contradicted the banner.
+  Validators stay mode-independent; a format lists the affected rule ids in
+  `FormatConfig.infoWhenTrusted`, and BOTH surfaces — CodeMirror's lint and the
+  validation list — present through `lib/formats/diagnosticPresentation.ts`.
+
 - Tables scroll horizontally inside `.table-scroll-container`; never clip them
   with `overflow-x: hidden` on an ancestor.
 - Frame ownership: when a wrapper exists (`.code-block-wrapper`), it owns

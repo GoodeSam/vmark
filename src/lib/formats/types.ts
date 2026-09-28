@@ -247,6 +247,14 @@ export interface FormatConfig {
   toPlainText?: (content: string) => string;
 
   validator?: Validator;
+
+  /**
+   * Rule ids whose findings are SHOWN as `info` once the user has trusted the
+   * document (trust-aware severity, lib/formats/diagnosticPresentation.ts).
+   * For findings that describe what a sandboxed preview refuses to run: a
+   * warning while it is blocked, information once trusted preview runs it.
+   */
+  infoWhenTrusted?: readonly string[];
   genericPreview?: PreviewRenderer;
   schemaDetector?: SchemaDetector;
   schemaRenderers?: Record<string, PreviewRenderer>;

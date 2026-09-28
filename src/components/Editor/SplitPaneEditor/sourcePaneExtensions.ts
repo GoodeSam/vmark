@@ -2,17 +2,19 @@
  * sourcePaneExtensions
  *
  * Purpose: Pure builders for SourcePane's CodeMirror wiring — the lint
- * extension (format.validator → gutter + hoisted diagnostics), the base
- * extension list, the diagnostic-to-CodeMirror mapping, and the lazy
- * compartment loader (language pack, per-format extras). Extracted from
- * SourcePane so its mount effect is a thin assembler. No React, no DOM —
- * unit-testable in isolation.
+ * extension (format.validator → gutter + hoisted diagnostics, presented at
+ * the severity the path's trust calls for), the base extension list, the
+ * diagnostic-to-CodeMirror mapping, and the lazy compartment loader
+ * (language pack, per-format extras). Extracted from SourcePane so its mount
+ * effect is a thin assembler. No React, no DOM — unit-testable in isolation.
  *
  * @coordinates-with SourcePane.tsx — sole caller
  * @coordinates-with lib/formats/types — FormatConfig.validator contract
+ * @coordinates-with lib/formats/diagnosticPresentation.ts — trust-aware severity
+ * @coordinates-with useTrustedSeveritySync.ts — re-presents on trust/path change
  * @module components/Editor/SplitPaneEditor/sourcePaneExtensions
  */
-import { Compartment, EditorState, type Extension } from "@codemirror/state";
+import { Compartment, EditorState, type Extension, type Text } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
@@ -23,6 +25,20 @@ import { useUIStore } from "@/stores/uiStore";
 import { sourceEditorTheme, codeHighlightStyle } from "@/plugins/codemirror/theme";
 import { reducedEditorContextMenuExtension } from "@/plugins/codemirror/editorContextMenu";
 import type { FormatConfig, ValidationDiagnostic } from "@/lib/formats/types";
+import { presentDiagnostics } from "@/lib/formats/diagnosticPresentation";
+import { useHtmlTrustStore } from "@/stores/htmlTrustStore";
+
+/** Whether the user has trusted the document at `path` this session. */
+export function isDocumentTrusted(path: string | null | undefined): boolean {
+  return path ? useHtmlTrustStore.getState().tokenFor(path) !== null : false;
+}
+
+
+/** What the validator last found, and the document version it found it in. */
+export interface RawLint {
+  doc: Text;
+  diagnostics: readonly ValidationDiagnostic[];
+}
 
 /** Map a format ValidationDiagnostic to a CodeMirror Diagnostic, clamping
  *  line/column to the doc's real range so an out-of-range report can't throw
@@ -82,11 +98,16 @@ export function diagnosticToCodemirror(
 }
 
 /** Build the validator-backed lint extension, or null when the format has no
- *  validator. Hoists diagnostics to `onDiagnostics` for the preview pane. */
+ *  validator. Hoists the RAW diagnostics to `onDiagnostics` (the validation
+ *  list presents them itself) and to `onRawLint` with the document version
+ *  they belong to; CodeMirror gets them presented for the path's current
+ *  trust (lib/formats/diagnosticPresentation.ts). */
 export function buildValidationLinter(
   tabId: string,
   validator: FormatConfig["validator"],
   onDiagnostics: (diagnostics: ValidationDiagnostic[]) => void,
+  infoWhenTrusted?: readonly string[],
+  onRawLint?: (raw: RawLint) => void,
 ): Extension | null {
   if (!validator) return null;
   return linter((view) => {
@@ -94,7 +115,9 @@ export function buildValidationLinter(
     const path = useDocumentStore.getState().documents?.[tabId]?.filePath ?? undefined;
     const diagnostics = validator(text, path ?? undefined);
     onDiagnostics(diagnostics);
-    return diagnostics.map((d) => diagnosticToCodemirror(view.state.doc, d));
+    onRawLint?.({ doc: view.state.doc, diagnostics });
+    return presentDiagnostics(diagnostics, infoWhenTrusted, isDocumentTrusted(path))
+      .map((d) => diagnosticToCodemirror(view.state.doc, d));
   });
 }
 
@@ -117,6 +140,10 @@ export interface BuildExtensionsArgs {
   persistOnUpdate: Extension;
   /** Hoists lint diagnostics to the preview pane. */
   onDiagnostics: (diagnostics: ValidationDiagnostic[]) => void;
+  /** Rule ids shown as info once the document is trusted (FormatConfig). */
+  infoWhenTrusted?: readonly string[] | undefined;
+  /** Receives each lint's raw findings for useTrustedSeveritySync. */
+  onRawLint?: (raw: RawLint) => void;
 }
 
 /** Assemble the full base extension list for the SourcePane editor. */
@@ -131,6 +158,8 @@ export function buildSourcePaneExtensions(args: BuildExtensionsArgs): Extension[
     extrasCompartment,
     persistOnUpdate,
     onDiagnostics,
+    infoWhenTrusted,
+    onRawLint,
   } = args;
 
   const extensions: Extension[] = [
@@ -165,7 +194,7 @@ export function buildSourcePaneExtensions(args: BuildExtensionsArgs): Extension[
     reducedEditorContextMenuExtension,
   ];
 
-  const validationLinter = buildValidationLinter(tabId, validator, onDiagnostics);
+  const validationLinter = buildValidationLinter(tabId, validator, onDiagnostics, infoWhenTrusted, onRawLint);
   if (validationLinter) extensions.push(validationLinter);
   if (readOnly) extensions.push(EditorState.readOnly.of(true));
 

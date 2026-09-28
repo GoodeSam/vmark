@@ -140,3 +140,15 @@ describe("html adapter", () => {
     });
   });
 });
+
+describe("htmlFormat.infoWhenTrusted — what a trusted document's findings mean", () => {
+  // Every HTML_RULES finding is about content the SANDBOXED preview refuses to
+  // run; once the user trusts the document, trusted preview runs it, so each
+  // must be listed. Adding a fourth rule without deciding this fails here.
+  it("lists exactly the rules the validator reports", () => {
+    const doc = `<script>x</script><a href="javascript:void 0">a</a><p onclick="y">p</p>`;
+    const reported = [...new Set(htmlValidator(doc).map((d) => d.ruleId))].sort();
+    expect([...(htmlFormat.infoWhenTrusted ?? [])].sort()).toEqual(reported);
+    expect(reported).toHaveLength(3);
+  });
+});

@@ -22,6 +22,7 @@ import { detectSourceLanguage } from "@/lib/formats/sourceLanguage";
 // `.source-editor`/`.source-pane`) used by the shared source theme.
 import "@/plugins/codemirror/source-syntax.css";
 import { buildSourcePaneExtensions, reconfigureWhenLoaded } from "./sourcePaneExtensions";
+import { useTrustedSeveritySync } from "./useTrustedSeveritySync";
 import type {
   FormatConfig,
   ValidationDiagnostic,
@@ -52,6 +53,7 @@ export function SourcePane({
 }: SourcePaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const trustedLint = useTrustedSeveritySync(viewRef, tabId, formatConfig.infoWhenTrusted);
   // WI-LX2.4: the window's active source view while this pane is focused.
   const focusedRef = useSourcePaneFocus(viewRef, getCurrentWindowLabel(), false, { tabId, cursorContext: false });
   const languageCompartmentRef = useRef(new Compartment());
@@ -167,6 +169,7 @@ export function SourcePane({
         : undefined,
       persistOnUpdate,
       onDiagnostics: (diagnostics) => onDiagnosticsRef.current?.(diagnostics),
+      ...trustedLint,
     });
 
     const initial = useDocumentStore.getState().documents?.[tabId]?.content ?? "";
