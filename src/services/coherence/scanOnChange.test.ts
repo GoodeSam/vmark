@@ -6,6 +6,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { startCoherenceScanOnChange } from "./scanOnChange";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 type Handler = (event: unknown) => void;
 
@@ -29,9 +30,23 @@ function makeDeps() {
 beforeEach(() => {
   vi.useFakeTimers();
   useWorkspaceStore.setState({ rootPath: "/ws/story" });
+  useSettingsStore.getState().updateGeneralSetting("coherenceCaptureOnSave", false);
 });
 
 describe("startCoherenceScanOnChange", () => {
+  it("sends the capture-on-save policy current at scan time (WI-LX1.4)", async () => {
+    const { deps, fire, invoke } = makeDeps();
+    startCoherenceScanOnChange(deps);
+    await vi.advanceTimersByTimeAsync(0);
+    useSettingsStore.getState().updateGeneralSetting("coherenceCaptureOnSave", true);
+    fire();
+    await vi.advanceTimersByTimeAsync(3100);
+    expect(invoke).toHaveBeenCalledWith("coherence_scan", {
+      workspaceRoot: "/ws/story",
+      policy: "adopt",
+    });
+  });
+
   it("debounces a burst of events into one scan", async () => {
     const { deps, fire, invoke } = makeDeps();
     startCoherenceScanOnChange(deps);
@@ -41,7 +56,11 @@ describe("startCoherenceScanOnChange", () => {
     fire();
     await vi.advanceTimersByTimeAsync(3100);
     expect(invoke).toHaveBeenCalledTimes(1);
-    expect(invoke).toHaveBeenCalledWith("coherence_scan", { workspaceRoot: "/ws/story" });
+    expect(invoke).toHaveBeenCalledWith("coherence_scan", {
+      workspaceRoot: "/ws/story",
+      // WI-LX1.4: the pass obeys capture-on-save (ships off).
+      policy: "tracked-only",
+    });
   });
 
   it("does nothing without an open workspace", async () => {

@@ -95,11 +95,18 @@ export interface GeneralSettings {
   autoSaveEnabled: boolean;
   autoSaveInterval: number; // seconds
   /**
-   * Track document provenance (the coherence layer) on save. OFF by default:
+   * "Stamp identity block on save" (the coherence layer). Governs EVERY write
+   * path — human save, MCP, genie, AI suggestion, history restore, new file —
+   * through one Rust choke point (`src-tauri/src/coherence/capture_policy.rs`).
+   * OFF by default:
    * capturing assigns a Semantic Object identity, which REWRITES the file to
    * insert a `vmark:` frontmatter block (prepending one if absent) and creates
    * `.vmark/` in the workspace. Modifying a user's markdown is opt-in — it must
-   * never happen silently, least of all on autosave.
+   * never happen silently, least of all on autosave. When OFF, a workspace that
+   * already has a ledger keeps recording writes to the documents it TRACKS: one
+   * registered at its path, or one whose file already carries its own `vmark:`
+   * identity (a tracked file moved, copied in or checked out — the ledger's scan
+   * adopts exactly those). Nothing is stamped and `.vmark/` is never created.
    */
   coherenceCaptureOnSave: boolean;
   // Document history

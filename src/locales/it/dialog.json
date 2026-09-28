@@ -211,7 +211,6 @@
   "common.pin": "Appunta",
   "common.pinTooltip": "Mantieni aperto questo avviso",
   "common.unpinTooltip": "Appuntato — chiudi manualmente",
-  "openWorkspaceFolder.title": "Apri cartella dell'area di lavoro",
   "openWorkspace.approval.title": "Aprire la cartella come area di lavoro?",
   "openWorkspace.approval.body": "L'assistente IA chiede di aprire questa cartella come area di lavoro, il che gli concede l'accesso all'albero dei file della cartella:",
   "openWorkspace.approval.approve": "Apri area di lavoro",
@@ -262,5 +261,15 @@
   "error.title": "Errore",
   "error.saveMediaFailed": "Salvataggio del file multimediale non riuscito: {{error}}",
   "resetShortcuts.title": "Reimposta scorciatoie",
-  "resetSettings.title": "Reimposta impostazioni"
+  "resetSettings.title": "Reimposta impostazioni",
+  "exportError.lockBusy": "Un’altra esportazione sta già scrivendo in {{destination}}. Se non ci sono altre esportazioni in corso, elimina {{lock}} e riprova.",
+  "exportError.takenOver": "L’esportazione in {{destination}} non è stata pubblicata: un’altra esportazione ha preso il controllo della cartella mentre questa era in corso. Nella destinazione non è stato modificato nulla.",
+  "exportError.notAFile": "{{path}} è una cartella, non un file che questa esportazione può sostituire. Spostala o rinominala, oppure esporta in un’altra cartella.",
+  "exportError.publishFailed": "Impossibile pubblicare l’esportazione in {{destination}}: {{reason}}. {{rollback}}",
+  "exportError.rollbackFilesNotRestored": "Impossibile ripristinare questi file: {{files}}.",
+  "exportError.rollbackFoldersLeft": "I tuoi file sono stati ripristinati, ma queste cartelle create dall’esportazione sono ancora presenti: {{folders}}.",
+  "exportError.rollbackRestored": "Nient’altro è stato modificato: la cartella è stata riportata al contenuto precedente.",
+  "exportError.backupKeptAt": "{{path}} (il contenuto precedente è conservato in {{backup}}: {{reason}})",
+  "exportError.backupGone": "{{path}} (anche il backup in {{backup}} è scomparso: {{reason}})",
+  "exportError.listItem": "«{{item}}»"
 }

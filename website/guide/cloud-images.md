@@ -23,7 +23,7 @@ In short: if the image already lives at a URL, paste the URL. VMark inserts it a
 
 The proposed feature would mean VMark detects a local image at paste time, uploads it to remote storage, and writes the returned URL into the Markdown instead of a `./.assets/…` path. That sounds small but expands VMark's scope in three load-bearing ways:
 
-1. **Credential vault**. Native S3-compatible upload needs the user's access key and secret access key stored at rest. VMark today has zero long-lived secrets — no encryption-at-rest decisions, no OS-keychain integration, no key-rotation UX, no accidental-key-in-Markdown failure mode. Adding upload moves VMark across that line.
+1. **Credential vault**. Native S3-compatible upload needs the user's access key and secret access key stored at rest. VMark does keep a few secrets today — AI-provider API keys and browser sessions you save for an AI both live in the OS keychain — but none of them is a credential that writes to a storage bucket you pay for. Upload would add exactly that: another provider's keys to store, key-rotation UX, and an accidental-key-in-Markdown failure mode.
 
 2. **Multi-provider support tail**. S3, Cloudflare R2, Backblaze B2, MinIO, DigitalOcean Spaces all advertise S3-compatibility but each has its own quirks (path-style vs virtual-hosted addressing, ACL semantics, regional endpoints, CORS rules). One maintainer absorbing that surface area is a long-term tax on a writing tool.
 

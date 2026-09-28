@@ -30,10 +30,56 @@ Na primeira execução após atualizar para o suporte a múltiplos formatos, o V
 | Dados — TOML | `.toml` | requer a alternância **Formatos de dados** | fonte + árvore | árvore navegável, com reconhecimento de esquema (`Cargo.toml`, `pyproject.toml`) |
 | Diagramas | `.mmd` | requer a alternância **Diagramas e SVG** | fonte + renderização | diagrama Mermaid ao vivo |
 | Vetorial | `.svg` | requer a alternância **Diagramas e SVG** | fonte + renderização | renderização inline sanitizada |
-| Web | `.html`, `.htm` | requer a alternância **Prévia HTML** | fonte + renderização | iframe em sandbox (empty `sandbox=""`, DOMPurify, CSP) |
+| Web | `.html`, `.htm` | requer a alternância **Prévia HTML** | fonte + renderização | iframe em sandbox (`sandbox=""` vazio, DOMPurify, CSP); o [modo confiável](#previa-html-confiavel-opcional) é opcional, por arquivo |
 | Código (somente leitura) | `.ts`, `.tsx`, `.js`, `.jsx`, `.py`, `.rs`, `.go`, `.css`, `.sh`, `.bash`, `.rb`, `.lua` | requer a alternância **Visualizadores de código** | visualizador (com opção de edição) | — |
+| Mídia | imagens (`.png`, `.jpg`, `.gif`, `.webp`, `.heic`, `.tiff`, …), vídeo (`.mp4`, `.webm`, `.mov`, …), áudio (`.mp3`, `.wav`, `.flac`, …) | sempre ativo | visualizador (somente leitura) | imagem nativa / `<video>` / `<audio>` |
 
-Arquivos de código abrem por padrão em modo somente leitura com um banner oferecendo **Habilitar edição** ou **Abrir no editor externo**.
+Arquivos de código abrem por padrão em modo somente leitura com um banner oferecendo **Ativar edição** ou **Abrir no editor externo**.
+
+## Modos de exibição (Fonte / Dividido / Visualização)
+
+Qualquer formato que tenha prévia — HTML, SVG, Mermaid, JSON, YAML, TOML — abre com
+uma pequena alternância **Fonte · Dividido · Visualização** no canto superior direito:
+
+- **Fonte** — o painel de fonte editável, em largura total.
+- **Dividido** — fonte e prévia lado a lado (o padrão).
+- **Visualização** — o resultado renderizado, em largura total. A visualização é uma
+  renderização **somente leitura**; para editar, volte para Fonte ou Dividido.
+
+Você também pode alternar pelo teclado: **`F6`** alterna Fonte ⇄ Dividido e
+**`Shift + F6`** alterna Visualização ⇄ Dividido (Dividido é o estado base). A escolha é
+lembrada por aba. Defina o padrão para arquivos recém-abertos em
+**Configurações → Formatos → Modo de exibição padrão**.
+
+Formatos sem prévia (texto simples, visualizadores de código) sempre mostram apenas a fonte, então
+nenhuma alternância aparece.
+
+## Arquivos de mídia (imagens, vídeo, áudio)
+
+Abra uma imagem, um vídeo ou um arquivo de áudio e o VMark o exibe inline — como a
+Visualização Rápida (Quick Look) do Finder. Há duas formas de pré-visualizar:
+
+- **Abra-o** (clique nele no explorador de arquivos, use **Arquivo → Abrir arquivo...** ou
+  arraste-o para a janela) para vê-lo em uma aba.
+- **Visualização Rápida**: selecione um arquivo no explorador e pressione **Espaço** para uma
+  sobreposição de prévia que ocupa a janela inteira. Pressione **Espaço**, **Esc** ou clique no fundo
+  para fechar.
+
+Como funciona e o que esperar:
+
+- **Nunca carregado como texto.** Mídia é binária — o VMark transmite o arquivo diretamente
+  para o visualizador pelo pipeline nativo de recursos. Ele nunca é lido como UTF-8,
+  nunca é mantido na memória como documento e nunca é editável nem salvo. Até
+  vídeos de vários gigabytes abrem instantaneamente e permitem avançar/retroceder nativamente.
+- **Edições no disco aparecem.** Reexporte a imagem do seu editor, ou deixe um
+  script reescrevê-la, e a aba aberta carrega a nova versão sozinha — sem
+  reabrir, sem fechar e abrir o arquivo de novo.
+- **Ampla cobertura de formatos.** O VMark entrega o arquivo ao mecanismo de mídia da
+  plataforma, então o suporte acompanha o que a webview do seu sistema consegue decodificar. No macOS
+  isso é amplo — HEIC, TIFF, `.mov`/H.264 e FLAC funcionam. Formatos que a
+  webview não consegue decodificar (por exemplo, `.mkv`, `.avi`, `.wmv`) ainda abrem, mostrando um
+  painel alternativo com **Abrir com o aplicativo padrão** e **Mostrar no Finder**.
+- **Somente leitura.** Abas de mídia nunca ficam com alterações pendentes e fecham sem pedir para salvar.
 
 ## Prévias com reconhecimento de esquema
 
@@ -41,7 +87,7 @@ Quando o caminho ou o conteúdo corresponde a um esquema conhecido, o VMark subs
 
 ### Workflow do GitHub Actions (`.github/workflows/*.yml`)
 
-Abre com a visualização do workflow (DAG de jobs, gatilhos, permissões).
+Abre com a bancada de workflow: o canvas interativo do DAG de jobs mais um editor de formulários estruturado com Salvar / Descartar (veja o [guia do Visualizador de Workflows](/pt-BR/guide/workflow-viewer)). O painel de fonte também reconhece workflows — completação de expressões `${{ }}`, destaque do job no canvas a partir do cursor e Cmd-clique em referências `uses:` locais.
 
 - Detecção por caminho: um arquivo `.yml` / `.yaml` em `.github/workflows/` é roteado para o renderizador de workflow — mesmo com YAML malformado, você vê a visualização degradada com diagnósticos em vez de uma árvore em branco. (O arquivo deve chegar primeiro ao adaptador YAML; isso requer a extensão `.yml`/`.yaml`.)
 - Detecção por conteúdo: chaves de nível superior `on:` e `jobs:`.
@@ -71,16 +117,42 @@ Abre com uma árvore de dependências Python — tanto PEP 621 (`[project]` + `[
 ## Regras de edição
 
 - **Markdown** inclui a barra de ferramentas completa, formatação de parágrafos, regras CJK, matemática, mermaid, notas de rodapé — todos os recursos markdown existentes.
-- **Formatos de dados** (JSON, YAML, TOML) são exibidos no painel de fonte com marcadores de erro de parse na margem; a prévia de árvore é atualizada enquanto você digita. Ações de menu exclusivas do Markdown estão desabilitadas (formatação CJK, inserção de bloco, formatação de parágrafo); os controles relevantes para o modo permanecem ativos.
-- **Formatos visuais** (Mermaid, SVG, HTML) são exibidos no painel de fonte com a visualização renderizada no painel direito (com debounce).
+- **Formatos de dados** (JSON, YAML, TOML) são exibidos no painel de fonte com marcadores de erro de parse na margem; a prévia de árvore é atualizada enquanto você digita. Ações de menu exclusivas do Markdown estão desabilitadas (formatação CJK, inserção de bloco, formatação de parágrafo); os controles relevantes para o modo permanecem ativos. O menu de contexto do botão direito fica reduzido às ações da área de transferência (Recortar/Copiar/Colar/Selecionar tudo).
+- **Formatos visuais** (Mermaid, SVG, HTML) são exibidos no painel de fonte com a visualização renderizada no painel direito. A prévia é renderizada com prioridade menor que a sua digitação, então, em um documento grande, ela acompanha um instante atrás do cursor em vez de ser renderizada de novo a cada tecla.
 - **Formatos de código** abrem como visualizadores com realce de sintaxe; ative a edição no local ou abra no seu editor externo (veja abaixo).
+
+## Como o VMark decide o tipo de um arquivo
+
+O VMark trata o **markdown como uma lista de permissões, não como padrão**. A regra, em ordem:
+
+1. **Uma extensão da família markdown** (`.md`, `.markdown`, `.mdown`, `.mkd`, `.mdx`) abre no editor markdown completo.
+2. **Uma extensão registrada que não seja markdown** (quando sua categoria está habilitada — JSON, YAML, visualizadores de código etc.) abre no painel de fonte desse formato.
+3. **Todo o resto** — `.env`, `.env.local`, `Dockerfile`, `Makefile`, `.gitignore`, extensões desconhecidas — abre no **painel de fonte de texto simples**, nunca no editor markdown.
+
+Isso significa que um arquivo de configuração nunca é renderizado silenciosamente como markdown. Um `.env.local` abre como texto simples, com suas linhas `KEY=value`, comentários `#` e sublinhados exatamente como foram digitados.
+
+Famílias de dotfiles são reconhecidas em grupo: uma substituição em `.env` vale para `.env.local`, `.env.production` e assim por diante.
+
+### Realce de sintaxe para arquivos simples
+
+Mesmo quando um arquivo abre como texto simples, o VMark o colore quando reconhece o tipo — `.env`/`.ini`/`.conf` (properties), `.sh`/`.bash` (shell), `Dockerfile`, `.toml`, `.sql`, `.diff` e as linguagens habituais. Isso é puramente cosmético; nunca muda em qual editor o arquivo abriu e funciona independentemente de a categoria de visualizadores de código estar habilitada.
+
+### Substituição: "Definir tipo de arquivo"
+
+A detecção é o padrão, não uma prisão. Abra a paleta de comandos e execute:
+
+- **Definir tipo de arquivo: Texto sem formatação** — força a família do arquivo atual a abrir como texto simples (por exemplo, para impedir que um `.txt` que você mantém como notas brutas seja renderizado).
+- **Definir tipo de arquivo: Markdown** — renderiza um arquivo que não é `.md` com o editor markdown (por exemplo, um `.txt` em que você de fato escreve markdown).
+- **Definir tipo de arquivo: Redefinir para padrão** — remove a substituição.
+
+As substituições são lembradas por família de arquivos (pela extensão, ou pelo nome do dotfile para arquivos como `.env`) e persistem entre sessões. Elas têm precedência sobre as regras embutidas acima.
 
 ## Localizar, salvar, pesquisa de conteúdo
 
-- **Cmd+O** filtra: um único predefinido "Todos os Suportados" cobrindo todos os formatos registrados. Os filtros de Salvar Como e a extensão padrão de salvamento são derivados do adaptador de formato da aba ativa, então salvar um arquivo `.toml` propõe `.toml` como extensão.
+- **Arquivo → Abrir arquivo...** oferece dois filtros: **Todos os formatos suportados** (todos os formatos registrados) e **Markdown**. O item não tem atalho padrão — `Mod + O` é a Abertura rápida — mas você pode atribuir um em **Configurações → Atalhos**. Os filtros de Salvar Como e a extensão padrão de salvamento são derivados do adaptador de formato da aba ativa, então salvar um arquivo `.toml` propõe `.toml` como extensão.
 - **Arrastar e soltar** aceita qualquer extensão registrada.
 - **Salvar Como** — os filtros e a extensão padrão ao salvar são derivados do adaptador de formato da aba ativa.
-- **Cmd+Shift+H** ("Localizar em Arquivos") indexa todos os formatos semelhantes a texto (markdown, txt, json, yaml, toml, html, svg, mermaid). Arquivos de código são excluídos por padrão — eles estão em modo de visualizador de código.
+- A pesquisa de conteúdo **Cmd+Shift+H** ("Localizar em Arquivos") indexa todos os formatos semelhantes a texto (markdown, txt, json, yaml, toml, html, svg, mermaid). Arquivos de código são excluídos por padrão — eles estão em modo de visualizador de código.
 
 ## Modelo de segurança para HTML
 
@@ -91,6 +163,59 @@ De acordo com o ADR-4 do plano multi-formato, a prévia HTML se apoia em três c
 3. **Injeção de CSP `<meta>`** — `default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; base-uri 'none';` — restringe o carregamento de recursos dentro do iframe.
 
 O validador exibe tags de script, URLs `javascript:` e manipuladores de eventos inline como avisos para que você veja o que está sendo bloqueado.
+
+A aprovação formal de segurança desta prévia ainda está pendente, e a prévia avisa isso em um aviso acima da página renderizada: **A prévia HTML é isolada, mas está aguardando a aprovação OWASP**. As três camadas acima estão em vigor; a etapa que falta é confirmá-las contra os payloads XSS do OWASP dentro da webview do aplicativo em execução.
+
+### Prévia HTML confiável (opcional)
+
+A prévia segura acima é o padrão e nunca muda. Para um documento que você mesmo
+escreveu — um laboratório interativo, um painel local, uma demonstração autocontida —
+você pode autorizar a execução de scripts para **aquele único arquivo, nesta sessão**.
+
+Use **Ativar pré-visualização confiável…** na barra acima da prévia. Primeiro você recebe
+um aviso; nada é executado até você confirmar. Enquanto está ativa, a barra permanece visível
+e diz **Confiável — scripts ativados**, e **Revogar confiança** fica a um clique de distância.
+
+O que o modo confiável concede, e o que não concede:
+
+| | Prévia confiável |
+|---|---|
+| JavaScript, DOM, eventos de ponteiro, `requestAnimationFrame`, Web Audio | ✅ executa |
+| Rede (`fetch`, `XMLHttpRequest`, WebSocket, imagens/scripts remotos) | ❌ bloqueada por `default-src 'none'` |
+| A própria página do VMark, comandos Tauri, seu sistema de arquivos | ❌ inacessíveis — o documento roda em uma origem opaca própria |
+| Navegação de nível superior, popups, envio de formulários, downloads, modais | ❌ não concedidos (`sandbox="allow-scripts"` e nada mais) |
+| Câmera, microfone, geolocalização, área de transferência | ❌ nenhum recurso é delegado ao frame |
+| `localStorage` / `sessionStorage` | ❌ indisponíveis — uma origem opaca não tem armazenamento de mesma origem |
+| `eval` / `new Function` | ❌ não permitidos |
+
+Três propriedades que vale conhecer:
+
+- **A confiança nunca é inferida.** Nem pela extensão `.html`, nem pela origem
+  do arquivo, nem por um arquivo vizinho no qual você já confiou. Somente a
+  confirmação a concede.
+- **A confiança nunca é persistida.** Feche o VMark e todas as concessões desaparecem. Ela também
+  fica indisponível para um documento não salvo, que não tem identidade à qual associar uma concessão
+  — salve o arquivo primeiro.
+- **Uma prévia confiável nunca se executa de novo sozinha.** Editar a fonte a marca como
+  *Pode não corresponder ao código-fonte atual* e aguarda **Recarregar**, para que uma
+  simulação em execução não seja reiniciada a cada tecla. A mesma marcação aparece quando
+  o VMark não consegue saber o que o frame está executando — depois que você sai da
+  aba e volta, ou a fecha e reabre, a prévia continua executando o que foi
+  publicado por último para aquele arquivo, então ela avisa isso em vez de afirmar que está
+  atualizada. **Recarregar** publica de novo o arquivo como ele está agora.
+
+::: info O Windows a serve por uma origem http local
+A WebView2 não tem esquemas de URL personalizados, então no Windows o documento confiável é servido
+a partir de `http://vmark-trusted.localhost` em vez de `vmark-trusted://` — a mesma
+concessão, o mesmo sandbox e o mesmo CSP, na forma de URL que o Tauri usa para todo
+protocolo personalizado ali. A prévia segura funciona em todas as plataformas.
+:::
+
+O conteúdo confiável é servido a partir de uma origem `vmark-trusted://`
+(`http://vmark-trusted.localhost` no Windows) com seu próprio CSP restritivo. Esse desvio é necessário, não decorativo: um
+frame `srcdoc`, `blob:` ou `data:` herda a política `script-src 'self'` do próprio
+VMark, e um CSP dentro do frame só pode restringir uma política herdada, nunca
+relaxá-la — então nenhum atributo de iframe sozinho consegue fazer um script inline ser executado.
 
 ## Abrir no editor externo
 
@@ -123,7 +248,8 @@ Conforme os não-objetivos do plano:
 
 - **Não é um editor de código.** Sem LSP, sem autocomplete, sem refatoração, sem depurador, sem indicadores git.
 - **Não é "todo formato de texto simples."** Escopo delimitado — veja a tabela acima.
-- **Sem execução de scripts HTML.** Apenas renderização em sandbox.
+- **Sem execução de scripts HTML por padrão.** Apenas renderização em sandbox, a menos que você
+  autorize explicitamente um arquivo pela [Prévia HTML confiável](#previa-html-confiavel-opcional).
 - **Sem impressão / exportação / copiar como HTML para formatos não-markdown** na v1.
 - **Ainda não suportados como visualizadores de código**: Zig, Swift, Kotlin, Java, Elixir, OCaml e outras linguagens fora do conjunto de 12 extensões. A regra de decisão é "linguagens que usamos" — abra uma issue se quiser que uma seja adicionada.
 

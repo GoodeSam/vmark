@@ -1,13 +1,13 @@
 # Lint Markdown
 
-VMark embarque un moteur de lint intégré qui détecte les **problèmes de correction**, pas les préférences de style. Le lint s'exécute à la demande (Cmd-Shift-L ou **Outils → Vérifier le Markdown**) et présente les résultats en ligne sous forme de surlignages dans la gouttière, avec un badge dans la barre d'état et une navigation F2 entre les diagnostics.
+VMark embarque un moteur de lint intégré qui détecte les **problèmes de correction**, pas les préférences de style. Le lint s'exécute à la demande (`Alt + Mod + V` ou **Affichage → Vérifier le Markdown**) et présente les résultats en ligne — une barre colorée le long de chaque bloc concerné en mode WYSIWYG, un soulignement ondulé sous le texte exact en mode Source — avec un badge dans la barre d'état et une navigation F2 entre les diagnostics.
 
 ## Ce que le lint est et n'est pas
 
 Le lint de VMark est un vérificateur de **correction**&nbsp;:
 
 - Références croisées cassées
-- Références de lien / note de bas de page non définies
+- Références de lien non définies (les références de note de bas de page ne sont pas vérifiées)
 - Blocs de code délimités non fermés
 - Tableaux avec un nombre de colonnes incohérent
 - Niveaux de titre qui sautent (h1 → h3)
@@ -50,14 +50,14 @@ Pour l'application du style, utilisez un outil distinct comme `prettier --check`
 
 | Déclencheur | Action |
 |---|---|
-| `Cmd + Shift + L` (macOS) / `Ctrl + Shift + L` (Win/Linux) | Exécuter le lint sur le document actif |
-| **Outils → Vérifier le Markdown** | Identique au raccourci |
+| `Alt + Mod + V` | Exécuter le lint sur le document actif |
+| **Affichage → Vérifier le Markdown** | Identique au raccourci |
 | `F2` | Sauter au diagnostic suivant |
 | `Shift + F2` | Sauter au diagnostic précédent |
 
 Pour les fichiers markdown avec des chemins de fichiers, la vérification de l'existence des liens s'exécute automatiquement aux côtés des règles synchrones — voir [Vérification des liens](/fr/guide/link-check).
 
-Pour les fichiers YAML, les erreurs d'analyse apparaissent en direct dans la gouttière au fur et à mesure de votre saisie, et le même raccourci `Cmd-Shift-L` alimente le badge + la navigation F2.
+Pour les fichiers YAML, les erreurs d'analyse apparaissent en direct dans la gouttière au fur et à mesure de votre saisie, et le même raccourci `Alt + Mod + V` alimente le badge + la navigation F2.
 
 ## Paramètres
 
@@ -65,7 +65,7 @@ Le moteur de lint a un seul interrupteur visible par l'utilisateur&nbsp;:
 
 - **Paramètres → Markdown → Activer le lint markdown** — activer ou désactiver entièrement le moteur
 
-Lorsqu'il est désactivé, le raccourci devient un no-op et aucun diagnostic n'apparaît dans la gouttière.
+Lorsqu'il est désactivé, le raccourci devient un no-op et aucun diagnostic n'apparaît dans l'éditeur.
 
 ## Voir aussi
 

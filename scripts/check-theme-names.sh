@@ -22,6 +22,7 @@
 #   - dev-docs/grills/**                   (spike/probe artifacts)
 #   - dev-docs/archive/**                  (historical docs)
 #   - website/**                           (user-facing docs)
+#   - .claude/feature-ledger.md            (the tracked feature inventory names every theme)
 #   - **/__snapshots__/**                  (test snapshot files)
 #   - The check script itself.
 #
@@ -54,7 +55,7 @@ THEME_NAMES='"(paper|white|mint|sepia|night|solarized)"|'\''(paper|white|mint|se
 #   - check-theme-contrast.ts names the ANSI slot "white" and parses the CSS
 #     colour keyword "white" — the WORD collides with the theme id, the
 #     meaning does not (theme ids reach it from the imported catalog).
-ALLOWLIST='^scripts/check-theme-contrast\.ts$|^src/theme/|^src/stores/settingsTypes\.ts$|^src/stores/settingsStore\.ts$|^src/stores/settingsStore/defaults\.ts$|^src/hooks/useTheme\.ts$|^src/hooks/useIsDarkTheme\.ts$|^src/locales/|^src-tauri/locales/|^src/export/reader/|^dev-docs/|^website/|^\.claude/rules/|/__snapshots__/|\.test\.(ts|tsx|mjs)$|^scripts/check-theme-names\.sh$|^scripts/baselineRatchetManifest\.mjs$|^scripts/theme-contrast-baseline\.json$'
+ALLOWLIST='^scripts/check-theme-contrast\.ts$|^src/theme/|^src/stores/settingsTypes\.ts$|^src/stores/settingsStore\.ts$|^src/stores/settingsStore/defaults\.ts$|^src/hooks/useTheme\.ts$|^src/hooks/useIsDarkTheme\.ts$|^src/locales/|^src-tauri/locales/|^src/export/reader/|^dev-docs/|^website/|^\.claude/rules/|^\.claude/feature-ledger\.md$|/__snapshots__/|\.test\.(ts|tsx|mjs)$|^scripts/check-theme-names\.sh$|^scripts/baselineRatchetManifest\.mjs$|^scripts/theme-contrast-baseline\.json$'
 
 cd "$(git rev-parse --show-toplevel)"
 
@@ -88,6 +89,7 @@ echo "  - src/locales/             (i18n labels)"
 echo "  - src-tauri/locales/       (i18n labels, Rust side)"
 echo "  - dev-docs/{baselines,plans,grills,archive}/"
 echo "  - website/                 (user docs)"
+echo "  - .claude/feature-ledger.md (feature inventory)"
 echo "  - **/__snapshots__/        (test snapshots)"
 echo
 echo "Offending files:"

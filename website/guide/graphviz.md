@@ -28,7 +28,7 @@ Both fence languages behave identically:
 ## Editing Modes
 
 - **WYSIWYG mode** — the code block renders as a diagram. Double-click it to edit the DOT source with a debounced live preview; save or cancel from the edit header.
-- **Source mode** — place the cursor inside a ` ```dot ` fence to get the floating diagram preview (drag, resize, zoom), same as Mermaid.
+- **Source mode** — place the cursor inside a ` ```dot ` fence to get the floating diagram preview (drag, resize, zoom), same as Mermaid. The preview is off by default; turn it on with **View → Toggle Diagram Preview** (`Alt + Mod + P`).
 
 ## Pan, Zoom, and Export
 

@@ -13,9 +13,10 @@
  *   - every directory this publish had to create is recorded;
  *   - a failure rolls the completed steps back in reverse — backups restored,
  *     files this export added removed, created directories removed — and the
- *     rejection then says either that the folder was restored or exactly which
- *     paths could not be put back AND where their backups are waiting. Silence
- *     about a half-written folder is the one outcome that is not allowed.
+ *     rejection (localized, in `exportErrorMessages.ts`) says either that the
+ *     folder was restored or exactly which paths could not be put back AND
+ *     where their backups are waiting. Silence about a half-written folder is
+ *     the one outcome that is not allowed.
  *
  * Restoring is `rename` first, `copyFile` second, and NEVER remove-then-rename
  * — see `restoreBackup`, which is where the cross-platform reasoning lives.
@@ -27,6 +28,7 @@
  * the whole staging design exists to prevent.
  *
  * @coordinates-with src/export/exportStaging.ts — the only consumer
+ * @coordinates-with src/export/exportErrorMessages.ts — the wording of every rejection
  * @coordinates-with src-tauri/src/atomic_replace.rs — the same Windows rename semantics, one layer down
  * @module export/exportPublish
  */
@@ -34,6 +36,7 @@
 import { copyFile, exists, lstat, mkdir, remove, rename } from "@tauri-apps/plugin-fs";
 import { exportWarn } from "@/utils/debug";
 import { errorMessage } from "@/utils/errorMessage";
+import * as messages from "./exportErrorMessages";
 
 /** Where a replaced destination file waits until the publish completes. */
 const REPLACED_DIR = ".replaced";
@@ -84,10 +87,7 @@ export async function publishTracked(
         // everything published so far. `lstat`, not `stat`: a symlink TO a
         // directory is renamed as the link, so only the link is at stake.
         if ((await lstat(final)).isDirectory) {
-          throw new Error(
-            `${final} is a directory, not a file this export may replace. ` +
-              "Move or rename it, or export to a different folder.",
-          );
+          throw new Error(messages.notAFileMessage(final));
         }
         // Aside, not away: a `rename` over it would destroy the previous
         // export's file with nothing left to put back (#334).
@@ -106,8 +106,7 @@ export async function publishTracked(
   } catch (error) {
     const undone = await rollback(done, createdDirs, retainedBackups);
     throw new Error(
-      `Export to ${destination} could not be published: ${errorMessage(error)}. ` +
-        describeRollback(undone),
+      messages.publishFailedMessage(destination, errorMessage(error), describeRollback(undone)),
       // The message already quotes the cause; attach it too, so a caller that
       // inspects the chain (rather than reading prose) can still reach it.
       { cause: error },
@@ -132,11 +131,9 @@ interface RollbackFailures {
  * there would report one failure twice.
  */
 function describeRollback({ files, dirs }: RollbackFailures): string {
-  if (files.length > 0) return `These files could not be restored: ${files.join(", ")}.`;
-  if (dirs.length > 0) {
-    return `Your files were restored, but these folders the export created are still there: ${dirs.join(", ")}.`;
-  }
-  return "Nothing else was changed — the folder was restored to its previous contents.";
+  if (files.length > 0) return messages.filesNotRestoredMessage(files);
+  if (dirs.length > 0) return messages.foldersLeftMessage(dirs);
+  return messages.restoredMessage();
 }
 
 /**
@@ -166,14 +163,12 @@ async function rollback(
         // and a lost file, so the stage is told to keep it (#334). Only a
         // CONFIRMED absence takes that away — discarding is irreversible.
         retainedBackups.push(backup);
-        files.push(
-          `${final} (its previous contents are kept at ${backup}: ${errorMessage(error)})`,
-        );
+        files.push(messages.backupKeptAtMessage(final, backup, errorMessage(error)));
       } else {
         // The restore failed BECAUSE the backup is gone — interference, or a
         // duplicate path that moved it. "Kept at <path>" would send the user
         // to a file that is not there (audit R2, #674).
-        files.push(`${final} (its backup at ${backup} is gone too: ${errorMessage(error)})`);
+        files.push(messages.backupGoneMessage(final, backup, errorMessage(error)));
       }
     }
   }

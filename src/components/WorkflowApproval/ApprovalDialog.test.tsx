@@ -5,7 +5,7 @@
  * Covers the user-visible contract of the workflow approval modal:
  * - Renders nothing when there is no pending approval.
  * - Renders the step summary / model / prompt preview when one is pending.
- * - Approve / Deny buttons call respondApproval with the right verdict and
+ * - Approve / Deny buttons call respondWorkflowApproval with the right verdict and
  *   then dismiss the dialog.
  * - Escape denies (verdict = false) and dismisses.
  * - Exposes dialog ARIA semantics (role=dialog, aria-modal, labelled title).
@@ -18,14 +18,12 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import { useWorkflowStore } from "@/stores/workflowStore";
 
-const mockRespondApproval = vi.fn(() => Promise.resolve());
+const mockRespondApproval = vi.fn((..._args: unknown[]) => Promise.resolve());
 
+const mockLifecycle = vi.fn();
 vi.mock("@/hooks/useWorkflowExecution", () => ({
-  useWorkflowExecution: () => ({
-    start: vi.fn(),
-    cancel: vi.fn(),
-    respondApproval: mockRespondApproval,
-  }),
+  useWorkflowEventLifecycle: () => mockLifecycle(),
+  respondWorkflowApproval: (...args: unknown[]) => mockRespondApproval(...args),
 }));
 
 const mockWorkflowError = vi.fn();
@@ -113,7 +111,7 @@ describe("ApprovalDialog", () => {
   });
 
   describe("approve / deny", () => {
-    it("Approve calls respondApproval(approved=true) then dismisses", async () => {
+    it("Approve calls respondWorkflowApproval(approved=true) then dismisses", async () => {
       enqueue({ executionId: "exec-9", stepId: "step-9" });
       render(<ApprovalDialog />);
 
@@ -127,7 +125,7 @@ describe("ApprovalDialog", () => {
       });
     });
 
-    it("Deny calls respondApproval(approved=false) then dismisses", async () => {
+    it("Deny calls respondWorkflowApproval(approved=false) then dismisses", async () => {
       enqueue({ executionId: "exec-2", stepId: "step-2" });
       render(<ApprovalDialog />);
 
@@ -145,7 +143,7 @@ describe("ApprovalDialog", () => {
     // loud), not dropped as an unhandled rejection.
     // audit-fix — on rejection the dialog must STAY OPEN (the backend request
     // is still pending) and the buttons must re-enable so the user can retry.
-    it("logs, stays open, and re-enables buttons when respondApproval rejects", async () => {
+    it("logs, stays open, and re-enables buttons when respondWorkflowApproval rejects", async () => {
       const unhandled = vi.fn();
       process.on("unhandledRejection", unhandled);
 

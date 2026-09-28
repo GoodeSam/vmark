@@ -92,8 +92,8 @@ If you prefer keeping system functions on F-keys, you can customize VMark shortc
 | Duplicate Line | `Shift + Alt + Down` |
 | Delete Line | `Mod + Shift + K` |
 | Join Lines | `Mod + J` |
-| Sort Lines Ascending | `F4` |
-| Sort Lines Descending | `Shift + F4` |
+| Sort Lines Ascending | `F4` _(Source mode only)_ |
+| Sort Lines Descending | `Shift + F4` _(Source mode only)_ |
 
 ## Text Transformations
 
@@ -353,12 +353,30 @@ When the integrated terminal is focused:
 | Focus Terminal or Editor | `` Ctrl + Shift + ` `` |
 | Copy | `Mod + C` (with selection) |
 | Paste | `Mod + V` |
+| Select All (terminal output only) | `Mod + A` |
 | Clear | `Mod + K` |
 | Search | `Mod + F` |
+| Switch to session 1–5 | `Mod + 1` through `Mod + 5` |
+| Terminal font bigger | `Mod + =` |
+| Terminal font smaller | `Mod + -` |
+| Terminal font default size | `Mod + 0` |
 | Previous command prompt | `Mod + ↑` |
 | Next command prompt | `Mod + ↓` |
+| Newline in the input line (Claude Code and similar tools) | `Shift + Enter` |
 
-Prompt navigation jumps between command prompts in the scrollback and requires shell integration (zsh).
+While the terminal is focused, `Mod + =`, `Mod + -` and `Mod + 0` resize the terminal's font instead of the editor's.
+
+Prompt navigation jumps between command prompts in the scrollback and requires shell integration (zsh or bash).
+
+On macOS the terminal also translates the usual text-editing chords for the shell:
+
+| Action | Shortcut |
+|--------|----------|
+| Move one word left / right | `Option + ←` / `Option + →` |
+| Move to line start / end | `Cmd + ←` / `Cmd + →` |
+| Delete the input line (sends `Ctrl + U`) | `Cmd + Backspace` |
+
+`Ctrl` chords such as `Ctrl + A`, `Ctrl + R` and `Ctrl + W` go straight to the shell on macOS.
 
 When the terminal search bar is open:
 
@@ -375,10 +393,16 @@ When the terminal search bar is open:
 ## Customizing Shortcuts
 
 1. Open Settings with `Mod + ,`
-2. Navigate to the **Shortcuts** tab
-3. Click on any shortcut to edit
-4. Press your desired key combination
-5. Changes are saved automatically
+2. Navigate to the **Shortcuts** tab (type in the search box to filter by name, category, description or key)
+3. Click the key shown next to a shortcut — or **Unassigned** for one with no key yet
+4. Press your desired key combination, then click **Assign** (`Escape` cancels)
+
+The dialog warns you before you assign a combination:
+
+- **Conflict** — the combination is already used by another shortcut, which it names. You can still choose **Assign Anyway**.
+- **Not supported** — VMark cannot use that combination, so it cannot be assigned. Try another.
+
+A customized shortcut is highlighted and gets a **Reset to default** button. **Reset All** restores every default after asking for confirmation. **Export** saves your shortcuts as a JSON file (`vmark-shortcuts.json`) and **Import** loads one; if any entry in the file is invalid, nothing is imported and the problems are listed.
 
 ::: tip
 Shortcuts sync with menu accelerators when applicable, so menu items will show your customized shortcuts.

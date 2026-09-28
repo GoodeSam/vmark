@@ -71,9 +71,17 @@ Modifica più posizioni contemporaneamente — VMark supporta il multi-cursore c
 | Annulla ultimo cursore | `Alt + Mod + Z` |
 | Comprimi a singolo cursore | `Escape` |
 
-Tutte le modifiche standard (digitazione, eliminazione, appunti, navigazione) funzionano su ogni cursore in modo indipendente. Delimitato per blocchi per impostazione predefinita per evitare modifiche involontarie tra sezioni.
+Tutte le modifiche standard (digitazione, eliminazione, appunti, navigazione) funzionano su ogni cursore in modo indipendente. Nel testo normale, `Mod + D` e `Mod + Shift + L` cercano in tutto il documento; all'interno di un blocco di codice restano entro quel blocco. `Alt + Mod + Shift + L` seleziona ogni corrispondenza solo nel blocco corrente.
 
 [Scopri di più →](/it/guide/multi-cursor)
+
+## Selezione Intelligente di Tutto
+
+In modalità WYSIWYG, `Mod + A` amplia la selezione un contenitore alla volta invece di passare direttamente all'intero documento: all'interno di una tabella seleziona la cella, poi la riga, poi la tabella, poi il documento. `Mod + Z` annulla un passo di espansione ed `Escape` riduce la selezione a un cursore.
+
+In modalità Sorgente, `Mod + A` seleziona prima il blocco che la contiene — un blocco di codice delimitato, una tabella, una citazione o un elenco — e poi l'intero documento; anche qui `Mod + Z` annulla un passo di espansione.
+
+La combinazione appartiene all'editor e non è personalizzabile.
 
 ## Coppia Automatica e Tab Escape
 
@@ -140,8 +148,10 @@ Potente manipolazione delle righe tramite Modifica → Righe:
 | Elimina riga | `Mod + Shift + K` |
 | Unisci righe | `Mod + J` |
 | Rimuovi righe vuote | — |
-| Ordina righe in modo crescente | `F4` |
-| Ordina righe in modo decrescente | `Shift + F4` |
+| Ordina righe in modo crescente | `F4` _(solo modalità Sorgente)_ |
+| Ordina righe in modo decrescente | `Shift + F4` _(solo modalità Sorgente)_ |
+
+L'ordinamento opera su righe di testo semplice, quindi è disponibile solo in modalità Sorgente.
 
 ## Tabelle
 
@@ -152,7 +162,7 @@ Modifica completa delle tabelle:
 - Allineamento delle celle (sinistra, centro, destra)
 - Ridimensiona le colonne trascinando
 - Barra degli strumenti contestuale per azioni rapide
-- Navigazione da tastiera (Tab, frecce, Enter)
+- Navigazione da tastiera — `Tab` / `Shift + Tab` si spostano tra le celle, i tasti freccia escono dalla tabella ai suoi bordi, e `Mod + Enter` / `Mod + Shift + Enter` aggiungono una riga sotto / sopra
 
 ## Immagini
 
@@ -240,6 +250,15 @@ Renderizza SVG grezzo inline tramite blocchi di codice ` ```svg `:
 - Ideale per grafici generati dall'IA e illustrazioni personalizzate
 - [Scopri di più →](/it/guide/svg)
 
+### Indice Inline
+
+Digita `[TOC]` su una riga a sé, oppure scegli **Inserisci → Indice**, per inserire un indice dinamico (la voce di menu non ha una scorciatoia predefinita; assegnane una in Impostazioni → Scorciatoie):
+
+- Generato automaticamente dalle intestazioni del documento con la corretta nidificazione
+- Fai clic su un'intestazione per scorrere direttamente fino a essa
+- Si aggiorna in tempo reale mentre scrivi
+- Viene renderizzato in WYSIWYG e nell'esportazione (HTML/PDF), e in modalità Sorgente il round-trip resta pulito
+
 ## Genies IA
 
 Assistenza alla scrittura IA integrata basata sul provider di tua scelta:
@@ -253,7 +272,7 @@ Assistenza alla scrittura IA integrata basata sul provider di tua scelta:
 
 ## Cerca e Sostituisci
 
-Apri la barra di ricerca con `Mod + F`. Appare inline nella parte superiore dell'area dell'editor e funziona sia in modalità WYSIWYG che Sorgente.
+Apri la barra di ricerca con `Mod + F`. Si apre nella barra in fondo alla finestra e funziona sia in modalità WYSIWYG che Sorgente.
 
 **Navigazione:**
 
@@ -272,7 +291,7 @@ Apri la barra di ricerca con `Mod + F`. Appare inline nella parte superiore dell
 
 **Sostituisci:**
 
-Fai clic sulla freccia di espansione nella barra di ricerca per rivelare la riga di sostituzione. Digita il testo sostitutivo, poi usa **Sostituisci** (singola corrispondenza) o **Sostituisci tutto** (ogni corrispondenza in una volta). Il contatore di corrispondenze mostra la posizione corrente e il totale (es. "3 di 12") così sai sempre dove ti trovi.
+Il campo di sostituzione si trova accanto al campo di ricerca — entrambi sono sempre visibili, e `Tab` passa dall'uno all'altro. Digita il testo sostitutivo, poi usa **Sostituisci** (singola corrispondenza) o **Sostituisci tutto** (ogni corrispondenza in una volta). Il contatore di corrispondenze mostra la posizione corrente e il totale (es. "3 di 12") così sai sempre dove ti trovi.
 
 ## Lint Markdown
 
@@ -303,7 +322,7 @@ Quando esegui un controllo lint, le diagnostiche appaiono come evidenziazioni in
 - Blocchi di codice delimitati non chiusi
 - Link a frammento rotti (`#ancora` che non corrisponde a nessuna intestazione)
 
-I risultati del lint sono effimeri e vengono cancellati quando modifichi il documento. Riesegui il controllo in qualsiasi momento con `Alt + Mod + V`.
+I risultati del lint non si aggiornano mentre scrivi. In modalità Sorgente, una modifica li cancella. In modalità WYSIWYG, una modifica rimuove le evidenziazioni, ma il conteggio dei problemi nella barra di stato e le destinazioni di `F2` / `Shift + F2` restano quelli dell'ultima esecuzione finché non esegui di nuovo il controllo o chiudi la scheda. Riesegui il controllo in qualsiasi momento con `Alt + Mod + V`.
 
 ## Barra degli Strumenti Universale
 
@@ -361,7 +380,7 @@ Strumenti integrati per la formattazione di testo cinese/giapponese/coreano:
 VMark salva automaticamente istantanee dei tuoi documenti così puoi recuperare versioni precedenti.
 
 - **Salvataggio automatico** con intervallo configurabile cattura istantanee in background
-- **Cronologia per documento** archiviata localmente in formato JSONL
+- **Cronologia per documento** archiviata localmente nella cartella dei dati dell'applicazione di VMark — un file di indice più un file Markdown per ogni istantanea
 - Apri la barra laterale Cronologia con `Ctrl + Shift + 3` per sfogliare le versioni passate
 - Le istantanee sono **raggruppate per giorno** con timestamp che mostrano l'ora esatta di ogni versione salvata
 - **Ripristina** una versione precedente facendo clic sul pulsante di ripristino accanto a qualsiasi istantanea (un dialogo di conferma previene ripristini accidentali)
@@ -372,9 +391,9 @@ VMark salva automaticamente istantanee dei tuoi documenti così puoi recuperare 
 
 ## Recupero Sessione (Hot Exit)
 
-Quando chiudi VMark o si chiude inaspettatamente, la tua sessione viene preservata e ripristinata al prossimo avvio.
+Quando VMark si riavvia per installare un aggiornamento, o si chiude inaspettatamente, il tuo lavoro viene preservato e ripristinato al prossimo avvio.
 
-**Cosa viene salvato:**
+**Cosa salva un riavvio per aggiornamento:**
 - Tutte le schede aperte e il loro contenuto (incluse le modifiche non salvate)
 - Posizioni del cursore e cronologia annulla/ripristina
 - Layout dell'interfaccia: stato della barra laterale, visibilità del sommario, modalità sorgente/focus/macchina da scrivere, stato del terminale
@@ -382,10 +401,11 @@ Quando chiudi VMark o si chiude inaspettatamente, la tua sessione viene preserva
 - Workspace attivo e impostazioni dell'esploratore file
 
 **Come funziona:**
-- Alla chiusura, VMark cattura lo stato completo della sessione di tutte le finestre
+- Quando scegli di riavviare e installare un aggiornamento, VMark cattura prima lo stato completo della sessione di tutte le finestre
 - Al riavvio, le schede vengono ripristinate esattamente come le avevi lasciate, con i documenti modificati (non salvati) contrassegnati di conseguenza
-- Il recupero da crash viene eseguito automaticamente dopo una chiusura inaspettata, ripristinando i documenti dalle istantanee di recupero periodiche
+- Le modifiche non salvate vengono anche scritte in istantanee di recupero ogni 10 secondi. Dopo una chiusura inaspettata, VMark le ripristina al prossimo avvio come schede non salvate
 - Le istantanee di recupero più vecchie di 7 giorni vengono eliminate automaticamente
+- Una normale chiusura non cattura la sessione: VMark ti chiede prima di salvare i documenti non salvati. Le schede aperte di un workspace tornano comunque la prossima volta che lo apri (vedi [Ripristino della Sessione](/it/guide/workspace-management#ripristino-della-sessione))
 
 Nessuna configurazione necessaria. Il recupero sessione è sempre attivo.
 
@@ -445,9 +465,9 @@ VMark include utilità per la pulizia e la formattazione del testo, disponibili 
 
 Strumenti integrati per la formattazione del testo cinese/giapponese/coreano. [Scopri di più →](/it/guide/cjk-formatting)
 
-### Pulizia Immagini (File → Pulisci immagini non utilizzate)
+### Pulizia Immagini (Formato → Pulizia testo → Rimuovi immagini non utilizzate...)
 
-Trova e rimuovi le immagini orfane dalla tua cartella delle risorse.
+Trova e rimuovi le immagini orfane dalla tua cartella delle risorse (disponibile anche dalla palette dei comandi). VMark mostra cosa ha trovato e chiede conferma prima di eliminare, e le immagini eliminate finiscono nel cestino di sistema. Un'immagine ancora usata da un documento aperto — incluse le modifiche non salvate in un'altra finestra di VMark — viene mantenuta. Se VMark non riesce a confermare che un'immagine è inutilizzata (per esempio, un'altra finestra non risponde in tempo), non elimina nulla.
 
 ## Terminale Integrato
 
@@ -471,6 +491,11 @@ VMark controlla automaticamente gli aggiornamenti e può scaricarli e installarl
 
 [Scopri di più →](/it/guide/workspace-management)
 
+## Coerenza, base di conoscenza e Slidev
+
+- **Coerenza e vista di dettaglio** — il tracciamento opzionale della provenienza registra quali documenti ha letto ogni generazione IA, segnala i documenti a valle quando uno a monte cambia, e vi aggiunge controlli semantici, affermazioni canoniche e contesti. Aprila da **Finestra → Dettaglio coerenza**. [Scopri di più →](/it/guide/coherence)
+- **Base di conoscenza** — pubblica un workspace aperto come sito con collegamenti incrociati (wiki link, backlink, grafo delle relazioni, ricerca full-text) su `127.0.0.1`, in un pannello (`Ctrl + Shift + 4`) o nel tuo browser, e mostra in anteprima ed esporta presentazioni Slidev. Nessuna build di rilascio include ancora il runtime del content server di cui ha bisogno, quindi il pannello, la sua voce di menu, il comando della palette e la scorciatoia sono nascosti a meno che **Impostazioni → Avanzate → Strumenti sviluppatore** non sia attivo. [Scopri di più →](/it/guide/knowledge-base)
+
 ## Personalizzazione
 
 ### Temi
@@ -490,6 +515,8 @@ Configura font separati per:
 - Testo Latino
 - Testo CJK (cinese/giapponese/coreano)
 - Monospace (codice)
+
+Ogni selettore offre un breve elenco di font consigliati, i font installati sul tuo computer e una voce **Personalizzato…** in cui digitare il nome di qualsiasi famiglia di font. [Dettagli →](/it/guide/settings#tipografia)
 
 ### Layout
 

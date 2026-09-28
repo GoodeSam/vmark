@@ -40,7 +40,7 @@ The 50 MB hard refusal is not user-adjustable. The webview cannot safely hold ar
 
 - If you have to keep editing a very large file in WYSIWYG, consider splitting it into smaller files linked from an index document. Markdown works well as a set of smaller chapters.
 - If you only need to read or search a large file, Source mode with the line-number ruler and `Find` (`Mod + F`) is usually the fastest workflow.
-- `Format > Format CJK Text` and other whole-document commands still run correctly on Source-mode documents.
+- **Format → CJK → Format Entire File** and other whole-document commands still run correctly on Source-mode documents.
 
 ## Edge cases
 
@@ -52,4 +52,4 @@ The 50 MB hard refusal is not user-adjustable. The webview cannot safely hold ar
 ## Known limitations
 
 - The thresholds are byte sizes, which are a proxy for the real cost (block count). A 600 KB file with thousands of short blocks can be slower than a 1.2 MB file of long paragraphs. The defaults are conservative.
-- Phase C of the large-file initiative (deferred WYSIWYG rendering) is not shipped yet — see `dev-docs/plans/20260422-large-file-open-ux.md` for status.
+- WYSIWYG still builds the whole document when it opens — there is no deferred or incremental rendering yet — so switching a large file to WYSIWYG costs the full open time described above.

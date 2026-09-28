@@ -71,9 +71,17 @@ Modifiez plusieurs emplacements simultanément — VMark prend en charge le mult
 | Annuler le dernier curseur | `Alt + Mod + Z` |
 | Réduire à un seul curseur | `Échap` |
 
-Toutes les éditions standard (frappe, suppression, presse-papiers, navigation) fonctionnent à chaque curseur indépendamment. Limité par défaut aux blocs pour éviter les modifications non intentionnelles entre les sections.
+Toutes les éditions standard (frappe, suppression, presse-papiers, navigation) fonctionnent à chaque curseur indépendamment. Dans la prose, `Mod + D` et `Mod + Shift + L` recherchent dans tout le document ; à l'intérieur d'un bloc de code, ils restent dans ce bloc. `Alt + Mod + Shift + L` sélectionne toutes les occurrences du bloc courant uniquement.
 
 [En savoir plus →](/fr/guide/multi-cursor)
+
+## Tout sélectionner intelligent
+
+En mode WYSIWYG, `Mod + A` agrandit la sélection un conteneur à la fois au lieu de sauter directement au document entier : dans un tableau, il sélectionne la cellule, puis la ligne, puis le tableau, puis le document. `Mod + Z` annule une étape d'agrandissement et `Échap` réduit la sélection à un curseur.
+
+En mode Source, `Mod + A` sélectionne d'abord le bloc englobant — un bloc de code délimité, un tableau, une citation ou une liste — puis le document entier ; `Mod + Z` y annule aussi une étape d'agrandissement.
+
+Ce raccourci appartient à l'éditeur et n'est pas personnalisable.
 
 ## Auto-paire et échappement par Tab
 
@@ -140,8 +148,10 @@ Manipulation puissante des lignes via Édition → Lignes :
 | Supprimer la ligne | `Mod + Shift + K` |
 | Joindre les lignes | `Mod + J` |
 | Supprimer les lignes vides | — |
-| Trier les lignes croissant | `F4` |
-| Trier les lignes décroissant | `Shift + F4` |
+| Trier les lignes croissant | `F4` _(mode Source uniquement)_ |
+| Trier les lignes décroissant | `Shift + F4` _(mode Source uniquement)_ |
+
+Le tri s'applique à des lignes de texte brut ; il n'est donc disponible qu'en mode Source.
 
 ## Tableaux
 
@@ -152,7 +162,7 @@ Manipulation puissante des lignes via Édition → Lignes :
 - Alignement des cellules (gauche, centre, droite)
 - Redimensionnez les colonnes par glisser-déposer
 - Barre d'outils contextuelle pour les actions rapides
-- Navigation au clavier (Tab, flèches, Entrée)
+- Navigation au clavier — `Tab` / `Shift + Tab` passent d'une cellule à l'autre, les touches fléchées quittent le tableau à ses bords, et `Mod + Enter` / `Mod + Shift + Enter` ajoutent une ligne en dessous / au-dessus
 
 ## Images
 
@@ -240,6 +250,15 @@ Rendez du SVG brut en ligne via des blocs de code ` ```svg ` :
 - Idéal pour les graphiques générés par IA et les illustrations personnalisées
 - [En savoir plus →](/fr/guide/svg)
 
+### Table des matières en ligne
+
+Tapez `[TOC]` seul sur une ligne, ou choisissez **Insertion → Table des matières**, pour insérer une table des matières dynamique (l'élément de menu n'a pas de raccourci par défaut ; attribuez-en un dans Paramètres → Raccourcis) :
+
+- Générée automatiquement à partir des titres du document, avec une imbrication correcte
+- Cliquez sur un titre pour y faire défiler directement le document
+- Mise à jour en temps réel pendant que vous éditez
+- Rendue en WYSIWYG et à l'export (HTML/PDF), et conservée intacte lors des allers-retours en mode Source
+
 ## Génies IA
 
 Assistance à l'écriture par IA intégrée propulsée par votre fournisseur préféré :
@@ -253,7 +272,7 @@ Assistance à l'écriture par IA intégrée propulsée par votre fournisseur pr�
 
 ## Rechercher et remplacer
 
-Ouvrez la barre de recherche avec `Mod + F`. Elle apparaît en ligne en haut de la zone d'édition et fonctionne en mode WYSIWYG et Source.
+Ouvrez la barre de recherche avec `Mod + F`. Elle s'ouvre dans la barre située en bas de la fenêtre et fonctionne en mode WYSIWYG et Source.
 
 **Navigation :**
 
@@ -272,7 +291,7 @@ Ouvrez la barre de recherche avec `Mod + F`. Elle apparaît en ligne en haut de 
 
 **Remplacer :**
 
-Cliquez sur le chevron d'expansion de la barre de recherche pour révéler la ligne de remplacement. Saisissez le texte de remplacement, puis utilisez **Remplacer** (une seule occurrence) ou **Tout remplacer** (chaque occurrence en même temps). Le compteur d'occurrences affiche la position actuelle et le total (par ex. « 3 sur 12 ») pour que vous sachiez toujours où vous en êtes.
+Le champ de remplacement se trouve à côté du champ de recherche — les deux sont toujours visibles, et `Tab` passe de l'un à l'autre. Saisissez le texte de remplacement, puis utilisez **Remplacer** (une seule occurrence) ou **Tout remplacer** (chaque occurrence en même temps). Le compteur d'occurrences affiche la position actuelle et le total (par ex. « 3 sur 12 ») pour que vous sachiez toujours où vous en êtes.
 
 ## Lint Markdown
 
@@ -303,7 +322,7 @@ Lorsque vous lancez une vérification lint, les diagnostics apparaissent sous fo
 - Blocs de code clôturés non fermés
 - Liens de fragment brisés (`#ancre` ne correspondant à aucun titre)
 
-Les résultats du lint sont éphémères et effacés lorsque vous modifiez le document. Relancez la vérification à tout moment avec `Alt + Mod + V`.
+Les résultats du lint ne sont pas mis à jour pendant la frappe. En mode Source, une modification les efface. En mode WYSIWYG, une modification supprime les surlignages, mais le nombre de problèmes dans la barre d'état et les cibles de `F2` / `Shift + F2` restent ceux de la dernière vérification jusqu'à ce que vous la relanciez ou fermiez l'onglet. Relancez la vérification à tout moment avec `Alt + Mod + V`.
 
 ## Barre d'outils universelle
 
@@ -326,7 +345,7 @@ Exportez vers du HTML autonome avec deux modes d'empaquetage :
 - **Mode dossier** (par défaut) : Crée `Document/index.html` avec les ressources dans un sous-dossier
 - **Mode fichier unique** : Crée un fichier `.html` autonome avec des images intégrées
 
-L'HTML exporté inclut le [**Lecteur VMark**](/fr/guide/export#vmark-reader) — des contrôles interactifs pour les paramètres, la table des matières, la visionneuse d'images et plus encore.
+L'HTML exporté inclut le [**Lecteur VMark**](/fr/guide/export#lecteur-vmark) — des contrôles interactifs pour les paramètres, la table des matières, la visionneuse d'images et plus encore.
 
 [En savoir plus sur l'exportation →](/fr/guide/export)
 
@@ -361,7 +380,7 @@ Outils de mise en forme de texte chinois/japonais/coréen intégrés :
 VMark sauvegarde automatiquement des instantanés de vos documents afin que vous puissiez récupérer des versions antérieures.
 
 - **Sauvegarde automatique** avec intervalle configurable capture des instantanés en arrière-plan
-- **Historique par document** stocké localement au format JSONL
+- **Historique par document** stocké localement dans le dossier de données de l'application VMark — un fichier d'index plus un fichier Markdown par instantané
 - Ouvrez la barre latérale Historique avec `Ctrl + Shift + 3` pour parcourir les versions passées
 - Les instantanés sont **regroupés par jour** avec des horodatages indiquant l'heure exacte de chaque version sauvegardée
 - **Restaurez** une version précédente en cliquant sur le bouton de restauration à côté de n'importe quel instantané (un dialogue de confirmation empêche les retours accidentels)
@@ -372,9 +391,9 @@ VMark sauvegarde automatiquement des instantanés de vos documents afin que vous
 
 ## Récupération de session (Hot Exit)
 
-Lorsque vous quittez VMark ou qu'il se ferme de manière inattendue, votre session est préservée et restaurée au prochain lancement.
+Lorsque VMark redémarre pour installer une mise à jour, ou qu'il se ferme de manière inattendue, votre travail est préservé et restauré au prochain lancement.
 
-**Ce qui est sauvegardé :**
+**Ce qu'un redémarrage de mise à jour sauvegarde :**
 - Tous les onglets ouverts et leur contenu (y compris les modifications non enregistrées)
 - Positions du curseur et historique d'annulation/rétablissement
 - Disposition de l'interface : état de la barre latérale, visibilité du plan, mode source/focus/machine à écrire, état du terminal
@@ -382,10 +401,11 @@ Lorsque vous quittez VMark ou qu'il se ferme de manière inattendue, votre sessi
 - Espace de travail actif et paramètres de l'explorateur de fichiers
 
 **Fonctionnement :**
-- À la fermeture, VMark capture l'état complet de la session de toutes les fenêtres
+- Lorsque vous choisissez de redémarrer pour installer une mise à jour, VMark capture d'abord l'état complet de la session de toutes les fenêtres
 - Au relancement, les onglets sont restaurés exactement comme vous les avez laissés, les documents modifiés (non enregistrés) étant marqués en conséquence
-- La récupération après plantage s'exécute automatiquement après une fermeture inattendue, restaurant les documents à partir d'instantanés de récupération périodiques
+- Les modifications non enregistrées sont aussi écrites dans des instantanés de récupération toutes les 10 secondes. Après une fermeture inattendue, VMark les restaure au prochain lancement sous forme d'onglets non enregistrés
 - Les instantanés de récupération de plus de 7 jours sont nettoyés automatiquement
+- Quitter normalement ne capture pas la session : VMark vous demande d'abord d'enregistrer les documents non enregistrés. Les onglets ouverts d'un espace de travail reviennent quand même la prochaine fois que vous l'ouvrez (voir [Restauration de session](/fr/guide/workspace-management#restauration-de-session))
 
 Aucune configuration nécessaire. La récupération de session est toujours active.
 
@@ -445,9 +465,9 @@ VMark inclut des utilitaires pour le nettoyage et la mise en forme du texte, dis
 
 Outils de mise en forme de texte chinois/japonais/coréen intégrés. [En savoir plus →](/fr/guide/cjk-formatting)
 
-### Nettoyage des images (Fichier → Nettoyer les images inutilisées)
+### Nettoyage des images (Format → Nettoyage du texte → Nettoyer les images inutilisées…)
 
-Trouvez et supprimez les images orphelines de votre dossier de ressources.
+Trouvez et supprimez les images orphelines de votre dossier de ressources (également disponible depuis la palette de commandes). VMark montre ce qu'il a trouvé et demande confirmation avant de supprimer, et les images supprimées vont dans la corbeille du système. Une image encore utilisée par un document ouvert — y compris par des modifications non enregistrées dans une autre fenêtre VMark — est conservée. Si VMark ne peut pas confirmer qu'une image est inutilisée (par exemple, une autre fenêtre ne répond pas à temps), il ne supprime rien.
 
 ## Terminal intégré
 
@@ -471,6 +491,11 @@ VMark vérifie automatiquement les mises à jour et peut les télécharger et le
 
 [En savoir plus →](/fr/guide/workspace-management)
 
+## Cohérence, base de connaissances et Slidev
+
+- **Cohérence et vue Détail** — un suivi de provenance optionnel enregistre les documents lus par chaque génération IA, signale les documents en aval lorsqu'un document en amont change, et ajoute par-dessus des vérifications sémantiques, des affirmations canoniques et des contextes. Ouvrez-la depuis **Fenêtre → Détail de cohérence**. [En savoir plus →](/fr/guide/coherence)
+- **Base de connaissances** — sert un espace de travail ouvert sous forme de site interconnecté (liens wiki, rétroliens, graphe de relations, recherche plein texte) sur `127.0.0.1`, dans un panneau (`Ctrl + Shift + 4`) ou dans votre navigateur, et prévisualise et exporte des présentations Slidev. Aucune version publiée n'inclut encore l'environnement d'exécution du serveur de contenu dont elle a besoin ; le panneau, son élément de menu, sa commande de palette et son raccourci sont donc masqués tant que **Paramètres → Avancé → Outils de développement** n'est pas activé. [En savoir plus →](/fr/guide/knowledge-base)
+
 ## Personnalisation
 
 ### Thèmes
@@ -490,6 +515,8 @@ Configurez des polices séparées pour :
 - Texte latin
 - Texte CJK (chinois/japonais/coréen)
 - Monospace (code)
+
+Chaque sélecteur propose une courte liste de polices recommandées, les polices installées sur votre ordinateur et une entrée **Personnalisée…** où vous saisissez n'importe quel nom de famille de police. [Détails →](/fr/guide/settings#typographie)
 
 ### Disposition
 

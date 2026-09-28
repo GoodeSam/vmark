@@ -7,7 +7,8 @@
 // Tauri webview.
 
 import { describe, expect, it, vi } from "vitest";
-import { render, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useWorkflowStore } from "@/stores/workflowStore";
 import type { WorkflowIR } from "@/lib/ghaWorkflow/types";
 import { WorkflowCanvas } from "../WorkflowCanvas";
 
@@ -86,6 +87,32 @@ describe("WorkflowCanvas", () => {
     );
     expect(container.querySelector('[data-id="b"]')).not.toBeNull();
     expect(container.querySelector('[data-id="c"]')).not.toBeNull();
+  });
+
+  // WI-LX2.4 — `setLayoutDirection` had no caller, so the canvas was always
+  // top-down. The control strip now toggles it, and the nodes' edge handles
+  // follow the direction.
+  it("toggles the layout between top-down and left-to-right from the controls", async () => {
+    useWorkflowStore.getState().setLayoutDirection("TD");
+    // A re-layout makes xyflow read the viewport zoom through DOMMatrixReadOnly,
+    // which jsdom lacks; identity scale is all it reads.
+    const matrixWindow = window as unknown as { DOMMatrixReadOnly?: unknown };
+    matrixWindow.DOMMatrixReadOnly ??= class {
+      m22 = 1;
+    };
+    const { container } = render(<WorkflowCanvas workflow={ir(["a"])} />);
+    const toLR = await screen.findByRole("button", { name: "Lay out left to right" }, { timeout: 4000 });
+    expect(container.querySelector(".react-flow__handle-top")).not.toBeNull();
+
+    fireEvent.click(toLR);
+
+    expect(useWorkflowStore.getState().view.layoutDirection).toBe("LR");
+    const toTD = await screen.findByRole("button", { name: "Lay out top to bottom" });
+    await waitFor(() => expect(container.querySelector(".react-flow__handle-left")).not.toBeNull());
+    expect(container.querySelector(".react-flow__handle-top")).toBeNull();
+
+    fireEvent.click(toTD);
+    expect(useWorkflowStore.getState().view.layoutDirection).toBe("TD");
   });
 
   it("registers the custom JobNode type — node text contains the job id label", async () => {

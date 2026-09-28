@@ -352,3 +352,59 @@ describe("the CLI", () => {
     expect(run("ts-has-test-case", file, "a", "b").status).toBe(64);
   });
 });
+
+// ---------------------------------------------------------------- serve mode (2026-09-27)
+// One node per probe loaded the TypeScript compiler every time (~0.36s), so a
+// phase with 41 probes spent 11s starting processes and the ledger phase test
+// took eleven minutes — long enough to time out under a parallel gate run.
+// `--serve` answers the same requests from ONE process; these cases pin that
+// the answers are the ones a fresh process gives.
+describe("--serve answers each request exactly as a fresh process would", () => {
+  const US = "\u001f";
+  const serve = (dir, requests) => {
+    const input = requests.map((argv) => [dir, ...argv].join(US)).join("\n") + "\n";
+    const res = spawnSync(process.execPath, [SCRIPT, "--serve"], { input, encoding: "utf8" });
+    expect(res.status).toBe(0);
+    const replies = [];
+    let cur = { out: [], err: [] };
+    for (const line of res.stdout.split("\n").filter(Boolean)) {
+      const [tag, rest] = [line[0], line.slice(2)];
+      if (tag === "O") cur.out.push(rest);
+      else if (tag === "E") cur.err.push(rest);
+      else if (tag === "X") { replies.push({ ...cur, code: Number(rest) }); cur = { out: [], err: [] }; }
+      else throw new Error(`untagged line: ${line}`);
+    }
+    return replies;
+  };
+  const dir = mkdtempSync(path.join(tmpdir(), "dod-serve-"));
+  writeFileSync(path.join(dir, "a.test.ts"), 'it("runs", () => {});\n');
+  writeFileSync(path.join(dir, "b.test.ts"), '/*\nit("planned", () => {});\n*/\n');
+  writeFileSync(path.join(dir, "m.rs"), "// mod hidden;\nmod shown;\n");
+
+  it("answers requests in order, resolving relative paths against each request's cwd", () => {
+    const [yes, no, grep] = serve(dir, [["ts-has-test-case", "a.test.ts"], ["ts-has-test-case", "b.test.ts"], ["rust-code-grep", "mod\\s+\\w+;", "m.rs"]]);
+    expect(yes.code).toBe(0);
+    expect(no.code).toBe(1);
+    expect(no.err.join("\n")).toMatch(/declares no runnable it\(\)\/test\(\) case/);
+    expect(grep).toEqual({ out: ["m.rs"], err: [], code: 0 });
+  });
+
+  it("reports an unreadable file as exit 2 and keeps serving", () => {
+    const [missing, after] = serve(dir, [["ts-has-test-case", "gone.test.ts"], ["ts-has-test-case", "a.test.ts"]]);
+    expect(missing.code).toBe(2);
+    expect(missing.err.join("\n")).toMatch(/cannot read gone\.test\.ts/);
+    expect(after.code).toBe(0);
+  });
+
+  it("answers the readiness ping without touching the working directory", () => {
+    const res = spawnSync(process.execPath, [SCRIPT, "--serve"], { input: `/no/such/dir${US}--ping\n`, encoding: "utf8" });
+    expect(res.stdout).toBe("X\t0\n");
+  });
+
+  it("agrees with a one-shot process on usage errors", () => {
+    const [usage] = serve(dir, [["no-such-command"]]);
+    const oneShot = spawnSync(process.execPath, [SCRIPT, "no-such-command"], { encoding: "utf8" });
+    expect(usage.code).toBe(oneShot.status);
+    expect(usage.err.join("\n")).toBe(oneShot.stderr.trimEnd());
+  });
+});

@@ -11,8 +11,13 @@
  *
  * Esc = Deny (consistent with VMark's other dialogs).
  *
+ * It is also the window's workflow-EVENT OWNER (audit 20260928 #115): always
+ * mounted in a document window, it holds the one subscription that routes the
+ * runner's frames — for panel runs and workflow genies alike. Run panels
+ * subscribe nothing.
+ *
  * @coordinates-with stores/workflowStore.ts — reads `pending`
- * @coordinates-with useWorkflowExecution.ts — calls `respondApproval`
+ * @coordinates-with useWorkflowExecution.ts — `useWorkflowEventLifecycle`, `respondWorkflowApproval`
  * @module components/WorkflowApproval/ApprovalDialog
  */
 
@@ -20,7 +25,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useWorkflowStore } from "@/stores/workflowStore";
-import { useWorkflowExecution } from "@/hooks/useWorkflowExecution";
+import { respondWorkflowApproval, useWorkflowEventLifecycle } from "@/hooks/useWorkflowExecution";
 import { workflowError } from "@/utils/debug";
 
 import "./approval-dialog.css";
@@ -29,7 +34,7 @@ import { useBrowserOccluder } from "@/hooks/useBrowserOccluder";
 export function ApprovalDialog() {
   const { t } = useTranslation();
   const pending = useWorkflowStore((s) => s.approval.pending);
-  const { respondApproval } = useWorkflowExecution();
+  useWorkflowEventLifecycle();
 
   // audit-fix — re-entrancy guard: ignore further verdicts/Escape while a
   // response is in flight, so double-clicks can't send duplicate verdicts.
@@ -46,7 +51,7 @@ export function ApprovalDialog() {
       submittingRef.current = true;
       setSubmitting(true);
       try {
-        await respondApproval(current.executionId, current.stepId, approved);
+        await respondWorkflowApproval(current.executionId, current.stepId, approved);
         // audit-fix — only dismiss on success; a rejected verdict leaves the
         // backend request pending, so keep the dialog open for retry.
         useWorkflowStore.getState().dismissApproval();
@@ -60,7 +65,7 @@ export function ApprovalDialog() {
         setSubmitting(false);
       }
     },
-    [respondApproval],
+    [],
   );
 
   useEffect(() => {

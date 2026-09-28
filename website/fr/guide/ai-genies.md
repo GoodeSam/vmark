@@ -12,7 +12,7 @@ Les Génies IA sont des modèles d'invite qui transforment votre texte à l'aide
 
 ## Le sélecteur de génie
 
-Appuyez sur `Mod + Y` (ou menu **Outils > Génies IA**) pour ouvrir une superposition de style Spotlight avec une seule entrée unifiée.
+Appuyez sur `Mod + Y` (ou menu **Édition → Génies → Rechercher des génies…**) pour ouvrir une superposition de style Spotlight avec une seule entrée unifiée. Le même sous-menu liste chaque génie par son nom&nbsp;; un génie peut donc aussi être lancé directement depuis le menu.
 
 **Recherche et formulaire libre** — Commencez à taper pour filtrer les génies par nom, description ou catégorie. Si aucun génie ne correspond, l'entrée devient un champ d'invite libre.
 
@@ -22,14 +22,14 @@ Appuyez sur `Mod + Y` (ou menu **Outils > Génies IA**) pour ouvrir une superpos
 
 **Cycle de portée** — Appuyez sur `Tab` pour parcourir les portées : sélection → bloc → document → tout.
 
-**Historique des invites** — En mode formulaire libre (aucun génie correspondant), appuyez sur `Flèche Haut` / `Flèche Bas` pour parcourir les invites précédentes. Appuyez sur `Ctrl + R` pour ouvrir un menu déroulant d'historique consultable. Le texte fantôme affiche l'invite correspondante la plus récente sous forme d'indice grisé — appuyez sur `Tab` pour l'accepter.
+**Historique des invites** — En mode formulaire libre (aucun génie correspondant), appuyez sur `Flèche Haut` / `Flèche Bas` pour parcourir les invites précédentes. Appuyez sur `Ctrl + R` pour ouvrir un menu déroulant d'historique consultable. Le texte fantôme affiche l'invite correspondante la plus récente sous forme d'indice grisé — appuyez sur `Tab` pour l'accepter, ou sur `Échap` pour l'ignorer (il réapparaît dès que vous modifiez ce que vous avez tapé).
 
 ### Retour de traitement
 
 Après avoir sélectionné un génie ou soumis une invite libre, le sélecteur affiche un retour en ligne :
 
 - **Traitement** — Un indicateur de réflexion avec un compteur de temps écoulé. Appuyez sur `Échap` pour annuler.
-- **Aperçu** — La réponse de l'IA diffuse en temps réel. Utilisez `Accepter` pour appliquer ou `Rejeter` pour ignorer.
+- **Aperçu** — La réponse de l'IA apparaît au fur et à mesure qu'elle arrive&nbsp;: les fournisseurs CLI la diffusent pendant sa génération, tandis que les fournisseurs REST livrent la réponse entière d'un seul coup à la fin de la requête. Utilisez `Accepter` pour appliquer ou `Rejeter` pour ignorer.
 - **Erreur** — En cas de problème, le message d'erreur apparaît avec un bouton `Réessayer`.
 
 La barre d'état affiche également la progression de l'IA — une icône tournante avec le temps écoulé pendant l'exécution, un bref flash « Terminé » en cas de succès, ou un indicateur d'erreur avec des boutons Réessayer/Ignorer. La barre d'état s'affiche automatiquement quand l'IA a un statut actif, même si vous l'avez précédemment masquée avec `F7`.
@@ -89,9 +89,9 @@ Si la portée est **Sélection** mais que rien n'est sélectionné, le génie op
 
 Après l'exécution d'un génie, la suggestion apparaît en ligne :
 
-- **Remplacement** — Texte original barré, nouveau texte en vert
-- **Insertion** — Nouveau texte affiché en vert après le bloc source
-- **Suppression** — Texte original barré
+- **Remplacement** — Texte original barré d'un trait ondulé rouge, suivi du nouveau texte en texte « fantôme » italique estompé, dans la couleur d'accent
+- **Insertion** — Nouveau texte affiché en texte fantôme après le bloc source
+- **Suppression** — Texte original barré d'un trait ondulé rouge
 
 Chaque suggestion a des boutons d'acceptation (coche) et de rejet (X).
 
@@ -130,13 +130,13 @@ Les génies sont stockés dans votre répertoire de données d'application :
 | Windows | `%APPDATA%\app.vmark\genies\` |
 | Linux | `~/.local/share/app.vmark/genies/` |
 
-Ouvrez ce dossier depuis le menu **Outils > Ouvrir le dossier des génies**.
+Ouvrez ce dossier depuis le menu **Édition → Génies → Ouvrir le dossier des génies**&nbsp;; après avoir ajouté ou modifié des fichiers, **Édition → Génies → Recharger les génies** actualise la liste.
 
 ### Structure du répertoire
 
-Les sous-répertoires deviennent des **catégories** dans le sélecteur. Vous pouvez organiser les génies comme vous le souhaitez :
+Les sous-répertoires deviennent des **catégories** dans le sélecteur, et l'analyse est récursive — imbriquez les dossiers aussi profondément que vous le souhaitez&nbsp;; la catégorie d'un génie est le chemin de son dossier relatif à `genies/` (ainsi `academic/thesis/abstract.md` se retrouve dans `academic/thesis`), sauf si le frontmatter définit `category`. Les liens symboliques sont ignorés. Vous pouvez organiser les génies comme vous le souhaitez :
 
-```
+```text
 genies/
 ├── editing/
 │   ├── polish.md
@@ -145,10 +145,10 @@ genies/
 ├── creative/
 │   ├── expand.md
 │   └── rephrase.md
-├── academic/          ← votre catégorie personnalisée
+├── academic/          ← your custom category
 │   ├── cite.md
 │   └── abstract.md
-└── my-workflows/      ← une autre catégorie personnalisée
+└── my-workflows/      ← another custom category
     └── blog-intro.md
 ```
 
@@ -158,15 +158,15 @@ Chaque fichier de génie a deux parties : **métadonnées** (frontmatter) et **m
 
 ```markdown
 ---
-description: Améliorer la clarté et le flux
+description: Improve clarity and flow
 scope: selection
 category: editing
 ---
 
-Vous êtes un éditeur expert. Améliorez la clarté, le flux et la concision
-du texte suivant tout en préservant la voix et l'intention de l'auteur.
+You are an expert editor. Improve the clarity, flow, and conciseness
+of the following text while preserving the author's voice and intent.
 
-Retournez uniquement le texte amélioré — pas d'explications.
+Return only the improved text — no explanations.
 
 {{content}}
 ```
@@ -193,20 +193,20 @@ L'espace réservé `{{content}}` est au cœur de chaque génie. Quand un génie 
 1. **Extrait le texte** selon la portée (texte sélectionné, bloc actuel ou document complet)
 2. **Remplace** chaque `{{content}}` dans votre modèle par le texte extrait
 3. **Envoie** l'invite remplie au fournisseur d'IA actif
-4. **Diffuse** la réponse en retour comme suggestion en ligne
+4. **Renvoie** la réponse sous forme de suggestion en ligne — diffusée au fil de sa génération par un fournisseur CLI, en une seule fois par un fournisseur REST
 
 Par exemple, avec ce modèle :
 
 ```markdown
-Traduisez le texte suivant en français.
+Translate the following text into French.
 
 {{content}}
 ```
 
 Si l'utilisateur sélectionne « Hello, how are you? », l'IA reçoit :
 
-```
-Traduisez le texte suivant en français.
+```text
+Translate the following text into French.
 
 Hello, how are you?
 ```
@@ -235,15 +235,15 @@ L'espace réservé `{{context}}` donne à l'IA le texte environnant en lecture s
 
 Avec `context: 1` et le curseur sur le deuxième paragraphe d'un document à trois paragraphes :
 
-```
-[Avant]
-Contenu du premier paragraphe ici.
+```text
+[Before]
+First paragraph content here.
 
-[Après]
-Contenu du troisième paragraphe ici.
+[After]
+Third paragraph content here.
 ```
 
-Les sections `[Avant]` et `[Après]` sont omises quand il n'y a pas de voisins dans cette direction (par ex. le contenu est au début ou à la fin du document).
+Les sections `[Before]` et `[After]` sont omises quand il n'y a pas de voisins dans cette direction (par ex. le contenu est au début ou à la fin du document).
 
 ### Le champ `action`
 
@@ -257,15 +257,15 @@ Utilisez `insert` pour : continuer l'écriture, générer des résumés sous le 
 
 ```markdown
 ---
-description: Continuer l'écriture depuis ici
+description: Continue writing from here
 scope: block
 action: insert
 ---
 
-Continuez naturellement l'écriture à partir de l'endroit où le texte suivant s'arrête.
-Correspondez à la voix, au style et au ton de l'auteur. Écrivez 2-3 paragraphes.
+Continue writing naturally from where the following text leaves off.
+Match the author's voice, style, and tone. Write 2-3 paragraphs.
 
-Ne répétez pas ou ne résumez pas le texte existant — continuez-le simplement.
+Do not repeat or summarize the existing text — just continue it.
 
 {{content}}
 ```
@@ -276,12 +276,12 @@ Remplacez le modèle par défaut pour un génie spécifique. Utile quand vous vo
 
 ```markdown
 ---
-description: Correction grammaticale rapide (utilise un modèle rapide)
+description: Quick grammar fix (uses fast model)
 scope: selection
 model: claude-haiku-4-5-20251001
 ---
 
-Corrigez les erreurs de grammaire et d'orthographe. Retournez uniquement le texte corrigé.
+Fix grammar and spelling errors. Return only the corrected text.
 
 {{content}}
 ```
@@ -295,11 +295,11 @@ L'identifiant de modèle doit correspondre à ce que votre fournisseur actif acc
 Dites à l'IA exactement ce qu'il faut retourner. Sans cela, les modèles ont tendance à ajouter des explications, des en-têtes ou des commentaires.
 
 ```markdown
-<!-- Bon -->
-Retournez uniquement le texte amélioré — pas d'explications.
+<!-- Good -->
+Return only the improved text — no explanations.
 
-<!-- Mauvais — l'IA peut envelopper la sortie entre guillemets, ajouter « Voici la version améliorée : », etc. -->
-Améliorez ce texte.
+<!-- Bad — AI may wrap output in quotes, add "Here's the improved version:", etc. -->
+Improve this text.
 ```
 
 ### Définissez un rôle
@@ -307,11 +307,11 @@ Améliorez ce texte.
 Donnez à l'IA un persona pour ancrer son comportement.
 
 ```markdown
-<!-- Bon -->
-Vous êtes un éditeur technique expert spécialisé dans la documentation d'API.
+<!-- Good -->
+You are an expert technical editor who specializes in API documentation.
 
-<!-- Correct mais moins ciblé -->
-Modifiez le texte suivant.
+<!-- Okay but less focused -->
+Edit the following text.
 ```
 
 ### Contraignez la portée
@@ -319,13 +319,13 @@ Modifiez le texte suivant.
 Dites à l'IA ce qu'il ne faut PAS modifier. Cela empêche la sur-édition.
 
 ```markdown
-<!-- Bon -->
-Corrigez uniquement les erreurs de grammaire et d'orthographe.
-Ne changez pas le sens, le style ou le ton.
-Ne restructurez pas les phrases.
+<!-- Good -->
+Fix grammar and spelling errors only.
+Do not change the meaning, style, or tone.
+Do not restructure sentences.
 
-<!-- Mauvais — donne trop de liberté à l'IA -->
-Corrigez ce texte.
+<!-- Bad — gives the AI too much freedom -->
+Fix this text.
 ```
 
 ### Utilisez Markdown dans les invites
@@ -334,20 +334,20 @@ Vous pouvez utiliser la mise en forme Markdown dans vos modèles d'invite. Cela 
 
 ```markdown
 ---
-description: Générer une analyse avantages/inconvénients
+description: Generate a pros/cons analysis
 scope: selection
 action: insert
 ---
 
-Analysez le texte suivant et produisez une brève liste avantages/inconvénients.
+Analyze the following text and produce a brief pros/cons list.
 
-Format :
+Format as:
 
-**Avantages :**
+**Pros:**
 - point 1
 - point 2
 
-**Inconvénients :**
+**Cons:**
 - point 1
 - point 2
 
@@ -359,15 +359,15 @@ Format :
 Un génie, un travail. Ne combinez pas plusieurs tâches dans un seul génie — créez des génies séparés à la place.
 
 ```markdown
-<!-- Bon — un travail clair -->
+<!-- Good — one clear job -->
 ---
-description: Convertir à la voix active
+description: Convert to active voice
 scope: selection
 ---
 
-Réécrivez le texte suivant en utilisant la voix active.
-Ne changez pas le sens.
-Retournez uniquement le texte réécrit.
+Rewrite the following text using active voice.
+Do not change the meaning.
+Return only the rewritten text.
 
 {{content}}
 ```
@@ -378,14 +378,14 @@ Retournez uniquement le texte réécrit.
 
 ```markdown
 ---
-description: Générer un résumé académique
+description: Generate an academic abstract
 scope: document
 action: insert
 ---
 
-Lisez l'article suivant et écrivez un résumé académique concis
-(150-250 mots). Suivez la structure standard : contexte, méthodes,
-résultats, conclusion.
+Read the following paper and write a concise academic abstract
+(150-250 words). Follow standard structure: background, methods,
+results, conclusion.
 
 {{content}}
 ```
@@ -394,14 +394,14 @@ résultats, conclusion.
 
 ```markdown
 ---
-description: Écrire un paragraphe d'ouverture accrocheur
+description: Write an engaging opening paragraph
 scope: document
 action: insert
 ---
 
-Lisez le brouillon suivant et écrivez un paragraphe d'ouverture convaincant
-qui accroche le lecteur. Utilisez une question, un fait surprenant ou une scène vivante.
-Gardez-le sous 3 phrases.
+Read the following draft and write a compelling opening paragraph
+that hooks the reader. Use a question, surprising fact, or vivid
+scene. Keep it under 3 sentences.
 
 {{content}}
 ```
@@ -410,14 +410,14 @@ Gardez-le sous 3 phrases.
 
 ```markdown
 ---
-description: Ajouter une explication en langage simple au-dessus du code
+description: Add a plain-English explanation above code
 scope: selection
 action: insert
 ---
 
-Lisez le code suivant et écrivez une brève explication en langage simple
-de ce qu'il fait. Utilisez 1-2 phrases. N'incluez pas le code lui-même
-dans votre réponse.
+Read the following code and write a brief plain-English explanation
+of what it does. Use 1-2 sentences. Do not include the code itself
+in your response.
 
 {{content}}
 ```
@@ -426,32 +426,32 @@ dans votre réponse.
 
 ```markdown
 ---
-description: Réécrire dans un ton professionnel
+description: Rewrite in professional tone
 scope: selection
 ---
 
-Réécrivez le texte suivant dans un ton professionnel et adapté aux affaires.
-Gardez le même sens et les mêmes points clés. Supprimez le langage familier,
-l'argot et les mots de remplissage.
+Rewrite the following text in a professional, business-appropriate tone.
+Keep the same meaning and key points. Remove casual language,
+slang, and filler words.
 
-Retournez uniquement le texte réécrit — pas d'explications.
+Return only the rewritten text — no explanations.
 
 {{content}}
 ```
 
-### Traduction — Vers le français
+### Traduction — Vers le chinois simplifié
 
 ```markdown
 ---
-description: Traduire en français
+description: Translate to Simplified Chinese
 scope: selection
 ---
 
-Traduisez le texte suivant en français.
-Préservez le sens, le ton et la mise en forme originaux.
-Utilisez un français naturel et idiomatique — pas une traduction mot à mot.
+Translate the following text into Simplified Chinese.
+Preserve the original meaning, tone, and formatting.
+Use natural, idiomatic Chinese — not word-for-word translation.
 
-Retournez uniquement le texte traduit — pas d'explications.
+Return only the translated text — no explanations.
 
 {{content}}
 ```
@@ -460,20 +460,20 @@ Retournez uniquement le texte traduit — pas d'explications.
 
 ```markdown
 ---
-description: Réécrire pour correspondre au ton et style environnants
+description: Rewrite to match surrounding tone and style
 scope: selection
 context: 1
 ---
 
-Réécrivez le contenu suivant pour s'intégrer naturellement dans son contexte environnant.
-Correspondez au ton, au style et au niveau de détail.
+Rewrite the following content to fit naturally with its surrounding context.
+Match the tone, style, and level of detail.
 
-Retournez uniquement le texte réécrit — pas d'explications.
+Return only the rewritten text — no explanations.
 
-## Contexte environnant (ne pas inclure dans la sortie) :
+## Surrounding context (do not include in output):
 {{context}}
 
-## Contenu à réécrire :
+## Content to rewrite:
 {{content}}
 ```
 
@@ -481,35 +481,58 @@ Retournez uniquement le texte réécrit — pas d'explications.
 
 ```markdown
 ---
-description: Signaler les affirmations qui nécessitent une vérification
+description: Flag claims that need verification
 scope: selection
 action: insert
 ---
 
-Lisez le texte suivant et listez toutes les affirmations factuelles qui devraient être
-vérifiées. Pour chaque affirmation, notez pourquoi elle pourrait nécessiter une vérification (par ex.
-chiffres spécifiques, dates, statistiques ou affirmations fortes).
+Read the following text and list any factual claims that should be
+verified. For each claim, note why it might need checking (e.g.,
+specific numbers, dates, statistics, or strong assertions).
 
-Formatez comme une liste à puces. Si tout semble solide, dites
-« Aucune affirmation signalée pour vérification. »
+Format as a bullet list. If everything looks solid, say
+"No claims flagged for verification."
 
 {{content}}
 ```
 
 ## Suggestions IA
 
-Lorsqu'un Génie renvoie un texte destiné à remplacer la sélection (plutôt qu'une réponse de chat libre), VMark le présente comme une **suggestion** avec un diff en ligne&nbsp;: barré rouge pour le texte original, soulignement vert pour le texte proposé. Vous examinez et approuvez avant qu'aucun changement ne soit appliqué de manière persistante.
+Lorsqu'un Génie renvoie un texte destiné à remplacer la sélection (plutôt qu'une réponse de chat libre), VMark le présente comme une **suggestion** avec un diff en ligne&nbsp;: barré ondulé rouge pour le texte original, texte fantôme italique estompé dans la couleur d'accent pour le texte proposé. Vous examinez et approuvez avant qu'aucun changement ne soit appliqué de manière persistante.
 
 | Action | Raccourci |
 |---|---|
-| Accepter la suggestion focalisée | `Tab` |
+| Accepter la suggestion focalisée | `Entrée` |
 | Rejeter la suggestion focalisée | `Échap` |
+| Passer à la suggestion suivante / précédente | `Tab` / `Shift + Tab` |
 | Accepter toutes les suggestions du document | `Mod + Shift + Entrée` _(sensible au contexte — aussi Ajouter une ligne au-dessus dans un tableau)_ |
-| Passer à la suggestion suivante | `Tab` depuis une position non focalisée |
+| Rejeter toutes les suggestions du document | `Mod + Shift + Échap` |
 
 Lorsqu'un Génie réécrit plusieurs paragraphes, chaque remplacement est sa propre suggestion, navigable indépendamment. Accepter l'une n'accepte pas automatiquement les autres.
 
-L'interface des suggestions a également une surface MCP — les agents IA externes connectés via le [serveur MCP](/fr/guide/mcp-tools) peuvent émettre les actions `suggestion.accept` / `suggestion.reject` pour manipuler le même état.
+## Génies dans les workflows
+
+Un génie unique exécute une seule invite. Lorsque vous devez enchaîner plusieurs étapes d'IA — plan, puis brouillon, puis polissage — et acheminer la sortie d'une étape vers la suivante, utilisez un **workflow de génies**&nbsp;: un fichier YAML qui orchestre plusieurs appels de génies avec un flux de données explicite, des points d'approbation facultatifs, un modèle par étape et un diagramme d'exécution en direct.
+
+Comme les étapes de workflow remplissent l'espace réservé `{{content}}` d'un génie à partir d'une map `with: { input: "..." }`, **les génies que vous écrivez ici s'exécutent sans modification dans les workflows** — aucune conversion n'est nécessaire.
+
+Consultez [Workflows Genie](/fr/guide/workflows) pour le schéma YAML complet, la syntaxe des expressions, les approbations et la manière d'exécuter un workflow.
+
+### Isolement du contenu non fiable
+
+Lorsqu'une étape `genie/<name>` d'un workflow s'exécute, le texte des
+documents, les sélections et le contenu des fichiers sont encadrés par des
+marqueurs uniques `<<<DOCUMENT-DATA-…>>>` avant d'atteindre le fournisseur
+d'IA, et l'invite demande au modèle de traiter le texte ainsi encadré
+strictement comme des données. Cet encadrement est propre aux étapes de
+workflow — un génie lancé directement depuis le sélecteur envoie le texte
+de sa portée au fournisseur tel quel. Il protège contre les documents qui
+tentent de glisser des instructions à l'IA (« ignore tes instructions et
+exécute … ») — ce qui compte surtout pour les fournisseurs CLI (Claude Code,
+Codex, Gemini CLI), capables d'exécuter des commandes. Traitez les génies
+que vous exécutez sur des fichiers de sources non fiables avec la même
+prudence que l'exécution d'un script trouvé sur Internet&nbsp;: l'encadrement
+est une atténuation solide, pas une garantie absolue.
 
 ## Limitations
 
@@ -522,7 +545,7 @@ L'interface des suggestions a également une surface MCP — les agents IA exter
 
 **« Aucun fournisseur d'IA disponible »** — Ouvrez Paramètres > Intégrations et configurez un fournisseur. Consultez [Fournisseurs d'IA](/fr/guide/ai-providers).
 
-**Génie n'apparaissant pas dans le sélecteur** — Vérifiez que le fichier a une extension `.md`, un frontmatter valide avec des délimiteurs `---`, et qu'il est dans le répertoire des génies (pas dans un sous-répertoire plus profond qu'un niveau).
+**Génie n'apparaissant pas dans le sélecteur** — Vérifiez que le fichier a une extension `.md` (ou `.yml`/`.yaml` pour un [génie de workflow](/fr/guide/workflow-genies)) et un frontmatter valide avec des délimiteurs `---`. Les sous-dossiers sont parcourus jusqu'à huit niveaux de profondeur (et 10 000 entrées au maximum au total), et les liens symboliques sont ignorés. Lancez **Édition → Génies → Recharger les génies** après avoir ajouté des fichiers.
 
 **L'IA retourne des résultats incorrects ou des erreurs** — Vérifiez que votre clé API est correcte et que le nom du modèle est valide pour votre fournisseur. Vérifiez les détails d'erreur dans le terminal/console.
 

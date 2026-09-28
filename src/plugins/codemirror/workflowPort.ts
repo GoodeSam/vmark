@@ -29,15 +29,14 @@ import type { WorkflowGraph } from "@/lib/workflow/types";
 
 /** What the Source workflow plugins need. */
 interface WorkflowPortState {
-  preview: { panelOpen: boolean };
   /** Live workflow IR per tab — keyed so two split panes (#1081)
    *  cannot clobber each other. Absent key = no workflow. */
   gha: { byTab: Record<string, WorkflowIR> };
   view: { selectedJobId: string | null };
-  setGraph: (graph: WorkflowGraph | null, error?: string) => void;
-  previewOpenPanel: () => void;
-  previewClosePanel: () => void;
-  resetPreview: () => void;
+  /** The preview writes are per tab too (#129), for the same reason. */
+  setGraph: (tabId: string, graph: WorkflowGraph | null, error?: string) => void;
+  previewOpenPanel: (tabId: string) => void;
+  previewClosePanel: (tabId: string) => void;
   selectJob: (jobId: string) => void;
 }
 
@@ -48,13 +47,11 @@ export interface WorkflowPort {
 /** No workflow, and nowhere for a parse result to go. */
 const UNBOUND: WorkflowPort = {
   getState: () => ({
-    preview: { panelOpen: false },
     gha: { byTab: {} },
     view: { selectedJobId: null },
     setGraph: () => {},
     previewOpenPanel: () => {},
     previewClosePanel: () => {},
-    resetPreview: () => {},
     selectJob: () => {},
   }),
 };

@@ -70,15 +70,15 @@ Lorsque vous sélectionnez un fournisseur REST, trois champs apparaissent :
 
 ### Remplissage automatique par variable d'environnement
 
-VMark lit les variables d'environnement standard au lancement. Si `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` ou `GEMINI_API_KEY` est défini dans votre profil shell, le champ de clé API se remplit automatiquement lorsque vous sélectionnez ce fournisseur.
+VMark lit les variables d'environnement standard depuis l'environnement de son propre processus. Si `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` ou `GOOGLE_API_KEY` / `GEMINI_API_KEY` (vérifiées dans cet ordre) est défini, le champ de clé API se remplit automatiquement lorsque vous sélectionnez ce fournisseur.
 
-Cela signifie que vous pouvez définir votre clé une fois dans `~/.zshrc` ou `~/.bashrc` :
+Les variables que VMark voit dépendent de la façon dont il a été lancé. Une clé exportée dans un profil shell tel que `~/.zshrc` ou `~/.bashrc` :
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-Puis redémarrez VMark — aucune saisie manuelle de clé n'est nécessaire.
+n'atteint VMark que si vous lancez l'application depuis ce shell. Lancé depuis le Dock, le Finder, Spotlight ou un lanceur de bureau, VMark ne lit pas votre profil shell, et le champ reste donc vide — collez la clé à la place. Sous Windows, une variable d'environnement utilisateur ou système fonctionne quelle que soit la façon dont VMark est lancé.
 
 ### Configuration : Anthropic (REST)
 

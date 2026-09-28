@@ -13,13 +13,24 @@ Nothing is ever auto-updated; you stay the editor-in-chief.
 ## How it works (30 seconds)
 
 - **Provenance tracking is opt-in.** Turn on *Settings → Files & Images →
-  Saving → Track document provenance* first. Until you do, VMark never
-  writes to your files or creates `.vmark/`.
+  Saving → Stamp identity block on save* first. Until you do, no write —
+  a save, genie apply, accepted AI suggestion, MCP write, version restore,
+  or a new file from the file explorer — stamps your files or creates
+  `.vmark/`.
 - Once enabled, every save, genie apply, accepted AI suggestion, MCP write,
-  and workflow
+  version restore, and workflow
   `save-file` step is recorded as a **transformation** in a plain-text
   ledger inside your workspace (`.vmark/` — git-friendly, human-readable
   JSONL; deleting the derived `index.db` loses nothing).
+- **A workspace that already has a ledger** — a `.vmark/` you created
+  earlier, or one a collaborator committed — keeps recording writes to the
+  documents it tracks even with the setting off. A document counts as
+  tracked when the ledger has recorded it before, or when the file already
+  carries its own `vmark:` identity — a tracked file you moved, copied in or
+  checked out; the ledger's own scan adopts exactly those. It stamps
+  nothing: a document without an identity is left out, and a write whose
+  inputs are therefore incomplete is recorded as `inferred` rather than
+  `exact`.
 - When an AI writes a document while reading others, those reads become
   **dependency edges**, pinned to the revision that was read. In-app
   instrumented paths record `exact` inputs; MCP writes honestly record an
@@ -177,8 +188,8 @@ the review.
 
 ## Frontmatter identity
 
-Once provenance tracking is enabled, the first time a file is captured
-VMark adds a small identity block to its frontmatter:
+Once *Stamp identity block on save* is on, the first time a file is
+captured VMark adds a small identity block to its frontmatter:
 
 ```yaml
 vmark:
@@ -191,8 +202,10 @@ everything else in your frontmatter is left untouched. If you copy a
 file, the duplicate ID is detected and surfaced for you to resolve —
 never auto-fixed.
 
-If you would rather VMark never touch your files, leave *Track document
-provenance* off — that is the default.
+If you would rather VMark never touch your files, leave *Stamp identity
+block on save* off — that is the default. With it off, VMark adds this
+block to no file, however the file is written — including files an AI or
+MCP edit only read.
 
 ## Git interoperability
 

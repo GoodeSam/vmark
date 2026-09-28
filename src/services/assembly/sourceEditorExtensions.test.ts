@@ -193,6 +193,17 @@ import { performUnifiedUndo, performUnifiedRedo } from "@/services/history/unifi
 import { toggleTaskList } from "@/plugins/sourceContextDetection/taskListActions";
 import { isMacPlatform } from "@/utils/shortcutMatch";
 
+// #129 — the engine preview is per tab: the assembly must hand it the editor's tabId.
+vi.mock("./workflowExtensionGates", () => ({
+  workflowExtensionGates: (filePath: string | null | undefined) => {
+    const yaml = !!filePath?.endsWith(".yml");
+    return { yaml, viewer: false, engine: yaml };
+  },
+}));
+vi.mock("@/plugins/codemirror/sourceWorkflowPreview", () => ({
+  sourceWorkflowPreviewExtensions: (tabId: string) => [`workflowPreview:${tabId}`],
+}));
+
 describe("createSourceEditorExtensions", () => {
   it("returns a non-empty array of extensions", () => {
     const exts = createSourceEditorExtensions({
@@ -418,5 +429,31 @@ describe("createSourceEditorExtensions — keymap run() callbacks", () => {
     expect(binding).toBeDefined();
     binding!.run({});
     expect(vi.mocked(performUnifiedRedo)).toHaveBeenCalledWith("main");
+  });
+});
+
+describe("createSourceEditorExtensions — workflow preview (#129)", () => {
+  const base = {
+    initialWordWrap: false,
+    initialShowBrTags: false,
+    initialAutoPair: false,
+    initialShowLineNumbers: false,
+    updateListener: "listener" as never,
+  };
+
+  it("hands the engine preview the editor's OWN tab, so two editors keep two previews", () => {
+    const left = createSourceEditorExtensions({ ...base, filePath: "/w/a.yml", tabId: "tab-left" });
+    const right = createSourceEditorExtensions({ ...base, filePath: "/w/b.yml", tabId: "tab-right" });
+    expect(left).toContain("workflowPreview:tab-left");
+    expect(left).not.toContain("workflowPreview:tab-right");
+    expect(right).toContain("workflowPreview:tab-right");
+  });
+
+  it("mounts no preview without a tab to write it under, or for a non-workflow file", () => {
+    const untabbed = createSourceEditorExtensions({ ...base, filePath: "/w/a.yml" });
+    const markdown = createSourceEditorExtensions({ ...base, filePath: "/w/a.md", tabId: "t" });
+    for (const exts of [untabbed, markdown]) {
+      expect(exts.some((e) => String(e).startsWith("workflowPreview:"))).toBe(false);
+    }
   });
 });

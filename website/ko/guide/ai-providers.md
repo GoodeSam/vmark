@@ -70,15 +70,15 @@ REST 제공자를 선택하면 세 가지 필드가 나타납니다:
 
 ### 환경 변수 자동 채우기
 
-VMark는 실행 시 표준 환경 변수를 읽습니다. 셸 프로파일에 `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, 또는 `GEMINI_API_KEY`가 설정되어 있으면, 해당 제공자를 선택할 때 API 키 필드가 자동으로 채워집니다.
+VMark는 자체 프로세스 환경에서 표준 환경 변수를 읽습니다. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, 또는 `GOOGLE_API_KEY` / `GEMINI_API_KEY`(이 순서로 확인)가 설정되어 있으면, 해당 제공자를 선택할 때 API 키 필드가 자동으로 채워집니다.
 
-즉, `~/.zshrc` 또는 `~/.bashrc`에 한 번만 키를 설정하면 됩니다:
+VMark가 어떤 변수를 볼 수 있는지는 VMark를 어떻게 시작했는지에 따라 달라집니다. `~/.zshrc` 또는 `~/.bashrc` 같은 셸 프로파일에서 내보낸 키는:
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-그런 다음 VMark를 재시작하면 수동으로 키를 입력할 필요가 없습니다.
+그 셸에서 앱을 실행할 때만 VMark에 전달됩니다. Dock, Finder, Spotlight 또는 데스크톱 런처에서 시작하면 VMark는 셸 프로파일을 읽지 않으므로 필드가 비어 있습니다 — 이 경우 키를 직접 붙여넣으세요. Windows에서는 사용자 또는 시스템 환경 변수가 VMark를 어떻게 실행하든 작동합니다.
 
 ### 설정: Anthropic (REST)
 

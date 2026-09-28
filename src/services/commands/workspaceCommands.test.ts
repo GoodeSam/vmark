@@ -10,11 +10,23 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockOpenPicker = vi.fn();
+// WI-LX1.1 — the folder picker is Rust's (`pick_workspace_folder`), which grants
+// AND records the pick. The plugin dialog's `open` stays mocked only so a test
+// can prove it is never used for this command.
+const mockPickFolder = vi.fn();
+const mockDialogOpen = vi.fn();
 const mockAsk = vi.fn();
 vi.mock("@tauri-apps/plugin-dialog", () => ({
-  open: (...a: unknown[]) => mockOpenPicker(...a),
+  open: (...a: unknown[]) => mockDialogOpen(...a),
   ask: (...a: unknown[]) => mockAsk(...a),
+}));
+const mockInvoke = vi.fn(async (cmd: string, args?: Record<string, unknown>) => {
+  if (cmd === "pick_workspace_folder") return mockPickFolder(args);
+  if (cmd === "allow_workspace_access") return args?.path;
+  return undefined;
+});
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: (cmd: string, args?: Record<string, unknown>) => mockInvoke(cmd, args),
 }));
 
 const mockOpenWorkspaceWithConfig = vi.fn();
@@ -55,7 +67,8 @@ import { tabBelongsToWorkspace } from "@/services/workspaces/workspaceTabCollect
 beforeEach(() => {
   _resetCommandBus();
   __resetWorkspaceCommandsRegistration();
-  mockOpenPicker.mockReset();
+  mockPickFolder.mockReset();
+  mockDialogOpen.mockReset();
   mockAsk.mockReset();
   mockPersistWorkspaceSession.mockReset().mockResolvedValue(undefined);
   mockToastError.mockReset();
@@ -104,7 +117,7 @@ describe("HMR re-registration (dev-only Vite reload)", () => {
 
 describe("workspace.openFolder (#1005)", () => {
   it("opens the selected workspace in the current window without a dialog", async () => {
-    mockOpenPicker.mockResolvedValue("/projects/foo");
+    mockPickFolder.mockResolvedValue("/projects/foo");
 
     await executeCommand("workspace.openFolder", {}, { windowLabel: "main" });
 
@@ -119,30 +132,57 @@ describe("workspace.openFolder (#1005)", () => {
     expect(mockAsk).not.toHaveBeenCalled();
   });
 
-  // #1252 — the picker must grant the workspace RECURSIVELY.
-  //
-  // tauri-plugin-dialog extends the fs scope for a picked directory with
-  // `allow_directory(&path, options.recursive)`. Without `recursive: true`
-  // only the folder ITSELF enters the scope, so opening any file inside it
-  // fails with `forbidden path: …`.
-  //
-  // It reproduces only off the home drive: the static scope in
-  // capabilities/default.json covers `$HOME/**`, `/Volumes/**`, `/mnt/**` and
-  // `/media/**`, which masks the missing grant on macOS and Linux. On Windows
-  // `$HOME` is `C:\Users\<name>`, so a workspace on `G:\` is covered by
-  // nothing and every file click is refused.
-  it("grants the picked workspace recursively so its files are in scope", async () => {
-    mockOpenPicker.mockResolvedValue("/projects/foo");
+  // WI-LX1.1 — the picker is the one Rust shows, not the plugin dialog. Rust
+  // grants the pick RECURSIVELY (#1252 — `allow_directory(path, true)`, pinned
+  // by `a_chosen_root_is_granted_recursively_and_recorded` in
+  // src-tauri/src/workspace_grants/mod.test.rs) and RECORDS it, so the next
+  // launch re-grants it. The plugin dialog granted for the session only: a
+  // folder off the static scope (`G:\` on Windows, `/opt` on macOS) was
+  // unreadable after a restart.
+  it("picks through Rust's folder picker, never the plugin dialog", async () => {
+    mockPickFolder.mockResolvedValue("/projects/foo");
 
     await executeCommand("workspace.openFolder", {}, { windowLabel: "main" });
 
-    expect(mockOpenPicker).toHaveBeenCalledWith(
-      expect.objectContaining({ directory: true, recursive: true })
-    );
+    expect(mockInvoke).toHaveBeenCalledWith("pick_workspace_folder", { defaultPath: null });
+    expect(mockDialogOpen).not.toHaveBeenCalled();
+  });
+
+  it("leaves the window as it was when the picker cannot open", async () => {
+    // A picker already open (Rust answers `conflict`) or an IPC failure.
+    mockPickFolder.mockRejectedValue({ code: "conflict", message: "busy" });
+
+    await expect(
+      executeCommand("workspace.openFolder", {}, { windowLabel: "main" }),
+    ).resolves.toBe(true);
+
+    expect(mockOpenWorkspaceWithConfig).not.toHaveBeenCalled();
+  });
+
+  // Audit F2 #143 — a refused picker used to be logged and nothing else, so
+  // File → Open Workspace simply did nothing. Rust's own message says why.
+  it.each([
+    ["another folder dialog is open", { code: "conflict", message: "A folder dialog is already open" }],
+    ["the picker call fails", new Error("ipc down")],
+  ])("tells the user when %s", async (_l, failure) => {
+    mockPickFolder.mockRejectedValue(failure);
+
+    await executeCommand("workspace.openFolder", {}, { windowLabel: "main" });
+
+    expect(mockToastError).toHaveBeenCalledTimes(1);
+    expect(mockToastError.mock.calls[0][0]).toMatch(/already open|ipc down/);
+  });
+
+  it("stays silent when the picker is cancelled", async () => {
+    mockPickFolder.mockResolvedValue(null);
+
+    await executeCommand("workspace.openFolder", {}, { windowLabel: "main" });
+
+    expect(mockToastError).not.toHaveBeenCalled();
   });
 
   it("does nothing when the folder picker is cancelled", async () => {
-    mockOpenPicker.mockResolvedValue(null);
+    mockPickFolder.mockResolvedValue(null);
 
     await executeCommand("workspace.openFolder", {}, { windowLabel: "main" });
 
@@ -152,7 +192,7 @@ describe("workspace.openFolder (#1005)", () => {
 
   it("ignores re-activation while the folder picker is already open (reentry guard)", async () => {
     let resolvePicker!: (value: string | null) => void;
-    mockOpenPicker.mockImplementation(
+    mockPickFolder.mockImplementation(
       () => new Promise<string | null>((resolve) => { resolvePicker = resolve; }),
     );
 
@@ -160,15 +200,15 @@ describe("workspace.openFolder (#1005)", () => {
     // Second activation while the picker is still open must be a no-op —
     // without the guard it would open an overlapping picker.
     await executeCommand("workspace.openFolder", {}, { windowLabel: "main" });
-    expect(mockOpenPicker).toHaveBeenCalledTimes(1);
+    expect(mockPickFolder).toHaveBeenCalledTimes(1);
 
     resolvePicker(null);
     await first;
 
     // Guard released after completion: the command works again.
-    mockOpenPicker.mockResolvedValue(null);
+    mockPickFolder.mockResolvedValue(null);
     await executeCommand("workspace.openFolder", {}, { windowLabel: "main" });
-    expect(mockOpenPicker).toHaveBeenCalledTimes(2);
+    expect(mockPickFolder).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -210,7 +250,7 @@ describe("workspace.close", () => {
     const closeWorkspace = vi.fn();
     useWorkspaceStore.setState({ closeWorkspace } as never);
     let resolvePicker!: (value: string | null) => void;
-    mockOpenPicker.mockImplementation(
+    mockPickFolder.mockImplementation(
       () => new Promise<string | null>((resolve) => { resolvePicker = resolve; }),
     );
 

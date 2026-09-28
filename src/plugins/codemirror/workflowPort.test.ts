@@ -22,20 +22,18 @@ describe("workflowPort", () => {
     expect(() => workflowPort()).not.toThrow();
     const s = workflowPort().getState();
     expect(s.gha.byTab).toEqual({});
-    expect(s.preview.panelOpen).toBe(false);
     expect(s.view.selectedJobId).toBeNull();
   });
 
   it("swallows writes when unbound instead of parsing into a void loudly", () => {
     const s = workflowPort().getState();
     expect(() => {
-      s.setGraph(null);
-      s.previewOpenPanel();
-      s.previewClosePanel();
-      s.resetPreview();
+      s.setGraph("tab-1", null);
+      s.previewOpenPanel("tab-1");
+      s.previewClosePanel("tab-1");
       s.selectJob("build");
     }).not.toThrow();
-    expect(workflowPort().getState().preview.panelOpen).toBe(false);
+    expect(workflowPort().getState().gha.byTab).toEqual({});
   });
 
   it("returns the port once bound", () => {

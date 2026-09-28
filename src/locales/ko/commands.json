@@ -12,7 +12,7 @@
   "genies.togglePicker": "지니 선택기 전환",
   "genies.openPicker": "지니 검색",
   "export.html": "HTML로 내보내기",
-  "export.pdf": "PDF로 인쇄",
+  "export.pdf": "인쇄…",
   "export.pdfNative": "PDF로 내보내기",
   "export.copyHtml": "HTML로 복사",
   "export.pandocHint": "Pandoc 설치",

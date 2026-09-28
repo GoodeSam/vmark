@@ -28,7 +28,7 @@ Les deux identifiants de langage se comportent de manière identique :
 ## Modes d'édition
 
 - **Mode WYSIWYG** — le bloc de code est rendu sous forme de diagramme. Double-cliquez dessus pour modifier le source DOT avec une prévisualisation en direct à rebond ; enregistrez ou annulez depuis l'en-tête d'édition.
-- **Mode Source** — placez le curseur à l'intérieur d'un bloc ` ```dot ` pour obtenir la prévisualisation flottante du diagramme (glisser, redimensionner, zoomer), comme pour Mermaid.
+- **Mode Source** — placez le curseur à l'intérieur d'un bloc ` ```dot ` pour obtenir la prévisualisation flottante du diagramme (glisser, redimensionner, zoomer), comme pour Mermaid. La prévisualisation est désactivée par défaut ; activez-la avec **Affichage → Afficher/masquer l'aperçu des diagrammes** (`Alt + Mod + P`).
 
 ## Panoramique, zoom et export
 

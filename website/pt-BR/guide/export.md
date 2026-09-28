@@ -2,56 +2,118 @@
 
 O VMark oferece várias formas de exportar e compartilhar seus documentos.
 
-## Modos de Exportação
+## O Que uma Exportação Produz
 
-### Modo Pasta (Padrão)
-
-Cria uma pasta autocontida com estrutura limpa:
+**Arquivo → Exportar → HTML** grava uma pasta, com o nome do seu documento, que sempre contém **os dois** arquivos abaixo — não há modo a escolher:
 
 ```text
 MeuDocumento/
-├── index.html
+├── index.html          ← aponta para os arquivos em assets/
+├── standalone.html     ← tudo embutido como URIs de dados (CSS, JS, imagens, fontes)
 └── assets/
-    ├── image1.png
-    ├── image2.jpg
-    └── ...
+    ├── vmark-reader.css
+    ├── vmark-reader.js
+    ├── images/
+    │   ├── image1.png
+    │   └── ...
+    └── fonts/          ← só quando o documento tem matemática ou você usa uma fonte web
 ```
 
-**Vantagens:**
-- URLs limpos quando hospedado (`/MeuDocumento/` em vez de `/MeuDocumento.html`)
-- Fácil de compartilhar como uma única pasta
-- Caminhos de ativos simples (`assets/image.png`)
-- Funciona bem com hosts de sites estáticos
+Use o arquivo que for mais adequado ao momento:
 
-### Modo Arquivo Único
+| Arquivo | Melhor para | Contrapartida |
+|---------|-------------|---------------|
+| `index.html` | Hospedar em um site estático (URLs limpos como `/MeuDocumento/`), editar em outra ferramenta, manter o tamanho pequeno | Precisa da pasta `assets/` ao lado |
+| `standalone.html` | Enviar por e-mail ou mensagem um único arquivo que não pode perder as imagens | Maior — todos os ativos são embutidos |
 
-Cria um único arquivo HTML autocontido:
-
-```text
-MeuDocumento.html
-```
-
-Todas as imagens são embutidas como URIs de dados, tornando-o completamente portátil, mas com tamanho de arquivo maior.
+Os dois arquivos são renderizados pelo mesmo renderizador WYSIWYG e pela mesma folha de estilos que o editor usa, e ambos incluem o [VMark Reader](#vmark-reader).
 
 ## Como Exportar
 
 ### Exportar HTML
 
-1. Use **Arquivo → Exportar HTML**
-2. Escolha o local de exportação
-3. Para modo pasta: Insira o nome da pasta (ex: `MeuDocumento`)
-4. Para modo único: Insira o nome do arquivo com extensão `.html`
+1. Use **Arquivo → Exportar → HTML**
+2. Escolha onde salvar e insira um nome — ele se torna o nome da pasta (um `.html` no final é removido)
+3. Abra `index.html` ou `standalone.html` na nova pasta
+
+#### Exportando de novo para uma pasta já usada
+
+Uma exportação HTML é tudo ou nada. Tudo é gravado primeiro em uma pasta
+temporária `.vmark-export-…` dentro do destino escolhido, e só é movido para o
+lugar quando todos os arquivos existem — assim, uma exportação que falha no meio
+deixa a exportação anterior exatamente como estava, em vez de sobrescrevê-la
+pela metade.
+
+Duas coisas que você pode ver:
+
+- **"Outra exportação já está gravando nesta pasta."** Apenas uma exportação
+  pode gravar em uma pasta por vez, entre todas as janelas. Aguarde a outra ou —
+  se nada mais estiver em execução — exclua o arquivo `.vmark-export.lock`
+  indicado na mensagem e tente novamente.
+- **Uma pasta `.vmark-export-…` que ficou para trás.** O VMark a remove quando
+  termina. Ela só permanece se a restauração dos seus arquivos anteriores também
+  falhou; nesse caso, ela guarda esses arquivos e a mensagem de erro diz
+  exatamente onde eles estão. Nada é excluído enquanto essa for a única cópia.
 
 ### Imprimir / Exportar PDF
 
-1. Pressione `Cmd/Ctrl + P` ou use **Arquivo → Imprimir**
-2. Use o diálogo de impressão do sistema para imprimir ou salvar como PDF
+Disponível no macOS, Windows e Linux.
 
-### Exportar para Outros Formatos
+**Exportar PDF** (**Arquivo → Exportar → PDF**) grava um PDF diretamente, usando
+o tamanho de página, a orientação, as margens e a tipografia que você escolher
+no diálogo de exportação.
+
+**Imprimir** (`Cmd/Ctrl + P`, ou **Arquivo → Imprimir**) abre o diálogo de
+impressão do sistema, para que você possa enviar o documento a uma impressora ou
+usar o "salvar como PDF" do próprio sistema operacional. No macOS e no Linux, o
+VMark confirma um trabalho de impressão concluído com um breve aviso e não diz
+nada se você cancelar o diálogo; a interface de impressão do Windows não dá
+retorno, então nenhum aviso é mostrado lá.
+
+O diálogo de exportação mostra as mesmas etapas de progresso — carregando,
+gerando, finalizando, concluído — nas três plataformas.
+
+::: info Tamanho de página no macOS
+O Tamanho e a Orientação que você escolhe no diálogo definem a página exportada
+em todas as plataformas. No macOS eles substituem o tamanho de papel configurado
+no sistema — se o seu Mac usa Carta por padrão e você escolhe A4, o PDF sai em
+A4.
+:::
+
+**Esboço na barra lateral.** Os PDFs exportados trazem um esboço dos títulos — o
+sumário clicável que o seu leitor de PDF mostra na barra lateral — nas três
+plataformas.
+
+#### Números de página
+
+A seção **Números de página** do diálogo adiciona um número a cada página. Ela
+vem ativada por padrão, centralizada na parte inferior.
+
+| Configuração | Opções |
+|--------------|--------|
+| Posição | Inferior centralizado, inferior direito ou nenhum |
+| Formato | `7`, `7 / 12` ou `Página 7 de 12` |
+| Ignorar a primeira página | Deixa a página 1 sem número, o tratamento usual para uma página de título |
+
+O número fica dentro da margem inferior que você escolheu e acompanha o tamanho
+da fonte do corpo. A numeração sempre reflete a página real, então ignorar a
+primeira página dá 2, 3, 4… nas páginas seguintes, em vez de renumerá-las.
+
+::: info Os números de página usam um alfabeto latino
+O número é desenhado com uma fonte PDF padrão que nenhum leitor precisa baixar,
+o que mantém as exportações rápidas e autocontidas — mas essa fonte não
+consegue renderizar chinês, japonês, coreano ou cirílico. Os dois formatos
+numéricos funcionam em qualquer idioma. Se o idioma da sua interface escreve
+`Página 7 de 12` em um sistema de escrita que essa fonte não consegue desenhar,
+o VMark imprime a forma numérica `7 / 12`, em vez de espaços em branco ou
+caracteres errados.
+:::
+
+### Exportar via Pandoc
 
 O VMark integra com o [Pandoc](https://pandoc.org/) — um conversor universal de documentos — para exportar seu markdown para formatos adicionais. Escolha um formato diretamente no menu:
 
-**Arquivo → Exportar → Outros Formatos →**
+**Arquivo → Exportar → Via Pandoc →**
 
 | Item do Menu | Extensão |
 |--------------|----------|
@@ -59,8 +121,8 @@ O VMark integra com o [Pandoc](https://pandoc.org/) — um conversor universal d
 | EPUB (.epub) | `.epub` |
 | LaTeX (.tex) | `.tex` |
 | OpenDocument (.odt) | `.odt` |
-| Rich Text (.rtf) | `.rtf` |
-| Texto Simples (.txt) | `.txt` |
+| Texto formatado (.rtf) | `.rtf` |
+| Texto simples (.txt) | `.txt` |
 
 **Configuração:**
 
@@ -68,39 +130,45 @@ O VMark integra com o [Pandoc](https://pandoc.org/) — um conversor universal d
    - macOS: `brew install pandoc`
    - Windows: `winget install pandoc`
    - Linux: `apt install pandoc`
-2. Reinicie o VMark (ou vá para **Configurações → Arquivos e Imagens → Ferramentas de Documento** e clique em **Detectar**)
-3. Use **Arquivo → Exportar → Outros Formatos → [formato]** para exportar
+2. Reinicie o VMark (ou vá para **Configurações → Arquivos e Imagens → Ferramentas de documento** e clique em **Detectar**)
+3. Use **Arquivo → Exportar → Via Pandoc → [formato]** para exportar
 
-Se o Pandoc não estiver instalado, o menu mostra um link **"Requer Pandoc — pandoc.org"** no final do submenu Outros Formatos.
+Se o Pandoc não estiver instalado, o submenu **Via Pandoc** mostra um único item — **"Instale o Pandoc para exportar para Word, EPUB, LaTeX…"** — que abre o guia de instalação do Pandoc ao ser clicado.
 
-Você pode verificar se o Pandoc foi detectado em **Configurações → Arquivos e Imagens → Ferramentas de Documento**.
+Você pode verificar se o Pandoc foi detectado em **Configurações → Arquivos e Imagens → Ferramentas de documento**.
 
 ### Copiar como HTML
 
-Pressione `Cmd/Ctrl + Shift + C` para copiar o HTML renderizado para a área de transferência e colar em outros aplicativos.
+Pressione `Cmd/Ctrl + Shift + C` para copiar o documento renderizado como **código-fonte** HTML. A marcação vai para a área de transferência como texto simples e sem estilos, então cole-a onde se espera código HTML — a visualização HTML de um CMS, um template, um editor de código; um editor de texto formatado como o Word ou o Mail mostra as tags literalmente. Imagens locais são embutidas como URIs de dados, então continuam aparecendo depois que o HTML sai do VMark.
 
 ## VMark Reader
 
-Quando você exporta para HTML (modo estilizado), seu documento inclui o **VMark Reader** — uma experiência de leitura interativa com recursos poderosos.
+Toda exportação HTML inclui o **VMark Reader** — uma experiência de leitura interativa com suas próprias configurações, navegação e lightbox.
 
 ### Painel de Configurações
 
-Clique no ícone de engrenagem (canto inferior direito) ou pressione `Esc` para abrir o painel de configurações:
+Clique no ícone de engrenagem (canto inferior direito) para abrir o painel de configurações; `Esc` o fecha de novo. Suas escolhas são lembradas pelo navegador (`localStorage`), então valem na próxima vez que você abrir o arquivo.
 
-| Configuração | Descrição |
-|-------------|-----------|
-| Tamanho da Fonte | Ajustar tamanho do texto (12px – 24px) |
-| Altura de Linha | Ajustar espaçamento entre linhas (1.2 – 2.0) |
-| Tema | Alternar entre temas (White, Paper, Mint, Sepia, Night) |
-| Espaçamento CJK-Latino | Alternar espaçamento entre caracteres CJK e latinos |
+| Configuração | Opções |
+|-------------|--------|
+| Tamanho da Fonte | 12px – 28px |
+| Altura de Linha | 1.2 – 2.4 |
+| Largura do Conteúdo | 30em – 80em |
+| Fonte Latina | System, Athelas, Palatino, Georgia, Charter, Literata |
+| Fonte CJK | System, PingFang, Songti, Kaiti, Noto Serif, Source Han |
+| Tema | White, Paper (padrão), Mint, Sepia, Night |
+| Espaçamento entre Letras CJK | 0.02em – 0.12em |
+| Espaçamento CJK-Latino | Alternar o espaçamento automático entre caracteres CJK e latinos |
+| Índice | Alternar a barra lateral do índice (o mesmo que pressionar `T`) |
+| Expandir Todas as Seções | Abrir todos os blocos `<details>` recolhíveis |
+| Restaurar Padrões | Voltar todas as configurações ao padrão |
 
 ### Índice
 
 A barra lateral de índice ajuda a navegar em documentos longos:
 
-- **Alternar**: Clique no cabeçalho do painel ou pressione `T`
+- **Alternar**: Clique na aba na borda da página ou pressione `T`
 - **Navegar**: Clique em qualquer título para ir até ele
-- **Teclado**: Use as setas `↑`/`↓` para mover, `Enter` para ir
 - **Destaque**: A seção atual é destacada enquanto você rola
 
 ### Progresso de Leitura
@@ -109,14 +177,13 @@ Uma barra de progresso sutil no topo da página mostra até onde você leu no do
 
 ### Voltar ao Topo
 
-Um botão flutuante aparece quando você rola para baixo. Clique nele ou pressione `Home` para voltar ao topo.
+Um botão flutuante aparece quando você rola para baixo. Clique nele para voltar ao topo.
 
 ### Lightbox de Imagens
 
 Clique em qualquer imagem para vê-la em um lightbox em tela cheia:
 
 - **Fechar**: Clique fora, pressione `Esc` ou clique no botão X
-- **Navegar**: Use as setas `←`/`→` para múltiplas imagens
 - **Zoom**: As imagens são exibidas no tamanho natural
 
 ### Blocos de Código
@@ -141,18 +208,17 @@ Os rodapés são totalmente interativos:
 
 | Tecla | Ação |
 |-------|------|
-| `Esc` | Alternar painel de configurações |
+| `Esc` | Fechar o painel de configurações ou o lightbox |
 | `T` | Alternar Índice |
-| `↑` / `↓` | Navegar itens do índice |
-| `Enter` | Ir para o item do índice selecionado |
-| `←` / `→` | Navegar imagens no lightbox |
-| `Home` | Rolar para o topo |
+| `+` / `=` | Aumentar o tamanho da fonte |
+| `-` | Diminuir o tamanho da fonte |
 
 ## Atalhos de Exportação
 
 | Ação | Atalho |
 |------|--------|
 | Exportar HTML | _(somente no menu)_ |
+| Exportar PDF | _(somente no menu)_ |
 | Imprimir | `Mod + P` |
 | Copiar como HTML | `Mod + Shift + C` |
 
@@ -175,16 +241,36 @@ open MeuDocumento/index.html
 
 ### Visualização Offline
 
-Ambos os modos de exportação funcionam completamente offline:
+Os dois arquivos abrem offline, com uma diferença para documentos que contêm matemática:
 
-- **Modo pasta**: Abra `index.html` em qualquer navegador
-- **Modo único**: Abra o arquivo `.html` diretamente
+- **`standalone.html`** é totalmente autocontido — a folha de estilos e as fontes do KaTeX são embutidas no momento da exportação, então a matemática é renderizada sem conexão.
+- **`index.html`** carrega a folha de estilos do KaTeX de uma CDN (jsDelivr), então sua matemática precisa de conexão com a internet quando a página é aberta; o leitor, as imagens e as fontes em `assets/` são locais.
 
-Equações matemáticas (KaTeX) requerem conexão com a internet para a folha de estilos, mas todo o outro conteúdo funciona offline.
+As fontes são baixadas durante a exportação (as fontes do KaTeX e qualquer fonte web que você escolheu nas Configurações), então exporte em uma máquina com acesso à internet se quiser que elas sejam embutidas — uma exportação offline recorre às fontes do sistema.
+
+### Quais Imagens São Embutidas
+
+Um arquivo exportado carrega os bytes reais das imagens, e exportações são
+compartilhadas — por isso o VMark limita de onde esses bytes podem vir:
+
+| Seu documento está… | As imagens podem vir de |
+|---|---|
+| dentro de um espaço de trabalho aberto | qualquer lugar desse espaço de trabalho |
+| aberto sozinho | a própria pasta do documento e as subpastas |
+
+Caminhos relativos são resolvidos a partir da pasta do documento, exatamente
+como no editor — então `../images/photo.png` funciona sempre que o destino
+permanece dentro do limite acima. Qualquer coisa fora dele (`~/.ssh/id_rsa`,
+`/etc/passwd`, um caminho absoluto em outro lugar do disco) é recusada e
+exportada como um espaço reservado "Image not found", contabilizado no
+aviso da exportação.
+
+Se uma imagem `../` for exportada como espaço reservado, abra a pasta dela como
+espaço de trabalho e exporte novamente.
 
 ### Melhores Práticas
 
-1. **Use o modo pasta** para documentos que você vai compartilhar ou hospedar
-2. **Use o modo único** para compartilhamento rápido por e-mail ou chat
+1. **Hospede o `index.html`** para documentos que você vai publicar — mantenha a pasta `assets/` ao lado
+2. **Envie o `standalone.html`** para compartilhamento rápido por e-mail ou chat
 3. **Inclua texto alternativo descritivo nas imagens** para acessibilidade
 4. **Teste o HTML exportado** em diferentes navegadores

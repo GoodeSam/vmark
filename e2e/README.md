@@ -221,10 +221,16 @@ assertion, or timeout) exits non-zero and prints a `FAIL` line.
 VMark is a **Tauri desktop app**, not a browser page. Per `AGENTS.md`:
 
 - The automation bridge (`tauri-plugin-mcp-bridge`, **debug-only**) is pinned to
-  `127.0.0.1:9323` in `src-tauri/src/lib.rs`.
-- Port **9223** is VMark's *own*, auth-protected MCP server (sidecar ↔ webview).
-  Sending commands there drops with `"Connection closed"`. **This harness uses
-  9323 only.**
+  `127.0.0.1:9323` — `AUTOMATION_BRIDGE_PORT` in `src-tauri/src/automation_port.rs`,
+  registered in `src-tauri/src/app_plugins.rs`. If 9323 is already taken at
+  startup, the bridge is not started at all (a line on stderr) rather than
+  sliding to another port.
+- VMark's *own*, auth-protected MCP bridge (sidecar ↔ webview) binds an
+  OS-assigned port on every launch (`src-tauri/src/mcp_bridge/bind.rs`) and
+  publishes it in the `mcp-port` file. Commands sent there without its token are
+  dropped. Port **9223** is only `tauri_driver_session`'s default — VMark
+  listens on neither it nor any other fixed port for its own bridge. **This
+  harness uses 9323 only.**
 - **Never use Chrome DevTools MCP** for VMark.
 
 ## Wire protocol
@@ -311,8 +317,9 @@ of the blocking `pnpm check:all` gate until that infrastructure is in place.
 
 | Symptom | Likely cause |
 |---------|--------------|
-| `Timed out connecting … on port 9323` | Debug app not running, or built in release mode (bridge is debug-only). Start `pnpm tauri:dev`. |
-| `Connection closed` immediately | You hit port **9223** (the auth-protected app bridge). Use 9323. |
+| `Timed out connecting … on port 9323` | Debug app not running, built in release mode (bridge is debug-only), or 9323 was busy when the app started, so the bridge was not started (see its stderr). Start `pnpm tauri:dev` with 9323 free. |
+| Nothing answers on port **9223** | That is the driver's default, not VMark's. Connect to 9323. |
+| `Connection closed` immediately | You reached VMark's own auth-protected MCP bridge (its OS-assigned port), not the automation bridge. Use 9323. |
 | `No .ProseMirror editor surface found` | App still booting, or a non-document window is focused. Wait for the editor, retry. |
 | `window.__TAURI__.event.emit is unavailable` | Not the document webview, or not a Tauri build. |
 | `Screenshot did not return a base64 data URL` | Headless environment with no display. Run headed. |

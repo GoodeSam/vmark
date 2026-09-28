@@ -28,9 +28,15 @@
 //     - src/components/WorkflowApproval/**/*.{ts,tsx}
 //     - src/services/workflow/**/*.{ts,tsx}       (mostly the embedded
 //       browser's workflow RUN engine — WI-NB6/NB7: executor, registry,
-//       approval, recorder; only workflowEnginePolicySync.ts is this
-//       engine's flag push to Rust)
-//     - src/stores/workflowStore.ts
+//       approval, recorder. This engine owns workflowEnginePolicySync.ts —
+//       the flag push to Rust — and providerPayload.ts, run_workflow's
+//       provider block; saveGhaWorkflowDocument.ts is the VIEWER's save)
+//     - src/stores/workflowStore.ts and its slice modules (workflowEditQueue,
+//       workflowSerialize, workflowPreviewSlice, workflowViewSlice,
+//       workflowApprovalSlice — the store's transitions, WI-LX2.4)
+//     (the yaml adapter's workflow renderers, src/lib/formats/adapters/
+//      yaml{Workflow,Engine}*, are guarded by multi-format-tdd-guard.mjs,
+//      whose src/lib/formats/** scope applies the same rule)
 //
 //   Shared by both — the CodeMirror workflow extensions in the source pane
 //   (completion, cursor sync, goto-def are viewer; preview is engine; the GHA
@@ -157,10 +163,21 @@ const SCOPED = [
   /^src\/lib\/workflow\/.*\.tsx?$/,
   /^src\/plugins\/workflowPreview\/.*\.tsx?$/,
   /^src\/components\/WorkflowApproval\/.*\.tsx?$/,
-  // 11 of the 12 modules here are the embedded browser's workflow RUN engine
-  // (WI-NB6/NB7); only workflowEnginePolicySync.ts belongs to the YAML engine.
+  // Mostly the embedded browser's workflow RUN engine (WI-NB6/NB7). The YAML
+  // engine owns workflowEnginePolicySync.ts (flag push) and providerPayload.ts
+  // (run_workflow's provider block); saveGhaWorkflowDocument.ts is the GHA
+  // viewer's save. All of it is scoped, whichever feature a file serves.
   /^src\/services\/workflow\/.*\.tsx?$/,
   /^src\/stores\/workflowStore\.ts$/,
+  // The store's slice transitions, each with a sibling test since WI-LX2.4.
+  // Named, not globbed: `workflow*Store.ts` would re-scope the dead
+  // workflowViewStore/workflowEditStore names the hook's test pins as unscoped.
+  /^src\/stores\/workflow(?:EditQueue|Serialize|PreviewSlice|ViewSlice|ApprovalSlice)\.ts$/,
+  // The yaml adapter's workflow modules (yamlWorkflow*, yamlEngine*) are NOT
+  // listed: they sit under src/lib/formats/, which multi-format-tdd-guard.mjs
+  // scopes whole with the identical sibling-test rule, so an entry here only
+  // ran the same check twice. gha-tdd-guard.test.mjs asserts the other guard
+  // blocks them.
 
   // ── Source-pane workflow extensions (viewer + engine) ──
   // Matches on `Workflow` or `Gha` ANYWHERE in the filename, not the

@@ -12,7 +12,7 @@
   "genies.togglePicker": "ジーニーピッカーを切り替え",
   "genies.openPicker": "ジーニーを検索",
   "export.html": "HTML として書き出し",
-  "export.pdf": "PDF に印刷",
+  "export.pdf": "印刷…",
   "export.pdfNative": "PDF として書き出し",
   "export.copyHtml": "HTML としてコピー",
   "export.pandocHint": "Pandoc をインストール",

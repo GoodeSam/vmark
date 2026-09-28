@@ -127,6 +127,8 @@ VMark 向 AI 助手暴露 **九个复合 MCP 工具**：`session`、`workspace`�
 
 **批准流程。** 首次调用返回 `{needsApproval: true}`，并弹出一个命名了该文件夹*规范*路径（符号链接已解析）的同意对话框。助手应当询问用户，然后**重试同一次调用**；一旦用户批准，重试就会打开该文件夹。被拒绝的请求会持续失败，直到重新获得批准。没有“记住”选项 —— 每次打开都要单独批准。
 
+**文件夹访问。** 仅在对话框中批准，并不能让 VMark 读取其始终可读位置（你的主文件夹和已挂载的卷）之外的文件夹。对于这样的文件夹，批准后的重试会在该文件夹处打开 VMark 的文件夹选择器，并返回 `APPROVAL_REQUIRED`，请用户在其中选择该文件夹；选择之后，下一次重试即可打开。如果已有另一个文件夹对话框打开，则不会显示任何内容，返回 `BUSY`——批准仍然保留，请在用户关闭该对话框后重试。该窗口中已有工作区切换正在进行时，也会返回 `BUSY`。
+
 ### `save`
 
 将标签页保存到它现有的路径。
@@ -355,7 +357,7 @@ VMark 向 AI 助手暴露 **九个复合 MCP 工具**：`session`、`workspace`�
 
 将你在一个 AI 拥有的标签页上**自己的操作**录制为一个可回放的工作流。参数：`tabId?`、`recordOp`（`"start"` 或 `"stop"`），以及 `site?`（录制所得工作流的 front-matter 站点 id；默认为 `recording`）。
 
-`start` 受 `record` 权限的**同意门控**，该权限 —— 与 `execute_js` 和 `session` 一样 —— **绝无长期授权**：每次录制都会重新征询你，因此 AI 永远无法悄悄录制你。在你允许之前，`start` 会返回 `needsApproval`；一旦你允许，VMark 便会激活一个休眠的页面世界（page-world）捕获垫片，并开始录制你执行的**点击和字段编辑**。`stop` 会返回 `{source, inputs, eventCount}` —— 其中 `source` 即工作流文本，你可以将其保存，或直接交给 [`workflow_run`](#workflow-run)。
+`start` 受 `record` 权限的**同意门控**，该权限 —— 与 `execute_js` 和 `session` 一样 —— **绝无长期授权**：每次录制都会重新征询你，因此 AI 永远无法悄悄录制你。在你允许之前，`start` 会返回 `needsApproval`；一旦你允许，VMark 便会激活一个休眠的页面世界（page-world）捕获垫片，并开始录制你执行的**点击和字段编辑**。`stop` 会返回 `{source, inputs, eventCount}` —— 其中 `source` 即工作流文本，你可以将其保存，或直接交给 [`workflow_run`](#workflow-run-workflow-cancel)。
 
 这份录制在**构造上就不含任何值**，而且这并不是一个信任页面的过滤器：你键入的任何内容都绝不会被捕获。每个文本字段都会变成一个具名的 `{input}` 变量（其值在回放时提供，绝不被录制）；**密码或一次性验证码字段**会变成一个 `confirm:` 步骤 —— 一道由你在回放时手动完成的人工关卡 —— 因此机密连被参数化的机会都没有；而每个 URL 都会被剥离到仅剩来源（origin）+ 路径，因此查询字符串里的令牌无法幸存。被录制下来的是你触碰过的**定位符**（ARIA role + 可访问名称），而绝非它们的数据。录制会随你跨页面导航持续进行，并且是有上界的（每页 200 个事件，每会话 1,000 个）。
 
@@ -542,7 +544,8 @@ VMark 向 AI 助手暴露 **九个复合 MCP 工具**：`session`、`workspace`�
 | `INVALID_PATCH` | 信封 | `workflow.apply_patch` 收到了格式错误的 `patches` 数组 |
 | `INVALID_TAB` | 信封 | `tabId` 无法解析 |
 | `INVALID_PATH` | 信封 | `filePath` 无法读取，或位于已打开的工作区 / 文档范围之外 |
-| `APPROVAL_REQUIRED` | 信封 | 在**自动批准编辑**关闭时用 `save_as` 保存到新位置 |
+| `APPROVAL_REQUIRED` | 信封 | 在**自动批准保存到新位置和精灵结果**关闭时用 `save_as` 保存到新位置；或 `open_workspace` 正在等待用户批准，或等待用户在 VMark 的文件夹选择器中选择该文件夹 |
+| `BUSY` | 信封 | `open_workspace` 无法继续：另一个文件夹对话框已打开，或该窗口中正在切换工作区；批准仍保留——请重试 |
 | `NOT_WORKFLOW` | 信封 | 在非 yaml-workflow 标签页上调用了 `workflow.*` |
 | `READ_ONLY` | 信封 | 试图对只读文档进行变更 |
 | `NO_EDITOR` | 信封 | 调用了 `selection.*`，但聚焦的标签页没有活动编辑器 |

@@ -9,6 +9,7 @@ VMark supporta una potente modifica multi-cursore sia in modalità WYSIWYG che S
 | Aggiungi cursore alla corrispondenza successiva | `Mod + D` |
 | Salta corrispondenza, vai alla successiva | `Mod + Shift + D` |
 | Aggiungi cursori a tutte le corrispondenze | `Mod + Shift + L` |
+| Aggiungi cursori a tutte le corrispondenze nel blocco corrente | `Alt + Mod + Shift + L` |
 | Annulla ultima aggiunta cursore | `Alt + Mod + Z` |
 | Aggiungi cursore sopra | `Mod + Alt + Su` |
 | Aggiungi cursore sotto | `Mod + Alt + Giù` |
@@ -44,8 +45,10 @@ Seleziona tutte le occorrenze della parola o della selezione corrente contempora
 
 1. Seleziona una parola o un testo
 2. Premi `Mod + Shift + L`
-3. Tutte le occorrenze corrispondenti nel blocco corrente vengono selezionate
+3. Tutte le occorrenze corrispondenti nel documento vengono selezionate — oppure, all'interno di un blocco di codice, tutte le corrispondenze in quel blocco (vedi [Ambito](#ambito))
 4. Digita per sostituire tutte contemporaneamente
+
+Per restare nel paragrafo, nell'intestazione o nell'elemento di elenco in cui ti trovi, usa invece `Alt + Mod + Shift + L`.
 
 ### Alt + Clic
 
@@ -112,7 +115,7 @@ L'escape con Tab funziona indipendentemente per ogni cursore:
 - I cursori prima delle parentesi di chiusura `)` `]` `}` saltano oltre di esse
 - I cursori nel testo normale rimangono fermi
 
-Questo ti permette di uscire da più regioni formattate contemporaneamente. Vedi [Navigazione Intelligente con Tab](./tab-navigation.md#multi-cursor-support) per i dettagli.
+Questo ti permette di uscire da più regioni formattate contemporaneamente. Vedi [Navigazione Intelligente con Tab](./tab-navigation.md#supporto-multi-cursore) per i dettagli.
 
 ### Appunti
 
@@ -123,21 +126,21 @@ Questo ti permette di uscire da più regioni formattate contemporaneamente. Vedi
 - Se gli appunti hanno lo stesso numero di righe dei cursori, ogni riga va a ogni cursore
 - Altrimenti, il contenuto completo degli appunti viene incollato su tutti i cursori
 
-## Ambito del Blocco
+## Ambito
 
-Le operazioni multi-cursore hanno **ambito limitato al blocco corrente** per prevenire modifiche indesiderate in sezioni non correlate.
+**Il codice ha un ambito delimitato; il testo normale no.** All'interno di un blocco di codice (WYSIWYG) o di un blocco delimitato (Sorgente), i cursori non attraversano mai il delimitatore — cercare il nome di una variabile in un frammento non può posizionare un cursore in un altro. Nel testo normale, `Mod + D` e `Mod + Shift + L` cercano in **tutto il documento**.
 
-### In Modalità WYSIWYG
-- I cursori non possono attraversare i confini dei blocchi di codice
-- Se il cursore principale è all'interno di un blocco di codice, i nuovi cursori rimangono in quel blocco
+Spesso è proprio ciò che vuoi, a volte no: in un documento lungo, cercare una parola comune posiziona cursori in paragrafi lontani, fuori dallo schermo.
 
-### In Modalità Sorgente
-- Le righe vuote fungono da confini del blocco
-- `Mod + D` e `Mod + Shift + L` corrispondono solo all'interno del paragrafo corrente
+### Seleziona Tutte le Occorrenze nel Blocco
+
+`Alt + Mod + Shift + L` seleziona ogni corrispondenza **solo all'interno del blocco corrente** — il paragrafo, l'intestazione o l'elemento di elenco in cui si trova il cursore. In modalità Sorgente il blocco è delimitato dalle righe vuote; in WYSIWYG dal blocco che lo contiene. All'interno di un blocco di codice delimitato si comporta esattamente come `Mod + Shift + L`, perché il blocco delimitato è già il blocco.
+
+Le due scorciatoie sono sorelle, non una modalità: `Mod + Shift + L` raggiunge ancora l'intero documento, quindi nulla di ciò su cui già fai affidamento cambia.
 
 <div class="feature-box">
-<strong>Perché l'ambito del blocco?</strong>
-<p>Questo impedisce di modificare accidentalmente un nome di variabile in sezioni di codice non correlate o di cambiare testo in paragrafi diversi che coincidono.</p>
+<strong>Quale usare?</strong>
+<p>Scegli la versione limitata al blocco quando la parola è comune — per rinominare una variabile citata nel testo, o per modificare lo schema di un singolo elemento di elenco. Scegli quella sull'intero documento quando intendi davvero ovunque.</p>
 </div>
 
 ## Compressione dei Cursori
@@ -166,14 +169,15 @@ In modalità scura, i colori del cursore e della selezione si adattano automatic
 | `Alt + Mod + Z` (Annullamento Soft) | ✓ | ✓ |
 | `Mod + Alt + Su/Giù` | ✓ | ✓ |
 | `Alt + Clic` | ✓ | ✓ |
-| Ambito del blocco | Recinzioni di codice | Righe vuote |
+| Ambito delimitato dal blocco di codice | Blocchi di codice | Blocchi di codice delimitati |
+| Selezione di tutto limitata al blocco | `Alt + Mod + Shift + L` | `Alt + Mod + Shift + L` |
 | Ricerca con ritorno a capo | ✓ | ✓ |
 
 ## Suggerimenti e Best Practice
 
 ### Rinominare Variabili
 1. Fai doppio clic sul nome della variabile
-2. `Mod + Shift + L` per selezionare tutte nel blocco
+2. `Alt + Mod + Shift + L` per selezionare ogni corrispondenza in questo blocco (oppure `Mod + Shift + L` per l'intero documento)
 3. Digita il nuovo nome
 
 ### Aggiungere Prefissi/Suffissi
@@ -192,7 +196,8 @@ In modalità scura, i colori del cursore e della selezione si adattano automatic
 |----------|---------------------|
 | Selezione attenta e incrementale | `Mod + D` |
 | Salta la corrispondenza indesiderata | `Mod + Shift + D` |
-| Sostituisci tutto nel blocco | `Mod + Shift + L` |
+| Sostituisci tutto nel blocco corrente | `Alt + Mod + Shift + L` |
+| Sostituisci tutto nel documento | `Mod + Shift + L` |
 | Annulla l'ultimo passo del cursore | `Alt + Mod + Z` |
 | Modifica righe consecutive | `Mod + Alt + Su/Giù` |
 | Posizioni arbitrarie | `Alt + Clic` |
@@ -202,7 +207,7 @@ In modalità scura, i colori del cursore e della selezione si adattano automatic
 
 - **Nodi atomici**: Non è possibile posizionare cursori all'interno di immagini, contenuto incorporato o blocchi matematici in modalità WYSIWYG
 - **Input IME**: Quando si usano metodi di input (cinese, giapponese, ecc.), la composizione influenza solo il cursore primario
-- **A livello di documento**: Le selezioni hanno ambito limitato ai blocchi, non all'intero documento
+- **Blocchi di codice**: All'interno di un blocco di codice (WYSIWYG) o di un blocco delimitato (Sorgente), la ricerca delle occorrenze non esce mai da quel blocco
 
 ## Riferimento Tastiera
 

@@ -28,7 +28,7 @@ Ambos identificadores de lenguaje se comportan de forma idéntica:
 ## Modos de Edición
 
 - **Modo WYSIWYG** — el bloque de código se renderiza como un diagrama. Haz doble clic en él para editar el código fuente DOT con una vista previa en vivo con debounce; guarda o cancela desde el encabezado de edición.
-- **Modo Fuente** — coloca el cursor dentro de un bloque ` ```dot ` para obtener la vista previa flotante del diagrama (arrastrar, redimensionar, zoom), igual que con Mermaid.
+- **Modo Fuente** — coloca el cursor dentro de un bloque ` ```dot ` para obtener la vista previa flotante del diagrama (arrastrar, redimensionar, zoom), igual que con Mermaid. La vista previa está desactivada por defecto; actívala con **Vista → Alternar vista previa de diagramas** (`Alt + Mod + P`).
 
 ## Panorámica, Zoom y Exportación
 

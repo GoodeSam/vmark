@@ -362,3 +362,62 @@ describe("DiagnosticsBanner — per-row collapse", () => {
     expect(view.dispatch).not.toHaveBeenCalled();
   });
 });
+
+// WI-LX2.4 — under a document split, the line jump targets THIS workbench's
+// source, never the other pane's document.
+describe("DiagnosticsBanner — the jump stays in its own pane", () => {
+  function paneWith(child?: HTMLElement): HTMLElement {
+    const pane = document.createElement("div");
+    pane.className = "split-pane-editor";
+    if (child) pane.append(child);
+    document.body.append(pane);
+    return pane;
+  }
+
+  function registerView(dom: HTMLElement) {
+    const dispatch = vi.fn();
+    useEditorStore.setState((s) => ({
+      active: {
+        ...s.active,
+        activeSourceView: {
+          dom,
+          state: { doc: { lines: 20, line: () => ({ from: 0, to: 5 }) } },
+          dispatch,
+          focus: vi.fn(),
+        } as never,
+      },
+    }));
+    return dispatch;
+  }
+
+  const diag = makeDiag({
+    severity: "error",
+    code: "GHA-ACTIONLINT-needs",
+    message: "unknown ref",
+    context: { jobId: "build" },
+    position: { startLine: 3, startCol: 1, endLine: 3, endCol: 2 },
+  });
+
+  afterEach(() => document.body.replaceChildren());
+
+  it("jumps when the active source view is in the banner's own pane", () => {
+    const source = document.createElement("div");
+    const pane = paneWith(source);
+    const dispatch = registerView(source);
+    render(<DiagnosticsBanner diagnostics={[diag]} />, { container: pane.appendChild(document.createElement("div")) });
+    fireEvent.click(screen.getByRole("button", { name: /unknown ref/i }));
+    expect(dispatch).toHaveBeenCalled();
+    expect(useWorkflowStore.getState().view.selectedJobId).toBeNull();
+  });
+
+  it("falls back to selecting the job when the active view belongs to the other pane", () => {
+    const otherSource = document.createElement("div");
+    paneWith(otherSource);
+    const dispatch = registerView(otherSource);
+    const ownPane = paneWith();
+    render(<DiagnosticsBanner diagnostics={[diag]} />, { container: ownPane.appendChild(document.createElement("div")) });
+    fireEvent.click(screen.getByRole("button", { name: /unknown ref/i }));
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(useWorkflowStore.getState().view.selectedJobId).toBe("build");
+  });
+});

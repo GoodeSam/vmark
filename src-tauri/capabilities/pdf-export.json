@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "pdf-export-window",
-  "description": "[capability-version: 0.8.2] PDF Export window capability \u2014 dialog for save location, print API, read-only access to app temp files, and opening the exported PDF in the user's viewer. No shell, PTY, MCP, or broad filesystem access.",
+  "description": "[capability-version: 0.9.84] PDF Export window capability \u2014 dialog for save location, print API, read-only access to the app temp files it renders from ($APPDATA/temp), and opening the exported PDF in the user's viewer. It has NO filesystem write permission: the PDF is written by the Rust export_pdf command. No shell, PTY, MCP, or broad filesystem access.",
   "windows": [
     "pdf-export"
   ],
@@ -29,17 +29,6 @@
       "allow": [
         {
           "path": "$APPDATA/temp/**"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:allow-write-file",
-      "allow": [
-        {
-          "path": "$HOME/**"
-        },
-        {
-          "path": "/Volumes/**"
         }
       ]
     }

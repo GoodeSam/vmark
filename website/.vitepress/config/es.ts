@@ -1,4 +1,4 @@
-
+import { guideSidebar } from "./guideSidebar";
 
 export const es = {
   label: "Español",
@@ -12,145 +12,56 @@ export const es = {
     ],
 
     sidebar: {
-      "/es/guide/": [
-        {
-          text: "Guía",
-          items: [
-            { text: "Primeros pasos", link: "/es/guide/" },
-            { text: "Características", link: "/es/guide/features" },
-            {
-              text: "Exportar e imprimir",
-              link: "/es/guide/export",
-            },
-            {
-              text: "Atajos de teclado",
-              link: "/es/guide/shortcuts",
-            },
-            {
-              text: "Navegación inteligente de pestañas",
-              link: "/es/guide/tab-navigation",
-            },
-            {
-              text: "Edición multicursor",
-              link: "/es/guide/multi-cursor",
-            },
-            {
-              text: "Popups en línea",
-              link: "/es/guide/popups",
-            },
-            {
-              text: "Diagramas Mermaid",
-              link: "/es/guide/mermaid",
-            },
-            {
-              text: "Diagramas Graphviz",
-              link: "/es/guide/graphviz",
-            },
-            {
-              text: "Mapas mentales Markmap",
-              link: "/es/guide/markmap",
-            },
-            { text: "Gráficos SVG", link: "/es/guide/svg" },
-            {
-              text: "Medios (vídeo/audio)",
-              link: "/es/guide/media-support",
-            },
-            {
-              text: "Imágenes alojadas en la nube",
-              link: "/es/guide/cloud-images",
-            },
-            {
-              text: "Terminal integrada",
-              link: "/es/guide/terminal",
-            },
-            {
-              text: "Gestión de espacios de trabajo",
-              link: "/es/guide/workspace-management",
-            },
-            {
-              text: "Archivos grandes",
-              link: "/es/guide/large-files",
-            },
-            {
-              text: "Visor de flujos de trabajo",
-              link: "/es/guide/workflow-viewer",
-            },
-            {
-              text: "Formato CJK",
-              link: "/es/guide/cjk-formatting",
-            },
-            { text: "AI Genies", link: "/es/guide/ai-genies" },
-            {
-              text: "Coherencia y vista de desglose",
-              link: "/es/guide/coherence",
-            },
-            { text: "Genies de flujo de trabajo", link: "/es/guide/workflow-genies" },
-            {
-              text: "Proveedores de IA",
-              link: "/es/guide/ai-providers",
-            },
-            {
-              text: "Configuración de MCP",
-              link: "/es/guide/mcp-setup",
-            },
-            {
-              text: "Referencia de herramientas MCP",
-              link: "/es/guide/mcp-tools",
-            },
-            { text: "Lint de Markdown", link: "/es/guide/lint" },
-            { text: "Verificación de enlaces", link: "/es/guide/link-check" },
-            { text: "Ajustes", link: "/es/guide/settings" },
-            { text: "Solución de problemas", link: "/es/guide/troubleshooting" },
-            { text: "Privacidad", link: "/es/guide/privacy" },
-            { text: "Licencia", link: "/es/guide/license" },
-          ],
+      "/es/guide/": guideSidebar("/es", {
+        sections: { guide: "Guía", usersAsDevelopers: "Usuarios como desarrolladores" },
+        pages: {
+          "": "Primeros pasos",
+          "formats": "Formatos Compatibles",
+          "features": "Características",
+          "large-files": "Archivos grandes",
+          "export": "Exportar e imprimir",
+          "shortcuts": "Atajos de teclado",
+          "tab-navigation": "Navegación inteligente de pestañas",
+          "multi-cursor": "Edición multicursor",
+          "popups": "Popups en línea",
+          "mermaid": "Diagramas Mermaid",
+          "graphviz": "Diagramas Graphviz",
+          "markmap": "Mapas mentales Markmap",
+          "workflow-viewer": "Visor de flujos de trabajo",
+          "svg": "Gráficos SVG",
+          "media-support": "Medios (vídeo/audio)",
+          "cloud-images": "Imágenes alojadas en la nube",
+          "terminal": "Terminal integrada",
+          "browser": "Navegador integrado",
+          "knowledge-base": "Base de conocimiento y Slidev",
+          "workspace-management": "Gestión de espacios de trabajo",
+          "workspace-rail": "Barra de espacios de trabajo",
+          "cjk-formatting": "Formato CJK",
+          "ai-genies": "AI Genies",
+          "coherence": "Coherencia y vista de desglose",
+          "workflows": "Flujos de trabajo de Genie",
+          "workflow-genies": "Genies de flujo de trabajo",
+          "ai-providers": "Proveedores de IA",
+          "mcp-setup": "Configuración de MCP",
+          "mcp-tools": "Referencia de herramientas MCP",
+          "lint": "Lint de Markdown",
+          "link-check": "Verificación de enlaces",
+          "settings": "Ajustes",
+          "troubleshooting": "Solución de problemas",
+          "privacy": "Privacidad",
+          "license": "Licencia",
+          "users-as-developers/": "Descripción general",
+          "users-as-developers/why-i-built-vmark": "Por qué creé VMark",
+          "users-as-developers/what-are-indispensable": "Cinco habilidades que la IA no puede reemplazar",
+          "users-as-developers/why-expensive-models-are-cheaper": "Por qué los modelos caros son más baratos",
+          "users-as-developers/subscription-vs-api": "Suscripción vs precios de API",
+          "users-as-developers/prompt-refinement": "Los prompts en inglés funcionan mejor",
+          "users-as-developers/cross-model-verification": "Verificación entre modelos",
+          "users-as-developers/why-issues-not-prs": "Por qué Issues y no PRs",
+          "users-as-developers/cost-evaluation": "Evaluación de costos y esfuerzo",
+          "users-as-developers/plugins-as-infrastructure": "Plugins como infraestructura",
         },
-        {
-          text: "Usuarios como desarrolladores",
-          items: [
-            {
-              text: "Descripción general",
-              link: "/es/guide/users-as-developers/",
-            },
-            {
-              text: "Por qué creé VMark",
-              link: "/es/guide/users-as-developers/why-i-built-vmark",
-            },
-            {
-              text: "Cinco habilidades que la IA no puede reemplazar",
-              link: "/es/guide/users-as-developers/what-are-indispensable",
-            },
-            {
-              text: "Por qué los modelos caros son más baratos",
-              link: "/es/guide/users-as-developers/why-expensive-models-are-cheaper",
-            },
-            {
-              text: "Suscripción vs precios de API",
-              link: "/es/guide/users-as-developers/subscription-vs-api",
-            },
-            {
-              text: "Los prompts en inglés funcionan mejor",
-              link: "/es/guide/users-as-developers/prompt-refinement",
-            },
-            {
-              text: "Verificación entre modelos",
-              link: "/es/guide/users-as-developers/cross-model-verification",
-            },
-            {
-              text: "Por qué Issues y no PRs",
-              link: "/es/guide/users-as-developers/why-issues-not-prs",
-            },
-            {
-              text: "Evaluación de costos y esfuerzo",
-              link: "/es/guide/users-as-developers/cost-evaluation",
-            },
-            {
-              text: "Plugins como infraestructura",
-              link: "/es/guide/users-as-developers/plugins-as-infrastructure",
-            },
-          ],
-        },
-      ],
+      }),
     },
 
     footer: {

@@ -16,6 +16,7 @@ import { EditorView, lineNumbers } from "@codemirror/view";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useUIStore } from "@/stores/uiStore";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
+import { bindSplitSourceView, useSourcePaneFocus } from "@/hooks/useSourcePaneFocus";
 import { detectSourceLanguage } from "@/lib/formats/sourceLanguage";
 // Side-effect import: ships the `.cm-hl-*` color rules (scoped to
 // `.source-editor`/`.source-pane`) used by the shared source theme.
@@ -51,6 +52,8 @@ export function SourcePane({
 }: SourcePaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
+  // WI-LX2.4: the window's active source view while this pane is focused.
+  const focusedRef = useSourcePaneFocus(viewRef, getCurrentWindowLabel(), false, { tabId, cursorContext: false });
   const languageCompartmentRef = useRef(new Compartment());
   // Per-format extras (FormatConfig.loadExtraExtensions) land in their
   // own compartment, mirroring the language pack's async lifecycle.
@@ -176,10 +179,7 @@ export function SourcePane({
       parent: containerRef.current,
     });
     viewRef.current = view;
-
-    // Jump-handle emit moved out of the mount effect — see the separate
-    // `useEffect` below that re-emits whenever `onJumpHandleReady` changes
-    // identity (audit Round A H1).
+    const releaseActiveView = bindSplitSourceView(view, tabId, focusedRef.current);
 
     let cancelled = false;
     if (loadLanguage) {
@@ -222,6 +222,7 @@ export function SourcePane({
 
     return () => {
       cancelled = true;
+      releaseActiveView();
       view.destroy();
       viewRef.current = null;
     };

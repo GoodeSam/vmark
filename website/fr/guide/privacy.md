@@ -64,12 +64,23 @@ Ces chiffres sont publiés ouvertement sur [`log.vmark.app/api/stats`](https://l
 - Le hash de machine n'est lié à aucun compte, e-mail ou adresse IP — c'est uniquement un compteur d'appareils pseudonyme
 - Nous n'utilisons pas de cookies de suivi, de prise d'empreintes digitales ou de SDK d'analyse
 
+## Ce que VMark peut lire sur le disque
+
+L'accès de VMark aux fichiers est un périmètre de permissions restreint, pas le disque entier :
+
+- **Périmètre statique** : votre dossier personnel (`$HOME/**`) ainsi que les volumes montés — `/Volumes/**` sur macOS, `/mnt/**` et `/media/**` sur Linux. Sous Windows, il couvre aussi les lecteurs `C:\` à `F:\` : seuls `G:\` et les lecteurs suivants, ainsi que les partages réseau, nécessitent une autorisation à l'exécution. Sur macOS et Linux, tout ce qui se trouve dans un dossier masqué (dont le nom commence par `.`) est hors du périmètre statique.
+- **Autorisations à l'exécution** : un fichier que vous ouvrez explicitement — depuis le Finder ou l'Explorateur, la ligne de commande `vmark` ou une boîte de dialogue de fichiers — reçoit une autorisation pour ce seul fichier. Un **dossier** n'est autorisé que si VMark peut établir que vous l'avez choisi : vous l'avez sélectionné dans la boîte de dialogue de dossier de VMark, ou ouvert depuis le Finder. VMark conserve la liste de ces dossiers (`workspace-grants.json` dans son dossier de données d'application) et les autorise de nouveau à chaque lancement, afin que votre session restaurée et **Espace de travail récent** continuent de fonctionner. Un espace de travail récent qui ne figure pas dans cette liste, et que le périmètre statique ne couvre pas, ouvre la boîte de dialogue de dossier sur ce dossier — choisissez-le pour confirmer. Lorsqu'un assistant IA demande à ouvrir un tel dossier, VMark fait de même après que vous avez approuvé la demande.
+- **Images et médias** : les images, vidéos et fichiers audio locaux sont affichés via le protocole de ressources de VMark, qui atteint les mêmes emplacements — le périmètre statique plus les autorisations à l'exécution ci-dessus. La visionneuse de médias ajoute une autorisation pour le seul fichier qu'elle affiche, et uniquement pour un fichier doté d'une extension de média ; une demande portant sur tout autre chemin est refusée au lieu d'élargir le périmètre. Une image située hors de ces emplacements, par exemple à côté d'un document ouvert seul depuis l'extérieur du périmètre statique, n'est affichée qu'une fois son dossier ouvert comme espace de travail.
+
+Rien de tout cela n'est envoyé nulle part ; le périmètre décide de ce que l'application elle-même peut lire.
+
 ## Transparence open source
 
 VMark est entièrement open source. Vous pouvez vérifier tout ce qui est décrit ici :
 
 - Configuration de l'endpoint de mise à jour : [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json)
 - Génération du hash de machine : [`src-tauri/src/lib.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/lib.rs) — cherchez `machine_id_hash`
+- Périmètre du système de fichiers et des ressources : [`src-tauri/capabilities/default.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/capabilities/default.json), l'entrée `assetProtocol` de [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json), [`src-tauri/src/fs_scope.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/fs_scope.rs) et [`src-tauri/src/workspace_grants/`](https://github.com/xiaolai/vmark/tree/main/src-tauri/src/workspace_grants)
 - Agrégation des statistiques côté serveur : [`scripts/vmark-stats-json`](https://github.com/xiaolai/vmark/blob/main/scripts/vmark-stats-json) — le script exact qui s'exécute sur notre serveur pour produire les [statistiques publiques](https://log.vmark.app/api/stats)
 - Aucun autre appel réseau n'existe dans la base de code — cherchez `fetch`, `http` ou `reqwest` vous-même
 

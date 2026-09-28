@@ -1,4 +1,4 @@
-
+import { guideSidebar } from "./guideSidebar";
 
 export const zhTW = {
   label: "繁體中文",
@@ -12,133 +12,56 @@ export const zhTW = {
     ],
 
     sidebar: {
-      "/zh-TW/guide/": [
-        {
-          text: "指南",
-          items: [
-            { text: "快速上手", link: "/zh-TW/guide/" },
-            { text: "功能特性", link: "/zh-TW/guide/features" },
-            { text: "匯出與列印", link: "/zh-TW/guide/export" },
-            { text: "鍵盤快捷鍵", link: "/zh-TW/guide/shortcuts" },
-            { text: "大型檔案", link: "/zh-TW/guide/large-files" },
-            {
-              text: "GitHub Actions 工作流程檢視器",
-              link: "/zh-TW/guide/workflow-viewer",
-            },
-            {
-              text: "智慧分頁導覽",
-              link: "/zh-TW/guide/tab-navigation",
-            },
-            {
-              text: "多游標編輯",
-              link: "/zh-TW/guide/multi-cursor",
-            },
-            { text: "內嵌彈窗", link: "/zh-TW/guide/popups" },
-            {
-              text: "Mermaid 圖表",
-              link: "/zh-TW/guide/mermaid",
-            },
-            {
-              text: "Graphviz 圖表",
-              link: "/zh-TW/guide/graphviz",
-            },
-            {
-              text: "Markmap 心智圖",
-              link: "/zh-TW/guide/markmap",
-            },
-            { text: "SVG 圖形", link: "/zh-TW/guide/svg" },
-            {
-              text: "媒體（影片/音訊）",
-              link: "/zh-TW/guide/media-support",
-            },
-            {
-              text: "雲端託管圖片",
-              link: "/zh-TW/guide/cloud-images",
-            },
-            {
-              text: "整合終端機",
-              link: "/zh-TW/guide/terminal",
-            },
-            {
-              text: "工作區管理",
-              link: "/zh-TW/guide/workspace-management",
-            },
-            {
-              text: "中日韓排版",
-              link: "/zh-TW/guide/cjk-formatting",
-            },
-            { text: "AI 精靈", link: "/zh-TW/guide/ai-genies" },
-            {
-              text: "一致性與明細檢視",
-              link: "/zh-TW/guide/coherence",
-            },
-            {
-              text: "工作流程精靈",
-              link: "/zh-TW/guide/workflow-genies",
-            },
-            {
-              text: "AI 服務商",
-              link: "/zh-TW/guide/ai-providers",
-            },
-            { text: "MCP 設定", link: "/zh-TW/guide/mcp-setup" },
-            {
-              text: "MCP 工具參考",
-              link: "/zh-TW/guide/mcp-tools",
-            },
-            { text: "Markdown 檢查", link: "/zh-TW/guide/lint" },
-            { text: "連結檢查", link: "/zh-TW/guide/link-check" },
-            { text: "設定", link: "/zh-TW/guide/settings" },
-            { text: "疑難排解", link: "/zh-TW/guide/troubleshooting" },
-            { text: "隱私權政策", link: "/zh-TW/guide/privacy" },
-            { text: "授權條款", link: "/zh-TW/guide/license" },
-          ],
+      "/zh-TW/guide/": guideSidebar("/zh-TW", {
+        sections: { guide: "指南", usersAsDevelopers: "使用者即開發者" },
+        pages: {
+          "": "快速上手",
+          "formats": "支援的格式",
+          "features": "功能特性",
+          "large-files": "大型檔案",
+          "export": "匯出與列印",
+          "shortcuts": "鍵盤快捷鍵",
+          "tab-navigation": "智慧分頁導覽",
+          "multi-cursor": "多游標編輯",
+          "popups": "內嵌彈窗",
+          "mermaid": "Mermaid 圖表",
+          "graphviz": "Graphviz 圖表",
+          "markmap": "Markmap 心智圖",
+          "workflow-viewer": "GitHub Actions 工作流程檢視器",
+          "svg": "SVG 圖形",
+          "media-support": "媒體（影片/音訊）",
+          "cloud-images": "雲端託管圖片",
+          "terminal": "整合終端機",
+          "browser": "內嵌瀏覽器",
+          "knowledge-base": "知識庫與 Slidev",
+          "workspace-management": "工作區管理",
+          "workspace-rail": "工作區導軌",
+          "cjk-formatting": "中日韓排版",
+          "ai-genies": "AI 精靈",
+          "coherence": "一致性與明細檢視",
+          "workflows": "精靈工作流程",
+          "workflow-genies": "工作流程精靈",
+          "ai-providers": "AI 服務商",
+          "mcp-setup": "MCP 設定",
+          "mcp-tools": "MCP 工具參考",
+          "lint": "Markdown 檢查",
+          "link-check": "連結檢查",
+          "settings": "設定",
+          "troubleshooting": "疑難排解",
+          "privacy": "隱私權政策",
+          "license": "授權條款",
+          "users-as-developers/": "概覽",
+          "users-as-developers/why-i-built-vmark": "我為什麼開發 VMark",
+          "users-as-developers/what-are-indispensable": "AI 無法取代的五項技能",
+          "users-as-developers/why-expensive-models-are-cheaper": "為什麼貴的模型反而更便宜",
+          "users-as-developers/subscription-vs-api": "訂閱 vs API 定價",
+          "users-as-developers/prompt-refinement": "英文提示詞效果更好",
+          "users-as-developers/cross-model-verification": "跨模型驗證",
+          "users-as-developers/why-issues-not-prs": "為什麼提 Issue 而非 PR",
+          "users-as-developers/cost-evaluation": "成本與工作量評估",
+          "users-as-developers/plugins-as-infrastructure": "外掛即基礎設施",
         },
-        {
-          text: "使用者即開發者",
-          items: [
-            {
-              text: "概覽",
-              link: "/zh-TW/guide/users-as-developers/",
-            },
-            {
-              text: "我為什麼開發 VMark",
-              link: "/zh-TW/guide/users-as-developers/why-i-built-vmark",
-            },
-            {
-              text: "AI 無法取代的五項技能",
-              link: "/zh-TW/guide/users-as-developers/what-are-indispensable",
-            },
-            {
-              text: "為什麼貴的模型反而更便宜",
-              link: "/zh-TW/guide/users-as-developers/why-expensive-models-are-cheaper",
-            },
-            {
-              text: "訂閱 vs API 定價",
-              link: "/zh-TW/guide/users-as-developers/subscription-vs-api",
-            },
-            {
-              text: "英文提示詞效果更好",
-              link: "/zh-TW/guide/users-as-developers/prompt-refinement",
-            },
-            {
-              text: "跨模型驗證",
-              link: "/zh-TW/guide/users-as-developers/cross-model-verification",
-            },
-            {
-              text: "為什麼提 Issue 而非 PR",
-              link: "/zh-TW/guide/users-as-developers/why-issues-not-prs",
-            },
-            {
-              text: "成本與工作量評估",
-              link: "/zh-TW/guide/users-as-developers/cost-evaluation",
-            },
-            {
-              text: "外掛即基礎設施",
-              link: "/zh-TW/guide/users-as-developers/plugins-as-infrastructure",
-            },
-          ],
-        },
-      ],
+      }),
     },
 
     footer: {

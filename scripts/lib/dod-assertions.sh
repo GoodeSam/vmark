@@ -69,22 +69,120 @@ assert_grep_in_section() {
 # template literal, a call site in a doc comment satisfied the greps these
 # replaced (audit 20260907 #26/#27/#31/#32) and satisfy nothing now.
 DOD_SYNTAX="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/dod-syntax.mjs"
+# Every probe goes through `dod_syntax`, which answers from ONE long-lived
+# `dod-syntax.mjs --serve` per shell instead of a node per probe: loading the
+# TypeScript compiler costs ~0.36s, and a phase issues dozens of probes (the
+# feature-ledger phase 5 spent 11s starting processes, and its self-test took
+# eleven minutes).
+#
+# The transport is one request/reply stream with no request ids, so it is
+# correct only while ONE process talks to it. Four rules keep it that way, and
+# each is a way it used to return a wrong answer (audit 2026-09-28):
+#   - Only the shell that started the server (BASH_SUBSHELL 0) uses it.
+#     Subshells inherit the descriptors, and a pipeline stage or background job
+#     runs CONCURRENTLY with its parent — two callers on one stream consumed
+#     each other's replies, or deadlocked. Every subshell takes a fresh process.
+#   - A working directory or argument holding LF, CR or U+001F cannot ride the
+#     line protocol (node's readline ends a line at a lone CR too); it takes a
+#     fresh process rather than splitting into two requests and leaving a
+#     stale reply to poison the next probe.
+#   - The server must answer a `--ping` before it is trusted, and one that dies
+#     is closed and never used again: that probe, and every later one, runs in
+#     a fresh process. Probes are read-only, so the retry is safe.
+#   - The descriptors are the first free ones at or above 10 (where bash's own
+#     `{var}` allocation starts — unavailable in the bash 3.2 macOS ships), not
+#     a fixed 7/8 that silently took over a caller's own.
+_DOD_STATE=""   # "" not tried · up · off (unavailable, or died: fresh processes from here on)
+_DOD_IN=""; _DOD_OUT=""; _DOD_PID=""; _DOD_CODE=""; _DOD_STDOUT=""; _DOD_STDERR=""
+_dod_free_fd() {
+  local fd="$1"
+  while (( fd < 250 )); do
+    if ! { true >&"$fd"; } 2>/dev/null; then echo "$fd"; return 0; fi
+    fd=$((fd + 1))
+  done
+  return 1
+}
+_dod_stop() {
+  [[ -n "$_DOD_IN" ]] && eval "exec ${_DOD_IN}>&-"
+  [[ -n "$_DOD_OUT" ]] && eval "exec ${_DOD_OUT}<&-"
+  _DOD_IN=""; _DOD_OUT=""; _DOD_STATE=off
+}
+# One reply, buffered until its `X` line so a server that dies mid-reply prints
+# nothing half-told. `$1` is a read timeout in seconds, or empty for none.
+_dod_read_reply() {
+  local line
+  _DOD_CODE=""; _DOD_STDOUT=""; _DOD_STDERR=""
+  while :; do
+    if [[ -n "$1" ]]; then IFS= read -r -t "$1" line <&"$_DOD_OUT" || return 1
+    else IFS= read -r line <&"$_DOD_OUT" || return 1; fi
+    case "$line" in
+      O$'\t'*) _DOD_STDOUT+="${line#??}"$'\n' ;;
+      E$'\t'*) _DOD_STDERR+="${line#??}"$'\n' ;;
+      X$'\t'*) _DOD_CODE="${line#??}"; return 0 ;;
+    esac
+  done
+}
+_dod_start() {
+  [[ "$BASH_SUBSHELL" -eq 0 && -z "$_DOD_STATE" ]] || return 1
+  _DOD_STATE=off   # until the handshake proves otherwise
+  local d in out
+  in="$(_dod_free_fd 10)" && out="$(_dod_free_fd $((in + 1)))" || return 1
+  d="$(mktemp -d "${TMPDIR:-/tmp}/dod-serve.XXXXXX")" || return 1
+  if ! mkfifo "$d/out"; then rm -rf "$d"; return 1; fi
+  # Requests travel over an anonymous PIPE (process substitution), never a
+  # FIFO: on macOS node never sees end-of-file on a FIFO stdin, so a FIFO-fed
+  # server outlived every shell that started it. Over a pipe, the shell's exit
+  # closes the descriptor and the server ends with it.
+  # node is BACKGROUNDED inside the substitution, which then exits at once:
+  # bash 5.2 has a bare `wait` also wait for a live process substitution, so a
+  # server running as one hung any caller that waited on its own jobs. `<&0`
+  # keeps the pipe as node's stdin (a background job would get /dev/null).
+  # Its pid is written beside the FIFO; the answered ping below proves node
+  # started, loaded and replied, long after that write.
+  eval "exec ${in}> >(node \"\$DOD_SYNTAX\" --serve <&0 >\"\$d/out\" 2>/dev/null & echo \$! >\"\$d/pid\")"
+  _DOD_IN="$in"
+  eval "exec ${out}<\"\$d/out\""
+  _DOD_OUT="$out"
+  if ( printf '/\x1f--ping\n' ) >&"$_DOD_IN" 2>/dev/null && _dod_read_reply 60 && [[ "$_DOD_CODE" == 0 ]]; then
+    _DOD_PID="$(cat "$d/pid" 2>/dev/null)"; rm -rf "$d"
+    _DOD_STATE=up; return 0
+  fi
+  rm -rf "$d"; _dod_stop; return 1
+}
+dod_syntax() {
+  local a
+  case "$PWD" in *$'\n'*|*$'\r'*|*$'\x1f'*) node "$DOD_SYNTAX" "$@"; return ;; esac
+  for a in "$@"; do
+    case "$a" in *$'\n'*|*$'\r'*|*$'\x1f'*) node "$DOD_SYNTAX" "$@"; return ;; esac
+  done
+  if [[ "$BASH_SUBSHELL" -ne 0 ]]; then node "$DOD_SYNTAX" "$@"; return; fi
+  if [[ "$_DOD_STATE" != up ]] && ! _dod_start; then node "$DOD_SYNTAX" "$@"; return; fi
+  if ( IFS=$'\x1f'; printf '%s\n' "$PWD"$'\x1f'"$*" ) >&"$_DOD_IN" 2>/dev/null && _dod_read_reply ""; then
+    printf '%s' "$_DOD_STDOUT"; printf '%s' "$_DOD_STDERR" >&2
+    return "$_DOD_CODE"
+  fi
+  # A server that died is loud, and is never the answer: close it, and let a
+  # fresh process answer this probe and every later one.
+  echo "dod-syntax: --serve stopped answering; continuing with one process per probe" >&2
+  _dod_stop
+  node "$DOD_SYNTAX" "$@"
+}
 # A Rust test file cargo will compile: an ACTIVE `#[path = "<base>"]` attribute
 # in CODE (not inside a raw string), followed — other attributes only — by the
 # `mod x;` it decorates, under no `cfg` gate but `cfg(test)`.
-rust_test_included() { node "$DOD_SYNTAX" rust-mod-include "$1" "$2" >/dev/null 2>&1; }
+rust_test_included() { dod_syntax rust-mod-include "$1" "$2" >/dev/null 2>&1; }
 # A TS/mjs test that DECLARES a case: an `it(`/`test(` call with a title (or
 # the call `it.each(…)` returns), outside comments and strings and not under
 # `skip`/`todo`. This does not prove vitest RUNS the file — check:all does —
 # only that the file declares one.
-has_test_case() { node "$DOD_SYNTAX" ts-has-test-case "$1" >/dev/null 2>&1; }
+has_test_case() { dod_syntax ts-has-test-case "$1" >/dev/null 2>&1; }
 # Non-test .rs files under `dir` (minus the `exclude` bash regex) whose CODE
 # matches `re` — a mention in a comment or a string literal does not. Prints
 # the matching files.
 rust_code_grep() {
   local re="$1" dir="$2" exclude="${3:-^$}" f files=()
   for f in "$dir"/*.rs; do [[ -f "$f" && "$f" != *.test.rs && ! "$f" =~ $exclude ]] && files+=("$f"); done
-  (( ${#files[@]} > 0 )) && node "$DOD_SYNTAX" rust-code-grep "$re" "${files[@]}" 2>/dev/null
+  (( ${#files[@]} > 0 )) && dod_syntax rust-code-grep "$re" "${files[@]}" 2>/dev/null
 }
 # assert_rust_code_grep <JS regex> <file.rs> <label> [--keep-strings]
 # The CODE of one Rust file must match. `grep` is satisfied by a doc comment
@@ -96,7 +194,7 @@ rust_code_grep() {
 assert_rust_code_grep() {
   local re="$1" file="$2" label="$3" keep="${4:-}"
   if [[ ! -f "$file" ]]; then fail "$label (file missing: $file)"; return; fi
-  if node "$DOD_SYNTAX" rust-code-grep ${keep:+--keep-strings} "$re" "$file" >/dev/null 2>&1; then ok "$label"
+  if dod_syntax rust-code-grep ${keep:+--keep-strings} "$re" "$file" >/dev/null 2>&1; then ok "$label"
   else fail "$label (no /$re/ in the CODE of $file — a comment, a commented-out call or a quoted mention does not count)"; fi
 }
 # assert_ts_code_grep <JS regex> <file.ts(x)> <label> [--keep-strings]
@@ -106,7 +204,7 @@ assert_rust_code_grep() {
 assert_ts_code_grep() {
   local re="$1" file="$2" label="$3" keep="${4:-}"
   if [[ ! -f "$file" ]]; then fail "$label (file missing: $file)"; return; fi
-  if node "$DOD_SYNTAX" ts-code-grep ${keep:+--keep-strings} "$re" "$file" >/dev/null 2>&1; then ok "$label"
+  if dod_syntax ts-code-grep ${keep:+--keep-strings} "$re" "$file" >/dev/null 2>&1; then ok "$label"
   else fail "$label (no /$re/ in the CODE of $file — a comment or a commented-out line does not count)"; fi
 }
 # Which `.rs` beside `$1` includes it with an active `#[path = "<basename>"]`?
@@ -114,11 +212,14 @@ assert_ts_code_grep() {
 # decision still comes from the syntax probe, which is what tells a live
 # attribute from one inside a comment or a raw string — because spawning node
 # once per `.rs` in a directory of eighty is minutes, not seconds.
+# Also leaves the path in `_DOD_MOUNT`, so a caller can read it without a
+# command substitution — a subshell would not use the probe server.
 rust_mount_owner() {
   local file="$1" dir base cand; dir="$(dirname "$file")"; base="$(basename "$file")"
+  _DOD_MOUNT=""
   while IFS= read -r cand; do
     [[ -n "$cand" && "$cand" != "$file" ]] || continue
-    if rust_test_included "$cand" "$base"; then printf '%s\n' "$cand"; return 0; fi
+    if rust_test_included "$cand" "$base"; then _DOD_MOUNT="$cand"; printf '%s\n' "$cand"; return 0; fi
   done < <(grep -lF -- "\"$base\"" "$dir"/*.rs 2>/dev/null)
   return 1
 }
@@ -136,7 +237,7 @@ rust_module_declared() {
   # only INSIDE the directory reported both as uncompiled (audit R2 #154).
   for parent in "$dir/mod.rs" "$dir/lib.rs" "$dir/main.rs" "$dir.rs"; do
     [[ -f "$parent" ]] || continue
-    node "$DOD_SYNTAX" rust-code-grep "(^|[^A-Za-z0-9_])mod\\s+${stem}\\s*;" "$parent" >/dev/null 2>&1 && return 0
+    dod_syntax rust-code-grep "(^|[^A-Za-z0-9_])mod\\s+${stem}\\s*;" "$parent" >/dev/null 2>&1 && return 0
   done
   # A `#[path = "<base>"] mod x;` mount is a declaration too, and a file
   # mounted that way carries no `mod <stem>;` anywhere — `nav_payloads_macos.rs`
@@ -165,7 +266,7 @@ assert_test_file() {
       if [[ -f "${f%.test.rs}.rs" ]] && rust_test_included "${f%.test.rs}.rs" "$base"; then
         mod="${f%.test.rs}.rs"
       else
-        mod="$(rust_mount_owner "$f")"
+        rust_mount_owner "$f" >/dev/null; mod="$_DOD_MOUNT"
       fi
       if [[ -z "$mod" ]]; then
         fail "$label present but no .rs beside it includes it (an active #[path = \"$base\"] followed by mod …;)"
@@ -187,7 +288,7 @@ assert_test_file() {
 assert_journey() {
   local f="$1" label="$2" why
   if [[ ! -f "$f" ]]; then fail "$label missing: $f"; return; fi
-  if why=$(node "$DOD_SYNTAX" journey-shape "$f" 2>&1 >/dev/null); then ok "$label (default { name, run })"
+  if why=$(dod_syntax journey-shape "$f" 2>&1 >/dev/null); then ok "$label (default { name, run })"
   else fail "$label present but not a runner-discoverable journey (${why:-needs \`export default { name, run }\`})"; fi
 }
 # `$1` as a LITERAL inside a POSIX ERE. Work-item and decision ids carry dots

@@ -299,6 +299,13 @@ errors:
   workflow.noPendingApproval: "Nenhuma solicitação de aprovação pendente corresponde"
   workflow.appDataDirUnavailable: "Não foi possível resolver o diretório de dados do aplicativo: %{detail}"
   workflow.snapshotFailed: "Não foi possível criar um instantâneo dos arquivos que este fluxo de trabalho modificará, então ele não foi executado: %{detail}"
+  workflow.snapshotNotFound: "Esse instantâneo do fluxo de trabalho não existe mais"
+  workflow.snapshotUnreadable: "Não foi possível ler o registro do instantâneo do fluxo de trabalho: %{detail}"
+  workflow.snapshotNoWorkspace: "Este instantâneo foi criado por uma versão anterior do VMark e não pode ser restaurado"
+  workflow.snapshotWorkspaceMissing: "A pasta a que este instantâneo pertence não existe mais: %{path}"
+  workflow.snapshotListFailed: "Não foi possível listar os instantâneos de fluxos de trabalho: %{detail}"
+  workflow.restoreWhileRunning: "Há um fluxo de trabalho em execução. Aguarde a conclusão ou cancele-o antes de restaurar arquivos."
+  workflow.restoreSuperseded: "Outro fluxo de trabalho foi executado depois deste instantâneo, então restaurá-lo poderia desfazer as alterações dele. Nada foi restaurado."
 
   # === Caminho de salvamento (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "A pasta deste arquivo não existe mais: %{dir}"
@@ -404,6 +411,17 @@ errors:
 
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "O acesso às chaves foi negado. Permita o VMark no aviso das chaves ou conceda o acesso no app Acesso às Chaves e tente novamente."
+
+  # === Permissões de espaços de trabalho (workspace_grants/commands.rs, WI-LX1.1) ===
+  workspaceAccess.notGranted: "O VMark não tem acesso a “%{path}”. Escolha a pasta em Arquivo → Abrir espaço de trabalho... para permitir."
+  workspaceAccess.pickerBusy: "Já há uma caixa de diálogo de pasta aberta"
+  workspaceAccess.checkBusy: "O VMark ainda está verificando o acesso a essa pasta. Tente novamente em instantes"
+  workspaceAccess.listProtected: "Somente o próprio VMark pode alterar a lista de pastas que ele tem permissão para abrir"
+
+# WI-LX1.1 — the folder picker Rust shows for workspace access
+workspaceAccess:
+  pickTitle: "Abrir pasta do espaço de trabalho"
+  confirmTitle: "Permitir que o VMark abra esta pasta"
 
 window:
   settings.title: "Configurações"

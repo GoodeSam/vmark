@@ -21,6 +21,7 @@
 #![cfg(not(target_os = "windows"))]
 
 use super::{GENIE_REWRITE, GENIE_TRANSLATE, SAMPLE_WORKFLOW};
+use crate::coherence::capture_policy::CapturePolicy;
 use crate::workflow::approval::ApprovalRegistry;
 use crate::workflow::genie_step::ProviderConfig;
 use crate::workflow::runner::run_workflow_sequential;
@@ -146,6 +147,7 @@ async fn the_bundled_sample_runs_end_to_end_and_saves_the_translation() {
         }),
         Some(genies.path().to_path_buf()),
         Arc::new(ApprovalRegistry::new()),
+        CapturePolicy::TrackedOnly,
     )
     .await;
     assert_eq!(result, Ok("exec-sample".to_string()));
@@ -215,6 +217,7 @@ async fn a_provider_failure_fails_the_genie_step_and_the_run_and_saves_nothing()
         }),
         Some(genies.path().to_path_buf()),
         Arc::new(ApprovalRegistry::new()),
+        CapturePolicy::TrackedOnly,
     )
     .await;
     let err = result.expect_err("a failed provider fails the run");

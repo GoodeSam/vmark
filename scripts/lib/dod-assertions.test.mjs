@@ -16,7 +16,7 @@
  */
 import { afterAll, describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -41,10 +41,13 @@ function tree(files) {
  */
 function runBody(body, { cwd, env = {} } = {}) {
   const script = `set -uo pipefail\nsource ${JSON.stringify(LIB)}\n${body}\necho "COUNTS pass=$PASS fail=$FAIL unverified=$UNVERIFIED"\n`;
+  // Bounded: a transport that deadlocks must fail the case, not hang the tier.
   const r = spawnSync("bash", ["-c", script], {
     encoding: "utf8",
     cwd,
     env: { ...process.env, ...env },
+    timeout: 60_000,
+    killSignal: "SIGKILL",
   });
   return { status: r.status, out: `${r.stdout}${r.stderr}` };
 }
@@ -192,5 +195,74 @@ describe("probe / assert_any", () => {
     const r = runBody(`assert_any 'either' ${JSON.stringify(bad)} 'grep|plain|b.txt'`, { cwd: root });
     expect(r.out).toContain(message);
     expect(r.out).toContain("COUNTS pass=0 fail=1");
+  });
+});
+
+// ---------------------------------------------------------------- the --serve transport (audit 2026-09-28)
+// `dod_syntax` answers from one long-lived server per shell. Every case below
+// is a way the transport could hand back a WRONG answer while looking fine —
+// the probe results themselves must match what a fresh process says.
+describe("dod_syntax over the server transport", () => {
+  const root = tree({ "yes.test.ts": 'it("runs", () => {});\n', "no.test.ts": "// it(\"planned\", () => {});\n" });
+  const verdicts = (out) => Object.fromEntries([...out.matchAll(/^(\w+)=(\d+)$/gm)].map((m) => [m[1], Number(m[2])]));
+
+  it("gives concurrent subshells their OWN answers — a pipeline stage or background job never shares the stream", () => {
+    const body = `has_test_case yes.test.ts; echo "warm=$?"
+for i in 1 2 3 4 5 6 7 8; do
+  ( has_test_case yes.test.ts; echo "y$i=$?" ) &
+  ( has_test_case no.test.ts; echo "n$i=$?" ) &
+done
+wait
+has_test_case no.test.ts; echo "after=$?"`;
+    const v = verdicts(runBody(body, { cwd: root }).out);
+    expect(v.warm).toBe(0);
+    for (let i = 1; i <= 8; i++) {
+      expect(v[`y${i}`], `y${i}`).toBe(0);
+      expect(v[`n${i}`], `n${i}`).toBe(1);
+    }
+    expect(v.after).toBe(1);
+  });
+
+  it("never makes a caller's own `wait` block on the server", () => {
+    // bash 5.2 (Ubuntu CI) has a bare `wait` also wait for a LIVE process
+    // substitution; a server started as one never exits while the shell
+    // lives, so a DoD script that waited on its own jobs hung forever.
+    const body = `has_test_case yes.test.ts; echo "warm=$?"
+( true ) &
+wait; echo "waited=0"
+has_test_case no.test.ts; echo "after=$?"`;
+    const v = verdicts(runBody(body, { cwd: root }).out);
+    expect(v).toEqual({ warm: 0, waited: 0, after: 1 });
+  });
+
+  it("answers correctly from a working directory whose name holds a carriage return, and stays in step afterwards", () => {
+    const odd = path.join(root, "a\rb");
+    mkdirSync(odd, { recursive: true });
+    writeFileSync(path.join(odd, "here.test.ts"), 'it("runs", () => {});\n');
+    const body = `has_test_case yes.test.ts; echo "warm=$?"
+cd "a"$'\\r'"b" && { has_test_case here.test.ts; echo "odd=$?"; cd - >/dev/null; }
+has_test_case no.test.ts; echo "after=$?"
+has_test_case yes.test.ts; echo "again=$?"`;
+    expect(verdicts(runBody(body, { cwd: root }).out)).toEqual({ warm: 0, odd: 0, after: 1, again: 0 });
+  });
+
+  it("falls back to a fresh process when the server dies, for this probe and every later one", () => {
+    const body = `has_test_case yes.test.ts; echo "warm=$?"
+kill "$_DOD_PID" 2>/dev/null; sleep 0.3
+dod_syntax ts-has-test-case yes.test.ts; echo "first=$?"
+has_test_case no.test.ts; echo "second=$?"`;
+    const r = runBody(body, { cwd: root });
+    expect(verdicts(r.out)).toEqual({ warm: 0, first: 0, second: 1 });
+    expect(r.out).toMatch(/--serve stopped answering/);
+  });
+
+  it("leaves a caller's own descriptors 7 and 8 alone", () => {
+    const body = `exec 7>seven.txt 8>eight.txt
+has_test_case yes.test.ts; echo "probe=$?"
+echo kept7 >&7; echo kept8 >&8
+exec 7>&- 8>&-`;
+    expect(verdicts(runBody(body, { cwd: root }).out)).toEqual({ probe: 0 });
+    expect(readFileSync(path.join(root, "seven.txt"), "utf8")).toBe("kept7\n");
+    expect(readFileSync(path.join(root, "eight.txt"), "utf8")).toBe("kept8\n");
   });
 });

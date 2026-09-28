@@ -51,6 +51,7 @@
 import { exists, mkdir } from "@tauri-apps/plugin-fs";
 import { acquireExportLock, holdsExportLock, nonce, releaseExportLock } from "./exportLock";
 import { publishTracked, removeQuietly, removeTree } from "./exportPublish";
+import { takenOverMessage } from "./exportErrorMessages";
 
 export {
   EXPORT_LOCK_NAME,
@@ -155,10 +156,7 @@ async function stageUnder(
       // — so refuse, and let the caller discard this tree (#332). It shrinks
       // the exposure from the whole export down to the publish itself.
       if (!(await holdsExportLock(destination, owner))) {
-        throw new Error(
-          `Export to ${destination} was not published: another export took over ` +
-            "the folder while this one was running. Nothing at the destination was changed.",
-        );
+        throw new Error(takenOverMessage(destination));
       }
       await publishTracked(destination, root, [...tracked], retainedBackups);
       await removeTree(root);

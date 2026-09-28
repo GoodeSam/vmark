@@ -1,4 +1,4 @@
-
+import { guideSidebar } from "./guideSidebar";
 
 export const ja = {
   label: "日本語",
@@ -12,133 +12,56 @@ export const ja = {
     ],
 
     sidebar: {
-      "/ja/guide/": [
-        {
-          text: "ガイド",
-          items: [
-            { text: "はじめに", link: "/ja/guide/" },
-            { text: "機能", link: "/ja/guide/features" },
-            { text: "大きなファイル", link: "/ja/guide/large-files" },
-            { text: "エクスポートと印刷", link: "/ja/guide/export" },
-            {
-              text: "キーボードショートカット",
-              link: "/ja/guide/shortcuts",
-            },
-            {
-              text: "スマートタブナビゲーション",
-              link: "/ja/guide/tab-navigation",
-            },
-            {
-              text: "マルチカーソル編集",
-              link: "/ja/guide/multi-cursor",
-            },
-            {
-              text: "インラインポップアップ",
-              link: "/ja/guide/popups",
-            },
-            {
-              text: "Mermaid ダイアグラム",
-              link: "/ja/guide/mermaid",
-            },
-            {
-              text: "Graphviz ダイアグラム",
-              link: "/ja/guide/graphviz",
-            },
-            {
-              text: "Markmap マインドマップ",
-              link: "/ja/guide/markmap",
-            },
-            {
-              text: "GitHub Actions ワークフロービューア",
-              link: "/ja/guide/workflow-viewer",
-            },
-            { text: "SVG グラフィックス", link: "/ja/guide/svg" },
-            {
-              text: "メディア（動画/音声）",
-              link: "/ja/guide/media-support",
-            },
-            {
-              text: "クラウドホスト画像",
-              link: "/ja/guide/cloud-images",
-            },
-            {
-              text: "統合ターミナル",
-              link: "/ja/guide/terminal",
-            },
-            {
-              text: "ワークスペース管理",
-              link: "/ja/guide/workspace-management",
-            },
-            {
-              text: "CJK フォーマット",
-              link: "/ja/guide/cjk-formatting",
-            },
-            { text: "AI ジーニー", link: "/ja/guide/ai-genies" },
-            { text: "整合性と内訳ビュー", link: "/ja/guide/coherence" },
-            { text: "ワークフロージーニー", link: "/ja/guide/workflow-genies" },
-            {
-              text: "AI プロバイダー",
-              link: "/ja/guide/ai-providers",
-            },
-            { text: "MCP セットアップ", link: "/ja/guide/mcp-setup" },
-            {
-              text: "MCP ツールリファレンス",
-              link: "/ja/guide/mcp-tools",
-            },
-            { text: "Markdown Lint", link: "/ja/guide/lint" },
-            { text: "リンクチェック", link: "/ja/guide/link-check" },
-            { text: "設定", link: "/ja/guide/settings" },
-            { text: "トラブルシューティング", link: "/ja/guide/troubleshooting" },
-            { text: "プライバシー", link: "/ja/guide/privacy" },
-            { text: "ライセンス", link: "/ja/guide/license" },
-          ],
+      "/ja/guide/": guideSidebar("/ja", {
+        sections: { guide: "ガイド", usersAsDevelopers: "ユーザーとしての開発者" },
+        pages: {
+          "": "はじめに",
+          "formats": "サポートされるフォーマット",
+          "features": "機能",
+          "large-files": "大きなファイル",
+          "export": "エクスポートと印刷",
+          "shortcuts": "キーボードショートカット",
+          "tab-navigation": "スマートタブナビゲーション",
+          "multi-cursor": "マルチカーソル編集",
+          "popups": "インラインポップアップ",
+          "mermaid": "Mermaid ダイアグラム",
+          "graphviz": "Graphviz ダイアグラム",
+          "markmap": "Markmap マインドマップ",
+          "workflow-viewer": "GitHub Actions ワークフロービューア",
+          "svg": "SVG グラフィックス",
+          "media-support": "メディア（動画/音声）",
+          "cloud-images": "クラウドホスト画像",
+          "terminal": "統合ターミナル",
+          "browser": "組み込みブラウザ",
+          "knowledge-base": "ナレッジベースと Slidev",
+          "workspace-management": "ワークスペース管理",
+          "workspace-rail": "ワークスペースレール",
+          "cjk-formatting": "CJK フォーマット",
+          "ai-genies": "AI ジーニー",
+          "coherence": "整合性と内訳ビュー",
+          "workflows": "Genie ワークフロー",
+          "workflow-genies": "ワークフロージーニー",
+          "ai-providers": "AI プロバイダー",
+          "mcp-setup": "MCP セットアップ",
+          "mcp-tools": "MCP ツールリファレンス",
+          "lint": "Markdown Lint",
+          "link-check": "リンクチェック",
+          "settings": "設定",
+          "troubleshooting": "トラブルシューティング",
+          "privacy": "プライバシー",
+          "license": "ライセンス",
+          "users-as-developers/": "概要",
+          "users-as-developers/why-i-built-vmark": "VMark を開発した理由",
+          "users-as-developers/what-are-indispensable": "AI が代替できない5つのスキル",
+          "users-as-developers/why-expensive-models-are-cheaper": "高価なモデルがなぜ安いのか",
+          "users-as-developers/subscription-vs-api": "サブスクリプション vs API 料金",
+          "users-as-developers/prompt-refinement": "英語プロンプトが効果的な理由",
+          "users-as-developers/cross-model-verification": "クロスモデル検証",
+          "users-as-developers/why-issues-not-prs": "PR ではなく Issue を出す理由",
+          "users-as-developers/cost-evaluation": "コストと工数の評価",
+          "users-as-developers/plugins-as-infrastructure": "プラグインというインフラ",
         },
-        {
-          text: "ユーザーとしての開発者",
-          items: [
-            {
-              text: "概要",
-              link: "/ja/guide/users-as-developers/",
-            },
-            {
-              text: "VMark を開発した理由",
-              link: "/ja/guide/users-as-developers/why-i-built-vmark",
-            },
-            {
-              text: "AI が代替できない5つのスキル",
-              link: "/ja/guide/users-as-developers/what-are-indispensable",
-            },
-            {
-              text: "高価なモデルがなぜ安いのか",
-              link: "/ja/guide/users-as-developers/why-expensive-models-are-cheaper",
-            },
-            {
-              text: "サブスクリプション vs API 料金",
-              link: "/ja/guide/users-as-developers/subscription-vs-api",
-            },
-            {
-              text: "英語プロンプトが効果的な理由",
-              link: "/ja/guide/users-as-developers/prompt-refinement",
-            },
-            {
-              text: "クロスモデル検証",
-              link: "/ja/guide/users-as-developers/cross-model-verification",
-            },
-            {
-              text: "PR ではなく Issue を出す理由",
-              link: "/ja/guide/users-as-developers/why-issues-not-prs",
-            },
-            {
-              text: "コストと工数の評価",
-              link: "/ja/guide/users-as-developers/cost-evaluation",
-            },
-            {
-              text: "プラグインというインフラ",
-              link: "/ja/guide/users-as-developers/plugins-as-infrastructure",
-            },
-          ],
-        },
-      ],
+      }),
     },
 
     footer: {

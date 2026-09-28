@@ -8,6 +8,12 @@
  * REQUIRES the caller to hold the per-window transition guard
  * (WORKSPACE_TRANSITION_GUARD) around this call (Codex F-08): the menu command
  * guards the dialog + this call together; the MCP handler guards this call.
+ *
+ * REQUIRES the caller to have settled ACCESS to `path` first (WI-LX1.1): every
+ * caller does — the picker grants what it returns, and Open Recent and the
+ * open_workspace MCP tool ask Rust (`resolveWorkspaceAccess`) and act on the
+ * answer. This used to re-grant as well, asking Rust twice per open (audit F2
+ * #145); a new caller that opens a folder it did not pick must ask first.
  * Running two transitions unguarded interleaves restore tabs/split into
  * whichever workspace lands last. Opening a workspace is safe with unsaved
  * changes — it does not close existing tabs, so dirty docs survive (#1005);
@@ -15,10 +21,10 @@
  *
  * @coordinates-with services/commands/workspaceCommands.ts — menu "Open Folder"
  * @coordinates-with services/commands/recentWorkspacesCommands.ts — "Open Recent"
- * @coordinates-with services/mcpBridge/v2/workspace.ts — open_workspace handler
+ * @coordinates-with services/mcpBridge/v2/workspaceOpenFolder.ts — open_workspace handler
+ * @coordinates-with services/workspaces/workspaceAccess.ts — how callers settle access
  * @module services/workspaces/openWorkspaceByPath
  */
-import { invoke } from "@tauri-apps/api/core";
 import { useUIStore } from "@/stores/uiStore";
 import { useRecentWorkspacesStore } from "@/stores/workspaceStore";
 import { openWorkspaceWithConfig } from "@/services/workspaces/openWorkspaceWithConfig";
@@ -49,20 +55,6 @@ export async function openWorkspaceByPath(
 ): Promise<boolean> {
   const windowLabel = options.windowLabel ?? "main";
   try {
-    // #1252 — extend the fs scope to the workspace tree BEFORE anything reads
-    // from it. Scope grants are in-memory and do not survive a restart, so a
-    // workspace restored from the previous session — or reopened from recents,
-    // or opened over MCP — never passes through the folder picker that would
-    // otherwise have granted it. Off the home drive nothing in the static
-    // scope (`$HOME/**`, `/Volumes/**`, `/mnt/**`, `/media/**`) covers it, and
-    // on Windows `$HOME` is `C:\Users\<name>`, so a workspace on `G:\` is
-    // refused entirely.
-    //
-    // Best-effort: the static scope still covers the common case, so a failed
-    // grant must degrade rather than abort an otherwise working open.
-    await invoke("allow_workspace_access", { path }).catch((error) => {
-      workspaceError("Failed to grant workspace fs scope:", error);
-    });
     const existing = await openWorkspaceWithConfig(path, { windowLabel });
     useUIStore.getState().showSidebarWithView("files");
     useRecentWorkspacesStore.getState().addWorkspace(path);

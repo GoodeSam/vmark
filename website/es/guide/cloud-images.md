@@ -23,7 +23,7 @@ En resumen: si la imagen ya vive en una URL, pega la URL. VMark la inserta como 
 
 La función propuesta significaría que VMark detecta una imagen local al pegar, la sube a un almacenamiento remoto, y escribe la URL devuelta en el Markdown en lugar de una ruta `./.assets/…`. Eso suena pequeño pero amplía el alcance de VMark de tres maneras significativas:
 
-1. **Bóveda de credenciales**. La carga nativa compatible con S3 requiere que la clave de acceso y la clave secreta del usuario se almacenen en reposo. VMark hoy no tiene secretos de larga duración — no hay decisiones de cifrado en reposo, ni integración con el llavero del SO, ni UX de rotación de claves, ni modo de fallo accidental con la clave en el Markdown. Añadir la carga cruza esa línea.
+1. **Bóveda de credenciales**. La carga nativa compatible con S3 requiere que la clave de acceso y la clave secreta del usuario se almacenen en reposo. VMark sí guarda hoy algunos secretos — las claves API de los proveedores de IA y las sesiones del navegador que guardas para una IA viven en el llavero del SO —, pero ninguno de ellos es una credencial que escriba en un bucket de almacenamiento por el que pagas. La carga añadiría exactamente eso: las claves de otro proveedor que almacenar, UX de rotación de claves y un modo de fallo accidental con la clave en el Markdown.
 
 2. **Cola de soporte multiproveedor**. S3, Cloudflare R2, Backblaze B2, MinIO, DigitalOcean Spaces todos anuncian compatibilidad con S3, pero cada uno tiene sus particularidades (direccionamiento por ruta vs. virtual-hosted, semántica de ACL, endpoints regionales, reglas de CORS). Que un solo mantenedor absorba esa superficie es un impuesto a largo plazo sobre una herramienta de escritura.
 

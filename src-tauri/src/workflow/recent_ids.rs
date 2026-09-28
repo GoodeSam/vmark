@@ -7,7 +7,9 @@
 //! same id twice would have two runs' events indistinguishable and two runs'
 //! snapshots in one directory. Validation at entry (`prepare::execution_id_for`)
 //! settles the shape; this settles the reuse: a bounded memory of the ids
-//! that were admitted, consulted when the next one is published.
+//! that were admitted, consulted when the next one is published. An id whose
+//! start was refused before it spawned is forgotten again (#91): no run
+//! carried it, and the caller's retry of the same start must not be refused.
 //!
 //! Bounded, because an id is a few dozen bytes and the process may run
 //! thousands of workflows: the oldest is forgotten past the cap.
@@ -43,6 +45,11 @@ const REMEMBERED: usize = 256;
 #[derive(Default)]
 pub(super) struct RecentExecutionIds {
     seen: Mutex<VecDeque<String>>,
+    /// The last run that got past preparation and SPAWNED — the only kind
+    /// that can have written files. A start refused before that (bad YAML, a
+    /// failed snapshot) wrote nothing and does not move it. Read by a
+    /// snapshot restore to refuse undoing a later run's work (#108).
+    last_spawned: Mutex<Option<String>>,
 }
 
 impl RecentExecutionIds {
@@ -58,6 +65,28 @@ impl RecentExecutionIds {
         }
         seen.push_back(id.to_string());
         true
+    }
+
+    /// Forget `id` — its start was refused before it spawned (#91), so no
+    /// run's events, cancel or snapshot ever carried it.
+    pub(super) fn forget(&self, id: &str) {
+        self.seen
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .retain(|s| s != id);
+    }
+
+    /// Record `id` as the last run that spawned.
+    pub(super) fn note_spawned(&self, id: String) {
+        *self.last_spawned.lock().unwrap_or_else(|p| p.into_inner()) = Some(id);
+    }
+
+    /// The last run that spawned in this process, if any.
+    pub(super) fn last_spawned(&self) -> Option<String> {
+        self.last_spawned
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .clone()
     }
 }
 

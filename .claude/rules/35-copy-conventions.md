@@ -1,3 +1,9 @@
+---
+paths:
+  - "src/locales/**"
+  - "src-tauri/locales/**"
+---
+
 # 35 - Copy Conventions (R14, WI-UI4.2)
 
 The casing REGISTER comes from the key pattern, never guessed from the value.

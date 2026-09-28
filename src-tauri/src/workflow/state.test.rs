@@ -411,3 +411,27 @@ fn an_execution_id_a_recent_run_carried_is_refused_with_conflict() {
         .expect("claimed")
         .expect("a fresh id after the refusal");
 }
+
+// -- #91: a start refused before it spawns does not use up its id ----------
+
+/// Every refusal after the claim (bad YAML, the canonical workspace-grant root
+/// check, a failed snapshot) drops the admission uncommitted. It used to leave
+/// the id remembered, so a caller retrying the same start was refused as a
+/// reuse of an id no run ever carried. A SPAWNED run's id stays used.
+#[test]
+fn an_admission_dropped_before_spawning_releases_its_id_and_a_spawned_one_keeps_it() {
+    let st = state_with(false, None);
+    drop(
+        st.claim_and_publish("exec-a")
+            .expect("claimed")
+            .expect("fresh"),
+    );
+    st.claim_and_publish("exec-a")
+        .expect("the flag was released")
+        .expect("the refused start's id is free for its retry")
+        .commit();
+    st.clear_running();
+    st.claim_and_publish("exec-a")
+        .expect("the flag is free")
+        .expect_err("a spawned run's id is used for good");
+}

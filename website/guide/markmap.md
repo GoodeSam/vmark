@@ -28,9 +28,9 @@ Type a fenced code block with the `markmap` language identifier:
 ```text
 ````
 
-### Using MCP Tool
+### From an AI Assistant
 
-Use the `media` MCP tool with `action: "markmap"` and the `code` parameter containing Markdown headings.
+There is no dedicated mind-map tool. An AI client connected through [VMark's MCP server](/guide/mcp-setup) inserts a mindmap the same way it inserts any other Markdown — by writing a ` ```markmap ` code block into the document with the `document` or `selection` tool.
 
 ## Editing Modes
 
@@ -38,15 +38,15 @@ Use the `media` MCP tool with `action: "markmap"` and the `code` parameter conta
 
 In WYSIWYG mode, Markmap mindmaps are rendered as interactive SVG trees. You can:
 
-- **Pan** by scrolling or clicking and dragging
-- **Zoom** by holding `Cmd`/`Ctrl` and scrolling
+- **Pan** by clicking and dragging (a plain scroll scrolls the document, not the mindmap)
+- **Zoom** by holding `Ctrl` and scrolling
 - **Collapse/expand** nodes by clicking the circle at each branch
 - **Fit** the view using the fit button (top-right corner on hover)
 - **Double-click** the mindmap to edit the source
 
 ### Source Mode with Live Preview
 
-In Source mode, a floating preview panel appears when your cursor is inside a markmap code block, updating as you type.
+In Source mode, a floating preview panel shows the mindmap while your cursor is inside a markmap code block, updating as you type. The preview is off by default — turn it on with **View → Toggle Diagram Preview** (`Alt + Mod + P`) or the command palette.
 
 ## Input Format
 
@@ -121,8 +121,8 @@ Here is an interactive markmap rendered directly on this page — try panning, z
 
 | Action | How |
 |--------|-----|
-| **Pan** | Scroll or click and drag |
-| **Zoom** | `Cmd`/`Ctrl` + scroll |
+| **Pan** | Click and drag |
+| **Zoom** | `Ctrl` + scroll |
 | **Collapse node** | Click the circle at a branch point |
 | **Expand node** | Click the circle again |
 | **Fit to view** | Click the fit button (top-right on hover) |

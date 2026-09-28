@@ -93,8 +93,8 @@ Wenn Sie die Systemfunktionen auf F-Tasten bevorzugen, können Sie VMark-Tastatu
 | Zeile duplizieren | `Umschalt + Alt + Ab` |
 | Zeile löschen | `Mod + Umschalt + K` |
 | Zeilen verbinden | `Mod + J` |
-| Zeilen aufsteigend sortieren | `F4` |
-| Zeilen absteigend sortieren | `Umschalt + F4` |
+| Zeilen aufsteigend sortieren | `F4` _(nur im Quellmodus)_ |
+| Zeilen absteigend sortieren | `Umschalt + F4` _(nur im Quellmodus)_ |
 
 ## Texttransformationen
 
@@ -312,10 +312,33 @@ Wenn das integrierte Terminal fokussiert ist:
 | Aktion | Tastenkürzel |
 |--------|--------------|
 | Terminal umschalten | `` Strg + ` `` |
+| Fokus auf Terminal oder Editor | `` Strg + Umschalt + ` `` |
 | Kopieren | `Mod + C` (mit Auswahl) |
 | Einfügen | `Mod + V` |
+| Alles auswählen (nur Terminalausgabe) | `Mod + A` |
 | Löschen | `Mod + K` |
 | Suchen | `Mod + F` |
+| Zu Sitzung 1–5 wechseln | `Mod + 1` bis `Mod + 5` |
+| Terminal-Schrift vergrößern | `Mod + =` |
+| Terminal-Schrift verkleinern | `Mod + -` |
+| Terminal-Schrift auf Standardgröße | `Mod + 0` |
+| Vorherige Eingabeaufforderung | `Mod + ↑` |
+| Nächste Eingabeaufforderung | `Mod + ↓` |
+| Zeilenumbruch in der Eingabezeile (Claude Code und ähnliche Tools) | `Umschalt + Eingabe` |
+
+Solange das Terminal fokussiert ist, ändern `Mod + =`, `Mod + -` und `Mod + 0` die Schriftgröße des Terminals statt der des Editors.
+
+Die Navigation zwischen Eingabeaufforderungen springt im Scrollback von Befehlszeile zu Befehlszeile und erfordert Shell-Integration (zsh oder bash).
+
+Unter macOS übersetzt das Terminal außerdem die üblichen Textbearbeitungs-Tastenkombinationen für die Shell:
+
+| Aktion | Tastenkürzel |
+|--------|--------------|
+| Ein Wort nach links / rechts | `Option + ←` / `Option + →` |
+| Zum Zeilenanfang / -ende | `Cmd + ←` / `Cmd + →` |
+| Eingabezeile löschen (sendet `Strg + U`) | `Cmd + Rücktaste` |
+
+`Strg`-Kombinationen wie `Strg + A`, `Strg + R` und `Strg + W` gehen unter macOS direkt an die Shell.
 
 Wenn die Terminal-Suchleiste geöffnet ist:
 
@@ -332,10 +355,16 @@ Wenn die Terminal-Suchleiste geöffnet ist:
 ## Tastaturkürzel anpassen
 
 1. Einstellungen mit `Mod + ,` öffnen
-2. Zur Registerkarte **Tastaturkürzel** navigieren
-3. Auf ein Tastaturkürzel klicken, um es zu bearbeiten
-4. Die gewünschte Tastenkombination drücken
-5. Änderungen werden automatisch gespeichert
+2. Zur Registerkarte **Tastenkürzel** navigieren (in das Suchfeld tippen, um nach Name, Kategorie, Beschreibung oder Taste zu filtern)
+3. Auf die Taste neben einem Tastaturkürzel klicken — oder auf **Nicht zugewiesen** bei einem, das noch keine Taste hat
+4. Die gewünschte Tastenkombination drücken, dann auf **Zuweisen** klicken (`Escape` bricht ab)
+
+Der Dialog warnt Sie, bevor Sie eine Kombination zuweisen:
+
+- **Konflikt** — die Kombination wird bereits von einem anderen Tastaturkürzel verwendet, das genannt wird. Sie können trotzdem **Trotzdem zuweisen** wählen.
+- **Nicht unterstützt** — VMark kann diese Kombination nicht verwenden, daher lässt sie sich nicht zuweisen. Versuchen Sie eine andere.
+
+Ein angepasstes Tastaturkürzel wird hervorgehoben und erhält eine Schaltfläche **Auf Standard zurücksetzen**. **Alle zurücksetzen** stellt nach einer Rückfrage alle Standardwerte wieder her. **Exportieren** speichert Ihre Tastaturkürzel als JSON-Datei (`vmark-shortcuts.json`), und **Importieren** lädt eine solche; ist ein Eintrag in der Datei ungültig, wird nichts importiert und die Probleme werden aufgelistet.
 
 ::: tip
 Tastaturkürzel werden mit Menübeschleunigern synchronisiert, wenn zutreffend, sodass Menüelemente Ihre angepassten Tastaturkürzel anzeigen.

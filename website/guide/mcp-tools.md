@@ -149,6 +149,8 @@ assistant should ask the user, then **retry the same call**; once the user
 approves, the retry opens the folder. A denied request keeps failing until it is
 re-approved. There is no "remember" option — each open is approved individually.
 
+**Folder access.** Approving the dialog does not by itself let VMark read a folder outside the places it can always read (your home folder and mounted volumes). For such a folder, the approved retry opens VMark's folder picker at that folder and returns `APPROVAL_REQUIRED`, asking the user to choose it there; once they do, the next retry opens it. If another folder dialog is already open, nothing is shown and the reply is `BUSY` — the approval is kept, so retry once the user has closed that dialog. `BUSY` is also the reply while a workspace switch is already running in that window.
+
 ### `save`
 
 Save a tab to its existing path.
@@ -459,7 +461,7 @@ front-matter site id; defaults to `recording`).
 never silently record you. Until you allow it, `start` returns `needsApproval`; once you do,
 VMark arms a dormant page-world capture shim and begins recording the **clicks and field
 edits** you perform. `stop` returns `{source, inputs, eventCount}` — the `source` is workflow
-text you can save or hand straight to [`workflow_run`](#workflow-run).
+text you can save or hand straight to [`workflow_run`](#workflow-run-workflow-cancel).
 
 The recording is **value-free by construction**, and this is not a filter that trusts the
 page: nothing you type is ever captured. Every text field becomes a named `{input}` variable
@@ -774,7 +776,8 @@ Two error shapes appear:
 | `INVALID_PATCH` | envelope | `workflow.apply_patch` received a malformed `patches` array |
 | `INVALID_TAB` | envelope | `tabId` could not be resolved |
 | `INVALID_PATH` | envelope | A `filePath` could not be read, or is outside the open workspace / document scope |
-| `APPROVAL_REQUIRED` | envelope | `save_as` to a new location while **Auto-approve saves to a new location and genie results** is off |
+| `APPROVAL_REQUIRED` | envelope | `save_as` to a new location while **Auto-approve saves to a new location and genie results** is off; or `open_workspace` waiting for the user's approval, or for them to choose the folder in VMark's folder dialog |
+| `BUSY` | envelope | `open_workspace` could not proceed: another folder dialog is open, or a workspace switch is running in that window; the approval is kept — retry |
 | `NOT_WORKFLOW` | envelope | `workflow.*` was called on a non-YAML-workflow tab |
 | `READ_ONLY` | envelope | A mutation was attempted on a read-only document |
 | `NO_EDITOR` | envelope | `selection.*` was called but the focused tab has no live editor |

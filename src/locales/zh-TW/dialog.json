@@ -211,7 +211,6 @@
   "common.pin": "釘住",
   "common.pinTooltip": "保持此通知開啟",
   "common.unpinTooltip": "已釘住 — 手動關閉",
-  "openWorkspaceFolder.title": "開啟工作區資料夾",
   "openWorkspace.approval.title": "將資料夾作為工作區開啟?",
   "openWorkspace.approval.body": "AI 助理請求將此資料夾作為工作區開啟,這將授予它存取該資料夾檔案樹的權限:",
   "openWorkspace.approval.approve": "開啟工作區",
@@ -262,5 +261,15 @@
   "error.title": "錯誤",
   "error.saveMediaFailed": "儲存媒體檔案失敗：{{error}}",
   "resetShortcuts.title": "重設快速鍵",
-  "resetSettings.title": "重設設定"
+  "resetSettings.title": "重設設定",
+  "exportError.lockBusy": "另一個匯出正在寫入 {{destination}}。如果沒有其他匯出在執行，請刪除 {{lock}} 後再試一次。",
+  "exportError.takenOver": "匯出到 {{destination}} 未發佈：本次匯出執行期間，另一個匯出接管了該資料夾。目的地未做任何變更。",
+  "exportError.notAFile": "{{path}} 是一個資料夾，而不是本次匯出可以取代的檔案。請移動或重新命名它，或匯出到其他資料夾。",
+  "exportError.publishFailed": "無法發佈到 {{destination}} 的匯出：{{reason}}。{{rollback}}",
+  "exportError.rollbackFilesNotRestored": "以下檔案無法還原：{{files}}。",
+  "exportError.rollbackFoldersLeft": "你的檔案已還原，但匯出建立的以下資料夾仍然存在：{{folders}}。",
+  "exportError.rollbackRestored": "其他內容皆未變更，資料夾已還原為先前的內容。",
+  "exportError.backupKeptAt": "{{path}}（先前的內容保存在 {{backup}}：{{reason}}）",
+  "exportError.backupGone": "{{path}}（位於 {{backup}} 的備份也已遺失：{{reason}}）",
+  "exportError.listItem": "「{{item}}」"
 }

@@ -89,10 +89,12 @@ watches the deck on disk, so saving edits in VMark hot-reloads the open preview.
 
 ### Export
 
-Slidev decks export to **PDF**, **PNG**, or **PPTX**. The first export
-downloads a headless Chromium (used only for rendering slides); subsequent
-exports reuse it. If a system Chrome/Edge is preferred, VMark can point the
-exporter at it instead.
+Slidev decks export to **PDF**, **PNG**, or **PPTX**. The content server runs
+Slidev's own `slidev export` command, which renders the slides in Chromium
+through the `playwright-chromium` package. VMark does not download or locate a
+browser for it: if `playwright-chromium` is not installed next to Slidev in the
+content server's runtime, the export fails and shows Slidev's error message.
+An export that runs longer than three minutes is stopped.
 
 ## Privacy & security
 

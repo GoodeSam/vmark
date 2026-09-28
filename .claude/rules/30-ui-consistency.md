@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/*.css"
+  - "src/**/*.tsx"
+---
+
 # 30 - UI Consistency
 
 > See detailed specs in `dev-docs/design-system.md`.

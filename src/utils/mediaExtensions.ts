@@ -13,63 +13,34 @@
  * The canonical IMAGE set is the UNION of all former copies (the most permissive
  * is the intended set: a real image file should be recognized everywhere).
  *
+ * @coordinates-with src/utils/mediaExtensions.json — the data, shared with Rust
+ * @coordinates-with src-tauri/src/asset_access.rs — embeds the same file for the asset:// grant gate
  * @module utils/mediaExtensions
  */
 
 /**
- * Image extensions (bare, no leading dot). Canonical union of former copies,
- * broadened for the media viewer. macOS WKWebView decodes heic/heif/tiff
- * natively; where a webview can't decode a format the media viewer degrades to
- * an "open externally" fallback rather than erroring.
+ * The lists themselves live in `mediaExtensions.json`, the ONE file both this
+ * module and the Rust asset-protocol gate (`src-tauri/src/asset_access.rs`,
+ * via `include_str!`) read. They used to be two hand-kept copies held together
+ * by a Rust test that parsed this file's source text, so a comment or a
+ * reformat could break or fool the check. Both sides now validate the same
+ * data: lowercase bare extensions, none named twice.
+ *
+ * Image: the canonical union of the former copies, broadened for the media
+ * viewer. macOS WKWebView decodes heic/heif/tiff natively; where a webview
+ * can't decode a format the media viewer degrades to an "open externally"
+ * fallback rather than erroring.
  */
-export const IMAGE_EXTENSIONS = [
-  "png",
-  "jpg",
-  "jpeg",
-  "jfif",
-  "gif",
-  "webp",
-  "svg",
-  "bmp",
-  "ico",
-  "avif",
-  "apng",
-  "heic",
-  "heif",
-  "tiff",
-  "tif",
-] as const;
+import MEDIA from "./mediaExtensions.json";
+
+/** Image extensions (bare, no leading dot). */
+export const IMAGE_EXTENSIONS: readonly string[] = Object.freeze([...MEDIA.image]);
 
 /** Video extensions (bare, no leading dot). */
-export const VIDEO_EXTENSIONS = [
-  "mp4",
-  "webm",
-  "mov",
-  "avi",
-  "mkv",
-  "m4v",
-  "ogv",
-  "mpeg",
-  "mpg",
-  "wmv",
-  "flv",
-  "3gp",
-] as const;
+export const VIDEO_EXTENSIONS: readonly string[] = Object.freeze([...MEDIA.video]);
 
 /** Audio extensions (bare, no leading dot). */
-export const AUDIO_EXTENSIONS = [
-  "mp3",
-  "m4a",
-  "ogg",
-  "oga",
-  "wav",
-  "flac",
-  "aac",
-  "opus",
-  "weba",
-  "aiff",
-  "wma",
-] as const;
+export const AUDIO_EXTENSIONS: readonly string[] = Object.freeze([...MEDIA.audio]);
 
 /** Image extensions with a leading dot (for path/URL suffix matching). */
 export const IMAGE_EXTENSIONS_DOTTED = IMAGE_EXTENSIONS.map((e) => `.${e}`);

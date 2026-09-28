@@ -299,6 +299,13 @@ errors:
   workflow.noPendingApproval: "일치하는 대기 중인 승인 요청이 없습니다"
   workflow.appDataDirUnavailable: "앱 데이터 디렉터리를 확인할 수 없습니다: %{detail}"
   workflow.snapshotFailed: "이 워크플로가 수정할 파일의 스냅샷을 만들 수 없어 실행하지 않았습니다: %{detail}"
+  workflow.snapshotNotFound: "해당 워크플로 스냅샷이 더 이상 존재하지 않습니다"
+  workflow.snapshotUnreadable: "워크플로 스냅샷 기록을 읽을 수 없습니다: %{detail}"
+  workflow.snapshotNoWorkspace: "이 스냅샷은 이전 버전의 VMark에서 만들어져 복원할 수 없습니다"
+  workflow.snapshotWorkspaceMissing: "이 스냅샷이 속한 폴더가 더 이상 존재하지 않습니다: %{path}"
+  workflow.snapshotListFailed: "워크플로 스냅샷 목록을 가져올 수 없습니다: %{detail}"
+  workflow.restoreWhileRunning: "워크플로가 실행 중입니다. 파일을 복원하기 전에 완료될 때까지 기다리거나 취소하세요."
+  workflow.restoreSuperseded: "이 스냅샷 이후 다른 워크플로가 실행되어, 복원하면 그 변경 사항이 취소될 수 있습니다. 아무것도 복원하지 않았습니다."
 
   # === 저장 경로 (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "이 파일이 있던 폴더가 더 이상 존재하지 않습니다: %{dir}"
@@ -404,6 +411,17 @@ errors:
 
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "키체인 접근이 거부되었습니다. 키체인 안내 창에서 VMark를 허용하거나 ‘키체인 접근’에서 접근 권한을 부여한 뒤 다시 시도하세요."
+
+  # === 워크스페이스 접근 권한 (workspace_grants/commands.rs, WI-LX1.1) ===
+  workspaceAccess.notGranted: "VMark에 “%{path}”에 대한 접근 권한이 없습니다. 파일 → 워크스페이스 열기...에서 폴더를 선택해 허용하세요."
+  workspaceAccess.pickerBusy: "폴더 선택 대화상자가 이미 열려 있습니다"
+  workspaceAccess.checkBusy: "VMark가 아직 해당 폴더에 대한 접근을 확인하고 있습니다. 잠시 후 다시 시도하세요"
+  workspaceAccess.listProtected: "VMark가 열 수 있는 폴더 목록은 VMark만 변경할 수 있습니다"
+
+# WI-LX1.1 — the folder picker Rust shows for workspace access
+workspaceAccess:
+  pickTitle: "워크스페이스 폴더 열기"
+  confirmTitle: "VMark가 이 폴더를 열도록 허용"
 
 window:
   settings.title: "설정"

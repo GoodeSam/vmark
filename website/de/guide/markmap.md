@@ -28,9 +28,9 @@ Geben Sie einen umzäunten Code-Block mit der `markmap`-Sprachkennung ein:
 ```text
 ````
 
-### Über das MCP-Tool
+### Über einen KI-Assistenten
 
-Das `media`-MCP-Tool mit `action: "markmap"` und dem `code`-Parameter mit Markdown-Überschriften verwenden.
+Es gibt kein eigenes Mindmap-Tool. Ein KI-Client, der über den [MCP-Server von VMark](/de/guide/mcp-setup) verbunden ist, fügt eine Mindmap genauso ein wie jedes andere Markdown — indem er mit dem `document`- oder `selection`-Tool einen ` ```markmap `-Code-Block in das Dokument schreibt.
 
 ## Bearbeitungsmodi
 
@@ -38,15 +38,15 @@ Das `media`-MCP-Tool mit `action: "markmap"` und dem `code`-Parameter mit Markdo
 
 Im WYSIWYG-Modus werden Markmap-Mindmaps als interaktive SVG-Bäume gerendert. Sie können:
 
-- **Schwenken** durch Scrollen oder Klicken und Ziehen
-- **Zoomen** durch Gedrückthalten von `Cmd`/`Strg` und Scrollen
+- **Schwenken** durch Klicken und Ziehen (einfaches Scrollen scrollt das Dokument, nicht die Mindmap)
+- **Zoomen** durch Gedrückthalten von `Strg` und Scrollen
 - **Knoten ein-/ausklappen** durch Klicken auf den Kreis an jedem Zweig
 - **Ansicht anpassen** mit der Anpassen-Schaltfläche (oben rechts beim Hovern)
 - **Doppelklicken** auf die Mindmap zum Bearbeiten des Quellcodes
 
 ### Quellmodus mit Live-Vorschau
 
-Im Quellmodus erscheint ein schwebendes Vorschau-Panel, wenn sich Ihr Cursor innerhalb eines Markmap-Code-Blocks befindet, das sich beim Tippen aktualisiert.
+Im Quellmodus zeigt ein schwebendes Vorschau-Panel die Mindmap an, solange sich Ihr Cursor innerhalb eines Markmap-Code-Blocks befindet, und aktualisiert sich beim Tippen. Die Vorschau ist standardmäßig ausgeschaltet — schalten Sie sie mit **Ansicht → Diagramm-Vorschau umschalten** (`Alt + Mod + P`) oder über die Befehlspalette ein.
 
 ## Eingabeformat
 
@@ -121,8 +121,8 @@ Hier ist eine interaktive Markmap, die direkt auf dieser Seite gerendert wird �
 
 | Aktion | Wie |
 |--------|-----|
-| **Schwenken** | Scrollen oder klicken und ziehen |
-| **Zoomen** | `Cmd`/`Strg` + Scrollen |
+| **Schwenken** | Klicken und ziehen |
+| **Zoomen** | `Strg` + Scrollen |
 | **Knoten einklappen** | Auf den Kreis an einem Zweigpunkt klicken |
 | **Knoten ausklappen** | Erneut auf den Kreis klicken |
 | **An Ansicht anpassen** | Auf die Anpassen-Schaltfläche klicken (oben rechts beim Hovern) |

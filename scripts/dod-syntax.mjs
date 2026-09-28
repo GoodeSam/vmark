@@ -47,6 +47,7 @@
  * @module scripts/dod-syntax
  */
 import { readFileSync } from "node:fs";
+import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import ts from "typescript";
@@ -392,12 +393,73 @@ export function journeyShape(sf) {
 
 // ---------------------------------------------------------------- CLI
 
+/** An exit code raised inside `main` — `--serve` must answer it, not die of it. */
+class DodExit extends Error {
+  constructor(code) {
+    super(`exit ${code}`);
+    this.code = code;
+  }
+}
+
 function readOrExit(file) {
   try {
     return readFileSync(file, "utf8");
   } catch (err) {
     console.error(`dod-syntax: cannot read ${file}: ${err instanceof Error ? err.message : String(err)}`);
-    process.exit(2);
+    throw new DodExit(2);
+  }
+}
+
+/** `main`, with an unreadable file reported as exit 2 rather than thrown. */
+function runOnce(argv) {
+  try {
+    return main(argv);
+  } catch (err) {
+    if (err instanceof DodExit) return err.code;
+    throw err;
+  }
+}
+
+/**
+ * `--serve`: answer many requests from ONE process. Loading the TypeScript
+ * compiler costs ~0.36s, and a DoD phase issues dozens of probes, so one node
+ * per probe spent most of a phase starting processes (41 probes, 11s, in the
+ * feature-ledger phase 5 — its self-test took eleven minutes and timed out
+ * under a parallel gate run). `scripts/lib/dod-assertions.sh` starts one
+ * server per shell and falls back to a fresh process when it cannot.
+ *
+ * Request: one line — the caller's cwd, then argv, joined by U+001F.
+ * Reply: `O <line>` per stdout line, `E <line>` per stderr line, then
+ * `X <exit code>`. Each request runs with the caller's cwd, so relative paths
+ * resolve exactly as they would in a process started there. The argv
+ * `--ping` alone is the readiness handshake: `X 0`, cwd untouched, so a
+ * caller learns the server is up before it trusts the stream with a probe.
+ */
+async function serve() {
+  const tagged = (tag, lines) => lines.flatMap((l) => String(l).split("\n")).map((l) => `${tag}\t${l}\n`).join("");
+  for await (const line of createInterface({ input: process.stdin, crlfDelay: Infinity })) {
+    const [cwd, ...argv] = line.split("\u001f");
+    if (argv.length === 1 && argv[0] === "--ping") {
+      process.stdout.write("X\t0\n");
+      continue;
+    }
+    const out = [];
+    const err = [];
+    const { log, error } = console;
+    console.log = (...a) => out.push(a.join(" "));
+    console.error = (...a) => err.push(a.join(" "));
+    let code;
+    try {
+      process.chdir(cwd);
+      code = runOnce(argv);
+    } catch (e) {
+      err.push(e instanceof Error ? e.message : String(e));
+      code = 70;
+    } finally {
+      console.log = log;
+      console.error = error;
+    }
+    process.stdout.write(`${tagged("O", out)}${tagged("E", err)}X\t${code}\n`);
   }
 }
 
@@ -499,5 +561,6 @@ export function main(argv) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exit(main(process.argv.slice(2)));
+  if (process.argv[2] === "--serve") await serve();
+  else process.exit(runOnce(process.argv.slice(2)));
 }

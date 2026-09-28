@@ -133,6 +133,8 @@ Einen **Ordner** als aktiven Arbeitsbereich öffnen. Anders als `open` (eine ein
 
 **Freigabeablauf.** Der erste Aufruf gibt `{needsApproval: true}` zurück und blendet einen Zustimmungsdialog ein, der den *kanonischen* Ordnerpfad nennt (Symlinks aufgelöst). Der Assistent sollte den Benutzer fragen und dann **denselben Aufruf wiederholen**; sobald der Benutzer zustimmt, öffnet die Wiederholung den Ordner. Eine abgelehnte Anfrage schlägt weiter fehl, bis sie erneut freigegeben wird. Es gibt keine „Merken"-Option — jedes Öffnen wird einzeln freigegeben.
 
+**Ordnerzugriff.** Die Bestätigung im Dialog allein erlaubt VMark nicht, einen Ordner außerhalb der immer lesbaren Orte (Ihr Benutzerordner und eingebundene Laufwerke) zu lesen. Für einen solchen Ordner öffnet der bestätigte erneute Aufruf die Ordnerauswahl von VMark bei diesem Ordner und antwortet mit `APPROVAL_REQUIRED` — der Benutzer muss ihn dort auswählen; danach öffnet der nächste Aufruf ihn. Ist bereits ein anderer Ordnerdialog offen, wird nichts angezeigt und die Antwort lautet `BUSY` — die Bestätigung bleibt erhalten, also erneut versuchen, sobald der Benutzer diesen Dialog geschlossen hat. `BUSY` kommt auch, solange in diesem Fenster bereits ein Arbeitsbereichswechsel läuft.
+
 ### `save`
 
 Einen Tab unter seinem bestehenden Pfad speichern.
@@ -361,7 +363,7 @@ Läufe sind begrenzt (≤ 25 Schritte, ≤ 120 s, Quelle ≤ 64 KiB) und laufen 
 
 Zeichnet **Ihre eigenen Aktionen** auf einem KI-eigenen Tab in einen abspielbaren Workflow auf. Argumente: `tabId?`, `recordOp` (`"start"` oder `"stop"`) und `site?` (die Site-ID im Front-Matter des aufgezeichneten Workflows; Standardwert ist `recording`).
 
-`start` ist durch die `record`-Berechtigung **einwilligungspflichtig**, die — wie `execute_js` und `session` — **nie ein dauerhaftes Recht** ist: Jede Aufzeichnung fragt Sie erneut, sodass die KI Sie niemals heimlich aufzeichnen kann. Bis Sie es erlauben, gibt `start` `needsApproval` zurück; sobald Sie es tun, aktiviert VMark einen ruhenden Erfassungs-Shim in der Seiten-World und beginnt, die **Klicks und Feldeingaben** aufzuzeichnen, die Sie ausführen. `stop` gibt `{source, inputs, eventCount}` zurück — die `source` ist Workflow-Text, den Sie speichern oder direkt an [`workflow_run`](#workflow-run) übergeben können.
+`start` ist durch die `record`-Berechtigung **einwilligungspflichtig**, die — wie `execute_js` und `session` — **nie ein dauerhaftes Recht** ist: Jede Aufzeichnung fragt Sie erneut, sodass die KI Sie niemals heimlich aufzeichnen kann. Bis Sie es erlauben, gibt `start` `needsApproval` zurück; sobald Sie es tun, aktiviert VMark einen ruhenden Erfassungs-Shim in der Seiten-World und beginnt, die **Klicks und Feldeingaben** aufzuzeichnen, die Sie ausführen. `stop` gibt `{source, inputs, eventCount}` zurück — die `source` ist Workflow-Text, den Sie speichern oder direkt an [`workflow_run`](#workflow-run-workflow-cancel) übergeben können.
 
 Die Aufzeichnung ist **von Grund auf wertfrei**, und dies ist kein Filter, der der Seite vertraut: Nichts, was Sie eingeben, wird jemals erfasst. Jedes Textfeld wird zu einer benannten `{input}`-Variablen (der Wert wird beim Abspielen bereitgestellt, nie aufgezeichnet); ein **Passwort- oder Einmalcode-Feld** wird zu einem `confirm:`-Schritt — einem menschlichen Gate, das Sie beim Abspielen von Hand abschließen — sodass ein Geheimnis nicht einmal parametrisiert wird; und jede URL wird auf Origin + Pfad reduziert, sodass ein Token in einer Query-Zeichenkette nicht überleben kann. Aufgezeichnet werden die **Locators**, die Sie berührt haben (ARIA-Rolle + zugänglicher Name), nie deren Daten. Die Aufzeichnung folgt Ihnen über Seitennavigationen hinweg und ist begrenzt (200 Ereignisse pro Seite, 1.000 pro Sitzung).
 
@@ -549,7 +551,8 @@ Es treten zwei Fehlerformen auf:
 | `INVALID_PATCH` | Hülle | `workflow.apply_patch` hat ein fehlerhaftes `patches`-Array erhalten |
 | `INVALID_TAB` | Hülle | `tabId` konnte nicht aufgelöst werden |
 | `INVALID_PATH` | Hülle | Ein `filePath` konnte nicht gelesen werden oder liegt außerhalb des Geltungsbereichs des offenen Arbeitsbereichs / Dokuments |
-| `APPROVAL_REQUIRED` | Hülle | `save_as` an einen neuen Ort, während **Änderungen automatisch genehmigen** aus ist |
+| `APPROVAL_REQUIRED` | Hülle | `save_as` an einen neuen Ort, während **Speichern an neuem Ort und Genie-Ergebnisse automatisch genehmigen** aus ist; oder `open_workspace` wartet auf die Bestätigung des Benutzers oder darauf, dass er den Ordner im Ordnerdialog von VMark auswählt |
+| `BUSY` | Hülle | `open_workspace` konnte nicht fortfahren: Ein anderer Ordnerdialog ist offen oder in diesem Fenster läuft ein Arbeitsbereichswechsel; die Bestätigung bleibt erhalten — erneut versuchen |
 | `NOT_WORKFLOW` | Hülle | `workflow.*` wurde auf einem Tab aufgerufen, der kein YAML-Workflow ist |
 | `READ_ONLY` | Hülle | Eine Mutation wurde auf einem schreibgeschützten Dokument versucht |
 | `NO_EDITOR` | Hülle | `selection.*` wurde aufgerufen, aber der fokussierte Tab hat keinen aktiven Editor |

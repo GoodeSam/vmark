@@ -23,7 +23,7 @@ VMark 处理 Markdown 中的图片引用时,会区分两个方向:
 
 设想中的功能是:VMark 在粘贴时识别出本地图片,上传到远程存储,然后把返回的 URL 写入 Markdown,而不是写入 `./.assets/…` 路径。听上去不复杂,但会让 VMark 的边界从三个关键方向向外扩张:
 
-1. **凭证管理**。原生 S3 兼容上传需要把用户的 access key 和 secret access key 长期保存下来。VMark 目前不保存任何长期密钥——既没有落盘加密方案、也没有接入系统 keychain、没有密钥轮换的相关界面,自然也不存在"密钥被误写进 Markdown"这种故障模式。一旦加入上传功能,就跨过了这条边界。
+1. **凭证管理**。原生 S3 兼容上传需要把用户的 access key 和 secret access key 长期保存下来。VMark 如今确实保存了少量密钥——AI 提供商的 API 密钥，以及你为 AI 保存的浏览器会话，都存放在系统 keychain 中——但其中没有任何一个是能向你付费的存储桶写入数据的凭证。上传功能恰恰会加入这样的东西：又一家服务商的密钥需要保存、需要密钥轮换的相关界面，还会带来"密钥被误写进 Markdown"这种故障模式。
 
 2. **多服务商适配的长期负担**。S3、Cloudflare R2、Backblaze B2、MinIO、DigitalOcean Spaces 都号称兼容 S3,但每家都有自己的脾气(path-style 与 virtual-hosted 寻址方式、ACL 语义、区域 endpoint、CORS 规则)。让一名维护者长期吃下这一摊接口,对一款写作工具来说成本太高。
 

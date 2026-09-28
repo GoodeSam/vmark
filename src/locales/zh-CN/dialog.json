@@ -211,7 +211,6 @@
   "common.pin": "钉住",
   "common.pinTooltip": "保持此通知打开",
   "common.unpinTooltip": "已钉住 — 手动关闭",
-  "openWorkspaceFolder.title": "打开工作区文件夹",
   "openWorkspace.approval.title": "将文件夹作为工作区打开?",
   "openWorkspace.approval.body": "AI 助手请求将此文件夹作为工作区打开,这将授予它访问该文件夹文件树的权限:",
   "openWorkspace.approval.approve": "打开工作区",
@@ -262,5 +261,15 @@
   "error.title": "错误",
   "error.saveMediaFailed": "保存媒体文件失败：{{error}}",
   "resetShortcuts.title": "重置快捷键",
-  "resetSettings.title": "重置设置"
+  "resetSettings.title": "重置设置",
+  "exportError.lockBusy": "另一个导出正在写入 {{destination}}。如果没有其他导出在运行，请删除 {{lock}} 后重试。",
+  "exportError.takenOver": "导出到 {{destination}} 未发布：本次导出运行期间，另一个导出接管了该文件夹。目标位置未做任何更改。",
+  "exportError.notAFile": "{{path}} 是一个文件夹，而不是本次导出可以替换的文件。请移动或重命名它，或导出到其他文件夹。",
+  "exportError.publishFailed": "无法发布到 {{destination}} 的导出：{{reason}}。{{rollback}}",
+  "exportError.rollbackFilesNotRestored": "以下文件无法恢复：{{files}}。",
+  "exportError.rollbackFoldersLeft": "你的文件已恢复，但导出创建的以下文件夹仍然存在：{{folders}}。",
+  "exportError.rollbackRestored": "其他内容均未更改，文件夹已恢复为之前的内容。",
+  "exportError.backupKeptAt": "{{path}}（之前的内容保存在 {{backup}}：{{reason}}）",
+  "exportError.backupGone": "{{path}}（位于 {{backup}} 的备份也已丢失：{{reason}}）",
+  "exportError.listItem": "“{{item}}”"
 }

@@ -39,6 +39,20 @@ pub(in crate::workflow) fn commit_with(
     bytes: &[u8],
     between: impl FnOnce(),
 ) -> Result<(), String> {
+    let root =
+        Dir::open(workspace_root).map_err(|e| format!("cannot resolve the workspace root: {e}"))?;
+    commit_in(target, &root, bytes, between)
+}
+
+/// [`commit_with`] against a root the caller already HOLDS open — a snapshot
+/// restore's many writes prove containment against one directory, so a root
+/// swapped for a link mid-restore cannot become "the workspace" (#74).
+pub(in crate::workflow) fn commit_in(
+    target: &Path,
+    root: &Dir,
+    bytes: &[u8],
+    between: impl FnOnce(),
+) -> Result<(), String> {
     let parent = target
         .parent()
         .ok_or_else(|| "no parent directory".to_string())?;
@@ -48,9 +62,7 @@ pub(in crate::workflow) fn commit_with(
     let final_name = c_name(file_name)?;
 
     let dir = Dir::open(parent)?;
-    let root =
-        Dir::open(workspace_root).map_err(|e| format!("cannot resolve the workspace root: {e}"))?;
-    dir.assert_within(&root, parent)?;
+    dir.assert_within(root, parent)?;
 
     between();
 

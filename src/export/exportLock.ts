@@ -74,6 +74,7 @@ import {
   writeLock,
 } from "./exportLockFile";
 import { takeOverIfStale } from "./exportLockTakeover";
+import { lockBusyMessage } from "./exportErrorMessages";
 import { remove } from "@tauri-apps/plugin-fs";
 
 export { EXPORT_LOCK_NAME, EXPORT_LOCK_STALE_MS, nonce } from "./exportLockFile";
@@ -108,10 +109,7 @@ export async function acquireExportLock(destination: string): Promise<string> {
     if (await takeOverIfStale(lock, owner)) return owner;
 
     if (Date.now() - startedAt >= EXPORT_LOCK_WAIT_MS) {
-      throw new Error(
-        `Another export is already writing to ${destination}. ` +
-          `If no other export is running, delete ${lock} and try again.`,
-      );
+      throw new Error(lockBusyMessage(destination, lock));
     }
     await delay(POLL_MS);
   }

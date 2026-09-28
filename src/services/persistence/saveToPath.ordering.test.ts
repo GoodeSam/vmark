@@ -51,7 +51,11 @@ const {
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => mockInvoke(...a) }));
 vi.mock("@/services/history/historyOperations", () => ({ createSnapshot: vi.fn() }));
-vi.mock("@/services/coherence/captureFunnel", () => ({ captureWrite: vi.fn() }));
+// Every save reports to the capture funnel (WI-LX1.4); it is async and never
+// rejects, so the stand-in resolves like the real one does when it declines.
+vi.mock("@/services/coherence/captureFunnel", () => ({
+  captureWrite: vi.fn(() => Promise.resolve(null)),
+}));
 vi.mock("@/services/ime/imeToast", () => ({
   imeToast: { warning: vi.fn(), error: vi.fn(), errorDetail: vi.fn(), info: vi.fn(), success: vi.fn() },
 }));

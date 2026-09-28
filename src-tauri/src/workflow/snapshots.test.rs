@@ -148,8 +148,7 @@ async fn create_accepts_uuid_and_fallback_id_shapes() {
 #[tokio::test]
 async fn restore_rejects_hostile_snapshot_id() {
     let app_data = tempdir().unwrap();
-    let ws = tempdir().unwrap();
-    let result = restore_snapshot(app_data.path(), "../../../etc", ws.path()).await;
+    let result = restore_snapshot(app_data.path(), "../../../etc").await;
     assert!(result.is_err(), "expected Err, got {:?}", result);
 }
 
@@ -261,9 +260,7 @@ async fn roundtrip_restores_modified_file() {
     assert_eq!(id, "snap-exec-4");
 
     std::fs::write(&file, "modified").unwrap();
-    restore_snapshot(app_data.path(), &id, ws.path())
-        .await
-        .unwrap();
+    restore_snapshot(app_data.path(), &id).await.unwrap();
     assert_eq!(std::fs::read_to_string(&file).unwrap(), "original");
 }
 
@@ -285,9 +282,7 @@ async fn restore_deletes_files_created_by_workflow() {
 
     // Workflow "creates" the file.
     std::fs::write(&new_file, "generated content").unwrap();
-    restore_snapshot(app_data.path(), &id, ws.path())
-        .await
-        .unwrap();
+    restore_snapshot(app_data.path(), &id).await.unwrap();
     assert!(
         !new_file.exists(),
         "created file must be deleted on restore"
@@ -297,8 +292,7 @@ async fn restore_deletes_files_created_by_workflow() {
 #[tokio::test]
 async fn restore_missing_snapshot_errors() {
     let app_data = tempdir().unwrap();
-    let ws = tempdir().unwrap();
-    let result = restore_snapshot(app_data.path(), "snap-does-not-exist", ws.path()).await;
+    let result = restore_snapshot(app_data.path(), "snap-does-not-exist").await;
     assert!(result.is_err());
 }
 
@@ -320,9 +314,7 @@ async fn nested_paths_preserved_in_snapshot() {
 
     std::fs::write(&a, "changed-one").unwrap();
     std::fs::write(&b, "changed-two").unwrap();
-    restore_snapshot(app_data.path(), &id, ws.path())
-        .await
-        .unwrap();
+    restore_snapshot(app_data.path(), &id).await.unwrap();
     assert_eq!(std::fs::read_to_string(&a).unwrap(), "one");
     assert_eq!(std::fs::read_to_string(&b).unwrap(), "two");
 }

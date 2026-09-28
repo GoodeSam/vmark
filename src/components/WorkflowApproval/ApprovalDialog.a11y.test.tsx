@@ -37,7 +37,8 @@ vi.mock("@/stores/workflowStore", () => {
 });
 
 vi.mock("@/hooks/useWorkflowExecution", () => ({
-  useWorkflowExecution: () => ({ respondApproval: vi.fn() }),
+  useWorkflowEventLifecycle: () => {},
+  respondWorkflowApproval: vi.fn(),
 }));
 
 import { ApprovalDialog } from "./ApprovalDialog";

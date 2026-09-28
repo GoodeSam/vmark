@@ -33,7 +33,9 @@
  *              { expected, reason }  a pinned doc value for a default the code
  *                           computes at runtime (the language auto-detect) or
  *                           keeps outside defaults.ts (per-workspace rows);
- *                           the reason is REQUIRED
+ *                           the reason is REQUIRED. A computed pin also names
+ *                           `key` and `computedBy` (the initialiser's source
+ *                           text), and the join checks both
  *              { notASetting: reason }  a documented row that is not a
  *                           persisted default at all (an action button, the
  *                           server's running state); the reason is REQUIRED
@@ -72,14 +74,21 @@ const HARD_BREAK = { preserve: "Preserve existing", twoSpaces: "Two spaces (Reco
 
 const settings = (row, key, render, heading) => ({ page: "settings", row, ...(heading ? { heading } : {}), key, render });
 const terminal = (row, key, render) => ({ page: "terminal", row, key, render });
-const pinned = (page, row, expected, reason) => ({ page, row, render: { expected, reason } });
+/**
+ * A doc value the join cannot derive. `computed` ties it to the defaults.ts
+ * key whose RUNTIME initialiser it describes — `{ key, by }`, `by` being that
+ * initialiser's source text — so the pin fails when the key goes away or
+ * stops being computed that way. Omit it for a row kept outside defaults.ts.
+ */
+const pinned = (page, row, expected, reason, computed) => ({
+  page, row, ...(computed ? { key: computed.key, computedBy: computed.by } : {}), render: { expected, reason },
+});
 const notASetting = (page, row, reason) => ({ page, row, render: { notASetting: reason } });
 
 /** One entry per documented Default row, in page order. See the header for the shape. */
 export const ROW_MAP = [
   // ── settings.md › Appearance ────────────────────────────────────────────
   settings("Follow system appearance", "appearance.followSystemAppearance", ON_OFF),
-  { page: "settings", row: "Language", key: "general.language", render: { expected: "English", reason: "resolveInitialLanguage() reads navigator.languages on first run; English is the fallback the page names" } },
   settings("Show filename in titlebar", "appearance.showFilenameInTitlebar", ON_OFF),
   settings("Dim level", "appearance.focusModeDim", { enum: { standard: "Standard", strong: "Strong", stronger: "Stronger" } }),
   // ── settings.md › Editor ────────────────────────────────────────────────
@@ -149,6 +158,9 @@ export const ROW_MAP = [
   settings("Diagrams & SVG", "formats.diagrams", ON_OFF),
   settings("HTML preview", "formats.htmlPreview", ON_OFF),
   settings("Code viewers", "formats.codeViewers", ON_OFF),
+  // ── settings.md › Language (interface) ──────────────────────────────────
+  pinned("settings", "Interface language", "System language", "resolveInitialLanguage() picks the first shipped locale from navigator.languages; English only as fallback",
+    { key: "general.language", by: "resolveInitialLanguage()" }),
   // ── settings.md › Language (CJK formatting) ─────────────────────────────
   settings("Convert fullwidth letters/numbers", "cjkFormatting.fullwidthAlphanumeric", ON_OFF),
   settings("Normalize punctuation width", "cjkFormatting.fullwidthPunctuation", ON_OFF),
@@ -207,7 +219,6 @@ export const ROW_MAP = [
   settings("AI browser session", "browser.aiSession", { enum: { sandbox: "Sandbox", shared: "Shared" } }),
   settings("Allow AI loopback access", "browser.aiAllowLoopback", ON_OFF),
   settings("Clear macOS quarantine on open", "advanced.clearMacQuarantineOnOpen", ON_OFF),
-  settings("Mac Option as Meta (terminal)", "terminal.macOptionIsMeta", ON_OFF),
   settings("Developer tools", "advanced.developerMode", ON_OFF),
   // ── terminal.md › Settings ──────────────────────────────────────────────
   terminal("Panel Size", "terminal.panelRatio", "percent"),

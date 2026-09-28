@@ -64,12 +64,23 @@ Estos números se publican abiertamente en [`log.vmark.app/api/stats`](https://l
 - El hash de máquina no está vinculado a ninguna cuenta, correo electrónico o dirección IP — es únicamente un contador pseudónimo de dispositivos
 - No usamos cookies de seguimiento, huellas digitales ni ningún SDK de análisis
 
+## Qué Puede Leer VMark en el Disco
+
+El acceso de VMark a los archivos es un ámbito de permisos acotado, no el disco entero:
+
+- **Ámbito estático**: tu carpeta personal (`$HOME/**`) más los volúmenes montados — `/Volumes/**` en macOS, `/mnt/**` y `/media/**` en Linux. En Windows también abarca las unidades `C:\` a `F:\`, así que solo `G:\` y las unidades posteriores, y las carpetas compartidas de red, necesitan un permiso en tiempo de ejecución. En macOS y Linux, todo lo que está dentro de una carpeta oculta (cuyo nombre empieza por `.`) queda fuera del ámbito estático.
+- **Permisos en tiempo de ejecución**: un archivo que abres expresamente — desde Finder o el Explorador de Archivos, la línea de comandos `vmark` o un diálogo de archivos — recibe un permiso solo para ese archivo. Una **carpeta** solo recibe permiso cuando VMark puede saber que la elegiste tú: la seleccionaste en el diálogo de carpetas de VMark o la abriste desde Finder. VMark guarda una lista de esas carpetas (`workspace-grants.json` en su carpeta de datos de la aplicación) y vuelve a concederles permiso en cada inicio, para que tu sesión restaurada y **Abrir espacio de trabajo reciente** sigan funcionando. Un espacio de trabajo reciente que no está en esa lista, y que el ámbito estático no cubre, abre el diálogo de carpetas en esa carpeta — elígela para confirmarlo. Cuando un asistente de IA pide abrir una carpeta así, VMark hace lo mismo después de que apruebes la solicitud.
+- **Imágenes y multimedia**: las imágenes, los vídeos y el audio locales se muestran mediante el protocolo de recursos de VMark, que llega a los mismos lugares — el ámbito estático más los permisos en tiempo de ejecución anteriores. El visor multimedia añade un permiso para el único archivo que muestra, y solo si tiene una extensión multimedia; una solicitud para cualquier otra ruta se rechaza en lugar de ampliar el ámbito. Una imagen fuera de esos lugares, como una junto a un documento que abriste por separado desde fuera del ámbito estático, no se muestra hasta que abres su carpeta como espacio de trabajo.
+
+Nada de esto se envía a ningún sitio; el ámbito decide lo que la propia aplicación puede leer.
+
 ## Transparencia de Código Abierto
 
 VMark es completamente de código abierto. Puedes verificar todo lo descrito aquí:
 
 - Configuración del endpoint de actualización: [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json)
 - Generación del hash de máquina: [`src-tauri/src/lib.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/lib.rs) — busca `machine_id_hash`
+- Ámbito del sistema de archivos y de recursos: [`src-tauri/capabilities/default.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/capabilities/default.json), la entrada `assetProtocol` de [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json), [`src-tauri/src/fs_scope.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/fs_scope.rs) y [`src-tauri/src/workspace_grants/`](https://github.com/xiaolai/vmark/tree/main/src-tauri/src/workspace_grants)
 - Agregación de estadísticas del lado del servidor: [`scripts/vmark-stats-json`](https://github.com/xiaolai/vmark/blob/main/scripts/vmark-stats-json) — el script exacto que se ejecuta en nuestro servidor para producir las [estadísticas públicas](https://log.vmark.app/api/stats)
 - No existen otras llamadas de red en el código base — busca `fetch`, `http` o `reqwest` tú mismo
 

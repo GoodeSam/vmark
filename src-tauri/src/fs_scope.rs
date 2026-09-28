@@ -1,32 +1,42 @@
-//! Runtime extension of the fs + asset-protocol read scopes.
+//! Runtime extension of the fs + asset-protocol scopes.
 //!
-//! The STATIC capability scope (`capabilities/default.json`) covers `$HOME/**`,
-//! `/Volumes/**`, `/mnt/**` and `/media/**`. That is deliberately narrow, so
-//! anything the user opens from outside it — a file from Finder or the CLI, a
-//! workspace on another drive — has to be granted here at runtime.
+//! The STATIC capability scope (`capabilities/default.json`, plus C:–F: in
+//! `windows.json`) covers `$HOME/**`, `/Volumes/**`, `/mnt/**` and `/media/**`,
+//! and the asset-protocol scope in `tauri.conf.json` is narrowed to the same
+//! roots (WI-LX1.2). Anything the user opens from outside them — a file from
+//! Finder or the CLI, a workspace on another drive — is granted here at runtime.
 //!
-//! Two properties of these grants drive every caller:
+//! Four properties of these grants drive every caller:
 //!   - they are IN-MEMORY and do not survive a restart, so a path must be
 //!     re-granted on every launch that opens it, not once when it is first
 //!     picked;
 //!   - `allow_file` grants exactly one path, while `allow_directory(p, r)`
 //!     pushes `p/*` when `r` is false and `p/**` when true — so a workspace
-//!     needs the recursive form or its subdirectories stay out of scope.
+//!     needs the recursive form or its subdirectories stay out of scope;
+//!   - a runtime fs grant is NOT read-only: the fs plugin accepts a
+//!     runtime-granted path for every command the capability permits (write,
+//!     rename, remove). The recursive workspace grant therefore lives in
+//!     `workspace_grants/scope.rs`, private to the module that decides a root
+//!     was chosen, never here;
+//!   - Tauri resolves a granted name AGAIN while granting, and also allows
+//!     whatever it resolves to then (`confirm_grant_target`).
 //!
 //! Split out of `file_open.rs` when that file crossed the 300-line limit:
 //! granting scope is a separate concern from queueing Finder/CLI opens.
 //!
 //! @coordinates-with file_open.rs — queues the opens these grants make readable
-//! @coordinates-with services/workspaces/openWorkspaceByPath.ts — the JS caller
+//! @coordinates-with workspace_grants/scope.rs — the recursive workspace grant
+//! @coordinates-with asset_access.rs — the media grant, confirmed the same way
 
 use tauri::Manager;
 
-/// Runtime-extend the fs + asset read scopes for a path the user asked to open.
+/// Runtime-extend the fs + asset scopes for a path the user asked to open.
 /// Files from Finder / CLI / "open in new window" can live anywhere
 /// (`/private/tmp`, `/etc`), so `readTextFile` rejects them until extended
-/// here. The asset-protocol scope (cwd-relative) needs the same per-file grant
-/// so `convertFileSrc`/asset:// serves the file (inline images + media viewer).
-/// Best-effort: failures logged, not propagated.
+/// here. The asset-protocol scope is limited to the same static roots, so it
+/// needs the same per-file grant for `convertFileSrc`/asset:// to serve the
+/// file (inline images + media viewer). Best-effort: failures logged, not
+/// propagated.
 pub(crate) fn allow_fs_read<R: tauri::Runtime, P: AsRef<std::path::Path>>(
     app: &tauri::AppHandle<R>,
     path: P,
@@ -67,9 +77,10 @@ pub(crate) fn allow_fs_read<R: tauri::Runtime, P: AsRef<std::path::Path>>(
 /// distinguishes "granted" from "logged and carried on", and the symptom
 /// surfaces a window later as an error the user cannot act on.
 ///
-/// The verdict is `is_allowed`, NOT the grant's own `Result`: a path the
-/// static scope already covers is readable whether or not the extra pattern
-/// took, and failing that case would refuse opens that work today.
+/// The verdict is the RUNTIME scope's `is_allowed`, not the grant's own
+/// `Result`. That scope starts empty (the fs plugin builds it from
+/// `FsScope::default()`) and never sees the capability files, so the check
+/// answers exactly "did a runtime pattern take?".
 pub(crate) fn grant_fs_read<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     path: &str,
@@ -86,42 +97,40 @@ pub(crate) fn grant_fs_read<R: tauri::Runtime>(
     }
 }
 
-/// Runtime-extend the fs + asset read scopes for a DIRECTORY tree the user
-/// opened as a workspace (#1252).
+/// Confirm, after a grant, that a name still resolves to the target the caller
+/// judged (#250).
 ///
-/// `allow_fs_read` grants a single path, which is right for one opened file and
-/// wrong for a workspace: a non-recursive grant leaves every SUBDIRECTORY out
-/// of scope.
+/// `Scope::allow_file` / `allow_directory` resolve the name they are given
+/// AGAIN and also allow whatever it resolves to at that instant: tauri 2.11.5's
+/// `push_pattern` (`src/scope/fs.rs:92`) ends by inserting
+/// `canonicalize_parent(path)` (`:143`), and `allow_directory` (`:351`) and
+/// `allow_file` both go through it. A caller that resolved and judged the
+/// target a moment earlier is exposed to a swap in between. This resolves once
+/// more after the grant and reports a moved name as a FAILED grant, so the
+/// caller records nothing and opens nothing.
 ///
-/// Invisible on macOS and Linux, where the static scope already covers where
-/// users keep files. On Windows `$HOME` is `C:\Users\<name>`, so a workspace on
-/// any other drive letter is covered by nothing and every file in it is refused
-/// with `forbidden path: …`. Best-effort: failures logged, not propagated.
-pub(crate) fn allow_fs_read_dir<R: tauri::Runtime>(app: &tauri::AppHandle<R>, path: &str) {
-    use tauri_plugin_fs::FsExt;
-    if let Err(e) = app.fs_scope().allow_directory(path, true) {
-        log::warn!("[fs-scope] Failed to allow directory '{}': {}", path, e);
+/// What it deliberately does NOT do is undo the stray grant. Tauri has no call
+/// that removes an allow pattern, and the only counter — a forbid pattern —
+/// outranks every allow, including ones the user made: a swap aimed at a
+/// workspace the user chose, or at a folder containing one, would have that
+/// workspace revoked. So the residual is stated, not papered over: after a
+/// swap that lands inside one grant call, the target stays readable (and, for
+/// the fs scope, writable) until the app restarts. It needs a rename of an
+/// EXISTING link into place during that call — no fs-plugin command creates
+/// one — and a swap undone before this check runs is invisible to any check
+/// made by name.
+pub(crate) fn confirm_grant_target<T: PartialEq + std::fmt::Debug>(
+    judged: &T,
+    resolve_again: impl FnOnce() -> Result<T, String>,
+) -> Result<(), String> {
+    let now = resolve_again()?;
+    if now == *judged {
+        return Ok(());
     }
-    if let Err(e) = app.asset_protocol_scope().allow_directory(path, true) {
-        log::warn!("[asset-scope] Failed to allow directory '{}': {}", path, e);
-    }
-}
-
-/// Grant the fs + asset read scopes for a workspace root the frontend is about
-/// to open (#1252).
-///
-/// Called from `openWorkspaceByPath` — the single JS funnel for the folder
-/// picker, "Open Recent" and the `open_workspace` MCP handler — because grants
-/// do not survive a restart. A workspace restored from the previous session, or
-/// reopened from recents, never passes through a dialog and so would otherwise
-/// be granted nothing.
-///
-/// Best-effort by design: a failed grant is logged and the open proceeds. The
-/// static scope still covers the common case, so refusing the whole open here
-/// would turn a partial degradation into a hard failure.
-#[tauri::command]
-pub fn allow_workspace_access(app: tauri::AppHandle, path: String) {
-    allow_fs_read_dir(&app, &path);
+    log::error!("[fs-scope] {judged:?} resolved to {now:?} while it was being granted");
+    Err(format!(
+        "{judged:?} resolved to {now:?} while it was being granted"
+    ))
 }
 
 #[cfg(test)]

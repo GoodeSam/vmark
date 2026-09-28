@@ -28,7 +28,7 @@ Entrambi gli identificatori di linguaggio si comportano in modo identico:
 ## Modalità di Modifica
 
 - **Modalità WYSIWYG** — il blocco di codice viene renderizzato come diagramma. Fai doppio clic per modificare il sorgente DOT con un'anteprima live con debounce; salva o annulla dall'intestazione di modifica.
-- **Modalità Sorgente** — posiziona il cursore all'interno di un blocco ` ```dot ` per ottenere l'anteprima fluttuante del diagramma (trascina, ridimensiona, zoom), come per Mermaid.
+- **Modalità Sorgente** — posiziona il cursore all'interno di un blocco ` ```dot ` per ottenere l'anteprima fluttuante del diagramma (trascina, ridimensiona, zoom), come per Mermaid. L'anteprima è disattivata per impostazione predefinita; attivala con **Vista → Mostra/Nascondi anteprima diagramma** (`Alt + Mod + P`).
 
 ## Pan, Zoom ed Esportazione
 

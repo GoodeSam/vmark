@@ -16,9 +16,9 @@
  *     keys, duplicate keys are rejected with an inline error). Removing a
  *     row cancels its queued sets and queues with.remove for its original
  *     key, so a deleted row never writes back on Save.
- *   - Action-metadata-driven field discovery (Phase 6 registry) is
- *     deferred to Phase 9 polish — the registry exists but threading
- *     the async fetch through this synchronous form needs more design.
+ *   - `with:` key suggestions, required-input warnings and default
+ *     placeholders come from the action's metadata (`useActionMetadata`,
+ *     setting-gated); a failed fetch falls back to free-form rows.
  *
  * @coordinates-with src/stores/workflowStore.ts — IRPatch sink
  * @module components/Editor/WorkflowEditor/StepForm

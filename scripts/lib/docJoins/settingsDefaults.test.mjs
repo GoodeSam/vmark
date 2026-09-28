@@ -350,12 +350,43 @@ describe("compare", () => {
 | Check Now | Trigger a check | — |
 `;
     const pinned = [
-      { page: "settings", row: "Language", key: "general.language", render: { expected: "English", reason: "auto-detected" } },
+      { page: "settings", row: "Language", key: "general.language", computedBy: "detect()", render: { expected: "English", reason: "auto-detected" } },
       { page: "settings", row: "Check Now", render: { notASetting: "an action button" } },
     ];
     expect(compare(pagesFrom({ settings: page }), { general: { language: "zh-CN" } }, pinned).findings).toEqual([]);
-    const { findings } = compare(pagesFrom({ settings: page.replace("| English |", "| Auto |") }), {}, pinned);
+    const { findings } = compare(pagesFrom({ settings: page.replace("| English |", "| Auto |") }), { general: { language: "zh-CN" } }, pinned);
     expect(findings).toEqual(['settings.md:4 "Language": doc says "Auto", the map pins "English" (auto-detected)']);
+  });
+
+  it("holds a KEYED pin to its key: the key must exist, and must still be computed the way the pin says", () => {
+    const page = `
+| Setting | Description | Default |
+|---|---|---|
+| Language | UI language | English |
+`;
+    const entry = [{ page: "settings", row: "Language", key: "general.language", computedBy: "detect()", render: { expected: "English", reason: "auto-detected" } }];
+    const pages = pagesFrom({ settings: page });
+    const defaults = { general: { language: "en" } };
+    // Computed as the pin says: clean.
+    expect(compare(pages, defaults, entry, {}, new Map([["general.language", "detect()"]])).findings).toEqual([]);
+    // The key was removed from defaults.ts: the pin describes nothing.
+    expect(compare(pages, { general: {} }, entry).findings).toEqual([
+      'settings.md:4 "Language": pinned key general.language is not in defaults.ts — the pin describes a setting that is gone',
+    ]);
+    // The default became a static literal: "System language" is no longer true.
+    expect(compare(pages, defaults, entry, {}, new Map([["general.language", '"en"']])).findings).toEqual([
+      'settings.md:4 "Language": defaults.ts initialises general.language with "en", not detect() — the pinned doc value was written for the computed default',
+    ]);
+  });
+
+  it("refuses a keyed pin without computedBy, and computedBy without a key", () => {
+    expect(validateRowMap([
+      { page: "settings", row: "A", key: "a.b", render: { expected: "X", reason: "r" } },
+      { page: "settings", row: "B", computedBy: "f()", render: { expected: "X", reason: "r" } },
+    ])).toEqual([
+      'ROW_MAP[0] "A": a pinned entry with a key must name the initialiser that computes it (computedBy) — otherwise the key is checked by nothing',
+      'ROW_MAP[1] "B": computedBy needs the key it describes',
+    ]);
   });
 
   it("refuses a bare { expected } or { notASetting } without a reason, and a duplicate entry", () => {

@@ -94,7 +94,7 @@ describe("FilesImagesSettings — Saving", () => {
     expect(store().general.autoSaveEnabled).toBe(true);
   });
 
-  it("Track document provenance writes general.coherenceCaptureOnSave (opt-in, ships off)", async () => {
+  it("Stamp identity block on save writes general.coherenceCaptureOnSave (opt-in, ships off)", async () => {
     const user = await renderPane();
     const provenance = screen.getByRole("switch", { name: PROVENANCE });
     expect(provenance).not.toBeChecked();

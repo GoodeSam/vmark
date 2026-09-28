@@ -1,12 +1,14 @@
 # Primeiros Passos com o VMark
 
-O VMark é um editor Markdown local com modos de edição duplos, ferramentas de formatação ricas e excelente suporte para CJK (Chinês/Japonês/Coreano).
+O VMark é o espaço de trabalho de texto simples onde humanos e IA colaboram. Os dois lados leem e escrevem diretamente os mesmos artefatos — markdown, YAML, JSON, TOML, Mermaid, SVG, HTML, código — sem nenhuma camada de tradução no meio. Quando o arquivo é um artefato conhecido (um workflow do GitHub Actions, `Cargo.toml`, `package.json`, `pyproject.toml`), o VMark mostra a visualização *certa*, e não uma árvore JSON genérica.
+
+O diferencial não é "abrir mais tipos de arquivo" — qualquer IDE faz isso. São as **prévias com reconhecimento de esquema**: a visualização estruturada de cada artefato, lado a lado com um painel de código-fonte ao vivo.
 
 ## Início Rápido
 
 1. **Baixe e instale** o VMark na [página de download](/pt-BR/download)
 2. **Inicie o aplicativo** e comece a escrever imediatamente
-3. **Abra um arquivo** com `Cmd/Ctrl + O` ou arraste e solte um arquivo `.md`
+3. **Abra um arquivo** com **Arquivo → Abrir arquivo…** ou arraste e solte qualquer [formato suportado](/pt-BR/guide/formats) — `Cmd/Ctrl + O` é **Abertura rápida**, para ir a um arquivo recente, aberto ou do espaço de trabalho
 4. **Abra uma pasta** com `Cmd/Ctrl + Shift + O` para o modo de área de trabalho
 
 ## Visão Geral da Interface
@@ -21,21 +23,23 @@ O VMark é um editor Markdown local com modos de edição duplos, ferramentas de
 
 ### Barra de Menu
 
-- **Arquivo**: Operações de novo, abrir, salvar, exportar
-- **Editar**: Desfazer/refazer, área de transferência, localizar/substituir, histórico de documentos
-- **Bloco**: Títulos, listas, citações, operações de linha
-- **Formatar**: Estilos de texto, links, transformações de texto
-- **Visualizar**: Modos de editor, barra lateral, modos de foco/máquina de escrever
-- **Ferramentas**: Limpeza de texto, formatação CJK, gerenciamento de imagens
+- **Arquivo**: Novo, Abertura rápida, arquivos e espaços de trabalho recentes, histórico do documento, salvar, exportar, imprimir, fechar
+- **Editar**: Desfazer/refazer, área de transferência, localizar (incluindo Encontrar em arquivos), seleção, operações de linha, finais de linha, Gênios
+- **Formatar**: Estilos de texto, títulos, listas, citações, transformações de texto, formatação CJK, limpeza de texto, limpeza de imagens
+- **Inserir**: Links, imagens, vídeo, áudio, tabelas, blocos de código, matemática, diagramas, notas de rodapé, blocos expansíveis, caixas de informações
+- **Visualizar**: Modos de editor, painéis, painéis da barra lateral, modos de foco/máquina de escrever, barra de ferramentas, terminal, Status das janelas, Verificar Markdown, zoom
+- **Janela** (macOS): Minimizar, Maximizar, Detalhamento de coerência, Trazer tudo para frente
+- **Ajuda**: Ajuda do VMark, Atalhos de teclado, o comando de shell `vmark` (macOS), Relatar um problema
 
 ### Modos de Edição
 
-O VMark suporta dois modos de edição entre os quais você pode alternar:
+O VMark suporta três modos de edição entre os quais você pode alternar:
 
 | Modo | Descrição | Atalho |
 |------|-----------|--------|
 | Texto Rico | Edição WYSIWYG com formatação ao vivo | Padrão |
 | Fonte | Markdown bruto com realce de sintaxe | `F6` |
+| Dividido | Código-fonte à esquerda, prévia ao vivo somente leitura à direita | `Shift + F6` |
 
 ### Modos de Visualização
 
@@ -64,14 +68,15 @@ Aprimore seu foco de escrita com estes modos de visualização:
 - **Listas**: Inicie linhas com `-`, `*`, `1.` ou `- [ ]` para listas de tarefas
 - **Citações**: Inicie com `>` ou use `Alt/Option + Cmd + Q`
 - **Blocos de código**: Use três acentos graves com linguagem opcional
-- **Tabelas**: Use o menu Formatar ou `Cmd/Ctrl + Shift + T`
+- **Tabelas**: Use **Inserir → Tabela** ou `Cmd/Ctrl + Shift + T`
 
 ## Trabalhando com Arquivos
 
 ### Criando e Abrindo
 
 - **Novo arquivo**: `Cmd/Ctrl + N`
-- **Abrir arquivo**: `Cmd/Ctrl + O`
+- **Abrir arquivo**: **Arquivo → Abrir arquivo…** (sem atalho padrão)
+- **Abertura rápida**: `Cmd/Ctrl + O` — vá a um arquivo recente, aberto ou do espaço de trabalho
 - **Abrir pasta**: `Cmd/Ctrl + Shift + O` (modo de área de trabalho)
 
 ### Salvando
@@ -82,8 +87,8 @@ Aprimore seu foco de escrita com estes modos de visualização:
 
 ### Exportando
 
-- **Exportar HTML**: Use **Arquivo → Exportar HTML** — inclui VMark Reader interativo
-- **Exportar PDF**: Use Imprimir (`Cmd/Ctrl + P`) e salve como PDF
+- **Exportar HTML**: **Arquivo → Exportar → HTML** — uma pasta com `index.html`, `standalone.html` e o VMark Reader interativo
+- **Exportar PDF**: **Arquivo → Exportar → PDF** — configuração de página, fontes, números de página e um esboço na barra lateral; ou Imprimir (`Cmd/Ctrl + P`) e use a opção salvar como PDF do diálogo do sistema
 - **Copiar como HTML**: `Cmd/Ctrl + Shift + C`
 
 O HTML exportado inclui o VMark Reader com sumário, painel de configurações e mais. [Saiba mais →](/pt-BR/guide/export)
@@ -111,7 +116,7 @@ O VMark inclui Gênios de IA integrados — selecione texto e pressione `Mod + Y
 
 1. **Navegue com o esboço**: Clique nos itens do esboço para pular entre seções
 2. **Experimente o modo foco**: `F8` esmaece tudo, exceto o parágrafo atual
-3. **Valide enquanto escreve**: `Cmd + Shift + L` executa o motor de lint de markdown e a verificação de links quebrados
+3. **Valide enquanto escreve**: `Alt + Mod + V` (**Visualizar → Verificar Markdown**) executa o motor de lint de markdown e a verificação de links quebrados
 4. **Aprenda os atalhos**: a referência completa está no [guia de atalhos](/pt-BR/guide/shortcuts)
 
 ## Próximos Passos

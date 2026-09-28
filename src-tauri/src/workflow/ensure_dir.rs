@@ -34,7 +34,7 @@ pub(super) fn create_parents_within(
 }
 
 #[cfg(unix)]
-pub(in crate::workflow) use anchored::create_parents_with;
+pub(in crate::workflow) use anchored::{create_parents_in, create_parents_with};
 
 #[cfg(not(unix))]
 pub(in crate::workflow) use fallback::create_parents_with;
@@ -55,11 +55,21 @@ mod anchored {
         workspace_root: &Path,
         between: impl FnOnce(),
     ) -> Result<(), String> {
-        let (existing, missing) = split_at_deepest_existing(target_parent)?;
-        let mut dir = Dir::open(&existing)?;
         let root = Dir::open(workspace_root)
             .map_err(|e| format!("cannot resolve the workspace root: {e}"))?;
-        dir.assert_within(&root, &existing)?;
+        create_parents_in(target_parent, &root, between)
+    }
+
+    /// [`create_parents_with`] against a root the caller already HOLDS open,
+    /// for a snapshot restore's many writes (#74).
+    pub(in crate::workflow) fn create_parents_in(
+        target_parent: &Path,
+        root: &Dir,
+        between: impl FnOnce(),
+    ) -> Result<(), String> {
+        let (existing, missing) = split_at_deepest_existing(target_parent)?;
+        let mut dir = Dir::open(&existing)?;
+        dir.assert_within(root, &existing)?;
 
         between();
 

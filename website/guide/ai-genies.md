@@ -89,9 +89,9 @@ If scope is **Selection** but nothing is selected, the genie operates on the cur
 
 After a genie runs, the suggestion appears inline:
 
-- **Replace** — Original text with strikethrough, new text in green
-- **Insert** — New text shown in green after the source block
-- **Delete** — Original text with strikethrough
+- **Replace** — Original text with a red wavy strikethrough, followed by the new text as faded italic "ghost" text in the accent colour
+- **Insert** — New text shown as ghost text after the source block
+- **Delete** — Original text with a red wavy strikethrough
 
 Each suggestion has accept (checkmark) and reject (X) buttons.
 
@@ -498,7 +498,7 @@ Format as a bullet list. If everything looks solid, say
 
 ## AI Suggestions
 
-When a Genie returns text intended as a replacement for the selection (rather than a free-form chat reply), VMark surfaces it as a **suggestion** with an inline diff: red strikethrough for the original text, green underline for the proposed text. You review and approve before any change persists.
+When a Genie returns text intended as a replacement for the selection (rather than a free-form chat reply), VMark surfaces it as a **suggestion** with an inline diff: red wavy strikethrough for the original text, faded italic ghost text in the accent colour for the proposed text. You review and approve before any change persists.
 
 | Action | Shortcut |
 |---|---|
@@ -509,8 +509,6 @@ When a Genie returns text intended as a replacement for the selection (rather th
 | Reject all suggestions in the document | `Mod + Shift + Escape` |
 
 When a Genie rewrites multiple paragraphs, each replacement is its own independently-navigable suggestion. Accepting one doesn't auto-accept the others.
-
-The suggestion UI also has an MCP surface — external AI agents connected through the [MCP server](/guide/mcp-tools) can emit `suggestion.accept` / `suggestion.reject` actions to manipulate the same state.
 
 ## Genies in Workflows
 
@@ -545,7 +543,7 @@ guarantee.
 
 **"No AI provider available"** — Open Settings > Integrations and configure a provider. See [AI Providers](/guide/ai-providers).
 
-**Genie not appearing in picker** — Check that the file has a `.md` extension (or `.yml`/`.yaml` for a [workflow genie](/guide/workflow-genies)) and valid frontmatter with `---` fences. Subfolders at any depth are scanned, but symbolic links are skipped. Run **Edit → Genies → Reload Genies** after adding files.
+**Genie not appearing in picker** — Check that the file has a `.md` extension (or `.yml`/`.yaml` for a [workflow genie](/guide/workflow-genies)) and valid frontmatter with `---` fences. Subfolders are scanned up to eight levels deep (and at most 10,000 entries in all), and symbolic links are skipped. Run **Edit → Genies → Reload Genies** after adding files.
 
 **AI returns garbage or errors** — Verify your API key is correct and the model name is valid for your provider. Check the terminal/console for error details.
 

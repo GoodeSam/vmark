@@ -64,12 +64,23 @@ X-Machine-Id: a3f8c2b1d4e5f6078a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1
 - 機器雜湊不與任何帳戶、電子郵件或 IP 位址關聯 — 它僅是一個匿名裝置計數器
 - 我們不使用追蹤 Cookie、指紋識別或任何分析 SDK
 
+## VMark 能讀取磁碟上的哪些內容
+
+VMark 的檔案存取是一個嚴格限定的權限範圍，而不是整個磁碟：
+
+- **靜態範圍**：你的個人資料夾（`$HOME/**`）以及已掛載的磁碟區 — macOS 上的 `/Volumes/**`，Linux 上的 `/mnt/**` 和 `/media/**`。在 Windows 上，它還涵蓋 `C:\` 到 `F:\` 磁碟機，因此只有 `G:\` 之後的磁碟機以及網路共用資料夾需要執行時授權。在 macOS 和 Linux 上，隱藏資料夾（名稱以 `.` 開頭）中的任何內容都在靜態範圍之外。
+- **執行時授權**：你明確開啟的檔案 — 來自 Finder 或檔案總管、`vmark` 命令列或檔案對話框 — 只會取得該檔案的授權。只有當 VMark 能確認是你選擇了某個**資料夾**時，才會授權該資料夾：你在 VMark 的資料夾對話框中選擇了它，或從 Finder 開啟了它。VMark 會保存這些資料夾的清單（應用程式資料資料夾中的 `workspace-grants.json`），並在每次啟動時重新授權，因此還原的工作階段和**開啟最近使用的工作區**都能繼續正常運作。若最近使用的工作區不在該清單中，也不在靜態範圍內，開啟時會在該資料夾處顯示資料夾對話框 — 選擇它即可確認。當 AI 助理要求開啟這樣的資料夾時，在你核准請求後，VMark 也會這樣做。
+- **圖片與媒體**：本機圖片、影片和音訊透過 VMark 的資源協定顯示，其可及範圍相同 — 靜態範圍加上上述執行時授權。媒體檢視器只為它顯示的那一個檔案新增授權，且僅限具有媒體副檔名的檔案；對其他任何路徑的請求都會被拒絕，而不會擴大範圍。位於這些範圍之外的圖片 — 例如你從靜態範圍外單獨開啟的文件旁邊的圖片 — 在你將其所在資料夾作為工作區開啟之前不會顯示。
+
+這裡的一切都不會被傳送到任何地方；該範圍只決定應用程式本身可以讀取什麼。
+
 ## 開放原始碼透明度
 
 VMark 完全開放原始碼。你可以驗證此處描述的一切：
 
 - 更新端點設定：[`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json)
 - 機器雜湊生成：[`src-tauri/src/lib.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/lib.rs) — 搜尋 `machine_id_hash`
+- 檔案系統與資源範圍：[`src-tauri/capabilities/default.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/capabilities/default.json)、[`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json) 中的 `assetProtocol` 項目、[`src-tauri/src/fs_scope.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/fs_scope.rs) 和 [`src-tauri/src/workspace_grants/`](https://github.com/xiaolai/vmark/tree/main/src-tauri/src/workspace_grants)
 - 伺服器端統計彙總：[`scripts/vmark-stats-json`](https://github.com/xiaolai/vmark/blob/main/scripts/vmark-stats-json) — 在我們伺服器上執行以生成[公開統計數據](https://log.vmark.app/api/stats)的確切腳本
 - 程式碼庫中沒有其他網路呼叫 — 自行搜尋 `fetch`、`http` 或 `reqwest`
 

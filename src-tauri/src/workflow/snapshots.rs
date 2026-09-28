@@ -28,6 +28,12 @@ pub(super) const MAX_ID_LEN: usize = 64;
 /// Validate a caller-supplied execution/snapshot id before it is embedded in
 /// a filesystem path. Only ASCII alphanumerics, `-` and `_` are allowed, so
 /// path separators and `..` traversal are structurally impossible.
+/// The snapshot a run's execution id names — one derivation, read by the
+/// writer and by a restore's supersede check.
+pub(super) fn snapshot_id_for(execution_id: &str) -> String {
+    format!("snap-{execution_id}")
+}
+
 pub(super) fn validate_id(id: &str) -> Result<(), String> {
     if id.is_empty() || id.len() > MAX_ID_LEN {
         return Err(format!("Invalid snapshot id length: {}", id.len()));
@@ -51,6 +57,11 @@ pub struct SnapshotInfo {
     /// Files that did not exist before execution (should be deleted on restore).
     #[serde(default)]
     pub created_files: Vec<String>,
+    /// The canonical workspace root the snapshot was taken against — the ONLY
+    /// root a restore writes under, so no caller can aim it elsewhere. Absent
+    /// on snapshots written before restore existed, which are not restorable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workspace_root: Option<String>,
 }
 
 /// Create a snapshot of the given files before modification.
@@ -82,7 +93,7 @@ pub async fn create_snapshot_unless(
     should_stop: &(dyn Fn() -> bool + Sync),
 ) -> Result<String, String> {
     validate_id(execution_id)?;
-    let snapshot_id = format!("snap-{}", execution_id);
+    let snapshot_id = snapshot_id_for(execution_id);
     let snapshots_root = app_data_dir.join("workflow-snapshots");
     let snapshot_dir = snapshots_root.join(&snapshot_id);
 
@@ -217,6 +228,7 @@ async fn fill_snapshot(
             .as_secs(),
         files: saved_files,
         created_files,
+        workspace_root: Some(canonical_root.to_string_lossy().to_string()),
     };
     let meta_path = snapshot_dir.join("metadata.json");
     let meta_json =
@@ -243,11 +255,10 @@ async fn cleanup_old_snapshots(app_data_dir: &Path) {
     let mut entries: Vec<(PathBuf, u64)> = Vec::new();
     if let Ok(mut dir) = tokio::fs::read_dir(&snapshots_dir).await {
         while let Ok(Some(entry)) = dir.next_entry().await {
-            let meta_path = entry.path().join("metadata.json");
-            if let Ok(meta_str) = tokio::fs::read_to_string(&meta_path).await {
-                if let Ok(info) = serde_json::from_str::<SnapshotInfo>(&meta_str) {
-                    entries.push((entry.path(), info.timestamp));
-                }
+            // The same bounded, id-checked loader list and restore use (#76).
+            let id = entry.file_name().to_string_lossy().into_owned();
+            if let Ok(info) = super::snapshot_restore::load_metadata(&entry.path(), &id).await {
+                entries.push((entry.path(), info.timestamp));
             }
         }
     }

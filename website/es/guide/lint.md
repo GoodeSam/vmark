@@ -1,13 +1,13 @@
 # Lint de Markdown
 
-VMark incluye un motor de lint integrado que detecta **problemas de corrección**, no preferencias de estilo. El lint se ejecuta a petición (Cmd-Shift-L o **Herramientas → Comprobar Markdown**) y muestra los resultados en línea como subrayados ondulados en el margen, con una insignia en la barra de estado y navegación con F2 entre los hallazgos.
+VMark incluye un motor de lint integrado que detecta **problemas de corrección**, no preferencias de estilo. El lint se ejecuta a petición (`Alt + Mod + V` o **Vista → Comprobar Markdown**) y muestra los resultados en línea — una barra de color a lo largo del lateral de cada bloque afectado en modo WYSIWYG, un subrayado ondulado bajo el texto exacto en modo Fuente — con una insignia en la barra de estado y navegación con F2 entre los hallazgos.
 
 ## Qué es y qué no es el lint
 
 El lint de VMark es un comprobador de **corrección**:
 
 - Referencias cruzadas rotas
-- Referencias indefinidas de enlaces / notas al pie
+- Referencias de enlaces indefinidas (las referencias a notas al pie no se comprueban)
 - Bloques de código sin cerrar
 - Tablas con número de columnas no coincidente
 - Niveles de encabezado que se saltan (h1 → h3)
@@ -50,14 +50,14 @@ Para la aplicación de estilo, usa una herramienta independiente como `prettier 
 
 | Activador | Acción |
 |---|---|
-| `Cmd + Shift + L` (macOS) / `Ctrl + Shift + L` (Win/Linux) | Ejecuta el lint en el documento activo |
-| **Herramientas → Comprobar Markdown** | Igual que el atajo |
+| `Alt + Mod + V` | Ejecuta el lint en el documento activo |
+| **Vista → Comprobar Markdown** | Igual que el atajo |
 | `F2` | Saltar al siguiente diagnóstico |
 | `Shift + F2` | Saltar al diagnóstico anterior |
 
 Para los archivos markdown con rutas de archivo, la comprobación de existencia de enlaces se ejecuta automáticamente junto a las reglas síncronas — consulta [Comprobación de Enlaces](/es/guide/link-check).
 
-Para los archivos YAML, los errores de análisis aparecen en vivo en el margen mientras escribes, y el mismo atajo `Cmd-Shift-L` rellena la insignia y la navegación con F2.
+Para los archivos YAML, los errores de análisis aparecen en vivo en el margen mientras escribes, y el mismo atajo `Alt + Mod + V` rellena la insignia y la navegación con F2.
 
 ## Configuración
 
@@ -65,7 +65,7 @@ El motor de lint tiene un único conmutador visible para el usuario:
 
 - **Configuración → Markdown → Habilitar lint de markdown** — activa o desactiva el motor por completo
 
-Cuando está desactivado, el atajo no realiza ninguna acción y no aparecen diagnósticos en el margen.
+Cuando está desactivado, el atajo no realiza ninguna acción y no aparecen diagnósticos en el editor.
 
 ## Ver también
 
