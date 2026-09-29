@@ -319,7 +319,7 @@ describe("whenNearViewport — the reader's view stays still", () => {
       return block;
     });
 
-    onlyObserver().trigger(blocks, (el) => -1900 + blocks.indexOf(el as HTMLElement) * 6);
+    onlyObserver().trigger(blocks, (el) => -1900 + blocks.findIndex((block) => block === el) * 6);
     runFrame();
     expect(root.scrollTop - 8000).toBe(rendered);
     runFrame();
