@@ -2,6 +2,7 @@ import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearEditorScrollOffsets,
+  getEditorScrollAnchor,
   getEditorScrollOffset,
 } from "@/services/editor/scrollPosition";
 import { useWysiwygScrollMemory } from "./useWysiwygScrollMemory";
@@ -89,5 +90,28 @@ describe("useWysiwygScrollMemory", () => {
     const src = useWysiwygScrollMemory.toString();
     expect(src).not.toMatch(/\.view\b/);
     expect(src).not.toMatch(/\.dom\b/);
+  });
+
+  it("records the block at the top of the view along with the offset (#1473)", () => {
+    // Inline math renders only near the viewport, so the pixels alone restore
+    // another paragraph once the content above lays out differently.
+    const ref = makeContainerRef(scroller);
+    const blocks = document.createElement("div");
+    blocks.className = "ProseMirror";
+    ref.current.appendChild(blocks);
+    scroller.getBoundingClientRect = () => new DOMRect(0, 0, 800, 500);
+    for (let i = 0; i < 10; i += 1) {
+      const block = document.createElement("p");
+      block.getBoundingClientRect = () => new DOMRect(0, i * 100 - scroller.scrollTop, 800, 100);
+      blocks.appendChild(block);
+    }
+    renderHook(() => useWysiwygScrollMemory(ref, "tab-1", true));
+
+    scroller.scrollTop = 250;
+    scroller.dispatchEvent(new Event("scroll"));
+    vi.advanceTimersByTime(200);
+
+    expect(getEditorScrollOffset("tab-1", "wysiwyg")).toBe(250);
+    expect(getEditorScrollAnchor("tab-1", "wysiwyg")).toEqual({ index: 2, offset: -50 });
   });
 });

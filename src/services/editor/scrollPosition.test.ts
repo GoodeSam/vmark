@@ -4,6 +4,7 @@ import {
   cancelEditorScrollRestore,
   clearEditorScrollOffsets,
   findScrollContainer,
+  getEditorScrollAnchor,
   getEditorScrollOffset,
   restoreEditorScroll,
   setEditorScrollOffset,
@@ -407,6 +408,101 @@ describe("restoreEditorScroll", () => {
 
   it("is a no-op without a container", () => {
     expect(() => restoreEditorScroll(null, 300)).not.toThrow();
+  });
+});
+
+describe("block anchors (WYSIWYG content that changes height on remount)", () => {
+  // Inline math renders only near the viewport, so a remounted editor shows
+  // formulas above the remembered offset as source text, at other heights
+  // than the reader left them: the same pixels are another paragraph.
+
+  /** Blocks of 100px each; `shortfall` is how much shorter everything above block 50 is. */
+  function blocksOver(el: FakeContainer, shortfall: () => number) {
+    Object.assign(el, { getBoundingClientRect: () => ({ top: 0, bottom: 500 }) });
+    const children = Array.from({ length: 100 }, (_, i) => ({
+      getBoundingClientRect: () => {
+        const top = i * 100 - (i >= 50 ? shortfall() : 0) - el.scrollTop;
+        return { top, bottom: top + 100 };
+      },
+    }));
+    return { children } as unknown as HTMLElement;
+  }
+
+  it("lands the remembered block where it sat, not the remembered pixels", () => {
+    const el = makeContainer({ scrollHeight: 20_000 });
+    const blocks = blocksOver(el, () => 300);
+
+    withSyncRaf(() => restoreEditorScroll(asElement(el), 5020, { blocks, at: { index: 50, offset: -20 } }));
+
+    expect(el.scrollTop).toBe(4720);
+  });
+
+  it("follows the block while renders around it keep changing the height above", () => {
+    const el = makeContainer({ scrollHeight: 20_000 });
+    let shortfall = 300;
+    const blocks = blocksOver(el, () => shortfall);
+    let frame = 0;
+
+    withSyncRaf(() => {
+      const original = globalThis.requestAnimationFrame;
+      globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+        frame += 1;
+        if (frame === 3) shortfall = 120; // formulas just above rendered
+        return original(cb);
+      }) as typeof globalThis.requestAnimationFrame;
+      restoreEditorScroll(asElement(el), 5020, { blocks, at: { index: 50, offset: -20 } });
+      globalThis.requestAnimationFrame = original;
+    });
+
+    expect(el.scrollTop).toBe(4900);
+  });
+
+  it("falls back to the pixels when the block is gone", () => {
+    const el = makeContainer({ scrollHeight: 20_000 });
+    const blocks = blocksOver(el, () => 300);
+
+    withSyncRaf(() => restoreEditorScroll(asElement(el), 5020, { blocks, at: { index: 500, offset: 0 } }));
+
+    expect(el.scrollTop).toBe(5020);
+  });
+
+  it("records the anchor with the offset, and forgets both on tab close", () => {
+    vi.useFakeTimers();
+    try {
+      const el = makeContainer({ scrollHeight: 20_000 });
+      const blocks = blocksOver(el, () => 0);
+      const stop = trackEditorScroll(asElement(el), "tab-1", "wysiwyg", () => blocks);
+
+      el.scrollTop = 5020;
+      el.emit("scroll");
+      vi.advanceTimersByTime(200);
+
+      expect(getEditorScrollOffset("tab-1", "wysiwyg")).toBe(5020);
+      expect(getEditorScrollAnchor("tab-1", "wysiwyg")).toEqual({ index: 50, offset: -20 });
+      clearEditorScrollOffsets("tab-1");
+      expect(getEditorScrollAnchor("tab-1", "wysiwyg")).toBeUndefined();
+      stop();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("records no anchor for a surface that gave no blocks (Source)", () => {
+    vi.useFakeTimers();
+    try {
+      const el = makeContainer({ scrollHeight: 20_000 });
+      const stop = trackEditorScroll(asElement(el), "tab-1", "source");
+
+      el.scrollTop = 700;
+      el.emit("scroll");
+      vi.advanceTimersByTime(200);
+
+      expect(getEditorScrollOffset("tab-1", "source")).toBe(700);
+      expect(getEditorScrollAnchor("tab-1", "source")).toBeUndefined();
+      stop();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
