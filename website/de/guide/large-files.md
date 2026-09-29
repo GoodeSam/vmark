@@ -52,4 +52,4 @@ Die harte 50-MB-Grenze ist nicht vom Benutzer einstellbar. Die Webview kann beli
 ## Bekannte Einschränkungen
 
 - Die Schwellen sind Byte-Größen, also ein Stellvertreter für die tatsächlichen Kosten (Block-Anzahl). Eine 600 KB große Datei mit Tausenden kurzer Blöcke kann langsamer sein als eine 1,2 MB große Datei mit langen Absätzen. Die Standardwerte sind konservativ.
-- WYSIWYG baut beim Öffnen weiterhin das gesamte Dokument auf — ein verzögertes oder inkrementelles Rendering gibt es noch nicht —, daher kostet der Wechsel einer großen Datei zu WYSIWYG die oben beschriebene volle Öffnungszeit.
+- WYSIWYG baut beim Öffnen weiterhin jeden Block des Dokuments auf — nur Inline-Formeln werden erst gerendert, wenn sie in die Nähe des sichtbaren Bereichs kommen —, daher kostet der Wechsel einer großen Datei zu WYSIWYG die oben beschriebene volle Öffnungszeit.
