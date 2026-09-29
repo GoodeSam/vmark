@@ -160,18 +160,19 @@ const CASES: ScalingCase[] = [
   {
     // The same paragraph with a URL in every text node that only the mdast
     // transform can see (`&#46;` hides it from micromark's own autolinks), so
-    // every text node is also REPLACED — the case where a lookup cache rebuilt
-    // after each replacement costs more than the `indexOf` it replaced. A
-    // first version of the patch did that: 2.08–2.11 here. On a quiet
-    // machine: 1.43–1.50 before, 1.09 after (the case above is the sharper
-    // guard for the lookups themselves). Sized below ~20,000 replacements per
-    // paragraph: past that, the in-place splice each replacement makes —
-    // unchanged by the patch, O(siblings) each — shows as well (1.38 at
-    // twice these sizes).
+    // every text node is also REPLACED. This guards the replacement path: a
+    // lookup cache rebuilt after each replacement costs more than the
+    // `indexOf` it replaced, as a first version of the patch did (2.07 here).
+    // It is not the guard for the lookups themselves — at these sizes the
+    // unpatched package reads 1.22 and passes; the case above catches that.
+    // This patch: 1.00–1.05 on a quiet machine. Kept small because the
+    // in-place splice every replacement makes — unchanged by the patch,
+    // O(siblings) each — adds its own growth as the paragraph grows (1.06–1.16
+    // at 1.5×, and up to 1.41 under load at 2×, these sizes).
     name: "hidden-autolinks-in-one-paragraph (stock GFM parse)",
     make: (n) => `${"`a` www&#46;example.com ".repeat(n)}\n`,
-    small: 2000,
-    large: 16000,
+    small: 1000,
+    large: 8000,
     run: (markdown) => {
       stockGfm.parse(markdown);
     },
