@@ -52,6 +52,7 @@ import {
   resolveReference,
   validateBaseline,
 } from "./lib/headerReferences.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 export { collectFindings, compareWithBaseline, extractReferences, resolveReference };
 
@@ -207,4 +208,4 @@ function main() {
   process.exit(1);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) main();
+if (isMainModule(import.meta.url)) main();

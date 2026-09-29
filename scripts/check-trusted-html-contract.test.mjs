@@ -33,9 +33,13 @@ const TRACKED = [
 let sandbox;
 
 beforeAll(() => {
-  sandbox = mkdtempSync(path.join(tmpdir(), "trusted-html-gate-"));
-  mkdirSync(path.join(sandbox, "scripts"), { recursive: true });
+  // A space and CJK characters in the path, deliberately: every drift case
+  // below expects a NON-zero exit, so it also proves the gate's main() ran from
+  // a path the old ad-hoc entry-point checks never matched (#1473).
+  sandbox = mkdtempSync(path.join(tmpdir(), "trusted-html gate 沙盒-"));
+  mkdirSync(path.join(sandbox, "scripts/lib"), { recursive: true });
   cpSync(GATE, path.join(sandbox, "scripts/check-trusted-html-contract.mjs"));
+  cpSync(path.join(REPO, "scripts/lib/isMainModule.mjs"), path.join(sandbox, "scripts/lib/isMainModule.mjs"));
   for (const rel of TRACKED) {
     mkdirSync(path.join(sandbox, path.dirname(rel)), { recursive: true });
     cpSync(path.join(REPO, rel), path.join(sandbox, rel));

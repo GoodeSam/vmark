@@ -85,7 +85,9 @@ describe("wireSessionInput — single-writer contract", () => {
       fireOnData("\r");
       expect(startShell).toHaveBeenCalledWith("s1");
       expect(entry.shellExited).toBe(false);
-      expect(clearMock).toHaveBeenCalled();
+      // startShell resets the terminal for every new PTY (#1471); a clear()
+      // here would only wipe the buffer and leave the dead program's modes.
+      expect(clearMock).not.toHaveBeenCalled();
       expect(writeMock).not.toHaveBeenCalled();
     });
 

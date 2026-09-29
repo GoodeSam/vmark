@@ -3,9 +3,14 @@
  *
  * Purpose: Pure registry/visibility helpers for terminal sessions, extracted
  * from useTerminalSessions so that hook focuses on wiring. These operate on a
- * sessions map and carry no React state. Behavior preserved verbatim.
+ * sessions map and carry no React state.
+ *
+ * Key decisions:
+ *   - switchVisibility starts a session's first shell but does not reset its
+ *     terminal: startShell resets for every new PTY (#1471).
  *
  * @coordinates-with useTerminalSessions.ts — sole caller
+ * @coordinates-with useTerminalShellLifecycle.ts — startShell, which resets the terminal
  * @module components/Terminal/terminalSessionRegistry
  */
 import type { SessionEntry, SessionsRef } from "./terminalSessionTypes";
@@ -87,11 +92,11 @@ export function switchVisibility(
     }
 
     // Start shell after first fit so PTY gets the real dimensions instead of
-    // 80×24 defaults from a hidden container. Reset first to clear blank-line
-    // artifacts from opening xterm in a hidden (display:none) container.
+    // 80×24 defaults from a hidden container. startShell resets the terminal
+    // first (as for every new PTY), which also clears the blank-line artifacts
+    // of opening xterm in a hidden (display:none) container.
     if (!entry.shellStarted && !entry.shellExited && !entry.disposed) {
       entry.shellStarted = true;
-      entry.instance.term.reset();
       startShell(activeId);
     }
   });

@@ -36,6 +36,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { CSS_RULE_RE, stripComments, declaredValue } from "./lib/cssRules.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const SRC_DIR = "src";
 const BASELINE_PATH = "scripts/bespoke-buttons-baseline.json";
@@ -352,7 +353,7 @@ export function identityVerdict({ key, allowed, found, noun, advice = "", descri
 }
 
 // Only run the gate when executed directly, so tests can import the helpers.
-if (process.argv[1] && process.argv[1].endsWith("check-bespoke-buttons.mjs")) {
+if (isMainModule(import.meta.url)) {
   let baseline;
   try {
     baseline = JSON.parse(readFileSync(BASELINE_PATH, "utf8"));

@@ -55,7 +55,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 export const ROOT = resolve(import.meta.dirname, "..");
 export const CONFIG_PATH = "scripts/knip-production.json";
@@ -379,6 +379,6 @@ function main(argv) {
   return 0;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   process.exit(main(process.argv.slice(2)));
 }

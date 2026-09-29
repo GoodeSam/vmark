@@ -134,6 +134,7 @@ describe.skipIf(platform() === "win32")("scripts/lib/ptyRun.py", () => {
         "--", "sh", "-c", "(trap '' HUP; exec sleep 30) & echo BG=$!; wait"],
       { encoding: "latin1", timeout: 60_000 },
     );
+    if (r.error) throw r.error; // a timeout is reported here, not in `status`
     expect(r.stdout, r.stderr).toContain("RAISED:injected transcript failure");
     const bg = /BG=(\d+)/.exec(r.stdout);
     expect(bg, r.stdout).not.toBeNull();
