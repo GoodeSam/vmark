@@ -15,7 +15,7 @@
  *
  * @module export/__tests__/exportToPdfImages.test
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 const {
   mockInvoke,
@@ -76,11 +76,19 @@ vi.mock("@/i18n", () => ({
   default: { t: (key: string) => key },
 }));
 
+// The markdown path renders through the off-screen ExportSurface; only its
+// choice is under test here, so it echoes the markdown it was given.
+vi.mock("../renderMarkdownToHtml", () => ({
+  renderMarkdownToHtml: (markdown: string) => Promise.resolve(`<p>rendered from markdown: ${markdown}</p>`),
+}));
+
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import { exportToPdf } from "../useExportOperations";
 import { useEditorStore } from "@/stores/editorStore";
 import { useTabStore } from "@/stores/tabStore";
 import type { DocumentTab } from "@/stores/tabStoreTypes";
+import { whenNearViewport, resetNearViewportForTest } from "@/plugins/shared/nearViewport";
+import { installFakeIntersectionObserver } from "@/test/fakeIntersectionObserver";
 
 const LIVE_TAB = "tab-live";
 
@@ -230,5 +238,63 @@ describe("exportToPdf — local image inlining (issue #999)", () => {
     });
 
     expect(mockToastWarning).not.toHaveBeenCalled();
+  });
+});
+
+describe("exportToPdf — deferred node-view renders in the live editor", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetNearViewportForTest();
+    document.body.innerHTML = "";
+    useEditorStore.getState().clearActiveEditors();
+    useTabStore.setState({ tabs: {}, activeTabId: {} } as never);
+    mockInvoke.mockResolvedValue({ status: "unknown" });
+    mockGetDocumentBaseDir.mockResolvedValue("/docs/my-notes");
+    mockResolveResources.mockImplementation((html: string) =>
+      Promise.resolve({ html, report: { resources: [], resolved: [], missing: [], totalSize: 0 } }),
+    );
+    installFakeIntersectionObserver();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("finishes renders still waiting for the viewport before reading the HTML", async () => {
+    // A formula far down the document has not been rendered yet — only its
+    // source text is in the live DOM. Printing must not capture that.
+    const live = installLiveEditor('<p><span class="math-inline">x^2</span></p>');
+    const math = live.querySelector(".math-inline")!;
+    whenNearViewport(math, document.body, () => {
+      math.textContent = "RENDERED";
+    });
+
+    await exportToPdf({ markdown: "$x^2$", sourceFilePath: "/docs/my-notes/note.md" });
+
+    const [, payload] = mockInvoke.mock.calls[0];
+    expect((payload as { html: string }).html).toContain("RENDERED");
+  });
+
+  it("prints the markdown instead when the editor goes away while the flush waits", async () => {
+    // A flush can wait for KaTeX's chunk. Switching or closing the tab
+    // meanwhile destroys the editor and cancels its renders, and its detached
+    // DOM still holds the raw LaTeX.
+    const live = installLiveEditor('<p><span class="math-inline">x^2</span></p>');
+    const math = live.querySelector(".math-inline")!;
+    let katexArrives!: () => void;
+    whenNearViewport(math, document.body, () => new Promise<void>((resolve) => {
+      katexArrives = resolve;
+    }));
+
+    const printing = exportToPdf({ markdown: "$x^2$", sourceFilePath: "/docs/my-notes/note.md" });
+    useEditorStore.getState().clearActiveEditors(); // the tab went away
+    live.remove();
+    katexArrives();
+    await printing;
+
+    const [, payload] = mockInvoke.mock.calls[0];
+    const html = (payload as { html: string }).html;
+    expect(html).toContain("rendered from markdown: $x^2$");
+    expect(html).not.toContain('class="math-inline"');
   });
 });

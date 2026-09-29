@@ -120,6 +120,11 @@ describe("BlockImageNodeView", () => {
       expect(nodeView.dom.getAttribute("data-type")).toBe("block_image");
     });
 
+    it("decodes the image off the main thread", () => {
+      createNodeView();
+      expect(nodeView.dom.querySelector("img")!.decoding).toBe("async");
+    });
+
     it("contains an img element", () => {
       createNodeView();
       const img = nodeView.dom.querySelector("img");

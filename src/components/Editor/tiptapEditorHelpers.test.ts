@@ -16,8 +16,14 @@ import {
   spellcheckAttrForDocSize,
   suppressCvIdleDuringEdit,
   syncMarkdownToEditor,
+  usesContentVisibility,
 } from "./tiptapEditorHelpers";
 import { MAX_NESTING_DEPTH, nestingRefusal } from "@/utils/markdownPipeline/nestingDepth";
+
+/** `navigator.platform` for this test; setup pins macOS (src/test/platformDefault.ts). */
+function setPlatform(value: string): void {
+  Object.defineProperty(navigator, "platform", { value, configurable: true, writable: true });
+}
 
 describe("buildTiptapEditorProps", () => {
   it("snapshots the spellcheck attribute from the doc size", () => {
@@ -146,9 +152,27 @@ describe("suppressCvIdleDuringEdit", () => {
     return { scroller, container, writes, scrollerRect, anchorRect };
   }
 
+  // The optimization never engages on macOS; see usesContentVisibility.
+  beforeEach(() => setPlatform("Win32"));
+
   afterEach(() => {
     document.body.innerHTML = "";
     vi.useRealTimers();
+    setPlatform("MacIntel");
+  });
+
+  it("strips cv-idle but never re-adds it on macOS", () => {
+    setPlatform("MacIntel");
+    vi.useFakeTimers();
+    const { container } = buildCvDom();
+    const timeoutRef = { current: null as number | null };
+
+    suppressCvIdleDuringEdit({ current: container as HTMLDivElement }, CV_IDLE_CHAR_THRESHOLD * 4, timeoutRef);
+
+    expect(container.classList.contains("cv-idle")).toBe(false);
+    expect(timeoutRef.current).toBeNull();
+    vi.advanceTimersByTime(2000);
+    expect(container.classList.contains("cv-idle")).toBe(false);
   });
 
   it("compensates the viewport when stripping cv-idle, and again on the idle re-add", () => {
@@ -289,5 +313,21 @@ describe("syncMarkdownToEditor on a document the parser refuses (#1407)", () => 
     const lastExternalContent = { current: "" };
     expect(syncMarkdownToEditor(editor, "# fine\n", lastExternalContent, false, "tab-7")).toBe(true);
     expect(reportUnparseableDocument).not.toHaveBeenCalled();
+  });
+});
+
+describe("usesContentVisibility", () => {
+  afterEach(() => setPlatform("MacIntel"));
+
+  // macOS (WKWebView) never gets it: on a 4,042-block document every scrolled
+  // frame cost ~1.2 s with it and ~20 ms without. Elsewhere it is unmeasured.
+  it.each([
+    ["Win32", CV_IDLE_CHAR_THRESHOLD, true],
+    ["Win32", CV_IDLE_CHAR_THRESHOLD - 1, false],
+    ["Linux x86_64", CV_IDLE_CHAR_THRESHOLD, true],
+    ["MacIntel", CV_IDLE_CHAR_THRESHOLD * 10, false],
+  ])("platform %s, %i chars → %s", (platform, size, expected) => {
+    setPlatform(platform);
+    expect(usesContentVisibility(size)).toBe(expected);
   });
 });

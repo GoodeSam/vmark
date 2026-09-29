@@ -16,6 +16,8 @@
  *   - Security: a media source carrying a URI scheme is refused; a relative
  *     path may contain `..` and resolves against the document's directory
  *     (#1433) — see plugins/shared/mediaSecurity.ts
+ *   - `decoding = "async"`: a full-page scan scrolled into view is decoded off
+ *     the main thread instead of stalling the frame that shows it
  *
  * Known limitations:
  *   - No lazy loading — all visible block images resolve immediately
@@ -75,6 +77,9 @@ export class BlockImageNodeView implements NodeView {
     this.dom.setAttribute("data-type", "block_image");
 
     this.img = document.createElement("img");
+    // Decode off the main thread: a full-page scan scrolled into view was a
+    // synchronous decode on the frame that showed it.
+    this.img.decoding = "async";
     this.img.alt = String(node.attrs.alt ?? "");
     this.img.title = String(node.attrs.title ?? "");
 

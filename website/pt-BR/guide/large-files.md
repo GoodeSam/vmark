@@ -52,4 +52,4 @@ A recusa fixa em 50 MB não é ajustável pelo usuário. A webview não consegue
 ## Limitações conhecidas
 
 - Os limiares são tamanhos em bytes, que são uma aproximação para o custo real (contagem de blocos). Um arquivo de 600 KB com milhares de blocos curtos pode ser mais lento que um arquivo de 1,2 MB com parágrafos longos. Os padrões são conservadores.
-- O WYSIWYG ainda constrói o documento inteiro ao abrir — ainda não há renderização diferida ou incremental — então mudar um arquivo grande para WYSIWYG custa todo o tempo de abertura descrito acima.
+- O WYSIWYG ainda constrói todos os blocos do documento ao abrir — só as fórmulas matemáticas em linha são renderizadas depois, quando se aproximam da área visível — então mudar um arquivo grande para WYSIWYG custa todo o tempo de abertura descrito acima.
