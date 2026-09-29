@@ -17,8 +17,9 @@
  * separates them with a wide margin on both sides. Three things keep the
  * measurement honest under load:
  *
- *   - CPU time of this process (`process.cpuUsage`), not wall time, so being
- *     descheduled costs nothing. Vitest runs each file in its own fork.
+ *   - CPU time of the test's own thread, not wall time, so being descheduled
+ *     costs nothing — and not the whole process's, so neither do V8's
+ *     background GC and compiler threads (`src/test/cpuClock.ts`).
  *   - Small and large runs are INTERLEAVED and the minimum of each is kept, so
  *     a burst of contention or a GC pause inflates one sample, not the answer.
  *   - A warm-up parse first, so JIT compilation is not billed to the small run
@@ -35,6 +36,7 @@
  * @module utils/markdownPipeline/__tests__/pathological/pathologicalScaling.test
  */
 import { describe, it, expect } from "vitest";
+import { growthExponent, measureGrowth, type Growth } from "@/test/cpuClock";
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import "../../dialect";
@@ -163,28 +165,9 @@ function parseOnce(markdown: string): void {
   parseMarkdown(schema, markdown);
 }
 
-function cpuMs(fn: () => void): number {
-  const start = process.cpuUsage();
-  fn();
-  const used = process.cpuUsage(start);
-  return (used.user + used.system) / 1000;
-}
-
-/** Minimum CPU cost of small and large inputs, interleaved. */
-function measure(
-  run: (markdown: string) => void,
-  small: string,
-  large: string,
-): { small: number; large: number } {
-  run(small); // warm-up: JIT and processor caches
-  let bestSmall = Number.POSITIVE_INFINITY;
-  let bestLarge = Number.POSITIVE_INFINITY;
-  for (let round = 0; round < 3; round += 1) {
-    bestSmall = Math.min(bestSmall, cpuMs(() => run(small)));
-    bestLarge = Math.min(bestLarge, cpuMs(() => run(large)));
-    bestSmall = Math.min(bestSmall, cpuMs(() => run(small)));
-  }
-  return { small: bestSmall, large: bestLarge };
+/** Minimum CPU cost of small and large inputs, interleaved, after a warm-up. */
+function measure(run: (markdown: string) => void, small: string, large: string): Growth {
+  return measureGrowth(run, small, large, { rounds: 3 });
 }
 
 describe("pathological inputs scale linearly (#1407)", () => {
@@ -194,13 +177,12 @@ describe("pathological inputs scale linearly (#1407)", () => {
     const cost = measure(c.parseOnly ? parseOnce : roundTrip, small, large);
     // A floor on the small sample keeps a sub-millisecond reading from
     // manufacturing a huge ratio out of timer resolution.
-    const smallCost = Math.max(cost.small, 1);
-    const exponent = Math.log(cost.large / smallCost) / Math.log(large.length / small.length);
+    const exponent = growthExponent(cost, small.length, large.length);
     expect(
       exponent,
-      `${c.name}: ${small.length} chars → ${cost.small.toFixed(1)}ms, ` +
-        `${large.length} chars → ${cost.large.toFixed(1)}ms ` +
-        `(exponent ${exponent.toFixed(2)}; 1 is linear, 2 is quadratic)`,
+      `${c.name}: ${small.length} chars → ${cost.smallMs.toFixed(1)}ms, ` +
+        `${large.length} chars → ${cost.largeMs.toFixed(1)}ms ` +
+        `(exponent ${exponent.toFixed(2)} on the ${cost.clock} clock; 1 is linear, 2 is quadratic)`,
     ).toBeLessThan(c.maxExponent ?? MAX_EXPONENT);
   }, 600_000);
 });

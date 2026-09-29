@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { execFileSync } from "node:child_process";
 import { runChecks, compareBaseline } from "./check-ui-consistency.mjs";
 import { focusPaintedClasses, uiOkMarkers } from "./lib/uiConsistencyCss.mjs";
+import { growthExponent, measureGrowth } from "../src/test/cpuClock.ts";
 
 const INDEX = `@theme inline { --text-sm: var(--font-size-base); --font-sans: var(--font-ui); --shadow-popup: var(--shadow-popup); }
 :root { --z-resize-handle: 10; --z-bar: 100; --z-toolbar: 102; --z-context-menu: 1000; --z-popup: 9999; --icon-size-sm: 22px; --font-size-sm: 12px; }
@@ -567,28 +568,20 @@ describe("Codex fourth pass — C12 and C9 probes", () => {
   });
 
   // A GROWTH EXPONENT, not a duration (the method of pathologicalScaling.test.ts):
-  // CPU time, small and large interleaved, best of five. The cubic loop this
+  // CPU time of this thread (src/test/cpuClock.ts), five rounds of small,
+  // large, small with the minimum of each side kept. The cubic loop this
   // replaced grew ~64× for 4× the rules; linear grows ~4×.
   it("C12: scales linearly on a stylesheet of many @media rules", () => {
     const sheet = (n) =>
       Array.from({ length: n }, (_, i) => `@media (min-width: ${i}px) { .p${i} { position: relative; z-index: var(--z-bar); } }`).join("\n");
-    const cpu = (css) => {
-      const start = process.cpuUsage();
-      expect(ids(run({ "a.css": css }), "C12")).toEqual([]);
-      const used = process.cpuUsage(start);
-      return (used.user + used.system) / 1000;
-    };
     const small = sheet(400);
     const large = sheet(1600);
-    cpu(small);
-    let bestSmall = Infinity;
-    let bestLarge = Infinity;
-    for (let round = 0; round < 5; round += 1) {
-      bestSmall = Math.min(bestSmall, cpu(small));
-      bestLarge = Math.min(bestLarge, cpu(large));
-    }
-    const exponent = Math.log(bestLarge / Math.max(bestSmall, 1)) / Math.log(large.length / small.length);
-    expect(exponent, `400 rules ${bestSmall.toFixed(1)}ms → 1600 rules ${bestLarge.toFixed(1)}ms`).toBeLessThan(1.35);
+    const cost = measureGrowth((css) => expect(ids(run({ "a.css": css }), "C12")).toEqual([]), small, large);
+    const exponent = growthExponent(cost, small.length, large.length);
+    expect(
+      exponent,
+      `400 rules ${cost.smallMs.toFixed(1)}ms → 1600 rules ${cost.largeMs.toFixed(1)}ms on the ${cost.clock} clock`,
+    ).toBeLessThan(1.35);
   });
 
   it.each([[":is"], [":where"]])("C9: an icon alternative inside %s() does not exempt the selected label", (fn) => {
