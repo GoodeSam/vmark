@@ -69,7 +69,7 @@ export const TUI_LEFTOVERS =
 
 /** DECRQM / DECRQSS queries covering every queryable mode TUI_LEFTOVER_CASES
  *  touches, including cursor blink (?12), which xterm stores in an option. */
-export const SESSION_STATE_QUERIES = [
+const SESSION_STATE_QUERIES = [
   ...[1, 6, 7, 9, 12, 25, 45, 47, 66, 1000, 1002, 1003, 1004, 1006, 1016, 1047, 1049, 2004, 2026]
     .map((mode) => `\x1b[?${mode}$p`),
   "\x1b[4$p",
