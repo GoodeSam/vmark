@@ -32,13 +32,16 @@
   display: inline;
 }
 
-/* KaTeX positions `.katex` and every `.katex-base` relative with no offset,
-   so each is a render layer too: 60% of the ~11,000 positioned boxes after
-   scrolling a math-heavy document, all walked on every frame. Static moves
-   no box (inlineMathLayers.webkit.test.ts); the absolutely positioned
-   children KaTeX draws (stretchy SVGs, lap contents) keep their own
-   positioned parents, and the clipped MathML copy has no offsets. */
-.math-inline .katex,
+/* KaTeX positions every `.katex-base` relative with no offset, so each is a
+   render layer too: most of the ~11,000 positioned boxes after scrolling a
+   math-heavy document, all walked on every frame. Static moves no box
+   (inlineMathLayers.webkit.test.ts); the absolutely positioned children KaTeX
+   draws (stretchy SVGs, lap contents) keep their own positioned parents.
+   `.katex` itself stays relative, as KaTeX has it: it contains the hidden,
+   absolutely positioned MathML copy. Static, the copy's containing block
+   became `.ProseMirror`, and WebKit re-lays out every such descendant each
+   time that block lays out — 197 ms instead of 59 ms per keystroke with the
+   whole synthetic textbook rendered. */
 .math-inline .katex .katex-base {
   position: static;
 }

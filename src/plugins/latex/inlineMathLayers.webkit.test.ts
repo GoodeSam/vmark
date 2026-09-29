@@ -1,14 +1,21 @@
 /**
- * Real-WebKit tier — inline math does not make KaTeX's wrapper boxes render
- * layers, and taking them out of positioning moves nothing.
+ * Real-WebKit tier — inline math keeps KaTeX's per-base wrappers out of
+ * positioning, keeps `.katex` itself positioned, and moves nothing.
  *
  * KaTeX gives `.katex` and every `.katex-base` `position: relative` with no
  * offset. In WebKit each positioned box is a render layer; a math-heavy
  * document had ~11,000 of them after a scroll, 60% from these two classes,
- * and layer bookkeeping dominated every frame. latex.css makes them static
- * inside `.math-inline`. jsdom computes no layout, so only a real engine can
- * show that no glyph moved.
+ * and layer bookkeeping dominated every frame. latex.css makes `.katex-base`
+ * static inside `.math-inline`.
  *
+ * `.katex` stays positioned on purpose: it is the containing block of the
+ * absolutely positioned, visually hidden MathML copy. Made static, that copy's
+ * containing block became the editor's `.ProseMirror` root, and WebKit lays out
+ * EVERY statically placed positioned descendant of a block whenever the block
+ * lays out — measured on the synthetic textbook with all 10,963 formulas
+ * rendered, a keystroke's forced layout went from 59 ms to 197 ms.
+ *
+ * jsdom computes no layout, so only a real engine can show either property.
  * **The failure is constructed, not assumed.** Each comparison restores
  * KaTeX's own positioning with an override and measures both, so a probe
  * that read nothing could not pass.
@@ -30,19 +37,26 @@ const SOURCES = [
 /** KaTeX's own positioning, which latex.css overrides inside inline math. */
 const KATEX_DEFAULT = ".math-inline .katex, .math-inline .katex .katex-base { position: relative !important; }";
 
-let host: HTMLElement;
+let editorRoot: HTMLElement;
 let override: HTMLStyleElement | null = null;
 
 afterEach(() => {
-  host?.remove();
+  editorRoot?.remove();
   override?.remove();
   override = null;
 });
 
-/** Render every source as the node view does: `.math-inline > .math-inline-preview > .katex`. */
+/**
+ * Render every source as the node view does — `.math-inline >
+ * .math-inline-preview > .katex` — in a paragraph inside a positioned
+ * `.ProseMirror`, as ProseMirror's own stylesheet positions the editor root.
+ */
 function renderInline(): HTMLElement {
-  host = document.createElement("p");
-  host.style.cssText = "width:900px;font-size:18px;line-height:32px;";
+  editorRoot = document.createElement("div");
+  editorRoot.className = "ProseMirror";
+  editorRoot.style.position = "relative";
+  const paragraph = document.createElement("p");
+  paragraph.style.cssText = "width:900px;font-size:18px;line-height:32px;";
   for (const source of SOURCES) {
     const node = document.createElement("span");
     node.className = "math-inline";
@@ -50,10 +64,11 @@ function renderInline(): HTMLElement {
     preview.className = "math-inline-preview";
     katex.render(source, preview, { throwOnError: false, displayMode: false });
     node.appendChild(preview);
-    host.append(node, document.createTextNode(" 文字 "));
+    paragraph.append(node, document.createTextNode(" 文字 "));
   }
-  document.body.appendChild(host);
-  return host;
+  editorRoot.appendChild(paragraph);
+  document.body.appendChild(editorRoot);
+  return paragraph;
 }
 
 const katexBoxes = (root: HTMLElement) => [...root.querySelectorAll(".katex, .katex *")];
@@ -75,15 +90,25 @@ function restoreKatexPositioning(): void {
 }
 
 describe("inline math render layers", () => {
-  it("keeps KaTeX's wrapper boxes out of positioning", () => {
+  it("keeps every .katex-base out of positioning", () => {
     const root = renderInline();
     const ours = positioned(root);
-    for (const el of root.querySelectorAll(".katex, .katex-base")) {
-      expect(getComputedStyle(el).position).toBe("static");
-    }
+    const bases = root.querySelectorAll(".katex-base");
+    expect(bases.length).toBeGreaterThan(SOURCES.length);
+    for (const el of bases) expect(getComputedStyle(el).position).toBe("static");
 
     restoreKatexPositioning();
     expect(positioned(root)).toBeGreaterThan(ours);
+  });
+
+  it("keeps each formula's hidden MathML copy contained by its own .katex", () => {
+    const root = renderInline();
+    const copies = [...root.querySelectorAll<HTMLElement>(".katex-mathml")];
+    expect(copies.length).toBe(SOURCES.length);
+    for (const copy of copies) {
+      expect(getComputedStyle(copy).position).toBe("absolute");
+      expect(copy.offsetParent).toBe(copy.closest(".katex"));
+    }
   });
 
   it("moves no KaTeX box", () => {
