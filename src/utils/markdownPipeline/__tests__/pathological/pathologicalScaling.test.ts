@@ -47,8 +47,9 @@ import { parseWith } from "./fromMarkdownBuilds";
 const schema = getSchema([StarterKit]);
 
 /** Linear is 1, quadratic is 2. Measured with the fixes: 1.04–1.18 under a
- *  load average above 150. Without them: 1.82–2.35 for every case except
- *  `backtick-runs`, which carries its own bound below. */
+ *  load average above 150. Without them: 1.82–2.35 for each of the #1407
+ *  cases except `backtick-runs`, which carries its own bound below. Cases
+ *  added since state their own before and after. */
 const MAX_EXPONENT = 1.35;
 
 interface ScalingCase {
