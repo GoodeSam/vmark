@@ -90,6 +90,23 @@ describe("createRenderQueue", () => {
     expect(ran).toBe(FRAME_LIMIT + 10);
   });
 
+  it("takes and drains a batch far larger than a call's argument limit", () => {
+    // One paragraph of `$a$ ` repeated is one block, and every formula in it
+    // comes due in one batch; spreading that into push() threw a RangeError
+    // (JavaScriptCore caps a call near 65,536 arguments) and lost them all.
+    const root = scroller();
+    let ran = 0;
+    const queue = createRenderQueue<Item>({ run: () => void (ran += 1), expire: vi.fn(), marginPx: 2000, budgetMs: 6 });
+    const block = document.createElement("p");
+    block.getBoundingClientRect = () => new DOMRect(0, 0, 800, 20);
+    const batch = Array.from({ length: 150_000 }, (_, i) => ({ root, block, name: `f${i}`, distance: 0, measuredAt: 0 }));
+
+    expect(() => queue.add(batch)).not.toThrow();
+    while (frames.pending() > 0) frames.runFrame();
+
+    expect(ran).toBe(150_000);
+  });
+
   it("drops a removed item, and reports whether it was queued", () => {
     const root = scroller();
     const ran: string[] = [];

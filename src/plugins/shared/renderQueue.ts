@@ -99,13 +99,16 @@ export function createRenderQueue<T extends QueuedRender>(options: RenderQueueOp
     rerank();
     const held = measureAboveViewport(queue.slice(0, FRAME_LIMIT));
     const deadline = performance.now() + options.budgetMs;
+    // By index, then one splice: shift() is a copy per item once a queue is
+    // large. A render can only remove items not yet run, which lie after it.
     let ran = 0;
     do {
-      const item = queue.shift();
+      const item = queue[ran];
       if (!item) break;
       options.run(item);
       ran += 1;
-    } while (queue.length > 0 && ran < FRAME_LIMIT && performance.now() < deadline);
+    } while (ran < queue.length && ran < FRAME_LIMIT && performance.now() < deadline);
+    queue.splice(0, ran);
     holdViewStill(held);
     if (queue.length > 0) schedule();
   }
@@ -119,7 +122,7 @@ export function createRenderQueue<T extends QueuedRender>(options: RenderQueueOp
   return {
     add(items) {
       if (items.length === 0) return;
-      queue.push(...items);
+      for (const item of items) queue.push(item); // a spread would exceed the argument limit
       queue.sort(byDistance);
       schedule();
     },
