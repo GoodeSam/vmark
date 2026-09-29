@@ -229,6 +229,22 @@ describe("#1471 — a restarted session does not inherit the killed program's te
     },
   );
 
+  it("a blink setting changed while the reset is still queued is the one that sticks", async () => {
+    const { term, lifecycle } = await setup(true);
+    term.write("x".repeat(200_000)); // the reset queues behind this
+
+    await act(async () => {
+      lifecycle.current.restartActiveSession();
+    });
+    // The user turns blink off before xterm reaches the reset; settings sync
+    // applies it to the live terminal immediately.
+    setCursorBlinkSetting(false);
+    term.options.cursorBlink = false;
+    await settle(term);
+
+    expect(term.options.cursorBlink).toBe(false);
+  });
+
   it("rapid repeated restarts spawn one shell, not one per click", async () => {
     const { term, entry, lifecycle, ptys } = await setup();
 

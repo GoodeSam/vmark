@@ -49,9 +49,10 @@ import { handleShellExit } from "./terminalShellExit";
 import type { SessionEntry, SessionsRef } from "./terminalSessionTypes";
 
 /** Reset the terminal for a new PTY (#1471); settles once xterm parsed it. The
- *  blink setting is passed in because xterm keeps a program's `?12` in it. */
+ *  blink setting is read then, because xterm keeps a program's `?12` in it. */
 function resetForNewSession(entry: SessionEntry, statusLine: string): Promise<void> {
-  const { cursorBlink } = { ...initialState.terminal, ...useSettingsStore.getState().terminal };
+  const cursorBlink = () =>
+    ({ ...initialState.terminal, ...useSettingsStore.getState().terminal }).cursorBlink;
   return resetTerminalForNewSession(entry.instance.term, { cursorBlink, statusLine });
 }
 

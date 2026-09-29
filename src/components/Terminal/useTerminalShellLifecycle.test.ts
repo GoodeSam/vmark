@@ -27,7 +27,7 @@ function makeEntry(): { entry: SessionEntry; writeMock: ReturnType<typeof vi.fn>
   // terminal reset to be parsed before it spawns (#1471).
   const writeMock = vi.fn((_data: string | Uint8Array, parsed?: () => void) => parsed?.());
   const instance = {
-    term: { write: writeMock, clear: vi.fn() },
+    term: { write: writeMock, clear: vi.fn(), options: {} },
     composing: false,
     onCompositionCommit: null,
     fitAddon: {},

@@ -53,7 +53,7 @@ describe("resetTerminalForNewSession", () => {
     await writeParsed(term, sequence);
     expect(await queryState(term)).not.toEqual(await pristineState(productionOptions(true)));
 
-    await resetTerminalForNewSession(term, { cursorBlink: true });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true });
 
     expect(await queryState(term)).toEqual(await pristineState(productionOptions(true)));
   });
@@ -62,7 +62,7 @@ describe("resetTerminalForNewSession", () => {
     const term = productionTerminal(cursorBlink);
     await writeParsed(term, cursorBlink ? "\x1b[?12l" : "\x1b[?12h");
 
-    await resetTerminalForNewSession(term, { cursorBlink });
+    await resetTerminalForNewSession(term, { cursorBlink: () => cursorBlink });
 
     expect(term.options.cursorBlink).toBe(cursorBlink);
     expect(await queryState(term)).toEqual(await pristineState(productionOptions(cursorBlink)));
@@ -72,7 +72,7 @@ describe("resetTerminalForNewSession", () => {
     const term = productionTerminal();
     await writeParsed(term, "old prompt $ codex\r\n" + TUI_LEFTOVERS + "TUI frame");
 
-    await resetTerminalForNewSession(term, { cursorBlink: true });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true });
 
     expect(term.buffer.active.type).toBe("normal");
     expect(bufferText(term).trim()).toBe("");
@@ -82,7 +82,7 @@ describe("resetTerminalForNewSession", () => {
     const term = productionTerminal();
     await writeParsed(term, TUI_LEFTOVERS);
 
-    await resetTerminalForNewSession(term, { cursorBlink: true, statusLine: "Restarting shell…" });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true, statusLine: "Restarting shell…" });
 
     expect(bufferText(term).trim()).toBe("Restarting shell…");
     // …and the line is plain text: the leftover SGR did not paint it.
@@ -99,7 +99,7 @@ describe("resetTerminalForNewSession", () => {
     const term = productionTerminal();
     await writeParsed(term, fragment);
 
-    await resetTerminalForNewSession(term, { cursorBlink: true, statusLine: "Restarting shell…" });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true, statusLine: "Restarting shell…" });
 
     expect(bufferText(term).trim()).toBe("Restarting shell…");
   });
@@ -108,7 +108,7 @@ describe("resetTerminalForNewSession", () => {
     const term = productionTerminal();
     term.write("x".repeat(200_000) + "\x1b[?1003h\x1b[?1006h");
 
-    await resetTerminalForNewSession(term, { cursorBlink: true, statusLine: "ready" });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true, statusLine: "ready" });
 
     // No extra flush: the caller attaches the new PTY right after this. The
     // status line proves the reset was parsed (an unparsed backlog would also
@@ -128,7 +128,7 @@ describe("resetTerminalForNewSession", () => {
     term.onData((d) => sent.push(d));
     term.onTitleChange((t) => titles.push(t));
 
-    await resetTerminalForNewSession(term, { cursorBlink: true });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true });
 
     expect(sent).toEqual([]);
     if (title) expect(titles).not.toContain(title);
@@ -140,7 +140,7 @@ describe("resetTerminalForNewSession", () => {
     // queued when the reset is requested — the restart-click race.
     term.write("x".repeat(200_000) + "\x1b[?1003h\x1b[?1006h\x1b[?25l");
 
-    await resetTerminalForNewSession(term, { cursorBlink: true });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true });
 
     expect(term.modes.mouseTrackingMode).toBe("none");
     expect(await queryState(term)).toEqual(await pristineState(productionOptions(true)));
@@ -152,7 +152,7 @@ describe("resetTerminalForNewSession", () => {
     const sent: string[] = [];
     term.onData((d) => sent.push(d));
 
-    await resetTerminalForNewSession(term, { cursorBlink: true, statusLine: "x" });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true, statusLine: "x" });
 
     expect(sent).toEqual([]);
   });
@@ -169,7 +169,7 @@ describe("resetTerminalForNewSession", () => {
     await writeParsed(term, "\x1b[?1049hTUI frame"); // killed on the alternate screen
     const alternate = term.registerMarker(0);
 
-    await resetTerminalForNewSession(term, { cursorBlink: true });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true });
 
     expect(normal?.isDisposed).toBe(true);
     expect(alternate?.isDisposed).toBe(true);
@@ -181,9 +181,34 @@ describe("resetTerminalForNewSession", () => {
     const marker = term.registerMarker(0);
     await writeParsed(term, "\x1b[H");
 
-    await resetTerminalForNewSession(term, { cursorBlink: true });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true });
 
     expect(marker?.isDisposed).toBe(true);
+  });
+
+  it("disposes them on a one-row terminal, where no cursor move leaves the home row", async () => {
+    // FitAddon can size a squeezed panel to a single row.
+    const term = createRealTerminal({ ...productionOptions(true), rows: 1 });
+    await writeParsed(term, "prompt");
+    const marker = term.registerMarker(0);
+
+    await resetTerminalForNewSession(term, { cursorBlink: () => true });
+
+    expect(marker?.isDisposed).toBe(true);
+  });
+
+  it("restores the blink setting in force when the reset is PARSED, not when it was queued", async () => {
+    const term = productionTerminal(true);
+    let setting = true;
+    term.write("x".repeat(200_000)); // still being parsed when the setting changes
+    const reset = resetTerminalForNewSession(term, { cursorBlink: () => setting });
+    // The user turns blink off meanwhile; settings sync applies it at once.
+    setting = false;
+    term.options.cursorBlink = false;
+
+    await reset;
+
+    expect(term.options.cursorBlink).toBe(false);
   });
 
   it("leaves no OSC 133 command mark behind", async () => {
@@ -192,7 +217,7 @@ describe("resetTerminalForNewSession", () => {
     await writeParsed(term, "\x1b]133;A\x07$ ls\r\n\x1b]133;A\x07$ ");
     expect(osc.getCommands()).toHaveLength(2);
 
-    await resetTerminalForNewSession(term, { cursorBlink: true });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true });
 
     expect(osc.getCommands()).toEqual([]);
   });
@@ -200,8 +225,8 @@ describe("resetTerminalForNewSession", () => {
   it("is idempotent on a terminal that is already pristine", async () => {
     const term = productionTerminal();
 
-    await resetTerminalForNewSession(term, { cursorBlink: true });
-    await resetTerminalForNewSession(term, { cursorBlink: true });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true });
+    await resetTerminalForNewSession(term, { cursorBlink: () => true });
 
     expect(await queryState(term)).toEqual(await pristineState(productionOptions(true)));
   });

@@ -25,18 +25,24 @@
  *   - RIS swaps in new buffers WITHOUT disposing the old ones' markers, and
  *     xterm's OSC 8 link registry keeps a marker per link — so each restart
  *     would pin the whole discarded buffer, scrollback included. Before RIS,
- *     the reset therefore has xterm drop every marker through its own linear
+ *     the reset therefore has xterm dispose every marker through its own
  *     bulk paths, in order: leaving the alternate screen empties that buffer,
  *     and `term.clear()` — run from the write callback, so it lands between
- *     the old output and RIS — empties the normal one. The cursor is first
- *     moved off the home cell, where clear() would do nothing at all.
+ *     the old output and RIS — empties the normal one. (That is the same
+ *     clear() a restart always ran; in xterm.js 6.0.0 its marker disposal is
+ *     itself superlinear in the marker count.) A line feed first takes the
+ *     cursor off the home cell with no scrollback — where clear() does nothing
+ *     at all — on any geometry, a one-row terminal included, where no cursor
+ *     move can leave row 1.
  *   - RIS in xterm.js 6 misses state kept outside the modes it resets, so the
  *     sequence adds exactly those, each verified against xterm's own reports
  *     in terminalSessionReset.test.ts:
  *       · cursor visibility (`?25`) lives in CoreService.isCursorHidden;
- *       · `?12` (blink) and LNM (`20`) write the cursorBlink / convertEol
- *         OPTIONS, which no reset restores — blink goes back to the user's
- *         setting, LNM off (VMark leaves convertEol at xterm's default);
+ *       · LNM (`20`) writes the convertEol OPTION, which no reset restores —
+ *         it goes back off (VMark leaves convertEol at xterm's default);
+ *       · a program's `?12` writes the cursorBlink OPTION too. It is restored
+ *         from the setting read when the reset is PARSED, not when it was
+ *         queued, so a change the user makes in between is the one that sticks;
  *       · OSC 4/10/11/12 palette overrides live in the theme service — OSC
  *         104/110/111/112 restore the configured theme's colors.
  *   - A DEAD session (non-zero exit) keeps its buffer so the failure stays
@@ -58,8 +64,9 @@ const CANCEL_UNFINISHED_SEQUENCE = "\x18";
 /** Back to the normal screen: xterm empties the alternate buffer and disposes
  *  its markers when it is left. */
 const LEAVE_ALTERNATE_SCREEN = "\x1b[?1049l";
-/** Cursor to row 2: `term.clear()` returns early at row 1 with no scrollback. */
-const CURSOR_OFF_HOME = "\x1b[2H";
+/** Line feed: moves down or scrolls, so the cursor is never left on the home
+ *  cell with no scrollback — where `term.clear()` returns early. */
+const LINE_FEED = "\n";
 /** RIS — Reset to Initial State. */
 const RESET_TO_INITIAL_STATE = "\x1bc";
 /** DECTCEM set: RIS leaves a hidden cursor hidden in xterm.js. */
@@ -72,16 +79,11 @@ const RESTORE_THEME_COLORS = "\x1b]104\x07\x1b]110\x07\x1b]111\x07\x1b]112\x07";
 /** DECRST of every mode that makes xterm emit data with no key pressed. */
 const STOP_POINTER_AND_FOCUS_REPORTS = "\x1b[?9;1000;1002;1003;1004l";
 
-/** Cursor blink (`?12`), set to the user's setting — xterm stores it in the
- *  cursorBlink option, so a program's `?12l` outlives RIS. */
-function cursorBlinkMode(cursorBlink: boolean): string {
-  return cursorBlink ? "\x1b[?12h" : "\x1b[?12l";
-}
-
 /** Options for {@link resetTerminalForNewSession}. */
 export interface NewSessionResetOptions {
-  /** The user's cursor-blink setting, restored over whatever the last program set. */
-  cursorBlink: boolean;
+  /** Reads the user's cursor-blink setting when the reset is parsed; restored
+   *  over whatever `?12` the last program sent. */
+  cursorBlink: () => boolean;
   /** Shown after the reset (e.g. the localized "Restarting shell…" notice). */
   statusLine?: string;
 }
@@ -92,22 +94,21 @@ export interface NewSessionResetOptions {
  * and scrollback. Settles once xterm has parsed it — attach the new PTY then.
  */
 export function resetTerminalForNewSession(
-  term: Pick<Terminal, "write" | "clear">,
+  term: Pick<Terminal, "write" | "clear" | "options">,
   { cursorBlink, statusLine = "" }: NewSessionResetOptions,
 ): Promise<void> {
   return new Promise((parsed) => {
     // Dispose both buffers' markers before RIS strands them (header).
-    term.write(CANCEL_UNFINISHED_SEQUENCE + LEAVE_ALTERNATE_SCREEN + CURSOR_OFF_HOME, () =>
+    term.write(CANCEL_UNFINISHED_SEQUENCE + LEAVE_ALTERNATE_SCREEN + LINE_FEED, () =>
       term.clear(),
     );
     term.write(
-      RESET_TO_INITIAL_STATE +
-        SHOW_CURSOR +
-        NEWLINE_MODE_OFF +
-        cursorBlinkMode(cursorBlink) +
-        RESTORE_THEME_COLORS +
-        statusLine,
-      parsed,
+      RESET_TO_INITIAL_STATE + SHOW_CURSOR + NEWLINE_MODE_OFF + RESTORE_THEME_COLORS + statusLine,
+      () => {
+        // Runs before anything written after the reset is parsed.
+        term.options.cursorBlink = cursorBlink();
+        parsed();
+      },
     );
   });
 }
