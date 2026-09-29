@@ -20,8 +20,10 @@
  *   - The handler returns `true` (handled) so xterm doesn't warn about an
  *     unrecognized sequence. Handlers are owned by the term's parser and torn
  *     down when the term is disposed — no explicit cleanup needed.
- *   - OSC 133 marks die with the buffer: a full reset (RIS) disposes them, since
+ *   - OSC 133 marks die with the buffer: a full reset (RIS) drops them, since
  *     xterm rebuilds its buffers on RIS but leaves their markers alive (#1471).
+ *     Every mark-list update is O(1) per mark (lazy compaction), so neither a
+ *     reset nor a bulk marker disposal is quadratic in the mark count.
  *
  * @coordinates-with createTerminalInstance.ts — sole caller; exposes getCwd()
  * @coordinates-with terminalSessionReset.ts — every new PTY session starts with RIS
@@ -99,6 +101,10 @@ export interface Osc133Handle {
  */
 export function setupOsc133(term: Terminal): Osc133Handle {
   let commands: CommandMark[] = [];
+  // Marks whose marker died since `commands` was last compacted. Removal is
+  // deferred to getCommands(): filtering once per disposal made a bulk
+  // disposal (clear, a session restart) quadratic in the number of marks.
+  const disposedMarks = new Set<CommandMark>();
   let current: CommandMark | null = null;
   let running = false;
   let onIdle: (() => void) | null = null;
@@ -122,9 +128,9 @@ export function setupOsc133(term: Terminal): Osc133Handle {
         const mark: CommandMark = { marker };
         commands.push(mark);
         current = mark;
-        // Self-remove when the line scrolls out of the buffer.
+        // Self-remove when the line scrolls out of the buffer (compacted lazily).
         marker.onDispose(() => {
-          commands = commands.filter((c) => c !== mark);
+          disposedMarks.add(mark);
           if (current === mark) current = null;
         });
       }
@@ -149,23 +155,29 @@ export function setupOsc133(term: Terminal): Osc133Handle {
     return true; // handled
   });
 
-  // RIS (ESC c — a session restart, or `reset` typed in the shell) rebuilds
+  // RIS (ESC c — `reset` typed in the shell, or a session restart) rebuilds
   // xterm's buffers without disposing their markers, so every mark would keep
-  // a line number into text that no longer exists (#1471). Empty the list
-  // FIRST — disposing from the live list re-filters it once per mark, which is
-  // quadratic in a count any program can inflate — then dispose, and return
-  // false so xterm still performs the reset. `running` is deliberately kept:
-  // the next prompt is what flushes idle work deferred while a command ran.
+  // a line number into text that no longer exists (#1471). DROP them rather
+  // than dispose them: disposing one by one splices xterm's own marker array
+  // each time — quadratic in a count any program can inflate — and the buffer
+  // they belong to is being discarded anyway. Return false so xterm still
+  // performs the reset. `running` is deliberately kept: the next prompt is
+  // what flushes idle work deferred while a command ran.
   term.parser.registerEscHandler({ final: "c" }, () => {
-    const stale = commands;
     commands = [];
+    disposedMarks.clear();
     current = null;
-    for (const mark of stale) mark.marker.dispose();
     return false;
   });
 
   return {
-    getCommands: () => commands,
+    getCommands: () => {
+      if (disposedMarks.size > 0) {
+        commands = commands.filter((mark) => !disposedMarks.has(mark));
+        disposedMarks.clear();
+      }
+      return commands;
+    },
     isRunning: () => running,
     setOnIdle: (cb) => {
       onIdle = cb;

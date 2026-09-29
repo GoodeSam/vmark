@@ -6,6 +6,33 @@ import { parseOsc7Cwd, setupOsc7, setupOsc133, scrollToAdjacentCommand } from ".
 import type { CommandMark } from "./setupOsc";
 import { createRealTerminal, writeParsed } from "./realXterm.testUtils";
 
+/** CPU milliseconds `work` costs this process. */
+async function cpuMs(work: () => Promise<void>): Promise<number> {
+  const start = process.cpuUsage();
+  await work();
+  const used = process.cpuUsage(start);
+  return (used.user + used.system) / 1000;
+}
+
+/**
+ * Growth exponent of `costAt` (CPU ms at size n) between `small` and `large`:
+ * 1 is linear, 2 quadratic. An exponent, never a duration — the method of
+ * htmlScaling.test.ts: contention and instrumentation move durations, they
+ * cannot turn cost ∝ n into cost ∝ n². Minimum of interleaved runs after a
+ * warm-up; the small sample is floored at 1 ms against timer resolution.
+ */
+async function growthExponent(costAt: (n: number) => Promise<number>, small: number, large: number) {
+  await costAt(small); // warm-up: JIT
+  let bestSmall = Number.POSITIVE_INFINITY;
+  let bestLarge = Number.POSITIVE_INFINITY;
+  for (let round = 0; round < 3; round += 1) {
+    bestSmall = Math.min(bestSmall, await costAt(small));
+    bestLarge = Math.min(bestLarge, await costAt(large));
+  }
+  const exponent = Math.log(bestLarge / Math.max(bestSmall, 1)) / Math.log(large / small);
+  return { exponent, small: bestSmall, large: bestLarge };
+}
+
 describe("parseOsc7Cwd", () => {
   it("extracts the path from a file:// URL with a host", () => {
     expect(parseOsc7Cwd("file://my-mac.local/Users/joker/project")).toBe(
@@ -310,44 +337,48 @@ describe("setupOsc133 — full reset (RIS) invalidates command marks", () => {
     expect(osc.getCommands()[0].marker.line).toBe(0);
   });
 
-  it("disposes N marks in linear time — terminal output must not be able to freeze the UI", () => {
-    // Growth exponent, never a duration (method: htmlScaling.test.ts). Each
-    // dispose fires onDispose, which filters the mark list: disposing from the
-    // live list made RIS quadratic in the number of marks a program emitted.
-    function build(count: number) {
+  it("drops N marks without per-mark work — a program's RIS must not be able to freeze the UI", async () => {
+    // Against REAL xterm markers: disposing them one by one splices xterm's
+    // own marker array each time, quadratic in a count any program can
+    // inflate by printing OSC 133;A. The marks are dropped instead; the old
+    // buffer they belong to is discarded by the reset.
+    const growth = await growthExponent(async (count) => {
+      const term = createRealTerminal();
+      const osc = setupOsc133(term);
+      await writeParsed(term, PROMPT.repeat(count));
+      const cost = await cpuMs(() => writeParsed(term, "\x1bc"));
+      expect(osc.getCommands()).toHaveLength(0);
+      term.dispose();
+      return cost;
+    }, 5_000, 20_000);
+    expect(growth.exponent, `5k marks ${growth.small.toFixed(1)}ms, 20k ${growth.large.toFixed(1)}ms`).toBeLessThan(1.35);
+  });
+
+  it("a bulk disposal of marks (clear, a restart) costs linear time in OUR bookkeeping", async () => {
+    // Filtering the mark list once per disposed marker made our share of a
+    // bulk disposal quadratic. Isolated from xterm on purpose: xterm's own
+    // clear() is itself superlinear in its marker count (measured 7→84→309 ms
+    // for 5k/20k/40k plain markers in 6.0.0) — the same cost Cmd+K and the
+    // pre-#1471 restart paid, reachable only by the user, not by output.
+    const growth = await growthExponent(async (count) => {
+      const disposers: Array<() => void> = [];
       let osc: ((data: string) => boolean) | undefined;
-      let ris: (() => boolean) | undefined;
       const term = {
         parser: {
-          registerOscHandler: (_id: number, h: (data: string) => boolean) => (osc = h),
-          registerEscHandler: (_id: unknown, h: () => boolean) => (ris = h),
+          registerOscHandler: (_id: number, handler: (data: string) => boolean) => (osc = handler),
+          registerEscHandler: () => ({ dispose: () => {} }),
         },
-        registerMarker: () => {
-          const listeners: Array<() => void> = [];
-          return { line: 0, onDispose: (cb: () => void) => listeners.push(cb), dispose: () => listeners.forEach((cb) => cb()) };
-        },
+        registerMarker: () => ({ line: 0, onDispose: (cb: () => void) => disposers.push(cb) }),
       } as unknown as import("@xterm/xterm").Terminal;
       const handle = setupOsc133(term);
       for (let i = 0; i < count; i += 1) osc?.("A");
-      return { handle, ris: () => ris?.() };
-    }
-    function cpuMsOfRis(count: number): number {
-      const { handle, ris } = build(count);
-      const start = process.cpuUsage();
-      ris();
-      const used = process.cpuUsage(start);
-      expect(handle.getCommands()).toHaveLength(0);
-      return (used.user + used.system) / 1000;
-    }
-    cpuMsOfRis(2_000); // warm-up: JIT
-    let small = Number.POSITIVE_INFINITY;
-    let large = Number.POSITIVE_INFINITY;
-    for (let round = 0; round < 3; round += 1) {
-      small = Math.min(small, cpuMsOfRis(5_000));
-      large = Math.min(large, cpuMsOfRis(20_000));
-    }
-    const exponent = Math.log(large / Math.max(small, 1)) / Math.log(4);
-    expect(exponent, `5k marks ${small.toFixed(1)}ms, 20k marks ${large.toFixed(1)}ms`).toBeLessThan(1.35);
+      const cost = await cpuMs(async () => {
+        for (const fire of disposers) fire(); // what clearAllMarkers does
+        expect(handle.getCommands()).toHaveLength(0);
+      });
+      return cost;
+    }, 20_000, 80_000); // big enough that the small sample is well above timer resolution
+    expect(growth.exponent, `20k marks ${growth.small.toFixed(1)}ms, 80k ${growth.large.toFixed(1)}ms`).toBeLessThan(1.35);
   });
 
   it("leaves a command that was running busy until the next prompt, so deferred idle work still flushes", async () => {
