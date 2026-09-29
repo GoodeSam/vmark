@@ -52,4 +52,4 @@ Le refus strict à 50 Mo n'est pas modifiable par l'utilisateur. La webview ne p
 ## Limitations connues
 
 - Les seuils sont des tailles en octets, qui sont un proxy pour le coût réel (nombre de blocs). Un fichier de 600 Ko avec des milliers de petits blocs peut être plus lent qu'un fichier de 1,2 Mo composé de longs paragraphes. Les valeurs par défaut sont conservatrices.
-- Le WYSIWYG construit toujours l'intégralité du document à l'ouverture — il n'existe pas encore de rendu différé ou incrémental —, donc passer un fichier volumineux en WYSIWYG coûte tout le temps d'ouverture décrit ci-dessus.
+- Le WYSIWYG construit toujours chaque bloc du document à l'ouverture — seules les formules mathématiques en ligne sont rendues plus tard, à l'approche de la zone visible —, donc passer un fichier volumineux en WYSIWYG coûte tout le temps d'ouverture décrit ci-dessus.

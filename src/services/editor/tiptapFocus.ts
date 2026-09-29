@@ -12,7 +12,8 @@
  *   - No cursor means the reader never clicked, so the remembered SCROLL offset
  *     is restored instead of scrolling to the top (#1249). `restoreEditorScroll`
  *     owns the async-content problem that the old unconditional `scrollTop = 0`
- *     sidestepped; a tab with nothing remembered still lands at the top.
+ *     sidestepped; a tab with nothing remembered still lands at the top. The
+ *     remembered block, when there is one, is what gets restored (#1473).
  *
  * @coordinates-with cursorSync/tiptap.ts — saves cursor position before mode switch
  * @coordinates-with Editor.tsx — calls focus functions after mode toggle
@@ -27,6 +28,7 @@ import type { CursorInfo } from "@/stores/documentStore";
 import { getTiptapEditorView } from "./tiptapView";
 import {
   findScrollContainer,
+  getEditorScrollAnchor,
   getEditorScrollOffset,
   restoreEditorScroll,
 } from "./scrollPosition";
@@ -99,9 +101,12 @@ export function scheduleTiptapFocusAndRestore(
         // Ignore selection errors
       }
 
+      // The block the reader left at the top, when one was recorded (#1473).
+      const at = getEditorScrollAnchor(tabId, "wysiwyg");
       restoreEditorScroll(
         findScrollContainer(view.dom as HTMLElement),
         getEditorScrollOffset(tabId, "wysiwyg") ?? 0,
+        at ? { blocks: view.dom, at } : null,
       );
     }
   };

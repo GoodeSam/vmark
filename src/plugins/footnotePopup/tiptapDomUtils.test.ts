@@ -154,6 +154,7 @@ describe("scrollToPosition", () => {
     getBoundingClientRect: ReturnType<typeof vi.fn>;
     scrollTop: number;
     scrollTo: ReturnType<typeof vi.fn>;
+    hasAttribute: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -161,6 +162,7 @@ describe("scrollToPosition", () => {
       getBoundingClientRect: vi.fn(() => ({ top: 50 })),
       scrollTop: 200,
       scrollTo: vi.fn(),
+      hasAttribute: vi.fn(() => false), // no deferred renders pending (settledScroll)
     };
   });
 

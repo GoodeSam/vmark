@@ -52,4 +52,4 @@ Il rifiuto rigido a 50 MB non è regolabile dall'utente. La webview non può con
 ## Limitazioni note
 
 - Le soglie sono dimensioni in byte, che approssimano il costo reale (numero di blocchi). Un file da 600 KB con migliaia di blocchi brevi può essere più lento di un file da 1,2 MB di paragrafi lunghi. I valori predefiniti sono prudenti.
-- WYSIWYG costruisce ancora l'intero documento all'apertura — non esiste ancora un rendering differito o incrementale — quindi passare un file grande a WYSIWYG richiede tutto il tempo di apertura descritto sopra.
+- WYSIWYG costruisce ancora ogni blocco del documento all'apertura — solo le formule matematiche in linea vengono renderizzate più tardi, quando si avvicinano all'area visibile — quindi passare un file grande a WYSIWYG richiede tutto il tempo di apertura descritto sopra.

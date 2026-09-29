@@ -144,6 +144,15 @@ describe("ImageNodeView", () => {
     expect(nodeView.dom.title).toBe("title");
   });
 
+  it("decodes the image off the main thread", () => {
+    const node = {
+      attrs: { src: "https://example.com/image.png", alt: "", title: "" },
+      type: { name: "image" },
+    } as never;
+    nodeView = new ImageNodeView(node, () => 0, mockEditor);
+    expect(nodeView.dom.decoding).toBe("async");
+  });
+
   it("sets external URL src directly", () => {
     const node = {
       attrs: { src: "https://example.com/image.png", alt: "", title: "" },
