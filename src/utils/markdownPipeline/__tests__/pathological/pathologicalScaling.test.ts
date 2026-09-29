@@ -67,7 +67,8 @@ interface ScalingCase {
   large: number;
   /** Measure parse alone — for a parser property whose input must be big. */
   parseOnly?: boolean;
-  /** A tighter bound, for a class whose broken growth is below quadratic. */
+  /** A bound other than MAX_EXPONENT, set between the case's measured fixed
+   *  and broken growth; the case says why. */
   maxExponent?: number;
   /** Measure this instead of the repo's parser. */
   run?: (markdown: string) => void;
@@ -165,15 +166,17 @@ const CASES: ScalingCase[] = [
     // `indexOf` it replaced, as a first version of the patch did (2.07 here).
     // It is not the guard for the lookups themselves — at these sizes the
     // unpatched package reads 1.22 and passes; the case above catches that.
-    // This patch: 1.09–1.18 at a load average of 37–52 — after the first
-    // replace call a paragraph goes back to `indexOf` (caller code may have
-    // edited it), so this shape runs close to the unpatched cost. Kept small
-    // because the in-place splice every replacement makes — unchanged by the
-    // patch, O(siblings) each — adds its own growth as the paragraph grows.
+    // This patch: 1.09–1.18 at a load average of 37–52, and up to 1.43 under
+    // concurrent load — after the first replace call a paragraph goes back to
+    // `indexOf` (caller code may have edited it), so this shape runs close to
+    // the unpatched cost, and the in-place splice every replacement makes
+    // (unchanged by the patch, O(siblings) each) adds growth of its own. So
+    // the bound sits between the patch's 1.43 and the regression's 2.07.
     name: "hidden-autolinks-in-one-paragraph (stock GFM parse)",
     make: (n) => `${"`a` www&#46;example.com ".repeat(n)}\n`,
     small: 1000,
     large: 8000,
+    maxExponent: 1.7,
     run: (markdown) => {
       stockGfm.parse(markdown);
     },
