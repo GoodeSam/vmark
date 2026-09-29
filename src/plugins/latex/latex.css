@@ -5,10 +5,13 @@
  * Note: katex.css and katexFixes.css are imported in main.tsx.
  */
 
-/* Inline math node */
+/* Inline math node.
+   Not positioned at rest: a positioned inline is its own render layer in
+   WebKit, and a math-heavy document has thousands of these spans — 11,150 in
+   one textbook, each walked on every scrolled frame. Only edit mode needs a
+   containing block (the absolutely positioned width-measure span). */
 .math-inline {
   display: inline;
-  position: relative;
   vertical-align: baseline;
   line-height: var(--editor-line-height-px);
 }
@@ -21,11 +24,23 @@
 
 /* Inline math in edit mode - no background, only underline on input */
 .math-inline.editing {
+  position: relative;
   background: transparent;
 }
 
 .math-inline-preview {
   display: inline;
+}
+
+/* KaTeX positions `.katex` and every `.katex-base` relative with no offset,
+   so each is a render layer too: 60% of the ~11,000 positioned boxes after
+   scrolling a math-heavy document, all walked on every frame. Static moves
+   no box (inlineMathLayers.webkit.test.ts); the absolutely positioned
+   children KaTeX draws (stretchy SVGs, lap contents) keep their own
+   positioned parents, and the clipped MathML copy has no offsets. */
+.math-inline .katex,
+.math-inline .katex .katex-base {
+  position: static;
 }
 
 .math-inline-preview:empty {
