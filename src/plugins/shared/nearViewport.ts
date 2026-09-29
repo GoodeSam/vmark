@@ -260,9 +260,9 @@ export async function flushNearViewport(container: Element): Promise<void> {
     for (const running of inflight) {
       if (container.contains(running.target)) due.push(running.promise);
     }
-    const runNow = [...jobs.values()].filter((job) => container.contains(job.target));
-    for (const job of runNow) {
-      if (jobs.get(job.target) !== job) continue; // replaced or cancelled by an earlier render
+    for (const job of [...jobs.values()]) {
+      // A render run earlier in this loop may have replaced or cancelled it.
+      if (jobs.get(job.target) !== job || !container.contains(job.target)) continue;
       detach(job);
       due.push(Promise.resolve(run(job)));
     }
