@@ -155,12 +155,15 @@ function numericEnvReads(source, file) {
   return out;
 }
 
+// `-z`: without it git QUOTES any path holding a non-ASCII byte, a quote or a
+// control character, and the quoted spelling names no file — which the read
+// below would then have skipped as "deleted".
 const files = execFileSync(
   "git",
-  ["ls-files", "--cached", "--others", "--exclude-standard", "*.ts", "*.tsx", "*.mts", "*.cts", "*.js", "*.mjs", "*.cjs"],
-  { cwd: REPO, encoding: "utf8" },
+  ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "*.ts", "*.tsx", "*.mts", "*.cts", "*.js", "*.jsx", "*.mjs", "*.cjs"],
+  { cwd: REPO, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
 )
-  .split("\n")
+  .split("\0")
   .filter(Boolean);
 
 describe("numeric environment reads", () => {
@@ -174,8 +177,9 @@ describe("numeric environment reads", () => {
       let source;
       try {
         source = readFileSync(path.join(REPO, file), "utf8");
-      } catch {
-        return []; // listed by git but deleted in the working tree
+      } catch (error) {
+        if (error?.code === "ENOENT") return []; // listed by git but deleted in the working tree
+        throw error; // any other read failure is a file this sweep did not check
       }
       return numericEnvReads(source, file);
     });

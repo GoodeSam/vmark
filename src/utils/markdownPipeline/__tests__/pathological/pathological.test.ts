@@ -131,6 +131,10 @@ describe("pathological inputs (killable child process)", () => {
       `child was killed — the class that hung: ${String(lastStarted)} ` +
         `(finished: ${[...finished].join(", ") || "none"})\nstderr: ${res.stderr}`,
     ).toBeNull();
+    // The ceiling can also fire after the child EXITED, when a descendant still
+    // holds its pipes: then `signal` is null and `status` is the child's own,
+    // and only `error` (ETIMEDOUT) says the run blew the ceiling.
+    expect(res.error, `the wall ceiling fired\nstderr: ${res.stderr}`).toBeUndefined();
     expect(res.status, `child failed\nstderr: ${res.stderr}`).toBe(0);
     expect(lines.some((l) => l.done)).toBe(true);
 
@@ -149,6 +153,7 @@ describe("pathological inputs (killable child process)", () => {
   it("SELF-TEST: a deliberate busy loop is killed and reported, not hung", () => {
     const { res, lines } = runChild({ HANG_PROBE: "1" }, HANG_PROBE_WINDOW_MS);
     expect(res.signal).toBe("SIGKILL");
+    expect((res.error as NodeJS.ErrnoException | undefined)?.code).toBe("ETIMEDOUT"); // killed by the window, nothing else
     // The probe announced itself before hanging — the culprit is nameable.
     expect(lines.some((l) => l.name === "hang-probe" && l.starting)).toBe(true);
     expect(lines.some((l) => l.done)).toBe(false);

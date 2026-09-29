@@ -49,7 +49,7 @@
  * @coordinates-with scripts/check-commit-message.test.mjs — the self-test
  */
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 /** Policy refusal. Distinct from a usage/IO failure so callers can tell them apart. */
 const EXIT_REFUSED = 65;
@@ -298,6 +298,6 @@ function main(argv) {
 
 // CLI entry — run only when invoked directly, never when imported by the test
 // or by an auditing sweep over history.
-if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   process.exitCode = main(process.argv.slice(2));
 }

@@ -13,8 +13,8 @@
  *     fails goes to services/editor/unparseableDocument.ts (Source mode + message, #1407).
  *   - shouldRerenderOnTransaction: false — Tiptap's default full-React-rerender per
  *     transaction is wasted work here since state flows through Zustand selectors.
- *   - content-visibility gated on .cv-idle (off during typing) and only above
- *     CV_IDLE_CHAR_THRESHOLD; viewport-preserving toggles (#823, #1340).
+ *   - content-visibility gated on .cv-idle (off during typing), large docs and
+ *     never on macOS (usesContentVisibility); viewport-preserving toggles (#823, #1340).
  *   - Native spellcheck disabled above 100K chars where rescans block the main thread.
  *   - Cursor tracking is delayed 200ms after creation to prevent spurious sync during
  *     initial render/focus.
@@ -64,7 +64,7 @@ import {
   applySpellcheckForDocSize,
   buildTiptapEditorProps,
   CURSOR_TRACKING_DELAY_MS,
-  CV_IDLE_CHAR_THRESHOLD,
+  usesContentVisibility,
   setContentWithoutHistory,
   spellcheckAttrForDocSize,
   suppressCvIdleDuringEdit,
@@ -375,12 +375,11 @@ export function TiptapEditorInner({ hidden = false, readOnly = false, preview = 
     cursorInfoRef,
   });
 
-  // Initial cv-idle application is gated on document size — small docs skip the
-  // optimization entirely to avoid the layout-shift / shaking pattern described
-  // above CV_IDLE_CHAR_THRESHOLD. `content.length` is a cheap proxy for the PM
-  // doc size (close enough for the threshold check; the exact post-parse size
-  // governs onUpdate toggling).
-  const shouldUseCvIdle = content.length >= CV_IDLE_CHAR_THRESHOLD;
+  // Initial cv-idle application: large docs, never on macOS (usesContentVisibility —
+  // small docs shake, and in WKWebView it costs ~1 s per scrolled frame).
+  // `content.length` is a cheap proxy for the PM doc size (close enough for the
+  // threshold check; the exact post-parse size governs onUpdate toggling).
+  const shouldUseCvIdle = usesContentVisibility(content.length);
   const editorClassName = [
     "tiptap-editor",
     shouldUseCvIdle ? "cv-idle" : null,

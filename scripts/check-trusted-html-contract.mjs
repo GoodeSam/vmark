@@ -25,9 +25,10 @@
  * Run: `node scripts/check-trusted-html-contract.mjs`
  */
 
-import { readFileSync, realpathSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -139,34 +140,11 @@ export function findings() {
   return problems;
 }
 
-/**
- * Entry-point detection, through symlinks.
- *
- * Node resolves `import.meta.url` to the REAL path but leaves `process.argv[1]`
- * as given, so on macOS — where the temp directory is `/var` → `/private/var` —
- * a plain string comparison never matches and the gate silently does nothing.
- * That is exactly how this gate first "passed" its own self-test, which runs it
- * from a copy in a temp directory: exit 0, no output, no checks performed.
- *
- * Several other gates in this directory share the weaker form. It only bites
- * when the script is reached through a symlinked path, which the repo checkout
- * is not — but a gate that no-ops silently is the failure mode this whole file
- * exists to argue against, so this one compares real paths.
- */
-function isMainModule() {
-  if (!process.argv[1]) return false;
-  try {
-    return (
-      realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
-    );
-  } catch {
-    return false;
-  }
-}
-
-const isMain = isMainModule();
-
-if (isMain) {
+// Entry-point detection through real paths (scripts/lib/isMainModule.mjs).
+// This gate first "passed" its own self-test, which runs it from a copy in a
+// temp directory, because a plain string comparison never matched there: exit
+// 0, no output, no checks performed.
+if (isMainModule(import.meta.url)) {
   const problems = findings();
   if (problems.length > 0) {
     console.error("\n❌ Trusted-HTML contract broken across languages:\n");

@@ -7,15 +7,16 @@
  * The real-engine proof is settledScroll.webkit.test.ts.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { contentMayResizeInFlight, scrollToSettled } from "./settledScroll";
+import { contentMayResizeInFlight, scrollToSettled, PENDING_RENDER_ATTR, RENDER_BUSY_ATTR } from "./settledScroll";
 import { scrollBehavior } from "./motion";
 
 /** A scroller of `maxScroll` px whose scrollTop clamps like a real one. */
-function fakeScroller(maxScroll = 100_000) {
+function fakeScroller(maxScroll = 100_000, attrs: string[] = []) {
   let top = 0;
   const scrollTo = vi.fn();
   const el = {
     ownerDocument: document,
+    hasAttribute: (name: string) => attrs.includes(name),
     get scrollTop() {
       return top;
     },
@@ -57,6 +58,17 @@ describe("contentMayResizeInFlight", () => {
     expect(contentMayResizeInFlight(null)).toBe(false);
     expect(contentMayResizeInFlight(document.createElement("div"))).toBe(false);
   });
+
+  it("is true while the scroller still has renders waiting for the viewport", () => {
+    // Deferred renders (inline math) change block heights mid-scroll exactly
+    // as content-visibility does, and are the reason WebKit runs without it.
+    stubComputedContentVisibility("visible");
+    const scroller = document.createElement("div");
+    scroller.setAttribute(PENDING_RENDER_ATTR, "");
+    expect(contentMayResizeInFlight(contentRoot("visible"), scroller)).toBe(true);
+    scroller.removeAttribute(PENDING_RENDER_ATTR);
+    expect(contentMayResizeInFlight(contentRoot("visible"), scroller)).toBe(false);
+  });
 });
 
 describe("scrollToSettled", () => {
@@ -67,6 +79,82 @@ describe("scrollToSettled", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+  });
+
+  it("jumps and settles, instead of a smooth scroll, while renders are pending", () => {
+    stubComputedContentVisibility("visible");
+    const { el, scrollTo } = fakeScroller(100_000, [PENDING_RENDER_ATTR]);
+
+    scrollToSettled(el, () => 300, contentRoot("visible"));
+
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(el.scrollTop).toBe(300);
+  });
+
+  it("does not settle while renders are still running, then settles once they finish", () => {
+    stubComputedContentVisibility("visible");
+    const attrs = [PENDING_RENDER_ATTR, RENDER_BUSY_ATTR];
+    const { el } = fakeScroller(100_000, attrs);
+    let targetTop = 3000;
+
+    scrollToSettled(el, () => targetTop - el.scrollTop, contentRoot("visible"));
+    // Still for longer than the settle window — but a render is running.
+    for (let i = 0; i < 6; i += 1) vi.advanceTimersToNextFrame();
+    targetTop = 3400; // …and when it lands, a formula above grew.
+    vi.advanceTimersToNextFrame();
+    expect(el.scrollTop).toBe(3400);
+
+    attrs.splice(attrs.indexOf(RENDER_BUSY_ATTR), 1);
+    for (let i = 0; i < 5; i += 1) vi.advanceTimersToNextFrame();
+    targetTop = 9000; // settled: no longer followed
+    vi.advanceTimersToNextFrame();
+    expect(el.scrollTop).toBe(3400);
+  });
+
+  it("keeps following the target for as long as renders stay busy, past the usual frame bound", () => {
+    // A first render waiting on KaTeX's chunk, or a long queue drained near
+    // the target, can keep the scroller busy for more than 60 frames; stopping
+    // then left a Find or footnote target wherever the late render pushed it.
+    stubComputedContentVisibility("visible");
+    const attrs = [PENDING_RENDER_ATTR, RENDER_BUSY_ATTR];
+    const { el } = fakeScroller(100_000, attrs);
+    let targetTop = 3000;
+
+    scrollToSettled(el, () => targetTop - el.scrollTop, contentRoot("visible"));
+    for (let i = 0; i < 65; i += 1) vi.advanceTimersToNextFrame();
+    targetTop = 3400;
+    vi.advanceTimersToNextFrame();
+
+    expect(el.scrollTop).toBe(3400);
+  });
+
+  it("still gives up on a scroller that never stops being busy", () => {
+    stubComputedContentVisibility("visible");
+    const attrs = [PENDING_RENDER_ATTR, RENDER_BUSY_ATTR];
+    const { el } = fakeScroller(100_000, attrs);
+    let targetTop = 3000;
+
+    scrollToSettled(el, () => targetTop - el.scrollTop, contentRoot("visible"));
+    for (let i = 0; i < 1200; i += 1) vi.advanceTimersToNextFrame();
+    targetTop = 9000;
+    vi.advanceTimersToNextFrame();
+
+    expect(el.scrollTop).toBe(3000);
+  });
+
+  it("stops at the reader's gesture even while renders are busy", () => {
+    stubComputedContentVisibility("visible");
+    const attrs = [PENDING_RENDER_ATTR, RENDER_BUSY_ATTR];
+    const { el } = fakeScroller(100_000, attrs);
+    let targetTop = 3000;
+
+    scrollToSettled(el, () => targetTop - el.scrollTop, contentRoot("visible"));
+    vi.advanceTimersToNextFrame();
+    document.dispatchEvent(new Event("wheel"));
+    targetTop = 3400;
+    for (let i = 0; i < 5; i += 1) vi.advanceTimersToNextFrame();
+
+    expect(el.scrollTop).toBe(3000);
   });
 
   it("keeps the caller's smooth scroll when nothing can resize in flight", () => {

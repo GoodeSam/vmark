@@ -36,10 +36,10 @@
  * passes exits 1 (record the win); `--update` rewrites the failing lists.
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { pathToFileURL } from "node:url";
 import type { ThemeTokens } from "../src/theme/tokens";
 import { themeTokensToColors } from "../src/theme/themeColorsAdapter";
 import { computeCoreColorVars, computeModeColorVars } from "../src/theme/legacyModeColors";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 type RGBA = [number, number, number, number];
 type RGB = [number, number, number];
@@ -300,7 +300,7 @@ export function checkMinimumContrastFloor(defaultsSource: string): string | null
 
 const BASELINE_PATH = "scripts/theme-contrast-baseline.json";
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+if (isMainModule(import.meta.url)) {
   const args = process.argv.slice(2);
   const baselinePath = args.includes("--baseline") ? args[args.indexOf("--baseline") + 1] : BASELINE_PATH;
   const baseline = JSON.parse(readFileSync(baselinePath, "utf8")) as ContrastBaseline;

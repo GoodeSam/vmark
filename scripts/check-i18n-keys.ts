@@ -26,6 +26,7 @@ import {
   allowedEntries,
   staleExceptions,
 } from "./i18nIdenticalAllowlist.js";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -1262,9 +1263,9 @@ export function checkCopyConventions(
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 // Guarded so the classifier can be imported by its test without running the
-// whole gate (same pattern as check-bespoke-buttons.mjs).
+// whole gate (scripts/lib/isMainModule.mjs, which every gate shares).
 
-if (process.argv[1] && process.argv[1].endsWith("check-i18n-keys.ts")) {
+if (isMainModule(import.meta.url)) {
   console.log("Checking i18n key completeness...\n");
 
   const updateUntranslated = process.argv.includes("--update-untranslated");

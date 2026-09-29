@@ -17,9 +17,20 @@ vi.mock("./MathInlineNodeView", () => ({
   })),
 }));
 
+const { scheduleKatexFontPreload } = vi.hoisted(() => ({ scheduleKatexFontPreload: vi.fn() }));
+vi.mock("./katexFontPreload", () => ({ scheduleKatexFontPreload }));
+
 import { mathInlineExtension } from "./tiptapInlineMath";
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
+
+describe("mathInlineExtension lifecycle", () => {
+  it("schedules KaTeX's font preload when an editor is created", () => {
+    const onCreate = mathInlineExtension.config.onCreate as (() => void) | undefined;
+    onCreate?.call({});
+    expect(scheduleKatexFontPreload).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("mathInlineExtension structure", () => {
   it("has name 'math_inline'", () => {

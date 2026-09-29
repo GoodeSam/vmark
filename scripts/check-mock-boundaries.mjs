@@ -41,6 +41,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import ts from "typescript";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 // ─── Pure, testable core ───
 
@@ -331,6 +332,6 @@ function main() {
   process.exit(1);
 }
 
-if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   main();
 }

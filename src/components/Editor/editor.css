@@ -119,10 +119,21 @@
    Both toggle directions are scroll-compensated (cvIdleViewportLock.ts): swapping
    the 2.5em estimates for real heights (and back) changes the height of content
    above the viewport, which threw the selection out of view on every edit in
-   50K+ docs (#1340). */
+   50K+ docs (#1340).
+
+   The sizing rule is NOT gated on .cv-idle. Dropping `contain-intrinsic-size: auto`
+   discards each block's last remembered size (CSS Sizing 4 §5.2.1): when it went
+   with every edit-time strip, the idle re-add skipped every block at 2.5em, and
+   near the document's end that layout was too short to hold the compensated
+   scrollTop — the write clamped and the view moved by hundreds of pixels half a
+   second after the edit (#1472). Without size containment the rule has no layout
+   effect; it keeps each block's rendered size on record for the next skip. */
+.tiptap-editor .ProseMirror > * {
+  contain-intrinsic-size: auto 2.5em;
+}
+
 .tiptap-editor.cv-idle .ProseMirror > * {
   content-visibility: auto;
-  contain-intrinsic-size: auto 2.5em;
 }
 
 @keyframes selection-pulse {

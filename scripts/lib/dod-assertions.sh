@@ -92,6 +92,21 @@ DOD_SYNTAX="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/dod-syntax.mjs"
 #   - The descriptors are the first free ones at or above 10 (where bash's own
 #     `{var}` allocation starts — unavailable in the bash 3.2 macOS ships), not
 #     a fixed 7/8 that silently took over a caller's own.
+#
+# And no open of the reply FIFO may BLOCK, on either end (#1473). A plain
+# open of a FIFO waits for the other end, and in bash 3.2 the reader's wait
+# fails with EINTR whenever a child exits meanwhile — measured at 7 of 120
+# runs under 8-way load, 0 of 60 with bash 5.3. The server's write-only open
+# then waited FOREVER for a reader that had given up, and the shell forked for
+# it held every descriptor it inherited: the caller's own stdout and stderr,
+# which bash parks at fd 10+ while a function such as `has_test_case … >/dev/null
+# 2>&1` runs. So the checker exited, yet whoever read its output (a test's
+# spawnSync) never saw end-of-file and hung. Now the READER opens first, and
+# neither of its opens can wait: read-write returns at once (Linux and macOS
+# both define it for a FIFO), and read-only then has that writer. The server's
+# write-only open then finds readers already there and cannot wait either. The
+# server stays WRITE-ONLY: one that could read its own reply FIFO never got
+# EPIPE, so when its caller left mid-reply it blocked for ever on a full pipe.
 _DOD_STATE=""   # "" not tried · up · off (unavailable, or died: fresh processes from here on)
 _DOD_IN=""; _DOD_OUT=""; _DOD_PID=""; _DOD_CODE=""; _DOD_STDOUT=""; _DOD_STDERR=""
 _dod_free_fd() {
@@ -125,10 +140,15 @@ _dod_read_reply() {
 _dod_start() {
   [[ "$BASH_SUBSHELL" -eq 0 && -z "$_DOD_STATE" ]] || return 1
   _DOD_STATE=off   # until the handshake proves otherwise
-  local d in out
-  in="$(_dod_free_fd 10)" && out="$(_dod_free_fd $((in + 1)))" || return 1
+  local d in out hold
+  in="$(_dod_free_fd 10)" && out="$(_dod_free_fd $((in + 1)))" && hold="$(_dod_free_fd $((out + 1)))" || return 1
   d="$(mktemp -d "${TMPDIR:-/tmp}/dod-serve.XXXXXX")" || return 1
   if ! mkfifo "$d/out"; then rm -rf "$d"; return 1; fi
+  # The reader's end, before the server exists (see above). Checked — an
+  # unchecked failure here left `_DOD_OUT` naming a descriptor never opened.
+  if ! eval "exec ${hold}<>\"\$d/out\""; then rm -rf "$d"; return 1; fi
+  if ! eval "exec ${out}<\"\$d/out\""; then eval "exec ${hold}<&-"; rm -rf "$d"; return 1; fi
+  _DOD_OUT="$out"
   # Requests travel over an anonymous PIPE (process substitution), never a
   # FIFO: on macOS node never sees end-of-file on a FIFO stdin, so a FIFO-fed
   # server outlived every shell that started it. Over a pipe, the shell's exit
@@ -137,13 +157,26 @@ _dod_start() {
   # bash 5.2 has a bare `wait` also wait for a live process substitution, so a
   # server running as one hung any caller that waited on its own jobs. `<&0`
   # keeps the pipe as node's stdin (a background job would get /dev/null).
-  # Its pid is written beside the FIFO; the answered ping below proves node
-  # started, loaded and replied, long after that write.
-  eval "exec ${in}> >(node \"\$DOD_SYNTAX\" --serve <&0 >\"\$d/out\" 2>/dev/null & echo \$! >\"\$d/pid\")"
+  # It starts as `sh -c 'echo $$ >pid; exec node …'` whose redirections are
+  # applied FIRST, so the pid file appears only once the server's end of the
+  # reply FIFO is open — and names the server, since `exec` keeps the pid. It
+  # closes the inherited `hold` and `out`, so it can never read its own reply
+  # FIFO (see above). The answered ping below proves node started and loaded.
+  # `--owner $$` (this shell, as `_dod_start` runs only at BASH_SUBSHELL 0):
+  # the server exits when this shell does, even while a background job the
+  # shell left behind still holds the request pipe open.
+  eval "exec ${in}> >(sh -c 'echo \$\$ >\"\$0\"; exec node \"\$1\" --serve --owner \"\$2\"' \"\$d/pid\" \"\$DOD_SYNTAX\" $$ <&0 >\"\$d/out\" 2>/dev/null ${hold}<&- ${out}<&- &)"
   _DOD_IN="$in"
-  eval "exec ${out}<\"\$d/out\""
-  _DOD_OUT="$out"
-  if ( printf '/\x1f--ping\n' ) >&"$_DOD_IN" 2>/dev/null && _dod_read_reply 60 && [[ "$_DOD_CODE" == 0 ]]; then
+  # `hold` is dropped once the server's end is open — never before: a read
+  # that beat the server's open found no writer at all and ended at once (6 of
+  # 120 runs) — so the server is the only writer and its death reads as
+  # end-of-file. The wait is on the pid file, NEVER on a timed read of the
+  # FIFO: bash's `read` takes a pipe a byte at a time, and a timeout firing
+  # mid-line hands back half a reply and leaves the stream out of step.
+  local waited=0
+  until [[ -s "$d/pid" ]] || (( waited >= 1200 )); do sleep 0.05; waited=$((waited + 1)); done
+  eval "exec ${hold}<&-"
+  if [[ -s "$d/pid" ]] && ( printf '/\x1f--ping\n' ) >&"$_DOD_IN" 2>/dev/null && _dod_read_reply 60 && [[ "$_DOD_CODE" == 0 ]]; then
     _DOD_PID="$(cat "$d/pid" 2>/dev/null)"; rm -rf "$d"
     _DOD_STATE=up; return 0
   fi

@@ -4,7 +4,7 @@ import type { Editor as TiptapEditor } from "@tiptap/core";
 import type { EditorView } from "@tiptap/pm/view";
 import { Schema } from "@tiptap/pm/model";
 import { PROGRAMMATIC_SELECTION_META, scheduleTiptapFocusAndRestore } from "./tiptapFocus";
-import { clearEditorScrollOffsets, setEditorScrollOffset } from "./scrollPosition";
+import { clearEditorScrollOffsets, setEditorScrollOffset, trackEditorScroll } from "./scrollPosition";
 
 describe("scheduleTiptapFocusAndRestore", () => {
   it("focuses and restores once the view is connected", () => {
@@ -546,6 +546,63 @@ describe("scheduleTiptapFocusAndRestore", () => {
     clearEditorScrollOffsets("tab-read");
 
     expect(scrollTop).toBe(900);
+  });
+
+  it("restores the remembered block, not the pixels, when the content above it changed height (#1473)", () => {
+    vi.useFakeTimers();
+    clearEditorScrollOffsets("tab-anchor");
+    let scrollTop = 0;
+    let shortfall = 0; // how much shorter the content above block 50 is in this mount
+    const listeners = new Set<() => void>();
+    const scrollContainer = {
+      get scrollTop() { return scrollTop; },
+      set scrollTop(val: number) { scrollTop = val; },
+      scrollHeight: 20_000,
+      clientHeight: 500,
+      style: { overflowY: "auto" },
+      parentElement: null,
+      ownerDocument: null,
+      getBoundingClientRect: () => ({ top: 0 }),
+      addEventListener: (_type: string, fn: () => void) => listeners.add(fn),
+      removeEventListener: (_type: string, fn: () => void) => listeners.delete(fn),
+    };
+    const children = Array.from({ length: 100 }, (_, i) => ({
+      getBoundingClientRect: () => {
+        const top = i * 100 - (i >= 50 ? shortfall : 0) - scrollTop;
+        return { top, bottom: top + 100 };
+      },
+    }));
+    const dom = { isConnected: true, parentElement: scrollContainer, children };
+
+    // The reader left block 50 just under the top, every formula above it rendered.
+    const stop = trackEditorScroll(scrollContainer as unknown as HTMLElement, "tab-anchor", "wysiwyg", () => dom as unknown as Element);
+    scrollTop = 5020;
+    listeners.forEach((fn) => fn());
+    vi.advanceTimersByTime(200);
+    stop();
+    vi.useRealTimers();
+
+    // Remounted: those formulas show as source text, 300px shorter in all.
+    shortfall = 300;
+    scrollTop = 0;
+    const view = {
+      dom,
+      focus: vi.fn(),
+      dispatch: vi.fn(),
+      state: {
+        doc: { content: { size: 10 } },
+        tr: { setSelection: vi.fn().mockReturnThis() },
+      },
+    } as unknown as EditorView;
+    const raf = vi.fn((cb: FrameRequestCallback) => { cb(0); return 1; });
+    const originalRaf = globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame = raf;
+
+    scheduleTiptapFocusAndRestore({ isDestroyed: false, view } as TiptapEditor, vi.fn().mockReturnValue(null), vi.fn(), "tab-anchor");
+
+    globalThis.requestAnimationFrame = originalRaf;
+    clearEditorScrollOffsets("tab-anchor");
+    expect(scrollTop).toBe(4720);
   });
 
   it("still starts at the top for a tab with nothing remembered (#1249)", () => {

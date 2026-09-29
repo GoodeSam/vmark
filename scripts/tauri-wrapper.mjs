@@ -32,10 +32,11 @@
  */
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { TARGET_MAP } from "../server/mcp/scripts/build-sidecar-core.mjs";
 import { checkDevDisk } from "./dev-disk.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const projectRoot = path.resolve(path.dirname(scriptPath), "..");
@@ -192,6 +193,6 @@ function main() {
 }
 
 // Only run when executed directly, so the helpers above stay importable by tests.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   main();
 }

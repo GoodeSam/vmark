@@ -1,7 +1,7 @@
 // Audit 20260907 #26/#27/#31/#32 — the syntax-aware probes behind the DoD
 // assertion helpers, and the Rust lexer they and the keybinding gate share.
 import { describe, it, expect } from "vitest";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -406,5 +406,31 @@ describe("--serve answers each request exactly as a fresh process would", () => 
     const oneShot = spawnSync(process.execPath, [SCRIPT, "no-such-command"], { encoding: "utf8" });
     expect(usage.code).toBe(oneShot.status);
     expect(usage.err.join("\n")).toBe(oneShot.stderr.trimEnd());
+  });
+
+  it.each(["--owner", "--owner abc", "--owner 0", "--owner 12 extra", "--verbose"])(
+    "refuses a malformed owner as a usage error: --serve %s",
+    (args) => {
+      const res = spawnSync(process.execPath, [SCRIPT, "--serve", ...args.split(" ")], { input: "", encoding: "utf8", timeout: 60_000 });
+      if (res.error) throw res.error;
+      expect(res.status).toBe(64);
+      expect(res.stderr).toMatch(/--serve \[--owner <pid>\]/);
+    },
+  );
+
+  it("exits once its owner is gone, with stdin still open", async () => {
+    const owner = spawn(process.execPath, ["-e", "setTimeout(() => {}, 60000)"]);
+    const server = spawn(process.execPath, [SCRIPT, "--serve", "--owner", String(owner.pid)], { stdio: ["pipe", "ignore", "ignore"] });
+    try {
+      const exited = new Promise((resolve) => server.on("exit", (code) => resolve(code)));
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      expect(server.exitCode, "the server must keep serving while its owner lives").toBeNull();
+      owner.kill("SIGKILL");
+      const code = await Promise.race([exited, new Promise((resolve) => setTimeout(() => resolve("still running"), 10_000))]);
+      expect(code).toBe(0);
+    } finally {
+      owner.kill("SIGKILL");
+      server.kill("SIGKILL");
+    }
   });
 });

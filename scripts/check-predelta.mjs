@@ -51,6 +51,7 @@ import { cpus } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { invokedScripts } from "./lib/packageScripts.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -200,4 +201,4 @@ async function main() {
   console.error(`\n✅ check:predelta: all ${total} delta gates passed. Confirm with \`pnpm check:all\` before pushing.`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (isMainModule(import.meta.url)) main();

@@ -17,7 +17,7 @@ function makeEntry(overrides: Partial<SessionEntry> = {}): SessionEntry {
     instance: {
       container,
       dispose: vi.fn(),
-      term: { focus: vi.fn(), reset: vi.fn() },
+      term: { focus: vi.fn() },
       fitAddon: { fit: vi.fn() },
       searchAddon: { clearDecorations: vi.fn() },
     },
@@ -159,7 +159,7 @@ describe("switchVisibility", () => {
 
     expect(active.instance.fitAddon.fit).toHaveBeenCalledOnce();
     expect(active.instance.term.focus).toHaveBeenCalledOnce();
-    expect(active.instance.term.reset).toHaveBeenCalledOnce();
+    // No terminal reset here: startShell resets for every new PTY (#1471).
     expect(active.shellStarted).toBe(true);
     expect(startShell).toHaveBeenCalledWith("a");
   });
@@ -172,7 +172,6 @@ describe("switchVisibility", () => {
     switchVisibility(ref, "a", startShell);
     flushRaf();
 
-    expect(active.instance.term.reset).not.toHaveBeenCalled();
     expect(startShell).not.toHaveBeenCalled();
   });
 

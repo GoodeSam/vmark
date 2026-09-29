@@ -52,4 +52,4 @@ El rechazo absoluto a 50 MB no es ajustable por el usuario. La webview no puede 
 ## Limitaciones conocidas
 
 - Los umbrales son tamaños en bytes, que son una aproximación al coste real (recuento de bloques). Un archivo de 600 KB con miles de bloques cortos puede ser más lento que uno de 1,2 MB con párrafos largos. Los valores por defecto son conservadores.
-- WYSIWYG sigue construyendo el documento completo al abrirlo — todavía no hay renderizado diferido ni incremental —, así que cambiar un archivo grande a WYSIWYG cuesta el tiempo de apertura completo descrito arriba.
+- WYSIWYG sigue construyendo todos los bloques del documento al abrirlo — solo las fórmulas matemáticas en línea se renderizan después, cuando se acercan a la zona visible —, así que cambiar un archivo grande a WYSIWYG cuesta el tiempo de apertura completo descrito arriba.

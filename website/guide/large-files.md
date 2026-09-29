@@ -52,4 +52,4 @@ The 50 MB hard refusal is not user-adjustable. The webview cannot safely hold ar
 ## Known limitations
 
 - The thresholds are byte sizes, which are a proxy for the real cost (block count). A 600 KB file with thousands of short blocks can be slower than a 1.2 MB file of long paragraphs. The defaults are conservative.
-- WYSIWYG still builds the whole document when it opens — there is no deferred or incremental rendering yet — so switching a large file to WYSIWYG costs the full open time described above.
+- WYSIWYG still builds every block of the document when it opens — only inline math formulas render later, as they come near the visible area — so switching a large file to WYSIWYG costs the full open time described above.

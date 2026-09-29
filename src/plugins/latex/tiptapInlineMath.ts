@@ -1,6 +1,7 @@
 import { Node } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { MathInlineNodeView } from "./MathInlineNodeView";
+import { scheduleKatexFontPreload } from "./katexFontPreload";
 import {
   createInlineMathEditingRegistry,
   type InlineMathEditingRegistry,
@@ -29,6 +30,12 @@ export const mathInlineExtension = Node.create<MathInlineOptions>({
 
   addOptions() {
     return { editingRegistry: createInlineMathEditingRegistry() };
+  },
+
+  onCreate() {
+    // Load KaTeX's fonts while this editor is still empty — see
+    // katexFontPreload.ts for the full-document restyle each late face costs.
+    scheduleKatexFontPreload();
   },
 
   group: "inline",
