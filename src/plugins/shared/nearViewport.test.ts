@@ -302,6 +302,83 @@ describe("whenNearViewport — the reader's view stays still", () => {
 
     expect(root.scrollTop).toBe(8000);
   });
+
+  it("corrects for every render a frame runs, never more renders than it measured", () => {
+    const { root, addBlock, addTarget } = mountEditor();
+    withScrollTop(root, 8000);
+    root.getBoundingClientRect = () => new DOMRect(0, 0, 800, 900);
+    let rendered = 0;
+    const blocks = Array.from({ length: 300 }, (_, i) => {
+      const block = addBlock();
+      let height = 5;
+      block.getBoundingClientRect = () => new DOMRect(0, -1900 + i * 6, 800, height);
+      whenNearViewport(addTarget(block), root, () => {
+        height = 6; // each render grows its block, above the view, by 1px
+        rendered += 1;
+      });
+      return block;
+    });
+
+    onlyObserver().trigger(blocks, (el) => -1900 + blocks.indexOf(el as HTMLElement) * 6);
+    runFrame();
+    expect(root.scrollTop - 8000).toBe(rendered);
+    runFrame();
+    expect(rendered).toBe(300);
+    expect(root.scrollTop).toBe(8300);
+  });
+
+  it("holds the view across a print flush", async () => {
+    const { root, addBlock, addTarget } = mountEditor();
+    withScrollTop(root, 8000);
+    root.getBoundingClientRect = () => new DOMRect(0, 0, 800, 900);
+    const above = addBlock();
+    let height = 64;
+    above.getBoundingClientRect = () => new DOMRect(0, -400, 800, height);
+    whenNearViewport(addTarget(above), root, () => {
+      height = 100;
+    });
+
+    await flushNearViewport(root);
+
+    expect(root.scrollTop).toBe(8036);
+  });
+});
+
+describe("whenNearViewport — after the reader scrolled", () => {
+  it("re-ranks due renders by where their blocks are now, and sends far ones back to wait", () => {
+    const { root, addBlock, addTarget } = mountEditor();
+    let scrollTop = 0;
+    Object.defineProperty(root, "scrollTop", { configurable: true, get: () => scrollTop });
+    root.getBoundingClientRect = () => new DOMRect(0, 0, 800, 900);
+    const passed = addBlock();
+    const reached = addBlock();
+    let passedTop = 100;
+    let reachedTop = 1500;
+    passed.getBoundingClientRect = () => new DOMRect(0, passedTop, 800, 40);
+    reached.getBoundingClientRect = () => new DOMRect(0, reachedTop, 800, 40);
+    const order: string[] = [];
+    whenNearViewport(addTarget(passed), root, () => {
+      order.push("passed");
+      frames.advance(10); // one render per frame
+    });
+    whenNearViewport(addTarget(reached), root, () => {
+      order.push("reached");
+      frames.advance(10);
+    });
+
+    onlyObserver().trigger([passed], () => passedTop); // on screen, due
+    scrollTop = 8000; // a fling, before any frame drained
+    onlyObserver().trigger([reached], () => reachedTop);
+    scrollTop = 9500;
+    passedTop = -9400;
+    reachedTop = 0;
+    runFrame();
+
+    expect(order).toEqual(["reached"]);
+    expect(onlyObserver().observed.has(passed)).toBe(true);
+    runFrame();
+    expect(order).toEqual(["reached"]);
+  });
 });
 
 describe("flushNearViewport", () => {

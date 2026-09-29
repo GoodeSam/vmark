@@ -141,18 +141,6 @@ describe("holdViewStill — engines without scroll anchoring (WKWebView before m
     expect(root.scrollTop).toBe(5000);
   });
 
-  it("measures no more than the first `limit` items (a flung queue can hold thousands)", () => {
-    engine(false);
-    const root = scroller(100);
-    let h = 100;
-    const blocks = [0, 1, 2].map((i) => block(root, -1000 + i * 150, () => h));
-    const measured = measureAboveViewport(blocks.map((b) => ({ root, block: b })), 2);
-
-    h = 110;
-    holdViewStill(measured);
-
-    expect(root.scrollTop).toBe(5020);
-  });
 });
 
 describe("holdViewStill — engines that anchor scrolling themselves", () => {

@@ -328,6 +328,8 @@
         "src/plugins/shared/renderMarks.ts",
         "src/plugins/shared/renderAnchor.ts",
         "src/plugins/shared/renderAnchor.test.ts",
+        "src/plugins/shared/renderQueue.ts",
+        "src/plugins/shared/renderQueue.test.ts",
         "src/stores/blockMathEditingStore.ts",
         "src/stores/__tests__/blockMathEditingStore.test.ts"
       ],

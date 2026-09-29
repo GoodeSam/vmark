@@ -19,21 +19,16 @@
  *   - Only where the engine does not anchor: CSS.supports says it can and the
  *     scroller's computed `overflow-anchor` is not `none` means the engine
  *     already holds the view, and correcting too would move it twice.
- *   - At most MEASURE_LIMIT queued items per frame: a fling can queue
- *     thousands, and no frame budget runs that many.
+ *   - The caller measures exactly the renders it is about to run: a frame's
+ *     batch (renderQueue.ts), or a print flush's whole backlog.
  *
- * Known limitations:
- *   - A block that straddles the visible top is not corrected when it changes
- *     above the edge.
- *   - Renders that finish asynchronously — the first ones of a session, while
- *     KaTeX's chunk loads — land outside the frame and are not corrected.
+ * Known limitation: a block that straddles the visible top is not corrected
+ * when it changes above the edge.
  *
- * @coordinates-with plugins/shared/nearViewport.ts — measures before and corrects after each frame's renders
+ * @coordinates-with plugins/shared/renderQueue.ts — measures and corrects around each frame's batch
+ * @coordinates-with plugins/shared/nearViewport.ts — and around a print flush
  * @module plugins/shared/renderAnchor
  */
-
-/** Queued items looked at per frame. */
-const MEASURE_LIMIT = 256;
 
 /** A queued render: the scroller it is deferred against and its top-level block. */
 export interface AnchorItem {
@@ -51,12 +46,10 @@ function anchorsNatively(root: Element): boolean {
 }
 
 /** Heights of the blocks among `items` that lie entirely above their scroller's visible top. */
-export function measureAboveViewport(items: Iterable<AnchorItem>, limit = MEASURE_LIMIT): AboveViewport {
+export function measureAboveViewport(items: Iterable<AnchorItem>): AboveViewport {
   const measured: AboveViewport = new Map();
   const edges = new Map<Element, number | null>(); // null: the engine anchors this root
-  let seen = 0;
   for (const { root, block } of items) {
-    if (seen++ >= limit) break;
     if (!block) continue;
     let edge = edges.get(root);
     if (edge === undefined) {
