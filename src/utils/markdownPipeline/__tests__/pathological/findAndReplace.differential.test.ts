@@ -232,6 +232,40 @@ const CONSTRUCTED: Record<string, () => string> = {
       () => undefined,
     );
   },
+  "ignore-property-test-getter-edits-the-tree": () => {
+    const shared = text("a");
+    const para = paragraph(text("b"), { type: "break" }, text("c"), text("d"), shared);
+    let reads = 0;
+    const test = {};
+    Object.defineProperty(test, "type", {
+      enumerable: true,
+      get() {
+        reads += 1;
+        if (reads === 3) para.children![0] = shared;
+        return "never-a-node-type";
+      },
+    });
+    const tree = { type: "root", children: [para] };
+    findAndReplace(tree as Root, [[/a/g, "A"]], { ignore: test as never });
+    return `${canonical(tree)}\nreads=${reads}`;
+  },
+  "find-regexp-exec-edits-the-tree": () => {
+    const shared = text("a");
+    const para = paragraph(text("b"), { type: "break" }, text("c"), text("d"), shared);
+    const find = /a/g;
+    const nativeExec = RegExp.prototype.exec;
+    let calls = 0;
+    Object.defineProperty(find, "exec", {
+      value(this: RegExp, input: string) {
+        calls += 1;
+        if (calls === 2) para.children![0] = shared;
+        return nativeExec.call(this, input);
+      },
+    });
+    const tree = { type: "root", children: [para] };
+    findAndReplace(tree as Root, [[find, "A"]]);
+    return `${canonical(tree)}\ncalls=${calls}`;
+  },
   "ignore-array-element-read-once": () => {
     let reads = 0;
     const test: unknown[] = [];

@@ -38,7 +38,7 @@ patchedDependencies:
     hash: 2a8ed9defc9d2ed468561614c2b996a909092e55c4b115dc18189a233334f9a5
     path: patches/@xterm__addon-webgl@0.19.0.patch
   mdast-util-find-and-replace@3.0.2:
-    hash: a6f6aa3332191ac9e139749f085eff62df17623cc12f198654082a216c7ac959
+    hash: 0754acb5f400e1692c68a9b3d20cdb80b1f3446b709f7b7e3cc6ead8062b10e5
     path: patches/mdast-util-find-and-replace@3.0.2.patch
   mdast-util-from-markdown@2.0.3:
     hash: ce8bb5e8823f4c7e65d9fae3ad211d198c79bd3a79efa7ff05146720836a3e27
@@ -275,7 +275,7 @@ importers:
         version: 0.18.12(markmap-common@0.18.9)
       mdast-util-find-and-replace:
         specifier: ^3.0.2
-        version: 3.0.2(patch_hash=a6f6aa3332191ac9e139749f085eff62df17623cc12f198654082a216c7ac959)
+        version: 3.0.2(patch_hash=0754acb5f400e1692c68a9b3d20cdb80b1f3446b709f7b7e3cc6ead8062b10e5)
       mermaid:
         specifier: ^12.0.0
         version: 12.0.0
@@ -486,7 +486,7 @@ importers:
         version: 0.18.9
       mdast-util-find-and-replace:
         specifier: ^3.0.2
-        version: 3.0.2(patch_hash=a6f6aa3332191ac9e139749f085eff62df17623cc12f198654082a216c7ac959)
+        version: 3.0.2(patch_hash=0754acb5f400e1692c68a9b3d20cdb80b1f3446b709f7b7e3cc6ead8062b10e5)
       playwright-chromium:
         specifier: ^1.63.0
         version: 1.63.0
@@ -17103,7 +17103,7 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  mdast-util-find-and-replace@3.0.2(patch_hash=a6f6aa3332191ac9e139749f085eff62df17623cc12f198654082a216c7ac959):
+  mdast-util-find-and-replace@3.0.2(patch_hash=0754acb5f400e1692c68a9b3d20cdb80b1f3446b709f7b7e3cc6ead8062b10e5):
     dependencies:
       '@types/mdast': 4.0.4
       escape-string-regexp: 5.0.0
@@ -17143,7 +17143,7 @@ snapshots:
       '@types/mdast': 4.0.4
       ccount: 2.0.1
       devlop: 1.1.0
-      mdast-util-find-and-replace: 3.0.2(patch_hash=a6f6aa3332191ac9e139749f085eff62df17623cc12f198654082a216c7ac959)
+      mdast-util-find-and-replace: 3.0.2(patch_hash=0754acb5f400e1692c68a9b3d20cdb80b1f3446b709f7b7e3cc6ead8062b10e5)
       micromark-util-character: 2.1.1
 
   mdast-util-gfm-footnote@2.1.0:
@@ -17210,7 +17210,7 @@ snapshots:
   mdast-util-newline-to-break@2.0.0:
     dependencies:
       '@types/mdast': 4.0.4
-      mdast-util-find-and-replace: 3.0.2(patch_hash=a6f6aa3332191ac9e139749f085eff62df17623cc12f198654082a216c7ac959)
+      mdast-util-find-and-replace: 3.0.2(patch_hash=0754acb5f400e1692c68a9b3d20cdb80b1f3446b709f7b7e3cc6ead8062b10e5)
 
   mdast-util-phrasing@4.1.0:
     dependencies:
