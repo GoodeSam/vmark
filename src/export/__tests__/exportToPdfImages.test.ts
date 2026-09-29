@@ -15,7 +15,7 @@
  *
  * @module export/__tests__/exportToPdfImages.test
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 const {
   mockInvoke,
@@ -81,6 +81,8 @@ import { exportToPdf } from "../useExportOperations";
 import { useEditorStore } from "@/stores/editorStore";
 import { useTabStore } from "@/stores/tabStore";
 import type { DocumentTab } from "@/stores/tabStoreTypes";
+import { whenNearViewport, resetNearViewportForTest } from "@/plugins/shared/nearViewport";
+import { installFakeIntersectionObserver } from "@/test/fakeIntersectionObserver";
 
 const LIVE_TAB = "tab-live";
 
@@ -230,5 +232,40 @@ describe("exportToPdf — local image inlining (issue #999)", () => {
     });
 
     expect(mockToastWarning).not.toHaveBeenCalled();
+  });
+});
+
+describe("exportToPdf — deferred node-view renders in the live editor", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetNearViewportForTest();
+    document.body.innerHTML = "";
+    useEditorStore.getState().clearActiveEditors();
+    useTabStore.setState({ tabs: {}, activeTabId: {} } as never);
+    mockInvoke.mockResolvedValue({ status: "unknown" });
+    mockGetDocumentBaseDir.mockResolvedValue("/docs/my-notes");
+    mockResolveResources.mockImplementation((html: string) =>
+      Promise.resolve({ html, report: { resources: [], resolved: [], missing: [], totalSize: 0 } }),
+    );
+    installFakeIntersectionObserver();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("finishes renders still waiting for the viewport before reading the HTML", async () => {
+    // A formula far down the document has not been rendered yet — only its
+    // source text is in the live DOM. Printing must not capture that.
+    const live = installLiveEditor('<p><span class="math-inline">x^2</span></p>');
+    const math = live.querySelector(".math-inline")!;
+    whenNearViewport(math, document.body, () => {
+      math.textContent = "RENDERED";
+    });
+
+    await exportToPdf({ markdown: "$x^2$", sourceFilePath: "/docs/my-notes/note.md" });
+
+    const [, payload] = mockInvoke.mock.calls[0];
+    expect((payload as { html: string }).html).toContain("RENDERED");
   });
 });

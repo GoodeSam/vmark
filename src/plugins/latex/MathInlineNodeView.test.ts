@@ -21,6 +21,7 @@ import type { EditorView } from "@tiptap/pm/view";
 vi.mock("./katexLoader", () => ({
   loadKatex: vi.fn(() => Promise.resolve({ default: { render: vi.fn() } })),
   isKatexLoaded: vi.fn(() => false),
+  getKatexModule: vi.fn(() => null),
 }));
 
 vi.mock("@/plugins/mathPreview/MathPreviewView", () => ({

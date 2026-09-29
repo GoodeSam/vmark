@@ -21,6 +21,12 @@
  *     nothing resizes in flight — small documents keep their animation.
  *   - Detection reads the engine's computed style, not a class name, so it is
  *     also right on an engine without content-visibility.
+ *   - Renders deferred until they near the viewport (inline math,
+ *     plugins/shared/nearViewport.ts) resize blocks mid-scroll the same way,
+ *     and macOS runs large documents without content-visibility — so a
+ *     scroller marked with PENDING_RENDER_ATTR also settles, and a frame
+ *     while it is marked RENDER_BUSY_ATTR (a render queued or running, e.g.
+ *     waiting for KaTeX to load) never counts as still.
  *   - The reader wins: a wheel, touch, key or pointer press stops correcting.
  *
  * @coordinates-with utils/motion.ts — scrollBehavior for the smooth path
@@ -36,10 +42,27 @@ const MAX_FRAMES = 60;
 const USER_GESTURES = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
 
 /**
- * Whether blocks under `contentRoot` can change height while a scroll is in
- * flight — true when they use `content-visibility: auto`.
+ * Present on a scroll container while node views inside it still have a render
+ * waiting for the viewport (set by plugins/shared/nearViewport.ts).
  */
-export function contentMayResizeInFlight(contentRoot: Element | null): boolean {
+export const PENDING_RENDER_ATTR = "data-pending-render";
+
+/**
+ * Present on a scroll container while one of those renders is queued or
+ * running — geometry near the viewport is about to change.
+ */
+export const RENDER_BUSY_ATTR = "data-render-busy";
+
+/**
+ * Whether blocks under `contentRoot` can change height while a scroll is in
+ * flight — true when they use `content-visibility: auto`, or when `scroller`
+ * still has renders waiting for the viewport.
+ */
+export function contentMayResizeInFlight(
+  contentRoot: Element | null,
+  scroller?: Element | null,
+): boolean {
+  if (scroller?.hasAttribute(PENDING_RENDER_ATTR)) return true;
   const block = contentRoot?.firstElementChild;
   if (!block) return false;
   return getComputedStyle(block).contentVisibility === "auto";
@@ -58,7 +81,7 @@ export function scrollToSettled(
   const initial = distance();
   if (initial === null) return;
 
-  if (!contentMayResizeInFlight(contentRoot)) {
+  if (!contentMayResizeInFlight(contentRoot, scroller)) {
     scroller.scrollTo({ top: scroller.scrollTop + initial, behavior: scrollBehavior() });
     return;
   }
@@ -83,8 +106,10 @@ export function scrollToSettled(
     const before = scroller.scrollTop;
     if (Math.abs(remaining) >= 1) scroller.scrollTop = before + remaining;
     // Unmoved counts as still: either the target is in place, or the scroller
-    // is at a boundary and the target cannot get any closer.
-    still = scroller.scrollTop === before ? still + 1 : 0;
+    // is at a boundary and the target cannot get any closer — unless a render
+    // is still due, which can move the target after it looked settled.
+    const busy = scroller.hasAttribute(RENDER_BUSY_ATTR);
+    still = scroller.scrollTop === before && !busy ? still + 1 : 0;
     frames += 1;
     if (still >= SETTLE_FRAMES || frames >= MAX_FRAMES) return stop();
     requestAnimationFrame(step);

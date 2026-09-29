@@ -16,6 +16,7 @@ import { getActiveTabId } from "@/services/navigation/activeDocument";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { readPrintStatus } from "./printOutcome";
 import { hasExportableContent } from "./exportGuards";
+import { flushNearViewport } from "@/plugins/shared/nearViewport";
 
 // Re-exported, not moved away: `services/commands/exportCommands.ts` and the
 // export test suite reach the folder export through this module, and the split
@@ -112,7 +113,8 @@ export function pickPrintHtmlSource(
  *
  * The HTML comes from the focused pane's live editor when it is showing the
  * window's active tab — the document `export.pdf` resolved (fast path,
- * WYSIWYG) — and from an ExportSurface render of the markdown otherwise:
+ * WYSIWYG), after its viewport-deferred renders are flushed — and from an
+ * ExportSurface render of the markdown otherwise:
  * Source mode, or a split whose focused pane is not WYSIWYG (#346). Either
  * way the local images are inlined first (#999): the helper webview has no
  * Tauri asset:// handler. See printDocument.ts for each step.
@@ -123,7 +125,11 @@ async function exportToPdfBrowser(
 ): Promise<void> {
   try {
     const activeTabId = getActiveTabId(getCurrentWindowLabel());
-    const source = pickPrintHtmlSource(liveEditorElement(activeTabId), markdown);
+    const liveEditor = liveEditorElement(activeTabId);
+    // Node views that render only near the viewport (inline math) must finish
+    // first: the live DOM is read below as if it were the finished document.
+    if (liveEditor) await flushNearViewport(liveEditor);
+    const source = pickPrintHtmlSource(liveEditor, markdown);
     if (source.kind === "empty") {
       toast.error(i18n.t("dialog:toast.noEditorContentToPrint"));
       return;
