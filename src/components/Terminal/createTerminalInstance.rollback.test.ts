@@ -27,7 +27,7 @@ vi.mock("./setupImeCompositionGate", () => ({
 vi.mock("@xterm/xterm", () => ({
   Terminal: class {
     element = document.createElement("div");
-    parser = { registerOscHandler: vi.fn() };
+    parser = { registerOscHandler: vi.fn(), registerEscHandler: vi.fn() };
     unicode = { activeVersion: "11" };
     buffer = { active: { viewportY: 0, length: 0, getLine: () => null } };
     modes = { bracketedPasteMode: false };

@@ -4,6 +4,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { parseOsc7Cwd, setupOsc7, setupOsc133, scrollToAdjacentCommand } from "./setupOsc";
 import type { CommandMark } from "./setupOsc";
+import { createRealTerminal, writeParsed } from "./realXterm.testUtils";
 
 describe("parseOsc7Cwd", () => {
   it("extracts the path from a file:// URL with a host", () => {
@@ -89,6 +90,7 @@ describe("setupOsc133", () => {
           if (id === 133) handler = h;
           return { dispose: vi.fn() };
         }),
+        registerEscHandler: vi.fn(() => ({ dispose: vi.fn() })),
       },
       registerMarker: vi.fn(() => {
         const line = nextLine++;
@@ -265,6 +267,65 @@ describe("setupOsc133", () => {
     expect(h.isRunning()).toBe(true);
     expect(h.getCommands()).toHaveLength(0);
     expect(term.registerMarker).not.toHaveBeenCalled();
+  });
+});
+
+// #1471 — a session restart resets the terminal with RIS (ESC c), and so does
+// `reset`/`tput reset` typed in the shell. RIS rebuilds xterm's buffers but
+// does NOT dispose their markers, so a mark kept its old line number and
+// pointed into text that no longer exists: prompt navigation jumped to the
+// wrong row and "Copy Command Output" copied the wrong lines. Real xterm here —
+// the question is what xterm does with a marker, which a mock can't answer.
+describe("setupOsc133 — full reset (RIS) invalidates command marks", () => {
+  const PROMPT = "\x1b]133;A\x07";
+  const RUNNING = "\x1b]133;C\x07";
+  const DONE_OK = "\x1b]133;D;0\x07";
+
+  it("drops every mark when RIS wipes the buffer they point into", async () => {
+    const term = createRealTerminal();
+    const osc = setupOsc133(term);
+    await writeParsed(term, `${PROMPT}$ ls\r\nout\r\n${DONE_OK}${PROMPT}$ codex\r\n${RUNNING}`);
+    expect(osc.getCommands()).toHaveLength(2);
+
+    await writeParsed(term, "\x1bc");
+
+    expect(osc.getCommands()).toEqual([]);
+  });
+
+  it("does not swallow the reset itself", async () => {
+    const term = createRealTerminal();
+    setupOsc133(term);
+    await writeParsed(term, "\x1b[?1003h\x1b[?2004h\x1bc");
+
+    expect(term.modes.mouseTrackingMode).toBe("none");
+    expect(term.modes.bracketedPasteMode).toBe(false);
+  });
+
+  it("tracks the next shell's prompts after the reset", async () => {
+    const term = createRealTerminal();
+    const osc = setupOsc133(term);
+    await writeParsed(term, `${PROMPT}$ codex\r\n${RUNNING}\x1bc${PROMPT}$ `);
+
+    expect(osc.getCommands()).toHaveLength(1);
+    expect(osc.getCommands()[0].marker.line).toBe(0);
+  });
+
+  it("leaves a command that was running busy until the next prompt, so deferred idle work still flushes", async () => {
+    // Deliberate: RIS does not end the command. After a restart the new
+    // shell's first prompt is the idle signal that flushes a workspace `cd`
+    // deferred while the old command ran; clearing `running` on RIS would
+    // swallow that flush.
+    const term = createRealTerminal();
+    const osc = setupOsc133(term);
+    const onIdle = vi.fn();
+    osc.setOnIdle(onIdle);
+    await writeParsed(term, `${PROMPT}$ codex\r\n${RUNNING}\x1bc`);
+    expect(osc.isRunning()).toBe(true);
+
+    await writeParsed(term, PROMPT);
+
+    expect(onIdle).toHaveBeenCalledOnce();
+    expect(osc.isRunning()).toBe(false);
   });
 });
 

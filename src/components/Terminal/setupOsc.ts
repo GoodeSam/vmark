@@ -12,8 +12,6 @@
  * arithmetic that turns a clicked buffer line into the output span of the
  * command that produced it, excluding its prompt line.
  *
-
- *
  * Key decisions:
  *   - OSC 7 payload is `file://<host>/<path>`. We use the path regardless of
  *     host (matches VS Code / iTerm2 behavior); SSH'd remote cwds still update
@@ -22,8 +20,11 @@
  *   - The handler returns `true` (handled) so xterm doesn't warn about an
  *     unrecognized sequence. Handlers are owned by the term's parser and torn
  *     down when the term is disposed — no explicit cleanup needed.
+ *   - OSC 133 marks die with the buffer: a full reset (RIS) disposes them, since
+ *     xterm rebuilds its buffers on RIS but leaves their markers alive (#1471).
  *
  * @coordinates-with createTerminalInstance.ts — sole caller; exposes getCwd()
+ * @coordinates-with terminalSessionReset.ts — every new PTY session starts with RIS
  * @coordinates-with fileLinkProvider.ts — consumes the live cwd for relative paths
  * @module components/Terminal/setupOsc
  */
@@ -146,6 +147,17 @@ export function setupOsc133(term: Terminal): Osc133Handle {
       current = null;
     }
     return true; // handled
+  });
+
+  // RIS (ESC c — a session restart, or `reset` typed in the shell) rebuilds
+  // xterm's buffers without disposing their markers, so every mark would keep
+  // a line number into text that no longer exists (#1471). Dispose them (their
+  // onDispose drops them from `commands`), then return false so xterm still
+  // performs the reset. `running` is deliberately kept: the next prompt is what
+  // flushes idle work deferred while a command ran.
+  term.parser.registerEscHandler({ final: "c" }, () => {
+    for (const mark of [...commands]) mark.marker.dispose();
+    return false;
   });
 
   return {
