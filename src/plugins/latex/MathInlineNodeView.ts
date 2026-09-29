@@ -466,13 +466,13 @@ export class MathInlineNodeView implements NodeView {
     const currentToken = ++this.renderToken;
     this.dom.classList.remove("math-error");
 
-    // The scheduler also decides what the preview shows until KaTeX runs.
     this.cancelDeferredRender = scheduleInlineMathRender({
       latex: trimmed,
       preview: this.previewDom,
       host: this.dom,
       editorDom: this.editorView?.dom ?? null,
       isCurrent: () => currentToken === this.renderToken,
+      replacesRender: this.previewDom.querySelector(".katex, .katex-error") !== null,
     });
   }
 

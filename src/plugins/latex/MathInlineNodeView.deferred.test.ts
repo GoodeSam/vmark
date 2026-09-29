@@ -162,6 +162,35 @@ describe("MathInlineNodeView — inside a scrolling editor", () => {
     await flushNearViewport(root);
     expect(view.dom.querySelector(".katex")?.textContent).toBe("\\frac{a}{b}");
   });
+
+  it("replaces a finished render at once, never flashing the new source", async () => {
+    // A formula that already shows KaTeX output is on the reader's screen or
+    // was: waiting for the observer would paint its raw LaTeX for a frame
+    // first — after every edit, and every time the caret passes through it.
+    const { mount } = scrollingEditor();
+    const view = mount("x^2");
+    await Promise.resolve();
+    onlyObserver().trigger();
+    runFrame();
+    expect(view.dom.querySelector(".katex")?.textContent).toBe("x^2");
+
+    view.update(mathNode("y^2"));
+
+    expect(view.dom.querySelector(".katex")?.textContent).toBe("y^2");
+    expect(frames.pending()).toBe(0);
+  });
+
+  it("still defers a formula whose preview holds no finished render", async () => {
+    const { mount } = scrollingEditor();
+    const view = mount("x^2");
+    await Promise.resolve();
+
+    view.update(mathNode("y^2"));
+    await Promise.resolve();
+
+    expect(render).not.toHaveBeenCalled();
+    expect(view.dom.textContent).toBe("y^2");
+  });
 });
 
 describe("MathInlineNodeView — without a scroll container", () => {

@@ -22,6 +22,10 @@
  *     soon as anything waits, so it is ready when needed.
  *   - Synchronous once KaTeX is loaded, so a caller that budgets its time
  *     (the viewport queue's frame budget, a print flush) sees the real cost.
+ *   - A render that REPLACES a finished one (the formula was edited, or its
+ *     source changed) runs at once: that formula is or was on screen, and
+ *     the observer reports only after a frame has painted, so waiting for it
+ *     flashed the raw LaTeX after every edit.
  *   - `isCurrent` lets the node view drop a render that a newer source has
  *     superseded.
  *
@@ -49,11 +53,13 @@ export interface InlineMathRenderRequest {
   editorDom: Element | null;
   /** False once a newer render has superseded this one. */
   isCurrent: () => boolean;
+  /** The preview shows a finished render that this one replaces (an edit, a new source). */
+  replacesRender: boolean;
 }
 
 /** Schedule the render. Returns a cancel for a render that has not run yet. */
 export function scheduleInlineMathRender(request: InlineMathRenderRequest): () => void {
-  const { latex, preview, host, editorDom, isCurrent } = request;
+  const { latex, preview, host, editorDom, isCurrent, replacesRender } = request;
 
   const fail = () => {
     preview.textContent = latex;
@@ -84,10 +90,16 @@ export function scheduleInlineMathRender(request: InlineMathRenderRequest): () =
       });
   };
 
+  const katex = getKatexModule();
+  if (replacesRender && katex) {
+    paint(katex);
+    return () => {};
+  }
+
   const scrollRoot = editorScrollRoot(editorDom);
   if (scrollRoot) {
     preview.textContent = latex;
-    if (!getKatexModule()) void loadKatex().catch(() => undefined); // failure reported at render
+    if (!katex) void loadKatex().catch(() => undefined); // failure reported at render
     return whenNearViewport(host, scrollRoot, render);
   }
 
