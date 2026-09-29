@@ -310,6 +310,46 @@ describe("setupOsc133 — full reset (RIS) invalidates command marks", () => {
     expect(osc.getCommands()[0].marker.line).toBe(0);
   });
 
+  it("disposes N marks in linear time — terminal output must not be able to freeze the UI", () => {
+    // Growth exponent, never a duration (method: htmlScaling.test.ts). Each
+    // dispose fires onDispose, which filters the mark list: disposing from the
+    // live list made RIS quadratic in the number of marks a program emitted.
+    function build(count: number) {
+      let osc: ((data: string) => boolean) | undefined;
+      let ris: (() => boolean) | undefined;
+      const term = {
+        parser: {
+          registerOscHandler: (_id: number, h: (data: string) => boolean) => (osc = h),
+          registerEscHandler: (_id: unknown, h: () => boolean) => (ris = h),
+        },
+        registerMarker: () => {
+          const listeners: Array<() => void> = [];
+          return { line: 0, onDispose: (cb: () => void) => listeners.push(cb), dispose: () => listeners.forEach((cb) => cb()) };
+        },
+      } as unknown as import("@xterm/xterm").Terminal;
+      const handle = setupOsc133(term);
+      for (let i = 0; i < count; i += 1) osc?.("A");
+      return { handle, ris: () => ris?.() };
+    }
+    function cpuMsOfRis(count: number): number {
+      const { handle, ris } = build(count);
+      const start = process.cpuUsage();
+      ris();
+      const used = process.cpuUsage(start);
+      expect(handle.getCommands()).toHaveLength(0);
+      return (used.user + used.system) / 1000;
+    }
+    cpuMsOfRis(2_000); // warm-up: JIT
+    let small = Number.POSITIVE_INFINITY;
+    let large = Number.POSITIVE_INFINITY;
+    for (let round = 0; round < 3; round += 1) {
+      small = Math.min(small, cpuMsOfRis(5_000));
+      large = Math.min(large, cpuMsOfRis(20_000));
+    }
+    const exponent = Math.log(large / Math.max(small, 1)) / Math.log(4);
+    expect(exponent, `5k marks ${small.toFixed(1)}ms, 20k marks ${large.toFixed(1)}ms`).toBeLessThan(1.35);
+  });
+
   it("leaves a command that was running busy until the next prompt, so deferred idle work still flushes", async () => {
     // Deliberate: RIS does not end the command. After a restart the new
     // shell's first prompt is the idle signal that flushes a workspace `cd`
