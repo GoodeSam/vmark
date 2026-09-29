@@ -18,12 +18,12 @@ import {
   syncMarkdownToEditor,
   usesContentVisibility,
 } from "./tiptapEditorHelpers";
+import { MAX_NESTING_DEPTH, nestingRefusal } from "@/utils/markdownPipeline/nestingDepth";
 
 /** `navigator.platform` for this test; setup pins macOS (src/test/platformDefault.ts). */
 function setPlatform(value: string): void {
   Object.defineProperty(navigator, "platform", { value, configurable: true, writable: true });
 }
-import { MAX_NESTING_DEPTH, nestingRefusal } from "@/utils/markdownPipeline/nestingDepth";
 
 describe("buildTiptapEditorProps", () => {
   it("snapshots the spellcheck attribute from the doc size", () => {
@@ -161,22 +161,19 @@ describe("suppressCvIdleDuringEdit", () => {
     setPlatform("MacIntel");
   });
 
-  it.each(["MacIntel"])(
-    "strips cv-idle but never re-adds it on macOS (%s)",
-    (platform) => {
-      setPlatform(platform);
-      vi.useFakeTimers();
-      const { container } = buildCvDom();
-      const timeoutRef = { current: null as number | null };
+  it("strips cv-idle but never re-adds it on macOS", () => {
+    setPlatform("MacIntel");
+    vi.useFakeTimers();
+    const { container } = buildCvDom();
+    const timeoutRef = { current: null as number | null };
 
-      suppressCvIdleDuringEdit({ current: container as HTMLDivElement }, CV_IDLE_CHAR_THRESHOLD * 4, timeoutRef);
+    suppressCvIdleDuringEdit({ current: container as HTMLDivElement }, CV_IDLE_CHAR_THRESHOLD * 4, timeoutRef);
 
-      expect(container.classList.contains("cv-idle")).toBe(false);
-      expect(timeoutRef.current).toBeNull();
-      vi.advanceTimersByTime(2000);
-      expect(container.classList.contains("cv-idle")).toBe(false);
-    },
-  );
+    expect(container.classList.contains("cv-idle")).toBe(false);
+    expect(timeoutRef.current).toBeNull();
+    vi.advanceTimersByTime(2000);
+    expect(container.classList.contains("cv-idle")).toBe(false);
+  });
 
   it("compensates the viewport when stripping cv-idle, and again on the idle re-add", () => {
     vi.useFakeTimers();
