@@ -3,8 +3,8 @@
  * The CPU clock the growth-exponent tests measure with (see `cpuClock.ts`).
  *
  * The clock choice and the sampling order are checked against fakes, so they
- * are deterministic on any machine. One property can only be checked for
- * real: that a sibling thread's CPU stays off the thread clock.
+ * are deterministic on any machine. Checked for real: a sibling thread's CPU
+ * stays off the thread clock, and sub-millisecond work is resolved here.
  */
 import { describe, it, expect } from "vitest";
 import { once } from "node:events";
@@ -28,6 +28,14 @@ function manualClock(kind: CpuClockKind) {
   return { clock, spend: (ms: number) => void (us += ms * 1000) };
 }
 
+let sink = 0;
+/** Pure CPU work: about a microsecond per thousand iterations on a fast machine. */
+function spin(iterations: number): void {
+  let x = sink;
+  for (let i = 0; i < iterations; i += 1) x = (x * 31 + i) | 0;
+  sink = x;
+}
+
 describe("selectCpuClock", () => {
   it("uses the thread clock when the runtime has one", () => {
     const source = {
@@ -37,6 +45,23 @@ describe("selectCpuClock", () => {
     const clock = selectCpuClock(source);
     expect(clock.kind).toBe("thread");
     expect(clock.readUs()).toBe(1_000);
+  });
+
+  it("brings the thread clock up to date before reading it", () => {
+    // Linux's model: RUSAGE_THREAD reports this thread's runtime as of the last
+    // scheduler update, up to a tick stale; RUSAGE_SELF folds the pending
+    // runtime in first.
+    let accounted = 1_000;
+    let pending = 400;
+    const source = {
+      cpuUsage() {
+        accounted += pending;
+        pending = 0;
+        return { user: accounted, system: 0 };
+      },
+      threadCpuUsage: () => ({ user: accounted, system: 0 }),
+    };
+    expect(selectCpuClock(source).readUs()).toBe(1_400);
   });
 
   it("falls back to the process clock on a runtime without one (Node < 22.19)", () => {
@@ -56,6 +81,13 @@ describe("selectCpuClock", () => {
   });
 
   it.runIf(hasThreadClock)("is the thread clock by default on this runtime", () => expect(CPU_CLOCK.kind).toBe("thread"));
+
+  it("resolves sub-millisecond work on this OS — a precise clock never reads it as zero", () => {
+    // Tens of microseconds each: a microsecond clock always sees them, while
+    // Linux's unprimed thread clock read 240 of 300 samples of ~0.2 ms as 0.
+    const readings = Array.from({ length: 50 }, () => cpuMs(() => spin(20_000)));
+    expect(readings.filter((ms) => ms === 0)).toEqual([]);
+  });
 
   it.runIf(hasThreadClock)(
     "keeps a sibling thread's CPU off the thread clock, while the process clock bills it",

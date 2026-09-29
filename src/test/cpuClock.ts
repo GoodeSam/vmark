@@ -19,6 +19,16 @@
  * bound, the thread clock none. Where the runtime has no thread clock this
  * falls back to the process clock, and the result says which one measured.
  *
+ * **Brought up to date before every read.** On Linux the thread clock is
+ * `getrusage(RUSAGE_THREAD)`, which reports the runtime the scheduler last
+ * accounted — up to a tick (1–4 ms) stale; `getrusage(RUSAGE_SELF)`, behind
+ * `process.cpuUsage()`, first folds the running thread's pending time in. So
+ * each read calls `process.cpuUsage()` first. Unprimed, Node 22.23.2 on Linux
+ * read 240 of 300 samples of 0.2 ms work as 0, and 1 ms of work anywhere from
+ * 0 to 0.98 ms (median 0.44); primed, it agreed with the process clock to a few
+ * microseconds. Unprimed, a CI run failed `numeric references` at 1.39 from
+ * 1.0 → 6.8 ms samples.
+ *
  * No garbage collection before a sample, deliberately. On the thread clock a
  * young-generation collection first took those `htmlScaling` readings at 1.25
  * or more from 1 to 6, all on a loaded machine; a full one hands milliseconds
@@ -58,7 +68,11 @@ const totalUs = (usage: NodeJS.CpuUsage): number => usage.user + usage.system;
 export function selectCpuClock(source: CpuUsageSource): CpuClock {
   const threadCpuUsage = source.threadCpuUsage;
   if (typeof threadCpuUsage === "function") {
-    return { kind: "thread", readUs: () => totalUs(threadCpuUsage.call(source)) };
+    const readUs = () => {
+      source.cpuUsage(); // Linux: account this thread's pending runtime (see header)
+      return totalUs(threadCpuUsage.call(source));
+    };
+    return { kind: "thread", readUs };
   }
   return { kind: "process", readUs: () => totalUs(source.cpuUsage()) };
 }
