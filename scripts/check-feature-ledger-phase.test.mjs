@@ -33,8 +33,22 @@ const SCRIPT = path.join(REPO, "scripts", "check-feature-ledger-phase.sh");
 const PLAN = "dev-docs/plans/20260907-feature-ledger-fixes.md";
 const RULE60 = ".claude/rules/60-ai-governance.md";
 
+// Bounded: this checker is the one consumer of the dod-syntax server, and a
+// descendant that outlived it holding its stdout once made this call wait for
+// end-of-file for ever, hanging the whole tier (#1473; pinned in
+// scripts/lib/dod-assertions.test.mjs). On timeout spawnSync closes its end of
+// the pipes even when bash itself has exited — but it then reports the timeout
+// only in `error` and keeps bash's own exit status, so the error is thrown:
+// otherwise a recurrence would still pass every status assertion, just late.
 function run(root, ...args) {
-  return spawnSync("bash", [SCRIPT, ...args, `--root=${root}`, "--no-exec"], { encoding: "utf8", cwd: REPO });
+  const r = spawnSync("bash", [SCRIPT, ...args, `--root=${root}`, "--no-exec"], {
+    encoding: "utf8",
+    cwd: REPO,
+    timeout: 120_000,
+    killSignal: "SIGKILL",
+  });
+  if (r.error) throw r.error;
+  return r;
 }
 function write(root, rel, body = "placeholder\n") {
   const abs = path.join(root, rel);
