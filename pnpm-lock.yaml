@@ -37,6 +37,9 @@ patchedDependencies:
   '@xterm/addon-webgl@0.19.0':
     hash: 2a8ed9defc9d2ed468561614c2b996a909092e55c4b115dc18189a233334f9a5
     path: patches/@xterm__addon-webgl@0.19.0.patch
+  mdast-util-from-markdown@2.0.3:
+    hash: ce8bb5e8823f4c7e65d9fae3ad211d198c79bd3a79efa7ff05146720836a3e27
+    path: patches/mdast-util-from-markdown@2.0.3.patch
   mdast-util-to-markdown@2.1.2:
     hash: fac6c36ab79a787b23857dabd34de41ab06dc7b3e76943769c0d4177b0bae773
     path: patches/mdast-util-to-markdown@2.1.2.patch
@@ -12418,7 +12421,7 @@ snapshots:
       lz-string: 1.5.0
       magic-string: 1.4.1
       markdown-it: 14.3.2
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(patch_hash=ce8bb5e8823f4c7e65d9fae3ad211d198c79bd3a79efa7ff05146720836a3e27)
       mdast-util-gfm: 3.1.0
       mdast-util-to-hast: 13.2.1
       ohash: 2.0.12
@@ -17104,7 +17107,7 @@ snapshots:
       unist-util-is: 6.0.1
       unist-util-visit-parents: 6.0.2
 
-  mdast-util-from-markdown@2.0.3:
+  mdast-util-from-markdown@2.0.3(patch_hash=ce8bb5e8823f4c7e65d9fae3ad211d198c79bd3a79efa7ff05146720836a3e27):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
@@ -17126,7 +17129,7 @@ snapshots:
       '@types/mdast': 4.0.4
       devlop: 1.1.0
       escape-string-regexp: 5.0.0
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(patch_hash=ce8bb5e8823f4c7e65d9fae3ad211d198c79bd3a79efa7ff05146720836a3e27)
       mdast-util-to-markdown: 2.1.2(patch_hash=fac6c36ab79a787b23857dabd34de41ab06dc7b3e76943769c0d4177b0bae773)
       micromark-extension-frontmatter: 2.0.0
     transitivePeerDependencies:
@@ -17144,7 +17147,7 @@ snapshots:
     dependencies:
       '@types/mdast': 4.0.4
       devlop: 1.1.0
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(patch_hash=ce8bb5e8823f4c7e65d9fae3ad211d198c79bd3a79efa7ff05146720836a3e27)
       mdast-util-to-markdown: 2.1.2(patch_hash=fac6c36ab79a787b23857dabd34de41ab06dc7b3e76943769c0d4177b0bae773)
       micromark-util-normalize-identifier: 2.0.1
     transitivePeerDependencies:
@@ -17153,7 +17156,7 @@ snapshots:
   mdast-util-gfm-strikethrough@2.0.0:
     dependencies:
       '@types/mdast': 4.0.4
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(patch_hash=ce8bb5e8823f4c7e65d9fae3ad211d198c79bd3a79efa7ff05146720836a3e27)
       mdast-util-to-markdown: 2.1.2(patch_hash=fac6c36ab79a787b23857dabd34de41ab06dc7b3e76943769c0d4177b0bae773)
     transitivePeerDependencies:
       - supports-color
@@ -17163,7 +17166,7 @@ snapshots:
       '@types/mdast': 4.0.4
       devlop: 1.1.0
       markdown-table: 3.0.4
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(patch_hash=ce8bb5e8823f4c7e65d9fae3ad211d198c79bd3a79efa7ff05146720836a3e27)
       mdast-util-to-markdown: 2.1.2(patch_hash=fac6c36ab79a787b23857dabd34de41ab06dc7b3e76943769c0d4177b0bae773)
     transitivePeerDependencies:
       - supports-color
@@ -17172,14 +17175,14 @@ snapshots:
     dependencies:
       '@types/mdast': 4.0.4
       devlop: 1.1.0
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(patch_hash=ce8bb5e8823f4c7e65d9fae3ad211d198c79bd3a79efa7ff05146720836a3e27)
       mdast-util-to-markdown: 2.1.2(patch_hash=fac6c36ab79a787b23857dabd34de41ab06dc7b3e76943769c0d4177b0bae773)
     transitivePeerDependencies:
       - supports-color
 
   mdast-util-gfm@3.1.0:
     dependencies:
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(patch_hash=ce8bb5e8823f4c7e65d9fae3ad211d198c79bd3a79efa7ff05146720836a3e27)
       mdast-util-gfm-autolink-literal: 2.0.1
       mdast-util-gfm-footnote: 2.1.0
       mdast-util-gfm-strikethrough: 2.0.0
@@ -17195,7 +17198,7 @@ snapshots:
       '@types/mdast': 4.0.4
       devlop: 1.1.0
       longest-streak: 3.1.0
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(patch_hash=ce8bb5e8823f4c7e65d9fae3ad211d198c79bd3a79efa7ff05146720836a3e27)
       mdast-util-to-markdown: 2.1.2(patch_hash=fac6c36ab79a787b23857dabd34de41ab06dc7b3e76943769c0d4177b0bae773)
       unist-util-remove-position: 5.0.0
     transitivePeerDependencies:
@@ -18372,7 +18375,7 @@ snapshots:
   remark-parse@11.0.0:
     dependencies:
       '@types/mdast': 4.0.4
-      mdast-util-from-markdown: 2.0.3
+      mdast-util-from-markdown: 2.0.3(patch_hash=ce8bb5e8823f4c7e65d9fae3ad211d198c79bd3a79efa7ff05146720836a3e27)
       micromark-util-types: 2.0.2
       unified: 11.0.5
     transitivePeerDependencies:

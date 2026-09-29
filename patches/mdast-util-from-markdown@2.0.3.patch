@@ -1,0 +1,305 @@
+diff --git a/dev/lib/index.js b/dev/lib/index.js
+index 51b7144c862faaa6997d9a87c6fb9717ed09f59c..beda4fa75798402e51f35d7649e5c01f996327d6 100644
+--- a/dev/lib/index.js
++++ b/dev/lib/index.js
+@@ -226,6 +226,8 @@ function compiler(options) {
+     }
+     /** @type {Array<number>} */
+     const listStack = []
++    /** @type {Array<ListItemInsertion>} */
++    const listItemInsertions = []
+     let index = -1
+ 
+     while (++index < events.length) {
+@@ -240,11 +242,13 @@ function compiler(options) {
+         } else {
+           const tail = listStack.pop()
+           assert(typeof tail === 'number', 'expected list to be open')
+-          index = prepareList(events, tail, index)
++          prepareList(events, tail, index, listItemInsertions)
+         }
+       }
+     }
+ 
++    // VMark patch (#1473): one pass, not a splice per item.
++    events = insertListItems(events, listItemInsertions)
+     index = -1
+ 
+     while (++index < events.length) {
+@@ -293,9 +297,12 @@ function compiler(options) {
+    * @param {Array<Event>} events
+    * @param {number} start
+    * @param {number} length
+-   * @returns {number}
++   * @param {Array<ListItemInsertion>} insertions
++   *   Receives this list's `listItem` enters and exits, for `insertListItems`
++   *   (VMark patch #1473: they were spliced into `events` here).
++   * @returns {undefined}
+    */
+-  function prepareList(events, start, length) {
++  function prepareList(events, start, length, insertions) {
+     let index = start - 1
+     let containerBalance = -1
+     let listSpread = false
+@@ -413,9 +420,10 @@ function compiler(options) {
+             lineIndex ? events[lineIndex][1].start : event[1].end
+           )
+ 
+-          events.splice(lineIndex || index, 0, ['exit', listItem, event[2]])
+-          index++
+-          length++
++          insertions.push({
++            at: lineIndex || index,
++            event: ['exit', listItem, event[2]]
++          })
+         }
+ 
+         // Create a new list item.
+@@ -429,9 +437,7 @@ function compiler(options) {
+             end: undefined
+           }
+           listItem = item
+-          events.splice(index, 0, ['enter', item, event[2]])
+-          index++
+-          length++
++          insertions.push({at: index, event: ['enter', item, event[2]]})
+           firstBlankLineIndex = undefined
+           atMarker = true
+         }
+@@ -439,7 +445,6 @@ function compiler(options) {
+     }
+ 
+     events[start][1]._spread = listSpread
+-    return length
+   }
+ 
+   /**
+@@ -1246,6 +1251,77 @@ function compiler(options) {
+   }
+ }
+ 
++/**
++ * A `listItem` enter or exit waiting to go into the events (VMark patch #1473).
++ *
++ * @typedef ListItemInsertion
++ * @property {number} at
++ *   Index, in the events as tokenized, of the event it goes in front of.
++ * @property {Event} event
++ *   The enter or exit.
++ */
++
++/**
++ * Insert the queued `listItem` enters and exits into `events`, in one pass.
++ *
++ * VMark patch (#1473): `prepareList` spliced each one into `events` — the
++ * WHOLE document's event array — as it found it, so every list item moved
++ * every later event of the document twice: O(list items × events), whether
++ * the items share one wide list or are spread over many short ones. They are
++ * queued instead, and merged here. (Upstream's fix on `main`,
++ * syntax-tree/mdast-util-from-markdown#51, batches per LIST: it still moves
++ * the rest of the document once per list, and twice per item in a list of up
++ * to four items, so it does not remove this.)
++ *
++ * The result is the array the splices built, event for event:
++ *
++ * - no walk depends on an inserted event. A list's own walk is past an item
++ *   by the time it queues the item's exit, and its backward scan for trailing
++ *   line endings stops at the item's prefix. An enclosing list's walk crosses
++ *   a nested list's items only where `containerBalance` is positive, where an
++ *   item would only reset `atMarker`, which is already unset there; its
++ *   backward scan stops at the nested list's exit, which follows them. So the
++ *   walks decide the same without the insertions, and the indices they take —
++ *   into the events as tokenized — order events exactly as the spliced array
++ *   did: each `at` names the event its splice went in front of.
++ * - so each insertion goes directly in front of its event, and insertions in
++ *   front of the same event keep queue order (an item's exit before the next
++ *   item's enter), as the splices left them. Lists are prepared innermost
++ *   first, so the queue is sorted within a list but not across nested lists;
++ *   `Array#sort` is stable, which keeps that order among equal `at`s.
++ *
++ * @param {Array<Event>} events
++ *   Events as tokenized.
++ * @param {Array<ListItemInsertion>} insertions
++ *   Every list's insertions, in the order `prepareList` queued them.
++ * @returns {Array<Event>}
++ *   Events with the `listItem` enters and exits in place.
++ */
++function insertListItems(events, insertions) {
++  if (insertions.length === 0) return events
++
++  insertions.sort(function (left, right) {
++    return left.at - right.at
++  })
++
++  /** @type {Array<Event>} */
++  const result = []
++  let next = 0
++  let index = -1
++
++  while (++index < events.length) {
++    while (next < insertions.length && insertions[next].at === index) {
++      result.push(insertions[next].event)
++      next++
++    }
++
++    result.push(events[index])
++  }
++
++  assert(next === insertions.length, 'expected every insertion to be placed')
++  return result
++}
++
+ /**
+  * Copy a point-like value.
+  *
+diff --git a/lib/index.js b/lib/index.js
+index 90e17befb5712e97284e97cd6689bc14ac42c1ba..09c1b96850f4e2c96589c1b1abea2671d4679751 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -217,6 +217,8 @@ function compiler(options) {
+     };
+     /** @type {Array<number>} */
+     const listStack = [];
++    /** @type {Array<ListItemInsertion>} */
++    const listItemInsertions = [];
+     let index = -1;
+     while (++index < events.length) {
+       // We preprocess lists to add `listItem` tokens, and to infer whether
+@@ -226,10 +228,13 @@ function compiler(options) {
+           listStack.push(index);
+         } else {
+           const tail = listStack.pop();
+-          index = prepareList(events, tail, index);
++          prepareList(events, tail, index, listItemInsertions);
+         }
+       }
+     }
++
++    // VMark patch (#1473): one pass, not a splice per item.
++    events = insertListItems(events, listItemInsertions);
+     index = -1;
+     while (++index < events.length) {
+       const handler = config[events[index][0]];
+@@ -273,9 +278,12 @@ function compiler(options) {
+    * @param {Array<Event>} events
+    * @param {number} start
+    * @param {number} length
+-   * @returns {number}
++   * @param {Array<ListItemInsertion>} insertions
++   *   Receives this list's `listItem` enters and exits, for `insertListItems`
++   *   (VMark patch #1473: they were spliced into `events` here).
++   * @returns {undefined}
+    */
+-  function prepareList(events, start, length) {
++  function prepareList(events, start, length, insertions) {
+     let index = start - 1;
+     let containerBalance = -1;
+     let listSpread = false;
+@@ -353,9 +361,10 @@ function compiler(options) {
+ 
+           // Fix position.
+           listItem.end = Object.assign({}, lineIndex ? events[lineIndex][1].start : event[1].end);
+-          events.splice(lineIndex || index, 0, ['exit', listItem, event[2]]);
+-          index++;
+-          length++;
++          insertions.push({
++            at: lineIndex || index,
++            event: ['exit', listItem, event[2]]
++          });
+         }
+ 
+         // Create a new list item.
+@@ -369,16 +378,16 @@ function compiler(options) {
+             end: undefined
+           };
+           listItem = item;
+-          events.splice(index, 0, ['enter', item, event[2]]);
+-          index++;
+-          length++;
++          insertions.push({
++            at: index,
++            event: ['enter', item, event[2]]
++          });
+           firstBlankLineIndex = undefined;
+           atMarker = true;
+         }
+       }
+     }
+     events[start][1]._spread = listSpread;
+-    return length;
+   }
+ 
+   /**
+@@ -1083,6 +1092,72 @@ function compiler(options) {
+   }
+ }
+ 
++/**
++ * A `listItem` enter or exit waiting to go into the events (VMark patch #1473).
++ *
++ * @typedef ListItemInsertion
++ * @property {number} at
++ *   Index, in the events as tokenized, of the event it goes in front of.
++ * @property {Event} event
++ *   The enter or exit.
++ */
++
++/**
++ * Insert the queued `listItem` enters and exits into `events`, in one pass.
++ *
++ * VMark patch (#1473): `prepareList` spliced each one into `events` — the
++ * WHOLE document's event array — as it found it, so every list item moved
++ * every later event of the document twice: O(list items × events), whether
++ * the items share one wide list or are spread over many short ones. They are
++ * queued instead, and merged here. (Upstream's fix on `main`,
++ * syntax-tree/mdast-util-from-markdown#51, batches per LIST: it still moves
++ * the rest of the document once per list, and twice per item in a list of up
++ * to four items, so it does not remove this.)
++ *
++ * The result is the array the splices built, event for event:
++ *
++ * - no walk depends on an inserted event. A list's own walk is past an item
++ *   by the time it queues the item's exit, and its backward scan for trailing
++ *   line endings stops at the item's prefix. An enclosing list's walk crosses
++ *   a nested list's items only where `containerBalance` is positive, where an
++ *   item would only reset `atMarker`, which is already unset there; its
++ *   backward scan stops at the nested list's exit, which follows them. So the
++ *   walks decide the same without the insertions, and the indices they take —
++ *   into the events as tokenized — order events exactly as the spliced array
++ *   did: each `at` names the event its splice went in front of.
++ * - so each insertion goes directly in front of its event, and insertions in
++ *   front of the same event keep queue order (an item's exit before the next
++ *   item's enter), as the splices left them. Lists are prepared innermost
++ *   first, so the queue is sorted within a list but not across nested lists;
++ *   `Array#sort` is stable, which keeps that order among equal `at`s.
++ *
++ * @param {Array<Event>} events
++ *   Events as tokenized.
++ * @param {Array<ListItemInsertion>} insertions
++ *   Every list's insertions, in the order `prepareList` queued them.
++ * @returns {Array<Event>}
++ *   Events with the `listItem` enters and exits in place.
++ */
++function insertListItems(events, insertions) {
++  if (insertions.length === 0) return events;
++  insertions.sort(function (left, right) {
++    return left.at - right.at;
++  });
++
++  /** @type {Array<Event>} */
++  const result = [];
++  let next = 0;
++  let index = -1;
++  while (++index < events.length) {
++    while (next < insertions.length && insertions[next].at === index) {
++      result.push(insertions[next].event);
++      next++;
++    }
++    result.push(events[index]);
++  }
++  return result;
++}
++
+ /**
+  * Copy a point-like value.
+  *

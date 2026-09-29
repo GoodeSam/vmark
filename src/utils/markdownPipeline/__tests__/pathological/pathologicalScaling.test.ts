@@ -32,6 +32,8 @@
  * @coordinates-with ../../serializerCosmetics.ts — the linear escape scan
  * @coordinates-with patches/micromark@4.0.2.patch — linear data-token merge
  * @coordinates-with patches/mdast-util-to-markdown@2.1.2.patch — linear escaping
+ * @coordinates-with patches/mdast-util-from-markdown@2.0.3.patch — linear list items
+ * @coordinates-with listPreparation.differential.test.ts — that patch changes no parse
  * @module utils/markdownPipeline/__tests__/pathological/pathologicalScaling.test
  */
 import { describe, it, expect } from "vitest";
@@ -151,6 +153,24 @@ const CASES: ScalingCase[] = [
     make: (n) => `${"\\*ab c".repeat(n)}\n`,
     small: 6000,
     large: 24000,
+    parseOnly: true,
+  },
+  {
+    // Many short lists, and more document after them (#1473: a study guide
+    // with numbered steps under every worked example). from-markdown spliced
+    // each list item's enter and exit into the WHOLE document's event array,
+    // so every item moved every later event of the document: O(items ×
+    // events). Every other stage costs far more per list item than per line
+    // of a code listing, so the listing is what makes the splices dominate at
+    // a size the PR tier can afford; a changed bullet starts a new list, so
+    // every list line is a list. Upstream's own fix batches per LIST
+    // (syntax-tree/mdast-util-from-markdown#51), which leaves this shape just
+    // as slow — a re-made patch that only backports it fails here. Measured
+    // at a load average of 45–100: 1.63–1.67 before, 1.02–1.05 after.
+    name: "short-lists-before-code",
+    make: (n) => `${"- a\n* b\n".repeat(n)}\`\`\`\n${"x\n".repeat(32 * n)}\`\`\`\n`,
+    small: 1000,
+    large: 8000,
     parseOnly: true,
   },
 ];
