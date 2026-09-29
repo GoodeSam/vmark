@@ -12,8 +12,6 @@
  * arithmetic that turns a clicked buffer line into the output span of the
  * command that produced it, excluding its prompt line.
  *
-
- *
  * Key decisions:
  *   - OSC 7 payload is `file://<host>/<path>`. We use the path regardless of
  *     host (matches VS Code / iTerm2 behavior); SSH'd remote cwds still update
@@ -22,8 +20,14 @@
  *   - The handler returns `true` (handled) so xterm doesn't warn about an
  *     unrecognized sequence. Handlers are owned by the term's parser and torn
  *     down when the term is disposed — no explicit cleanup needed.
+ *   - OSC 133 marks die with the buffer: a full reset (RIS) drops them, since
+ *     xterm rebuilds its buffers on RIS but leaves their markers alive (#1471).
+ *     Marks live in a Set: each update is O(1), so neither a reset nor a bulk
+ *     marker disposal is quadratic in the mark count, and a scrolled-out mark
+ *     is released as soon as its marker dies.
  *
  * @coordinates-with createTerminalInstance.ts — sole caller; exposes getCwd()
+ * @coordinates-with terminalSessionReset.ts — every new PTY session starts with RIS
  * @coordinates-with fileLinkProvider.ts — consumes the live cwd for relative paths
  * @module components/Terminal/setupOsc
  */
@@ -97,7 +101,11 @@ export interface Osc133Handle {
  * `D;<code>` we record the exit code of the command being closed.
  */
 export function setupOsc133(term: Terminal): Osc133Handle {
-  let commands: CommandMark[] = [];
+  // Live marks in buffer order. A Set, so a mark leaves in O(1) the moment its
+  // marker dies: filtering an array per disposal made a bulk disposal (clear,
+  // a session restart) quadratic, and deferring the removal kept every
+  // scrolled-out mark alive for as long as nobody read the list.
+  const commands = new Set<CommandMark>();
   let current: CommandMark | null = null;
   let running = false;
   let onIdle: (() => void) | null = null;
@@ -119,11 +127,11 @@ export function setupOsc133(term: Terminal): Osc133Handle {
       const marker = term.registerMarker(0);
       if (marker) {
         const mark: CommandMark = { marker };
-        commands.push(mark);
+        commands.add(mark);
         current = mark;
         // Self-remove when the line scrolls out of the buffer.
         marker.onDispose(() => {
-          commands = commands.filter((c) => c !== mark);
+          commands.delete(mark);
           if (current === mark) current = null;
         });
       }
@@ -148,8 +156,22 @@ export function setupOsc133(term: Terminal): Osc133Handle {
     return true; // handled
   });
 
+  // RIS (ESC c — `reset` typed in the shell, or a session restart) rebuilds
+  // xterm's buffers without disposing their markers, so every mark would keep
+  // a line number into text that no longer exists (#1471). DROP them rather
+  // than dispose them: disposing one by one splices xterm's own marker array
+  // each time — quadratic in a count any program can inflate — and the buffer
+  // they belong to is being discarded anyway. Return false so xterm still
+  // performs the reset. `running` is deliberately kept: the next prompt is
+  // what flushes idle work deferred while a command ran.
+  term.parser.registerEscHandler({ final: "c" }, () => {
+    commands.clear();
+    current = null;
+    return false;
+  });
+
   return {
-    getCommands: () => commands,
+    getCommands: () => [...commands],
     isRunning: () => running,
     setOnIdle: (cb) => {
       onIdle = cb;
