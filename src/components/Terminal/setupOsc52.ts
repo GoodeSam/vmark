@@ -24,6 +24,8 @@
  *   - A write is BOUNDED (OSC52_WRITE_TIMEOUT_MS). xterm parses nothing while
  *     it waits, so a clipboard IPC that never answered froze the terminal —
  *     and a restart, which waits for its reset to be parsed (#1471) — for good.
+ *     Once one write has timed out, later writes are skipped until it settles:
+ *     a stuck IPC costs the parser one timeout, not one per queued write.
  *   - Gated by `settings.terminal.osc52Clipboard` (default on) so a user who
  *     considers even write access too much can turn the channel off entirely.
  *
@@ -54,6 +56,11 @@ export const OSC52_WRITE_TIMEOUT_MS = 2_000;
  * Exported so the read-denial can be asserted directly.
  */
 export function createVMarkClipboardProvider(): IClipboardProvider {
+  // A write that outlived its timeout and has still not settled. While there
+  // is one, the clipboard IPC is presumed stuck and further writes are skipped
+  // — stacked behind it, each would hold the parser for another full timeout.
+  let stuckWrite: Promise<void> | null = null;
+
   return {
     /**
      * Always denies. Returning "" (rather than throwing) is what the OSC 52
@@ -71,17 +78,30 @@ export function createVMarkClipboardProvider(): IClipboardProvider {
       selection: ClipboardSelectionType,
       text: string,
     ): Promise<void> {
+      if (stuckWrite) {
+        clipboardWarn(
+          `OSC 52 clipboard write skipped (selection "${selection}"): an earlier ` +
+            "write is still pending after timing out.",
+        );
+        return;
+      }
       let timer: ReturnType<typeof setTimeout> | undefined;
       const timedOut = new Promise<"timed-out">((resolve) => {
         timer = setTimeout(() => resolve("timed-out"), OSC52_WRITE_TIMEOUT_MS);
       });
+      const write = writeText(text);
       try {
-        const outcome = await Promise.race([writeText(text), timedOut]);
+        const outcome = await Promise.race([write, timedOut]);
         if (outcome === "timed-out") {
           clipboardWarn(
             `OSC 52 clipboard write timed out after ${OSC52_WRITE_TIMEOUT_MS}ms ` +
               `(selection "${selection}"); the terminal carried on without it.`,
           );
+          stuckWrite = write;
+          const release = () => {
+            if (stuckWrite === write) stuckWrite = null;
+          };
+          void write.then(release, release);
         }
       } catch (error: unknown) {
         clipboardWarn(
