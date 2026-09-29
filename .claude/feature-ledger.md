@@ -2395,7 +2395,7 @@ The panel is lazy-imported in `src/App.tsx` behind a `FeatureErrorBoundary`; `sr
 - id: terminal-clipboard
 - feature: Integrated terminal
 - summary: Remote programs can write the host clipboard via OSC 52, selections can auto-copy, and Mod+C/V route through the Tauri clipboard plugin.
-- capabilities: OSC 52 write-only — `readText` always returns `""` and logs, even with the setting on; writes go through `@tauri-apps/plugin-clipboard-manager`; addon failure degrades to "no OSC 52" rather than failing terminal creation; copy-on-select with 150 ms debounce, re-checked at flush, trailing whitespace trimmed, suppressed during IME composition, setting read at event time; `Mod+C` copies with a selection and passes through for SIGINT without one (on Windows/Linux `Ctrl+C` copies only with a selection); `Mod+V` pastes via `term.paste()` with preventDefault to avoid double paste
+- capabilities: OSC 52 write-only — `readText` always returns `""` and logs, even with the setting on; writes go through `@tauri-apps/plugin-clipboard-manager` and are bounded to 2 s, since xterm parses nothing while one is pending (#1471); addon failure degrades to "no OSC 52" rather than failing terminal creation; copy-on-select with 150 ms debounce, re-checked at flush, trailing whitespace trimmed, suppressed during IME composition, setting read at event time; `Mod+C` copies with a selection and passes through for SIGINT without one (on Windows/Linux `Ctrl+C` copies only with a selection); `Mod+V` pastes via `term.paste()` with preventDefault to avoid double paste
 - status: shipped-on
 - gate: `terminal.osc52Clipboard = true` (read at creation → new sessions only); `terminal.copyOnSelect = false`
 - surfaces: settings pane toggles; keyboard; context menu; automatic (OSC 52)

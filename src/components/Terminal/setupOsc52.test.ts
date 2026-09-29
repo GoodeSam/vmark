@@ -5,7 +5,7 @@
 // terminal — including `cat`-ing a hostile file over ssh. iTerm2 and VS Code
 // both deny it by default; so does VMark, and that denial is a tested
 // behavior rather than a comment.
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const { mockWriteText, mockReadText, mockLog } = vi.hoisted(() => ({
   mockWriteText: vi.fn(() => Promise.resolve()),
@@ -24,7 +24,8 @@ vi.mock("@/utils/debug", async (importOriginal) => ({
   clipboardWarn: mockLog,
 }));
 
-import { createVMarkClipboardProvider, setupOsc52 } from "./setupOsc52";
+import { createVMarkClipboardProvider, setupOsc52, OSC52_WRITE_TIMEOUT_MS } from "./setupOsc52";
+import { createRealTerminal, bufferText } from "./realXterm.testUtils";
 import type { Terminal } from "@xterm/xterm";
 
 /** Minimal Terminal double that records loaded addons. */
@@ -93,6 +94,49 @@ describe("createVMarkClipboardProvider — write", () => {
     const provider = createVMarkClipboardProvider();
     await provider.writeText("c" as never, "行1\n行2\t末");
     expect(mockWriteText).toHaveBeenCalledWith("行1\n行2\t末");
+  });
+});
+
+// The addon hands xterm the write's promise, and xterm parses NOTHING more —
+// shell output, a session reset — until it settles. A clipboard IPC that never
+// answered froze the terminal for good, and made a restart wait forever (#1471).
+describe("setupOsc52 — a clipboard write cannot stall the terminal", () => {
+  beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.useRealTimers());
+
+  it("the parser moves on once the write's time is up, and the stall is logged", async () => {
+    vi.useFakeTimers();
+    mockWriteText.mockReturnValueOnce(new Promise<void>(() => {})); // never settles
+    const term = createRealTerminal();
+    setupOsc52(term, true);
+    let parsed = false;
+    term.write("\x1b]52;c;aGk=\x07after the clipboard", () => {
+      parsed = true;
+    });
+
+    await vi.advanceTimersByTimeAsync(OSC52_WRITE_TIMEOUT_MS + 100);
+
+    expect(mockWriteText).toHaveBeenCalledWith("hi");
+    expect(parsed).toBe(true);
+    expect(bufferText(term)).toContain("after the clipboard");
+    expect(mockLog.mock.calls.flat().join(" ")).toMatch(/timed out/i);
+    term.dispose();
+  });
+
+  it("a write that settles in time holds the parser only that long", async () => {
+    vi.useFakeTimers();
+    const term = createRealTerminal();
+    setupOsc52(term, true);
+    let parsed = false;
+    term.write("\x1b]52;c;aGk=\x07after", () => {
+      parsed = true;
+    });
+
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(parsed).toBe(true);
+    expect(mockLog).not.toHaveBeenCalled();
+    term.dispose();
   });
 });
 

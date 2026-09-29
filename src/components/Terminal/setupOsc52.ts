@@ -21,6 +21,9 @@
  *   - A rejected write is swallowed and logged. This provider is invoked from
  *     inside xterm's parser; throwing would surface as an unhandled rejection
  *     on every OSC 52 sequence and could break the data path.
+ *   - A write is BOUNDED (OSC52_WRITE_TIMEOUT_MS). xterm parses nothing while
+ *     it waits, so a clipboard IPC that never answered froze the terminal —
+ *     and a restart, which waits for its reset to be parsed (#1471) — for good.
  *   - Gated by `settings.terminal.osc52Clipboard` (default on) so a user who
  *     considers even write access too much can turn the channel off entirely.
  *
@@ -37,6 +40,14 @@ import {
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { clipboardWarn, terminalLog } from "@/utils/debug";
 import { errorMessage } from "@/utils/errorMessage";
+
+/**
+ * The longest one OSC 52 write may hold xterm's parser. The addon hands xterm
+ * the write's promise, and xterm parses nothing more until it settles — shell
+ * output and a session reset (#1471) included. A clipboard write takes
+ * milliseconds; this bound only matters when the IPC never answers.
+ */
+export const OSC52_WRITE_TIMEOUT_MS = 2_000;
 
 /**
  * VMark's clipboard provider: writes reach the host clipboard, reads never do.
@@ -60,13 +71,25 @@ export function createVMarkClipboardProvider(): IClipboardProvider {
       selection: ClipboardSelectionType,
       text: string,
     ): Promise<void> {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timedOut = new Promise<"timed-out">((resolve) => {
+        timer = setTimeout(() => resolve("timed-out"), OSC52_WRITE_TIMEOUT_MS);
+      });
       try {
-        await writeText(text);
+        const outcome = await Promise.race([writeText(text), timedOut]);
+        if (outcome === "timed-out") {
+          clipboardWarn(
+            `OSC 52 clipboard write timed out after ${OSC52_WRITE_TIMEOUT_MS}ms ` +
+              `(selection "${selection}"); the terminal carried on without it.`,
+          );
+        }
       } catch (error: unknown) {
         clipboardWarn(
           `OSC 52 clipboard write failed (selection "${selection}"):`,
           errorMessage(error),
         );
+      } finally {
+        clearTimeout(timer);
       }
     },
   };
