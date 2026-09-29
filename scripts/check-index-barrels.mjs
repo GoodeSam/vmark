@@ -26,6 +26,7 @@
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const ROOT = "src";
 
@@ -208,6 +209,6 @@ function main() {
 }
 
 // Allow importing findImpureStatements in tests without running the gate.
-if (process.argv[1] && process.argv[1].endsWith("check-index-barrels.mjs")) {
+if (isMainModule(import.meta.url)) {
   main();
 }

@@ -48,10 +48,9 @@
  */
 import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
-import { fileURLToPath } from "node:url";
-import { resolve } from "node:path";
 import ts from "typescript";
 import { rustCode } from "./lib/rustSource.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const USAGE =
   "usage: node scripts/dod-syntax.mjs rust-mod-include <module.rs> <x.test.rs>\n" +
@@ -560,7 +559,7 @@ export function main(argv) {
   return 64;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   if (process.argv[2] === "--serve") await serve();
   else process.exit(runOnce(process.argv.slice(2)));
 }

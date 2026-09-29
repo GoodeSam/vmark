@@ -54,6 +54,7 @@ import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 import { rustCode } from "./lib/rustSource.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 /** The call that actually creates a native window + webview. */
 export const WINDOW_BUILDER = "WebviewWindowBuilder::new";
@@ -403,4 +404,4 @@ function main() {
   );
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) main();
+if (isMainModule(import.meta.url)) main();

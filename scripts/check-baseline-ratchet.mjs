@@ -73,6 +73,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { MANIFEST } from "./baselineRatchetManifest.mjs";
 import { evaluateCheck, reconcileAllowRaise } from "./baselineRatchetModes.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 // ─── Discovery ───
 
@@ -256,6 +257,6 @@ function main() {
   );
 }
 
-if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   main();
 }

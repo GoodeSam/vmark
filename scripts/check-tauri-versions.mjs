@@ -24,6 +24,7 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 // ─── Pure, testable core ───
 
@@ -125,4 +126,4 @@ function main() {
   );
 }
 
-if (process.argv[1]?.endsWith("check-tauri-versions.mjs")) main();
+if (isMainModule(import.meta.url)) main();

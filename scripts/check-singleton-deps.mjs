@@ -26,7 +26,7 @@
  * @coordinates-with src/plugins/codemirror/theme.highlight.test.ts — the runtime symptom
  */
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 /**
  * Shared-identity cores: their classes, props, facets or keys are created in
@@ -78,7 +78,7 @@ export function singletonFindings(versions, singletons = SINGLETONS) {
   return out;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   const findings = singletonFindings(lockedVersions(readFileSync("pnpm-lock.yaml", "utf8")));
   if (findings.length > 0) {
     console.error("❌ Shared-identity packages must resolve to ONE version (scripts/check-singleton-deps.mjs):\n");

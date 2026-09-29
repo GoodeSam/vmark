@@ -24,6 +24,7 @@
  */
 
 import { readFileSync, appendFileSync } from "node:fs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 /** Flatten a vitest bench JSON payload into { "<group> :: <name>": mean }. */
 export function flattenBenchmarks(payload) {
@@ -177,6 +178,6 @@ function main() {
 }
 
 // Only run the CLI when executed directly (not when imported by tests).
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMainModule(import.meta.url)) {
   main();
 }

@@ -93,13 +93,13 @@
 import { readFileSync, existsSync, statSync, writeFileSync, mkdirSync, renameSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { renderLedger } from "./lib/featureLedgerRender.mjs";
 import { CODE_EXTENSIONS, claimErrors, isCodeFile, isTestFile, resolveOwners } from "./lib/featureOwnership.mjs";
 import { LEDGER_REL, ledgerErrors, parseLedger } from "./lib/featureLedgerDoc.mjs";
 import { gitIn, ledgerProbes, repoFiles } from "./lib/featureMapInputs.mjs";
 import { LOG_ARGS, parseNameStatusLog, touchesByFeature } from "./lib/featureHistory.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const OUTPUT_REL = "dev-docs/feature-metrics.md";
 const DEFAULTS_REL = "src/stores/settingsStore/defaults.ts";
@@ -707,6 +707,6 @@ function main() {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   main();
 }

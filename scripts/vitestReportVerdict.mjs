@@ -43,6 +43,7 @@
  * @module scripts/vitestReportVerdict
  */
 import { readFileSync } from "node:fs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 /**
  * Every reason this run is not the deliverable, in report order. An empty
@@ -97,6 +98,6 @@ function main(argv) {
   return 1;
 }
 
-if (process.argv[1] && process.argv[1].endsWith("vitestReportVerdict.mjs")) {
+if (isMainModule(import.meta.url)) {
   process.exit(main(process.argv.slice(2)));
 }
