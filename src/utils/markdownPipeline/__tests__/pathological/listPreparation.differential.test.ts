@@ -15,9 +15,10 @@
  *     cannot show that (an item's position comes from its tokens, and a line
  *     ending outside a paragraph adds nothing), yet it is exactly what the
  *     patch places. An mdast extension that only OBSERVES those events — it
- *     adds handlers for events that have none — records each one's type (the
- *     walk rewrites `lineEnding` and `lineEndingBlank`) and the node stack
- *     open around it.
+ *     adds handlers for events that have none, and wraps the one default it
+ *     needs (`exit` of `lineEnding`) — records each one's type (the walk
+ *     rewrites `lineEnding` and `lineEndingBlank`) and the node stack open
+ *     around it.
  *
  * Both builds are checked, each loaded by path (`fromMarkdownBuilds.ts`):
  * `dev/`, which vitest resolves, and `lib/`, which the production bundle
@@ -210,14 +211,23 @@ interface LoggedToken {
   start: { offset?: number };
 }
 
+/** What a from-markdown handler sees as `this`, as far as the observer uses it. */
+interface ObservedContext {
+  stack: { type: string }[];
+  config: { exit: Record<string, ((this: ObservedContext, token: LoggedToken) => void) | undefined> };
+}
+
 /**
  * The events a list item's enter and exit are placed among: line endings
  * (whose type the walk also rewrites), line and block-quote prefixes, and the
  * parts of a list item's own prefix. None has a handler in from-markdown 2.0.3
- * for the kinds listed (its only ones near them are `exit` of `lineEnding` and
- * `enter` of `listItemValue`, both left alone), a test below checks these
- * extensions define none, and another that adding them leaves the tree as it
- * was.
+ * for the kinds listed (its only other one near them, `enter` of
+ * `listItemValue`, is left alone), a test below checks these extensions
+ * define none, and another that adding them leaves the tree as it was.
+ *
+ * `exit` of `lineEnding` is observed too, but not listed: it HAS a default
+ * handler, which an extension would replace, so `observeStructure` wraps it
+ * instead.
  */
 const OBSERVED = {
   enter: [
@@ -241,9 +251,26 @@ const OBSERVED = {
  */
 function observeStructure(build: Build, markdown: string): { log: string; tree: unknown } {
   const log: string[] = [];
+  const line = (kind: string, context: ObservedContext, token: LoggedToken): void => {
+    log.push(`${kind} ${token.type}@${token.start.offset}:${context.stack.map((node) => node.type).join(">")}`);
+  };
+  let wrapped = false;
   const recorder = (kind: string) =>
-    function record(this: { stack: { type: string }[] }, token: LoggedToken): void {
-      log.push(`${kind} ${token.type}@${token.start.offset}:${this.stack.map((node) => node.type).join(">")}`);
+    function record(this: ObservedContext, token: LoggedToken): void {
+      // Wrap `exit` of `lineEnding` from inside the parse, in this parse's own
+      // handler table: the default still runs, after its exit is logged. Every
+      // line ending's enter is observed and comes before its exit, so the
+      // wrapper is in place for the first exit.
+      if (!wrapped) {
+        const original = this.config.exit.lineEnding;
+        if (!original) throw new Error("from-markdown has no `exit` handler for `lineEnding` to wrap");
+        this.config.exit.lineEnding = function (this: ObservedContext, exited: LoggedToken): void {
+          line("exit", this, exited);
+          original.call(this, exited);
+        };
+        wrapped = true;
+      }
+      line(kind, this, token);
     };
   const observer = {
     enter: Object.fromEntries(OBSERVED.enter.map((type) => [type, recorder("enter")])),
@@ -407,6 +434,12 @@ describe("list preparation matches the unpatched from-markdown (#1473)", () => {
         }
       }
       expect(mismatches).toEqual([]);
+    });
+
+    it("logs line-ending exits, so the wrapped default handler really ran", () => {
+      // `- a\n- b\n`: the first line ending sits between the two items; its
+      // exit is where an item opened one event early would show.
+      expect(structureLog(build, "- a\n- b\n")).toContain("exit lineEnding@3:root>list\n");
     });
 
     it.each(Object.keys(NAMED))("observing structure leaves the tree of %s unchanged", (name) => {
