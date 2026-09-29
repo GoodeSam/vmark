@@ -30,6 +30,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+// A repo-level dev tool (it writes into `src/` too), so it shares the repo's
+// entry-point check rather than keeping a copy of one.
+import { isMainModule } from '../../../scripts/lib/isMainModule.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SIDECAR_ROOT = resolve(HERE, '..');
@@ -333,9 +336,6 @@ export async function main(argv: string[]): Promise<number> {
   return 1;
 }
 
-const invokedDirectly =
-  process.argv[1] !== undefined &&
-  pathToFileURL(resolve(process.argv[1])).href === import.meta.url;
-if (invokedDirectly) {
+if (isMainModule(import.meta.url)) {
   process.exitCode = await main(process.argv.slice(2));
 }

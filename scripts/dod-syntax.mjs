@@ -48,10 +48,9 @@
  */
 import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
-import { fileURLToPath } from "node:url";
-import { resolve } from "node:path";
 import ts from "typescript";
 import { rustCode } from "./lib/rustSource.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const USAGE =
   "usage: node scripts/dod-syntax.mjs rust-mod-include <module.rs> <x.test.rs>\n" +
@@ -434,8 +433,22 @@ function runOnce(argv) {
  * resolve exactly as they would in a process started there. The argv
  * `--ping` alone is the readiness handshake: `X 0`, cwd untouched, so a
  * caller learns the server is up before it trusts the stream with a probe.
+ *
+ * `--owner <pid>` (the starting shell's pid): the server exits once that
+ * process is gone. End-of-file on stdin is not enough on its own: every
+ * background job the shell starts inherits the request pipe's write end, and
+ * the server outlived the shell for as long as any of them ran.
  */
-async function serve() {
+async function serve(owner) {
+  if (owner !== undefined) {
+    setInterval(() => {
+      try {
+        process.kill(owner, 0);
+      } catch (err) {
+        if (err?.code === "ESRCH") process.exit(0);
+      }
+    }, 1000).unref();
+  }
   const tagged = (tag, lines) => lines.flatMap((l) => String(l).split("\n")).map((l) => `${tag}\t${l}\n`).join("");
   for await (const line of createInterface({ input: process.stdin, crlfDelay: Infinity })) {
     const [cwd, ...argv] = line.split("\u001f");
@@ -560,7 +573,14 @@ export function main(argv) {
   return 64;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  if (process.argv[2] === "--serve") await serve();
-  else process.exit(runOnce(process.argv.slice(2)));
+if (isMainModule(import.meta.url)) {
+  const [cmd, flag, pid, ...extra] = process.argv.slice(2);
+  if (cmd === "--serve") {
+    const owner = flag === "--owner" ? Number(pid) : undefined;
+    if ((flag !== undefined && !(Number.isInteger(owner) && owner > 0)) || extra.length > 0) {
+      console.error("usage: node scripts/dod-syntax.mjs --serve [--owner <pid>]");
+      process.exit(64);
+    }
+    await serve(owner);
+  } else process.exit(runOnce(process.argv.slice(2)));
 }

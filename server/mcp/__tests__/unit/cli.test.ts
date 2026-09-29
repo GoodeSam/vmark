@@ -28,11 +28,15 @@ const VERSION = (() => {
 })();
 
 function run(...args: string[]) {
-  return spawnSync('pnpm', ['exec', 'tsx', CLI, ...args], {
+  const r = spawnSync('pnpm', ['exec', 'tsx', CLI, ...args], {
     cwd: PKG,
     encoding: 'utf8',
     timeout: 60_000,
   });
+  // A timeout lands in `error` and may leave `status` as the CLI's own exit
+  // code; unchecked, a hang would pass the status assertions below, only late.
+  if (r.error) throw r.error;
+  return r;
 }
 
 describe('cli --port', () => {

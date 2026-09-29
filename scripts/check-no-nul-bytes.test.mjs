@@ -11,10 +11,10 @@
  * one. A raw NUL in this file would make the test file itself binary — and the
  * gate would flag its own test.
  */
-import { describe, it, expect } from "vitest";
+import { afterAll, describe, it, expect } from "vitest";
 import { spawnSync, execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { cpSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { platform, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,9 +22,20 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SCRIPT = path.join(REPO, "scripts", "check-no-nul-bytes.mjs");
 const NUL = String.fromCharCode(0);
 
+/** Every temp dir this file makes, removed once it is done. */
+const made = [];
+afterAll(() => {
+  for (const dir of made) rmSync(dir, { recursive: true, force: true });
+});
+const tempDir = (prefix) => {
+  const dir = mkdtempSync(path.join(tmpdir(), prefix));
+  made.push(dir);
+  return dir;
+};
+
 /** A committed scratch repo — the gate reads `git ls-files`. */
-function scratchRepo(files, { untracked = {} } = {}) {
-  const dir = mkdtempSync(path.join(tmpdir(), "no-nul-bytes-"));
+function scratchRepo(files, { untracked = {}, prefix = "no-nul-bytes-" } = {}) {
+  const dir = tempDir(prefix);
   const write = (rel, content) => {
     const full = path.join(dir, rel);
     mkdirSync(path.dirname(full), { recursive: true });
@@ -121,7 +132,7 @@ describe("check-no-nul-bytes", () => {
   });
 
   it("fails closed when the root is not a git repository", () => {
-    const dir = mkdtempSync(path.join(tmpdir(), "no-nul-bytes-bare-"));
+    const dir = tempDir("no-nul-bytes-bare-");
     const { status, stderr } = runGate(dir);
     expect(status).toBe(64);
     expect(stderr).toContain("could not scan");
@@ -131,5 +142,44 @@ describe("check-no-nul-bytes", () => {
     const { status, stdout } = runGate(REPO);
     expect(status).toBe(0);
     expect(stdout).toContain("No raw NUL bytes");
+  });
+});
+
+// #1473: the gate must RUN wherever the checkout lives. It compared
+// `import.meta.url` (percent-encoded, real path) with `file://${argv[1]}` (as
+// typed), so from a path with a space or CJK characters, or through a symlink,
+// main() never ran — exit 0, no output, nothing scanned. And its default root
+// came from `new URL(import.meta.url).pathname`, still percent-encoded, so once
+// main() did run from such a path it scanned a directory that does not exist.
+// Each case seeds a violation: a gate that never ran exits 0, not 1.
+describe("check-no-nul-bytes runs from any checkout path", () => {
+  const seeded = { "src/a.ts": `const k = "${NUL}";\n` };
+
+  it("a checkout whose path has a space and CJK characters, with the DEFAULT root", () => {
+    const dir = scratchRepo(seeded, { prefix: "仓库 副本 " });
+    // The gate as that checkout holds it: its own copy, beside its helper.
+    mkdirSync(path.join(dir, "scripts/lib"), { recursive: true });
+    cpSync(SCRIPT, path.join(dir, "scripts/check-no-nul-bytes.mjs"));
+    cpSync(path.join(REPO, "scripts/lib/isMainModule.mjs"), path.join(dir, "scripts/lib/isMainModule.mjs"));
+    const res = spawnSync(process.execPath, [path.join(dir, "scripts/check-no-nul-bytes.mjs")], {
+      encoding: "utf8",
+      input: "",
+    });
+    expect(res.stderr).not.toContain("could not scan");
+    expect(res.stderr).toContain("src/a.ts:1:12");
+    expect(res.status).toBe(1);
+  });
+
+  it.skipIf(platform() === "win32")("the real script reached through a symlink whose path has a space and CJK characters", () => {
+    const dir = scratchRepo(seeded);
+    // rmSync on the parent removes the link, never the repository it points at.
+    const link = path.join(tempDir("nul-link-"), "vmark 测试");
+    symlinkSync(REPO, link, "dir");
+    const res = spawnSync(process.execPath, [path.join(link, "scripts/check-no-nul-bytes.mjs"), "--root", dir], {
+      encoding: "utf8",
+      input: "",
+    });
+    expect(res.stderr).toContain("src/a.ts:1:12");
+    expect(res.status).toBe(1);
   });
 });

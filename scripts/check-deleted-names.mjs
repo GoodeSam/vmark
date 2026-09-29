@@ -82,6 +82,7 @@ import { dirname, join, resolve } from "node:path";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 import { REGISTRY } from "./lib/deletedNamesRegistry.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 
 /** POSIX ERE word boundary — `git grep -E` has no portable `\b`. */
@@ -336,6 +337,6 @@ function main() {
   console.log(`✅ Deleted-name gate held (${registry.length} entries, none reappeared).`);
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   main();
 }

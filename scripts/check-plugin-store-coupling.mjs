@@ -51,6 +51,7 @@ import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import ts from "typescript";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 /** The four ways a plugin reaches the app, in report order. */
 export const CHANNELS = ["stores", "services", "hooks", "components"];
@@ -351,6 +352,6 @@ function main() {
 }
 
 // Only run when invoked directly, so the test can import the pure helpers.
-if (process.argv[1] && process.argv[1].endsWith("check-plugin-store-coupling.mjs")) {
+if (isMainModule(import.meta.url)) {
   main();
 }

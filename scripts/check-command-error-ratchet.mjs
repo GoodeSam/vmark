@@ -59,6 +59,7 @@ import path from "node:path";
 import ts from "typescript";
 
 import { rustCode } from "./lib/rustSource.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 // ─── Pure, testable core ───
 
@@ -717,6 +718,6 @@ function main() {
   process.exit(1);
 }
 
-if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   main();
 }
