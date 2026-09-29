@@ -1,7 +1,6 @@
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { Selection } from "@tiptap/pm/state";
 import type { NodeView, EditorView } from "@tiptap/pm/view";
-import { isKatexLoaded } from "./katexLoader";
 import { scheduleInlineMathRender } from "./scheduleInlineMathRender";
 import { getMathPreviewView } from "@/plugins/mathPreview/MathPreviewView";
 import { isImeKeyEvent } from "@/utils/imeGuard";
@@ -20,8 +19,9 @@ import type { InlineMathEditingRegistry } from "./inlineMathEditingRegistry";
  * The `.editing` class is added by the inlineNodeEditing plugin
  * when cursor is at the node.
  *
- * When KaTeX runs is scheduleInlineMathRender's call: near the viewport in a
- * scrolling editor, on idle elsewhere. Until then the preview holds the source.
+ * When KaTeX runs, and what the preview shows until then, is
+ * scheduleInlineMathRender's call: near the viewport in a scrolling editor
+ * (showing the source), on idle elsewhere.
  */
 export class MathInlineNodeView implements NodeView {
   dom: HTMLElement;
@@ -466,16 +466,7 @@ export class MathInlineNodeView implements NodeView {
     const currentToken = ++this.renderToken;
     this.dom.classList.remove("math-error");
 
-    // Show loading indicator if KaTeX hasn't loaded yet
-    if (!isKatexLoaded()) {
-      const loading = document.createElement("span");
-      loading.className = "math-inline-loading";
-      loading.textContent = "…";
-      this.previewDom.replaceChildren(loading);
-    } else {
-      this.previewDom.textContent = trimmed;
-    }
-
+    // The scheduler also decides what the preview shows until KaTeX runs.
     this.cancelDeferredRender = scheduleInlineMathRender({
       latex: trimmed,
       preview: this.previewDom,

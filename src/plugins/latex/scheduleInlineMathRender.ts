@@ -13,11 +13,13 @@
  *   - With no scroll container — the off-screen export surface — it renders
  *     on idle exactly as before, because that surface's HTML is captured as
  *     soon as it settles.
- *   - A formula waiting for the viewport shows its SOURCE TEXT, never the
- *     animated loading indicator the node view uses on idle: thousands of
- *     formulas wait off screen, and one infinite CSS animation each (10,775
- *     measured in the app) cost over a second per scrolled frame. KaTeX
- *     starts loading as soon as anything waits, so it is ready when needed.
+ *   - This file also owns what the preview shows while it waits, so no
+ *     placeholder is built only to be replaced. A formula waiting for the
+ *     viewport shows its SOURCE TEXT, never the animated loading indicator
+ *     the idle path uses before KaTeX has loaded: thousands of formulas wait
+ *     off screen, and one infinite CSS animation each (10,775 measured in the
+ *     app) cost over a second per scrolled frame. KaTeX starts loading as
+ *     soon as anything waits, so it is ready when needed.
  *   - Synchronous once KaTeX is loaded, so a caller that budgets its time
  *     (the viewport queue's frame budget, a print flush) sees the real cost.
  *   - `isCurrent` lets the node view drop a render that a newer source has
@@ -29,7 +31,7 @@
  * @module plugins/latex/scheduleInlineMathRender
  */
 
-import { loadKatex, getKatexModule, type KatexModule } from "./katexLoader";
+import { loadKatex, getKatexModule, isKatexLoaded, type KatexModule } from "./katexLoader";
 import { renderInlineMath } from "./inlineMathRenderCache";
 import { whenNearViewport } from "@/plugins/shared/nearViewport";
 import { editorScrollRoot } from "@/plugins/shared/editorScrollRoot";
@@ -89,6 +91,14 @@ export function scheduleInlineMathRender(request: InlineMathRenderRequest): () =
     return whenNearViewport(host, scrollRoot, render);
   }
 
+  if (isKatexLoaded()) {
+    preview.textContent = latex;
+  } else {
+    const loading = document.createElement("span");
+    loading.className = "math-inline-loading";
+    loading.textContent = "…";
+    preview.replaceChildren(loading);
+  }
   if (typeof requestIdleCallback !== "undefined") {
     requestIdleCallback(() => void render(), { timeout: 100 });
   } else {
