@@ -1,0 +1,257 @@
+/**
+ * #1471 — every PTY session attaches to a pristine terminal.
+ *
+ * One xterm instance outlives many PTYs: the tab bar's restart button, the
+ * press-any-key respawn after a non-zero exit or a failed spawn, and the
+ * first spawn all hand the SAME instance a new shell. Restart used to
+ * `term.clear()` the buffer, which leaves every mode the killed program set.
+ * A Codex TUI's any-event mouse tracking (1003 + SGR 1006) then kept encoding
+ * pointer motion as `ESC[<35;col;rowM`, and the new shell's line editor
+ * echoed it as `35;79;40M35;76;39M…`.
+ *
+ * These tests run the REAL xterm parser and read its state back through the
+ * terminal's own DECRQM/DECRQSS reports — the state that decides which bytes
+ * reach the PTY — instead of asserting which reset method was called.
+ */
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import type { Terminal } from "@xterm/xterm";
+import { useTerminalShellLifecycle } from "./useTerminalShellLifecycle";
+import { wireSessionInput } from "./terminalSessionInputWiring";
+import { useUIStore, resetTerminalSessionStore } from "@/stores/uiStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { spawnPty } from "./spawnPty";
+import {
+  createRealTerminal,
+  flushWrites,
+  writeParsed,
+  queryState,
+  pristineState,
+  bufferText,
+  TUI_LEFTOVERS,
+} from "./realXterm.testUtils";
+import type { SessionEntry } from "./terminalSessionTypes";
+import type { TerminalInstance } from "./createTerminalInstance";
+import type { IPty } from "@/lib/pty";
+
+vi.mock("./spawnPty", () => ({
+  spawnPty: vi.fn(),
+  resolveTerminalCwd: vi.fn(() => "/tmp"),
+  resolveActiveFileCwd: vi.fn(() => undefined),
+  resolveTerminalWorkspaceRoot: vi.fn(() => null),
+}));
+
+const SESSION = "term-1";
+
+function makePty(): IPty {
+  return { write: vi.fn(), resize: vi.fn(), kill: vi.fn() } as unknown as IPty;
+}
+
+/** A session entry whose terminal is a REAL xterm (options as production). */
+function makeEntry(term: Terminal): SessionEntry {
+  const instance = {
+    term,
+    composing: false,
+    onCompositionCommit: null,
+    noteExternalWrite: () => {},
+    getCwd: () => null,
+  } as unknown as TerminalInstance;
+  return {
+    instance,
+    pty: null,
+    ptyRefForKeys: { current: null },
+    spawnedCwd: undefined,
+    shellStarted: true,
+    shellExited: false,
+    shellSpawning: false,
+    disposed: false,
+    spawnGen: 0,
+    pendingRafId: null,
+  };
+}
+
+/** Each spawnPty call hands back a fresh fake PTY and records its onExit. */
+function trackSpawns() {
+  const ptys: IPty[] = [];
+  const exits: Array<(code: number) => void> = [];
+  vi.mocked(spawnPty).mockImplementation(async (opts) => {
+    exits.push(opts.onExit);
+    const pty = makePty();
+    ptys.push(pty);
+    return pty;
+  });
+  return { ptys, exits };
+}
+
+function setCursorBlinkSetting(cursorBlink: boolean): void {
+  useSettingsStore.setState((s) => ({ terminal: { ...s.terminal, cursorBlink } }));
+}
+
+async function setup(cursorBlink = true) {
+  setCursorBlinkSetting(cursorBlink);
+  const term = createRealTerminal({ cursorBlink });
+  const entry = makeEntry(term);
+  const sessionsRef = { current: new Map([[SESSION, entry]]) };
+  const spawns = trackSpawns();
+  const { result } = renderHook(() => useTerminalShellLifecycle(sessionsRef));
+  await act(async () => {
+    await result.current.startShell(SESSION);
+  });
+  return { term, entry, sessionsRef, lifecycle: result, ...spawns };
+}
+
+beforeEach(() => {
+  resetTerminalSessionStore();
+  vi.mocked(spawnPty).mockReset();
+  useUIStore.setState({
+    terminalVisible: true,
+    terminal: {
+      sessions: [{ id: SESSION, label: "Terminal 1", ordinal: 1, isAlive: true }],
+      activeSessionId: SESSION,
+      lastActiveByScope: {},
+    },
+  });
+});
+
+describe("#1471 — a restarted session does not inherit the killed program's terminal", () => {
+  it("restart button: mouse tracking, bracketed paste, alt screen, hidden cursor … all reset", async () => {
+    const { term, entry, lifecycle, ptys } = await setup();
+    await writeParsed(term, TUI_LEFTOVERS);
+    expect(term.modes.mouseTrackingMode).toBe("any"); // the Codex TUI state
+
+    await act(async () => {
+      lifecycle.current.restartActiveSession();
+    });
+    await flushWrites(term);
+
+    // The exact bug: xterm must no longer turn pointer motion into input.
+    expect(term.modes.mouseTrackingMode).toBe("none");
+    expect(term.buffer.active.type).toBe("normal");
+    expect(await queryState(term)).toEqual(await pristineState({ cursorBlink: true }));
+    // The old PTY is gone and the new one is the only writer.
+    expect(ptys[0].kill).toHaveBeenCalled();
+    expect(entry.pty).toBe(ptys[1]);
+  });
+
+  it("restart still shows the localized notice, intact, after the reset", async () => {
+    const { term, lifecycle } = await setup();
+    // Killed INSIDE an escape sequence, with the DEC line-drawing charset on:
+    // a reset that left the parser mid-CSI would eat the "R", and one that
+    // left the charset would draw "shell" as box corners.
+    await writeParsed(term, TUI_LEFTOVERS + "\x1b[?100");
+
+    await act(async () => {
+      lifecycle.current.restartActiveSession();
+    });
+    await flushWrites(term);
+
+    const rows = bufferText(term).split("\n");
+    const row = rows.findIndex((text) => text.includes("Restarting shell…"));
+    expect(row).toBeGreaterThanOrEqual(0);
+    // Plain text, not in the dead program's bold red.
+    const cell = term.buffer.active.getLine(row)?.getCell(rows[row].indexOf("R"));
+    expect(cell?.isBold()).toBe(0);
+    expect(cell?.isFgDefault()).toBe(true);
+  });
+
+  it("output the old PTY already queued in xterm cannot re-arm tracking after the reset", async () => {
+    const { term, lifecycle } = await setup();
+    // Parsed after the click, not before it: xterm drains big writes in slices.
+    term.write("x".repeat(200_000) + "\x1b[?1003h\x1b[?1006h");
+
+    await act(async () => {
+      lifecycle.current.restartActiveSession();
+    });
+    await flushWrites(term);
+
+    expect(term.modes.mouseTrackingMode).toBe("none");
+  });
+
+  it("press-any-key respawn after a non-zero exit starts pristine too", async () => {
+    const { term, entry, sessionsRef, lifecycle, exits } = await setup();
+    wireSessionInput({
+      sessionId: SESSION,
+      getEntry: (id) => sessionsRef.current.get(id),
+      startShell: (id) => void lifecycle.current.startShell(id),
+    });
+    await writeParsed(term, TUI_LEFTOVERS);
+    act(() => exits[0](1));
+
+    await act(async () => {
+      term.input("x"); // the "any key"
+    });
+    await flushWrites(term);
+
+    expect(vi.mocked(spawnPty)).toHaveBeenCalledTimes(2);
+    expect(entry.shellExited).toBe(false);
+    expect(await queryState(term)).toEqual(await pristineState({ cursorBlink: true }));
+  });
+
+  it("the first spawn on an instance starts pristine without its caller resetting", async () => {
+    setCursorBlinkSetting(true);
+    const term = createRealTerminal({ cursorBlink: true });
+    await writeParsed(term, TUI_LEFTOVERS);
+    const sessionsRef = { current: new Map([[SESSION, makeEntry(term)]]) };
+    trackSpawns();
+    const { result } = renderHook(() => useTerminalShellLifecycle(sessionsRef));
+
+    await act(async () => {
+      await result.current.startShell(SESSION);
+    });
+    await flushWrites(term);
+
+    expect(await queryState(term)).toEqual(await pristineState({ cursorBlink: true }));
+  });
+
+  it.each([true, false])(
+    "cursor blink returns to the user's setting (%s), not the dead program's",
+    async (cursorBlink) => {
+      const { term, lifecycle } = await setup(cursorBlink);
+      // ncurses' cnorm is `ESC[?12l ESC[?25h`: xterm writes ?12 into the
+      // cursorBlink OPTION, which a plain RIS never restores.
+      await writeParsed(term, cursorBlink ? "\x1b[?12l" : "\x1b[?12h");
+
+      await act(async () => {
+        lifecycle.current.restartActiveSession();
+      });
+      await flushWrites(term);
+
+      expect(term.options.cursorBlink).toBe(cursorBlink);
+    },
+  );
+
+  it("drops the dead program's tab title", async () => {
+    const { lifecycle } = await setup();
+    useUIStore.getState().terminalSetProgramTitle(SESSION, "Codex");
+
+    await act(async () => {
+      lifecycle.current.restartActiveSession();
+    });
+
+    const session = useUIStore.getState().terminal.sessions.find((s) => s.id === SESSION);
+    expect(session?.programTitle ?? "").toBe("");
+  });
+});
+
+describe("#1471 — a dead session stops reporting input for the program that died", () => {
+  it("mouse and focus reporting stop, but the failure stays readable", async () => {
+    const { term, exits } = await setup();
+    await writeParsed(term, "codex output\r\n\x1b[?1003h\x1b[?1006h\x1b[?1004h");
+    const sent: string[] = [];
+    term.onData((d) => sent.push(d));
+
+    act(() => exits[0](1));
+    await flushWrites(term);
+
+    // "Press any key" listens to onData, so a pointer move or a focus change
+    // must not produce any — or it restarts and wipes the message. Turning the
+    // reports off must not emit anything either, for the same reason.
+    expect(term.modes.mouseTrackingMode).toBe("none");
+    expect(term.modes.sendFocusMode).toBe(false);
+    expect(sent).toEqual([]);
+    const text = bufferText(term);
+    expect(text).toContain("codex output");
+    expect(text).toContain("[Process exited with code 1]");
+    expect(text).toContain("Press any key to restart…");
+  });
+});

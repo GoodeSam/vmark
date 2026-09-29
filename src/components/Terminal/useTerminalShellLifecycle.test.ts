@@ -197,8 +197,11 @@ describe("useTerminalShellLifecycle — shell exit (#1103)", () => {
     expect(state.terminal.sessions.map((s) => s.id)).toEqual(["term-1"]);
     expect(state.terminal.sessions[0].isAlive).toBe(false);
     expect(state.terminalVisible).toBe(true);
-    // Exit notice + press-any-key prompt written to the buffer.
-    expect(writeMock).toHaveBeenCalledTimes(2);
+    // Exit notice + press-any-key prompt written to the buffer (the modes
+    // side of this path is covered against real xterm in the .reset test).
+    const written = writeMock.mock.calls.map(([data]) => String(data)).join("");
+    expect(written).toContain("[Process exited with code 1]");
+    expect(written).toContain("Press any key to restart…");
     expect(entry.shellExited).toBe(true);
     expect(entry.pty).toBeNull();
   });

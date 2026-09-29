@@ -26,14 +26,24 @@
  *     appeared did nothing at all.
  *   - An explicit "Open Terminal Here" cwd outranks sibling inheritance and is
  *     released only once a spawn using it succeeds.
+ *   - Every spawn attaches to a PRISTINE terminal (#1471). startShell is the
+ *     one path all of them take — first spawn, restart, press-any-key respawn
+ *     after an exit or a failed spawn — so it, not its callers, resets the
+ *     terminal and drops the dead program's tab title. A killed TUI otherwise
+ *     left mouse tracking on and the next shell echoed its reports as text.
+ *   - A non-zero exit keeps the buffer but stops pointer/focus reporting, so
+ *     only a real key press restarts the shell.
  *
  * @coordinates-with useTerminalSessions.ts — sole caller
  * @coordinates-with spawnPty.ts — shell process creation
+ * @coordinates-with terminalSessionReset.ts — what a session boundary resets
  * @coordinates-with terminalMessages.ts — localized buffer status lines
  * @module components/Terminal/useTerminalShellLifecycle
  */
 import { useCallback } from "react";
 import { useUIStore } from "@/stores/uiStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { initialState } from "@/stores/settingsStore/defaults";
 import { errorMessage } from "@/utils/errorMessage";
 import { terminalWarn } from "@/utils/debug";
 import { spawnPty, resolveTerminalWorkspaceRoot } from "./spawnPty";
@@ -49,6 +59,7 @@ import {
   pressAnyKeyToRetryLine,
   restartingLine,
 } from "./terminalMessages";
+import { resetTerminalForNewSession, stopUnsolicitedInput } from "./terminalSessionReset";
 import type { SessionEntry, SessionsRef } from "./terminalSessionTypes";
 
 /** Detach a dead PTY from its session entry so keystrokes can't reach it. */
@@ -70,21 +81,43 @@ function closeSessionOnCleanExit(sessionId: string): void {
   removeTerminalSessionWithPanelPolicy(sessionId);
 }
 
-/** Non-zero exit: keep the buffer readable and offer respawn on any key. */
+/**
+ * Non-zero exit: keep the buffer readable and offer respawn on any key. The
+ * dead program's pointer/focus reporting goes first — "any key" listens to
+ * onData, and a mouse move must not count as one.
+ */
 function promptRestartOnErrorExit(
   entry: SessionEntry,
   sessionId: string,
   exitCode: number,
 ): void {
+  stopUnsolicitedInput(entry.instance.term);
   entry.instance.term.write(processExitedLine(exitCode));
   entry.instance.term.write(pressAnyKeyToRestartLine());
   useUIStore.getState().terminalMarkSessionDead(sessionId);
 }
 
+/**
+ * Give the session a pristine terminal before a new PTY attaches (#1471):
+ * modes, screen and tab title all belong to a process that is gone. The
+ * cursor-blink setting is read here because xterm stores a program's `?12`
+ * in that option, beyond what a terminal reset restores.
+ */
+function resetForNewSession(entry: SessionEntry, sessionId: string, statusLine: string): void {
+  const { cursorBlink } = { ...initialState.terminal, ...useSettingsStore.getState().terminal };
+  resetTerminalForNewSession(entry.instance.term, { cursorBlink, statusLine });
+  const ui = useUIStore.getState();
+  if (ui.terminal.sessions.find((s) => s.id === sessionId)?.programTitle) {
+    ui.terminalSetProgramTitle(sessionId, "");
+  }
+}
+
 export interface TerminalShellLifecycle {
-  /** Spawn the shell for a session entry. Guarded against re-entrance. */
-  startShell: (sessionId: string) => Promise<void>;
-  /** Kill the active session's PTY, clear the buffer, and respawn. */
+  /** Spawn the shell for a session entry on a freshly reset terminal, then
+   *  show `statusLine` (if any) until the shell draws. Guarded against
+   *  re-entrance. */
+  startShell: (sessionId: string, statusLine?: string) => Promise<void>;
+  /** Kill the active session's PTY and respawn it on a reset terminal. */
   restartActiveSession: () => void;
 }
 
@@ -92,7 +125,7 @@ export function useTerminalShellLifecycle(
   sessionsRef: SessionsRef,
 ): TerminalShellLifecycle {
   const startShell = useCallback(
-    async (sessionId: string) => {
+    async (sessionId: string, statusLine = "") => {
       const entry = sessionsRef.current.get(sessionId);
       if (!entry || entry.disposed) return;
 
@@ -101,6 +134,7 @@ export function useTerminalShellLifecycle(
       entry.shellSpawning = true;
 
       entry.shellExited = false;
+      resetForNewSession(entry, sessionId, statusLine);
       // Spawn generation: bumped on every (re)spawn. A killed PTY's onExit
       // fires asynchronously and could otherwise mark a freshly-restarted
       // session dead — the guard below ignores exits from a superseded gen.
@@ -254,10 +288,9 @@ export function useTerminalShellLifecycle(
     }
 
     entry.shellExited = false;
-    entry.instance.term.clear();
-    entry.instance.term.write(restartingLine());
-
-    void startShell(activeId);
+    // startShell resets the terminal (#1471), so it writes the notice too —
+    // written here first, the reset would wipe it.
+    void startShell(activeId, restartingLine());
   }, [sessionsRef, startShell]);
 
   return { startShell, restartActiveSession };
