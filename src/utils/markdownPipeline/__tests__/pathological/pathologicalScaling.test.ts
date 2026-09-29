@@ -34,6 +34,7 @@
  * @coordinates-with patches/mdast-util-to-markdown@2.1.2.patch — linear escaping
  * @coordinates-with patches/mdast-util-from-markdown@2.0.3.patch — linear list items
  * @coordinates-with listPreparation.differential.test.ts — that patch changes no parse
+ * @coordinates-with fromMarkdownBuilds.ts — the shipped from-markdown build, by path
  * @module utils/markdownPipeline/__tests__/pathological/pathologicalScaling.test
  */
 import { describe, it, expect } from "vitest";
@@ -41,6 +42,7 @@ import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import "../../dialect";
 import { parseMarkdown, serializeMarkdown } from "../../adapter";
+import { parseWith } from "./fromMarkdownBuilds";
 
 const schema = getSchema([StarterKit]);
 
@@ -59,6 +61,8 @@ interface ScalingCase {
   parseOnly?: boolean;
   /** A tighter bound, for a class whose broken growth is below quadratic. */
   maxExponent?: number;
+  /** Measure this instead of the repo's parser. */
+  run?: (markdown: string) => void;
 }
 
 const backtickRuns = (n: number): string => {
@@ -66,6 +70,9 @@ const backtickRuns = (n: number): string => {
   for (let i = 1; i <= n; i += 1) out += `e${"`".repeat(i)}`;
   return `${out}\n`;
 };
+
+const shortListsBeforeCode = (n: number): string =>
+  `${"- a\n* b\n".repeat(n)}\`\`\`\n${"x\n".repeat(32 * n)}\`\`\`\n`;
 
 const CASES: ScalingCase[] = [
   {
@@ -165,13 +172,29 @@ const CASES: ScalingCase[] = [
     // a size the PR tier can afford; a changed bullet starts a new list, so
     // every list line is a list. Upstream's own fix batches per LIST
     // (syntax-tree/mdast-util-from-markdown#51), which leaves this shape just
-    // as slow — a re-made patch that only backports it fails here. Measured
-    // at a load average of 45–100: 1.63–1.67 before, 1.02–1.05 after.
+    // as slow — a re-made patch that only backports it fails here. Measured:
+    // 1.63 before and 1.06 after on a quiet machine; 1.63–1.67 before and
+    // 1.02–1.05 after at a load average of 45–100.
     name: "short-lists-before-code",
-    make: (n) => `${"- a\n* b\n".repeat(n)}\`\`\`\n${"x\n".repeat(32 * n)}\`\`\`\n`,
+    make: shortListsBeforeCode,
     small: 1000,
     large: 8000,
     parseOnly: true,
+  },
+  {
+    // The same shape, measured on from-markdown's `lib/` build. Every case
+    // above runs the repo's parser, which vitest runs on the package's `dev/`
+    // build; the production bundle ships `lib/`, and the patch edits the two
+    // separately, so a `lib/` left quadratic would pass everything else.
+    // Measured on a quiet machine: 1.60 before, 1.66 with only `dev/`
+    // patched, 0.98 after.
+    name: "short-lists-before-code (shipped from-markdown build)",
+    make: shortListsBeforeCode,
+    small: 1000,
+    large: 8000,
+    run: (markdown) => {
+      parseWith("production", markdown);
+    },
   },
 ];
 
@@ -211,7 +234,7 @@ describe("pathological inputs scale linearly (#1407)", () => {
   it.each(CASES)("$name: cost grows linearly with input size", (c) => {
     const small = c.make(c.small);
     const large = c.make(c.large);
-    const cost = measure(c.parseOnly ? parseOnce : roundTrip, small, large);
+    const cost = measure(c.run ?? (c.parseOnly ? parseOnce : roundTrip), small, large);
     // A floor on the small sample keeps a sub-millisecond reading from
     // manufacturing a huge ratio out of timer resolution.
     const smallCost = Math.max(cost.small, 1);

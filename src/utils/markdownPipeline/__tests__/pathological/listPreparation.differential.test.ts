@@ -10,17 +10,18 @@
  * and nothing else, so two things must be identical to the unpatched package:
  *
  *   - the mdast — node for node, position for position, `spread` for `spread`;
- *   - the event order around line endings. The tree alone cannot show where an
- *     item's exit sits among its trailing line endings (a line ending outside a
- *     paragraph adds nothing to it), yet that is exactly what the patch
- *     places. An mdast extension that only OBSERVES line endings — it adds
- *     handlers for events that have none by default — records each one's type
- *     (the walk rewrites `lineEnding` and `lineEndingBlank`) and the node
- *     stack open around it.
+ *   - where each item opens and closes among the events around it: line
+ *     endings, line and block-quote prefixes, the item's own prefix. The tree
+ *     cannot show that (an item's position comes from its tokens, and a line
+ *     ending outside a paragraph adds nothing), yet it is exactly what the
+ *     patch places. An mdast extension that only OBSERVES those events — it
+ *     adds handlers for events that have none — records each one's type (the
+ *     walk rewrites `lineEnding` and `lineEndingBlank`) and the node stack
+ *     open around it.
  *
- * Both builds are checked, each loaded by path: `dev/` (the `development`
- * export condition, which vitest resolves) and `lib/` (the `default` one,
- * which the production bundle ships). The patch edits them separately.
+ * Both builds are checked, each loaded by path (`fromMarkdownBuilds.ts`):
+ * `dev/`, which vitest resolves, and `lib/`, which the production bundle
+ * ships. The patch edits them separately.
  *
  * With the patch applied there is no unpatched from-markdown left to run, so
  * the reference is RECORDED. `listPreparation.reference.json` holds what the
@@ -48,73 +49,26 @@
  *
  * @coordinates-with patches/mdast-util-from-markdown@2.0.3.patch — the change under test
  * @coordinates-with pathologicalScaling.test.ts — its growth bound
+ * @coordinates-with fromMarkdownBuilds.ts — both builds, loaded by path
  * @coordinates-with ../spec/corpusRegistry.ts — the pinned corpora
  * @module utils/markdownPipeline/__tests__/pathological/listPreparation.differential.test
  */
 import { describe, it, expect } from "vitest";
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
-import { pathToFileURL } from "node:url";
-import { unified } from "unified";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
 import { CORPORA, loadExamples } from "../spec/corpusRegistry";
+import {
+  BUILDS,
+  MDAST_EXTENSIONS,
+  PRISTINE_SHA256,
+  implementationPath,
+  implementationSha256,
+  parseWith,
+  type Build,
+} from "./fromMarkdownBuilds";
 
 const REFERENCE_PATH = new URL("./listPreparation.reference.json", import.meta.url);
 const RECORD = process.env.VMARK_RECORD_LIST_REFERENCE === "1";
-
-type FromMarkdown = (
-  markdown: string,
-  options: { extensions: unknown[]; mdastExtensions: unknown[] },
-) => unknown;
-
-type Build = "development" | "production";
-const BUILDS: readonly Build[] = ["development", "production"];
-
-/**
- * The installed package's directory, found the way remark-parse finds it. The
- * resolved entry depends on the export conditions in force (vitest adds
- * `development`), so walk up from it to the package's own `package.json`.
- */
-function packageRoot(): string {
-  const remarkParse = createRequire(import.meta.url).resolve("remark-parse");
-  let dir = dirname(createRequire(remarkParse).resolve("mdast-util-from-markdown"));
-  while (dirname(dir) !== dir) {
-    try {
-      const manifest = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as { name?: string };
-      if (manifest.name === "mdast-util-from-markdown") return dir;
-    } catch {
-      // No package.json here; keep walking up.
-    }
-    dir = dirname(dir);
-  }
-  throw new Error("mdast-util-from-markdown: package root not found");
-}
-const PACKAGE_ROOT = packageRoot();
-const ENTRY: Record<Build, string> = { development: "dev/index.js", production: "index.js" };
-const IMPLEMENTATION: Record<Build, string> = { development: "dev/lib/index.js", production: "lib/index.js" };
-
-/** sha256 of each build's implementation in the pristine 2.0.3 tarball. */
-const PRISTINE_SHA256: Record<Build, string> = {
-  development: "bc4760bec02ae905b362fbe7eb7dd935ceb49cfcff8728c6cc07f5940a1a26c8",
-  production: "2b19a9873232679ef08429e08c5836c865a54d8113ae5d58cb9409a60863727b",
-};
-
-const fromMarkdown = {} as Record<Build, FromMarkdown>;
-for (const build of BUILDS) {
-  const url = pathToFileURL(join(PACKAGE_ROOT, ENTRY[build])).href;
-  fromMarkdown[build] = ((await import(url)) as { fromMarkdown: FromMarkdown }).fromMarkdown;
-}
-
-/** Stock syntax only: the contract is from-markdown's, not VMark's dialect. */
-const syntax = unified().use(remarkGfm, { singleTilde: false }).use(remarkMath).freeze().data() as {
-  micromarkExtensions?: unknown[];
-  fromMarkdownExtensions?: unknown[];
-};
-const EXTENSIONS = syntax.micromarkExtensions ?? [];
-const MDAST_EXTENSIONS = syntax.fromMarkdownExtensions ?? [];
 
 /** The pinned upstream corpora (the registry checks each file's sha256). */
 const CORPUS_PREFIXES = ["cm", "gfm", "cmreg", "gfmreg", "gfmext"];
@@ -246,8 +200,9 @@ function hasList(node: unknown): boolean {
   return Array.isArray(children) && children.some(hasList);
 }
 
+
 function parse(build: Build, markdown: string): unknown {
-  return fromMarkdown[build](markdown, { extensions: EXTENSIONS, mdastExtensions: MDAST_EXTENSIONS });
+  return parseWith(build, markdown);
 }
 
 interface LoggedToken {
@@ -255,34 +210,51 @@ interface LoggedToken {
   start: { offset?: number };
 }
 
-/** The handlers the line-ending observer adds, by event kind. */
-const OBSERVED = { enter: ["lineEnding", "lineEndingBlank"], exit: ["lineEndingBlank"] } as const;
+/**
+ * The events a list item's enter and exit are placed among: line endings
+ * (whose type the walk also rewrites), line and block-quote prefixes, and the
+ * parts of a list item's own prefix. None has a handler in from-markdown 2.0.3
+ * for the kinds listed (its only ones near them are `exit` of `lineEnding` and
+ * `enter` of `listItemValue`, both left alone), a test below checks these
+ * extensions define none, and another that adding them leaves the tree as it
+ * was.
+ */
+const OBSERVED = {
+  enter: [
+    "lineEnding", "lineEndingBlank", "linePrefix", "listItemPrefix", "listItemMarker",
+    "listItemPrefixWhitespace", "listItemIndent", "blockQuotePrefix", "blockQuoteMarker",
+    "blockQuotePrefixWhitespace",
+  ],
+  exit: [
+    "lineEndingBlank", "linePrefix", "listItemPrefix", "listItemMarker", "listItemValue",
+    "listItemPrefixWhitespace", "listItemIndent", "blockQuotePrefix", "blockQuoteMarker",
+    "blockQuotePrefixWhitespace",
+  ],
+} as const;
 
 /**
- * Every line ending's type and offset, and the node types open around it —
- * which shows on which side of its trailing line endings each item closed.
- * from-markdown has no default for the handlers in `OBSERVED` (only `exit` of
- * `lineEnding`), and a test below checks these extensions have none either,
- * so adding them leaves the tree as it is — also checked below.
+ * Each observed event's kind, type and offset, and the node types open
+ * around it. The tree alone cannot show which side of these events a list
+ * item opened or closed on — an item's position comes from its tokens, and a
+ * line ending outside a paragraph adds nothing — and that is exactly what the
+ * patch places.
  */
-function observeLineEndings(build: Build, markdown: string): { log: string; tree: unknown } {
+function observeStructure(build: Build, markdown: string): { log: string; tree: unknown } {
   const log: string[] = [];
-  function record(this: { stack: { type: string }[] }, token: LoggedToken): void {
-    log.push(`${token.type}@${token.start.offset}:${this.stack.map((node) => node.type).join(">")}`);
-  }
+  const recorder = (kind: string) =>
+    function record(this: { stack: { type: string }[] }, token: LoggedToken): void {
+      log.push(`${kind} ${token.type}@${token.start.offset}:${this.stack.map((node) => node.type).join(">")}`);
+    };
   const observer = {
-    enter: Object.fromEntries(OBSERVED.enter.map((type) => [type, record])),
-    exit: Object.fromEntries(OBSERVED.exit.map((type) => [type, record])),
+    enter: Object.fromEntries(OBSERVED.enter.map((type) => [type, recorder("enter")])),
+    exit: Object.fromEntries(OBSERVED.exit.map((type) => [type, recorder("exit")])),
   };
-  const tree = fromMarkdown[build](markdown, {
-    extensions: EXTENSIONS,
-    mdastExtensions: [...MDAST_EXTENSIONS, observer],
-  });
+  const tree = parseWith(build, markdown, [observer]);
   return { log: log.join("\n"), tree };
 }
 
-function lineEndingLog(build: Build, markdown: string): string {
-  return observeLineEndings(build, markdown).log;
+function structureLog(build: Build, markdown: string): string {
+  return observeStructure(build, markdown).log;
 }
 
 interface Reference {
@@ -294,8 +266,8 @@ interface Reference {
   corpus: Record<string, string>;
   /** `fuzz-<seed>` → digest of the canonical tree. */
   fuzz: Record<string, string>;
-  /** Named input, corpus id or fuzz id → digest of its line-ending log. */
-  lineEndings: Record<string, string>;
+  /** Named input, corpus id or fuzz id → digest of its structure log. */
+  structure: Record<string, string>;
 }
 
 function corpusExamples(): Map<string, string> {
@@ -307,7 +279,7 @@ function corpusExamples(): Map<string, string> {
   return examples;
 }
 
-/** Every input the reference covers, keyed as `lineEndings` is. */
+/** Every input the reference covers, keyed as `structure` is. */
 function allInputs(corpusIds: Iterable<string>): Map<string, string> {
   const inputs = new Map<string, string>(Object.entries(NAMED));
   const examples = corpusExamples();
@@ -320,39 +292,35 @@ function allInputs(corpusIds: Iterable<string>): Map<string, string> {
   return inputs;
 }
 
-function implementationSha256(build: Build): string {
-  const source = readFileSync(join(PACKAGE_ROOT, IMPLEMENTATION[build]));
-  return createHash("sha256").update(source).digest("hex");
-}
-
 function record(): Reference {
   for (const build of BUILDS) {
     if (implementationSha256(build) !== PRISTINE_SHA256[build]) {
       throw new Error(
-        `Refusing to record: ${IMPLEMENTATION[build]} is not the pristine 2.0.3 file. ` +
+        `Refusing to record: ${implementationPath(build)} is not the pristine 2.0.3 file. ` +
           "Remove the patch from pnpm.patchedDependencies and reinstall first.",
       );
     }
   }
   const [build, other] = BUILDS;
-  const treeOf = (markdown: string): string => {
-    const tree = canonical(parse(build, markdown));
-    if (canonical(parse(other, markdown)) !== tree) throw new Error(`Builds disagree on ${JSON.stringify(markdown)}`);
-    return tree;
+  const agreed = (of: (b: Build, markdown: string) => string, markdown: string): string => {
+    const value = of(build, markdown);
+    if (of(other, markdown) !== value) throw new Error(`Builds disagree on ${JSON.stringify(markdown)}`);
+    return value;
   };
+  const treeOf = (b: Build, markdown: string): string => canonical(parse(b, markdown));
   const named: Record<string, string> = {};
-  for (const [name, markdown] of Object.entries(NAMED)) named[name] = treeOf(markdown);
+  for (const [name, markdown] of Object.entries(NAMED)) named[name] = agreed(treeOf, markdown);
   const corpus: Record<string, string> = {};
   for (const [id, markdown] of corpusExamples()) {
-    if (hasList(parse(build, markdown))) corpus[id] = digest(treeOf(markdown));
+    if (hasList(parse(build, markdown))) corpus[id] = digest(agreed(treeOf, markdown));
   }
   const fuzz: Record<string, string> = {};
-  for (let seed = 0; seed < FUZZ_COUNT; seed += 1) fuzz[`fuzz-${seed}`] = digest(treeOf(fuzzDocument(seed)));
-  const lineEndings: Record<string, string> = {};
+  for (let seed = 0; seed < FUZZ_COUNT; seed += 1) {
+    fuzz[`fuzz-${seed}`] = digest(agreed(treeOf, fuzzDocument(seed)));
+  }
+  const structure: Record<string, string> = {};
   for (const [key, markdown] of allInputs(Object.keys(corpus))) {
-    const log = lineEndingLog(build, markdown);
-    if (lineEndingLog(other, markdown) !== log) throw new Error(`Builds disagree on ${JSON.stringify(markdown)}`);
-    lineEndings[key] = digest(log);
+    structure[key] = digest(agreed(structureLog, markdown));
   }
   return {
     provenance:
@@ -362,7 +330,7 @@ function record(): Reference {
     named,
     corpus,
     fuzz,
-    lineEndings,
+    structure,
   };
 }
 
@@ -383,7 +351,7 @@ describe("list preparation matches the unpatched from-markdown (#1473)", () => {
     // list. A re-recording that drops some would otherwise pass quietly.
     expect(Object.keys(reference.corpus)).toHaveLength(89);
     expect(Object.keys(reference.fuzz)).toHaveLength(FUZZ_COUNT);
-    expect(Object.keys(reference.lineEndings).sort()).toEqual(
+    expect(Object.keys(reference.structure).sort()).toEqual(
       [...allInputs(Object.keys(reference.corpus)).keys()].sort(),
     );
     // A fuzz that stopped producing lists would compare nothing of interest.
@@ -399,7 +367,7 @@ describe("list preparation matches the unpatched from-markdown (#1473)", () => {
     expect(implementationSha256("development")).not.toBe(implementationSha256("production"));
   });
 
-  it("observes line endings without replacing any extension's handler", () => {
+  it("observes structure without replacing any extension's handler", () => {
     const replaced: string[] = [];
     for (const extension of MDAST_EXTENSIONS.flat(Infinity) as {
       enter?: Record<string, unknown>;
@@ -441,14 +409,14 @@ describe("list preparation matches the unpatched from-markdown (#1473)", () => {
       expect(mismatches).toEqual([]);
     });
 
-    it.each(Object.keys(NAMED))("observing line endings leaves the tree of %s unchanged", (name) => {
-      expect(canonical(observeLineEndings(build, NAMED[name]).tree)).toBe(canonical(parse(build, NAMED[name])));
+    it.each(Object.keys(NAMED))("observing structure leaves the tree of %s unchanged", (name) => {
+      expect(canonical(observeStructure(build, NAMED[name]).tree)).toBe(canonical(parse(build, NAMED[name])));
     });
 
-    it("every input puts its line endings inside the recorded nodes", () => {
+    it("every input opens and closes its items among the recorded events", () => {
       const mismatches: string[] = [];
       for (const [key, markdown] of allInputs(Object.keys(reference.corpus))) {
-        if (digest(lineEndingLog(build, markdown)) !== reference.lineEndings[key]) {
+        if (digest(structureLog(build, markdown)) !== reference.structure[key]) {
           mismatches.push(`${key}: ${JSON.stringify(markdown)}`);
         }
       }
