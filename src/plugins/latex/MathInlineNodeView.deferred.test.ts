@@ -171,7 +171,7 @@ describe("MathInlineNodeView — inside a scrolling editor", () => {
   it("paints formulas that waited for KaTeX's chunk inside a frame, not in one burst", async () => {
     // The first math document of a session: formulas come due while KaTeX is
     // still loading. Painting them all in the load's microtask skipped the
-    // frame budget and the view-holding around it.
+    // frame budget.
     katexState.loaded = false;
     let release!: () => void;
     katexState.gate = new Promise<void>((resolve) => {

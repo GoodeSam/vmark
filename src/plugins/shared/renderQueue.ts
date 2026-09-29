@@ -1,8 +1,7 @@
 /**
  * Purpose: the frame-budgeted queue behind nearViewport — which due render
- * runs next, how many run in a frame, and keeping the reader's view still
- * while they do. nearViewport decides WHEN a render is due; this decides the
- * order and the pace.
+ * runs next, and how many run in a frame. nearViewport decides WHEN a render
+ * is due; this decides the order and the pace.
  *
  * Key decisions:
  *   - Nearest first, by the block's distance from the visible box. A distance
@@ -14,18 +13,11 @@
  *     (`expire`) to wait for the viewport again, rather than run where nobody
  *     is reading.
  *   - Synchronous time is budgeted per frame, with at least one render so the
- *     queue always moves and at most FRAME_LIMIT, which is also exactly the
- *     batch whose blocks renderAnchor measures before it runs.
+ *     queue always moves.
  *
  * @coordinates-with plugins/shared/nearViewport.ts — the one user: feeds due renders in, takes expired ones back
- * @coordinates-with plugins/shared/renderAnchor.ts — holds the view across each frame's batch
  * @module plugins/shared/renderQueue
  */
-
-import { measureAboveViewport, holdViewStill } from "./renderAnchor";
-
-/** Most renders one frame runs — and the batch measured for view-holding. */
-export const FRAME_LIMIT = 256;
 
 /** A render waiting its turn. */
 export interface QueuedRender {
@@ -97,7 +89,6 @@ export function createRenderQueue<T extends QueuedRender>(options: RenderQueueOp
   function drain(): void {
     scheduled = false;
     rerank();
-    const held = measureAboveViewport(queue.slice(0, FRAME_LIMIT));
     const deadline = performance.now() + options.budgetMs;
     // By index, then one splice: shift() is a copy per item once a queue is
     // large. A render can only remove items not yet run, which lie after it.
@@ -107,9 +98,8 @@ export function createRenderQueue<T extends QueuedRender>(options: RenderQueueOp
       if (!item) break;
       options.run(item);
       ran += 1;
-    } while (ran < queue.length && ran < FRAME_LIMIT && performance.now() < deadline);
+    } while (ran < queue.length && performance.now() < deadline);
     queue.splice(0, ran);
-    holdViewStill(held);
     if (queue.length > 0) schedule();
   }
 

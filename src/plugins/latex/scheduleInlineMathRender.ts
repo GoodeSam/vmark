@@ -24,7 +24,7 @@
  *     (the viewport queue's frame budget, a print flush) sees the real cost.
  *     A formula that comes due while KaTeX's chunk is still loading waits for
  *     it and then queues again: painting in the load's microtask ran every
- *     due formula at once, outside the frame budget and the view-holding.
+ *     due formula at once, outside the frame budget.
  *   - A render that REPLACES a finished one (the formula was edited, or its
  *     source changed) runs at once: that formula is or was on screen, and
  *     the observer reports only after a frame has painted, so waiting for it

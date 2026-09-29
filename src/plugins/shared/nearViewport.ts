@@ -25,21 +25,17 @@
  *     runs everything outstanding and waits for every render in flight —
  *     print reads the live DOM as a finished document.
  *   - Jobs are counted onto the root (`renderMarks.ts`) for navigation scrolls.
- *   - Renders keep the reader's view still where the engine has no CSS
- *     scroll anchoring (`renderAnchor.ts`): each frame's, and a flush's.
  *
  * @coordinates-with plugins/latex/scheduleInlineMathRender.ts — the first caller
  * @coordinates-with export/useExportOperations.ts — flushes before printing the live editor
  * @coordinates-with plugins/shared/editorScrollRoot.ts — picks the root to observe against
  * @coordinates-with plugins/shared/renderMarks.ts — the root's pending/busy marks
  * @coordinates-with plugins/shared/renderQueue.ts — the order and pace of due renders
- * @coordinates-with plugins/shared/renderAnchor.ts — holds the view across a flush
  * @coordinates-with components/Editor/editor.css — the content-visibility that hides a block's insides
  * @module plugins/shared/nearViewport
  */
 
 import { markRoot, resetRenderMarksForTest } from "./renderMarks";
-import { measureAboveViewport, holdViewStill } from "./renderAnchor";
 import { createRenderQueue, distanceToVisible } from "./renderQueue";
 
 /** A deferred render: synchronous when it can be (the frame budget only sees
@@ -265,16 +261,13 @@ export async function flushNearViewport(container: Element): Promise<void> {
       if (container.contains(running.target)) due.push(running.promise);
     }
     const runNow = [...jobs.values()].filter((job) => container.contains(job.target));
-    // Per round: a render in flight when the flush began paints in a later one.
-    const held = measureAboveViewport(runNow);
     for (const job of runNow) {
       if (jobs.get(job.target) !== job) continue; // replaced or cancelled by an earlier render
       detach(job);
       due.push(Promise.resolve(run(job)));
     }
-    if (due.length === 0) break;
+    if (due.length === 0) return;
     await Promise.all(due);
-    holdViewStill(held);
   }
 }
 

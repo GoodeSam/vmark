@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createRenderQueue, distanceToVisible, FRAME_LIMIT, type QueuedRender } from "./renderQueue";
+import { createRenderQueue, distanceToVisible, type QueuedRender } from "./renderQueue";
 import { installFakeAnimationFrames, type FakeAnimationFrames } from "@/test/fakeAnimationFrames";
 
 interface Item extends QueuedRender {
@@ -10,7 +10,6 @@ let frames: FakeAnimationFrames;
 
 beforeEach(() => {
   frames = installFakeAnimationFrames();
-  vi.stubGlobal("CSS", { supports: () => true }); // native anchoring: no view-holding here
 });
 
 afterEach(() => {
@@ -76,18 +75,6 @@ describe("createRenderQueue", () => {
     expect(ran).toEqual(["a", "b"]); // 4 ms, then 8 ms: past the 6 ms budget
     frames.runFrame();
     expect(ran).toEqual(["a", "b", "c"]);
-  });
-
-  it(`runs at most ${FRAME_LIMIT} items in one frame even when they cost nothing`, () => {
-    const root = scroller();
-    let ran = 0;
-    const queue = createRenderQueue<Item>({ run: () => void (ran += 1), expire: vi.fn(), marginPx: 2000, budgetMs: 6 });
-
-    queue.add(Array.from({ length: FRAME_LIMIT + 10 }, (_, i) => item(root, `i${i}`, 0)));
-    frames.runFrame();
-    expect(ran).toBe(FRAME_LIMIT);
-    frames.runFrame();
-    expect(ran).toBe(FRAME_LIMIT + 10);
   });
 
   it("takes and drains a batch far larger than a call's argument limit", () => {
