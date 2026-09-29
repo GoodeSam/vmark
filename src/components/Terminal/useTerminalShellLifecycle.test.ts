@@ -23,9 +23,11 @@ vi.mock("./spawnPty", () => ({
 }));
 
 function makeEntry(): { entry: SessionEntry; writeMock: ReturnType<typeof vi.fn> } {
-  const writeMock = vi.fn();
+  // Calls back like xterm does once a write is parsed: startShell waits for its
+  // terminal reset to be parsed before it spawns (#1471).
+  const writeMock = vi.fn((_data: string | Uint8Array, parsed?: () => void) => parsed?.());
   const instance = {
-    term: { write: writeMock, clear: vi.fn() },
+    term: { write: writeMock, clear: vi.fn(), options: {} },
     composing: false,
     onCompositionCommit: null,
     fitAddon: {},
@@ -197,8 +199,11 @@ describe("useTerminalShellLifecycle — shell exit (#1103)", () => {
     expect(state.terminal.sessions.map((s) => s.id)).toEqual(["term-1"]);
     expect(state.terminal.sessions[0].isAlive).toBe(false);
     expect(state.terminalVisible).toBe(true);
-    // Exit notice + press-any-key prompt written to the buffer.
-    expect(writeMock).toHaveBeenCalledTimes(2);
+    // Exit notice + press-any-key prompt written to the buffer (the modes
+    // side of this path is covered against real xterm in the .reset test).
+    const written = writeMock.mock.calls.map(([data]) => String(data)).join("");
+    expect(written).toContain("[Process exited with code 1]");
+    expect(written).toContain("Press any key to restart…");
     expect(entry.shellExited).toBe(true);
     expect(entry.pty).toBeNull();
   });
@@ -278,6 +283,8 @@ describe("restart during an in-flight spawn (audit fix)", () => {
     act(() => {
       void result.current.startShell("term-1");
     });
+    // In flight = spawnPty called and not settled (it follows the reset).
+    await vi.waitFor(() => expect(vi.mocked(spawnPty)).toHaveBeenCalledTimes(1));
     expect(entry.shellSpawning).toBe(true);
     const genBefore = entry.spawnGen;
 
@@ -309,6 +316,7 @@ describe("restart during an in-flight spawn (audit fix)", () => {
     act(() => {
       void result.current.startShell("term-1");
     });
+    await vi.waitFor(() => expect(vi.mocked(spawnPty)).toHaveBeenCalledTimes(1));
     await act(async () => {
       result.current.restartActiveSession();
     });

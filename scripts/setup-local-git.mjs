@@ -26,7 +26,7 @@
  * bottom wires in the real `git`.
  */
 import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const SSH_KEEPALIVE = "ssh -o ServerAliveInterval=20 -o ServerAliveCountMax=20";
 
@@ -74,6 +74,6 @@ function realGit(args) {
 
 // CLI entry — run only when invoked directly (`node scripts/setup-local-git.mjs`),
 // never when imported by the test.
-if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   setupLocalGit(realGit);
 }

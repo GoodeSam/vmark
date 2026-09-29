@@ -39,6 +39,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const BASELINE_PATH = join(ROOT, "scripts/test-types-baseline.json");
@@ -157,4 +158,4 @@ function main() {
   console.log(`✅ Test types held (${counts.size} baselined file(s), ${total} frozen error(s)).`);
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) main();
+if (isMainModule(import.meta.url)) main();

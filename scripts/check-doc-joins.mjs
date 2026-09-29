@@ -37,11 +37,12 @@
  * @coordinates-with .github/workflows/ci.yml — the docs-only filter this gate sidesteps
  */
 import { resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 import * as lintTable from "./lib/docJoins/lintTable.mjs";
 import * as settingsDefaults from "./lib/docJoins/settingsDefaults.mjs";
 import * as readmeClaims from "./lib/docJoins/readmeClaims.mjs";
 import * as journeyInventory from "./lib/docJoins/journeyInventory.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 export const ROOT = resolve(import.meta.dirname, "..");
 
@@ -154,7 +155,7 @@ async function main(argv) {
   return 0;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   // exitCode, not exit(): a report piped into a pager must not be cut off by
   // exiting before stdout drains.
   process.exitCode = await main(process.argv.slice(2));

@@ -12,7 +12,8 @@
  *   - onData is dropped while a composition is active (no writes mid-compose).
  *   - IME commits are written straight to the PTY (single writer).
  *   - Press-any-key-to-restart: after a shell exits, either an onData chunk OR
- *     an IME commit triggers respawn.
+ *     an IME commit triggers respawn. The terminal is NOT cleared here —
+ *     startShell resets it for every new PTY (#1471).
  *
  * @coordinates-with useTerminalSessions.ts — sole caller
  * @module components/Terminal/terminalSessionInputWiring
@@ -62,7 +63,6 @@ export function wireSessionInput({ sessionId, getEntry, startShell }: WireOption
       // committed text is intentionally not replayed; the user retypes once a
       // fresh prompt appears.
       e.shellExited = false;
-      e.instance.term.clear();
       startShell(sessionId);
     }
     // During shell spawn or before first start: text is dropped (no prompt is
@@ -78,7 +78,6 @@ export function wireSessionInput({ sessionId, getEntry, startShell }: WireOption
 
     if (e.shellExited && !e.pty) {
       e.shellExited = false;
-      e.instance.term.clear();
       startShell(sessionId);
       return;
     }

@@ -33,8 +33,8 @@
  */
 
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 // Chunk families that must NEVER be reachable statically at cold start.
 export const DENYLIST = [
@@ -348,6 +348,6 @@ function main() {
 }
 
 // CLI entry — run only when invoked directly, never when imported by tests.
-if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   main();
 }

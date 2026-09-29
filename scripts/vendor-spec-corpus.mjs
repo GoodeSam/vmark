@@ -25,7 +25,7 @@
  * @module scripts/vendor-spec-corpus
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const FENCE = "`".repeat(32);
 
@@ -177,6 +177,6 @@ function main() {
   console.log(`${outPath}: ${examples.length} examples`);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+if (isMainModule(import.meta.url)) {
   main();
 }
