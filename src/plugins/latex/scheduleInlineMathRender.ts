@@ -22,6 +22,9 @@
  *     soon as anything waits, so it is ready when needed.
  *   - Synchronous once KaTeX is loaded, so a caller that budgets its time
  *     (the viewport queue's frame budget, a print flush) sees the real cost.
+ *     A formula that comes due while KaTeX's chunk is still loading waits for
+ *     it and then queues again: painting in the load's microtask ran every
+ *     due formula at once, outside the frame budget and the view-holding.
  *   - A render that REPLACES a finished one (the formula was edited, or its
  *     source changed) runs at once: that formula is or was on screen, and
  *     the observer reports only after a frame has painted, so waiting for it
@@ -75,19 +78,10 @@ export function scheduleInlineMathRender(request: InlineMathRenderRequest): () =
     }
   };
 
-  const render = (): void | Promise<void> => {
-    const loaded = getKatexModule();
-    if (loaded) {
-      paint(loaded);
-      return;
-    }
-    return loadKatex()
-      .then(paint)
-      .catch((error: unknown) => {
-        if (!isCurrent()) return;
-        renderWarn("Math inline render failed:", errorMessage(error));
-        fail();
-      });
+  const loadFailed = (error: unknown) => {
+    if (!isCurrent()) return;
+    renderWarn("Math inline render failed:", errorMessage(error));
+    fail();
   };
 
   const katex = getKatexModule();
@@ -100,8 +94,32 @@ export function scheduleInlineMathRender(request: InlineMathRenderRequest): () =
   if (scrollRoot) {
     preview.textContent = latex;
     if (!katex) void loadKatex().catch(() => undefined); // failure reported at render
-    return whenNearViewport(host, scrollRoot, render);
+    let cancelled = false;
+    let cancel = () => {};
+    const whenNear = () => {
+      cancel = whenNearViewport(host, scrollRoot, renderNear);
+    };
+    const renderNear = (): void | Promise<void> => {
+      const loaded = getKatexModule();
+      if (loaded) return paint(loaded);
+      return loadKatex()
+        .then(() => {
+          if (!cancelled && isCurrent()) whenNear();
+        })
+        .catch(loadFailed);
+    };
+    whenNear();
+    return () => {
+      cancelled = true;
+      cancel();
+    };
   }
+
+  const render = () => {
+    const loaded = getKatexModule();
+    if (loaded) return paint(loaded);
+    void loadKatex().then(paint).catch(loadFailed);
+  };
 
   if (isKatexLoaded()) {
     preview.textContent = latex;
@@ -112,9 +130,9 @@ export function scheduleInlineMathRender(request: InlineMathRenderRequest): () =
     preview.replaceChildren(loading);
   }
   if (typeof requestIdleCallback !== "undefined") {
-    requestIdleCallback(() => void render(), { timeout: 100 });
+    requestIdleCallback(render, { timeout: 100 });
   } else {
-    setTimeout(() => void render(), 0);
+    setTimeout(render, 0);
   }
   return () => {};
 }

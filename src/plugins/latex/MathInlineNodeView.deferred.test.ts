@@ -19,16 +19,20 @@ const { render } = vi.hoisted(() => ({
   }),
 }));
 
-/** `loaded: false` models the first math document of a session (KaTeX not imported yet). */
-const katexState = vi.hoisted(() => ({ loaded: true, loads: 0 }));
+/** `loaded: false` models the first math document of a session (KaTeX not imported yet);
+ *  `gate` holds its chunk load open until the test releases it. */
+const katexState = vi.hoisted(() => ({ loaded: true, loads: 0, gate: null as Promise<void> | null }));
 
 vi.mock("./katexLoader", () => {
   const katex = { default: { render } };
   return {
     loadKatex: vi.fn(() => {
       katexState.loads++;
-      katexState.loaded = true;
-      return Promise.resolve(katex);
+      const finish = () => {
+        katexState.loaded = true;
+        return katex;
+      };
+      return katexState.gate ? katexState.gate.then(finish) : Promise.resolve(finish());
     }),
     isKatexLoaded: vi.fn(() => katexState.loaded),
     getKatexModule: vi.fn(() => (katexState.loaded ? katex : null)),
@@ -79,6 +83,7 @@ const runFrame = () => frames.runFrame();
 beforeEach(() => {
   katexState.loaded = true;
   katexState.loads = 0;
+  katexState.gate = null;
   render.mockClear();
   clearInlineMathRenderCache();
   resetNearViewportForTest();
@@ -161,6 +166,47 @@ describe("MathInlineNodeView — inside a scrolling editor", () => {
 
     await flushNearViewport(root);
     expect(view.dom.querySelector(".katex")?.textContent).toBe("\\frac{a}{b}");
+  });
+
+  it("paints formulas that waited for KaTeX's chunk inside a frame, not in one burst", async () => {
+    // The first math document of a session: formulas come due while KaTeX is
+    // still loading. Painting them all in the load's microtask skipped the
+    // frame budget and the view-holding around it.
+    katexState.loaded = false;
+    let release!: () => void;
+    katexState.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { mount } = scrollingEditor();
+    const views = [mount("a"), mount("b"), mount("c")];
+    await Promise.resolve();
+    onlyObserver().trigger();
+    runFrame(); // due, but KaTeX is still loading
+
+    release();
+    for (let i = 0; i < 10; i += 1) await Promise.resolve();
+    expect(render).not.toHaveBeenCalled();
+
+    onlyObserver().trigger(); // back in the queue now that KaTeX is ready
+    runFrame();
+    expect(views.every((view) => view.dom.querySelector(".katex") !== null)).toBe(true);
+  });
+
+  it("still renders, for print, a formula whose KaTeX was loading", async () => {
+    katexState.loaded = false;
+    let release!: () => void;
+    katexState.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { root, mount } = scrollingEditor();
+    const view = mount("\\sqrt{2}");
+    await Promise.resolve();
+
+    const flushing = flushNearViewport(root);
+    release();
+    await flushing;
+
+    expect(view.dom.querySelector(".katex")?.textContent).toBe("\\sqrt{2}");
   });
 
   it("replaces a finished render at once, never flashing the new source", async () => {
