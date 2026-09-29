@@ -28,7 +28,8 @@ vi.mock("./spawnPty", () => ({
 
 function makeEntry(): SessionEntry {
   const instance = {
-    term: { write: vi.fn(), clear: vi.fn() },
+    // Calls back like xterm once parsed: startShell awaits its reset (#1471).
+    term: { write: vi.fn((_data: string | Uint8Array, parsed?: () => void) => parsed?.()), clear: vi.fn() },
     resetDisplay: () => {},
     getCwd: () => null,
     getCommands: () => [],

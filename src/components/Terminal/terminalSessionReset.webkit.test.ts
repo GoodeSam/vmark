@@ -85,8 +85,7 @@ describe("resetTerminalForNewSession — real pointer, real renderer", () => {
     expect(leaked).toContain("\x1b[<35;");
     expect(leaked).toMatch(/\[<35;\d+;\d+M/);
 
-    resetTerminalForNewSession(term, { cursorBlink: true });
-    await parsed(term, "");
+    await resetTerminalForNewSession(term, { cursorBlink: true });
     const afterReset = capture(term);
     await sweepPointer(term);
 
@@ -102,8 +101,7 @@ describe("resetTerminalForNewSession — real pointer, real renderer", () => {
     );
     expect(await queryColors(term)).not.toEqual(pristine);
 
-    resetTerminalForNewSession(term, { cursorBlink: true });
-    await parsed(term, "");
+    await resetTerminalForNewSession(term, { cursorBlink: true });
 
     expect(await queryColors(term)).toEqual(pristine);
   });

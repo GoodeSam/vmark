@@ -23,7 +23,9 @@ vi.mock("./spawnPty", () => ({
 }));
 
 function makeEntry(): { entry: SessionEntry; writeMock: ReturnType<typeof vi.fn> } {
-  const writeMock = vi.fn();
+  // Calls back like xterm does once a write is parsed: startShell waits for its
+  // terminal reset to be parsed before it spawns (#1471).
+  const writeMock = vi.fn((_data: string | Uint8Array, parsed?: () => void) => parsed?.());
   const instance = {
     term: { write: writeMock, clear: vi.fn() },
     composing: false,
@@ -281,6 +283,8 @@ describe("restart during an in-flight spawn (audit fix)", () => {
     act(() => {
       void result.current.startShell("term-1");
     });
+    // In flight = spawnPty called and not settled (it follows the reset).
+    await vi.waitFor(() => expect(vi.mocked(spawnPty)).toHaveBeenCalledTimes(1));
     expect(entry.shellSpawning).toBe(true);
     const genBefore = entry.spawnGen;
 
@@ -312,6 +316,7 @@ describe("restart during an in-flight spawn (audit fix)", () => {
     act(() => {
       void result.current.startShell("term-1");
     });
+    await vi.waitFor(() => expect(vi.mocked(spawnPty)).toHaveBeenCalledTimes(1));
     await act(async () => {
       result.current.restartActiveSession();
     });

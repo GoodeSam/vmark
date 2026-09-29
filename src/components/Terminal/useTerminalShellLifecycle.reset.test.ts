@@ -87,6 +87,14 @@ function setCursorBlinkSetting(cursorBlink: boolean): void {
   useSettingsStore.setState((s) => ({ terminal: { ...s.terminal, cursorBlink } }));
 }
 
+/** Let xterm parse everything written so far — the reset included — and let
+ *  startShell finish what it does once the reset is parsed (spawn, attach). */
+function settle(term: Terminal): Promise<void> {
+  return act(async () => {
+    await flushWrites(term);
+  });
+}
+
 async function setup(cursorBlink = true) {
   setCursorBlinkSetting(cursorBlink);
   const term = createRealTerminal({ cursorBlink });
@@ -122,7 +130,7 @@ describe("#1471 — a restarted session does not inherit the killed program's te
     await act(async () => {
       lifecycle.current.restartActiveSession();
     });
-    await flushWrites(term);
+    await settle(term);
 
     // The exact bug: xterm must no longer turn pointer motion into input.
     expect(term.modes.mouseTrackingMode).toBe("none");
@@ -143,7 +151,7 @@ describe("#1471 — a restarted session does not inherit the killed program's te
     await act(async () => {
       lifecycle.current.restartActiveSession();
     });
-    await flushWrites(term);
+    await settle(term);
 
     const rows = bufferText(term).split("\n");
     const row = rows.findIndex((text) => text.includes("Restarting shell…"));
@@ -162,7 +170,7 @@ describe("#1471 — a restarted session does not inherit the killed program's te
     await act(async () => {
       lifecycle.current.restartActiveSession();
     });
-    await flushWrites(term);
+    await settle(term);
 
     expect(term.modes.mouseTrackingMode).toBe("none");
   });
@@ -180,7 +188,7 @@ describe("#1471 — a restarted session does not inherit the killed program's te
     await act(async () => {
       term.input("x"); // the "any key"
     });
-    await flushWrites(term);
+    await settle(term);
 
     expect(vi.mocked(spawnPty)).toHaveBeenCalledTimes(2);
     expect(entry.shellExited).toBe(false);
@@ -198,7 +206,7 @@ describe("#1471 — a restarted session does not inherit the killed program's te
     await act(async () => {
       await result.current.startShell(SESSION);
     });
-    await flushWrites(term);
+    await settle(term);
 
     expect(await queryState(term)).toEqual(await pristineState({ cursorBlink: true }));
   });
@@ -214,22 +222,76 @@ describe("#1471 — a restarted session does not inherit the killed program's te
       await act(async () => {
         lifecycle.current.restartActiveSession();
       });
-      await flushWrites(term);
+      await settle(term);
 
       expect(term.options.cursorBlink).toBe(cursorBlink);
     },
   );
 
+  it("rapid repeated restarts spawn one shell, not one per click", async () => {
+    const { term, entry, lifecycle, ptys } = await setup();
+
+    await act(async () => {
+      lifecycle.current.restartActiveSession();
+      lifecycle.current.restartActiveSession();
+      lifecycle.current.restartActiveSession();
+    });
+    await settle(term);
+
+    // The initial shell plus ONE restart: the overtaken attempts stood down
+    // while their reset was still being parsed, before spawning anything.
+    expect(vi.mocked(spawnPty)).toHaveBeenCalledTimes(2);
+    expect(entry.pty).toBe(ptys[1]);
+    expect(entry.shellSpawning).toBe(false);
+  });
+
   it("drops the dead program's tab title", async () => {
-    const { lifecycle } = await setup();
+    const { term, lifecycle } = await setup();
     useUIStore.getState().terminalSetProgramTitle(SESSION, "Codex");
 
     await act(async () => {
       lifecycle.current.restartActiveSession();
     });
+    await settle(term);
 
     const session = useUIStore.getState().terminal.sessions.find((s) => s.id === SESSION);
     expect(session?.programTitle ?? "").toBe("");
+  });
+
+  it("drops a title the old program had queued but xterm had not yet parsed", async () => {
+    const { term, lifecycle } = await setup();
+    // As in createSession: OSC 0/2 → the tab title.
+    term.onTitleChange((title) => useUIStore.getState().terminalSetProgramTitle(SESSION, title));
+    term.write("x".repeat(200_000) + "\x1b]2;Codex\x07");
+
+    await act(async () => {
+      lifecycle.current.restartActiveSession();
+    });
+    await settle(term);
+
+    const session = useUIStore.getState().terminal.sessions.find((s) => s.id === SESSION);
+    expect(session?.programTitle ?? "").toBe("");
+  });
+
+  it("nothing the old program queued reaches the NEW pty — not even xterm's replies to it", async () => {
+    const { term, sessionsRef, lifecycle, ptys } = await setup();
+    wireSessionInput({
+      sessionId: SESSION,
+      getEntry: (id) => sessionsRef.current.get(id),
+      startShell: (id) => void lifecycle.current.startShell(id),
+    });
+    // Still queued when restart is clicked: a cursor-position query (xterm
+    // answers it through onData, exactly like a mouse report) and tracking.
+    term.write("x".repeat(200_000) + "\x1b[6n\x1b[?1003h\x1b[?1006h");
+
+    await act(async () => {
+      lifecycle.current.restartActiveSession();
+    });
+    await settle(term);
+
+    expect(ptys).toHaveLength(2);
+    expect(ptys[1].write).not.toHaveBeenCalled();
+    expect(term.modes.mouseTrackingMode).toBe("none");
   });
 });
 
@@ -241,7 +303,7 @@ describe("#1471 — a dead session stops reporting input for the program that di
     term.onData((d) => sent.push(d));
 
     act(() => exits[0](1));
-    await flushWrites(term);
+    await settle(term);
 
     // "Press any key" listens to onData, so a pointer move or a focus change
     // must not produce any — or it restarts and wipes the message. Turning the
@@ -253,5 +315,24 @@ describe("#1471 — a dead session stops reporting input for the program that di
     expect(text).toContain("codex output");
     expect(text).toContain("[Process exited with code 1]");
     expect(text).toContain("Press any key to restart…");
+  });
+
+  it("a query the program died in the middle of is abandoned, not answered — no respawn without a key", async () => {
+    const { term, sessionsRef, lifecycle, exits, entry } = await setup();
+    wireSessionInput({
+      sessionId: SESSION,
+      getEntry: (id) => sessionsRef.current.get(id),
+      startShell: (id) => void lifecycle.current.startShell(id),
+    });
+    // An unterminated DECRQSS: an ESC would complete it and xterm would reply
+    // through onData, which the dead session takes for "any key".
+    await writeParsed(term, "\x1bP$q");
+
+    act(() => exits[0](1));
+    await settle(term);
+
+    expect(vi.mocked(spawnPty)).toHaveBeenCalledTimes(1);
+    expect(entry.shellExited).toBe(true);
+    expect(bufferText(term)).toContain("[Process exited with code 1]");
   });
 });

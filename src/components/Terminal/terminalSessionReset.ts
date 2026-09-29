@@ -15,7 +15,13 @@
  *     queue: output the old PTY had already queued is parsed BEFORE it (a
  *     synchronous reset() ran first and that output re-armed mouse tracking),
  *     and RIS also resets the parser (reset() left it mid-sequence when the
- *     program died inside one, eating the next character).
+ *     program died inside one, eating the next character). The returned
+ *     promise settles once it is parsed; the caller attaches the new PTY only
+ *     then, because until that moment the dead program's modes still turn
+ *     pointer motion — and xterm's replies to its queued queries — into input.
+ *   - Both boundary writes start with CAN, which ABANDONS a sequence the
+ *     program died inside. The ESC that follows would otherwise complete it,
+ *     and xterm answers a completed query (DECRQSS) through onData.
  *   - RIS in xterm.js 6 misses state kept outside the modes it resets, so the
  *     sequence adds exactly those, each verified against xterm's own reports
  *     in terminalSessionReset.test.ts:
@@ -38,6 +44,8 @@
  */
 import type { Terminal } from "@xterm/xterm";
 
+/** CAN — abandon any unfinished escape sequence without dispatching it. */
+const CANCEL_UNFINISHED_SEQUENCE = "\x18";
 /** RIS — Reset to Initial State. */
 const RESET_TO_INITIAL_STATE = "\x1bc";
 /** DECTCEM set: RIS leaves a hidden cursor hidden in xterm.js. */
@@ -66,21 +74,25 @@ export interface NewSessionResetOptions {
 
 /**
  * Return `term` to the state a freshly created terminal is in, ordered after
- * everything already written to it, then show `statusLine`. Call before a new
- * PTY is attached. Clears the screen and scrollback.
+ * everything already written to it, then show `statusLine`. Clears the screen
+ * and scrollback. Settles once xterm has parsed it — attach the new PTY then.
  */
 export function resetTerminalForNewSession(
   term: Pick<Terminal, "write">,
   { cursorBlink, statusLine = "" }: NewSessionResetOptions,
-): void {
-  term.write(
-    RESET_TO_INITIAL_STATE +
-      SHOW_CURSOR +
-      NEWLINE_MODE_OFF +
-      cursorBlinkMode(cursorBlink) +
-      RESTORE_THEME_COLORS +
-      statusLine,
-  );
+): Promise<void> {
+  return new Promise((parsed) => {
+    term.write(
+      CANCEL_UNFINISHED_SEQUENCE +
+        RESET_TO_INITIAL_STATE +
+        SHOW_CURSOR +
+        NEWLINE_MODE_OFF +
+        cursorBlinkMode(cursorBlink) +
+        RESTORE_THEME_COLORS +
+        statusLine,
+      parsed,
+    );
+  });
 }
 
 /**
@@ -89,5 +101,5 @@ export function resetTerminalForNewSession(
  * mode alone.
  */
 export function stopUnsolicitedInput(term: Pick<Terminal, "write">): void {
-  term.write(STOP_POINTER_AND_FOCUS_REPORTS);
+  term.write(CANCEL_UNFINISHED_SEQUENCE + STOP_POINTER_AND_FOCUS_REPORTS);
 }

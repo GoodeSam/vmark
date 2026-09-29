@@ -26,13 +26,11 @@
  *     appeared did nothing at all.
  *   - An explicit "Open Terminal Here" cwd outranks sibling inheritance and is
  *     released only once a spawn using it succeeds.
- *   - Every spawn attaches to a PRISTINE terminal (#1471). startShell is the
- *     one path all of them take — first spawn, restart, press-any-key respawn
- *     after an exit or a failed spawn — so it, not its callers, resets the
- *     terminal and drops the dead program's tab title. A killed TUI otherwise
- *     left mouse tracking on and the next shell echoed its reports as text.
- *   - A non-zero exit keeps the buffer but stops pointer/focus reporting, so
- *     only a real key press restarts the shell.
+ *   - Every PTY attaches to a PRISTINE terminal (#1471). startShell is the one
+ *     path all spawns take (first, restart, press-any-key respawn), so it —
+ *     not its callers — resets the terminal, waits until xterm has parsed the
+ *     reset, and drops the dead program's tab title. A non-zero exit keeps the
+ *     buffer but stops pointer/focus reporting: only a real key restarts.
  *
  * @coordinates-with useTerminalSessions.ts — sole caller
  * @coordinates-with spawnPty.ts — shell process creation
@@ -81,11 +79,8 @@ function closeSessionOnCleanExit(sessionId: string): void {
   removeTerminalSessionWithPanelPolicy(sessionId);
 }
 
-/**
- * Non-zero exit: keep the buffer readable and offer respawn on any key. The
- * dead program's pointer/focus reporting goes first — "any key" listens to
- * onData, and a mouse move must not count as one.
- */
+/** Non-zero exit: keep the buffer readable and offer respawn on any key —
+ *  after stopping pointer/focus reports, or a mouse move would count as one. */
 function promptRestartOnErrorExit(
   entry: SessionEntry,
   sessionId: string,
@@ -97,25 +92,23 @@ function promptRestartOnErrorExit(
   useUIStore.getState().terminalMarkSessionDead(sessionId);
 }
 
-/**
- * Give the session a pristine terminal before a new PTY attaches (#1471):
- * modes, screen and tab title all belong to a process that is gone. The
- * cursor-blink setting is read here because xterm stores a program's `?12`
- * in that option, beyond what a terminal reset restores.
- */
-function resetForNewSession(entry: SessionEntry, sessionId: string, statusLine: string): void {
+/** Reset the terminal for a new PTY (#1471); settles once xterm parsed it. The
+ *  blink setting is passed in because xterm keeps a program's `?12` in it. */
+function resetForNewSession(entry: SessionEntry, statusLine: string): Promise<void> {
   const { cursorBlink } = { ...initialState.terminal, ...useSettingsStore.getState().terminal };
-  resetTerminalForNewSession(entry.instance.term, { cursorBlink, statusLine });
+  return resetTerminalForNewSession(entry.instance.term, { cursorBlink, statusLine });
+}
+
+/** The OSC 0/2 tab title belonged to the dead program: fall back to the label. */
+function dropProgramTitle(sessionId: string): void {
   const ui = useUIStore.getState();
-  if (ui.terminal.sessions.find((s) => s.id === sessionId)?.programTitle) {
-    ui.terminalSetProgramTitle(sessionId, "");
-  }
+  const hasTitle = ui.terminal.sessions.some((s) => s.id === sessionId && s.programTitle);
+  if (hasTitle) ui.terminalSetProgramTitle(sessionId, "");
 }
 
 export interface TerminalShellLifecycle {
-  /** Spawn the shell for a session entry on a freshly reset terminal, then
-   *  show `statusLine` (if any) until the shell draws. Guarded against
-   *  re-entrance. */
+  /** Spawn the shell for a session on a freshly reset terminal, showing
+   *  `statusLine` (if any) until the shell draws. Guarded against re-entrance. */
   startShell: (sessionId: string, statusLine?: string) => Promise<void>;
   /** Kill the active session's PTY and respawn it on a reset terminal. */
   restartActiveSession: () => void;
@@ -134,11 +127,11 @@ export function useTerminalShellLifecycle(
       entry.shellSpawning = true;
 
       entry.shellExited = false;
-      resetForNewSession(entry, sessionId, statusLine);
       // Spawn generation: bumped on every (re)spawn. A killed PTY's onExit
       // fires asynchronously and could otherwise mark a freshly-restarted
       // session dead — the guard below ignores exits from a superseded gen.
       const gen = ++entry.spawnGen;
+      const resetParsed = resetForNewSession(entry, statusLine);
       // WI-4.2: an EXPLICIT request ("Open Terminal Here") outranks
       // everything else. PEEKED, not consumed: it is cleared only once the
       // spawn succeeds, so a failed first spawn can still be retried in the
@@ -167,6 +160,14 @@ export function useTerminalShellLifecycle(
       // against `cwd` conflated the two and immediately cd'd a sibling-
       // inheriting terminal back to the root, undoing WI-2.2 (Codex audit).
       const rootBeforeSpawn = resolveTerminalWorkspaceRoot();
+
+      // Spawn only once the reset is parsed: until then the dead program's
+      // modes still turn pointer motion and query replies into input. Stand
+      // down if a restart or a removal overtook this attempt meanwhile.
+      await resetParsed;
+      const live = sessionsRef.current.get(sessionId);
+      if (!live || live.disposed || live.spawnGen !== gen) return;
+      dropProgramTitle(sessionId);
 
       try {
         const pty = await spawnPty({

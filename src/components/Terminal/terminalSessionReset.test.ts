@@ -52,8 +52,7 @@ describe("resetTerminalForNewSession", () => {
     await writeParsed(term, sequence);
     expect(await queryState(term)).not.toEqual(await pristineState(productionOptions(true)));
 
-    resetTerminalForNewSession(term, { cursorBlink: true });
-    await flushWrites(term);
+    await resetTerminalForNewSession(term, { cursorBlink: true });
 
     expect(await queryState(term)).toEqual(await pristineState(productionOptions(true)));
   });
@@ -62,8 +61,7 @@ describe("resetTerminalForNewSession", () => {
     const term = productionTerminal(cursorBlink);
     await writeParsed(term, cursorBlink ? "\x1b[?12l" : "\x1b[?12h");
 
-    resetTerminalForNewSession(term, { cursorBlink });
-    await flushWrites(term);
+    await resetTerminalForNewSession(term, { cursorBlink });
 
     expect(term.options.cursorBlink).toBe(cursorBlink);
     expect(await queryState(term)).toEqual(await pristineState(productionOptions(cursorBlink)));
@@ -73,8 +71,7 @@ describe("resetTerminalForNewSession", () => {
     const term = productionTerminal();
     await writeParsed(term, "old prompt $ codex\r\n" + TUI_LEFTOVERS + "TUI frame");
 
-    resetTerminalForNewSession(term, { cursorBlink: true });
-    await flushWrites(term);
+    await resetTerminalForNewSession(term, { cursorBlink: true });
 
     expect(term.buffer.active.type).toBe("normal");
     expect(bufferText(term).trim()).toBe("");
@@ -84,8 +81,7 @@ describe("resetTerminalForNewSession", () => {
     const term = productionTerminal();
     await writeParsed(term, TUI_LEFTOVERS);
 
-    resetTerminalForNewSession(term, { cursorBlink: true, statusLine: "Restarting shell…" });
-    await flushWrites(term);
+    await resetTerminalForNewSession(term, { cursorBlink: true, statusLine: "Restarting shell…" });
 
     expect(bufferText(term).trim()).toBe("Restarting shell…");
     // …and the line is plain text: the leftover SGR did not paint it.
@@ -102,10 +98,39 @@ describe("resetTerminalForNewSession", () => {
     const term = productionTerminal();
     await writeParsed(term, fragment);
 
-    resetTerminalForNewSession(term, { cursorBlink: true, statusLine: "Restarting shell…" });
-    await flushWrites(term);
+    await resetTerminalForNewSession(term, { cursorBlink: true, statusLine: "Restarting shell…" });
 
     expect(bufferText(term).trim()).toBe("Restarting shell…");
+  });
+
+  it("resolves only once xterm has parsed the reset, backlog included", async () => {
+    const term = productionTerminal();
+    term.write("x".repeat(200_000) + "\x1b[?1003h\x1b[?1006h");
+
+    await resetTerminalForNewSession(term, { cursorBlink: true, statusLine: "ready" });
+
+    // No extra flush: the caller attaches the new PTY right after this. The
+    // status line proves the reset was parsed (an unparsed backlog would also
+    // read "none", so the mode alone could not tell).
+    expect(bufferText(term).trim()).toBe("ready");
+    expect(term.modes.mouseTrackingMode).toBe("none");
+  });
+
+  it.each([
+    ["a DECRQSS query", "\x1bP$q", undefined],
+    ["a title", "\x1b]2;half a title", "half a title"],
+  ])("abandons %s the program left unterminated instead of completing it", async (_label, fragment, title) => {
+    const term = productionTerminal();
+    await writeParsed(term, fragment);
+    const sent: string[] = [];
+    const titles: string[] = [];
+    term.onData((d) => sent.push(d));
+    term.onTitleChange((t) => titles.push(t));
+
+    await resetTerminalForNewSession(term, { cursorBlink: true });
+
+    expect(sent).toEqual([]);
+    if (title) expect(titles).not.toContain(title);
   });
 
   it("is ordered after output the old PTY had already queued", async () => {
@@ -114,8 +139,7 @@ describe("resetTerminalForNewSession", () => {
     // queued when the reset is requested — the restart-click race.
     term.write("x".repeat(200_000) + "\x1b[?1003h\x1b[?1006h\x1b[?25l");
 
-    resetTerminalForNewSession(term, { cursorBlink: true });
-    await flushWrites(term);
+    await resetTerminalForNewSession(term, { cursorBlink: true });
 
     expect(term.modes.mouseTrackingMode).toBe("none");
     expect(await queryState(term)).toEqual(await pristineState(productionOptions(true)));
@@ -127,8 +151,7 @@ describe("resetTerminalForNewSession", () => {
     const sent: string[] = [];
     term.onData((d) => sent.push(d));
 
-    resetTerminalForNewSession(term, { cursorBlink: true, statusLine: "x" });
-    await flushWrites(term);
+    await resetTerminalForNewSession(term, { cursorBlink: true, statusLine: "x" });
 
     expect(sent).toEqual([]);
   });
@@ -136,9 +159,8 @@ describe("resetTerminalForNewSession", () => {
   it("is idempotent on a terminal that is already pristine", async () => {
     const term = productionTerminal();
 
-    resetTerminalForNewSession(term, { cursorBlink: true });
-    resetTerminalForNewSession(term, { cursorBlink: true });
-    await flushWrites(term);
+    await resetTerminalForNewSession(term, { cursorBlink: true });
+    await resetTerminalForNewSession(term, { cursorBlink: true });
 
     expect(await queryState(term)).toEqual(await pristineState(productionOptions(true)));
   });
@@ -175,6 +197,24 @@ describe("stopUnsolicitedInput", () => {
 
     expect(term.modes.sendFocusMode).toBe(false);
     expect(sent).toEqual([]);
+  });
+
+  it.each([
+    ["a DECRQSS query", "\x1bP$q"],
+    ["a title", "\x1b]2;half a title"],
+  ])("abandons %s the program died inside, sending nothing", async (_label, fragment) => {
+    // A reply here would reach onData — "press any key" — and respawn the
+    // shell with no key pressed.
+    const term = productionTerminal();
+    await writeParsed(term, fragment);
+    const sent: string[] = [];
+    term.onData((d) => sent.push(d));
+
+    stopUnsolicitedInput(term);
+    await writeParsed(term, "[Process exited with code 1]");
+
+    expect(sent).toEqual([]);
+    expect(bufferText(term)).toContain("[Process exited with code 1]");
   });
 
   it("keeps the dead session's output on screen", async () => {
