@@ -184,6 +184,7 @@ describe("#1471 — a restarted session does not inherit the killed program's te
     });
     await writeParsed(term, TUI_LEFTOVERS);
     act(() => exits[0](1));
+    await settle(term); // "any key" is armed once the exit lines are parsed
 
     await act(async () => {
       term.input("x"); // the "any key"
@@ -315,6 +316,25 @@ describe("#1471 — a dead session stops reporting input for the program that di
     expect(text).toContain("codex output");
     expect(text).toContain("[Process exited with code 1]");
     expect(text).toContain("Press any key to restart…");
+  });
+
+  it("output the program queued before it died cannot count as the key", async () => {
+    const { term, sessionsRef, lifecycle, exits, entry } = await setup();
+    wireSessionInput({
+      sessionId: SESSION,
+      getEntry: (id) => sessionsRef.current.get(id),
+      startShell: (id) => void lifecycle.current.startShell(id),
+    });
+    // Still unparsed when the exit arrives: a cursor-position query, which
+    // xterm answers through onData — the channel "press any key" listens on.
+    term.write("x".repeat(200_000) + "\x1b[6n");
+
+    act(() => exits[0](1));
+    await settle(term);
+
+    expect(vi.mocked(spawnPty)).toHaveBeenCalledTimes(1);
+    expect(entry.shellExited).toBe(true); // armed — once everything was parsed
+    expect(bufferText(term)).toContain("Press any key to restart…");
   });
 
   it("a query the program died in the middle of is abandoned, not answered — no respawn without a key", async () => {

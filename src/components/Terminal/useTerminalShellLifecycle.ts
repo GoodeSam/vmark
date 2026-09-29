@@ -1,22 +1,17 @@
 /**
  * useTerminalShellLifecycle
  *
- * Purpose: Owns spawning, exit handling, and restart for terminal sessions.
+ * Purpose: Owns spawning and restart for terminal sessions, and routes each
+ * shell exit to terminalShellExit.
  * Extracted from useTerminalSessions so that hook focuses on registry +
  * visibility orchestration. Behavior preserved verbatim from the inline
  * implementation; user-facing status lines now route through i18n.
  *
  * Key decisions:
  *   - Re-entrance guard (shellSpawning) prevents concurrent spawns.
- *   - spawnGen ignores a stale PTY's onExit after a restart.
- *   - Clean exit (code 0) closes the tab — and hides the panel when it was
- *     the last session (#1103). Non-zero exits keep the buffer open with a
- *     "press any key to restart" prompt so the failure stays readable.
- *   - EVERY exit is logged at warn level, which reaches the Tauri log in
- *     production. A clean exit tears the whole panel down with nothing left on
- *     screen to explain it, so without this line "the terminal closed by
- *     itself" is indistinguishable from a crash — and the log had nothing to
- *     say about it when that was reported.
+ *   - spawnGen ignores a stale PTY's onExit after a restart. What a current
+ *     exit does (close on code 0, keep the buffer and prompt otherwise, log
+ *     every exit) lives in terminalShellExit.ts.
  *   - A new terminal inherits a live sibling's cwd (OSC 7), else falls back
  *     to workspace-or-file resolution.
  *   - Spawn failures mark the session dead and prompt "press any key".
@@ -29,11 +24,11 @@
  *   - Every PTY attaches to a PRISTINE terminal (#1471). startShell is the one
  *     path all spawns take (first, restart, press-any-key respawn), so it —
  *     not its callers — resets the terminal, waits until xterm has parsed the
- *     reset, and drops the dead program's tab title. A non-zero exit keeps the
- *     buffer but stops pointer/focus reporting: only a real key restarts.
+ *     reset, and drops the dead program's tab title.
  *
  * @coordinates-with useTerminalSessions.ts — sole caller
  * @coordinates-with spawnPty.ts — shell process creation
+ * @coordinates-with terminalShellExit.ts — what a shell exit does
  * @coordinates-with terminalSessionReset.ts — what a session boundary resets
  * @coordinates-with terminalMessages.ts — localized buffer status lines
  * @module components/Terminal/useTerminalShellLifecycle
@@ -43,54 +38,15 @@ import { useUIStore } from "@/stores/uiStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { initialState } from "@/stores/settingsStore/defaults";
 import { errorMessage } from "@/utils/errorMessage";
-import { terminalWarn } from "@/utils/debug";
 import { spawnPty, resolveTerminalWorkspaceRoot } from "./spawnPty";
 import { resolveTerminalSpawnContext } from "./resolveTerminalSpawnContext";
 import { buildCdCommand } from "./terminalSessionStoreSync";
 import { shouldFollowWorkspaceCd } from "@/services/terminal/terminalCdFollow";
-import { removeTerminalSessionWithPanelPolicy } from "@/services/terminal/closeTerminalSession";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
-import {
-  processExitedLine,
-  pressAnyKeyToRestartLine,
-  failedToStartLine,
-  pressAnyKeyToRetryLine,
-  restartingLine,
-} from "./terminalMessages";
-import { resetTerminalForNewSession, stopUnsolicitedInput } from "./terminalSessionReset";
+import { failedToStartLine, pressAnyKeyToRetryLine, restartingLine } from "./terminalMessages";
+import { resetTerminalForNewSession } from "./terminalSessionReset";
+import { handleShellExit } from "./terminalShellExit";
 import type { SessionEntry, SessionsRef } from "./terminalSessionTypes";
-
-/** Detach a dead PTY from its session entry so keystrokes can't reach it. */
-function detachExitedPty(entry: SessionEntry): void {
-  entry.pty = null;
-  entry.ptyRefForKeys.current = null;
-  entry.shellExited = true;
-}
-
-/**
- * Clean exit (Ctrl+D / `exit`, code 0): close the tab (#1103) via the ONE
- * remove+hide policy (audit 20260831 #32 — TerminalPanel's close button and
- * this path had drifted). The panel hides only when this was the last
- * VISIBLE session (WI-TS3.3/D-T7); a hidden scope's exiting shell still
- * closes its tab. Instance/registry teardown follows from the store removal
- * via useTerminalSessions' subscription (removeSessionEntry).
- */
-function closeSessionOnCleanExit(sessionId: string): void {
-  removeTerminalSessionWithPanelPolicy(sessionId);
-}
-
-/** Non-zero exit: keep the buffer readable and offer respawn on any key —
- *  after stopping pointer/focus reports, or a mouse move would count as one. */
-function promptRestartOnErrorExit(
-  entry: SessionEntry,
-  sessionId: string,
-  exitCode: number,
-): void {
-  stopUnsolicitedInput(entry.instance.term);
-  entry.instance.term.write(processExitedLine(exitCode));
-  entry.instance.term.write(pressAnyKeyToRestartLine());
-  useUIStore.getState().terminalMarkSessionDead(sessionId);
-}
 
 /** Reset the terminal for a new PTY (#1471); settles once xterm parsed it. The
  *  blink setting is passed in because xterm keeps a program's `?12` in it. */
@@ -181,18 +137,7 @@ export function useTerminalShellLifecycle(
             const e = sessionsRef.current.get(sessionId);
             // Ignore a stale exit from a PTY superseded by a restart.
             if (!e || e.disposed || e.spawnGen !== gen) return;
-            detachExitedPty(e);
-            // A clean exit tears the panel down with nothing on screen to
-            // explain it, so this line is the only evidence that the terminal
-            // "closed by itself" was a shell exit and not a crash. Warn level
-            // because createWarnLogger forwards to the Tauri log in production,
-            // where the user is actually looking.
-            terminalWarn(`session ${sessionId} exited`, { sessionId, exitCode });
-            if (exitCode === 0) {
-              closeSessionOnCleanExit(sessionId);
-            } else {
-              promptRestartOnErrorExit(e, sessionId, exitCode);
-            }
+            handleShellExit(e, sessionId, exitCode);
           },
           disposed: () => {
             const e = sessionsRef.current.get(sessionId);
