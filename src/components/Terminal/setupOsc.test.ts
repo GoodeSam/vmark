@@ -2,16 +2,37 @@
 // WI-2.1 — OSC 7 cwd parsing + handler registration
 // WI-3.2 — OSC 133 command-boundary tracking
 import { describe, it, expect, vi } from "vitest";
+import { setFlagsFromString } from "node:v8";
+import { runInNewContext } from "node:vm";
 import { parseOsc7Cwd, setupOsc7, setupOsc133, scrollToAdjacentCommand } from "./setupOsc";
 import type { CommandMark } from "./setupOsc";
+import type { IMarker } from "@xterm/xterm";
 import { createRealTerminal, writeParsed } from "./realXterm.testUtils";
 
-/** CPU milliseconds `work` costs this process. */
+setFlagsFromString("--expose_gc");
+/** A full, synchronous garbage collection (V8's `gc`, exposed above). */
+const collectGarbage = runInNewContext("gc") as () => void;
+
+/**
+ * This thread's CPU clock where the runtime has one (Node ≥ 23.9), else the
+ * process's — which also bills V8's background GC threads, the dominant noise
+ * when the measured work is a few milliseconds.
+ */
+const cpuClock: () => NodeJS.CpuUsage =
+  (process as NodeJS.Process & { threadCpuUsage?: () => NodeJS.CpuUsage }).threadCpuUsage?.bind(process) ??
+  (() => process.cpuUsage());
+
+/**
+ * CPU milliseconds `work` costs. Garbage left by the SETUP is collected first,
+ * so a collection it triggers is not billed to `work`; what `work` itself
+ * allocates still counts.
+ */
 async function cpuMs(work: () => Promise<void>): Promise<number> {
-  const start = process.cpuUsage();
+  collectGarbage();
+  const start = cpuClock();
   await work();
-  const used = process.cpuUsage(start);
-  return (used.user + used.system) / 1000;
+  const end = cpuClock();
+  return (end.user - start.user + end.system - start.system) / 1000;
 }
 
 /**
@@ -25,9 +46,11 @@ async function growthExponent(costAt: (n: number) => Promise<number>, small: num
   await costAt(small); // warm-up: JIT
   let bestSmall = Number.POSITIVE_INFINITY;
   let bestLarge = Number.POSITIVE_INFINITY;
-  for (let round = 0; round < 3; round += 1) {
+  // Five interleaved rounds, minimum kept — htmlScaling.test.ts's `measure`.
+  for (let round = 0; round < 5; round += 1) {
     bestSmall = Math.min(bestSmall, await costAt(small));
     bestLarge = Math.min(bestLarge, await costAt(large));
+    bestSmall = Math.min(bestSmall, await costAt(small));
   }
   const exponent = Math.log(bestLarge / Math.max(bestSmall, 1)) / Math.log(large / small);
   return { exponent, small: bestSmall, large: bestLarge };
@@ -337,29 +360,39 @@ describe("setupOsc133 — full reset (RIS) invalidates command marks", () => {
     expect(osc.getCommands()[0].marker.line).toBe(0);
   });
 
-  it("drops N marks without per-mark work — a program's RIS must not be able to freeze the UI", async () => {
+  it("drops its marks on RIS without disposing them one by one — a program's reset must not freeze the UI", async () => {
     // Against REAL xterm markers: disposing them one by one splices xterm's
-    // own marker array each time, quadratic in a count any program can
-    // inflate by printing OSC 133;A. The marks are dropped instead; the old
-    // buffer they belong to is discarded by the reset.
-    const growth = await growthExponent(async (count) => {
-      const term = createRealTerminal();
-      const osc = setupOsc133(term);
-      await writeParsed(term, PROMPT.repeat(count));
-      const cost = await cpuMs(() => writeParsed(term, "\x1bc"));
-      expect(osc.getCommands()).toHaveLength(0);
-      term.dispose();
-      return cost;
-    }, 5_000, 20_000);
-    expect(growth.exponent, `5k marks ${growth.small.toFixed(1)}ms, 20k ${growth.large.toFixed(1)}ms`).toBeLessThan(1.35);
+    // own marker array each time — 1.6 s at 20k marks, quadratic in a count
+    // any program can inflate by printing OSC 133;A. The marks are dropped
+    // instead (the buffer they belong to is discarded by the reset). Asserted
+    // directly rather than timed: the dropped path is too cheap to time
+    // reliably, and the property IS "no per-mark dispose".
+    const term = createRealTerminal();
+    const markers: IMarker[] = [];
+    const registerMarker = term.registerMarker.bind(term);
+    term.registerMarker = (offset?: number) => {
+      const marker = registerMarker(offset);
+      if (marker) markers.push(marker);
+      return marker;
+    };
+    const osc = setupOsc133(term);
+    await writeParsed(term, PROMPT.repeat(5_000));
+
+    await writeParsed(term, "\x1bc");
+
+    expect(osc.getCommands()).toHaveLength(0);
+    expect(markers).toHaveLength(5_000);
+    expect(markers.filter((marker) => marker.isDisposed)).toHaveLength(0);
+    term.dispose();
   });
 
   it("a bulk disposal of marks (clear, a restart) costs linear time in OUR bookkeeping", async () => {
     // Filtering the mark list once per disposed marker made our share of a
     // bulk disposal quadratic. Isolated from xterm on purpose: xterm's own
     // clear() is itself superlinear in its marker count (measured 7→84→309 ms
-    // for 5k/20k/40k plain markers in 6.0.0) — the same cost Cmd+K and the
-    // pre-#1471 restart paid, reachable only by the user, not by output.
+    // for 5k/20k/40k plain markers in 6.0.0). Only a user action runs it
+    // (Cmd+K, a restart — main's restart ran it too), though output decides
+    // how many markers it meets; that part is upstream's to fix.
     const growth = await growthExponent(async (count) => {
       const disposers: Array<() => void> = [];
       let osc: ((data: string) => boolean) | undefined;
@@ -378,7 +411,43 @@ describe("setupOsc133 — full reset (RIS) invalidates command marks", () => {
       });
       return cost;
     }, 20_000, 80_000); // big enough that the small sample is well above timer resolution
-    expect(growth.exponent, `20k marks ${growth.small.toFixed(1)}ms, 80k ${growth.large.toFixed(1)}ms`).toBeLessThan(1.35);
+    // 1.75, not the 1.35 htmlScaling uses: this path is linear but a V8 hash
+    // table's shrink-on-delete and memory effects bend it — measured 1.15–1.3
+    // in isolation (per-thread CPU, minimum of 7) and up to 1.61 in a loaded
+    // full-file run. Quadratic is 2; the per-dispose filter it replaced
+    // measured 2.23, so the bound still separates the two.
+    expect(growth.exponent, `20k marks ${growth.small.toFixed(1)}ms, 80k ${growth.large.toFixed(1)}ms`).toBeLessThan(1.75);
+  });
+
+  it("lets go of a scrolled-out mark as its marker dies, even if nobody reads the list", async () => {
+    // A program can print prompts forever; marks whose line left the
+    // scrollback must not accumulate until the next getCommands(). Observed
+    // through the garbage collector — reading the list would compact it.
+    const term = createRealTerminal({ rows: 5, scrollback: 10 });
+    const markers: Array<WeakRef<object>> = [];
+    const registerMarker = term.registerMarker.bind(term);
+    term.registerMarker = (offset?: number) => {
+      const marker = registerMarker(offset);
+      if (marker) markers.push(new WeakRef(marker));
+      return marker;
+    };
+    setupOsc133(term);
+    await writeParsed(term, `${PROMPT}$ \r\n`.repeat(200));
+    await new Promise((resolve) => setTimeout(resolve, 0)); // WeakRefs clear only after the job
+
+    collectGarbage();
+
+    const alive = markers
+      .slice(0, 150)
+      .map((ref) => ref.deref() as { isDisposed?: boolean } | undefined)
+      .filter((marker) => marker !== undefined);
+    // Every survivor died first — so onDispose ran and the mark left our list
+    // — and there are only a handful: xterm/V8 keep a few disposed markers
+    // alive on their own (up to 4, the same ones run after run). Keeping
+    // scrolled-out marks ourselves kept all 150.
+    expect(alive.every((marker) => marker.isDisposed === true)).toBe(true);
+    expect(alive.length).toBeLessThan(8);
+    term.dispose();
   });
 
   it("leaves a command that was running busy until the next prompt, so deferred idle work still flushes", async () => {

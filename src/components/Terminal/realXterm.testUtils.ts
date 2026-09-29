@@ -11,13 +11,15 @@
  * program could use — never through xterm internals.
  */
 import { vi } from "vitest";
-import type { ITerminalOptions, Terminal } from "@xterm/xterm";
+import type { ITerminalInitOnlyOptions, ITerminalOptions, Terminal } from "@xterm/xterm";
 
 const { Terminal: RealTerminal } =
   await vi.importActual<typeof import("@xterm/xterm")>("@xterm/xterm");
 
 /** A real, unopened xterm with production-like options. */
-export function createRealTerminal(options: ITerminalOptions = {}): Terminal {
+export function createRealTerminal(
+  options: ITerminalOptions & ITerminalInitOnlyOptions = {},
+): Terminal {
   return new RealTerminal({ cols: 80, rows: 24, allowProposedApi: true, ...options });
 }
 

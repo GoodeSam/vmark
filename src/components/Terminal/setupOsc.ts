@@ -22,8 +22,9 @@
  *     down when the term is disposed — no explicit cleanup needed.
  *   - OSC 133 marks die with the buffer: a full reset (RIS) drops them, since
  *     xterm rebuilds its buffers on RIS but leaves their markers alive (#1471).
- *     Every mark-list update is O(1) per mark (lazy compaction), so neither a
- *     reset nor a bulk marker disposal is quadratic in the mark count.
+ *     Marks live in a Set: each update is O(1), so neither a reset nor a bulk
+ *     marker disposal is quadratic in the mark count, and a scrolled-out mark
+ *     is released as soon as its marker dies.
  *
  * @coordinates-with createTerminalInstance.ts — sole caller; exposes getCwd()
  * @coordinates-with terminalSessionReset.ts — every new PTY session starts with RIS
@@ -100,11 +101,11 @@ export interface Osc133Handle {
  * `D;<code>` we record the exit code of the command being closed.
  */
 export function setupOsc133(term: Terminal): Osc133Handle {
-  let commands: CommandMark[] = [];
-  // Marks whose marker died since `commands` was last compacted. Removal is
-  // deferred to getCommands(): filtering once per disposal made a bulk
-  // disposal (clear, a session restart) quadratic in the number of marks.
-  const disposedMarks = new Set<CommandMark>();
+  // Live marks in buffer order. A Set, so a mark leaves in O(1) the moment its
+  // marker dies: filtering an array per disposal made a bulk disposal (clear,
+  // a session restart) quadratic, and deferring the removal kept every
+  // scrolled-out mark alive for as long as nobody read the list.
+  const commands = new Set<CommandMark>();
   let current: CommandMark | null = null;
   let running = false;
   let onIdle: (() => void) | null = null;
@@ -126,11 +127,11 @@ export function setupOsc133(term: Terminal): Osc133Handle {
       const marker = term.registerMarker(0);
       if (marker) {
         const mark: CommandMark = { marker };
-        commands.push(mark);
+        commands.add(mark);
         current = mark;
-        // Self-remove when the line scrolls out of the buffer (compacted lazily).
+        // Self-remove when the line scrolls out of the buffer.
         marker.onDispose(() => {
-          disposedMarks.add(mark);
+          commands.delete(mark);
           if (current === mark) current = null;
         });
       }
@@ -164,20 +165,13 @@ export function setupOsc133(term: Terminal): Osc133Handle {
   // performs the reset. `running` is deliberately kept: the next prompt is
   // what flushes idle work deferred while a command ran.
   term.parser.registerEscHandler({ final: "c" }, () => {
-    commands = [];
-    disposedMarks.clear();
+    commands.clear();
     current = null;
     return false;
   });
 
   return {
-    getCommands: () => {
-      if (disposedMarks.size > 0) {
-        commands = commands.filter((mark) => !disposedMarks.has(mark));
-        disposedMarks.clear();
-      }
-      return commands;
-    },
+    getCommands: () => [...commands],
     isRunning: () => running,
     setOnIdle: (cb) => {
       onIdle = cb;
