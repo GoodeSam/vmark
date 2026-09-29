@@ -2,36 +2,27 @@
 // WI-2.1 — OSC 7 cwd parsing + handler registration
 // WI-3.2 — OSC 133 command-boundary tracking
 import { describe, it, expect, vi } from "vitest";
-import { setFlagsFromString } from "node:v8";
-import { runInNewContext } from "node:vm";
+import { queryObjects } from "node:v8";
 import { parseOsc7Cwd, setupOsc7, setupOsc133, scrollToAdjacentCommand } from "./setupOsc";
 import type { CommandMark } from "./setupOsc";
 import type { IMarker } from "@xterm/xterm";
 import { createRealTerminal, writeParsed } from "./realXterm.testUtils";
 
-setFlagsFromString("--expose_gc");
-/** A full, synchronous garbage collection (V8's `gc`, exposed above). */
-const collectGarbage = runInNewContext("gc") as () => void;
-
 /**
- * This thread's CPU clock where the runtime has one (Node ≥ 23.9), else the
- * process's — which also bills V8's background GC threads, the dominant noise
- * when the measured work is a few milliseconds.
+ * CPU milliseconds `work` costs on this thread's own clock
+ * (`process.threadCpuUsage`, Node ≥ 22.19; the process clock before that).
+ * No garbage collection first: a forced full collection bills its sweeping to
+ * the samples that follow — under load it raised Node 22's median small and
+ * large samples from 1.52 and 7.52 ms to 2.62 and 11.93 ms, lowering the
+ * exponent by adding cost rather than measuring the bookkeeping better. Kept
+ * minimal on purpose — the shared `cpuMs` in src/test/cpuClock.ts replaces it
+ * once that module is on main.
  */
-const cpuClock: () => NodeJS.CpuUsage =
-  (process as NodeJS.Process & { threadCpuUsage?: () => NodeJS.CpuUsage }).threadCpuUsage?.bind(process) ??
-  (() => process.cpuUsage());
-
-/**
- * CPU milliseconds `work` costs. Garbage left by the SETUP is collected first,
- * so a collection it triggers is not billed to `work`; what `work` itself
- * allocates still counts.
- */
-async function cpuMs(work: () => Promise<void>): Promise<number> {
-  collectGarbage();
-  const start = cpuClock();
-  await work();
-  const end = cpuClock();
+function cpuMs(work: () => void): number {
+  const clock = process.threadCpuUsage?.bind(process) ?? (() => process.cpuUsage());
+  const start = clock();
+  work();
+  const end = clock();
   return (end.user - start.user + end.system - start.system) / 1000;
 }
 
@@ -42,18 +33,29 @@ async function cpuMs(work: () => Promise<void>): Promise<number> {
  * cannot turn cost ∝ n into cost ∝ n². Minimum of interleaved runs after a
  * warm-up; the small sample is floored at 1 ms against timer resolution.
  */
-async function growthExponent(costAt: (n: number) => Promise<number>, small: number, large: number) {
-  await costAt(small); // warm-up: JIT
+function growthExponent(costAt: (n: number) => number, small: number, large: number) {
+  costAt(small); // warm-up: JIT
   let bestSmall = Number.POSITIVE_INFINITY;
   let bestLarge = Number.POSITIVE_INFINITY;
   // Five interleaved rounds, minimum kept — htmlScaling.test.ts's `measure`.
   for (let round = 0; round < 5; round += 1) {
-    bestSmall = Math.min(bestSmall, await costAt(small));
-    bestLarge = Math.min(bestLarge, await costAt(large));
-    bestSmall = Math.min(bestSmall, await costAt(small));
+    bestSmall = Math.min(bestSmall, costAt(small));
+    bestLarge = Math.min(bestLarge, costAt(large));
+    bestSmall = Math.min(bestSmall, costAt(small));
   }
   const exponent = Math.log(bestLarge / Math.max(bestSmall, 1)) / Math.log(large / small);
   return { exponent, small: bestSmall, large: bestLarge };
+}
+
+/**
+ * A full garbage collection WITHOUT `--expose-gc`, whose runtime toggle races
+ * between vitest's worker threads: `v8.queryObjects` collects before it counts
+ * (it exists for memory-leak regression tests). Prints one ExperimentalWarning
+ * per worker thread that calls it.
+ */
+class GcProbe {}
+function collectGarbage(): void {
+  queryObjects(GcProbe, { format: "count" });
 }
 
 describe("parseOsc7Cwd", () => {
@@ -386,14 +388,14 @@ describe("setupOsc133 — full reset (RIS) invalidates command marks", () => {
     term.dispose();
   });
 
-  it("a bulk disposal of marks (clear, a restart) costs linear time in OUR bookkeeping", async () => {
+  it("a bulk disposal of marks (clear, a restart) costs linear time in OUR bookkeeping", () => {
     // Filtering the mark list once per disposed marker made our share of a
     // bulk disposal quadratic. Isolated from xterm on purpose: xterm's own
     // clear() is itself superlinear in its marker count (measured 7→84→309 ms
     // for 5k/20k/40k plain markers in 6.0.0). Only a user action runs it
     // (Cmd+K, a restart — main's restart ran it too), though output decides
     // how many markers it meets; that part is upstream's to fix.
-    const growth = await growthExponent(async (count) => {
+    const growth = growthExponent((count) => {
       const disposers: Array<() => void> = [];
       let osc: ((data: string) => boolean) | undefined;
       const term = {
@@ -405,24 +407,24 @@ describe("setupOsc133 — full reset (RIS) invalidates command marks", () => {
       } as unknown as import("@xterm/xterm").Terminal;
       const handle = setupOsc133(term);
       for (let i = 0; i < count; i += 1) osc?.("A");
-      const cost = await cpuMs(async () => {
+      return cpuMs(() => {
         for (const fire of disposers) fire(); // what clearAllMarkers does
         expect(handle.getCommands()).toHaveLength(0);
       });
-      return cost;
     }, 20_000, 80_000); // big enough that the small sample is well above timer resolution
     // 1.75, not the 1.35 htmlScaling uses: this path is linear but a V8 hash
-    // table's shrink-on-delete and memory effects bend it — measured 1.15–1.3
-    // in isolation (per-thread CPU, minimum of 7) and up to 1.61 in a loaded
-    // full-file run. Quadratic is 2; the per-dispose filter it replaced
-    // measured 2.23, so the bound still separates the two.
+    // table's shrink-on-delete and memory effects bend it. On this thread
+    // clock, at load ~40 on Node 24 and 22: this file in full, 180 readings,
+    // max 1.41; the measurement alone, 1,000 readings, max 1.68. Quadratic is
+    // 2; the per-dispose filter it replaced measured 2.18–2.22.
     expect(growth.exponent, `20k marks ${growth.small.toFixed(1)}ms, 80k ${growth.large.toFixed(1)}ms`).toBeLessThan(1.75);
   });
 
   it("lets go of a scrolled-out mark as its marker dies, even if nobody reads the list", async () => {
     // A program can print prompts forever; marks whose line left the
     // scrollback must not accumulate until the next getCommands(). Observed
-    // through the garbage collector — reading the list would compact it.
+    // through the garbage collector — reading the list would compact it —
+    // each marker tracked by a WeakRef, so no other test's objects count.
     const term = createRealTerminal({ rows: 5, scrollback: 10 });
     const markers: Array<WeakRef<object>> = [];
     const registerMarker = term.registerMarker.bind(term);
