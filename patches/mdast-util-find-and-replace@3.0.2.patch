@@ -1,19 +1,23 @@
 diff --git a/lib/index.js b/lib/index.js
-index af84ba60dd09bee196f7271555bd5ea70e870cf6..0b491c6b84e9bd2fb4eefadef7c61e9075d0a7da 100644
+index af84ba60dd09bee196f7271555bd5ea70e870cf6..6682af3afc3e750cb054d7fbdfe072bfe2d4bc42 100644
 --- a/lib/index.js
 +++ b/lib/index.js
-@@ -78,6 +78,10 @@ import {convert} from 'unist-util-is'
+@@ -77,7 +77,13 @@ import {convert} from 'unist-util-is'
+  */
  export function findAndReplace(tree, list, options) {
    const settings = options || {}
-   const ignored = convert(settings.ignore || [])
-+  // VMark patch (#1473): see `readsIndex` and `indexIn` below.
-+  const ancestorIndexNeeded = readsIndex(settings.ignore)
+-  const ignored = convert(settings.ignore || [])
++  // VMark patch (#1473): read the test once, so `convert` and `readsIndex`
++  // judge the same one; see `readsIndex` and `indexIn` below.
++  const ignore = snapshotTest(settings.ignore)
++  const ignored = convert(ignore || [])
++  const ancestorIndexNeeded = readsIndex(ignore)
 +  /** @type {Positions} */
 +  const positions = new WeakMap()
    const pairs = toPairs(list)
    let pairIndex = -1
  
-@@ -99,7 +103,7 @@ export function findAndReplace(tree, list, options) {
+@@ -99,7 +105,7 @@ export function findAndReplace(tree, list, options) {
        if (
          ignored(
            parent,
@@ -22,7 +26,7 @@ index af84ba60dd09bee196f7271555bd5ea70e870cf6..0b491c6b84e9bd2fb4eefadef7c61e90
            grandparent
          )
        ) {
-@@ -131,7 +135,7 @@ export function findAndReplace(tree, list, options) {
+@@ -131,7 +137,7 @@ export function findAndReplace(tree, list, options) {
      let start = 0
      /** @type {Array<Nodes>} */
      const siblings = parent.children
@@ -31,7 +35,7 @@ index af84ba60dd09bee196f7271555bd5ea70e870cf6..0b491c6b84e9bd2fb4eefadef7c61e90
      let change = false
      /** @type {Array<PhrasingContent>} */
      let nodes = []
-@@ -191,6 +195,7 @@ export function findAndReplace(tree, list, options) {
+@@ -191,6 +197,7 @@ export function findAndReplace(tree, list, options) {
        }
  
        parent.children.splice(index, 1, ...nodes)
@@ -39,7 +43,7 @@ index af84ba60dd09bee196f7271555bd5ea70e870cf6..0b491c6b84e9bd2fb4eefadef7c61e90
      } else {
        nodes = [node]
      }
-@@ -199,6 +204,125 @@ export function findAndReplace(tree, list, options) {
+@@ -199,6 +206,145 @@ export function findAndReplace(tree, list, options) {
    }
  }
  
@@ -78,6 +82,26 @@ index af84ba60dd09bee196f7271555bd5ea70e870cf6..0b491c6b84e9bd2fb4eefadef7c61e90
 + * @property {number} hint
 + *   Where the last lookup or splice left off.
 + */
++
++/**
++ * The test with its arrays copied, each element read once: `convert` reads
++ * an array's elements once when it builds its check, and `readsIndex` must
++ * see the same elements.
++ *
++ * @param {Test | null | undefined} test
++ * @returns {Test | null | undefined}
++ */
++function snapshotTest(test) {
++  if (!Array.isArray(test)) return test
++  /** @type {Array<any>} */
++  const copy = []
++  let index = -1
++  while (++index < test.length) {
++    copy.push(snapshotTest(test[index]))
++  }
++
++  return copy
++}
 +
 +/**
 + * Whether an `ignore` test can observe the index it is given: only a test

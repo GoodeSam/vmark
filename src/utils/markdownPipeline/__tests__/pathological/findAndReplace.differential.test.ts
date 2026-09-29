@@ -177,8 +177,10 @@ const paragraph = (...children: Node[]): Node => ({ type: "paragraph", children 
 
 /**
  * Trees a parser never builds, where a node object is shared or returned
- * again: `indexOf` then answers with the FIRST occurrence, and the patch must
- * too. Each returns the tree after the call plus the `ignore` log.
+ * again (`indexOf` then answers with the FIRST occurrence, and the patch must
+ * too), and `ignore` tests in every form that can read the index: a function
+ * alone, inside flat, nested and mixed arrays, and behind a getter. Each
+ * returns the tree after the call plus the `ignore` log.
  */
 const CONSTRUCTED: Record<string, () => string> = {
   "same-paragraph-twice": () => {
@@ -201,6 +203,36 @@ const CONSTRUCTED: Record<string, () => string> = {
       [/b/g, () => [twice, twice]],
     ]);
   },
+  "replace-returns-a-later-text-sibling": () => {
+    const shared = text("a");
+    return constructedRun(
+      { type: "root", children: [paragraph(text("b"), { type: "break" }, text("c"), text("d"), shared)] },
+      [[/[ab]/g, (value: string) => (value === "b" ? shared : "A")]],
+    );
+  },
+  "ignore-array-holding-a-function": () =>
+    constructedRun(twoParagraphs(), [[/b/g, "B"]], firstParagraph, (test) => ["link", test]),
+  "ignore-nested-array-holding-a-function": () =>
+    constructedRun(twoParagraphs(), [[/b/g, "B"]], firstParagraph, (test) => [["strong", test]]),
+  "ignore-mixed-tests-holding-a-function": () =>
+    constructedRun(twoParagraphs(), [[/b/g, "B"]], firstParagraph, (test) => [{ type: "heading" }, ["x", test]]),
+  "ignore-read-once-through-a-getter": () => {
+    let reads = 0;
+    const calls: string[] = [];
+    const tree = twoParagraphs();
+    findAndReplace(tree as Root, [[/b/g, "B"]], {
+      get ignore() {
+        reads += 1;
+        return reads === 1
+          ? (node: { type: string }, index: number | undefined): boolean => {
+              calls.push(`${node.type}@${index}`);
+              return node.type === "paragraph" && index === 0;
+            }
+          : undefined;
+      },
+    } as never);
+    return `${canonical(tree)}\n${calls.join(",")}\nreads=${reads}`;
+  },
   "callback-edits-the-tree-and-ignore-reads-the-index": () => {
     const c = paragraph(text("c"));
     const root = { type: "root", children: [paragraph(text("a")), paragraph(text("b")), c] };
@@ -218,18 +250,28 @@ const CONSTRUCTED: Record<string, () => string> = {
   },
 };
 
+const twoParagraphs = (): Node => ({ type: "root", children: [paragraph(text("a b")), paragraph(text("b c"))] });
+const firstParagraph = (node: Node, index: number | undefined): boolean =>
+  node.type === "paragraph" && index === 0;
+
+type IndexTest = (node: { type: string }, index: number | undefined, parent: { type: string } | undefined) => boolean;
+
+/**
+ * Run `findAndReplace` with a logging test function as (or, via `wrap`,
+ * inside) the `ignore` test; return the tree and the log.
+ */
 function constructedRun(
   tree: Node,
   list: [RegExp, string | Replace][],
   ignoreWhen: (node: Node, index: number | undefined) => boolean = () => false,
+  wrap: (test: IndexTest) => unknown = (test) => test,
 ): string {
   const calls: string[] = [];
-  findAndReplace(tree as Root, list as never, {
-    ignore: (node: { type: string }, index: number | undefined, parent: { type: string } | undefined): boolean => {
-      calls.push(`${node.type}@${index}<${parent?.type}`);
-      return ignoreWhen(node as Node, index);
-    },
-  });
+  const test: IndexTest = (node, index, parent) => {
+    calls.push(`${node.type}@${index}<${parent?.type}`);
+    return ignoreWhen(node as Node, index);
+  };
+  findAndReplace(tree as Root, list as never, { ignore: wrap(test) as never });
   return `${canonical(tree)}\n${calls.join(",")}`;
 }
 
