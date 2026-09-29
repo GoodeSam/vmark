@@ -7,24 +7,7 @@ import { parseOsc7Cwd, setupOsc7, setupOsc133, scrollToAdjacentCommand } from ".
 import type { CommandMark } from "./setupOsc";
 import type { IMarker } from "@xterm/xterm";
 import { createRealTerminal, writeParsed } from "./realXterm.testUtils";
-
-/**
- * CPU milliseconds `work` costs on this thread's own clock
- * (`process.threadCpuUsage`, Node ≥ 22.19; the process clock before that).
- * No garbage collection first: a forced full collection bills its sweeping to
- * the samples that follow — under load it raised Node 22's median small and
- * large samples from 1.52 and 7.52 ms to 2.62 and 11.93 ms, lowering the
- * exponent by adding cost rather than measuring the bookkeeping better. Kept
- * minimal on purpose — the shared `cpuMs` in src/test/cpuClock.ts replaces it
- * once that module is on main.
- */
-function cpuMs(work: () => void): number {
-  const clock = process.threadCpuUsage?.bind(process) ?? (() => process.cpuUsage());
-  const start = clock();
-  work();
-  const end = clock();
-  return (end.user - start.user + end.system - start.system) / 1000;
-}
+import { cpuMs } from "@/test/cpuClock";
 
 /**
  * Growth exponent of `costAt` (CPU ms at size n) between `small` and `large`:
@@ -32,6 +15,15 @@ function cpuMs(work: () => void): number {
  * htmlScaling.test.ts: contention and instrumentation move durations, they
  * cannot turn cost ∝ n into cost ∝ n². Minimum of interleaved runs after a
  * warm-up; the small sample is floored at 1 ms against timer resolution.
+ *
+ * Not the shared `measureGrowth`: each sample needs freshly registered marks
+ * to dispose, and repeating one run would bill that setup too. Samples are
+ * timed with the shared `cpuMs` (this thread's clock, brought up to date
+ * before each read). No garbage collection first: a forced full collection
+ * bills its sweeping to the samples that follow — under load it raised Node
+ * 22's median small and large samples from 1.52 and 7.52 ms to 2.62 and
+ * 11.93 ms, lowering the exponent by adding cost rather than measuring the
+ * bookkeeping better.
  */
 function growthExponent(costAt: (n: number) => number, small: number, large: number) {
   costAt(small); // warm-up: JIT
