@@ -259,22 +259,23 @@ const FLUSH_ROUNDS = 5; // bound, for renders that keep registering renders
  * (an edit while KaTeX loads), so the caller reads a fully rendered DOM.
  */
 export async function flushNearViewport(container: Element): Promise<void> {
-  const held = measureAboveViewport([...jobs.values()].filter((job) => container.contains(job.target)));
   for (let round = 0; round < FLUSH_ROUNDS; round += 1) {
     const due: Promise<void>[] = [];
     for (const running of inflight) {
       if (container.contains(running.target)) due.push(running.promise);
     }
-    for (const job of [...jobs.values()]) {
-      // A render run earlier in this loop may have replaced or cancelled it.
-      if (jobs.get(job.target) !== job || !container.contains(job.target)) continue;
+    const runNow = [...jobs.values()].filter((job) => container.contains(job.target));
+    // Per round: a render in flight when the flush began paints in a later one.
+    const held = measureAboveViewport(runNow);
+    for (const job of runNow) {
+      if (jobs.get(job.target) !== job) continue; // replaced or cancelled by an earlier render
       detach(job);
       due.push(Promise.resolve(run(job)));
     }
     if (due.length === 0) break;
     await Promise.all(due);
+    holdViewStill(held);
   }
-  holdViewStill(held);
 }
 
 /** Test seam: forget every outstanding render and any scheduled frame. */

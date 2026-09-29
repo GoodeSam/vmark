@@ -342,6 +342,36 @@ describe("whenNearViewport — the reader's view stays still", () => {
 
     expect(root.scrollTop).toBe(8036);
   });
+
+  it("holds the view across a flush for a render already in flight when it began", async () => {
+    // The first render of a session waits for KaTeX, then queues again
+    // (scheduleInlineMathRender); the flush paints that second job a round later.
+    const { root, addBlock, addTarget } = mountEditor();
+    withScrollTop(root, 8000);
+    root.getBoundingClientRect = () => new DOMRect(0, 0, 800, 900);
+    const above = addBlock();
+    let height = 64;
+    above.getBoundingClientRect = () => new DOMRect(0, -400, 800, height);
+    const target = addTarget(above);
+    let katexArrives!: () => void;
+    whenNearViewport(target, root, () => new Promise<void>((resolve) => {
+      katexArrives = () => {
+        whenNearViewport(target, root, () => {
+          height = 100;
+        });
+        resolve();
+      };
+    }));
+    onlyObserver().trigger([above], () => -400);
+    runFrame(); // in flight, waiting for KaTeX
+
+    const flushing = flushNearViewport(root);
+    katexArrives();
+    await flushing;
+
+    expect(height).toBe(100);
+    expect(root.scrollTop).toBe(8036);
+  });
 });
 
 describe("whenNearViewport — after the reader scrolled", () => {
