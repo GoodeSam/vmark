@@ -26,6 +26,7 @@ const perfEnabled = process.env.PERF === "1";
 const describePerf = perfEnabled ? describe : describe.skip;
 import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
+import { measureGrowth } from "@/test/cpuClock";
 import { parseMarkdown, serializeMarkdown } from "../adapter";
 import { parseMarkdownToMdast } from "../parser";
 
@@ -207,22 +208,20 @@ describePerf("Markdown Pipeline Performance", () => {
   describe("scaling behavior", () => {
     it("does not scale exponentially with document size", () => {
       const sizes = [1000, 2000, 4000, 8000];
-      const times: number[] = [];
+      const documents = sizes.map((size) => generateLargeMarkdown(size));
+      const roundTrip = (markdown: string) => void serializeMarkdown(schema, parseMarkdown(schema, markdown));
 
-      for (const size of sizes) {
-        const markdown = generateLargeMarkdown(size);
-        const start = performance.now();
-        const doc = parseMarkdown(schema, markdown);
-        serializeMarkdown(schema, doc);
-        times.push(performance.now() - start);
-      }
+      // Each doubling on the test thread's own CPU clock (`@/test/cpuClock`),
+      // not the wall clock: the minimum of interleaved samples per size.
+      for (let i = 1; i < sizes.length; i++) {
+        const cost = measureGrowth(roundTrip, documents[i - 1], documents[i], { rounds: 1 });
+        console.log(
+          `[Perf] Scaling: ${sizes[i - 1]}→${cost.smallMs.toFixed(0)}ms, ${sizes[i]}→${cost.largeMs.toFixed(0)}ms (${cost.clock} clock)`,
+        );
 
-      console.log(`[Perf] Scaling: ${sizes.map((s, i) => `${s}→${times[i].toFixed(0)}ms`).join(", ")}`);
-
-      // Check that doubling input doesn't more than 5x time
-      // (should be roughly linear, but small values have high variance)
-      for (let i = 1; i < times.length; i++) {
-        const ratio = times[i] / times[i - 1];
+        // Check that doubling input doesn't more than 5x time
+        // (should be roughly linear, but small values have high variance)
+        const ratio = cost.largeMs / cost.smallMs;
         expect(ratio).toBeLessThan(5);
       }
     });
