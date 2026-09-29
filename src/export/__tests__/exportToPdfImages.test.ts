@@ -76,6 +76,12 @@ vi.mock("@/i18n", () => ({
   default: { t: (key: string) => key },
 }));
 
+// The markdown path renders through the off-screen ExportSurface; only its
+// choice is under test here, so it echoes the markdown it was given.
+vi.mock("../renderMarkdownToHtml", () => ({
+  renderMarkdownToHtml: (markdown: string) => Promise.resolve(`<p>rendered from markdown: ${markdown}</p>`),
+}));
+
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import { exportToPdf } from "../useExportOperations";
 import { useEditorStore } from "@/stores/editorStore";
@@ -267,5 +273,28 @@ describe("exportToPdf — deferred node-view renders in the live editor", () => 
 
     const [, payload] = mockInvoke.mock.calls[0];
     expect((payload as { html: string }).html).toContain("RENDERED");
+  });
+
+  it("prints the markdown instead when the editor goes away while the flush waits", async () => {
+    // A flush can wait for KaTeX's chunk. Switching or closing the tab
+    // meanwhile destroys the editor and cancels its renders, and its detached
+    // DOM still holds the raw LaTeX.
+    const live = installLiveEditor('<p><span class="math-inline">x^2</span></p>');
+    const math = live.querySelector(".math-inline")!;
+    let katexArrives!: () => void;
+    whenNearViewport(math, document.body, () => new Promise<void>((resolve) => {
+      katexArrives = resolve;
+    }));
+
+    const printing = exportToPdf({ markdown: "$x^2$", sourceFilePath: "/docs/my-notes/note.md" });
+    useEditorStore.getState().clearActiveEditors(); // the tab went away
+    live.remove();
+    katexArrives();
+    await printing;
+
+    const [, payload] = mockInvoke.mock.calls[0];
+    const html = (payload as { html: string }).html;
+    expect(html).toContain("rendered from markdown: $x^2$");
+    expect(html).not.toContain('class="math-inline"');
   });
 });

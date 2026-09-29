@@ -115,7 +115,8 @@ export function pickPrintHtmlSource(
  * window's active tab — the document `export.pdf` resolved (fast path,
  * WYSIWYG), after its viewport-deferred renders are flushed — and from an
  * ExportSurface render of the markdown otherwise:
- * Source mode, or a split whose focused pane is not WYSIWYG (#346). Either
+ * Source mode, a split whose focused pane is not WYSIWYG (#346), or an editor
+ * that went away while the flush waited. Either
  * way the local images are inlined first (#999): the helper webview has no
  * Tauri asset:// handler. See printDocument.ts for each step.
  */
@@ -129,7 +130,11 @@ async function exportToPdfBrowser(
     // Node views that render only near the viewport (inline math) must finish
     // first: the live DOM is read below as if it were the finished document.
     if (liveEditor) await flushNearViewport(liveEditor);
-    const source = pickPrintHtmlSource(liveEditor, markdown);
+    // The flush can wait for KaTeX's chunk. A tab switched or closed meanwhile
+    // destroyed that editor and cancelled its renders — its detached DOM still
+    // holds raw LaTeX — so the markdown snapshot is printed instead.
+    const stillLive = liveEditor?.isConnected && liveEditorElement(activeTabId) === liveEditor ? liveEditor : null;
+    const source = pickPrintHtmlSource(stillLive, markdown);
     if (source.kind === "empty") {
       toast.error(i18n.t("dialog:toast.noEditorContentToPrint"));
       return;
