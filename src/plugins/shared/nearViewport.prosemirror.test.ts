@@ -9,6 +9,7 @@ import { EditorState } from "@tiptap/pm/state";
 import { EditorView } from "@tiptap/pm/view";
 import { whenNearViewport, flushNearViewport, resetNearViewportForTest } from "./nearViewport";
 import { installFakeIntersectionObserver, onlyObserver } from "@/test/fakeIntersectionObserver";
+import { installFakeAnimationFrames, type FakeAnimationFrames } from "@/test/fakeAnimationFrames";
 
 const schema = new Schema({
   nodes: {
@@ -20,12 +21,8 @@ const schema = new Schema({
   },
 });
 
-let frames: FrameRequestCallback[] = [];
-const runFrame = () => {
-  const due = frames;
-  frames = [];
-  due.forEach((cb) => cb(0));
-};
+let frames: FakeAnimationFrames;
+const runFrame = () => frames.runFrame();
 
 function mountView(render: () => void) {
   const root = document.createElement("div");
@@ -52,12 +49,14 @@ function mountView(render: () => void) {
 beforeEach(() => {
   resetNearViewportForTest();
   document.body.innerHTML = "";
-  frames = [];
-  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => frames.push(cb));
+  frames = installFakeAnimationFrames();
   installFakeIntersectionObserver();
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe("nearViewport — ProseMirror moving a node view to a new block", () => {
   it("follows a waiting formula into the heading its paragraph became", async () => {

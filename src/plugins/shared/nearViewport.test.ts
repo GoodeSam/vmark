@@ -11,13 +11,10 @@ import {
   onlyObserver,
   FakeIntersectionObserver,
 } from "@/test/fakeIntersectionObserver";
+import { installFakeAnimationFrames, type FakeAnimationFrames } from "@/test/fakeAnimationFrames";
 
-let frames: FrameRequestCallback[] = [];
-function runFrame(): void {
-  const due = frames;
-  frames = [];
-  due.forEach((cb) => cb(0));
-}
+let frames: FakeAnimationFrames;
+const runFrame = () => frames.runFrame();
 
 /** `.editor-content > .ProseMirror > blocks`, the shape the editor renders. */
 function mountEditor() {
@@ -43,11 +40,7 @@ function mountEditor() {
 beforeEach(() => {
   resetNearViewportForTest();
   document.body.innerHTML = "";
-  frames = [];
-  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
-    frames.push(cb);
-    return frames.length;
-  });
+  frames = installFakeAnimationFrames();
   installFakeIntersectionObserver();
 });
 
@@ -146,11 +139,7 @@ describe("whenNearViewport — deferral", () => {
 
   it("spreads due renders over frames under the time budget, at least one per frame", () => {
     const { root, addBlock, addTarget } = mountEditor();
-    let now = 0;
-    vi.spyOn(performance, "now").mockImplementation(() => now);
-    const slow = () => {
-      now += 10; // each render blows the whole budget
-    };
+    const slow = () => frames.advance(10); // each render blows the whole budget
     const renders = [vi.fn(slow), vi.fn(slow), vi.fn(slow)];
     const block = addBlock();
     for (const render of renders) whenNearViewport(addTarget(block), root, render);
@@ -162,7 +151,7 @@ describe("whenNearViewport — deferral", () => {
     expect(renders.map((r) => r.mock.calls.length)).toEqual([1, 1, 0]);
     runFrame();
     expect(renders.map((r) => r.mock.calls.length)).toEqual([1, 1, 1]);
-    expect(frames).toHaveLength(0);
+    expect(frames.pending()).toBe(0);
   });
 });
 

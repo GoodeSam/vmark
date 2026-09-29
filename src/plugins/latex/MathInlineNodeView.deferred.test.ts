@@ -46,6 +46,7 @@ import { MathInlineNodeView } from "./MathInlineNodeView";
 import { clearInlineMathRenderCache } from "./inlineMathRenderCache";
 import { flushNearViewport, resetNearViewportForTest } from "@/plugins/shared/nearViewport";
 import { installFakeIntersectionObserver, onlyObserver } from "@/test/fakeIntersectionObserver";
+import { installFakeAnimationFrames, type FakeAnimationFrames } from "@/test/fakeAnimationFrames";
 
 const registry = { startEditing: vi.fn(), stopEditing: vi.fn(), isEditingAt: () => false, clear: vi.fn() };
 
@@ -72,12 +73,8 @@ function scrollingEditor() {
   return { root, mount };
 }
 
-let frames: FrameRequestCallback[] = [];
-const runFrame = () => {
-  const due = frames;
-  frames = [];
-  due.forEach((cb) => cb(0));
-};
+let frames: FakeAnimationFrames;
+const runFrame = () => frames.runFrame();
 
 beforeEach(() => {
   katexState.loaded = true;
@@ -86,13 +83,13 @@ beforeEach(() => {
   clearInlineMathRenderCache();
   resetNearViewportForTest();
   document.body.innerHTML = "";
-  frames = [];
-  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => frames.push(cb));
+  frames = installFakeAnimationFrames();
   installFakeIntersectionObserver();
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
