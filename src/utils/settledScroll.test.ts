@@ -111,6 +111,52 @@ describe("scrollToSettled", () => {
     expect(el.scrollTop).toBe(3400);
   });
 
+  it("keeps following the target for as long as renders stay busy, past the usual frame bound", () => {
+    // A first render waiting on KaTeX's chunk, or a long queue drained near
+    // the target, can keep the scroller busy for more than 60 frames; stopping
+    // then left a Find or footnote target wherever the late render pushed it.
+    stubComputedContentVisibility("visible");
+    const attrs = [PENDING_RENDER_ATTR, RENDER_BUSY_ATTR];
+    const { el } = fakeScroller(100_000, attrs);
+    let targetTop = 3000;
+
+    scrollToSettled(el, () => targetTop - el.scrollTop, contentRoot("visible"));
+    for (let i = 0; i < 65; i += 1) vi.advanceTimersToNextFrame();
+    targetTop = 3400;
+    vi.advanceTimersToNextFrame();
+
+    expect(el.scrollTop).toBe(3400);
+  });
+
+  it("still gives up on a scroller that never stops being busy", () => {
+    stubComputedContentVisibility("visible");
+    const attrs = [PENDING_RENDER_ATTR, RENDER_BUSY_ATTR];
+    const { el } = fakeScroller(100_000, attrs);
+    let targetTop = 3000;
+
+    scrollToSettled(el, () => targetTop - el.scrollTop, contentRoot("visible"));
+    for (let i = 0; i < 1200; i += 1) vi.advanceTimersToNextFrame();
+    targetTop = 9000;
+    vi.advanceTimersToNextFrame();
+
+    expect(el.scrollTop).toBe(3000);
+  });
+
+  it("stops at the reader's gesture even while renders are busy", () => {
+    stubComputedContentVisibility("visible");
+    const attrs = [PENDING_RENDER_ATTR, RENDER_BUSY_ATTR];
+    const { el } = fakeScroller(100_000, attrs);
+    let targetTop = 3000;
+
+    scrollToSettled(el, () => targetTop - el.scrollTop, contentRoot("visible"));
+    vi.advanceTimersToNextFrame();
+    document.dispatchEvent(new Event("wheel"));
+    targetTop = 3400;
+    for (let i = 0; i < 5; i += 1) vi.advanceTimersToNextFrame();
+
+    expect(el.scrollTop).toBe(3000);
+  });
+
   it("keeps the caller's smooth scroll when nothing can resize in flight", () => {
     stubComputedContentVisibility("visible");
     const { el, scrollTo } = fakeScroller();

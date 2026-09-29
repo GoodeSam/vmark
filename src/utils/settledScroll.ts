@@ -26,7 +26,10 @@
  *     and macOS runs large documents without content-visibility — so a
  *     scroller marked with PENDING_RENDER_ATTR also settles, and a frame
  *     while it is marked RENDER_BUSY_ATTR (a render queued or running, e.g.
- *     waiting for KaTeX to load) never counts as still.
+ *     waiting for KaTeX to load) never counts as still, nor toward
+ *     MAX_FRAMES: a busy stretch can outlast 60 frames, and stopping inside
+ *     it left the target wherever the late render pushed it. MAX_BUSY_FRAMES
+ *     still bounds a scroller that never stops being busy.
  *   - The reader wins: a wheel, touch, key or pointer press stops correcting.
  *
  * @coordinates-with utils/motion.ts — scrollBehavior for the smooth path
@@ -39,6 +42,8 @@ import { scrollBehavior } from "./motion";
 const SETTLE_FRAMES = 3;
 /** Upper bound on correction frames (~1s), for a target that never settles. */
 const MAX_FRAMES = 60;
+/** Absolute bound (~10s) when renders keep the scroller busy throughout. */
+const MAX_BUSY_FRAMES = 600;
 const USER_GESTURES = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
 
 /**
@@ -89,7 +94,8 @@ export function scrollToSettled(
   scroller.scrollTop += initial;
 
   const doc = scroller.ownerDocument;
-  let frames = 0;
+  let frames = 0; // frames spent while no render was busy
+  let total = 0;
   let still = 0;
   let stopped = false;
 
@@ -110,8 +116,9 @@ export function scrollToSettled(
     // is still due, which can move the target after it looked settled.
     const busy = scroller.hasAttribute(RENDER_BUSY_ATTR);
     still = scroller.scrollTop === before && !busy ? still + 1 : 0;
-    frames += 1;
-    if (still >= SETTLE_FRAMES || frames >= MAX_FRAMES) return stop();
+    if (!busy) frames += 1;
+    total += 1;
+    if (still >= SETTLE_FRAMES || frames >= MAX_FRAMES || total >= MAX_BUSY_FRAMES) return stop();
     requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
