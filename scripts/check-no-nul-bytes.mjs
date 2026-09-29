@@ -40,6 +40,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 /**
  * Extensions whose files legitimately contain NUL. Everything not listed here
@@ -122,9 +123,12 @@ export function findNulBytes(root) {
 
 function main(argv) {
   const rootFlag = argv.indexOf("--root");
+  // `import.meta.dirname`, never `new URL(import.meta.url).pathname`: a URL's
+  // pathname is still percent-encoded, so a checkout under a path with a space
+  // or CJK characters was scanned at a directory that does not exist (#1473).
   const root =
     rootFlag === -1
-      ? path.resolve(path.dirname(new URL(import.meta.url).pathname), "..")
+      ? path.resolve(import.meta.dirname, "..")
       : path.resolve(argv[rootFlag + 1]);
 
   let findings;
@@ -158,6 +162,6 @@ function main(argv) {
   console.log("No raw NUL bytes in text files (tracked + untracked-non-ignored).");
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+if (isMainModule(import.meta.url)) {
   main(process.argv.slice(2));
 }

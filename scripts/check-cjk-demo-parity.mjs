@@ -31,6 +31,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -103,4 +104,4 @@ function main() {
   console.log("✅ CJK demo settings match the app's.");
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) main();
+if (isMainModule(import.meta.url)) main();
