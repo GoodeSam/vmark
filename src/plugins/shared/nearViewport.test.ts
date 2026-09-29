@@ -250,6 +250,60 @@ describe("whenNearViewport — cancel", () => {
   });
 });
 
+describe("whenNearViewport — the reader's view stays still", () => {
+  // WKWebView before macOS 27 has no CSS scroll anchoring: a formula rendered
+  // above the viewport pushed the visible text down by whatever height it
+  // gained. jsdom claims support, so each case emulates such an engine.
+  beforeEach(() => {
+    vi.stubGlobal("CSS", { supports: () => false });
+  });
+
+  function withScrollTop(root: HTMLElement, initial: number): void {
+    let value = initial;
+    Object.defineProperty(root, "scrollTop", {
+      configurable: true,
+      get: () => value,
+      set: (next: number) => {
+        value = next;
+      },
+    });
+  }
+
+  it("scrolls by what a block above the visible top gained when its render ran", () => {
+    const { root, addBlock, addTarget } = mountEditor();
+    withScrollTop(root, 8000);
+    root.getBoundingClientRect = () => new DOMRect(0, 0, 800, 900);
+    const above = addBlock();
+    let height = 64;
+    above.getBoundingClientRect = () => new DOMRect(0, -400, 800, height);
+    whenNearViewport(addTarget(above), root, () => {
+      height = 100; // the rendered formula is taller than its source text
+    });
+
+    onlyObserver().trigger([above], () => -400);
+    runFrame();
+
+    expect(root.scrollTop).toBe(8036);
+  });
+
+  it("leaves the scroll alone when the render lands inside or below the visible box", () => {
+    const { root, addBlock, addTarget } = mountEditor();
+    withScrollTop(root, 8000);
+    root.getBoundingClientRect = () => new DOMRect(0, 0, 800, 900);
+    const visible = addBlock();
+    let height = 64;
+    visible.getBoundingClientRect = () => new DOMRect(0, 300, 800, height);
+    whenNearViewport(addTarget(visible), root, () => {
+      height = 100;
+    });
+
+    onlyObserver().trigger([visible], () => 300);
+    runFrame();
+
+    expect(root.scrollTop).toBe(8000);
+  });
+});
+
 describe("flushNearViewport", () => {
   it("runs waiting and queued renders inside the container and awaits async ones", async () => {
     const { root, addBlock, addTarget } = mountEditor();

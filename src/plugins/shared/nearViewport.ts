@@ -23,16 +23,20 @@
  *     runs everything outstanding and waits for every render in flight —
  *     print reads the live DOM as a finished document.
  *   - Jobs are counted onto the root (`renderMarks.ts`) for navigation scrolls.
+ *   - Each frame's renders keep the reader's view still where the engine has
+ *     no CSS scroll anchoring (`renderAnchor.ts`).
  *
  * @coordinates-with plugins/latex/scheduleInlineMathRender.ts — the first caller
  * @coordinates-with export/useExportOperations.ts — flushes before printing the live editor
  * @coordinates-with plugins/shared/editorScrollRoot.ts — picks the root to observe against
  * @coordinates-with plugins/shared/renderMarks.ts — the root's pending/busy marks
+ * @coordinates-with plugins/shared/renderAnchor.ts — holds the view across a frame's renders
  * @coordinates-with components/Editor/editor.css — the content-visibility that hides a block's insides
  * @module plugins/shared/nearViewport
  */
 
 import { markRoot, resetRenderMarksForTest } from "./renderMarks";
+import { measureAboveViewport, holdViewStill } from "./renderAnchor";
 
 /** A deferred render: synchronous when it can be (the frame budget only sees
  *  synchronous time), a promise when it must wait (a lazily loaded renderer). */
@@ -119,6 +123,7 @@ function run(job: Job): void | Promise<void> {
 
 function drain(): void {
   drainScheduled = false;
+  const above = measureAboveViewport(queue);
   const deadline = performance.now() + RENDER_BUDGET_MS;
   // At least one render per frame, however slow, so the queue always moves.
   do {
@@ -126,6 +131,7 @@ function drain(): void {
     if (!job) break;
     void run(job);
   } while (queue.length > 0 && performance.now() < deadline);
+  holdViewStill(above);
   if (queue.length > 0) scheduleDrain();
 }
 
@@ -164,10 +170,7 @@ function handleEntries(entries: IntersectionObserverEntry[], observer: Intersect
 function observerFor(root: Element): IntersectionObserver {
   let observer = observers.get(root);
   if (!observer) {
-    observer = new IntersectionObserver(handleEntries, {
-      root,
-      rootMargin: NEAR_VIEWPORT_MARGIN,
-    });
+    observer = new IntersectionObserver(handleEntries, { root, rootMargin: NEAR_VIEWPORT_MARGIN });
     observers.set(root, observer);
   }
   return observer;
@@ -241,11 +244,7 @@ function detach(job: Job): void {
  *
  * Returns a cancel function. Calling it after the render ran is a no-op.
  */
-export function whenNearViewport(
-  target: Element,
-  root: Element | null,
-  render: DeferredRender,
-): () => void {
+export function whenNearViewport(target: Element, root: Element | null, render: DeferredRender): () => void {
   if (!root || typeof IntersectionObserver === "undefined") {
     const result = render();
     if (result instanceof Promise) void follow(target, result, () => undefined);
