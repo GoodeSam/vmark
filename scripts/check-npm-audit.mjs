@@ -43,6 +43,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const BASELINE = path.join(REPO, "scripts/npm-audit-baseline.json");
@@ -182,4 +183,4 @@ function main() {
   console.log("npm-audit: every advisory is reviewed and still current");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (isMainModule(import.meta.url)) main();

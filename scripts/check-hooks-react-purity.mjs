@@ -48,6 +48,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import ts from "typescript";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const SOURCE_EXT = /\.(ts|tsx)$/;
 /** `useFoo` — the React hook naming convention the linter itself enforces. */
@@ -213,6 +214,6 @@ function main() {
   process.exit(1);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   main();
 }

@@ -42,6 +42,7 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const ROOT = join(import.meta.dirname, "..");
 
@@ -280,4 +281,4 @@ function main() {
   );
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) main();
+if (isMainModule(import.meta.url)) main();

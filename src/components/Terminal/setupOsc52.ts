@@ -21,6 +21,11 @@
  *   - A rejected write is swallowed and logged. This provider is invoked from
  *     inside xterm's parser; throwing would surface as an unhandled rejection
  *     on every OSC 52 sequence and could break the data path.
+ *   - A write is BOUNDED (OSC52_WRITE_TIMEOUT_MS). xterm parses nothing while
+ *     it waits, so a clipboard IPC that never answered froze the terminal —
+ *     and a restart, which waits for its reset to be parsed (#1471) — for good.
+ *     Once one write has timed out, later writes are skipped until it settles:
+ *     a stuck IPC costs the parser one timeout, not one per queued write.
  *   - Gated by `settings.terminal.osc52Clipboard` (default on) so a user who
  *     considers even write access too much can turn the channel off entirely.
  *
@@ -39,10 +44,23 @@ import { clipboardWarn, terminalLog } from "@/utils/debug";
 import { errorMessage } from "@/utils/errorMessage";
 
 /**
+ * The longest one OSC 52 write may hold xterm's parser. The addon hands xterm
+ * the write's promise, and xterm parses nothing more until it settles — shell
+ * output and a session reset (#1471) included. A clipboard write takes
+ * milliseconds; this bound only matters when the IPC never answers.
+ */
+export const OSC52_WRITE_TIMEOUT_MS = 2_000;
+
+/**
  * VMark's clipboard provider: writes reach the host clipboard, reads never do.
  * Exported so the read-denial can be asserted directly.
  */
 export function createVMarkClipboardProvider(): IClipboardProvider {
+  // A write that outlived its timeout and has still not settled. While there
+  // is one, the clipboard IPC is presumed stuck and further writes are skipped
+  // — stacked behind it, each would hold the parser for another full timeout.
+  let stuckWrite: Promise<void> | null = null;
+
   return {
     /**
      * Always denies. Returning "" (rather than throwing) is what the OSC 52
@@ -60,13 +78,38 @@ export function createVMarkClipboardProvider(): IClipboardProvider {
       selection: ClipboardSelectionType,
       text: string,
     ): Promise<void> {
+      if (stuckWrite) {
+        clipboardWarn(
+          `OSC 52 clipboard write skipped (selection "${selection}"): an earlier ` +
+            "write is still pending after timing out.",
+        );
+        return;
+      }
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timedOut = new Promise<"timed-out">((resolve) => {
+        timer = setTimeout(() => resolve("timed-out"), OSC52_WRITE_TIMEOUT_MS);
+      });
+      const write = writeText(text);
       try {
-        await writeText(text);
+        const outcome = await Promise.race([write, timedOut]);
+        if (outcome === "timed-out") {
+          clipboardWarn(
+            `OSC 52 clipboard write timed out after ${OSC52_WRITE_TIMEOUT_MS}ms ` +
+              `(selection "${selection}"); the terminal carried on without it.`,
+          );
+          stuckWrite = write;
+          const release = () => {
+            if (stuckWrite === write) stuckWrite = null;
+          };
+          void write.then(release, release);
+        }
       } catch (error: unknown) {
         clipboardWarn(
           `OSC 52 clipboard write failed (selection "${selection}"):`,
           errorMessage(error),
         );
+      } finally {
+        clearTimeout(timer);
       }
     },
   };

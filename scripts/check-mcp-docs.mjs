@@ -30,6 +30,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const TOOLS_DIR = join(ROOT, "server/mcp/src/tools");
@@ -297,4 +298,4 @@ function main() {
   console.error(`✅ MCP docs gate: all ${actions.length} sidecar tool actions are documented.`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (isMainModule(import.meta.url)) main();

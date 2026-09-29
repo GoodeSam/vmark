@@ -31,7 +31,6 @@
  * check-deleted-names.mjs.
  */
 import { readFileSync, writeFileSync, globSync, statSync } from "node:fs";
-import { pathToFileURL } from "node:url";
 import {
   indexTokens,
   checkFontSize,
@@ -44,6 +43,7 @@ import {
   focusPaintedClasses,
 } from "./lib/uiConsistencyCss.mjs";
 import { checkIconSizes, collectFocusables } from "./lib/uiConsistencyTsx.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const BASELINE_PATH = "scripts/ui-consistency-baseline.json";
 const CHECK_KEYS = ["C3", "C4", "C5", "C7", "C8", "C9", "C10", "C11", "C12"];
@@ -166,7 +166,7 @@ export function compareBaseline(findings, baseline) {
   return { newFindings, stale };
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+if (isMainModule(import.meta.url)) {
   const args = process.argv.slice(2);
   const started = Date.now();
   const cssFiles = files("src/**/*.css");

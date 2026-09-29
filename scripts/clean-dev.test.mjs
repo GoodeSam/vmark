@@ -25,7 +25,11 @@ const SCRIPT = path.join(REPO, "scripts/clean-dev.sh");
 const BUNDLE = path.join(REPO, "src-tauri/target/release/bundle");
 
 function run(args) {
-  return spawnSync("bash", [SCRIPT, ...args], { cwd: REPO, encoding: "utf8", timeout: 60_000 });
+  const r = spawnSync("bash", [SCRIPT, ...args], { cwd: REPO, encoding: "utf8", timeout: 60_000 });
+  // A timeout lands in `error` and may leave `status` as bash's own exit code;
+  // unchecked, a hang would pass every status assertion below, only late.
+  if (r.error) throw r.error;
+  return r;
 }
 
 /**
