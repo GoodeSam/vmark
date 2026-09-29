@@ -5,8 +5,9 @@
  * `patches/mdast-util-find-and-replace@3.0.2.patch` changes only how the
  * package finds a node's index among its siblings (no ancestor index unless
  * the `ignore` test can read it; the text node's own found by looking outward
- * from the last one, while the siblings are distinct objects), so everything
- * observable must be identical to the unpatched package:
+ * from the last one, while the siblings are distinct objects and no caller
+ * code has run since that was checked), so everything observable must be
+ * identical to the unpatched package:
  *
  *   - the tree GFM's autolink transform (its main user) leaves after the stock
  *     GFM parse — node for node, position for position. Its `ignore` test is
@@ -216,6 +217,36 @@ const CONSTRUCTED: Record<string, () => string> = {
     constructedRun(twoParagraphs(), [[/b/g, "B"]], firstParagraph, (test) => [["strong", test]]),
   "ignore-mixed-tests-holding-a-function": () =>
     constructedRun(twoParagraphs(), [[/b/g, "B"]], firstParagraph, (test) => [{ type: "heading" }, ["x", test]]),
+  "callback-edits-its-own-siblings-without-an-ignore-test": () => {
+    const shared = text("a");
+    const siblings: Node[] = [text("b"), { type: "break" }, text("c"), text("d"), shared];
+    return constructedRun(
+      { type: "root", children: [paragraph(...siblings)] },
+      [[/[ab]/g, (value: string, match: { stack: Node[] }) => {
+        if (value !== "b") return "A";
+        // The same children array the traversal is walking.
+        match.stack.at(-2)!.children![0] = shared;
+        return false;
+      }]],
+      undefined,
+      () => undefined,
+    );
+  },
+  "ignore-array-element-read-once": () => {
+    let reads = 0;
+    const test: unknown[] = [];
+    Object.defineProperty(test, 0, {
+      get() {
+        reads += 1;
+        return reads === 1 ? (node: { type: string }, index: number | undefined) => node.type === "paragraph" && index === 0 : "link";
+      },
+      enumerable: true,
+    });
+    test.length = 1;
+    const tree = twoParagraphs();
+    findAndReplace(tree as Root, [[/b/g, "B"]], { ignore: test as never });
+    return `${canonical(tree)}\nreads=${reads}`;
+  },
   "ignore-read-once-through-a-getter": () => {
     let reads = 0;
     const calls: string[] = [];
