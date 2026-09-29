@@ -12,10 +12,13 @@
  * `utils/markdownPipeline/__tests__/pathological/pathologicalScaling.test.ts`.
  * A millisecond bound here passed locally and failed on a CI shard running
  * under coverage instrumentation; what instrumentation and contention cannot
- * do is turn cost ∝ n into cost ∝ n². CPU time of this process, small and
- * large runs interleaved with the minimum of each kept, after a warm-up.
+ * do is turn cost ∝ n into cost ∝ n². CPU time of the test's own thread — not
+ * of the whole process, which bills V8's background threads to whichever
+ * sample runs longest (`@/test/cpuClock`) — with small and large runs
+ * interleaved and the minimum of each kept, after a warm-up.
  */
 import { describe, it, expect } from "vitest";
+import { growthExponent, measureGrowth } from "@/test/cpuClock";
 import { htmlValidator } from "./html";
 import { scanHtmlTags } from "./htmlTags";
 
@@ -41,26 +44,6 @@ const CASES: { name: string; make: (n: number) => string; run?: (html: string) =
   { name: "handlers", make: (n) => "<b onclick=x></b>".repeat(n) },
 ];
 
-function cpuMs(fn: () => void): number {
-  const start = process.cpuUsage();
-  fn();
-  const used = process.cpuUsage(start);
-  return (used.user + used.system) / 1000;
-}
-
-/** Minimum CPU cost of small and large inputs, interleaved. */
-function measure(run: (html: string) => void, small: string, large: string) {
-  run(small); // warm-up: JIT
-  let bestSmall = Number.POSITIVE_INFINITY;
-  let bestLarge = Number.POSITIVE_INFINITY;
-  for (let round = 0; round < 5; round += 1) {
-    bestSmall = Math.min(bestSmall, cpuMs(() => run(small)));
-    bestLarge = Math.min(bestLarge, cpuMs(() => run(large)));
-    bestSmall = Math.min(bestSmall, cpuMs(() => run(small)));
-  }
-  return { small: bestSmall, large: bestLarge };
-}
-
 describe("HTML validation scales linearly on hostile input", () => {
   it.each(CASES)("$name", (c) => {
     // 4× apart: linear costs ~4×, quadratic ~16×, and the bound sits at 6.5×.
@@ -68,14 +51,12 @@ describe("HTML validation scales linearly on hostile input", () => {
     // collector, not the algorithm, bends the curve.
     const small = c.make(8_000);
     const large = c.make(32_000);
-    const cost = measure(c.run ?? ((html) => void htmlValidator(html)), small, large);
-    // A floor on the small sample keeps a sub-millisecond reading from
-    // manufacturing a huge ratio out of timer resolution.
-    const exponent = Math.log(cost.large / Math.max(cost.small, 1)) / Math.log(large.length / small.length);
+    const cost = measureGrowth(c.run ?? ((html) => void htmlValidator(html)), small, large);
+    const exponent = growthExponent(cost, small.length, large.length);
     expect(
       exponent,
-      `${c.name}: ${small.length} chars → ${cost.small.toFixed(1)}ms, ${large.length} chars → ${cost.large.toFixed(1)}ms ` +
-        `(exponent ${exponent.toFixed(2)}; 1 is linear, 2 is quadratic)`,
+      `${c.name}: ${small.length} chars → ${cost.smallMs.toFixed(1)}ms, ${large.length} chars → ${cost.largeMs.toFixed(1)}ms ` +
+        `(exponent ${exponent.toFixed(2)} on the ${cost.clock} clock; 1 is linear, 2 is quadratic)`,
     ).toBeLessThan(MAX_EXPONENT);
   }, 120_000);
 });
