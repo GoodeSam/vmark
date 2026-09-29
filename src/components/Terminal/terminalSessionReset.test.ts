@@ -12,6 +12,7 @@ import { describe, it, expect } from "vitest";
 import type { Terminal } from "@xterm/xterm";
 import { resetTerminalForNewSession, stopUnsolicitedInput } from "./terminalSessionReset";
 import { buildTerminalOptions } from "./terminalOptions";
+import { setupOsc133 } from "./setupOsc";
 import {
   createRealTerminal,
   flushWrites,
@@ -154,6 +155,46 @@ describe("resetTerminalForNewSession", () => {
     await resetTerminalForNewSession(term, { cursorBlink: true, statusLine: "x" });
 
     expect(sent).toEqual([]);
+  });
+
+  // RIS replaces xterm's buffers WITHOUT disposing their markers. xterm's own
+  // OSC 8 hyperlink registry keeps a marker per link, and an undisposed one
+  // pins the whole discarded buffer (scrollback included) for the life of the
+  // terminal — one leaked buffer per restart. A public marker lives in the
+  // same list and dies by the same path, so its disposal proves theirs.
+  it("disposes the markers of both discarded buffers, not just the visible one", async () => {
+    const term = productionTerminal();
+    await writeParsed(term, "shell output\r\n".repeat(40));
+    const normal = term.registerMarker(0);
+    await writeParsed(term, "\x1b[?1049hTUI frame"); // killed on the alternate screen
+    const alternate = term.registerMarker(0);
+
+    await resetTerminalForNewSession(term, { cursorBlink: true });
+
+    expect(normal?.isDisposed).toBe(true);
+    expect(alternate?.isDisposed).toBe(true);
+  });
+
+  it("disposes them with the cursor home and no scrollback, where a bare clear() does nothing", async () => {
+    const term = productionTerminal();
+    await writeParsed(term, "one line");
+    const marker = term.registerMarker(0);
+    await writeParsed(term, "\x1b[H");
+
+    await resetTerminalForNewSession(term, { cursorBlink: true });
+
+    expect(marker?.isDisposed).toBe(true);
+  });
+
+  it("leaves no OSC 133 command mark behind", async () => {
+    const term = productionTerminal();
+    const osc = setupOsc133(term);
+    await writeParsed(term, "\x1b]133;A\x07$ ls\r\n\x1b]133;A\x07$ ");
+    expect(osc.getCommands()).toHaveLength(2);
+
+    await resetTerminalForNewSession(term, { cursorBlink: true });
+
+    expect(osc.getCommands()).toEqual([]);
   });
 
   it("is idempotent on a terminal that is already pristine", async () => {

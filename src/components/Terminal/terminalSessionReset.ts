@@ -22,6 +22,14 @@
  *   - Both boundary writes start with CAN, which ABANDONS a sequence the
  *     program died inside. The ESC that follows would otherwise complete it,
  *     and xterm answers a completed query (DECRQSS) through onData.
+ *   - RIS swaps in new buffers WITHOUT disposing the old ones' markers, and
+ *     xterm's OSC 8 link registry keeps a marker per link — so each restart
+ *     would pin the whole discarded buffer, scrollback included. Before RIS,
+ *     the reset therefore has xterm drop every marker through its own linear
+ *     bulk paths, in order: leaving the alternate screen empties that buffer,
+ *     and `term.clear()` — run from the write callback, so it lands between
+ *     the old output and RIS — empties the normal one. The cursor is first
+ *     moved off the home cell, where clear() would do nothing at all.
  *   - RIS in xterm.js 6 misses state kept outside the modes it resets, so the
  *     sequence adds exactly those, each verified against xterm's own reports
  *     in terminalSessionReset.test.ts:
@@ -38,7 +46,8 @@
  *     to onData, and a mouse move over the panel would otherwise restart the
  *     shell and wipe the message.
  *
- * @coordinates-with useTerminalShellLifecycle.ts — sole caller (startShell, exit)
+ * @coordinates-with useTerminalShellLifecycle.ts — startShell resets before every spawn
+ * @coordinates-with terminalShellExit.ts — a non-zero exit stops unsolicited input
  * @coordinates-with setupOsc.ts — drops OSC 133 marks when RIS wipes the buffer
  * @module components/Terminal/terminalSessionReset
  */
@@ -46,6 +55,11 @@ import type { Terminal } from "@xterm/xterm";
 
 /** CAN — abandon any unfinished escape sequence without dispatching it. */
 const CANCEL_UNFINISHED_SEQUENCE = "\x18";
+/** Back to the normal screen: xterm empties the alternate buffer and disposes
+ *  its markers when it is left. */
+const LEAVE_ALTERNATE_SCREEN = "\x1b[?1049l";
+/** Cursor to row 2: `term.clear()` returns early at row 1 with no scrollback. */
+const CURSOR_OFF_HOME = "\x1b[2H";
 /** RIS — Reset to Initial State. */
 const RESET_TO_INITIAL_STATE = "\x1bc";
 /** DECTCEM set: RIS leaves a hidden cursor hidden in xterm.js. */
@@ -78,13 +92,16 @@ export interface NewSessionResetOptions {
  * and scrollback. Settles once xterm has parsed it — attach the new PTY then.
  */
 export function resetTerminalForNewSession(
-  term: Pick<Terminal, "write">,
+  term: Pick<Terminal, "write" | "clear">,
   { cursorBlink, statusLine = "" }: NewSessionResetOptions,
 ): Promise<void> {
   return new Promise((parsed) => {
+    // Dispose both buffers' markers before RIS strands them (header).
+    term.write(CANCEL_UNFINISHED_SEQUENCE + LEAVE_ALTERNATE_SCREEN + CURSOR_OFF_HOME, () =>
+      term.clear(),
+    );
     term.write(
-      CANCEL_UNFINISHED_SEQUENCE +
-        RESET_TO_INITIAL_STATE +
+      RESET_TO_INITIAL_STATE +
         SHOW_CURSOR +
         NEWLINE_MODE_OFF +
         cursorBlinkMode(cursorBlink) +
