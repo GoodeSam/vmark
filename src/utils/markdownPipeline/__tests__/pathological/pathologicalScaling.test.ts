@@ -176,7 +176,8 @@ describe("pathological inputs scale linearly (#1407)", () => {
     const large = c.make(c.large);
     const cost = measure(c.parseOnly ? parseOnce : roundTrip, small, large);
     // A floor on the small sample keeps a sub-millisecond reading from
-    // manufacturing a huge ratio out of timer resolution.
+    // ever being timed: each sample repeats its input until it costs 20 ms of
+    // CPU, so timer resolution cannot manufacture a ratio (src/test/cpuClock.ts).
     const exponent = growthExponent(cost, small.length, large.length);
     expect(
       exponent,

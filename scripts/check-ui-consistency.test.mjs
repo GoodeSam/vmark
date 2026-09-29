@@ -568,9 +568,9 @@ describe("Codex fourth pass — C12 and C9 probes", () => {
   });
 
   // A GROWTH EXPONENT, not a duration (the method of pathologicalScaling.test.ts):
-  // CPU time of this thread (src/test/cpuClock.ts), five rounds of small,
-  // large, small with the minimum of each side kept. The cubic loop this
-  // replaced grew ~64× for 4× the rules; linear grows ~4×.
+  // CPU time of this thread (src/test/cpuClock.ts), five rounds of one small
+  // and one large sample with the minimum of each side kept. The cubic loop
+  // this replaced grew ~64× for 4× the rules; linear grows ~4×.
   it("C12: scales linearly on a stylesheet of many @media rules", () => {
     const sheet = (n) =>
       Array.from({ length: n }, (_, i) => `@media (min-width: ${i}px) { .p${i} { position: relative; z-index: var(--z-bar); } }`).join("\n");

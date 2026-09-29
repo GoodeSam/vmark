@@ -86,12 +86,12 @@ describe("normalizeFullwidthPunctuation scaling", () => {
     // ratio grew with it too.
     const run = (n: number) => `中${",".repeat(n)}`;
     // Sizes stay in the range where the timing is genuinely linear (see above).
-    // The minimum of interleaved samples per side, after an untimed warm-up.
+    // The minimum of interleaved samples per side, after an untimed warm-up;
+    // each sample repeats its run until it costs enough to time precisely.
     const cost = measureGrowth(normalizeFullwidthPunctuation, run(2_000), run(8_000));
 
-    // 4x input under a quadratic law is ~16x time; the 1ms floor keeps a
-    // sub-millisecond baseline from turning timer noise into a failure.
-    expect(cost.largeMs, `on the ${cost.clock} clock`).toBeLessThan(Math.max(cost.smallMs, 1) * 12);
+    // 4x input under a quadratic law is ~16x time.
+    expect(cost.largeMs, `on the ${cost.clock} clock`).toBeLessThan(cost.smallMs * 12);
   });
 
   it("still protects technical subspans inside a long document", () => {

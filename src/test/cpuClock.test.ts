@@ -1,23 +1,14 @@
 // @vitest-environment node
 /**
- * The CPU clock the growth-exponent tests measure with (see `cpuClock.ts`).
- *
- * The clock choice and the sampling order are checked against fakes, so they
- * are deterministic on any machine. Checked for real: a sibling thread's CPU
- * stays off the thread clock, and sub-millisecond work is resolved here.
+ * The CPU clock the growth-exponent tests measure with (see `cpuClock.ts`):
+ * which clock is chosen and how it is read, checked against fakes; checked for
+ * real, that a sibling thread's CPU stays off the thread clock and that
+ * sub-millisecond work is resolved on this OS. `measureGrowth` has its own file.
  */
 import { describe, it, expect } from "vitest";
 import { once } from "node:events";
 import { Worker } from "node:worker_threads";
-import {
-  CPU_CLOCK,
-  cpuMs,
-  growthExponent,
-  measureGrowth,
-  selectCpuClock,
-  type CpuClock,
-  type CpuClockKind,
-} from "./cpuClock";
+import { CPU_CLOCK, cpuMs, growthExponent, selectCpuClock, type CpuClock, type CpuClockKind } from "./cpuClock";
 
 const hasThreadClock = typeof (process as { threadCpuUsage?: unknown }).threadCpuUsage === "function";
 
@@ -82,12 +73,17 @@ describe("selectCpuClock", () => {
 
   it.runIf(hasThreadClock)("is the thread clock by default on this runtime", () => expect(CPU_CLOCK.kind).toBe("thread"));
 
-  it("resolves sub-millisecond work on this OS — a precise clock never reads it as zero", () => {
-    // Tens of microseconds each: a microsecond clock always sees them, while
-    // Linux's unprimed thread clock read 240 of 300 samples of ~0.2 ms as 0.
-    const readings = Array.from({ length: 50 }, () => cpuMs(() => spin(20_000)));
-    expect(readings.filter((ms) => ms === 0)).toEqual([]);
-  });
+  // Not on Windows: libuv reports thread times there in whole milliseconds
+  // (through SYSTEMTIME), so short work legitimately reads 0 — see the header.
+  it.skipIf(process.platform === "win32")(
+    "resolves sub-millisecond work on this OS — a precise clock never reads it as zero",
+    () => {
+      // Tens of microseconds each: a microsecond clock always sees them, while
+      // Linux's unprimed thread clock read 240 of 300 samples of ~0.2 ms as 0.
+      const readings = Array.from({ length: 50 }, () => cpuMs(() => spin(20_000)));
+      expect(readings.filter((ms) => ms === 0)).toEqual([]);
+    },
+  );
 
   it.runIf(hasThreadClock)(
     "keeps a sibling thread's CPU off the thread clock, while the process clock bills it",
@@ -137,70 +133,25 @@ describe("cpuMs", () => {
   });
 });
 
-describe("measureGrowth", () => {
-  /** A run whose i-th call on `input` costs `costs[input][i]` ms, recording the order. */
-  function scriptedRun(clock: ReturnType<typeof manualClock>, costs: Record<string, number[]>) {
-    const calls: string[] = [];
-    const seen: Record<string, number> = {};
-    const run = (input: string) => {
-      calls.push(input);
-      const i = seen[input] ?? 0;
-      seen[input] = i + 1;
-      clock.spend(costs[input][i]);
-    };
-    return { run, calls };
-  }
-
-  it("warms up once untimed, then interleaves small, large, small each round", () => {
-    const clock = manualClock("thread");
-    const { run, calls } = scriptedRun(clock, { s: [1, 1, 1, 1, 1], l: [4, 4] });
-
-    measureGrowth(run, "s", "l", { rounds: 2, clock: clock.clock });
-
-    expect(calls).toEqual(["s", "s", "l", "s", "s", "l", "s"]);
-  });
-
-  it("keeps the minimum of each side and ignores the warm-up", () => {
-    const clock = manualClock("thread");
-    // The warm-up (first "s") is the cheapest reading of all: it must not count.
-    // Neither side's minimum is its last reading.
-    const { run } = scriptedRun(clock, { s: [0.5, 3, 2, 4, 5], l: [7, 9] });
-
-    const growth = measureGrowth(run, "s", "l", { rounds: 2, clock: clock.clock });
-
-    expect(growth).toEqual({ smallMs: 2, largeMs: 7, clock: "thread" });
-  });
-
-  it("names the clock that measured", () => {
-    const clock = manualClock("process");
-    const { run } = scriptedRun(clock, { s: [1, 1, 1], l: [4] });
-    expect(measureGrowth(run, "s", "l", { rounds: 1, clock: clock.clock }).clock).toBe("process");
-  });
-
-  it("defaults to five rounds on the default clock", () => {
-    const calls: string[] = [];
-    const growth = measureGrowth((input: string) => void calls.push(input), "s", "l");
-    expect(calls).toHaveLength(1 + 5 * 3);
-    expect(growth.clock).toBe(CPU_CLOCK.kind);
-  });
-
-  it.each([0, -1, 1.5, Number.NaN])("refuses %s rounds", (rounds) => {
-    const clock = manualClock("thread");
-    expect(() => measureGrowth(() => {}, "s", "l", { rounds, clock: clock.clock })).toThrow(RangeError);
-  });
-});
-
 describe("growthExponent", () => {
-  const growth = (smallMs: number, largeMs: number) => ({ smallMs, largeMs, clock: "thread" as const });
+  const growth = (smallMs: number, largeMs: number) => ({
+    smallMs,
+    largeMs,
+    repeats: { small: 1, large: 1 },
+    clock: "thread" as const,
+  });
 
   it("is 1 for linear cost and 2 for quadratic", () => {
     expect(growthExponent(growth(2, 8), 1_000, 4_000)).toBeCloseTo(1, 10);
     expect(growthExponent(growth(2, 32), 1_000, 4_000)).toBeCloseTo(2, 10);
   });
 
-  it("floors the small sample at 1 ms, so timer resolution cannot manufacture a ratio", () => {
-    // 0.25 → 2 ms would read as exponent 1.5; floored, it is 0.5.
-    expect(growthExponent(growth(0.25, 2), 1_000, 4_000)).toBeCloseTo(0.5, 10);
+  it("takes a sub-millisecond run cost as it is — calibrated samples are long enough to trust it", () => {
+    expect(growthExponent(growth(0.25, 1), 1_000, 4_000)).toBeCloseTo(1, 10);
+  });
+
+  it.each([[0, 4], [-1, 4], [1, 0], [Number.NaN, 4]])("refuses costs %s → %s ms", (smallMs, largeMs) => {
+    expect(() => growthExponent(growth(smallMs, largeMs), 1_000, 4_000)).toThrow(RangeError);
   });
 
   it.each([[1_000, 1_000], [4_000, 1_000], [0, 1_000], [-1, 1_000]])("refuses sizes %s → %s", (smallSize, largeSize) => {
