@@ -186,6 +186,14 @@ Standard shell shortcuts like `Ctrl+R` (reverse history search in zsh/bash) work
 
 When the workspace root changes after the terminal is already running, idle sessions automatically `cd` to the new root. A session busy with a command (say, `vim` or `less`) is not interrupted: it changes directory once the command finishes, which needs [shell integration](#shell-integration) to detect. With the [workspace rail](/guide/workspace-rail) on, sessions that belong to a workspace keep their own directory.
 
+## Microphone, camera and Apple Events on macOS
+
+Programs you run in the integrated terminal can ask for the microphone, the camera, or permission to control other apps (Apple Events, used by `osascript`). macOS asks under VMark's name, because it treats VMark as the app responsible for everything its terminal starts. Allow access when macOS asks; you can change it later in **System Settings → Privacy & Security** under **Microphone**, **Camera** or **Automation**. The request happens when a program first uses the resource, not when you open the terminal.
+
+If a program gets silent audio, a black frame or a "not authorized" error and no prompt appears, check whether VMark is listed and allowed in that settings page. When reporting the problem, include the program's output.
+
+For virtual audio inputs such as BlackHole, permission alone does not route audio. Select the intended input in your recording tool, route audio to it, and verify a short recording before a longer session: a growing audio file does not by itself prove that sound was captured. VMark does not include a recorder or transcriber; those come from tools you install separately.
+
 ## Not yet implemented
 
 These are tracked but do **not** ship today. They are listed here because

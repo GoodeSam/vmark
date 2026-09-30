@@ -183,6 +183,31 @@ jobs:
           # same commit the trigger already carried.
           ref: refs/tags/${{ needs.create-release.outputs.version }}
 
+      # Decided from the CHECKED-OUT tree, not from this workflow file: a manual
+      # dispatch runs today's workflow against an older tag. Trees that carry
+      # the overlay ship the pre-signed sidecar through bundle.macOS.files
+      # instead of externalBin, which the bundler would re-sign with the app's
+      # privacy entitlements (#1483), and are verified after the build. Trees
+      # from before it build the way they always did. Half a layout fails.
+      - name: Resolve macOS bundle layout
+        id: layout
+        if: matrix.platform == 'macos-latest'
+        run: |
+          set -euo pipefail
+          OVERLAY=src-tauri/tauri.macos-release.conf.json
+          VERIFIER=scripts/verify-macos-bundle-entitlements.sh
+          if [ -f "$OVERLAY" ] && [ -f "$VERIFIER" ]; then
+            echo "config=--config $OVERLAY" >> "$GITHUB_OUTPUT"
+            echo "verify=true" >> "$GITHUB_OUTPUT"
+          elif [ ! -e "$OVERLAY" ] && [ ! -e "$VERIFIER" ]; then
+            echo "::notice::This tag predates the sidecar entitlement layout (#1483): building with externalBin, no bundle verification."
+            echo "config=" >> "$GITHUB_OUTPUT"
+            echo "verify=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Only one of $OVERLAY and $VERIFIER exists; the layout is half-applied."
+            exit 1
+          fi
+
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
@@ -274,8 +299,13 @@ jobs:
             echo "Skipping full health check (cross-architecture build)"
           fi
 
-      # Pre-sign sidecar with JIT entitlements (required for pkg/Node.js binaries)
-      # This must happen BEFORE Tauri signs the app
+      # Sign the sidecar with ITS OWN entitlements (JIT exceptions for the
+      # pkg/Node.js binary, nothing else) and stage it where
+      # src-tauri/tauri.macos-release.conf.json places it in the bundle. The
+      # bundler copies files listed there without re-signing them, so this is
+      # the signature that ships; the app's microphone/camera/Apple Events
+      # entitlements stay on the app. Verified after the build by
+      # scripts/verify-macos-bundle-entitlements.sh.
       - name: Sign sidecar with JIT entitlements (macOS)
         if: matrix.platform == 'macos-latest'
         env:
@@ -305,6 +335,12 @@ jobs:
           codesign -dv --verbose=2 "$SIDECAR_PATH"
           echo "Checking entitlements..."
           codesign -d --entitlements - "$SIDECAR_PATH"
+
+          # cp keeps the embedded signature; the overlay maps this fixed path
+          # to Contents/MacOS/vmark-mcp-server for either architecture.
+          mkdir -p src-tauri/binaries/macos-release
+          cp "$SIDECAR_PATH" src-tauri/binaries/macos-release/vmark-mcp-server
+          codesign --verify --strict src-tauri/binaries/macos-release/vmark-mcp-server
 
       - name: Build MCP server sidecar (Windows)
         if: matrix.platform == 'windows-latest'
@@ -370,11 +406,27 @@ jobs:
           CI: true
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
-          args: ${{ matrix.args }}
+          # The layout config goes BEFORE the matrix's `--target`: the DMG step
+          # reads the target as ${MATRIX_ARGS##*--target }. The separating space
+          # lives here, not in the output value. Config is empty off macOS.
+          args: ${{ steps.layout.outputs.config }} ${{ matrix.args }}
           # Disable per-job latest.json upload to avoid race condition
           # We generate and upload it once in publish-release job
           # (renamed from includeUpdaterJson in tauri-action v1.0.0)
           uploadUpdaterJson: false
+
+      # The gate on what was signed, not on what the plists meant: the app must
+      # declare microphone, camera and Apple Events for its terminal (#1483) and
+      # the sidecar must carry none of them. Fails the job, so publish-release
+      # (which needs build-tauri) never promotes the draft.
+      - name: Verify bundle entitlements (macOS)
+        if: matrix.platform == 'macos-latest' && steps.layout.outputs.verify == 'true'
+        env:
+          MATRIX_ARGS: ${{ matrix.args }}
+        run: |
+          set -euo pipefail
+          TARGET="${MATRIX_ARGS##*--target }"
+          scripts/verify-macos-bundle-entitlements.sh "src-tauri/target/$TARGET/release/bundle/macos/VMark.app"
 
       # tauri-action signs, notarizes and staples the .app, and signs the .dmg —
       # but it never notarizes the disk image itself. A signed-but-unnotarized

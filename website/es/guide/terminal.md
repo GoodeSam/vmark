@@ -189,6 +189,14 @@ Los atajos de shell estándar como `Ctrl+R` (búsqueda inversa del historial en 
 
 Cuando la raíz del espacio de trabajo cambia después de que el terminal ya está en ejecución, las sesiones inactivas cambian automáticamente su directorio a la nueva raíz mediante `cd`. Una sesión ocupada con un comando (por ejemplo, `vim` o `less`) no se interrumpe: cambia de directorio cuando el comando termina, lo que requiere la [integración con el shell](#integracion-con-el-shell) para detectarlo. Con la [barra de espacios de trabajo](/es/guide/workspace-rail) activada, las sesiones que pertenecen a un espacio de trabajo conservan su propio directorio.
 
+## Micrófono, cámara y Apple Events en macOS
+
+Los programas que ejecutas en el terminal integrado pueden solicitar el micrófono, la cámara o permiso para controlar otras apps (Apple Events, que usa `osascript`). macOS pregunta en nombre de VMark, porque considera a VMark la app responsable de todo lo que inicia su terminal. Permite el acceso cuando macOS lo pregunte; puedes cambiarlo más adelante en **Ajustes del Sistema → Privacidad y seguridad**, en **Micrófono**, **Cámara** o **Automatización**. La solicitud se produce cuando un programa usa el recurso por primera vez, no al abrir el terminal.
+
+Si un programa graba silencio, captura un fotograma negro o muestra un error de «no autorizado» sin que aparezca ninguna solicitud, comprueba en la página de ajustes correspondiente que VMark aparece en la lista y está permitido. Al informar del problema, incluye la salida del programa.
+
+Con entradas de audio virtuales como BlackHole, el permiso por sí solo no enruta el audio. Selecciona la entrada deseada en tu herramienta de grabación, enruta el audio hacia ella y verifica una grabación corta antes de una sesión larga: que un archivo de audio crezca no demuestra por sí solo que se haya capturado sonido. VMark no incluye grabadora ni transcriptor; esos comandos los proporcionan herramientas que instalas por separado.
+
 ## Aún no implementado
 
 Estas funciones están registradas pero **no** se incluyen hoy. Se enumeran aquí

@@ -1,0 +1,10 @@
+{
+  "bundle": {
+    "externalBin": [],
+    "macOS": {
+      "files": {
+        "MacOS/vmark-mcp-server": "binaries/macos-release/vmark-mcp-server"
+      }
+    }
+  }
+}

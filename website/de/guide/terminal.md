@@ -193,6 +193,14 @@ Standard-Shell-Kürzel wie `Strg+R` (Rückwärtshistorie-Suche in zsh/bash) funk
 
 Wenn sich das Arbeitsbereichsstammverzeichnis ändert, nachdem das Terminal bereits läuft, wechseln untätige Sitzungen automatisch per `cd` zum neuen Stammverzeichnis. Eine Sitzung, die mit einem Befehl beschäftigt ist (etwa `vim` oder `less`), wird nicht unterbrochen: Sie wechselt das Verzeichnis, sobald der Befehl beendet ist, was [Shell-Integration](#shell-integration) zur Erkennung voraussetzt. Mit eingeschalteter [Workspace-Leiste](/de/guide/workspace-rail) behalten Sitzungen, die zu einem Arbeitsbereich gehören, ihr eigenes Verzeichnis.
 
+## Mikrofon, Kamera und Apple Events unter macOS
+
+Programme, die Sie im integrierten Terminal ausführen, können das Mikrofon, die Kamera oder die Erlaubnis anfordern, andere Apps zu steuern (Apple Events, die `osascript` verwendet). macOS fragt im Namen von VMark, weil es VMark als verantwortliche App für alles behandelt, was das Terminal startet. Erlauben Sie den Zugriff, wenn macOS fragt; ändern können Sie ihn später unter **Systemeinstellungen → Datenschutz & Sicherheit** bei **Mikrofon**, **Kamera** oder **Automation**. Die Anfrage erfolgt, wenn ein Programm die Ressource zum ersten Mal nutzt, nicht beim Öffnen des Terminals.
+
+Wenn ein Programm nur Stille aufnimmt, ein schwarzes Bild liefert oder einen „nicht autorisiert“-Fehler meldet, ohne dass eine Anfrage erscheint, prüfen Sie auf der jeweiligen Einstellungsseite, ob VMark aufgeführt und erlaubt ist. Fügen Sie einer Fehlermeldung die Ausgabe des Programms bei.
+
+Bei virtuellen Audioeingängen wie BlackHole leitet die Berechtigung allein noch kein Audio weiter. Wählen Sie im Aufnahmeprogramm den gewünschten Eingang, leiten Sie das Audio dorthin und prüfen Sie vor einer längeren Sitzung eine kurze Aufnahme: Eine wachsende Audiodatei allein beweist nicht, dass Ton aufgezeichnet wurde. VMark enthält weder Rekorder noch Transkription; diese Befehle stammen aus Werkzeugen, die Sie separat installieren.
+
 ## Noch nicht implementiert
 
 Diese Punkte sind vorgemerkt, werden aber heute **nicht** ausgeliefert. Sie sind

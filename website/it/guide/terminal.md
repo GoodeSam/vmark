@@ -191,6 +191,14 @@ Le scorciatoie shell standard come `Ctrl+R` (ricerca cronologia inversa in zsh/b
 
 Quando la radice del workspace cambia dopo che il terminale è già in esecuzione, le sessioni inattive eseguono automaticamente `cd` alla nuova radice. Una sessione impegnata in un comando (ad esempio `vim` o `less`) non viene interrotta: cambia directory quando il comando termina, cosa che richiede l'[integrazione della shell](#integrazione-della-shell) per essere rilevata. Con la [barra degli spazi di lavoro](/it/guide/workspace-rail) attiva, le sessioni che appartengono a un workspace mantengono la propria directory.
 
+## Microfono, fotocamera e Apple Events su macOS
+
+I programmi che esegui nel terminale integrato possono richiedere il microfono, la fotocamera o il permesso di controllare altre app (Apple Events, usati da `osascript`). macOS chiede a nome di VMark, perché considera VMark l'app responsabile di tutto ciò che il terminale avvia. Consenti l'accesso quando macOS lo chiede; potrai modificarlo in seguito in **Impostazioni di Sistema → Privacy e sicurezza**, alla voce **Microfono**, **Fotocamera** o **Automazione**. La richiesta avviene quando un programma usa la risorsa per la prima volta, non all'apertura del terminale.
+
+Se un programma registra silenzio, cattura un fotogramma nero o segnala un errore di tipo "non autorizzato" senza che compaia alcuna richiesta, verifica nella pagina delle impostazioni corrispondente che VMark sia elencato e consentito. Quando segnali il problema, allega l'output del programma.
+
+Per gli ingressi audio virtuali come BlackHole, il permesso da solo non instrada l'audio. Seleziona l'ingresso desiderato nello strumento di registrazione, instrada l'audio verso di esso e verifica una breve registrazione prima di una sessione lunga: un file audio che cresce non dimostra da solo che il suono sia stato catturato. VMark non include registratori né strumenti di trascrizione; questi comandi provengono da strumenti che installi separatamente.
+
 ## Non ancora implementato
 
 Queste funzioni sono pianificate ma **non** sono disponibili oggi. Sono elencate qui

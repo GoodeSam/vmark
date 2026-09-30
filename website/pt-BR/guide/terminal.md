@@ -189,6 +189,14 @@ Os atalhos padrão do shell como `Ctrl+R` (pesquisa de histórico reverso no zsh
 
 Quando a raiz da área de trabalho muda enquanto o terminal já está em execução, as sessões ociosas fazem automaticamente `cd` para a nova raiz. Uma sessão ocupada com um comando (por exemplo, `vim` ou `less`) não é interrompida: ela muda de diretório quando o comando termina, o que requer a [integração com o shell](#integracao-com-o-shell) para ser detectado. Com a [barra de espaços de trabalho](/pt-BR/guide/workspace-rail) ativada, as sessões que pertencem a uma área de trabalho mantêm seu próprio diretório.
 
+## Microfone, câmera e Apple Events no macOS
+
+Os programas que você executa no terminal integrado podem solicitar o microfone, a câmera ou permissão para controlar outros apps (Apple Events, usados pelo `osascript`). O macOS pergunta em nome do VMark, porque considera o VMark o app responsável por tudo o que o terminal inicia. Permita o acesso quando o macOS perguntar; você pode alterá-lo depois em **Ajustes do Sistema → Privacidade e Segurança**, em **Microfone**, **Câmera** ou **Automação**. A solicitação acontece quando um programa usa o recurso pela primeira vez, não ao abrir o terminal.
+
+Se um programa gravar silêncio, capturar uma imagem preta ou relatar um erro de "não autorizado" sem que apareça nenhuma solicitação, verifique na página de ajustes correspondente se o VMark está listado e permitido. Ao relatar o problema, inclua a saída do programa.
+
+Para entradas de áudio virtuais como o BlackHole, a permissão por si só não roteia o áudio. Selecione a entrada desejada na sua ferramenta de gravação, roteie o áudio para ela e verifique uma gravação curta antes de uma sessão longa: um arquivo de áudio crescendo não prova, por si só, que o som foi capturado. O VMark não inclui gravador nem transcritor; esses comandos vêm de ferramentas que você instala separadamente.
+
 ## Ainda não implementado
 
 Estes itens estão planejados, mas **não** estão disponíveis hoje. Eles aparecem

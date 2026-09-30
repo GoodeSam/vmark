@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  Entitlements for the VMark app bundle (tauri.conf.json bundle.macOS.entitlements).
+  The Tauri bundler signs every executable it places in the bundle with this one
+  file, the MCP sidecar included; release.yml's earlier sidecar-only signature
+  (sidecar-entitlements.plist) is replaced at that point. An entitlement only
+  lets a process ask: the sidecar never opens audio, video or Apple Events, and
+  any request still goes through the user's consent.
+
+  Programs run in the integrated terminal are attributed to VMark by macOS, so
+  under the Hardened Runtime they can only ask for a protected resource the app
+  declares; anything else is denied without a prompt (#1483). Each resource needs
+  its usage description in Info.plist. scripts/check-macos-tcc-entitlements.test.mjs
+  pins both lists.
+-->
+<dict>
+    <!-- Terminal programs recording audio (ffmpeg, sox, dictation tools) -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+    <!-- Terminal programs capturing video (ffmpeg, imagesnap) -->
+    <key>com.apple.security.device.camera</key>
+    <true/>
+    <!-- Terminal programs scripting other apps (osascript, AppleScript) -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+    <!-- Allow JIT compilation (required for V8/Node.js) -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <!-- Allow unsigned executable memory (required for V8) -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <!-- Disable library validation (required for loading native modules) -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+</dict>
+</plist>
