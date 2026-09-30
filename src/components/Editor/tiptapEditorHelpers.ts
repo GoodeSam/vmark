@@ -3,13 +3,15 @@
  *
  * Purpose: pure, editor-instance-level helpers extracted from TiptapEditor.tsx —
  * history-free content replacement, adaptive debounce sizing, the spellcheck
- * size cutoff, the viewport-preserving cv-idle toggle (#823, #1340) and the
- * platform gate that keeps it off macOS (usesContentVisibility), and
+ * size cutoff, the viewport-preserving cv-idle toggle (#823, #1340) with the
+ * `.cv-enabled` sizing marker that outlives it (#1472, #1473) and the
+ * platform gate that keeps both off macOS (usesContentVisibility), and
  * external markdown→editor sync. No React state; safe to call from effects
  * and callbacks.
  *
  * @coordinates-with utils/platform.ts — isMacPlatform for the content-visibility gate
- * @coordinates-with TiptapEditor.tsx — sole consumer; behavior documented there
+ * @coordinates-with TiptapEditor.tsx — consumer; behavior documented there
+ * @coordinates-with useContentVisibilityMode.ts — applies the cv classes outside edits
  * @coordinates-with services/editor/unparseableDocument.ts — a refused sync lands in Source mode
  * @module components/Editor/tiptapEditorHelpers
  */
@@ -173,6 +175,36 @@ export function usesContentVisibility(docSize: number): boolean {
 }
 
 /**
+ * Marks an editor that uses content-visibility, for as long as it does. editor.css
+ * scopes `contain-intrinsic-size: auto` to it: remembered sizes survive the strip of
+ * `.cv-idle` (#1472), and editors that never skip a block record none (#1473).
+ */
+export const CV_ENABLED_CLASS = "cv-enabled";
+
+/** Mount: both classes at once — no block has been laid out, so no size to wait for. */
+export function applyContentVisibilityAtMount(container: HTMLElement, enabled: boolean): void {
+  container.classList.toggle(CV_ENABLED_CLASS, enabled);
+  container.classList.toggle("cv-idle", enabled);
+}
+
+/**
+ * Bring the classes to rest for `enabled` outside an edit (a document load, an
+ * editor shown again): an edit's transition across the threshold, or a fresh
+ * idle window when the marker is on but `.cv-idle` is neither applied nor due.
+ */
+export function followContentVisibility(
+  containerRef: MutableRefObject<HTMLDivElement | null>,
+  enabled: boolean,
+  cvIdleTimeoutRef: MutableRefObject<number | null>,
+): void {
+  const container = containerRef.current;
+  if (!container) return;
+  const idleOrDue = container.classList.contains("cv-idle") || cvIdleTimeoutRef.current !== null;
+  const atRest = container.classList.contains(CV_ENABLED_CLASS) === enabled && (!enabled || idleOrDue);
+  if (!atRest) setContentVisibility(containerRef, enabled, cvIdleTimeoutRef);
+}
+
+/**
  * Suppress content-visibility during active typing — keeping cv on during
  * edits costs O(blocks-after-insertion)/keystroke (378ms on a 2250-block
  * doc). Re-enables after 500ms idle so scroll/repaint keep the optimization.
@@ -184,6 +216,10 @@ export function usesContentVisibility(docSize: number): boolean {
  * heights when off-screen blocks have never been rendered, and small docs
  * don't need the optimization anyway (#823).
  *
+ * The same decision sets `.cv-enabled`: an edit that grows the document past the
+ * threshold marks it at once, and `.cv-idle` follows after the idle window with
+ * every block's size on record; one that shrinks it below drops both, and the re-add.
+ *
  * Both class toggles go through {@link setCvIdlePreservingViewport}: on a
  * large doc the same estimate-vs-real height divergence changes the height of
  * content ABOVE the viewport, so an unadjusted scrollTop threw the selection
@@ -192,27 +228,41 @@ export function usesContentVisibility(docSize: number): boolean {
  * window (the per-keystroke hot path) it is already off and nothing is
  * measured or written.
  *
- * If the idle timer fires while the editor is hidden (Source mode toggled
- * within the window), display:none geometry yields no anchor and the re-add
- * is class-only — correct, since nothing is visible and returning to WYSIWYG
- * re-derives the viewport (cursor mapping, scroll restore). Unmount never
- * reaches the timer at all: useTiptapUnmountFlush clears it.
+ * Hiding the editor (Source mode toggled within the window) cancels the re-add
+ * and showing it starts a fresh window (useContentVisibilityMode); a timer
+ * that still fires on a display:none container re-adds class-only, with no
+ * anchor to measure. Unmount never reaches the timer: useTiptapUnmountFlush clears it.
  */
 export function suppressCvIdleDuringEdit(
   containerRef: MutableRefObject<HTMLDivElement | null>,
   docSize: number,
   cvIdleTimeoutRef: MutableRefObject<number | null>,
 ): void {
+  setContentVisibility(containerRef, usesContentVisibility(docSize), cvIdleTimeoutRef);
+}
+
+/**
+ * Strip `.cv-idle`; when `enabled`, bring it back after 500ms idle. The marker goes on before
+ * the strip and off after it, so the rule never lapses while the optimization is on and a
+ * re-add is pending only while it is set. A forced toggle writes nothing if the class matches.
+ */
+function setContentVisibility(
+  containerRef: MutableRefObject<HTMLDivElement | null>,
+  enabled: boolean,
+  cvIdleTimeoutRef: MutableRefObject<number | null>,
+): void {
   const container = containerRef.current;
   if (!container) return;
+  if (enabled) container.classList.toggle(CV_ENABLED_CLASS, true);
   if (container.classList.contains("cv-idle")) {
     setCvIdlePreservingViewport(container, false);
   }
+  if (!enabled) container.classList.toggle(CV_ENABLED_CLASS, false);
   if (cvIdleTimeoutRef.current !== null) {
     window.clearTimeout(cvIdleTimeoutRef.current);
     cvIdleTimeoutRef.current = null;
   }
-  if (usesContentVisibility(docSize)) {
+  if (enabled) {
     cvIdleTimeoutRef.current = window.setTimeout(() => {
       cvIdleTimeoutRef.current = null;
       const idleContainer = containerRef.current;

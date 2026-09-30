@@ -13,8 +13,8 @@
  *     fails goes to services/editor/unparseableDocument.ts (Source mode + message, #1407).
  *   - shouldRerenderOnTransaction: false — Tiptap's default full-React-rerender per
  *     transaction is wasted work here since state flows through Zustand selectors.
- *   - content-visibility gated on .cv-idle (off during typing), large docs and
- *     never on macOS (usesContentVisibility); viewport-preserving toggles (#823, #1340).
+ *   - content-visibility only on large docs and never on macOS: .cv-enabled marks those
+ *     editors, .cv-idle applies it between edits (onUpdate, onTransaction, useContentVisibilityMode).
  *   - Native spellcheck disabled above 100K chars where rescans block the main thread.
  *   - Cursor tracking is delayed 200ms after creation to prevent spurious sync during
  *     initial render/focus.
@@ -31,7 +31,7 @@
  * @coordinates-with utils/wysiwygFlush.ts — registers flusher for on-demand serialization before save
  * @module components/Editor/TiptapEditor
  */
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import { useActiveTabId, useDocumentActions, useDocumentContent, useDocumentCursorInfo } from "@/hooks/useDocumentState";
@@ -60,11 +60,11 @@ import { ImageContextMenu } from "./ImageContextMenu";
 import { useTiptapContentSync } from "./useTiptapContentSync";
 import { useTiptapFlush } from "./useTiptapFlush";
 import { useWysiwygScrollMemory } from "./useWysiwygScrollMemory";
+import { followContentReplacement, useContentVisibilityMode } from "./useContentVisibilityMode";
 import {
   applySpellcheckForDocSize,
   buildTiptapEditorProps,
   CURSOR_TRACKING_DELAY_MS,
-  usesContentVisibility,
   setContentWithoutHistory,
   spellcheckAttrForDocSize,
   suppressCvIdleDuringEdit,
@@ -280,6 +280,8 @@ export function TiptapEditorInner({ hidden = false, readOnly = false, preview = 
       // Debounced serialize-to-store (RAF for small docs, timeout for large).
       scheduleFlush(editor);
     },
+    // Programmatic loads skip onUpdate; content-visibility follows them across the threshold.
+    onTransaction: (event) => followContentReplacement(editorContainerRef, event, cvIdleTimeoutRef, hiddenRef.current),
     onSelectionUpdate: ({ editor, transaction }) => {
       if (hiddenRef.current || previewRef.current) return;
       // Selection text sync runs before the cursor-tracking gate (no feedback
@@ -375,22 +377,17 @@ export function TiptapEditorInner({ hidden = false, readOnly = false, preview = 
     cursorInfoRef,
   });
 
-  // Initial cv-idle application: large docs, never on macOS (usesContentVisibility —
-  // small docs shake, and in WKWebView it costs ~1 s per scrolled frame).
-  // `content.length` is a cheap proxy for the PM doc size (close enough for the
-  // threshold check; the exact post-parse size governs onUpdate toggling).
-  const shouldUseCvIdle = usesContentVisibility(content.length);
-  const editorClassName = [
-    "tiptap-editor",
-    shouldUseCvIdle ? "cv-idle" : null,
-    codeBlockLineNumbers ? "show-line-numbers" : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  // The container's changing classes are written directly, never through className,
+  // whose re-render would overwrite them: content-visibility (mount, hide/show) and
+  // code-block line numbers.
+  useContentVisibilityMode({ containerRef: editorContainerRef, content, hidden, cvIdleTimeoutRef });
+  useLayoutEffect(() => {
+    editorContainerRef.current?.classList.toggle("show-line-numbers", codeBlockLineNumbers);
+  }, [codeBlockLineNumbers]);
 
   return (
     <>
-      <div ref={editorContainerRef} className={editorClassName} style={hidden ? { display: "none" } : undefined}>
+      <div ref={editorContainerRef} className="tiptap-editor" style={hidden ? { display: "none" } : undefined}>
         <EditorContent editor={editor} />
       </div>
       {!hidden && <ImageContextMenu onAction={(action) => void handleImageContextMenuAction(action)} />}

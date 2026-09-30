@@ -114,21 +114,29 @@
    a long doc cost O(blocks-after-insertion), e.g. 378ms per keystroke on a 2250-block
    doc. We apply it only when the editor is idle (initial load + between edits) and
    strip it during active typing. The debounced toggle is suppressCvIdleDuringEdit
-   in tiptapEditorHelpers.ts, invoked from TiptapEditor.tsx's onUpdate.
+   in tiptapEditorHelpers.ts, invoked from TiptapEditor.tsx's onUpdate;
+   useContentVisibilityMode.ts sets them at mount, across hide and show, and when a
+   document load crosses the size threshold (content syncs, reloads, split preview).
 
    Both toggle directions are scroll-compensated (cvIdleViewportLock.ts): swapping
    the 2.5em estimates for real heights (and back) changes the height of content
    above the viewport, which threw the selection out of view on every edit in
    50K+ docs (#1340).
 
-   The sizing rule is NOT gated on .cv-idle. Dropping `contain-intrinsic-size: auto`
-   discards each block's last remembered size (CSS Sizing 4 §5.2.1): when it went
-   with every edit-time strip, the idle re-add skipped every block at 2.5em, and
-   near the document's end that layout was too short to hold the compensated
-   scrollTop — the write clamped and the view moved by hundreds of pixels half a
-   second after the edit (#1472). Without size containment the rule has no layout
-   effect; it keeps each block's rendered size on record for the next skip. */
-.tiptap-editor .ProseMirror > * {
+   The sizing rule outlives .cv-idle on editors marked .cv-enabled: the ones that use
+   content-visibility at all (usesContentVisibility — large documents, never macOS).
+   Dropping `contain-intrinsic-size: auto` discards each block's last remembered size
+   (CSS Sizing 4 §5.2.1): when it went with every edit-time strip, the idle re-add
+   skipped every block at 2.5em, and near the document's end that layout was too
+   short to hold the compensated scrollTop — the write clamped and the view moved by
+   hundreds of pixels half a second after the edit (#1472). The marker goes on before
+   .cv-idle first returns and comes off only with it (tiptapEditorHelpers.ts).
+   Without size containment the rule has no layout effect, but the engine still
+   records every block's size at every rendering update, so an editor that never
+   skips a block is not given it (#1473). .cv-idle carries it too: content-visibility
+   never applies without a size estimate. */
+.tiptap-editor.cv-enabled .ProseMirror > *,
+.tiptap-editor.cv-idle .ProseMirror > * {
   contain-intrinsic-size: auto 2.5em;
 }
 
