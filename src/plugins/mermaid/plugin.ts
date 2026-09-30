@@ -87,7 +87,7 @@ function computeConfigKey(): string {
  * to avoid double-scaling. Mermaid's default flowchart padding/wrapping
  * are left untouched so its node-sizing algorithm stays accurate.
  */
-function applyMermaidConfig(): void {
+function applyMermaidConfig(strict = false): void {
   const key = computeConfigKey();
   if (!mermaidModule) {
     appliedConfigKey = observedConfigKey = key;
@@ -102,7 +102,8 @@ function applyMermaidConfig(): void {
     theme: "base",
     // Use "antiscript" (mermaid's default) to allow inline styles from `style` directives
     // while still sanitizing scripts. "strict" would strip all custom styling.
-    securityLevel: "antiscript",
+    securityLevel: strict ? "strict" : "antiscript",
+    ...(strict ? { htmlLabels: false, flowchart: { htmlLabels: false } } : {}),
     ...MERMAID_V11_RENDERING,
     fontFamily: tokens.fontMono,
     fontSize: currentFontSize,
@@ -164,7 +165,8 @@ async function initMermaid(): Promise<void> {
  */
 export async function renderMermaid(
   content: string,
-  id?: string
+  id?: string,
+  strict = false
 ): Promise<string | null> {
   try {
     await initMermaid();
@@ -183,8 +185,8 @@ export async function renderMermaid(
       id ?? `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 
     try {
-      if (appliedConfigKey !== computeConfigKey()) {
-        applyMermaidConfig();
+      if (strict || appliedConfigKey !== computeConfigKey()) {
+        applyMermaidConfig(strict);
       }
       // mermaidModule is guaranteed non-null after initMermaid()
       const { svg } = await mermaidModule!.default.render(diagramId, content);
@@ -198,6 +200,7 @@ export async function renderMermaid(
     } finally {
       // Clean up the temporary container Mermaid creates in document.body
       // (on error it leaves error displays there too).
+      if (strict) appliedConfigKey = null;
       cleanupMermaidContainer(diagramId);
     }
   });

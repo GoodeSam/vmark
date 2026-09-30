@@ -8,11 +8,14 @@
  * Key decisions:
  *   - switchVisibility starts a session's first shell but does not reset its
  *     terminal: startShell resets for every new PTY (#1471).
+ *   - removeSessionEntry releases the session's transcript binding, which
+ *     deletes its binding file (transcriptBinding.forgetTranscriptBinding).
  *
  * @coordinates-with useTerminalSessions.ts — sole caller
  * @coordinates-with useTerminalShellLifecycle.ts — startShell, which resets the terminal
  * @module components/Terminal/terminalSessionRegistry
  */
+import { forgetTranscriptBinding } from "@/services/terminal/transcriptBinding";
 import type { SessionEntry, SessionsRef } from "./terminalSessionTypes";
 import { fitAndResizePty } from "./fitAndResizePty";
 import { terminalLog } from "@/utils/debug";
@@ -46,6 +49,7 @@ export function removeSessionEntry(
       /* ignore */
     }
   }
+  forgetTranscriptBinding(sessionId);
   sessionsRef.current.delete(sessionId);
 }
 

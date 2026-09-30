@@ -16,6 +16,10 @@
  *     for it lives there, next to the code that sets it.
  *   - The disposed() callback lets the caller abort if the session was removed
  *     while the async spawn was in flight.
+ *   - With a sessionId, the shell gets VMARK_TRANSCRIPT_TOKEN — an opaque token
+ *     the CLI SessionStart hook binds its transcript to, prepared even while
+ *     transcript rendering is off. A failed or superseded binding is logged and
+ *     the shell starts without one; it never blocks the shell.
  *   - Watermark-based flow control pauses the PTY when xterm.js's parser can't
  *     keep up with rapid output (e.g. AI tool redraws), preventing lag/freezes.
  *     Retained after WI-1.1: the binary Channel removed the IPC-encoding
@@ -25,8 +29,10 @@
  *
  * @coordinates-with useTerminalSessions.ts — calls spawnPty when starting a shell
  * @coordinates-with createTerminalInstance.ts — provides the xterm Terminal instance
+ * @coordinates-with services/terminal/transcriptBinding.ts — per-shell transcript token
  * @module components/Terminal/spawnPty
  */
+import { prepareTranscriptBinding } from "@/services/terminal/transcriptBinding";
 import { spawn, type IPty, type IEvent } from "@/lib/pty";
 import { invoke } from "@tauri-apps/api/core";
 import type { Terminal } from "@xterm/xterm";
@@ -101,6 +107,7 @@ export function resolveTerminalWorkspaceRoot(
 
 /** Options for spawning a PTY process connected to an xterm instance. */
 export interface SpawnOptions {
+  sessionId?: string;
   term: Terminal;
   cwd?: string;
   /** VMARK_WORKSPACE root, resolved ONCE by the caller before the spawn
@@ -196,6 +203,11 @@ export async function spawnPty(options: SpawnOptions): Promise<IPty> {
   if (disposed()) throw new Error("disposed before spawn");
 
   const env = buildBaseTerminalEnv(loginPath, workspaceRoot);
+  if (options.sessionId) {
+    try { env.VMARK_TRANSCRIPT_TOKEN = await prepareTranscriptBinding(options.sessionId); }
+    catch (error) { terminalLog("Transcript binding unavailable:", error); }
+    if (disposed()) throw new Error("disposed before transcript binding");
+  }
   // Observability (T1): make "why doesn't `git commit` open VMark?" answerable
   // from a dev-mode log instead of guesswork. Once per session, not per bell.
   terminalLog(

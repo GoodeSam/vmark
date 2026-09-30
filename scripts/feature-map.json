@@ -795,6 +795,8 @@
         "src-tauri/src/pty",
         "src-tauri/src/shell_env.rs",
         "src-tauri/src/shell_integration.rs",
+        "src-tauri/src/terminal_transcript",
+        "src/utils/terminalTranscript.ts",
         "src/lib/pty.ts",
         "src/services/terminalAttention.ts",
         "src/pages/settings/TerminalSettings.tsx",

@@ -28,6 +28,7 @@ export type TerminalBellMode = "off" | "visual" | "audible";
 
 /** Terminal emulator preferences — shell, font, cursor, renderer, and panel layout. */
 export interface TerminalSettings {
+  transcriptPreview: boolean; // Default false: automatic assistant transcript rendering within the terminal area
   shell: string;       // Default: "" (empty = system default via getpwuid → $SHELL → /bin/sh)
   fontSize: number;    // Default: 13 (clamp range: 8–32, see CLAMP_RANGES.terminal)
   lineHeight: number;  // Default: 1.2 (clamp range: 1–2.5, see CLAMP_RANGES.terminal)

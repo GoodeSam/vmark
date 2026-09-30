@@ -784,5 +784,11 @@
   "appearance.theme.night.description": "Dunkler Schiefer für wenig Licht",
   "appearance.theme.solarized.description": "Solarized Dark, die klassische Palette",
   "appearance.theme.badge.light": "Hell",
-  "appearance.theme.badge.dark": "Dunkel"
+  "appearance.theme.badge.dark": "Dunkel",
+  "terminal.transcript.label": "Gesprächsprotokolle automatisch darstellen",
+  "terminal.transcript.description": "Claude/Codex-Markdown, Tabellen und Diagramme im Terminal darstellen. Fügt einen lokalen Start-Hook hinzu; laufende CLI-Sitzungen danach neu starten.",
+  "terminal.transcript.title": "Formatiertes Gesprächsprotokoll",
+  "terminal.transcript.waiting": "Warte auf eine Claude/Codex-Sitzung. CLI in diesem Terminal starten oder fortsetzen.",
+  "terminal.transcript.error": "Protokoll nicht verfügbar. CLI-Hooks und Node prüfen und Sitzung neu starten.",
+  "terminal.transcript.diagram": "Mermaid-Diagramm"
 }

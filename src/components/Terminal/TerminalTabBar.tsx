@@ -22,8 +22,11 @@
  *     unreachable in production (T5).
  *   - Dead sessions (process exited) get a visual indicator via CSS class.
  *   - Uses getState() pattern for session creation to avoid stale closures.
+ *   - With transcript rendering on, the actions group also holds the
+ *     rendered-transcript toggle: a chart icon, pressed (accent wash) while the
+ *     transcript is open, with `aria-controls` naming the region (WI-TP3.3).
  *   - Every action button carries a stable `data-terminal-action`
- *     (`new`/`close`/`restart`/`swap`). The E2E terminal journeys drive these to
+ *     (`new`/`close`/`restart`/`swap`, and `transcript` when enabled). The E2E terminal journeys drive these to
  *     create and dispose their OWN session, so the values are an automation
  *     CONTRACT, not decoration: selecting by DOM order is fragile and by
  *     aria-label breaks under any non-English locale. Renaming or dropping one
@@ -35,7 +38,7 @@
  * @module components/Terminal/TerminalTabBar
  */
 import { useCallback, useState } from "react";
-import { Plus, Trash2, RotateCcw, ArrowLeftRight, ArrowUpDown } from "lucide-react";
+import { Plus, Trash2, RotateCcw, ArrowLeftRight, ArrowUpDown, ChartColumn } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useUIStore, MAX_TERMINAL_SESSIONS, type EffectiveTerminalPosition } from "@/stores/uiStore";
 import type { TerminalSession } from "@/stores/uiStore/types";
@@ -54,6 +57,8 @@ interface TerminalTabBarProps {
   orientation?: "vertical" | "horizontal";
   /** Current effective panel position — drives the swap control's direction. */
   position: EffectiveTerminalPosition;
+  /** Present only while transcript rendering is enabled. */
+  transcript?: { expanded: boolean; controls: string; onToggle: () => void };
 }
 
 /**
@@ -91,8 +96,9 @@ function getTabDisplay(session: TerminalSession, displayName: string): string {
 }
 
 /** Renders numbered buttons for switching between terminal sessions plus create/close/restart controls. */
-export function TerminalTabBar({ onClose, onRestart, orientation = "vertical", position }: TerminalTabBarProps) {
+export function TerminalTabBar({ onClose, onRestart, orientation = "vertical", position, transcript }: TerminalTabBarProps) {
   const { t } = useTranslation("statusbar");
+  const { t: tSettings } = useTranslation("settings");
   // WI-TS3.1: the tab bar renders the VISIBLE population — the active
   // workspace scope's sessions ∪ window-scoped (everything with rail off).
   const sessions = useVisibleTerminalSessions();
@@ -141,6 +147,9 @@ export function TerminalTabBar({ onClose, onRestart, orientation = "vertical", p
   // The cap gates on what the user can SEE (D-T5's visible union) — a hidden
   // scope's sessions do not consume this scope's headroom.
   const isMaxed = sessions.length >= MAX_TERMINAL_SESSIONS;
+  // The transcript's strings live with its setting; asking for the namespace
+  // through the hook is what loads it (a bare `{ ns }` option renders the key).
+  const transcriptLabel = tSettings("terminal.transcript.title");
 
   return (
     <div className={`terminal-tab-bar ${orientation === "horizontal" ? "terminal-tab-bar--horizontal" : ""}`}>
@@ -198,6 +207,19 @@ export function TerminalTabBar({ onClose, onRestart, orientation = "vertical", p
       </div>
 
       <div className="terminal-tab-bar-actions">
+        {transcript && (
+          <button
+            className="vm-icon-btn vm-icon-btn--sm"
+            data-terminal-action="transcript"
+            onClick={transcript.onToggle}
+            title={transcriptLabel}
+            aria-label={transcriptLabel}
+            aria-pressed={transcript.expanded}
+            aria-controls={transcript.expanded ? transcript.controls : undefined}
+          >
+            <ChartColumn size={14} />
+          </button>
+        )}
         <button className="vm-icon-btn vm-icon-btn--sm" data-terminal-action="swap" onClick={handleSwap} title={t("terminal.swapPosition")} aria-label={t("terminal.swapPosition")}>
           <SwapIcon size={14} />
         </button>

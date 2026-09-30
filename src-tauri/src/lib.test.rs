@@ -82,5 +82,6 @@ fn manage_state_registers_every_backend_state() {
         crate::trusted_html::TrustedHtmlState,
         crate::close_to_tray::CloseToTrayState,
         crate::workspace_grants::WorkspaceGrants,
+        crate::terminal_transcript::TranscriptConfigState,
     );
 }

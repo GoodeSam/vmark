@@ -228,11 +228,22 @@ haben, als gäbe es sie bereits:
 | Schriftgröße | 10 – 24 px | 13 px | Alle |
 | Zeilenhöhe | 1,0 – 2,0 | 1,2 | Alle |
 | Bei Auswahl kopieren | Ein / Aus | Aus | Alle |
+| Gesprächsprotokolle automatisch darstellen | Ein / Aus | Aus | Alle |
 | Mac Option als Meta | Ein / Aus | Ein | macOS |
 | Shell-Integration | Ein / Aus | Ein | macOS / Linux (zsh, bash) |
 | Zwischenablage aus der Ferne (OSC 52) | Ein / Aus | Ein | Alle |
 | Scrollback-Puffer | 1.000 / 5.000 / 10.000 / 50.000 Zeilen | 5.000 | Alle |
 | Screenreader-Modus | Ein / Aus | Aus | Alle |
+
+### Gesprächsprotokolle automatisch darstellen
+
+Aktivieren Sie **Gesprächsprotokolle automatisch darstellen**, um Markdown, auswählbare Tabellen und Mermaid-Diagramme des Assistenten in einem Bereich für das formatierte Gesprächsprotokoll innerhalb des Terminalbereichs anzuzeigen. Er befindet sich rechts neben der CLI, wenn das Terminal oben oder unten angeordnet ist, und darunter, wenn das Terminal links oder rechts angeordnet ist; die interaktive CLI bleibt daneben nutzbar.
+
+Der Bereich ist anfangs eingeklappt. Er öffnet sich von selbst, wenn eine neue Antwort eine Tabelle oder ein Mermaid-Diagramm enthält — reine Textantworten, die das Terminal ohnehin gut darstellt, lassen ihn geschlossen. Klicken Sie jederzeit auf die Diagramm-Schaltfläche in der Tab-Leiste des Terminals (Tooltip **Formatiertes Gesprächsprotokoll**), um ihn ein- oder auszublenden; die Schaltfläche ist hervorgehoben, solange das Protokoll angezeigt wird, und beim Ausblenden erhält die CLI den gesamten Bereich zurück; nachdem Sie ihn eingeklappt haben, bleibt er bis zur nächsten Antwort mit einer Tabelle oder einem Diagramm geschlossen. Inhalte, die sich beim ersten Anzeigen der Sitzung bereits im Protokoll befinden, öffnen ihn nicht. Ein ausgeblendetes Terminal liest keine Protokolle mehr.
+
+Beim Aktivieren wird ein lokaler `SessionStart`-Hook zur `settings.json` von Claude Code und zur `hooks.json` von Codex hinzugefügt, wobei vorhandene Hooks erhalten bleiben. Starten Sie Claude/Codex nach dem Aktivieren in einem VMark-Terminal oder setzen Sie eine Sitzung dort fort; bereits laufende Sitzungen müssen neu gestartet werden. Codex fordert Sie beim ersten Start möglicherweise auf, dem neuen Hook zu vertrauen. Erforderlich sind Node und eine CLI-Version mit Lifecycle-Hooks. Ausdrücklich deaktivierte oder durch Richtlinien eingeschränkte Hooks, entfernte SSH-Sitzungen sowie benutzerdefinierte CLI-Konfigurationsverzeichnisse, die von der Umgebung von VMark abweichen, können keine Bindung herstellen.
+
+Jedes Terminal folgt genau seiner eigenen Sitzung statt dem zuletzt geänderten Protokoll. Die Vorschau behält bis zu 100 Assistentennachrichten aus den letzten 2 MiB der Protokolldaten. Rohes HTML und entfernte Bilder bleiben wirkungslos; ungültige Diagramme bleiben als Quelltext lesbar. Beim Deaktivieren wird der formatierte Bereich entfernt, und die von VMark installierten Hooks werden deaktiviert.
 
 ### Barrierefreiheit
 

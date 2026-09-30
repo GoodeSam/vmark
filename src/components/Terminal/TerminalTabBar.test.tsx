@@ -470,6 +470,35 @@ describe("TerminalTabBar", () => {
       expect(screen.getByTitle("🇯🇵 tokyo").textContent).toBe("🇯🇵");
     });
   });
+  // WI-TP3.3: the rendered-transcript toggle lives with the other panel actions.
+  describe("transcript toggle", () => {
+    it("is absent while transcript rendering is off", () => {
+      const { container } = renderWithSession();
+      expect(container.querySelector('[data-terminal-action="transcript"]')).toBeNull();
+    });
+
+    it("sits in the actions group as a chart toggle that names itself and shows its state", () => {
+      useUIStore.getState().terminalCreateSession();
+      const onToggle = vi.fn();
+      const { container, rerender } = render(
+        <TerminalTabBar onClose={onClose} onRestart={onRestart} position="bottom" transcript={{ expanded: false, controls: "tx", onToggle }} />,
+      );
+      const button = container.querySelector('.terminal-tab-bar-actions [data-terminal-action="transcript"]')!;
+      expect(button).toHaveAttribute("aria-label", "Rendered Transcript");
+      expect(button).toHaveAttribute("title", "Rendered Transcript");
+      expect(button).toHaveAttribute("aria-pressed", "false");
+      expect(button).not.toHaveAttribute("aria-controls");
+      expect(button.querySelector("svg")).toHaveClass("lucide-chart-column");
+      fireEvent.click(button);
+      expect(onToggle).toHaveBeenCalledOnce();
+      rerender(
+        <TerminalTabBar onClose={onClose} onRestart={onRestart} position="right" orientation="horizontal" transcript={{ expanded: true, controls: "tx", onToggle }} />,
+      );
+      expect(button).toHaveAttribute("aria-pressed", "true");
+      expect(button).toHaveAttribute("aria-controls", "tx");
+      expect(button.querySelector("svg")).toHaveClass("lucide-chart-column");
+    });
+  });
 });
 
 // WI-UI3.6 (R13) — a dead session announces its state, and shows a glyph.
@@ -489,4 +518,5 @@ describe("dead session indicator (R13)", () => {
     expect(tab!.getAttribute("aria-label")).toContain("(exited)");
     expect(tab!.querySelector(".terminal-tab-dead-glyph")).not.toBeNull();
   });
+
 });

@@ -227,11 +227,22 @@ Ouvrez **Paramètres → Terminal** pour configurer :
 | Taille de police | 10 – 24 px | 13 px | Toutes |
 | Interligne | 1.0 – 2.0 | 1.2 | Toutes |
 | Copier à la sélection | Activé / Désactivé | Désactivé | Toutes |
+| Afficher automatiquement les transcriptions | Activé / Désactivé | Désactivé | Toutes |
 | Option comme touche Meta | Activé / Désactivé | Activé | macOS |
 | Intégration du shell | Activé / Désactivé | Activé | macOS / Linux (zsh, bash) |
 | Presse-papiers distant (OSC 52) | Activé / Désactivé | Activé | Toutes |
 | Historique de défilement | 1 000 / 5 000 / 10 000 / 50 000 lignes | 5 000 | Toutes |
 | Mode lecteur d'écran | Activé / Désactivé | Désactivé | Toutes |
+
+### Afficher automatiquement les transcriptions
+
+Activez **Afficher automatiquement les transcriptions** pour afficher le Markdown de l'assistant, des tableaux sélectionnables et des diagrammes Mermaid dans une section de transcription mise en forme, à l'intérieur de la zone du terminal. Elle se place à droite de la CLI lorsque le terminal est en haut ou en bas, et en dessous lorsque le terminal est à gauche ou à droite ; la CLI interactive reste utilisable à côté.
+
+La section est d'abord repliée. Elle s'ouvre d'elle-même lorsqu'une nouvelle réponse contient un tableau ou un diagramme Mermaid — les réponses en texte brut, que le terminal affiche déjà bien, la laissent fermée. Cliquez sur le bouton graphique dans la barre d'onglets du terminal (info-bulle **Transcription mise en forme**) pour l'afficher ou la masquer à tout moment ; le bouton est mis en surbrillance tant que la transcription est affichée, et la masquer rend toute la zone à la CLI ; après l'avoir repliée, elle reste fermée jusqu'à la prochaine réponse contenant un tableau ou un diagramme. Le contenu déjà présent dans la transcription lorsque la session est affichée pour la première fois ne l'ouvre pas. Un terminal masqué cesse de lire les transcriptions.
+
+L'activation ajoute un hook `SessionStart` local au `settings.json` de Claude Code et au `hooks.json` de Codex, en conservant les hooks existants. Après l'activation, démarrez ou reprenez Claude/Codex dans un terminal VMark ; redémarrez les sessions déjà en cours. Codex peut vous demander de faire confiance au nouveau hook lors de sa première exécution. Node et une version de la CLI prenant en charge les hooks de cycle de vie sont requis. Les hooks explicitement désactivés ou restreints par une stratégie, les sessions SSH distantes et les répertoires de configuration CLI personnalisés qui diffèrent de l'environnement de VMark ne peuvent pas établir de liaison.
+
+Chaque terminal suit exactement sa propre session plutôt que la transcription modifiée le plus récemment. L'aperçu conserve jusqu'à 100 messages de l'assistant issus des 2 derniers MiB de données de transcription. Le HTML brut et les images distantes restent inertes ; les diagrammes non valides restent lisibles sous forme de source. La désactivation supprime la section mise en forme et désactive les hooks installés par VMark.
 
 ### Accessibilité
 

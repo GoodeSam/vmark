@@ -218,11 +218,22 @@ Open **Settings → Terminal** to configure:
 | Font Size | 10 – 24 px | 13 px | All |
 | Line Height | 1.0 – 2.0 | 1.2 | All |
 | Copy on Select | On / Off | Off | All |
+| Automatic transcript rendering | On / Off | Off | All |
 | Mac Option as Meta | On / Off | On | macOS |
 | Shell Integration | On / Off | On | macOS / Linux (zsh, bash) |
 | Remote Clipboard (OSC 52) | On / Off | On | All |
 | Scrollback | 1,000 / 5,000 / 10,000 / 50,000 lines | 5,000 | All |
 | Screen Reader Mode | On / Off | Off | All |
+
+### Automatic transcript rendering
+
+Enable **Automatic transcript rendering** to display assistant Markdown, selectable tables and Mermaid diagrams in a rendered-transcript section inside the terminal area. It sits to the right of the CLI when the terminal is at the top or bottom, and below it when the terminal is on the left or right; the interactive CLI stays usable beside it.
+
+The section starts collapsed. It opens by itself when a new reply contains a table or a Mermaid diagram — plain-text replies, which the terminal already shows well, leave it closed. Click the chart button in the terminal tab bar (tooltip **Rendered Transcript**) to show or hide it at any time; the button is highlighted while the transcript is shown, and hiding it gives the CLI the whole area back; after you collapse it, it stays closed until the next reply with a table or diagram. Content already in the transcript when the session is first shown does not open it. A hidden terminal stops reading transcripts.
+
+Enabling adds a local `SessionStart` hook to Claude Code's `settings.json` and Codex's `hooks.json`, preserving existing hooks. Start or resume Claude/Codex in a VMark terminal after enabling; restart sessions that are already running. Codex may ask you to trust the new hook on its first run. Node and a CLI version with lifecycle hooks are required. Explicitly disabled or policy-restricted hooks, remote SSH sessions, and custom CLI configuration directories that differ from VMark's environment cannot provide a binding.
+
+Each terminal follows its exact session rather than whichever transcript was modified most recently. The preview retains up to 100 assistant messages from the last 2 MiB of transcript data. Raw HTML and remote images remain inert; invalid diagrams remain readable as source. Disabling removes the rendered section and deactivates VMark's installed hooks.
 
 ### Accessibility
 

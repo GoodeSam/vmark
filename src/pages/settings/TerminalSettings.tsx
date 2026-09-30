@@ -106,6 +106,10 @@ export function TerminalSettings() {
   return (
     <div className="space-y-6">
       <SettingsGroup title={t("terminal.group.terminal")}>
+        <SettingRow label={t("terminal.transcript.label")} description={t("terminal.transcript.description")}>
+          <Toggle checked={terminal.transcriptPreview} onChange={(v) => updateTerminalSetting("transcriptPreview", v)} />
+        </SettingRow>
+
         <SettingRow label={t("terminal.shell.label")} description={t("terminal.shell.description")}>
           <Select
             value={terminal.shell}

@@ -66,6 +66,7 @@ mod system_fonts;
 mod tab_transfer;
 mod task;
 mod temp_html;
+mod terminal_transcript;
 mod trusted_html; // #1273 opt-in origin-isolated execution for standalone HTML
 mod watcher;
 mod webview_edit;
@@ -145,6 +146,8 @@ fn manage_state<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         // WI-LX1.1: the workspace roots the user chose. Loaded from app data
         // and re-granted in `setup_app`; picks made before that are merged.
         .manage(workspace_grants::WorkspaceGrants::default())
+        // Serializes terminal-transcript CLI hook configuration writes.
+        .manage(terminal_transcript::TranscriptConfigState::default())
 }
 
 /// Build and run the Tauri application with all plugins, commands, and event handlers.

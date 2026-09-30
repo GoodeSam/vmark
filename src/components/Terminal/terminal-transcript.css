@@ -1,0 +1,28 @@
+/* The transcript takes the panel's long axis: right of the CLI in a top/bottom
+   panel (--row), below it in a side panel (--column). See TerminalSessionsArea;
+   the container's direction itself lives in terminal-panel.css. Mounted only
+   while open; its toggle is in the tab bar. */
+.terminal-transcript {
+  flex: 0 1 50%;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  color: var(--text-color);
+  background: var(--bg-color);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+}
+.terminal-sessions-container--column > .terminal-transcript { border-top: var(--border-thin) solid var(--border-color); }
+.terminal-sessions-container--row > .terminal-transcript { flex-basis: 45%; border-left: var(--border-thin) solid var(--border-color); }
+.terminal-transcript article + article { border-top: var(--border-thin) solid var(--border-color); }
+.transcript-markdown { user-select: text; overflow-wrap: anywhere; }
+.transcript-markdown pre { white-space: pre-wrap; font-family: var(--font-mono); }
+.transcript-heading { display: block; margin-block: var(--space-2); }
+.transcript-table { overflow-x: auto; margin-block: var(--space-2); }
+.transcript-table table { border-collapse: collapse; width: 100%; }
+.transcript-table td, .transcript-table th {
+  border: var(--border-thin) solid var(--border-color);
+  padding: var(--space-1) var(--space-2);
+  text-align: start;
+}
+.transcript-diagram { border: none; width: 100%; height: auto; }
