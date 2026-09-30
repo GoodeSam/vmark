@@ -79,6 +79,7 @@ const TERMINAL_DOC = `
 | Font Size | 10 – 24 px | 13 px | All |
 | Line Height | 1.0 – 2.0 | 1.2 | All |
 | Copy on Select | On / Off | Off | All |
+| Automatic transcript rendering | On / Off | Off | All |
 | Mac Option as Meta | On / Off | On | macOS |
 | Shell Integration | On / Off | On | macOS / Linux (zsh, bash) |
 | Remote Clipboard (OSC 52) | On / Off | On | All |
@@ -100,6 +101,7 @@ const TERMINAL_DEFAULTS = {
     fontSize: 13,
     lineHeight: 1.2,
     copyOnSelect: false,
+    transcriptPreview: false,
     macOptionIsMeta: true,
     shellIntegration: true,
     osc52Clipboard: true,
@@ -446,18 +448,18 @@ describe("compare", () => {
 // ---------------------------------------------------------------------------
 
 describe("terminal.md Default column ↔ defaults (formerly terminalDocDefaults.test.ts)", () => {
-  it("maps all eleven published terminal rows and finds them all correct against the shipped defaults", () => {
-    expect(TERMINAL_MAP).toHaveLength(11);
+  it("maps all twelve published terminal rows and finds them all correct against the shipped defaults", () => {
+    expect(TERMINAL_MAP).toHaveLength(12);
     const { findings, info } = compare(pagesFrom({ terminal: TERMINAL_DOC }), TERMINAL_DEFAULTS, TERMINAL_MAP);
     expect(findings).toEqual([]);
-    expect(info).toContain("terminal.md: 11 Default rows, 11 mapped");
+    expect(info).toContain("terminal.md: 12 Default rows, 12 mapped");
   });
 
   it("catches T9 — Option-as-Meta documented Off while the code ships true", () => {
     const doc = TERMINAL_DOC.replace("| Mac Option as Meta | On / Off | On |", "| Mac Option as Meta | On / Off | Off |");
     const { findings } = compare(pagesFrom({ terminal: doc }), TERMINAL_DEFAULTS, TERMINAL_MAP);
     expect(findings).toEqual([
-      'terminal.md:10 "Mac Option as Meta": doc says "Off", code (terminal.macOptionIsMeta) says "On"',
+      'terminal.md:11 "Mac Option as Meta": doc says "Off", code (terminal.macOptionIsMeta) says "On"',
     ]);
   });
 
@@ -551,7 +553,7 @@ describe("run", () => {
     const { findings, info } = await run({ root, paths, deps: { defaults, rowMap } });
     expect(findings).toEqual(['docs/settings.md:3 "Confirm quit": doc says "On", code (general.confirmQuit) says "Off"']);
     expect(info).toContain("defaults: injected by the caller");
-    expect(info).toContain("docs/terminal.md: 11 Default rows, 11 mapped");
+    expect(info).toContain("docs/terminal.md: 12 Default rows, 12 mapped");
   });
 
   it("LIVE: settings.md and terminal.md agree with defaults.ts in both directions", async () => {
@@ -564,7 +566,7 @@ describe("run", () => {
         .filter(Boolean)
         .map((m) => [m[1], { rows: Number(m[2]), mapped: Number(m[3]) }]),
     );
-    expect(rows["website/guide/terminal.md"]).toEqual({ rows: 11, mapped: 11 });
+    expect(rows["website/guide/terminal.md"]).toEqual({ rows: 12, mapped: 12 });
     expect(rows["website/guide/settings.md"].rows).toBeGreaterThan(100);
     expect(rows["website/guide/settings.md"].mapped).toBe(rows["website/guide/settings.md"].rows);
   });

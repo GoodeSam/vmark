@@ -784,5 +784,11 @@
   "appearance.theme.night.description": "暗色石板，弱光環境",
   "appearance.theme.solarized.description": "Solarized Dark 經典配色",
   "appearance.theme.badge.light": "淺色",
-  "appearance.theme.badge.dark": "深色"
+  "appearance.theme.badge.dark": "深色",
+  "terminal.transcript.label": "自動渲染對話記錄",
+  "terminal.transcript.description": "在終端內渲染 Claude/Codex 的 Markdown、表格和圖表。啟用時新增本機啟動鉤子；啟用後請重新啟動正在執行的 CLI 工作階段。",
+  "terminal.transcript.title": "渲染後的對話記錄",
+  "terminal.transcript.waiting": "正在等待 Claude/Codex 工作階段。請在此終端中啟動或恢復 CLI。",
+  "terminal.transcript.error": "無法讀取對話記錄。請檢查 CLI 鉤子和 Node，然後重新啟動工作階段。",
+  "terminal.transcript.diagram": "Mermaid 圖表"
 }

@@ -784,5 +784,11 @@
   "appearance.theme.night.description": "Dark slate for low light",
   "appearance.theme.solarized.description": "Solarized Dark, the classic palette",
   "appearance.theme.badge.light": "Light",
-  "appearance.theme.badge.dark": "Dark"
+  "appearance.theme.badge.dark": "Dark",
+  "terminal.transcript.label": "Automatic transcript rendering",
+  "terminal.transcript.description": "Render Claude/Codex Markdown, tables and diagrams inside the terminal. Adds a local start hook; restart running CLI sessions after enabling",
+  "terminal.transcript.title": "Rendered Transcript",
+  "terminal.transcript.waiting": "Waiting for a Claude/Codex session. Start or resume the CLI in this terminal.",
+  "terminal.transcript.error": "Transcript unavailable. Check CLI hooks and Node, then restart the session.",
+  "terminal.transcript.diagram": "Mermaid diagram"
 }

@@ -128,6 +128,7 @@ export function useTerminalShellLifecycle(
 
       try {
         const pty = await spawnPty({
+          sessionId,
           term: entry.instance.term,
           // Omitted when nothing resolved a directory — see spawnPty's cwd note.
           ...(cwd !== undefined ? { cwd } : {}),

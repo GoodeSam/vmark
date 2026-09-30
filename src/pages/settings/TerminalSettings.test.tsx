@@ -182,3 +182,11 @@ describe("TerminalSettings panel size (WI-1.2)", () => {
     expect(panelSizeSelect().value).toBe(String(TERMINAL_MAX_RATIO));
   });
 });
+
+// WI-TP2.1: automatic transcript rendering is an opt-in persisted preference.
+describe("TerminalSettings transcript preview", () => {
+  it("offers a transcript preview toggle", () => {
+    render(<TerminalSettings />);
+    expect(screen.getByText("Automatic transcript rendering")).toBeInTheDocument();
+  });
+});

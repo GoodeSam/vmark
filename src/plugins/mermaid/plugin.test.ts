@@ -56,6 +56,14 @@ beforeEach(() => {
 });
 
 describe("renderMermaid", () => {
+  // WI-TP2.1: transcript rendering must not change the editor's global config.
+  it("uses strict SVG labels for transcripts and restores normal config on the next render", async () => {
+    const { renderMermaid } = await loadPlugin();
+    await renderMermaid("graph TD; A-->B", "transcript", true);
+    expect(mockInitialize).toHaveBeenLastCalledWith(expect.objectContaining({ securityLevel: "strict", htmlLabels: false }));
+    await renderMermaid("graph TD; A-->B", "editor");
+    expect(mockInitialize).toHaveBeenLastCalledWith(expect.objectContaining({ securityLevel: "antiscript" }));
+  });
   it("renders content to SVG with the live 'base' theme config", async () => {
     const { renderMermaid } = await loadPlugin();
 

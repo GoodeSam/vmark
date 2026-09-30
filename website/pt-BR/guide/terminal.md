@@ -225,11 +225,22 @@ Abra **Configurações → Terminal** para configurar:
 | Tamanho da fonte | 10 – 24 px | 13 px | Todas |
 | Altura da linha | 1.0 – 2.0 | 1.2 | Todas |
 | Copiar ao selecionar | Ligado / Desligado | Desligado | Todas |
+| Renderizar transcrições automaticamente | Ligado / Desligado | Desligado | Todas |
 | Option como tecla Meta | Ligado / Desligado | Ligado | macOS |
 | Integração com o shell | Ligado / Desligado | Ligado | macOS / Linux (zsh, bash) |
 | Área de transferência remota (OSC 52) | Ligado / Desligado | Ligado | Todas |
 | Histórico de rolagem | 1.000 / 5.000 / 10.000 / 50.000 linhas | 5.000 | Todas |
 | Modo leitor de tela | Ligado / Desligado | Desligado | Todas |
+
+### Renderizar transcrições automaticamente
+
+Ative **Renderizar transcrições automaticamente** para exibir o Markdown do assistente, tabelas selecionáveis e diagramas Mermaid em uma seção de transcrição formatada dentro da área do terminal. Ela fica à direita da CLI quando o terminal está no topo ou na parte inferior, e abaixo dela quando o terminal está à esquerda ou à direita; a CLI interativa continua utilizável ao lado.
+
+A seção começa recolhida. Ela se abre sozinha quando uma nova resposta contém uma tabela ou um diagrama Mermaid — respostas em texto simples, que o terminal já exibe bem, a mantêm fechada. Clique no botão de gráfico na barra de abas do terminal (dica **Transcrição formatada**) para mostrá-la ou ocultá-la a qualquer momento; o botão fica destacado enquanto a transcrição está visível, e ocultá-la devolve toda a área à CLI; depois que você a recolhe, ela permanece fechada até a próxima resposta com uma tabela ou um diagrama. O conteúdo que já está na transcrição quando a sessão é exibida pela primeira vez não a abre. Um terminal oculto para de ler transcrições.
+
+Ao ativar, um hook `SessionStart` local é adicionado ao `settings.json` do Claude Code e ao `hooks.json` do Codex, preservando os hooks existentes. Depois de ativar, inicie ou retome o Claude/Codex em um terminal do VMark; reinicie as sessões que já estão em execução. O Codex pode pedir que você confie no novo hook na primeira execução. São necessários o Node e uma versão da CLI com hooks de ciclo de vida. Hooks explicitamente desativados ou restringidos por política, sessões SSH remotas e diretórios de configuração personalizados da CLI que diferem do ambiente do VMark não conseguem fornecer um vínculo.
+
+Cada terminal acompanha exatamente a sua sessão, em vez da transcrição modificada mais recentemente. A pré-visualização mantém até 100 mensagens do assistente dos últimos 2 MiB de dados da transcrição. HTML bruto e imagens remotas permanecem inertes; diagramas inválidos continuam legíveis como código-fonte. Ao desativar, a seção formatada é removida e os hooks instalados pelo VMark são desativados.
 
 ### Acessibilidade
 

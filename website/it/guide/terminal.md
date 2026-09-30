@@ -227,11 +227,22 @@ Apri **Impostazioni → Terminale** per configurare:
 | Dimensione carattere | 10 – 24 px | 13 px | Tutte |
 | Interlinea | 1.0 – 2.0 | 1.2 | Tutte |
 | Copia alla selezione | Attivo / Disattivato | Disattivato | Tutte |
+| Visualizza automaticamente le trascrizioni | Attivo / Disattivato | Disattivato | Tutte |
 | Option come tasto Meta | Attivo / Disattivato | Attivo | macOS |
 | Integrazione della shell | Attivo / Disattivato | Attivo | macOS / Linux (zsh, bash) |
 | Appunti remoti (OSC 52) | Attivo / Disattivato | Attivo | Tutte |
 | Cronologia di scorrimento | 1.000 / 5.000 / 10.000 / 50.000 righe | 5.000 | Tutte |
 | Modalità screen reader | Attivo / Disattivato | Disattivato | Tutte |
+
+### Visualizza automaticamente le trascrizioni
+
+Attiva **Visualizza automaticamente le trascrizioni** per mostrare il Markdown dell'assistente, tabelle selezionabili e diagrammi Mermaid in una sezione di trascrizione formattata all'interno dell'area del terminale. Si trova a destra della CLI quando il terminale è in alto o in basso, e sotto di essa quando il terminale è a sinistra o a destra; la CLI interattiva resta utilizzabile accanto.
+
+La sezione parte compressa. Si apre da sola quando una nuova risposta contiene una tabella o un diagramma Mermaid — le risposte in testo semplice, che il terminale mostra già bene, la lasciano chiusa. Fai clic sul pulsante del grafico nella barra delle schede del terminale (tooltip **Trascrizione formattata**) per mostrarla o nasconderla in qualsiasi momento; il pulsante è evidenziato mentre la trascrizione è visibile e nasconderla restituisce l'intera area alla CLI; dopo averla compressa, resta chiusa fino alla successiva risposta con una tabella o un diagramma. Il contenuto già presente nella trascrizione quando la sessione viene mostrata per la prima volta non la apre. Un terminale nascosto smette di leggere le trascrizioni.
+
+L'attivazione aggiunge un hook `SessionStart` locale al `settings.json` di Claude Code e al `hooks.json` di Codex, preservando gli hook esistenti. Dopo l'attivazione, avvia o riprendi Claude/Codex in un terminale di VMark; riavvia le sessioni già in esecuzione. Codex potrebbe chiederti di considerare attendibile il nuovo hook alla prima esecuzione. Sono richiesti Node e una versione della CLI con gli hook del ciclo di vita. Gli hook disattivati esplicitamente o limitati da criteri, le sessioni SSH remote e le directory di configurazione personalizzate della CLI diverse dall'ambiente di VMark non possono fornire un collegamento.
+
+Ogni terminale segue esattamente la propria sessione anziché la trascrizione modificata più di recente. L'anteprima conserva fino a 100 messaggi dell'assistente dagli ultimi 2 MiB di dati della trascrizione. L'HTML grezzo e le immagini remote restano inerti; i diagrammi non validi restano leggibili come sorgente. La disattivazione rimuove la sezione formattata e disattiva gli hook installati da VMark.
 
 ### Accessibilità
 

@@ -103,6 +103,7 @@ export const initialState: SettingsState = {
     cleanupOrphansOnClose: false, // Off by default - user must opt in
   },
   terminal: {
+    transcriptPreview: false,
     shell: "",
     // D15: deliberately independent of the 18px reading size — a terminal is
     // a dense monitoring surface, and 13/1.2 matches what real terminals ship.

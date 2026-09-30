@@ -8,6 +8,7 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
+import { useEffect } from "react";
 import { EditorArea } from "./EditorArea";
 
 describe("EditorArea", () => {
@@ -84,21 +85,9 @@ describe("EditorArea", () => {
     expect(screen.getByTestId("editor")).toBeInTheDocument();
   });
 
-  it("uses column layout when panel is top", () => {
-    const { container } = render(
-      <EditorArea editor={<div>editor</div>} bottomBar={<div>bottom</div>} panel={<div>panel</div>} panelPosition="top" />
-    );
-    expect(container.firstChild as HTMLElement).toHaveStyle({ flexDirection: "column" });
-  });
-
-  it("uses row layout when panel is left", () => {
-    const { container } = render(
-      <EditorArea editor={<div>editor</div>} bottomBar={<div>bottom</div>} panel={<div>panel</div>} panelPosition="left" />
-    );
-    expect(container.firstChild as HTMLElement).toHaveStyle({ flexDirection: "row" });
-  });
-
-  it.each(["top", "left"] as const)("renders the panel before the editor for %s", (panelPosition) => {
+  // The panel is drawn FIRST for top/left by reversing the flex axis, not by
+  // moving it to another child slot — see the remount regression test below.
+  it.each([["top", "column-reverse"], ["left", "row-reverse"]] as const)("draws the panel before the editor for %s", (panelPosition, flexDirection) => {
     const { container } = render(
       <EditorArea
         editor={<div data-testid="editor">editor</div>}
@@ -108,7 +97,26 @@ describe("EditorArea", () => {
       />
     );
     const root = container.firstChild as HTMLElement;
-    expect(root.firstChild).toHaveAttribute("data-testid", "panel");
+    expect(root).toHaveStyle({ flexDirection });
+    expect(root.lastChild).toHaveAttribute("data-testid", "panel");
+  });
+
+  // Regression: swapping the terminal between top and bottom (or left and
+  // right) moved the panel to a different child slot, so React unmounted it —
+  // and the terminal's unmount kills every PTY, taking running programs (a
+  // Claude session) with it. The panel must survive every position change.
+  it("keeps the panel mounted across every position change", () => {
+    let mounts = 0;
+    function Panel() {
+      useEffect(() => { mounts += 1; }, []);
+      return <div data-testid="panel">panel</div>;
+    }
+    const area = (panelPosition: "top" | "bottom" | "left" | "right") => (
+      <EditorArea editor={<div>editor</div>} bottomBar={<div>bottom</div>} panel={<Panel />} panelPosition={panelPosition} />
+    );
+    const { rerender } = render(area("bottom"));
+    for (const position of ["top", "bottom", "left", "right", "top", "left"] as const) rerender(area(position));
+    expect(mounts).toBe(1);
   });
 
   it.each(["bottom", "right"] as const)("renders the panel after the editor for %s", (panelPosition) => {

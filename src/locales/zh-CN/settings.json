@@ -784,5 +784,11 @@
   "appearance.theme.night.description": "暗色石板，弱光环境",
   "appearance.theme.solarized.description": "Solarized Dark 经典配色",
   "appearance.theme.badge.light": "浅色",
-  "appearance.theme.badge.dark": "深色"
+  "appearance.theme.badge.dark": "深色",
+  "terminal.transcript.label": "自动渲染对话记录",
+  "terminal.transcript.description": "在终端内渲染 Claude/Codex 的 Markdown、表格和图表。启用时添加本地启动钩子；启用后请重启正在运行的 CLI 会话。",
+  "terminal.transcript.title": "渲染后的对话记录",
+  "terminal.transcript.waiting": "正在等待 Claude/Codex 会话。请在此终端中启动或恢复 CLI。",
+  "terminal.transcript.error": "无法读取对话记录。请检查 CLI 钩子和 Node，然后重启会话。",
+  "terminal.transcript.diagram": "Mermaid 图表"
 }

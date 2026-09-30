@@ -225,11 +225,22 @@ Abre **Configuración → Terminal** para configurar:
 | Tamaño de Fuente | 10 – 24 px | 13 px | Todas |
 | Altura de Línea | 1.0 – 2.0 | 1.2 | Todas |
 | Copiar al Seleccionar | Activado / Desactivado | Desactivado | Todas |
+| Mostrar transcripciones automáticamente | Activado / Desactivado | Desactivado | Todas |
 | Tecla Option de Mac como Meta | Activado / Desactivado | Activado | macOS |
 | Integración con el shell | Activado / Desactivado | Activado | macOS / Linux (zsh, bash) |
 | Portapapeles remoto (OSC 52) | Activado / Desactivado | Activado | Todas |
 | Historial de desplazamiento | 1.000 / 5.000 / 10.000 / 50.000 líneas | 5.000 | Todas |
 | Modo lector de pantalla | Activado / Desactivado | Desactivado | Todas |
+
+### Mostrar transcripciones automáticamente
+
+Activa **Mostrar transcripciones automáticamente** para ver el Markdown del asistente, tablas seleccionables y diagramas Mermaid en una sección de transcripción con formato dentro del área del terminal. Se sitúa a la derecha de la CLI cuando el terminal está arriba o abajo, y debajo de ella cuando el terminal está a la izquierda o a la derecha; la CLI interactiva sigue siendo utilizable a su lado.
+
+La sección empieza contraída. Se abre sola cuando una nueva respuesta contiene una tabla o un diagrama Mermaid — las respuestas de texto sin formato, que el terminal ya muestra bien, la dejan cerrada. Haz clic en el botón de gráfico de la barra de pestañas del terminal (texto emergente **Transcripción con formato**) para mostrarla u ocultarla en cualquier momento; el botón aparece resaltado mientras se muestra la transcripción, y al ocultarla la CLI recupera toda el área; después de contraerla, permanece cerrada hasta la siguiente respuesta con una tabla o un diagrama. El contenido que ya está en la transcripción cuando la sesión se muestra por primera vez no la abre. Un terminal oculto deja de leer transcripciones.
+
+Al habilitarla se añade un hook `SessionStart` local al `settings.json` de Claude Code y al `hooks.json` de Codex, conservando los hooks existentes. Después de habilitarla, inicia o reanuda Claude/Codex en un terminal de VMark; reinicia las sesiones que ya estén en ejecución. Codex puede pedirte que confíes en el nuevo hook la primera vez que se ejecute. Se requieren Node y una versión de la CLI con hooks de ciclo de vida. Los hooks deshabilitados explícitamente o restringidos por políticas, las sesiones SSH remotas y los directorios de configuración personalizados de la CLI que difieran del entorno de VMark no pueden proporcionar un vínculo.
+
+Cada terminal sigue su sesión exacta en lugar de la transcripción modificada más recientemente. La vista previa conserva hasta 100 mensajes del asistente de los últimos 2 MiB de datos de la transcripción. El HTML sin procesar y las imágenes remotas permanecen inertes; los diagramas no válidos siguen siendo legibles como código fuente. Al deshabilitarla se elimina la sección con formato y se desactivan los hooks instalados por VMark.
 
 ### Accesibilidad
 

@@ -784,5 +784,11 @@
   "appearance.theme.night.description": "暗いスレート、暗所向け",
   "appearance.theme.solarized.description": "Solarized Dark、定番パレット",
   "appearance.theme.badge.light": "ライト",
-  "appearance.theme.badge.dark": "ダーク"
+  "appearance.theme.badge.dark": "ダーク",
+  "terminal.transcript.label": "会話記録を自動表示",
+  "terminal.transcript.description": "Claude/Codex の Markdown、表、図をターミナル内に表示します。ローカル起動フックを追加します。有効化後、実行中の CLI を再起動してください。",
+  "terminal.transcript.title": "整形された会話記録",
+  "terminal.transcript.waiting": "Claude/Codex のセッションを待っています。このターミナルで CLI を起動または再開してください。",
+  "terminal.transcript.error": "会話記録を読み込めません。CLI フックと Node を確認し、セッションを再起動してください。",
+  "terminal.transcript.diagram": "Mermaid の図"
 }

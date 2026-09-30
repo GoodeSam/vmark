@@ -4,8 +4,16 @@
  *
  * Per ADR-007, EditorArea is a pure layout helper — no store imports.
  * The dynamic panel positioning (top/bottom/left/right) is the only layout
- * intelligence: left/right use a row axis, top/left render the panel before
+ * intelligence: left/right use a row axis, top/left draw the panel before
  * the editor. Everything else is pass-through composition.
+ *
+ * The panel always occupies ONE child slot, after the editor column; top/left
+ * reverse the flex axis instead of moving it. Moving it between slots made
+ * React unmount and remount it on every top↔bottom / left↔right swap, and the
+ * terminal's unmount kills its PTYs — a running Claude session died with it.
+ * The cost is that for top/left the DOM (and so Tab) order puts the panel after
+ * the editor while it is drawn before; the two are independent landmarks, so
+ * no reading sequence depends on that order.
  *
  * The editor + bottom-bar are siblings inside a flex column so the
  * 40px bottom bar always hugs the editor. The panel arranges around
@@ -56,21 +64,22 @@ export function EditorArea({
 }: EditorAreaProps) {
   const { t } = useTranslation();
 
-  // left/right share a row axis; top/left render the panel before the editor.
+  // left/right share a row axis; top/left draw the panel first by REVERSING
+  // the axis — never by moving the panel to another slot (see header).
   const horizontal = panelPosition === "left" || panelPosition === "right";
   const panelFirst = panelPosition === "top" || panelPosition === "left";
+  const axis = horizontal ? "row" : "column";
 
   const panelAxis = (
     <div
       style={{
         flex: 1,
         display: "flex",
-        flexDirection: horizontal ? "row" : "column",
+        flexDirection: panelFirst ? `${axis}-reverse` : axis,
         minHeight: 0,
         minWidth: 0,
       }}
     >
-      {panelFirst && panel}
       <div
         style={{
           flex: 1,
@@ -107,7 +116,7 @@ export function EditorArea({
           {bottomBar}
         </div>
       </div>
-      {!panelFirst && panel}
+      {panel}
     </div>
   );
 

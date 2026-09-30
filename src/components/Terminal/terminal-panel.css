@@ -103,10 +103,27 @@
 
 .terminal-sessions-container {
   position: relative;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
+}
+
+/* A top/bottom panel is wide and short: its transcript goes beside the CLI.
+   Declared here, after the base rule, so it wins in any stylesheet load order. */
+.terminal-sessions-container--row {
+  flex-direction: row;
+}
+
+/* The CLI grid and its overlays (search bar, empty state); the rendered
+   transcript, when enabled, is its sibling (TerminalSessionsArea). */
+.terminal-grid-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
 }
 
 .terminal-container {

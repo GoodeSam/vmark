@@ -449,6 +449,7 @@ Configurer le panneau de terminal intégré. Ouvrez le terminal avec `` Ctrl + `
 | Style du curseur | Forme du curseur du terminal | Barre | Barre, Bloc, Souligné |
 | Clignotement du curseur | Si le curseur du terminal clignote | Activé | Activé / Désactivé |
 | Copier à la sélection | Copier automatiquement le texte du terminal sélectionné dans le presse-papiers | Désactivé | Activé / Désactivé |
+| Afficher automatiquement les transcriptions | Afficher le Markdown, les tableaux et les diagrammes Mermaid Claude/Codex à côté de la CLI du terminal. Ajoute un hook SessionStart local à la configuration de Claude Code et de Codex ; redémarrez les sessions CLI en cours après activation | Désactivé | Activé / Désactivé |
 | Rendu WebGL | Utiliser le rendu accéléré GPU pour le terminal. Désactiver en cas de problèmes de saisie IME. Nécessite un redémarrage du terminal | Activé | Activé / Désactivé |
 | Presse-papiers distant (OSC 52) | Permettre aux programmes exécutés dans le terminal — via ssh, dans tmux — de copier vers le presse-papiers du système. Le canal fonctionne en écriture seule : la lecture du presse-papiers est toujours refusée, car n'importe quelle sortie affichée dans le terminal pourrait la demander | Activé | Activé / Désactivé |
 | Historique de défilement | Nombre de lignes de sortie que chaque session conserve dans son historique de défilement. Des valeurs plus élevées consomment plus de mémoire | 5 000 | 1 000 / 5 000 / 10 000 / 50 000 |

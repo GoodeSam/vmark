@@ -6,7 +6,8 @@
  * drag-to-resize handle on the editor-adjacent edge. Hosts multiple terminal
  * sessions via useTerminalSessions, a search
  * bar, a tab bar (vertical for a top/bottom panel, horizontal for left/right),
- * and a context menu.
+ * a context menu, and — with terminal.transcriptPreview on — the rendered
+ * Claude/Codex transcript beside the CLI (TerminalSessionsArea).
  *
  * User interactions:
  *   - Drag the resize handle to adjust panel height (top/bottom) or width (left/right)
@@ -28,6 +29,8 @@
  *     dimensions in sync, and again from a ResizeObserver on the container so
  *     transition frames and cross-axis window resizes are not missed.
  *   - Adds .terminal-resizing class during drag to suppress CSS transitions.
+ *   - Transcript open state has one owner (useRenderedTranscript) shared by the
+ *     tab-bar toggle and the region, which mounts only while open.
  *
  * @coordinates-with useTerminalSessions.ts — manages xterm + PTY lifecycle
  * @coordinates-with useTerminalResize.ts — vertical/horizontal drag handle
@@ -36,9 +39,10 @@
  * @coordinates-with TerminalTabBar.tsx — session switching and management
  * @coordinates-with TerminalSearchBar.tsx — inline search within terminal output
  * @coordinates-with TerminalContextMenu.tsx — right-click copy/paste/clear/reset-display menu
+ * @coordinates-with TerminalSessionsArea.tsx — CLI grid beside the transcript region
  * @module components/Terminal/TerminalPanel
  */
-import { useRef, useEffect, useState, useCallback, type RefObject, type MutableRefObject } from "react";
+import { useRef, useEffect, useState, useCallback, useId, type RefObject, type MutableRefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { useUIStore } from "@/stores/uiStore";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -56,6 +60,10 @@ import { TerminalTabBar } from "./TerminalTabBar";
 import { TerminalContextMenu } from "./TerminalContextMenu";
 import { TerminalSearchBar } from "./TerminalSearchBar";
 import { resolveBufferLineFromEvent } from "./resolveBufferLine";
+import { TerminalTranscript } from "./TerminalTranscript";
+import { TerminalSessionsArea } from "./TerminalSessionsArea";
+import { useTranscriptConfiguration } from "./useTranscriptConfiguration";
+import { useRenderedTranscript } from "./useRenderedTranscript";
 import "./terminal-panel.css";
 
 const NULL_REF: RefObject<HTMLDivElement | null> = { current: null };
@@ -63,6 +71,8 @@ const NULL_REF: RefObject<HTMLDivElement | null> = { current: null };
 /** Container for the integrated terminal with resize handle, tab bar, search bar, and context menu. */
 export function TerminalPanel() {
   const { t } = useTranslation("statusbar");
+  const transcriptEnabled = useSettingsStore(s => s.terminal.transcriptPreview);
+  const transcriptConfiguration = useTranscriptConfiguration(transcriptEnabled);
   const visible = useUIStore((s) => s.terminalVisible);
   const height = useUIStore((s) => s.terminalHeight);
   const width = useUIStore((s) => s.terminalWidth);
@@ -83,6 +93,8 @@ export function TerminalPanel() {
   }, []);
 
   const activeSessionId = useUIStore((s) => s.terminal.activeSessionId);
+  const transcript = useRenderedTranscript(activeSessionId, transcriptEnabled, visible, transcriptConfiguration);
+  const transcriptId = useId();
 
   const { fit, getActiveTerminal, getActiveSearchAddon, restartActiveSession } =
     useTerminalSessions(activated ? containerRef : NULL_REF, { onSearch });
@@ -241,7 +253,10 @@ export function TerminalPanel() {
         title={t("terminal.maximizeHint")}
       />
       <div className={`terminal-body ${isHorizontal ? "terminal-body--column" : ""}`}>
-        <div className="terminal-sessions-container">
+        <TerminalSessionsArea
+          position={position}
+          transcript={transcript.expanded ? <TerminalTranscript id={transcriptId} messages={transcript.messages} failed={transcript.failed} configuration={transcriptConfiguration} /> : null}
+        >
           <div
             ref={containerRef}
             className="terminal-container"
@@ -260,12 +275,13 @@ export function TerminalPanel() {
               onClose={() => setSearchVisible(false)}
             />
           )}
-        </div>
+        </TerminalSessionsArea>
         <TerminalTabBar
           onClose={handleClose}
           onRestart={handleRestart}
           orientation={isHorizontal ? "horizontal" : "vertical"}
           position={position}
+          {...(transcriptEnabled ? { transcript: { expanded: transcript.expanded, controls: transcriptId, onToggle: transcript.toggle } } : {})}
         />
       </div>
       {contextMenu && active && (

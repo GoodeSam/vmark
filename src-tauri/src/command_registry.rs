@@ -213,6 +213,10 @@ macro_rules! all_commands {
             pty::pty_pause,
             pty::pty_resume,
             shell_integration::prepare_shell_integration,
+            terminal_transcript::terminal_transcript_prepare,
+            terminal_transcript::terminal_transcript_configure,
+            terminal_transcript::terminal_transcript_read,
+            terminal_transcript::terminal_transcript_forget,
             system_fonts::list_system_font_families,
         ]
     };

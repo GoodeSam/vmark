@@ -784,5 +784,11 @@
   "appearance.theme.night.description": "Ardesia scura per poca luce",
   "appearance.theme.solarized.description": "Solarized Dark, la palette classica",
   "appearance.theme.badge.light": "Chiaro",
-  "appearance.theme.badge.dark": "Scuro"
+  "appearance.theme.badge.dark": "Scuro",
+  "terminal.transcript.label": "Visualizza automaticamente le trascrizioni",
+  "terminal.transcript.description": "Mostra Markdown, tabelle e diagrammi di Claude/Codex nel terminale. Aggiunge un hook di avvio locale; riavvia le sessioni CLI attive dopo l’attivazione.",
+  "terminal.transcript.title": "Trascrizione formattata",
+  "terminal.transcript.waiting": "In attesa di una sessione Claude/Codex. Avvia o riprendi il CLI in questo terminale.",
+  "terminal.transcript.error": "Trascrizione non disponibile. Controlla gli hook del CLI e Node, poi riavvia la sessione.",
+  "terminal.transcript.diagram": "Diagramma Mermaid"
 }

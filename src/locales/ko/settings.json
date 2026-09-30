@@ -784,5 +784,11 @@
   "appearance.theme.night.description": "어두운 슬레이트, 저조도용",
   "appearance.theme.solarized.description": "Solarized Dark 클래식 팔레트",
   "appearance.theme.badge.light": "라이트",
-  "appearance.theme.badge.dark": "다크"
+  "appearance.theme.badge.dark": "다크",
+  "terminal.transcript.label": "대화 기록 자동 렌더링",
+  "terminal.transcript.description": "터미널 안에서 Claude/Codex의 Markdown, 표, 다이어그램을 표시합니다. 로컬 시작 훅을 추가합니다. 활성화한 후 실행 중인 CLI 세션을 다시 시작하세요.",
+  "terminal.transcript.title": "렌더링된 대화 기록",
+  "terminal.transcript.waiting": "Claude/Codex 세션을 기다리고 있습니다. 이 터미널에서 CLI를 시작하거나 재개하세요.",
+  "terminal.transcript.error": "대화 기록을 읽을 수 없습니다. CLI 훅과 Node를 확인하고 세션을 다시 시작하세요.",
+  "terminal.transcript.diagram": "Mermaid 다이어그램"
 }
