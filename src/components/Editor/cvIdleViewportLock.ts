@@ -22,8 +22,9 @@
  *     rendering update. At bare 2.5em estimates that layout was far too short
  *     near the document's end, the write clamped, and the view moved by
  *     hundreds of pixels (#1472). editor.css keeps the sizing rule on outside
- *     `.cv-idle`, so a block skipped again comes back at the size it last
- *     rendered at and the re-add measures only what changed since.
+ *     `.cv-idle` for as long as `.cv-enabled` marks the editor, so a block
+ *     skipped again comes back at the size it last rendered at and the re-add
+ *     measures only what changed since.
  *   - The anchor search early-exits at the first block whose bottom clears
  *     the scroller's top edge — O(blocks above the viewport), so a full walk
  *     happens only with the reader at the document's very end. Each visited
