@@ -192,6 +192,14 @@ Les raccourcis shell standard comme `Ctrl+R` (recherche d'historique inversée d
 
 Lorsque la racine de l'espace de travail change alors que le terminal est déjà en cours d'exécution, les sessions inactives effectuent automatiquement `cd` vers la nouvelle racine. Une session occupée par une commande (par exemple `vim` ou `less`) n'est pas interrompue : elle change de répertoire une fois la commande terminée, ce qui nécessite l'[intégration du shell](#integration-du-shell) pour être détecté. Avec la [barre des espaces de travail](/fr/guide/workspace-rail) activée, les sessions qui appartiennent à un espace de travail conservent leur propre répertoire.
 
+## Micro, caméra et Apple Events sur macOS
+
+Les programmes que vous lancez dans le terminal intégré peuvent demander le micro, la caméra ou l'autorisation de contrôler d'autres apps (Apple Events, utilisés par `osascript`). macOS pose la question au nom de VMark, car il considère VMark comme l'app responsable de tout ce que le terminal lance. Autorisez l'accès lorsque macOS le demande ; vous pourrez le modifier plus tard dans **Réglages Système → Confidentialité et sécurité**, sous **Microphone**, **Caméra** ou **Automatisation**. La demande a lieu lorsqu'un programme utilise la ressource pour la première fois, pas à l'ouverture du terminal.
+
+Si un programme enregistre du silence, capture une image noire ou signale une erreur « non autorisé » sans qu'aucune demande n'apparaisse, vérifiez que VMark figure dans la page de réglages correspondante et qu'il y est autorisé. Joignez la sortie du programme lorsque vous signalez le problème.
+
+Pour les entrées audio virtuelles comme BlackHole, l'autorisation seule n'achemine pas le son. Choisissez l'entrée voulue dans votre outil d'enregistrement, acheminez-y le son et vérifiez un court enregistrement avant une longue session : un fichier audio qui grossit ne prouve pas à lui seul que du son a été capté. VMark n'inclut ni enregistreur ni outil de transcription ; ces commandes proviennent d'outils que vous installez séparément.
+
 ## Pas encore implémenté
 
 Ces éléments sont suivis mais ne sont **pas** disponibles aujourd'hui. Ils sont
