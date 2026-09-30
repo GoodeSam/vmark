@@ -1,7 +1,7 @@
 {
   "name": "vmark",
   "private": true,
-  "version": "0.9.88",
+  "version": "0.9.89",
   "license": "ISC",
   "description": "The plain-text workspace where humans and AI collaborate",
   "type": "module",
