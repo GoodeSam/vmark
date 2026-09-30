@@ -105,10 +105,20 @@
       "resources/workflows/**/*"
     ],
     "macOS": {
-      "entitlements": "sidecar-entitlements.plist",
+      "entitlements": "app-entitlements.plist",
       "minimumSystemVersion": "13.4",
       "files": {
-        "Resources/Assets.car": "icons/Assets.car"
+        "Resources/Assets.car": "icons/Assets.car",
+        "Resources/en.lproj/InfoPlist.strings": "macos-l10n/en.lproj/InfoPlist.strings",
+        "Resources/de.lproj/InfoPlist.strings": "macos-l10n/de.lproj/InfoPlist.strings",
+        "Resources/es.lproj/InfoPlist.strings": "macos-l10n/es.lproj/InfoPlist.strings",
+        "Resources/fr.lproj/InfoPlist.strings": "macos-l10n/fr.lproj/InfoPlist.strings",
+        "Resources/it.lproj/InfoPlist.strings": "macos-l10n/it.lproj/InfoPlist.strings",
+        "Resources/ja.lproj/InfoPlist.strings": "macos-l10n/ja.lproj/InfoPlist.strings",
+        "Resources/ko.lproj/InfoPlist.strings": "macos-l10n/ko.lproj/InfoPlist.strings",
+        "Resources/pt-BR.lproj/InfoPlist.strings": "macos-l10n/pt-BR.lproj/InfoPlist.strings",
+        "Resources/zh-Hans.lproj/InfoPlist.strings": "macos-l10n/zh-Hans.lproj/InfoPlist.strings",
+        "Resources/zh-Hant.lproj/InfoPlist.strings": "macos-l10n/zh-Hant.lproj/InfoPlist.strings"
       }
     },
     "windows": {

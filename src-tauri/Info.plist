@@ -16,10 +16,22 @@
   Tauri's own CFBundleIconFile (icons/icon.icns) stays and is not redundant:
   macOS 26 prefers the catalogue, and everything older ignores CFBundleIconName
   entirely and falls back to the .icns.
+
+  The NS*UsageDescription strings pair with the privacy entitlements in
+  app-entitlements.plist: macOS attributes programs run in the integrated
+  terminal to VMark and shows these strings when one of them asks for the
+  microphone, the camera or Apple Events (#1483). Without a string, macOS
+  terminates the program on first access instead of asking. Translations live
+  in macos-l10n/<lang>.lproj/InfoPlist.strings, one per app locale, copied into
+  Contents/Resources through bundle.macOS.files.
 -->
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Allow command-line tools you run in VMark's integrated terminal to record audio from your microphone or other audio input devices.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Allow command-line tools you run in VMark's integrated terminal to capture video from your camera.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Allow command-line tools you run in VMark's integrated terminal, such as osascript, to control other apps.</string>
 	<key>CFBundleVersion</key>
 	<string></string>
 	<key>CFBundleIconName</key>

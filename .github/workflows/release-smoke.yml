@@ -179,8 +179,9 @@ jobs:
 
       - name: The bundled MCP sidecar reports its version
         shell: bash
-        # The sidecar is a Tauri externalBin (Contents/MacOS/vmark-mcp-server*),
-        # a CLI — so unlike the GUI app it can prove itself in headless CI. Its
+        # The sidecar (Contents/MacOS/vmark-mcp-server; an externalBin, except in
+        # the macOS release, which places it via bundle.macOS.files) is a CLI —
+        # so unlike the GUI app it can prove itself in headless CI. Its
         # --version must match the tag, and --health-check must pass: each has
         # failed silently in a shipped binary before elsewhere, and each looks
         # identical to success until someone runs it.
@@ -199,6 +200,26 @@ jobs:
             exit 1
           }
           "$SIDECAR" --health-check
+
+      - name: The published bundle carries the intended entitlements
+        shell: bash
+        # Same check release.yml runs before publishing, now on the notarized,
+        # downloaded artifact: the app declares microphone, camera and Apple
+        # Events for its terminal (#1483); the sidecar carries none of them.
+        # Enforced from v0.9.89, the first release built this way; a manual run
+        # against an older tag would otherwise fail on what that tag never had.
+        timeout-minutes: 3
+        env:
+          APP: ${{ steps.mount.outputs.app }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          FIRST=0.9.89
+          if [ "$(printf '%s\n%s\n' "$FIRST" "${TAG#v}" | sort -V | head -n 1)" != "$FIRST" ]; then
+            echo "skip: $TAG predates the entitlement layout (first: v$FIRST)"
+            exit 0
+          fi
+          scripts/verify-macos-bundle-entitlements.sh "$APP"
 
       - name: Unmount
         if: always() && steps.mount.outputs.mount != ''

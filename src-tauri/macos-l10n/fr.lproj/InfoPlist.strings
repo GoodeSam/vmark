@@ -1,0 +1,5 @@
+/* Privacy prompts for programs run in VMark's integrated terminal (#1483).
+   Keep in step with src-tauri/Info.plist; scripts/check-macos-tcc-entitlements.test.mjs checks both. */
+"NSMicrophoneUsageDescription" = "Autorise les outils en ligne de commande que vous lancez dans le terminal intégré de VMark à enregistrer l'audio de votre micro ou d'autres entrées audio.";
+"NSCameraUsageDescription" = "Autorise les outils en ligne de commande que vous lancez dans le terminal intégré de VMark à capturer la vidéo de votre caméra.";
+"NSAppleEventsUsageDescription" = "Autorise les outils en ligne de commande que vous lancez dans le terminal intégré de VMark, comme osascript, à contrôler d'autres apps.";
