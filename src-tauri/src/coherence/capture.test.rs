@@ -349,3 +349,111 @@ fn an_oversized_capture_is_rejected_before_any_side_effect() {
         "a rejected capture must not register the object"
     );
 }
+
+fn path_input(path: &str) -> CaptureInputSpec {
+    CaptureInputSpec {
+        path: Some(path.into()),
+        object_id: None,
+        revision: None,
+        role: InputRole::Direct,
+        kind: crate::coherence::edge_kind::OriginEdgeKind::Dependency,
+    }
+}
+
+#[test]
+fn an_input_copy_of_a_still_present_tracked_document_is_held_not_moved() {
+    // Audit finding #44: `b.md` is a COPY of tracked `a.md` (same vmark.id),
+    // and `a.md` still exists. Adopting `b.md` as an input used to register the
+    // id at `b.md` — a silent "move" — and skip the duplicate hold entirely.
+    let (dir, mut kernel) = workspace();
+    write_file(dir.path(), "a.md", "original\n");
+    let a = capture(&mut kernel, human_save("a.md", "original\n")).unwrap();
+    let stamped = std::fs::read_to_string(dir.path().join("a.md")).unwrap();
+    write_file(dir.path(), "b.md", &stamped);
+    write_file(dir.path(), "c.md", "derived\n");
+    let mut req = human_save("c.md", "derived\n");
+    req.inputs = vec![path_input("b.md")];
+
+    let err = capture(&mut kernel, req).unwrap_err();
+    assert!(err.contains("duplicate"), "{err}");
+    let registry = kernel.index().registry_state().unwrap();
+    assert_eq!(
+        registry.path_of.get(&a.object).map(String::as_str),
+        Some("a.md"),
+        "the registry still points at the original, not the copy"
+    );
+    assert!(kernel.index().is_held(&a.object).unwrap(), "capture-held");
+}
+
+#[test]
+fn an_input_moved_away_from_its_tracked_path_is_re_registered() {
+    // The legitimate half of #44: the original path is GONE, so this is a move.
+    let (dir, mut kernel) = workspace();
+    write_file(dir.path(), "a.md", "original\n");
+    let a = capture(&mut kernel, human_save("a.md", "original\n")).unwrap();
+    std::fs::rename(dir.path().join("a.md"), dir.path().join("b.md")).unwrap();
+    write_file(dir.path(), "c.md", "derived\n");
+    let mut req = human_save("c.md", "derived\n");
+    req.inputs = vec![path_input("b.md")];
+
+    capture(&mut kernel, req).unwrap();
+    let registry = kernel.index().registry_state().unwrap();
+    assert_eq!(
+        registry.path_of.get(&a.object).map(String::as_str),
+        Some("b.md")
+    );
+    assert!(!kernel.index().is_held(&a.object).unwrap());
+}
+
+#[test]
+fn a_noop_save_after_a_buffer_capture_clears_the_disk_lag() {
+    // Audit finding #46: buffer capture B (disk lags at A) → real save of B,
+    // which is a no-op capture → external revert to A. The no-op used to return
+    // before clearing the lag, so the scan still treated A as "the buffer's
+    // expected lag" and silently ignored the revert.
+    let (dir, mut kernel) = workspace();
+    write_file(dir.path(), "scene.md", "v1\n");
+    capture(&mut kernel, human_save("scene.md", "v1\n")).unwrap();
+    let v1_on_disk = std::fs::read_to_string(dir.path().join("scene.md")).unwrap();
+
+    let mut buffer = human_save("scene.md", "v2\n");
+    buffer.rewrite_identity = false;
+    capture(&mut kernel, buffer).unwrap();
+
+    write_file(dir.path(), "scene.md", "v2\n");
+    let saved = capture(&mut kernel, human_save("scene.md", "v2\n")).unwrap();
+    assert!(
+        saved.entry_id.is_none(),
+        "the save itself is a no-op capture"
+    );
+
+    write_file(dir.path(), "scene.md", &v1_on_disk);
+    let report = crate::coherence::scan::scan_workspace(&mut kernel).unwrap();
+    assert_eq!(report.external_edits, 1, "the external revert is recorded");
+}
+
+#[test]
+fn an_input_whose_registered_original_exists_but_is_unreadable_is_refused() {
+    // Round 2 of #44: an original that EXISTS but cannot be read is not proof
+    // of a move. A directory at the registered path is the portable way to make
+    // the read fail with something other than NotFound.
+    let (dir, mut kernel) = workspace();
+    write_file(dir.path(), "a.md", "original\n");
+    let a = capture(&mut kernel, human_save("a.md", "original\n")).unwrap();
+    let stamped = std::fs::read_to_string(dir.path().join("a.md")).unwrap();
+    write_file(dir.path(), "b.md", &stamped);
+    std::fs::remove_file(dir.path().join("a.md")).unwrap();
+    std::fs::create_dir(dir.path().join("a.md")).unwrap();
+    write_file(dir.path(), "c.md", "derived\n");
+    let mut req = human_save("c.md", "derived\n");
+    req.inputs = vec![path_input("b.md")];
+
+    let err = capture(&mut kernel, req).unwrap_err();
+    assert!(err.contains("could not be read"), "{err}");
+    let registry = kernel.index().registry_state().unwrap();
+    assert_eq!(
+        registry.path_of.get(&a.object).map(String::as_str),
+        Some("a.md"),
+        "the registry is not repointed on an unverifiable original"
+    );
+}

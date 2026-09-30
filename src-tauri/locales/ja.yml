@@ -299,6 +299,13 @@ errors:
   workflow.noPendingApproval: "該当する保留中の承認リクエストはありません"
   workflow.appDataDirUnavailable: "アプリデータディレクトリを解決できませんでした: %{detail}"
   workflow.snapshotFailed: "このワークフローが変更するファイルのスナップショットを作成できなかったため、実行しませんでした: %{detail}"
+  workflow.snapshotNotFound: "そのワークフローのスナップショットはもう存在しません"
+  workflow.snapshotUnreadable: "ワークフローのスナップショットの記録を読み取れませんでした: %{detail}"
+  workflow.snapshotNoWorkspace: "このスナップショットは以前のバージョンの VMark で作成されたため、復元できません"
+  workflow.snapshotWorkspaceMissing: "このスナップショットが属するフォルダーはもう存在しません: %{path}"
+  workflow.snapshotListFailed: "ワークフローのスナップショットを一覧表示できませんでした: %{detail}"
+  workflow.restoreWhileRunning: "ワークフローが実行中です。ファイルを復元する前に、完了を待つかキャンセルしてください。"
+  workflow.restoreSuperseded: "このスナップショットの後に別のワークフローが実行されたため、復元するとその変更が取り消される可能性があります。何も復元されていません。"
 
   # === 保存パス（file_write.rs、WI-14 CommandError）===
   save.parentMissing: "このファイルのフォルダはもう存在しません: %{dir}"
@@ -404,6 +411,17 @@ errors:
 
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "キーチェーンへのアクセスが拒否されました。キーチェーンのダイアログで VMark を許可するか、「キーチェーンアクセス」でアクセス権を付与してから、もう一度お試しください。"
+
+  # === ワークスペースのアクセス許可 (workspace_grants/commands.rs, WI-LX1.1) ===
+  workspaceAccess.notGranted: "VMark には「%{path}」へのアクセスが許可されていません。ファイル → ワークスペースを開く... でフォルダを選択して許可してください。"
+  workspaceAccess.pickerBusy: "フォルダ選択ダイアログはすでに開いています"
+  workspaceAccess.checkBusy: "VMark はまだそのフォルダへのアクセスを確認しています。少し待ってからもう一度お試しください"
+  workspaceAccess.listProtected: "VMark が開くことを許可されたフォルダの一覧は、VMark 自身しか変更できません"
+
+# WI-LX1.1 — the folder picker Rust shows for workspace access
+workspaceAccess:
+  pickTitle: "ワークスペースフォルダを開く"
+  confirmTitle: "このフォルダを開くことを VMark に許可"
 
 window:
   settings.title: "設定"

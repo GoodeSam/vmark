@@ -19,6 +19,7 @@ Common issues and where to look for the fix:
 | Blank window on Linux | WebKitGTK DMABUF renderer | [Blank Window on Linux](#blank-window-on-linux) |
 | Straight quotes and `--` stay literal on macOS | System smart substitutions are turned off for VMark | [Smart Quotes and Dashes on macOS](#smart-quotes-and-dashes-on-macos) |
 | VMark never "naps" in Activity Monitor | App Nap is disabled so AI assistants keep working | [VMark Stays Awake in the Background](#vmark-stays-awake-in-the-background-app-nap) |
+| A folder dialog opens for a recent workspace, or an error says `forbidden path` | The folder is outside what VMark may read | [Folder Access and `forbidden path` Errors](#folder-access-and-forbidden-path-errors) |
 
 For anything not listed above, see [Reporting Bugs](#reporting-bugs).
 
@@ -31,7 +32,7 @@ VMark writes log files to help diagnose issues. Logs include warnings and errors
 | Platform | Path |
 |----------|------|
 | macOS | `~/Library/Logs/app.vmark/` |
-| Windows | `%APPDATA%\app.vmark\logs\` |
+| Windows | `%LOCALAPPDATA%\app.vmark\logs\` |
 | Linux | `~/.local/share/app.vmark/logs/` |
 
 ### Log Levels
@@ -115,6 +116,15 @@ VMark may refuse to open a file or show garbled content.
 - Verify the file has read permissions for your user account.
 - VMark expects UTF-8 encoded Markdown. Files in other encodings (e.g., GB2312, Shift-JIS) may not display correctly — convert them to UTF-8 first.
 - If the file is locked by another process (e.g., a sync client or backup tool), close that process and try again.
+- **macOS: double-clicking a downloaded file does nothing while VMark is running.** Files saved by some apps carry the download-quarantine attribute (`com.apple.quarantine`), and macOS can silently drop the request to open such a file in an app that is already running. When you open a workspace, VMark removes the attribute from the workspace folder and the files directly inside it that it can open (subfolders are not touched) — the **Clear download quarantine on workspace open** setting under **Settings → Advanced → macOS**, on by default. For any other file, use **File → Open**, or run `xattr -d com.apple.quarantine <file>` in Terminal.
+
+### Folder Access and `forbidden path` Errors
+
+Outside your home folder and mounted volumes — and, on Windows, outside drives `C:\` to `F:\` — VMark reads only what you have given it access to; see [What VMark can read on disk](/guide/privacy#what-vmark-can-read-on-disk).
+
+- **A folder dialog opens when you choose a recent workspace.** VMark cannot confirm that you chose that folder before, and nothing else lets it read there. The dialog opens at that folder: click **Open** to confirm, and VMark remembers it from then on. Cancel, and nothing opens.
+- **An AI assistant's request to open a folder needs one more step.** After you approve the request, VMark shows the same dialog; choose the folder there, then let the assistant retry.
+- **An error mentions `forbidden path`, or an image does not show.** The file is outside every place VMark may read — often an image next to a document you opened on its own. Open the document's folder with **File → Open Workspace…** to give VMark the whole folder.
 
 ### Editor Performance
 
@@ -140,7 +150,7 @@ AI Genies require a configured AI provider to function.
 
 Double-clicking a file, or launching VMark again from a launcher, hands the file to the VMark that is already running and brings a window forward instead of starting a second copy. A second process would share the first one's app data, session and window storage, and the two would overwrite each other's state — the data loss behind #1330. macOS has always behaved this way through the operating system. A development (`tauri dev`) build uses its own identifier and so counts as a different app.
 
-On Linux this relies on the D-Bus session bus; in a session with no `DBUS_SESSION_BUS_ADDRESS`, VMark may fail to start at all. Launch it from a desktop session, or from a shell where that variable is set.
+On Linux this relies on the D-Bus session bus. In a session with no usable `DBUS_SESSION_BUS_ADDRESS`, VMark still starts but without this guard — launching it again starts a second copy, with the risk described above — and the log records that the guard is off. Launch it from a desktop session, or from a shell where that variable is set.
 
 ### Blank Window on Linux
 

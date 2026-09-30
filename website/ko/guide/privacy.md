@@ -64,12 +64,23 @@ X-Machine-Id: a3f8c2b1d4e5f6078a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1
 - 기기 해시는 어떤 계정, 이메일, IP 주소와도 연결되지 않습니다 — 익명 기기 카운터일 뿐입니다
 - 추적 쿠키, 지문 수집, 분석 SDK를 사용하지 않습니다
 
+## VMark가 디스크에서 읽을 수 있는 범위
+
+VMark의 파일 접근은 디스크 전체가 아니라 좁게 제한된 권한 범위입니다:
+
+- **정적 범위**: 홈 폴더(`$HOME/**`)와 마운트된 볼륨 — macOS에서는 `/Volumes/**`, Linux에서는 `/mnt/**`와 `/media/**`. Windows에서는 `C:\`부터 `F:\`까지의 드라이브도 포함되므로, 런타임 허가가 필요한 것은 `G:\` 이후의 드라이브와 네트워크 공유뿐입니다. macOS와 Linux에서는 숨김 폴더(이름이 `.`으로 시작하는 폴더) 안에 있는 것은 모두 정적 범위 밖입니다.
+- **런타임 허가**: 명시적으로 연 파일 — Finder나 탐색기, `vmark` 명령줄, 파일 대화상자에서 연 파일 — 은 그 파일 하나에 대해서만 허가를 받습니다. **폴더**는 사용자가 직접 선택했다는 것을 VMark가 알 수 있을 때만 허가됩니다. 즉 VMark의 폴더 선택 대화상자에서 골랐거나 Finder에서 연 경우입니다. VMark는 이런 폴더 목록(앱 데이터 폴더의 `workspace-grants.json`)을 보관하고 실행할 때마다 다시 허가하므로, 복원된 세션과 **최근 워크스페이스 열기**가 계속 작동합니다. 이 목록에 없고 정적 범위에도 포함되지 않는 최근 워크스페이스를 열면, 해당 폴더를 연 상태로 폴더 선택 대화상자가 나타납니다 — 그 폴더를 선택해 확인하세요. AI 어시스턴트가 그런 폴더를 열려고 할 때도, 요청을 승인한 뒤 같은 과정을 거칩니다.
+- **이미지와 미디어**: 로컬 이미지, 동영상, 오디오는 VMark의 에셋 프로토콜로 표시되며, 이 프로토콜이 닿는 곳도 같습니다 — 정적 범위와 위의 런타임 허가입니다. 미디어 뷰어는 보여 주는 파일 하나에 대해서만, 그리고 미디어 확장자를 가진 파일에 한해서만 허가를 추가합니다. 다른 경로에 대한 요청은 범위를 넓히지 않고 거부됩니다. 이 범위 밖의 이미지 — 예를 들어 정적 범위 밖에서 단독으로 연 문서 옆에 있는 이미지 — 는 그 폴더를 워크스페이스로 열 때까지 표시되지 않습니다.
+
+여기서 어떤 것도 외부로 전송되지 않습니다. 범위는 앱 자체가 무엇을 읽을 수 있는지를 결정합니다.
+
 ## 오픈 소스 투명성
 
 VMark는 완전한 오픈 소스입니다. 여기서 설명한 모든 것을 확인할 수 있습니다:
 
 - 업데이트 엔드포인트 구성: [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json)
 - 기기 해시 생성: [`src-tauri/src/lib.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/lib.rs) — `machine_id_hash` 검색
+- 파일 시스템 및 에셋 범위: [`src-tauri/capabilities/default.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/capabilities/default.json), [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json)의 `assetProtocol` 항목, [`src-tauri/src/fs_scope.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/fs_scope.rs), [`src-tauri/src/workspace_grants/`](https://github.com/xiaolai/vmark/tree/main/src-tauri/src/workspace_grants)
 - 서버 측 통계 집계: [`scripts/vmark-stats-json`](https://github.com/xiaolai/vmark/blob/main/scripts/vmark-stats-json) — [공개 통계](https://log.vmark.app/api/stats)를 생성하기 위해 서버에서 실행되는 정확한 스크립트
 - 코드베이스에 다른 네트워크 호출이 없습니다 — `fetch`, `http`, 또는 `reqwest`를 직접 검색해 보세요
 

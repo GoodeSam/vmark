@@ -299,6 +299,13 @@ errors:
   workflow.noPendingApproval: "Keine offene Genehmigungsanfrage stimmt überein"
   workflow.appDataDirUnavailable: "Das App-Datenverzeichnis konnte nicht ermittelt werden: %{detail}"
   workflow.snapshotFailed: "Die Dateien, die dieser Workflow ändern würde, konnten nicht gesichert werden; er wurde daher nicht ausgeführt: %{detail}"
+  workflow.snapshotNotFound: "Dieser Workflow-Snapshot existiert nicht mehr"
+  workflow.snapshotUnreadable: "Die Angaben zum Workflow-Snapshot konnten nicht gelesen werden: %{detail}"
+  workflow.snapshotNoWorkspace: "Dieser Snapshot wurde von einer älteren VMark-Version erstellt und kann nicht wiederhergestellt werden"
+  workflow.snapshotWorkspaceMissing: "Der Ordner, zu dem dieser Snapshot gehört, existiert nicht mehr: %{path}"
+  workflow.snapshotListFailed: "Workflow-Snapshots konnten nicht aufgelistet werden: %{detail}"
+  workflow.restoreWhileRunning: "Ein Workflow läuft gerade. Warten Sie, bis er fertig ist, oder brechen Sie ihn ab, bevor Sie Dateien wiederherstellen."
+  workflow.restoreSuperseded: "Seit dieser Momentaufnahme lief ein weiterer Workflow; eine Wiederherstellung könnte dessen Änderungen rückgängig machen. Es wurde nichts wiederhergestellt."
 
   # === Speicherpfad (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "Der Ordner dieser Datei existiert nicht mehr: %{dir}"
@@ -404,6 +411,17 @@ errors:
 
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "Der Zugriff auf den Schlüsselbund wurde verweigert. Erlauben Sie VMark in der Schlüsselbund-Abfrage oder gewähren Sie den Zugriff in der Schlüsselbundverwaltung, und versuchen Sie es erneut."
+
+  # === Arbeitsbereich-Freigaben (workspace_grants/commands.rs, WI-LX1.1) ===
+  workspaceAccess.notGranted: "VMark hat keinen Zugriff auf „%{path}“. Wählen Sie den Ordner über Datei → Arbeitsbereich öffnen..., um ihn freizugeben."
+  workspaceAccess.pickerBusy: "Ein Ordnerdialog ist bereits geöffnet"
+  workspaceAccess.checkBusy: "VMark prüft den Zugriff auf diesen Ordner noch. Versuche es gleich noch einmal"
+  workspaceAccess.listProtected: "Die Liste der Ordner, die VMark öffnen darf, kann nur VMark selbst ändern"
+
+# WI-LX1.1 — the folder picker Rust shows for workspace access
+workspaceAccess:
+  pickTitle: "Arbeitsbereich-Ordner öffnen"
+  confirmTitle: "VMark das Öffnen dieses Ordners erlauben"
 
 window:
   settings.title: "Einstellungen"

@@ -53,7 +53,7 @@
 
 .content-search-toggle--active {
   background: var(--accent-bg);
-  color: var(--accent-primary);
+  color: var(--accent-primary); /* ui-ok(state): glyph toggle (Aa / ab / .*), labelled by aria-label — the glyph is the indicator */
   border-color: var(--accent-primary);
 }
 
@@ -153,8 +153,10 @@
   text-align: right;
 }
 
+/* The selected row keeps its ink (rule 30, R6): its line number steps up from
+ * secondary to the row's text colour rather than turning accent. */
 .content-search-match--selected .content-search-line-num {
-  color: var(--accent-primary);
+  color: var(--text-color);
 }
 
 .content-search-line-text {

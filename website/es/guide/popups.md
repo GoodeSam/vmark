@@ -169,7 +169,7 @@ Edita los enlaces estilo wiki para conexiones internas de documentos.
 Acciones de edición rápida de tablas.
 
 **Activación:**
-- **WYSIWYG:** Usa la barra de herramientas o los atajos de teclado
+- **WYSIWYG:** Clic derecho en una celda de tabla (las mismas acciones también están en la barra de herramientas y tienen atajos de teclado)
 - **Fuente:** Clic derecho en una celda de tabla
 
 **Acciones:**
@@ -183,6 +183,7 @@ Acciones de edición rápida de tablas.
 | Alinear Columna Izquierda/Centro/Derecha | Establece la alineación para la columna actual |
 | Alinear Todo Izquierda/Centro/Derecha | Establece la alineación para todas las columnas |
 | Formatear Tabla | Auto-alinea las columnas de la tabla (embellece el markdown) |
+| Ajustar al ancho / Ancho natural | Solo en WYSIWYG: fija esta tabla al ancho del editor con columnas proporcionales a su contenido, o la devuelve a su ancho natural |
 
 ## Popup de Revisión Ortográfica
 

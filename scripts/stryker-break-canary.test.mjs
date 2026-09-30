@@ -48,6 +48,10 @@ describe("stryker break-threshold canary (real Stryker on a fixture project)", (
       [STRYKER_BIN, "run", "stryker.conf.json"],
       { cwd: FIXTURE, encoding: "utf8", timeout: CANARY_TIMEOUT_MS },
     );
+    // A timeout is reported in `error`, and `status` can still be Stryker's own
+    // non-zero exit when a descendant held the pipes — which every assertion
+    // below would accept. Thrown, so a timed-out run cannot pass.
+    if (res.error) throw res.error;
     const out = `${res.stdout ?? ""}\n${res.stderr ?? ""}`;
 
     // The run must REACH the scoring phase — a crash or config error also

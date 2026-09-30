@@ -147,6 +147,8 @@ mesma chamada**; uma vez que o usuário aprove, a repetição abre a pasta. Uma
 requisição negada continua falhando até ser reaprovada. Não há opção de
 "lembrar" — cada abertura é aprovada individualmente.
 
+**Acesso a pastas.** Aprovar o diálogo não basta para o VMark ler uma pasta fora dos locais que ele sempre pode ler (sua pasta pessoal e os volumes montados). Para uma pasta assim, a nova tentativa aprovada abre o seletor de pastas do VMark nessa pasta e responde `APPROVAL_REQUIRED`, pedindo ao usuário que a escolha lá; depois disso, a tentativa seguinte a abre. Se outro diálogo de pastas já estiver aberto, nada é mostrado e a resposta é `BUSY` — a aprovação é mantida, então tente de novo quando o usuário fechar aquele diálogo. `BUSY` também é a resposta enquanto uma troca de espaço de trabalho já estiver em andamento nessa janela.
+
 ### `save`
 
 Salva uma aba em seu caminho atual.
@@ -431,7 +433,7 @@ autorização de novo, de modo que a IA nunca pode gravá-lo silenciosamente. At
 `start` retorna `needsApproval`; assim que você permite, o VMark prepara um shim de captura
 dormente no mundo da página e começa a gravar os **cliques e edições de campos** que você
 realiza. `stop` retorna `{source, inputs, eventCount}` — o `source` é texto de workflow que
-você pode salvar ou passar diretamente para [`workflow_run`](#workflow-run).
+você pode salvar ou passar diretamente para [`workflow_run`](#workflow-run-workflow-cancel).
 
 A gravação é **livre de valores por construção**, e isso não é um filtro que confia na página:
 nada do que você digita chega a ser capturado. Todo campo de texto vira uma variável `{input}`
@@ -717,7 +719,8 @@ Aparecem dois formatos de erro:
 | `INVALID_PATCH` | envelope | `workflow.apply_patch` recebeu um array `patches` malformado |
 | `INVALID_TAB` | envelope | `tabId` não pôde ser resolvido |
 | `INVALID_PATH` | envelope | Um `filePath` não pôde ser lido, ou está fora do escopo do workspace aberto / dos documentos |
-| `APPROVAL_REQUIRED` | envelope | `save_as` para um novo local enquanto **Aprovar edições automaticamente** está desativado |
+| `APPROVAL_REQUIRED` | envelope | `save_as` para um novo local enquanto **Aprovar automaticamente salvamentos em um novo local e resultados de gênios** está desativado; ou `open_workspace` aguardando a aprovação do usuário, ou que ele escolha a pasta no seletor de pastas do VMark |
+| `BUSY` | envelope | `open_workspace` não pôde continuar: outro diálogo de pastas está aberto, ou uma troca de espaço de trabalho está em andamento nessa janela; a aprovação é mantida — tente de novo |
 | `NOT_WORKFLOW` | envelope | `workflow.*` foi chamado em uma aba que não é YAML de workflow |
 | `READ_ONLY` | envelope | Foi tentada uma mutação em um documento somente leitura |
 | `NO_EDITOR` | envelope | `selection.*` foi chamado, mas a aba focada não tem um editor ativo |

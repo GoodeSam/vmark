@@ -79,6 +79,8 @@ count() {
   local rel="$1" mode="$2" at="${3:-}"
   [[ -f "$ROOT/$rel" ]] || { echo ""; return; }
   ROOT="$ROOT" REL="$rel" MODE="$mode" AT="$at" node -e '
+    // This body is single-quoted in bash: an apostrophe anywhere in it, even
+    // in a comment, ends the quote and breaks every phase.
     // No top-level `return` — node -e compiles the body as a script, where it is
     // a syntax error. Everything lives in a function that returns a value.
     const fs = require("fs");
@@ -87,7 +89,10 @@ count() {
       const doc = JSON.parse(fs.readFileSync(`${process.env.ROOT}/${process.env.REL}`, "utf8"));
       const at = process.env.AT;
       const node = at ? at.split(".").reduce((a, k) => (a == null ? undefined : a[k]), doc) : doc;
-      if (node == null) return 0;
+      // A key that is not there is UNREADABLE, never zero: 0 satisfies every
+      // "at most" target, so a renamed key used to pass its phase silently.
+      if (node === undefined) return "";
+      if (node === null) return 0;
       if (process.env.MODE === "sum") {
         const sum = (o) => Object.entries(o).reduce(
           (n, [k, v]) => n + (isComment(k) ? 0
@@ -96,10 +101,13 @@ count() {
         return typeof node === "object" ? sum(node) : 0;
       }
       if (process.env.MODE === "records") {
-        return Array.isArray(node) ? node.length
-          : Object.keys(node).filter((k) => !isComment(k)).length;
+        // Records are an array or the keys of an object; anything else (a number
+        // where a list belongs) is unreadable, not zero records.
+        if (Array.isArray(node)) return node.length;
+        if (typeof node === "object") return Object.keys(node).filter((k) => !isComment(k)).length;
+        return "";
       }
-      return typeof node === "number" ? node : 0;
+      return typeof node === "number" ? node : "";
     };
     process.stdout.write(String(compute()));
   ' 2>/dev/null || echo ""
@@ -150,8 +158,8 @@ phase_4() {
   # is BELOW the starting measurement. A phase that passed at 88/80 would
   # certify having done nothing.
   local named styled
-  named=$(count scripts/bespoke-buttons-baseline.json scalar maxBespokeButtonClasses)
-  styled=$(count scripts/bespoke-buttons-baseline.json scalar maxStyledButtonClasses)
+  named=$(count scripts/bespoke-buttons-baseline.json records bespokeButtonClasses)
+  styled=$(count scripts/bespoke-buttons-baseline.json records styledButtonClasses)
   at_most "bespoke button classes below the 88 starting point (WI-DP4.1)" "$named" 87
   at_most "styled button classes below the 80 starting point (WI-DP4.1)"  "$styled" 79
 }

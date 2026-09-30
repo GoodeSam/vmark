@@ -36,6 +36,7 @@ use super::runner::run_workflow_sequential;
 use super::state::{AdmissionGuard, CancelDecision, WorkflowRunnerState};
 use super::types::RawWorkflow;
 use super::validate::validate_document;
+use crate::coherence::capture_policy::CapturePolicy;
 use crate::command_error::{CommandError, ErrorCode};
 use crate::localized_error;
 use std::collections::HashMap;
@@ -89,6 +90,9 @@ fn admit_run<'s>(
 /// command returns, what it publishes before it spawns, and what a refusal
 /// leaves behind. `admit_run` alone could be tested without an app, and that
 /// left the four joins around it untested.
+// Each argument is a named key on the IPC wire; folding them into a struct
+// would change what both callers send, for a lint about arity.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn run_workflow<R: tauri::Runtime>(
     app: AppHandle<R>,
@@ -101,6 +105,10 @@ pub async fn run_workflow<R: tauri::Runtime>(
     // emits its first event (closes the executionId race in
     // useWorkflowExecution).
     execution_id: Option<String>,
+    // `general.coherenceCaptureOnSave` for this run's save-file captures
+    // (WI-LX1.4), read by the caller at the moment of the start. Absent is
+    // treated as OFF: nothing creates `.vmark/` or stamps a file unasked.
+    capture_policy: Option<CapturePolicy>,
     state: State<'_, WorkflowRunnerState>,
 ) -> Result<String, CommandError> {
     // The caller's id — pre-generated so the frontend can subscribe to events
@@ -111,8 +119,22 @@ pub async fn run_workflow<R: tauri::Runtime>(
     // `?` from here drops `admission`, which clears the id with the flag, so
     // an early return can never leave a stale id behind.
     let execution_id = execution_id_for(execution_id)?;
+    // A root that contains app data would let a save-file step rewrite the
+    // workspace-grant list (WI-LX1.1). Refused before anything is claimed, so
+    // the ordinary refusal spends no execution id…
+    crate::workspace_grants::refuse_root_containing_list(
+        &app,
+        std::path::Path::new(&workspace_root),
+    )?;
     let (workflow, workspace, admission) =
         admit_run(&state, &yaml, &workspace_root, &execution_id)?;
+    // …and checked AGAIN on the ADMITTED root (#67): the one canonical
+    // `PathBuf` the snapshot, the runner and every step then use. The check
+    // above resolved the caller's string on its own, and a link retargeted in
+    // between could answer it differently; this is the check that binds. A
+    // refusal here drops `admission`, releasing the claim and the published id.
+    crate::workspace_grants::refuse_root_containing_list(&app, &workspace)?;
+    let capture_policy = capture_policy.unwrap_or(CapturePolicy::TrackedOnly);
 
     let genies_dir = prepare_run(&app, &state, &workflow, &workspace, &execution_id).await?;
 
@@ -132,6 +154,7 @@ pub async fn run_workflow<R: tauri::Runtime>(
             provider,
             genies_dir,
             approvals,
+            capture_policy,
         )
         .await
     });

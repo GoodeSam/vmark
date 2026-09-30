@@ -45,7 +45,14 @@
  *     `.editor-content` to `overflow: hidden` and zeroes it), and any arriving
  *     while a restore is in flight (`view.focus()` scrolls the caret into view
  *     mid-restore). Both were observed erasing the offset being restored.
+ *   - WYSIWYG also records WHAT was at the top (`scrollAnchor.ts`: a block and
+ *     its offset), and a restore holds that block where it sat, re-measured
+ *     each frame. Inline math renders only near the viewport, so a remount
+ *     lays the content above the offset out at other heights and the same
+ *     pixels are another paragraph. The pixels remain the fallback: Source,
+ *     and a block that no longer exists.
  *
+ * @coordinates-with scrollAnchor.ts — the content anchor
  * @coordinates-with tiptapFocus.ts — WYSIWYG restore on fresh load
  * @coordinates-with components/Editor/sourceFocusRestore.ts — Source restore
  * @coordinates-with components/Editor/useWysiwygScrollMemory.ts — WYSIWYG tracking
@@ -53,8 +60,16 @@
  * @module services/editor/scrollPosition
  */
 
+import { anchorDistance, captureBlockAnchor, type BlockAnchor } from "./scrollAnchor";
+
 /** The two editor surfaces that own a scroll position of their own. */
 export type EditorSurface = "wysiwyg" | "source";
+
+/** A remembered block to restore, in the blocks root it indexes into. */
+export interface RestoreAnchor {
+  blocks: Element;
+  at: BlockAnchor;
+}
 
 /**
  * Frames a restore will wait for late content before giving up (~1.5s at
@@ -88,6 +103,8 @@ const SAVE_THROTTLE_MS = 150;
 
 /** Last known scroll offset per tab, per surface. */
 const offsetsByTab: Record<string, Partial<Record<EditorSurface, number>>> = {};
+/** The block under each remembered offset, for surfaces that give their blocks. */
+const anchorsByTab: Record<string, Partial<Record<EditorSurface, BlockAnchor>>> = {};
 
 /** Record where `surface` was scrolled to in `tabId`. */
 export function setEditorScrollOffset(
@@ -110,9 +127,19 @@ export function getEditorScrollOffset(
   return offsetsByTab[tabId]?.[surface];
 }
 
+/** The block remembered under `surface`'s offset in `tabId`, if one was recorded. */
+export function getEditorScrollAnchor(
+  tabId: string | null | undefined,
+  surface: EditorSurface,
+): BlockAnchor | undefined {
+  if (!tabId) return undefined;
+  return anchorsByTab[tabId]?.[surface];
+}
+
 /** Forget every surface's offset for a tab (called on tab close/detach). */
 export function clearEditorScrollOffsets(tabId: string): void {
   delete offsetsByTab[tabId];
+  delete anchorsByTab[tabId];
 }
 
 /**
@@ -142,18 +169,21 @@ export function findScrollContainer(from: HTMLElement | null): HTMLElement | nul
  * Persist `container`'s scroll offset for (tabId, surface) while the caller
  * lives. Returns a teardown that detaches the listener and flushes whatever
  * the throttle was still holding — an unmount within 150ms of the last scroll
- * is the common case, not an edge one.
+ * is the common case, not an edge one. `blocks` (WYSIWYG) yields the root whose
+ * children are the document's blocks, to record the block at the top as well.
  */
 export function trackEditorScroll(
   container: HTMLElement | null,
   tabId: string | null | undefined,
   surface: EditorSurface,
+  blocks?: () => Element | null,
 ): () => void {
   if (!container || !tabId || typeof container.addEventListener !== "function") {
     return () => {};
   }
 
   let pending: number | null = null;
+  let pendingAnchor: BlockAnchor | null = null;
   let pendingEpoch = restoreEpoch;
   let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -167,6 +197,9 @@ export function trackEditorScroll(
     // restore — is how the remembered offset overwrote itself.
     if (activeRestore || pendingEpoch !== restoreEpoch) return;
     setEditorScrollOffset(tabId, surface, value);
+    const anchors = anchorsByTab[tabId] ?? (anchorsByTab[tabId] = {});
+    if (pendingAnchor) anchors[surface] = pendingAnchor;
+    else delete anchors[surface];
   };
 
   const onScroll = () => {
@@ -178,6 +211,7 @@ export function trackEditorScroll(
     // restored — measured live, the memory poisoned itself in one round trip.
     if (activeRestore) return;
     pending = container.scrollTop;
+    pendingAnchor = blocks ? captureBlockAnchor(container, blocks()) : null;
     pendingEpoch = restoreEpoch;
     if (timer === null) timer = setTimeout(flush, SAVE_THROTTLE_MS);
   };
@@ -192,13 +226,17 @@ export function trackEditorScroll(
 }
 
 /**
- * Scroll `container` back to `offset`, holding it there for a short window
- * while late layout settles.
+ * Scroll `container` back to `offset` — or, given an `anchor`, to where its
+ * block sat — holding it there for a short window while late layout settles.
  *
  * `offset <= 0` is written once and returns: "the top" is always reachable, and
  * a watch loop there would fight a reader scrolling down out of a fresh load.
  */
-export function restoreEditorScroll(container: HTMLElement | null, offset: number): void {
+export function restoreEditorScroll(
+  container: HTMLElement | null,
+  offset: number,
+  anchor?: RestoreAnchor | null,
+): void {
   cancelEditorScrollRestore();
   if (!container) return;
   restoreEpoch += 1;
@@ -210,6 +248,11 @@ export function restoreEditorScroll(container: HTMLElement | null, offset: numbe
   let frames = 0;
   let landed = false;
   let finished = false;
+  /** Where the scroller should be now: the anchored block's place, else the pixels. */
+  const target = () => {
+    const moveBy = anchor ? anchorDistance(container, anchor.blocks, anchor.at) : null;
+    return moveBy === null ? offset : container.scrollTop + moveBy;
+  };
 
   const doc = container.ownerDocument;
   const finish = (settle: boolean) => {
@@ -219,7 +262,7 @@ export function restoreEditorScroll(container: HTMLElement | null, offset: numbe
     for (const type of USER_GESTURES) doc?.removeEventListener(type, stop, true);
     // Ran out of patience without ever reaching the offset: the document is
     // shorter than it was. Landing at its end beats landing at its top.
-    if (settle && !landed) container.scrollTop = offset;
+    if (settle && !landed) container.scrollTop = target();
   };
   const stop = () => finish(false);
 
@@ -230,9 +273,10 @@ export function restoreEditorScroll(container: HTMLElement | null, offset: numbe
     if (finished) return;
     // Hold it against focus() and the caret reset, which each scroll on their
     // own a frame or two after this starts.
-    if (container.scrollHeight - container.clientHeight >= offset) {
-      if (container.scrollTop !== offset) container.scrollTop = offset;
-      landed = landed || container.scrollTop === offset;
+    const want = target();
+    if (container.scrollHeight - container.clientHeight >= want) {
+      if (Math.abs(container.scrollTop - want) >= 1) container.scrollTop = want;
+      landed = landed || Math.abs(container.scrollTop - target()) < 1;
     }
     if (++frames >= MAX_RESTORE_FRAMES) return finish(true);
     requestAnimationFrame(step);

@@ -10,7 +10,8 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { spawnSync } from "node:child_process";
-import { rmdirSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync } from "node:fs";
+import { rmdirSync, mkdirSync, mkdtempSync, writeFileSync, rmSync, readdirSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 // Vitest runs with cwd = repo root; import.meta.url is a virtual URL under the
@@ -191,6 +192,57 @@ describe("gha-tdd-guard — WI-19: SCOPED names paths that exist", () => {
     // Exact-path scope entry, satisfied — proves the entry resolves to a file
     // that exists, unlike the two store paths removed above.
     expect(runGuard(write("src/stores/workflowStore.ts")).status).toBe(0);
+  });
+
+  // WI-LX2.4 — the store slices joined the scope. Each real file must pass (it
+  // ships with a sibling test); that it is SCOPED is proven below, in a fixture
+  // tree where the same paths have no test — here a real file returns 0 whether
+  // scoped or not, so these calls alone could not see the entry vanish.
+  const STORE_SLICES = [
+    "src/stores/workflowStore.ts",
+    "src/stores/workflowEditQueue.ts",
+    "src/stores/workflowSerialize.ts",
+    "src/stores/workflowPreviewSlice.ts",
+    "src/stores/workflowViewSlice.ts",
+    "src/stores/workflowApprovalSlice.ts",
+  ];
+  it("lets the real workflow store slices through — each ships with its test (WI-LX2.4)", () => {
+    for (const real of STORE_SLICES) expect(runGuard(write(real)).status, `${real} ships with its test`).toBe(0);
+    // Named, not globbed: a new unrelated store must stay out of scope.
+    expect(runGuard(write("src/stores/workflowSomethingElse__probe__.ts")).status).toBe(0);
+  });
+
+  it("blocks every named store slice when it has NO test — the exact-name entries are live", () => {
+    // The guard resolves its repo root from its own location, so a copy under
+    // a scratch `.claude/hooks/` judges the scratch tree, where none of these
+    // files has a sibling test.
+    const root = mkdtempSync(join(tmpdir(), "gha-guard-"));
+    try {
+      mkdirSync(join(root, ".claude/hooks"), { recursive: true });
+      mkdirSync(join(root, "src/stores"), { recursive: true });
+      writeFileSync(join(root, ".claude/hooks/gha-tdd-guard.mjs"), readFileSync(GUARD, "utf8"));
+      const guardIn = (rel) => spawnSync(process.execPath, [join(root, ".claude/hooks/gha-tdd-guard.mjs")], {
+        input: JSON.stringify(write(join(root, rel))), encoding: "utf8",
+      }).status;
+      for (const store of STORE_SLICES) expect(guardIn(store), `${store} must be scoped`).toBe(2);
+      // …and the same fixture passes once the test exists, so the 2 above is the scope, not a broken fixture.
+      writeFileSync(join(root, "src/stores/workflowEditQueue.test.ts"), "");
+      expect(guardIn("src/stores/workflowEditQueue.ts")).toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // The yaml adapter's workflow modules live under src/lib/formats/, which the
+  // multi-format guard scopes as a whole with the identical sibling-test rule.
+  // A second entry here only ran the same check twice on every edit.
+  it("leaves the yaml adapter's workflow modules to the multi-format guard, which already blocks them", () => {
+    const MULTI = join(REPO, ".claude/hooks/multi-format-tdd-guard.mjs");
+    for (const probe of ["src/lib/formats/adapters/yamlWorkflow__probe__.ts", "src/lib/formats/adapters/yamlEngine__probe__.tsx"]) {
+      expect(runGuard(write(probe)).status, `${probe}: not this guard's scope`).toBe(0);
+      const multi = spawnSync(process.execPath, [MULTI], { input: JSON.stringify(write(probe)), encoding: "utf8" });
+      expect(multi.status, `${probe}: the multi-format guard must block it`).toBe(2);
+    }
   });
 
   it("still honours the allow-list inside the new scopes", () => {

@@ -28,9 +28,9 @@ Digite um bloco de código delimitado com o identificador de linguagem `markmap`
 ```text
 ````
 
-### Usando a Ferramenta MCP
+### A Partir de um Assistente de IA
 
-Use a ferramenta MCP `media` com `action: "markmap"` e o parâmetro `code` contendo títulos Markdown.
+Não existe uma ferramenta dedicada a mapas mentais. Um cliente de IA conectado pelo [servidor MCP do VMark](/pt-BR/guide/mcp-setup) insere um mapa mental da mesma forma que insere qualquer outro Markdown — escrevendo um bloco de código ` ```markmap ` no documento com a ferramenta `document` ou `selection`.
 
 ## Modos de Edição
 
@@ -38,15 +38,15 @@ Use a ferramenta MCP `media` com `action: "markmap"` e o parâmetro `code` conte
 
 No modo WYSIWYG, os mapas mentais Markmap são renderizados como árvores SVG interativas. Você pode:
 
-- **Pan** rolando ou clicando e arrastando
-- **Zoom** segurando `Cmd`/`Ctrl` e rolando
+- **Pan** clicando e arrastando (uma rolagem simples rola o documento, não o mapa mental)
+- **Zoom** segurando `Ctrl` e rolando
 - **Colapsar/expandir** nós clicando no círculo em cada ramo
 - **Ajustar** a visualização usando o botão de ajuste (canto superior direito ao passar o mouse)
 - **Duplo clique** no mapa mental para editar o código-fonte
 
 ### Modo Fonte com Prévia ao Vivo
 
-No modo Fonte, um painel de prévia flutuante aparece quando o cursor estiver dentro de um bloco de código markmap, atualizando conforme você digita.
+No modo Fonte, um painel de prévia flutuante mostra o mapa mental enquanto o cursor estiver dentro de um bloco de código markmap, atualizando conforme você digita. A prévia vem desativada por padrão — ative-a com **Visualizar → Alternar pré-visualização de diagrama** (`Alt + Mod + P`) ou pela paleta de comandos.
 
 ## Formato de Entrada
 
@@ -121,8 +121,8 @@ Aqui está um markmap interativo renderizado diretamente nesta página — exper
 
 | Ação | Como |
 |------|------|
-| **Pan** | Role ou clique e arraste |
-| **Zoom** | `Cmd`/`Ctrl` + scroll |
+| **Pan** | Clique e arraste |
+| **Zoom** | `Ctrl` + scroll |
 | **Colapsar nó** | Clique no círculo em um ponto de ramo |
 | **Expandir nó** | Clique no círculo novamente |
 | **Ajustar à visualização** | Clique no botão de ajuste (canto superior direito ao passar o mouse) |

@@ -21,14 +21,18 @@ vi.mock("@/utils/pendingSaves", () => ({
 
 import {
   captureAiEdit,
-  captureMcpWrite,
+  captureExplorerNewFile,
   captureWrite,
-  recordMcpRead,
-  takeMcpReadInputs,
   workspaceRelativePath,
 } from "./captureFunnel";
+import { captureMcpWrite, recordMcpRead, takeMcpReadInputs } from "./mcpCapture";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+
+function setCaptureOnSave(on: boolean) {
+  useSettingsStore.getState().updateGeneralSetting("coherenceCaptureOnSave", on);
+}
 
 function setRoot(rootPath: string | null) {
   useWorkspaceStore.setState({ rootPath });
@@ -45,6 +49,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.useRealTimers();
   setRoot("/ws/story");
+  setCaptureOnSave(false);
   mockInvoke.mockResolvedValue(receipt);
 });
 
@@ -85,6 +90,8 @@ describe("captureWrite", () => {
         // retries.
         idem: expect.stringMatching(/^[0-9a-f-]{36}$/),
       },
+      // Capture-on-save ships off (WI-LX1.4).
+      policy: "tracked-only",
     });
   });
 
@@ -181,6 +188,7 @@ describe("captureAiEdit", () => {
         rewrite_identity: false,
         idem: expect.stringMatching(/^[0-9a-f-]{36}$/),
       },
+      policy: "tracked-only",
     });
   });
 
@@ -236,5 +244,99 @@ describe("MCP session reads and writes", () => {
     recordMcpRead("/ws/story/elena.md");
     expect(takeMcpReadInputs("/ws/story")).toHaveLength(1);
     expect(takeMcpReadInputs("/ws/story")).toHaveLength(0);
+  });
+});
+
+// WI-LX1.4 — every write path reaches the kernel through this funnel, and the
+// funnel is where the capture-on-save setting is attached. The kernel enforces
+// it (`coherence/capture_policy.rs`): `tracked-only` never creates `.vmark/` and
+// never stamps a file; `adopt` is the opt-in behaviour.
+describe("capture-on-save setting reaches the kernel on every write path", () => {
+  function policySent(): unknown {
+    const call = mockInvoke.mock.calls.find((c) => c[0] === "coherence_capture");
+    return (call?.[1] as { policy?: unknown } | undefined)?.policy;
+  }
+
+  const paths: Array<{ name: string; run: () => Promise<unknown> }> = [
+    {
+      // Human save and history restore call captureWrite directly.
+      name: "captureWrite (save, history restore)",
+      run: () =>
+        captureWrite({
+          absolutePath: "/ws/story/scene.md",
+          content: "x",
+          agent: { type: "human" },
+          intent: { kind: "editor-save", summary: "s" },
+        }),
+    },
+    {
+      name: "captureMcpWrite (MCP document.write / workspace.save)",
+      run: () =>
+        captureMcpWrite({ absolutePath: "/ws/story/ch1.md", content: "c", toolName: "document.write" }),
+    },
+    {
+      name: "captureAiEdit (genie apply, accepted AI suggestion)",
+      run: () => {
+        useDocumentStore.getState().initDocument("tab-policy", "applied", "/ws/story/scene.md");
+        return captureAiEdit({
+          tabId: "tab-policy",
+          intentKind: "genie",
+          summary: "s",
+          bufferWasDirty: false,
+        });
+      },
+    },
+    {
+      name: "captureExplorerNewFile (explorer new file)",
+      run: async () => {
+        captureExplorerNewFile("/ws/story/new.md");
+        await vi.waitFor(() => expect(policySent()).toBeDefined());
+      },
+    },
+  ];
+
+  it.each(paths)("$name sends tracked-only while the setting is OFF", async ({ run }) => {
+    mockInvoke.mockImplementation(async (cmd: unknown) => (cmd === "coherence_head" ? null : receipt));
+    await run();
+    expect(policySent()).toBe("tracked-only");
+  });
+
+  it.each(paths)("$name sends adopt while the setting is ON", async ({ run }) => {
+    setCaptureOnSave(true);
+    mockInvoke.mockImplementation(async (cmd: unknown) => (cmd === "coherence_head" ? null : receipt));
+    await run();
+    expect(policySent()).toBe("adopt");
+  });
+
+  it("reads the setting at the write, not at an earlier one", async () => {
+    await captureWrite({
+      absolutePath: "/ws/story/a.md",
+      content: "a",
+      agent: { type: "human" },
+      intent: { kind: "editor-save", summary: "s" },
+    });
+    setCaptureOnSave(true);
+    await captureWrite({
+      absolutePath: "/ws/story/b.md",
+      content: "b",
+      agent: { type: "human" },
+      intent: { kind: "editor-save", summary: "s" },
+    });
+    const policies = mockInvoke.mock.calls
+      .filter((c) => c[0] === "coherence_capture")
+      .map((c) => (c[1] as { policy: string }).policy);
+    expect(policies).toEqual(["tracked-only", "adopt"]);
+  });
+
+  it("a declined capture (null receipt) returns null and registers no pending save", async () => {
+    mockInvoke.mockResolvedValue(null);
+    const result = await captureWrite({
+      absolutePath: "/ws/story/scene.md",
+      content: "x",
+      agent: { type: "human" },
+      intent: { kind: "editor-save", summary: "s" },
+    });
+    expect(result).toBeNull();
+    expect(mockRegisterPendingSave).not.toHaveBeenCalled();
   });
 });

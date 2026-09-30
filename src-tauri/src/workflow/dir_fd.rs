@@ -49,6 +49,23 @@ impl Dir {
         Ok(Self { file })
     }
 
+    /// Open the absolute, already-canonical `path` by walking it from `/`
+    /// one component at a time with `O_NOFOLLOW` (#74). A canonical path has
+    /// no link in it, so a link found at any component now means the name was
+    /// swapped after it was resolved — refused, never followed.
+    pub(super) fn open_nofollow(path: &Path) -> Result<Self, String> {
+        use std::path::Component;
+        let mut dir = Self::open(Path::new("/"))?;
+        for component in path.components() {
+            match component {
+                Component::RootDir => {}
+                Component::Normal(name) => dir = dir.open_child(&c_name(name)?)?,
+                _ => return Err(format!("{} is not a canonical path", path.display())),
+            }
+        }
+        Ok(dir)
+    }
+
     pub(super) fn fd(&self) -> RawFd {
         self.file.as_raw_fd()
     }
@@ -157,6 +174,28 @@ impl Dir {
             Err(e) => return Err(format!("cannot stat {name:?} in the target directory: {e}")),
         }
         Ok(found.st_dev as u64 == want.dev() && found.st_ino as u64 == want.ino())
+    }
+
+    /// Is `name`, looked up in THIS directory without following a link, a
+    /// regular file? `None` when nothing is there. A snapshot restore deletes
+    /// only a regular file the run made — never a link's target (#75).
+    pub(super) fn is_regular_file(&self, name: &CString) -> Result<Option<bool>, String> {
+        let mut found: libc::stat = unsafe { std::mem::zeroed() };
+        // SAFETY: as `holds` — an open directory descriptor, a NUL-terminated
+        // name that outlives the call, and a live `libc::stat` to fill in.
+        let rc = unsafe {
+            libc::fstatat(
+                self.fd(),
+                name.as_ptr(),
+                &mut found,
+                libc::AT_SYMLINK_NOFOLLOW,
+            )
+        };
+        match checked(rc) {
+            Ok(()) => Ok(Some(found.st_mode & libc::S_IFMT == libc::S_IFREG)),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+            Err(e) => Err(format!("cannot stat {name:?}: {e}")),
+        }
     }
 
     /// `renameat(self, from, self, to)` — both operands relative to this

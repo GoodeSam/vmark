@@ -27,7 +27,9 @@
  *
  * What this guard covers is the CONTAINER shape — nested blockquotes and lists
  * — whose recursion is upstream and therefore cannot be removed from here.
- * Both are real; only one of them is what the soak reported.
+ * Both are real; only one of them is what the soak reported. Lists nest on a
+ * single line too (`- - - a` is three deep), so every chained marker counts;
+ * a thematic break (`- - -`) is a leaf and counts none.
  *
  * # Where the limit comes from
  *
@@ -72,19 +74,43 @@ export const MAX_NESTING_DEPTH = 1000;
 const FENCE = /^ {0,3}(`{3,}|~{3,})/;
 
 /**
- * A list marker at the start of a line's content.
+ * A list marker at `lastIndex` (sticky, so matching never copies the line).
  *
  * The trailing space is required: `-a` is text and `- a` is a list item, and a
  * bare `-` on its own line is a thematic break rather than a container. `*`
  * without it would also catch the opening of emphasis.
  */
-const LIST_MARKER = /^(?:[-*+]|\d{1,9}[.)])(?: |\t|$)/;
+const LIST_MARKER = /(?:[-*+]|\d{1,9}[.)])(?: |\t|$)/y;
+
+/**
+ * Where a trailing thematic break (`- - -`, `* * *`, `___`) starts on `line`,
+ * or `line.length` when the line does not end in one. A rule is a leaf, so a
+ * run of `- ` that forms one opens no lists, however long it is.
+ */
+function thematicBreakStart(line: string): number {
+  let i = line.length - 1;
+  while (i >= 0 && (line[i] === " " || line[i] === "\t")) i -= 1;
+  const mark = line[i];
+  if (mark !== "-" && mark !== "*" && mark !== "_") return line.length;
+  let count = 0;
+  let start = i;
+  for (; i >= 0; i -= 1) {
+    if (line[i] === mark) {
+      count += 1;
+      start = i;
+    } else if (line[i] !== " " && line[i] !== "\t") {
+      break;
+    }
+  }
+  return count >= 3 ? start : line.length;
+}
 
 /**
  * The deepest container nesting any single line opens.
  *
- * Counts blockquote markers and list indentation, which are the constructs
- * that make an mdast tree deep. Inline nesting is deliberately not counted:
+ * Counts blockquote markers, list markers (including several chained on one
+ * line) and list indentation, which are the constructs that make an mdast
+ * tree deep. Inline nesting is deliberately not counted:
  * `*_` repeated 12000 times parses without incident, because micromark does
  * not build a tree that deep for it, so charging for it would reject
  * documents that parse perfectly well.
@@ -112,8 +138,9 @@ export function maxContainerDepth(markdown: string): number {
     let i = 0;
     let depth = 0;
     let spaces = 0;
+    const ruleStart = thematicBreakStart(line);
 
-    // Leading container markers: any mix of indentation and `>`.
+    // Leading container markers: any mix of indentation, `>` and list markers.
     while (i < line.length) {
       const ch = line[i];
       if (ch === " ") {
@@ -129,16 +156,22 @@ export function maxContainerDepth(markdown: string): number {
         spaces = 0;
         i += 1;
       } else {
-        break;
+        if (i >= ruleStart) break;
+        LIST_MARKER.lastIndex = i;
+        const marker = LIST_MARKER.exec(line);
+        if (!marker) break;
+        // A list marker opens a level, and so does every marker CHAINED after
+        // it: `- - - a` is three lists deep. Counting only the first let a
+        // single line of `- ` reach the parser's stack overflow (#1454).
+        depth += Math.floor(spaces / 2) + 1;
+        spaces = 0;
+        i += marker[0].length;
+        // The whitespace after a marker is its content offset, not nesting.
+        while (line[i] === " " || line[i] === "\t") i += 1;
       }
     }
     // Trailing indentation before actual content is list nesting too.
     depth += Math.floor(spaces / 2);
-
-    // The list marker itself opens a level. Without this, `> > - a` scores 2
-    // when the tree is blockquote > blockquote > list, and a ladder of
-    // `  - a` lines is under-counted by one at every level.
-    if (LIST_MARKER.test(line.slice(i))) depth += 1;
 
     if (depth > max) max = depth;
   }

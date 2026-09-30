@@ -72,7 +72,10 @@ function rootWith({ knip = 75, mergeDrops = 2, commandErrors = 99, mocks = 274, 
   write(
     root,
     "scripts/bespoke-buttons-baseline.json",
-    JSON.stringify({ maxBespokeButtonClasses: named, maxStyledButtonClasses: styled }),
+    JSON.stringify({
+      bespokeButtonClasses: Array.from({ length: named }, (_, i) => `named-${i}`),
+      styledButtonClasses: Array.from({ length: styled }, (_, i) => `styled-${i}`),
+    }),
   );
   return root;
 }
@@ -126,6 +129,26 @@ describe("a phase is done when the real baseline says so (ADR-1)", () => {
     // starting number would certify doing nothing.
     expect(run(rootWith({}), "4").status).toBe(1);
     expect(run(rootWith({ named: 80, styled: 70 }), "4").status, "lowered").toBe(0);
+  });
+
+  // The baseline's keys were renamed when its counts became named lists. The
+  // old reader returned 0 for a key it could not find — and 0 is "at most 87".
+  it("phase 4 reads a missing or wrongly-shaped key as unreadable, never as zero", () => {
+    const root = rootWith({});
+    write(root, "scripts/bespoke-buttons-baseline.json", JSON.stringify({ maxBespokeButtonClasses: 3, maxStyledButtonClasses: 3 }));
+    const r = run(root, "4");
+    expect(r.status).toBe(1);
+    expect(r.stdout).toMatch(/unreadable/);
+  });
+
+  // `records` counted Object.keys(88) — zero — so a list key holding a
+  // NUMBER certified the phase done (Codex review).
+  it("phase 4 reads a number where a list belongs as unreadable, never as zero records", () => {
+    const root = rootWith({});
+    write(root, "scripts/bespoke-buttons-baseline.json", JSON.stringify({ bespokeButtonClasses: 88, styledButtonClasses: 80 }));
+    const r = run(root, "4");
+    expect(r.status).toBe(1);
+    expect(r.stdout).toMatch(/unreadable/);
   });
 });
 

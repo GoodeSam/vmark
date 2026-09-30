@@ -9,6 +9,7 @@ O VMark suporta edição poderosa com múltiplos cursores nos modos WYSIWYG e Fo
 | Adicionar cursor na próxima correspondência | `Mod + D` |
 | Pular correspondência, ir para a próxima | `Mod + Shift + D` |
 | Adicionar cursores em todas as correspondências | `Mod + Shift + L` |
+| Adicionar cursores em todas as correspondências do bloco atual | `Alt + Mod + Shift + L` |
 | Desfazer última adição de cursor | `Alt + Mod + Z` |
 | Adicionar cursor acima | `Mod + Alt + Cima` |
 | Adicionar cursor abaixo | `Mod + Alt + Baixo` |
@@ -44,8 +45,10 @@ Selecione todas as ocorrências da palavra ou seleção atual de uma vez:
 
 1. Selecione uma palavra ou texto
 2. Pressione `Mod + Shift + L`
-3. Todas as ocorrências correspondentes no bloco atual são selecionadas
+3. Todas as ocorrências correspondentes no documento são selecionadas — ou, dentro de um bloco de código, todas as correspondências nesse bloco (veja [Escopo](#escopo))
 4. Digite para substituir todas de uma vez
+
+Para ficar dentro do parágrafo, título ou item de lista em que você está, use `Alt + Mod + Shift + L`.
 
 ### Alt + Clique
 
@@ -112,7 +115,7 @@ O escape por Tab funciona independentemente para cada cursor:
 - Cursores antes de parênteses de fechamento `)` `]` `}` saltam sobre eles
 - Cursores em texto simples permanecem no lugar
 
-Isso permite que você escape de múltiplas regiões formatadas simultaneamente. Veja [Navegação Inteligente com Tab](./tab-navigation.md#multi-cursor-support) para detalhes.
+Isso permite que você escape de múltiplas regiões formatadas simultaneamente. Veja [Navegação Inteligente com Tab](./tab-navigation.md#suporte-a-multiplos-cursores) para detalhes.
 
 ### Área de Transferência
 
@@ -123,21 +126,21 @@ Isso permite que você escape de múltiplas regiões formatadas simultaneamente.
 - Se a área de transferência tiver o mesmo número de linhas que cursores, cada linha vai para cada cursor
 - Caso contrário, o conteúdo completo da área de transferência é colado em todos os cursores
 
-## Escopo de Bloco
+## Escopo
 
-As operações de múltiplos cursores têm **escopo no bloco atual** para evitar edições não intencionais em seções não relacionadas.
+**O código tem escopo; a prosa não.** Dentro de um bloco de código (WYSIWYG) ou de um bloco delimitado (Fonte), os cursores nunca atravessam o delimitador — encontrar um nome de variável em um trecho de código não pode posicionar um cursor em outro. Na prosa comum, `Mod + D` e `Mod + Shift + L` pesquisam o **documento inteiro**.
 
-### No Modo WYSIWYG
-- Os cursores não podem cruzar os limites dos blocos de código
-- Se o cursor principal estiver dentro de um bloco de código, os novos cursores permanecem dentro desse bloco
+Geralmente é isso que você quer, mas às vezes não: em um documento longo, buscar uma palavra comum posiciona cursores em parágrafos muito fora da tela.
 
-### No Modo Fonte
-- Linhas em branco atuam como limites de bloco
-- `Mod + D` e `Mod + Shift + L` só correspondem dentro do parágrafo atual
+### Selecionar Todas as Ocorrências no Bloco
+
+`Alt + Mod + Shift + L` seleciona todas as correspondências **apenas dentro do bloco atual** — o parágrafo, título ou item de lista em que o cursor está. No modo Fonte, linhas em branco delimitam o bloco; no WYSIWYG, o bloco que o envolve o delimita. Dentro de um bloco de código delimitado, ele se comporta exatamente como `Mod + Shift + L`, já que o bloco delimitado já é o bloco.
+
+Os dois são atalhos irmãos, não um modo: `Mod + Shift + L` continua alcançando o documento inteiro, então nada daquilo em que você já confia muda.
 
 <div class="feature-box">
-<strong>Por que o escopo de bloco?</strong>
-<p>Isso evita editar acidentalmente um nome de variável em seções de código não relacionadas ou alterar texto em parágrafos diferentes que por acaso correspondem.</p>
+<strong>Qual usar?</strong>
+<p>Use a versão restrita ao bloco quando a palavra for comum — ao renomear uma variável mencionada na prosa ou ao editar o padrão de um item de lista. Use a versão para o documento inteiro quando você realmente quer dizer em todo lugar.</p>
 </div>
 
 ## Colapsando Cursores
@@ -166,14 +169,15 @@ No modo escuro, as cores do cursor e da seleção se ajustam automaticamente par
 | `Alt + Mod + Z` (Desfazer Suave) | ✓ | ✓ |
 | `Mod + Alt + Cima/Baixo` | ✓ | ✓ |
 | `Alt + Clique` | ✓ | ✓ |
-| Escopo de bloco | Delimitadores de código | Linhas em branco |
+| Escopo de delimitador | Blocos de código | Blocos de código delimitados |
+| Selecionar tudo restrito ao bloco | `Alt + Mod + Shift + L` | `Alt + Mod + Shift + L` |
 | Pesquisa com retorno | ✓ | ✓ |
 
 ## Dicas e Melhores Práticas
 
 ### Renomeando Variáveis
 1. Dê um duplo clique no nome da variável
-2. `Mod + Shift + L` para selecionar todas no bloco
+2. `Alt + Mod + Shift + L` para selecionar todas as correspondências neste bloco (ou `Mod + Shift + L` para o documento inteiro)
 3. Digite o novo nome
 
 ### Adicionando Prefixos/Sufixos
@@ -192,7 +196,8 @@ No modo escuro, as cores do cursor e da seleção se ajustam automaticamente par
 |---------|---------------|
 | Seleção cuidadosa e incremental | `Mod + D` |
 | Pular correspondência indesejada | `Mod + Shift + D` |
-| Substituir todos no bloco | `Mod + Shift + L` |
+| Substituir todos no bloco atual | `Alt + Mod + Shift + L` |
+| Substituir todos no documento | `Mod + Shift + L` |
 | Desfazer último passo do cursor | `Alt + Mod + Z` |
 | Editar linhas consecutivas | `Mod + Alt + Cima/Baixo` |
 | Posições arbitrárias | `Alt + Clique` |
@@ -202,7 +207,7 @@ No modo escuro, as cores do cursor e da seleção se ajustam automaticamente par
 
 - **Nós atômicos**: Não é possível posicionar cursores dentro de imagens, conteúdo embutido ou blocos matemáticos no modo WYSIWYG
 - **Entrada IME**: Ao usar métodos de entrada (Chinês, Japonês, etc.), a composição afeta apenas o cursor principal
-- **Em todo o documento**: As seleções têm escopo em blocos, não no documento inteiro
+- **Blocos de código**: Dentro de um bloco de código (WYSIWYG) ou bloco delimitado (Fonte), a busca de ocorrências nunca sai desse bloco
 
 ## Referência de Teclado
 

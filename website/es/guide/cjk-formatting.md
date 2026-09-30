@@ -4,9 +4,9 @@ VMark incluye un conjunto completo de reglas de formato para texto en chino, jap
 
 ## Inicio Rápido
 
-Usa **Formato → Formatear Documento CJK** o presiona `Alt + Mod + Shift + F` para formatear el documento completo.
+Usa **Formato → CJK → Formatear archivo completo** o presiona `Alt + Mod + Shift + F` para formatear el documento completo.
 
-`Mod + Shift + F` formatea **los bloques que abarca tu selección** — el párrafo, la lista o la tabla completos que toca el cursor o la selección, no los caracteres exactos seleccionados. El espaciado CJK es una propiedad del límite *entre* dos caracteres adyacentes, y una selección a media palabra no contiene ese límite, así que el comando nombra una región que corregir en lugar del texto que reescribir. Sin selección, formatea el bloque donde está el cursor.
+**Formato → CJK → Formatear selección** (`Mod + Shift + F`) formatea **los bloques que abarca tu selección** — el párrafo, la lista o la tabla completos que toca el cursor o la selección, no los caracteres exactos seleccionados. El espaciado CJK es una propiedad del límite *entre* dos caracteres adyacentes, y una selección a media palabra no contiene ese límite, así que el comando nombra una región que corregir en lugar del texto que reescribir. Sin selección, formatea el bloque donde está el cursor.
 
 Ambos comandos protegen exactamente lo mismo (ver [Contenido protegido](#contenido-protegido)), así que seleccionar todo antes de `Mod + Shift + F` es seguro.
 
@@ -119,12 +119,19 @@ Limita los signos de puntuación consecutivos (límite configurable).
 
 El siguiente contenido **no** se ve afectado por el formato:
 
-- Bloques de código (```)
+- Bloques de código (```) — incluida una valla **sin cerrar**, que abarca el resto del documento, tal como especifica CommonMark
 - Código en línea (`)
 - URLs de enlaces
 - Rutas de imágenes
 - Etiquetas HTML
-- Frontmatter YAML
+- Frontmatter — tanto YAML (`---`) como TOML (`+++`)
+- Matemáticas en línea (`$…$`), detectadas con la misma regla que usa el renderizador de VMark, de modo que un par de importes como `价格是 $100 和 $200 元` *no* se confunde con matemáticas
+- Matemáticas en bloque (`$$…$$`)
+- Bloques de código con sangría
+- Enlaces wiki (`[[target]]`, `[[target|display]]`)
+- Marcadores de notas al pie — referencias como `[^1]` y la etiqueta `[^1]:` de una definición (el texto propio de la definición sí se formatea)
+- Referencias de caracteres HTML (`&amp;`, `&#x5176;`)
+- Separadores temáticos (`---`, `***`)
 - Puntuación escapada con barra invertida (por ejemplo, `\,` permanece como `,`)
 
 ### Construcciones Técnicas
@@ -164,13 +171,13 @@ Añade `\` antes de cualquier signo de puntuación para evitar la conversión:
 
 Cuando el [servidor MCP](/es/guide/mcp-setup) está conectado, los asistentes de IA pueden aplicar el formateo CJK de forma programática a través de la herramienta `document.transform` con uno de tres valores de `kind`:
 
-- `"cjk-format"` — normalización CJK completa (espaciado + puntuación + comillas tipográficas según tu configuración)
-- `"cjk-spacing"` — ajusta solo el espaciado en blanco alrededor de los límites CJK ↔ Latín/dígitos
-- `"cjk-punctuation"` — convierte la puntuación entre ancho completo y medio ancho según las reglas
+- `"cjk-format"` — normalización CJK completa (espaciado + puntuación + comillas tipográficas), el mismo formateador que ejecuta el comando del menú, siguiendo tu configuración en Configuración → Idioma
+- `"cjk-spacing"` — inserta un espacio dondequiera que un carácter CJK se encuentre con una letra latina o un dígito, y nada más
+- `"cjk-punctuation"` — convierte `,` `.` `!` `?` `;` `:` `(` `)` de medio ancho junto a un carácter CJK en su forma de ancho completo; nunca convierte de ancho completo a medio ancho
 
-Cada transformación ejecuta el documento activo a través de un viaje de ida y vuelta de serialización-formato-análisis para preservar las marcas en línea (negrita, enlaces, matemáticas, etc.) y respetar tus reglas de formato configuradas.
+Solo `cjk-format` lee tu configuración de formato. `cjk-spacing` y `cjk-punctuation` son reglas fijas que la ignoran y, a diferencia del formateador, también tratan el hangul coreano como CJK. Las tres trabajan sobre el código fuente markdown del documento y dejan intacto el [contenido protegido](#contenido-protegido).
 
-Consulta la [Referencia de Herramientas MCP](/es/guide/mcp-tools#document-tool) para la forma completa de la solicitud — `document.transform` toma `tabId`, `kind` y un `expected_revision` para concurrencia optimista.
+Consulta la [Referencia de Herramientas MCP](/es/guide/mcp-tools#transform) para la forma completa de la solicitud — `document.transform` toma `tabId`, `kind` y un `expected_revision` para concurrencia optimista.
 
 ## Configuración
 
@@ -278,7 +285,7 @@ Los apóstrofos en contracciones (como "it's" o "don't") se conservan correctame
 
 ### Alternar Estilo de Comillas en el Cursor
 
-Puedes cambiar rápidamente el estilo de comillas de las comillas existentes sin reformatear todo el documento. Coloca el cursor dentro de cualquier par de comillas y presiona `Shift + Mod + '` para alternar.
+Puedes cambiar rápidamente el estilo de comillas de las comillas existentes sin reformatear todo el documento. Coloca el cursor dentro de cualquier par de comillas y presiona `Shift + Mod + '` para alternar. Esto solo funciona en modo WYSIWYG; el modo Fuente no tiene alternancia de comillas.
 
 **Modo simple** (predeterminado): Alterna entre comillas rectas y tu estilo preferido.
 

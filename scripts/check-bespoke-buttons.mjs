@@ -11,9 +11,11 @@
  * that *a* token was used, never that the right one was, or that the control
  * should have existed at all.
  *
- * TWO budgets, each pinned in a committed baseline that may only go DOWN.
- * Writing another bespoke button fails the gate; so does letting a baseline go
- * stale after a migration. Use `.vm-btn` (src/styles/button-shared.css).
+ * THREE named lists, each pinned in a committed baseline that may only shrink.
+ * Writing another bespoke button fails the gate; so does letting a list go
+ * stale after a migration. They were counts until a swap — one button
+ * deleted, another written — held the total (see identityVerdict). Use
+ * `.vm-btn` (src/styles/button-shared.css).
  *
  *   1. BY NAME — button-ish class DEFINITIONS in src/**\/*.css.
  *   2. BY USAGE — classes applied to a `<button>` whose CSS re-derives a button
@@ -34,6 +36,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { CSS_RULE_RE, stripComments, declaredValue } from "./lib/cssRules.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const SRC_DIR = "src";
 const BASELINE_PATH = "scripts/bespoke-buttons-baseline.json";
@@ -292,45 +295,65 @@ export function collectBespokeButtons(files, readFile = (p) => readFileSync(p, "
 }
 
 /**
- * Compare one measured count against its committed budget.
+ * Every (file, class) definition site, keyed `"<file> <class>"`.
  *
- * Extracted because the CLI below did this three times — once per budget — with
- * the integer check, the over-budget branch and the stale-budget branch copied
- * verbatim each time. Three copies of a two-way ratchet is three places for the
- * "never raise it" half to be dropped from.
+ * The by-name list is keyed by SITE, not by class: a listed name defined in a
+ * new file is a new bespoke implementation hiding behind an old exemption, and
+ * a class-keyed list let it through (Codex review of the named lists).
+ */
+export function collectBespokeButtonSites(files, readFile = (p) => readFileSync(p, "utf8")) {
+  const sites = new Map(); // "<file> <class>" -> file
+  for (const file of files) {
+    for (const cls of collectBespokeButtons([file], readFile).keys()) sites.set(`${file} ${cls}`, file);
+  }
+  return sites;
+}
+
+/**
+ * Compare the classes the code has against a named list that may only shrink.
  *
- * Returns `null` when the budget is held; otherwise `{ kind, message }` where
- * `kind` is `invalid` | `over` | `stale`. The caller supplies `overDetail`
- * because each budget names different things and points at a different remedy.
+ * A COUNT budget read 37/37 after one bespoke button was deleted and another
+ * written — a swap is a new bespoke button whatever the total — so each
+ * budget is the list of the classes themselves. A class not on the list
+ * fails; a listed class the code no longer has is stale and must be deleted,
+ * so the win is locked in. One verdict for all three lists: three copies of
+ * a two-way ratchet are three places for the "never add" half to be dropped.
  *
  * @returns {{kind: "invalid"|"over"|"stale", message: string} | null}
  */
-export function ratchetVerdict({ key, limit, actual, noun, overDetail = "" }) {
-  if (!Number.isInteger(limit)) {
-    return { kind: "invalid", message: `❌ ${BASELINE_PATH} needs an integer \`${key}\`.` };
+export function identityVerdict({ key, allowed, found, noun, advice = "", describe = (name, info) => `  ${name}  (${info})` }) {
+  const valid =
+    Array.isArray(allowed) &&
+    allowed.every((c) => typeof c === "string" && c.length > 0) &&
+    new Set(allowed).size === allowed.length;
+  if (!valid) {
+    return { kind: "invalid", message: `❌ ${BASELINE_PATH} needs \`${key}\`: an array of distinct class names.` };
   }
-  if (actual > limit) {
+  const listed = new Set(allowed);
+  const added = [...found.keys()].filter((c) => !listed.has(c)).sort();
+  const stale = allowed.filter((c) => !found.has(c)).sort();
+  if (added.length > 0) {
     return {
       kind: "over",
       message:
-        `\n❌ ${actual} ${noun}, budget is ${limit}.\n\n` +
-        overDetail +
-        `\n\n   Do NOT raise the budget.\n`,
+        `\n❌ ${added.length} new ${noun} (not in \`${key}\`):\n\n` +
+        added.map((c) => describe(c, found.get(c))).join("\n") +
+        (advice ? `\n\n${advice}` : "") +
+        (stale.length > 0 ? `\n\n   (Gone from the code, delete from the list: ${stale.join(", ")}.)` : "") +
+        "\n\n   Do NOT add them to the list.\n",
     };
   }
-  if (actual < limit) {
+  if (stale.length > 0) {
     return {
       kind: "stale",
-      message:
-        `\n❌ Budget is stale: ${actual} ${noun} remain but the budget says ${limit}.\n` +
-        `   Lower \`${key}\` to ${actual} in ${BASELINE_PATH} to lock the win in.\n`,
+      message: `\n❌ \`${key}\` is stale — the code no longer has: ${stale.join(", ")}.\n   Delete them from ${BASELINE_PATH} to lock the win in.\n`,
     };
   }
   return null;
 }
 
 // Only run the gate when executed directly, so tests can import the helpers.
-if (process.argv[1] && process.argv[1].endsWith("check-bespoke-buttons.mjs")) {
+if (isMainModule(import.meta.url)) {
   let baseline;
   try {
     baseline = JSON.parse(readFileSync(BASELINE_PATH, "utf8"));
@@ -339,20 +362,15 @@ if (process.argv[1] && process.argv[1].endsWith("check-bespoke-buttons.mjs")) {
     process.exit(1);
   }
 
-  const limit = baseline.maxBespokeButtonClasses;
-  const found = collectBespokeButtons(walkCss(SRC_DIR));
-  const actual = found.size;
-  const nameVerdict = ratchetVerdict({
-    key: "maxBespokeButtonClasses",
-    limit,
-    actual,
+  const found = collectBespokeButtonSites(walkCss(SRC_DIR));
+  const nameVerdict = identityVerdict({
+    key: "bespokeButtonClasses",
+    allowed: baseline.bespokeButtonClasses,
+    found,
+    describe: (site) => `  ${site}`,
     noun: "bespoke button classes",
-    overDetail:
-      [...found.entries()]
-        .slice(0, 10)
-        .map(([c, f]) => `  ${c}  (${f})`)
-        .join("\n") +
-      "\n\n   Use `.vm-btn` from src/styles/button-shared.css, or `.popup-icon-btn`" +
+    advice:
+      "   Use `.vm-btn` from src/styles/button-shared.css, or `.popup-icon-btn`" +
       "\n   for icon-only buttons inside popups.",
   });
   if (nameVerdict) {
@@ -363,16 +381,13 @@ if (process.argv[1] && process.argv[1].endsWith("check-bespoke-buttons.mjs")) {
   // Second, usage-based budget: classes applied to a <button> whose CSS
   // re-derives a button surface. Naming cannot evade this one.
   const styled = collectStyledButtonClasses(walkExt(SRC_DIR, ".tsx"), walkCss(SRC_DIR));
-  const styledVerdict = ratchetVerdict({
-    key: "maxStyledButtonClasses",
-    limit: baseline.maxStyledButtonClasses,
-    actual: styled.size,
+  const styledVerdict = identityVerdict({
+    key: "styledButtonClasses",
+    allowed: baseline.styledButtonClasses,
+    found: styled,
     noun: "classes that style a <button> without the canonical primitive",
-    overDetail:
-      [...styled.entries()]
-        .slice(0, 10)
-        .map(([c, f]) => `  .${c}  (${f})`)
-        .join("\n") + "\n\n   Use `.vm-btn` from src/styles/button-shared.css.",
+    advice: "   Use `.vm-btn` from src/styles/button-shared.css.",
+    describe: (c, file) => `  .${c}  (${file})`,
   });
   if (styledVerdict) {
     console.error(styledVerdict.message);
@@ -389,23 +404,17 @@ if (process.argv[1] && process.argv[1].endsWith("check-bespoke-buttons.mjs")) {
   }
   const tokens = buildTokenMap(readFileSync("src/styles/index.css", "utf8"));
   const shape = collectShapeDrift(walkExt(SRC_DIR, ".tsx"), walkCss(SRC_DIR), { canonical, tokens });
-  const shapeVerdict = ratchetVerdict({
-    key: "maxShapeDriftClasses",
-    limit: baseline.maxShapeDriftClasses,
-    actual: shape.size,
+  const shapeVerdict = identityVerdict({
+    key: "shapeDriftClasses",
+    allowed: baseline.shapeDriftClasses,
+    found: shape,
     noun: "button classes that diverge from the canonical control shape",
-    // Report the DIFF, not the count: the useful output is "change this to
-    // that". A number tells you a rule was broken; this tells you how to fix it.
-    overDetail:
-      [...shape.entries()]
-        .slice(0, 8)
-        .map(
-          ([cls, { file, diffs }]) =>
-            `  .${cls}  (${file})\n` +
-            diffs.map((d) => `      ${d.property}: ${d.actual}  ≠  ${d.expected}`).join("\n"),
-        )
-        .join("\n") +
-      "\n\n   Canonical is `.vm-btn` (src/styles/button-shared.css): " +
+    // Report the DIFF, not the name alone: the useful output is "change this
+    // to that". A name tells you a rule was broken; this tells you how to fix it.
+    describe: (cls, { file, diffs }) =>
+      `  .${cls}  (${file})\n` + diffs.map((d) => `      ${d.property}: ${d.actual}  ≠  ${d.expected}`).join("\n"),
+    advice:
+      "   Canonical is `.vm-btn` (src/styles/button-shared.css): " +
       SHAPE_PROPERTIES.map((p) => `${p} ${canonical[p]}`).join(", ") +
       ".\n   Adopt the primitive, promote a genuinely-missing variant onto it, or — if the" +
       "\n   deviation is justified — record it in the rule body as" +
@@ -417,8 +426,7 @@ if (process.argv[1] && process.argv[1].endsWith("check-bespoke-buttons.mjs")) {
   }
 
   console.log(
-    `✅ Bespoke-button budgets held (${actual}/${limit} by name, ` +
-      `${styled.size}/${baseline.maxStyledButtonClasses} by usage, ` +
-      `${shape.size}/${baseline.maxShapeDriftClasses} by shape).`,
+    `✅ Bespoke-button lists held (${found.size} by name, ` +
+      `${styled.size} by usage, ${shape.size} by shape — each a named list that only shrinks).`,
   );
 }

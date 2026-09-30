@@ -105,30 +105,13 @@ vi.mock("@/utils/multiImageParsing", () => ({
 
 // --- Imports (after mocks) ---
 
-import { Schema } from "@tiptap/pm/model";
+import { Schema, Slice } from "@tiptap/pm/model";
 import { EditorState } from "@tiptap/pm/state";
+import type { EditorView } from "@tiptap/pm/view";
 import { imageHandlerExtension } from "./tiptap";
 import { imageHandlerError } from "@/utils/debug";
 
 // --- Helpers ---
-
-/**
- * Extract the plugin's handlePaste and handleDrop from the extension.
- */
-function _getPluginProps() {
-  const ext = imageHandlerExtension;
-  // Access the addProseMirrorPlugins method
-  const plugins = ext.options?.addProseMirrorPlugins
-    ? ext.options.addProseMirrorPlugins()
-    : [];
-
-  // The extension creates plugins via Extension.create, so we need to
-  // instantiate it and get the plugin props. For testing, we'll directly
-  // test the exported extension's configuration.
-  // Since we can't easily instantiate tiptap extensions in unit tests,
-  // we test the handlePaste/handleDrop functions extracted from the module.
-  return { plugins };
-}
 
 function createMockView(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   const mockTr = {
@@ -544,7 +527,7 @@ describe("handleDrop edge cases", () => {
 });
 
 describe("imageHandler plugin handler integration", () => {
-  let handlePaste: (view: unknown, event: ClipboardEvent) => boolean;
+  let handlePaste: (view: unknown, event: ClipboardEvent, slice?: Slice) => boolean;
   let handleDrop: (view: unknown, event: DragEvent, slice: unknown, moved: boolean) => boolean;
 
   beforeEach(() => {
@@ -566,7 +549,10 @@ describe("imageHandler plugin handler integration", () => {
     };
     const plugins = imageHandlerExtension.config.addProseMirrorPlugins?.call(extensionContext) ?? [];
     const plugin = plugins[0];
-    handlePaste = plugin.props.handlePaste!;
+    const pluginHandlePaste = plugin.props.handlePaste!;
+    // ProseMirror always passes a slice (`slice || Slice.empty`).
+    handlePaste = (view, event, slice = Slice.empty) =>
+      pluginHandlePaste.call(plugin, view as EditorView, event, slice) === true;
     handleDrop = plugin.props.handleDrop!;
   });
 

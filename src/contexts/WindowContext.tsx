@@ -17,7 +17,8 @@
  *   - Runtime transfers are handled by listeners set up after isReady.
  *   - Workspace resolution: for files opened via Finder/drag, resolves the
  *     workspace root using openPolicy logic. For URL-provided workspace roots,
- *     loads config from disk.
+ *     loads config from disk. Either root's grant is awaited first (#38): a
+ *     root on a slow mount is granted after launch (`openStartupWorkspace`).
  *   - Settings and non-document windows (label !== main/doc-*) skip document
  *     initialization entirely.
  *   - Settings window reads workspace state from the source document window's
@@ -46,6 +47,7 @@ import { useTabStore } from "../stores/tabStore";
 import { useRecentWorkspacesStore, useWorkspaceStore } from "../stores/workspaceStore";
 import { useUIStore } from "../stores/uiStore";
 import { openWorkspaceWithConfig } from "@/services/workspaces/openWorkspaceWithConfig";
+import { regrantWorkspaceAccess } from "@/services/workspaces/workspaceAccess";
 import { restoreWindowBrowserSession } from "@/services/persistence/windowBrowserSession";
 import { openStartupContent, parseStartupFilesParam } from "./startupFileOpen";
 import { isLaunchWindow, isDocumentWindowLabel } from "@/utils/windowLabels";
@@ -63,12 +65,11 @@ import { windowContextError, appError } from "@/utils/debug";
 import { claimWorkspaceTransferForWindow } from "@/services/workspaces/workspaceWindowActions";
 import { voidAsync } from "@/utils/voidAsync";
 
-/**
- * Delay before emitting "ready" event to Rust.
- * This ensures child components' useEffect hooks have run and set up menu listeners.
- * Without sufficient delay, menu events (e.g., menu:open) arrive before
- * useFileOperations has registered its listener.
- */
+/** Open the workspace a window starts on once its grant is in (#38). */
+async function openStartupWorkspace(root: string, windowLabel: string) {
+  await regrantWorkspaceAccess(root); // never throws; a refusal is ordinary
+  return openWorkspaceWithConfig(root, { windowLabel });
+}
 
 interface WindowContextValue {
   windowLabel: string;
@@ -145,7 +146,7 @@ export function WindowProvider({ children }: WindowProviderProps) {
             > = null;
             if (workspaceRootParam) {
               try {
-                workspaceConfig = await openWorkspaceWithConfig(workspaceRootParam, { windowLabel: label });
+                workspaceConfig = await openStartupWorkspace(workspaceRootParam, label);
                 useUIStore.getState().showSidebarWithView("files");
                 useRecentWorkspacesStore.getState().addWorkspace(workspaceRootParam);
               } catch (e) {
@@ -165,7 +166,7 @@ export function WindowProvider({ children }: WindowProviderProps) {
               if (!isWorkspaceMode || !rootPath || !isWithinWorkspace) {
                 const derivedRoot = resolveWorkspaceRootForExternalFile(filePath);
                 if (derivedRoot) {
-                  await openWorkspaceWithConfig(derivedRoot, { windowLabel: label });
+                  await openStartupWorkspace(derivedRoot, label);
                 } else if (isLaunchWindow(label)) {
                   useWorkspaceStore.getState().closeWorkspace();
                 }

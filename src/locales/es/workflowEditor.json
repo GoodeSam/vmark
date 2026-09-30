@@ -24,6 +24,8 @@
   "panel.exportMermaid": "Copiar como Mermaid",
   "panel.exportMermaidLossy": "La exportación a Mermaid omite el estado de ejecución, los iconos de acciones, las insignias personalizadas y los detalles de expansión de la matriz.",
   "panel.exportSvgLossy": "La exportación SVG usa foreignObject; para primitivas vectoriales nativas, exporta como PNG.",
+  "panel.layout.leftToRight": "Organizar de izquierda a derecha",
+  "panel.layout.topToBottom": "Organizar de arriba abajo",
   "panel.matrix.expand": "Expandir la matriz ({count} combinaciones)",
   "panel.matrix.collapse": "Contraer la matriz",
   "panel.matrix.dynamic": "Matriz dinámica",
@@ -155,5 +157,18 @@
   "form.job.add.submit": "Añadir",
   "form.job.add.duplicate": "Ya existe un trabajo con este ID",
   "form.job.add.invalid": "Empieza con una letra o un guion bajo, seguido de letras, dígitos, guiones o guiones bajos",
-  "diagnosticsBanner.actionlintTimedOut": "actionlint no respondió a tiempo; VMark dejó de esperarlo"
+  "diagnosticsBanner.actionlintTimedOut": "actionlint no respondió a tiempo; VMark dejó de esperarlo",
+  "form.concurrency.label": "Concurrencia",
+  "form.concurrency.group": "Grupo",
+  "form.concurrency.cancelInProgress": "Cancelar en curso",
+  "form.concurrency.expressionLocked": "(expresión — editar en el código fuente)",
+  "form.job.delete.label": "Eliminar trabajo",
+  "form.job.steps.add": "Añadir paso",
+  "form.job.steps.delete": "Eliminar paso",
+  "form.job.steps.moveUp": "Subir paso",
+  "form.job.steps.moveDown": "Bajar paso",
+  "form.permissions.label": "Permisos",
+  "form.permissions.default": "Predeterminado",
+  "form.permissions.custom": "Personalizado (por ámbito)",
+  "form.permissions.unset": "(sin definir)"
 }

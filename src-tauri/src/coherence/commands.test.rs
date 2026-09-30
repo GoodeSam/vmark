@@ -611,3 +611,82 @@ fn status_admits_when_the_projection_is_incomplete() {
          reads as authoritative when it cannot be"
     );
 }
+
+// Audit finding #133 — an MCP read pins the revision whose CONTENT was served,
+// never whatever the head is by the time the asynchronous lookup runs.
+#[test]
+fn head_pins_the_revision_matching_the_served_content() {
+    let (dir, mut kernel) = workspace();
+    write_file(dir.path(), "a.md", "v1\n");
+    let r1 = save(&mut kernel, "a.md", "v1\n");
+    write_file(dir.path(), "a.md", "v2\n");
+    let r2 = save(&mut kernel, "a.md", "v2\n");
+    let rev = |v: Option<serde_json::Value>| v.map(|v| v["revision"].as_str().map(str::to_string));
+    let some = |r: &CaptureReceipt| Some(Some(r.revision.as_str().to_string()));
+
+    // The client was served v1; a capture of v2 landed before the pin ran.
+    assert_eq!(
+        rev(perform_head(&kernel, "a.md", Some("v1\n"), None).unwrap()),
+        some(&r1)
+    );
+    // CRLF / identity-less buffer content still hashes to its revision.
+    assert_eq!(
+        rev(perform_head(&kernel, "a.md", Some("v2\r\n"), None).unwrap()),
+        some(&r2)
+    );
+    // No content: the single head, as before.
+    assert_eq!(
+        rev(perform_head(&kernel, "a.md", None, None).unwrap()),
+        some(&r2)
+    );
+    assert!(perform_head(&kernel, "unknown.md", Some("x"), None)
+        .unwrap()
+        .is_none());
+}
+
+#[test]
+fn head_pins_the_latest_of_several_revisions_with_the_served_content() {
+    // Round 2 of #133: A → B → A leaves two revisions with content A. The read
+    // saw the CURRENT A, not the historical one an index lookup happens to
+    // return first.
+    let (dir, mut kernel) = workspace();
+    write_file(dir.path(), "a.md", "same\n");
+    save(&mut kernel, "a.md", "same\n");
+    write_file(dir.path(), "a.md", "other\n");
+    save(&mut kernel, "a.md", "other\n");
+    write_file(dir.path(), "a.md", "same\n");
+    let latest = save(&mut kernel, "a.md", "same\n");
+    let pinned = perform_head(&kernel, "a.md", Some("same\n"), None)
+        .unwrap()
+        .unwrap();
+    assert_eq!(pinned["revision"].as_str(), Some(latest.revision.as_str()));
+}
+
+#[test]
+fn a_dirty_read_pins_its_saved_base_or_nothing() {
+    // Round 2 of #133: unsaved buffer content matches no revision. The base it
+    // was edited from (the tab's saved content) identifies the revision it
+    // descends from; with no matching base, NO revision is claimed — never the
+    // current head, which the client did not see.
+    let (dir, mut kernel) = workspace();
+    write_file(dir.path(), "a.md", "v1\n");
+    let r1 = save(&mut kernel, "a.md", "v1\n");
+    write_file(dir.path(), "a.md", "v2\n");
+    save(&mut kernel, "a.md", "v2\n");
+
+    let based = perform_head(&kernel, "a.md", Some("v1 + unsaved\n"), Some("v1\n"))
+        .unwrap()
+        .unwrap();
+    assert_eq!(based["revision"].as_str(), Some(r1.revision.as_str()));
+    let unproven = perform_head(&kernel, "a.md", Some("v1 + unsaved\n"), None)
+        .unwrap()
+        .expect("a known object");
+    assert!(
+        unproven["revision"].is_null(),
+        "no revision is claimed: {unproven}"
+    );
+    let unmatched_base = perform_head(&kernel, "a.md", Some("dirty\n"), Some("never saved\n"))
+        .unwrap()
+        .unwrap();
+    assert!(unmatched_base["revision"].is_null());
+}

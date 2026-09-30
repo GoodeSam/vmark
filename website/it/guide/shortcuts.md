@@ -93,8 +93,8 @@ Se preferisci mantenere le funzioni di sistema sui tasti F, puoi personalizzare 
 | Duplica riga | `Shift + Alt + Giù` |
 | Elimina riga | `Mod + Shift + K` |
 | Unisci righe | `Mod + J` |
-| Ordina righe in modo crescente | `F4` |
-| Ordina righe in modo decrescente | `Shift + F4` |
+| Ordina righe in modo crescente | `F4` _(solo modalità Sorgente)_ |
+| Ordina righe in modo decrescente | `Shift + F4` _(solo modalità Sorgente)_ |
 
 ## Trasformazioni del Testo
 
@@ -314,10 +314,33 @@ Quando il terminale integrato è attivo:
 | Azione | Scorciatoia |
 |--------|-------------|
 | Attiva/disattiva terminale | `` Ctrl + ` `` |
+| Sposta il focus sul terminale o sull'editor | `` Ctrl + Shift + ` `` |
 | Copia | `Mod + C` (con selezione) |
 | Incolla | `Mod + V` |
+| Seleziona tutto (solo l'output del terminale) | `Mod + A` |
 | Cancella | `Mod + K` |
 | Cerca | `Mod + F` |
+| Passa alla sessione 1–5 | `Mod + 1` fino a `Mod + 5` |
+| Ingrandisci il font del terminale | `Mod + =` |
+| Riduci il font del terminale | `Mod + -` |
+| Dimensione predefinita del font del terminale | `Mod + 0` |
+| Prompt dei comandi precedente | `Mod + ↑` |
+| Prompt dei comandi successivo | `Mod + ↓` |
+| A capo nella riga di input (Claude Code e strumenti simili) | `Shift + Enter` |
+
+Quando il terminale è attivo, `Mod + =`, `Mod + -` e `Mod + 0` ridimensionano il font del terminale invece di quello dell'editor.
+
+La navigazione tra i prompt salta da un prompt dei comandi all'altro nello scrollback e richiede l'integrazione della shell (zsh o bash).
+
+Su macOS il terminale traduce anche le consuete combinazioni di modifica del testo per la shell:
+
+| Azione | Scorciatoia |
+|--------|-------------|
+| Sposta di una parola a sinistra / destra | `Option + ←` / `Option + →` |
+| Vai a inizio / fine riga | `Cmd + ←` / `Cmd + →` |
+| Elimina la riga di input (invia `Ctrl + U`) | `Cmd + Backspace` |
+
+Le combinazioni con `Ctrl` come `Ctrl + A`, `Ctrl + R` e `Ctrl + W` vanno direttamente alla shell su macOS.
 
 Quando la barra di ricerca del terminale è aperta:
 
@@ -334,10 +357,16 @@ Quando la barra di ricerca del terminale è aperta:
 ## Personalizzare le Scorciatoie
 
 1. Apri le Impostazioni con `Mod + ,`
-2. Vai alla scheda **Scorciatoie**
-3. Fai clic su qualsiasi scorciatoia per modificarla
-4. Premi la combinazione di tasti desiderata
-5. Le modifiche vengono salvate automaticamente
+2. Vai alla scheda **Scorciatoie** (digita nella casella di ricerca per filtrare per nome, categoria, descrizione o tasto)
+3. Fai clic sul tasto mostrato accanto a una scorciatoia — oppure su **Non assegnato** per una che non ha ancora un tasto
+4. Premi la combinazione di tasti desiderata, poi fai clic su **Assegna** (`Escape` annulla)
+
+La finestra di dialogo ti avvisa prima che tu assegni una combinazione:
+
+- **Conflitto** — la combinazione è già usata da un'altra scorciatoia, che viene indicata. Puoi comunque scegliere **Assegna comunque**.
+- **Non supportata** — VMark non può usare quella combinazione, quindi non può essere assegnata. Provane un'altra.
+
+Una scorciatoia personalizzata viene evidenziata e riceve un pulsante **Reimposta al valore predefinito**. **Reimposta tutto** ripristina tutti i valori predefiniti dopo aver chiesto conferma. **Esporta** salva le tue scorciatoie come file JSON (`vmark-shortcuts.json`) e **Importa** ne carica uno; se una qualsiasi voce del file non è valida, non viene importato nulla e i problemi vengono elencati.
 
 ::: tip
 Le scorciatoie si sincronizzano con gli acceleratori del menu quando applicabile, quindi le voci del menu mostreranno le tue scorciatoie personalizzate.

@@ -8,7 +8,11 @@ VMark prend en charge les diagrammes [Mermaid](https://mermaid.js.org/) pour cr�
 
 ## Insérer un diagramme
 
-### Utiliser un raccourci clavier
+### Utiliser le menu ou le raccourci
+
+Choisissez **Insertion → Diagramme**, ou appuyez sur `Alt + Mod + Shift + D`. VMark insère un bloc de code `mermaid` contenant un organigramme de départ que vous pouvez modifier. Si du texte est sélectionné, la sélection devient la source du diagramme.
+
+### Taper un bloc de code
 
 Tapez un bloc de code délimité avec l'identifiant de langage `mermaid` :
 
@@ -21,21 +25,15 @@ graph TD
 ```
 ````
 
-### Utiliser la commande slash
-
-1. Tapez `/` pour ouvrir le menu de commandes
-2. Sélectionnez **Diagramme Mermaid**
-3. Un diagramme modèle est inséré pour que vous le modifiiez
-
 ## Modes d'édition
 
 ### Mode Texte enrichi (WYSIWYG)
 
-En mode WYSIWYG, les diagrammes Mermaid sont rendus en ligne au fil de la saisie. Cliquez sur un diagramme pour modifier son code source.
+En mode WYSIWYG, les diagrammes Mermaid sont rendus en ligne. Double-cliquez sur un diagramme pour modifier son code source ; l'en-tête d'édition comporte les boutons **Copier**, **Annuler** et **Enregistrer**.
 
 ### Mode Source avec prévisualisation en direct
 
-En mode Source, un panneau de prévisualisation flottant apparaît lorsque votre curseur est à l'intérieur d'un bloc de code mermaid :
+En mode Source, un panneau de prévisualisation flottant affiche le diagramme tant que votre curseur est à l'intérieur d'un bloc de code mermaid. La prévisualisation est **désactivée par défaut** — activez-la avec **Affichage → Afficher/masquer l'aperçu des diagrammes** (`Alt + Mod + P`) ou la palette de commandes. Elle reste activée pour cette fenêtre jusqu'à ce que vous la désactiviez.
 
 ![Panneau de prévisualisation en direct en mode Source](/screenshots/mermaid-source-preview.png)
 
@@ -44,7 +42,7 @@ En mode Source, un panneau de prévisualisation flottant apparaît lorsque votre
 | **Prévisualisation en direct** | Voir le diagramme rendu au fil de la saisie (rebond de 200ms) |
 | **Glisser pour déplacer** | Glissez l'en-tête pour repositionner la prévisualisation |
 | **Redimensionner** | Glissez n'importe quel bord ou coin pour redimensionner |
-| **Zoom** | Utilisez les boutons `−` et `+` (10% à 300%) |
+| **Zoom** | Utilisez les boutons `−` et `+`, ou `Cmd/Ctrl` + défilement (10% à 300%) |
 
 Le panneau de prévisualisation mémorise sa position si vous le déplacez, facilitant l'organisation de votre espace de travail.
 
@@ -235,7 +233,7 @@ En mode WYSIWYG, les diagrammes rendus prennent en charge la navigation interact
 
 | Action | Comment |
 |--------|---------|
-| **Panoramique** | Défilez ou cliquez et glissez le diagramme |
+| **Panoramique** | Cliquez et glissez le diagramme (un simple défilement fait défiler le document, pas le diagramme) |
 | **Zoom** | Maintenez `Cmd` (macOS) ou `Ctrl` (Windows/Linux) et défilez |
 | **Réinitialiser** | Cliquez sur le bouton de réinitialisation qui apparaît au survol (coin supérieur droit) |
 
@@ -264,7 +262,7 @@ Lors de l'exportation du document complet en HTML ou PDF, les diagrammes Mermaid
 
 ## Corriger les diagrammes générés par IA
 
-VMark utilise **Mermaid v11**, qui a un parseur plus strict (Langium) que les versions plus anciennes. Les outils IA (ChatGPT, Claude, Copilot, etc.) génèrent souvent une syntaxe qui fonctionnait dans les anciennes versions de Mermaid mais échoue en v11. Voici les problèmes les plus courants et comment les corriger.
+VMark utilise **Mermaid v12**, qui conserve le parseur plus strict (Langium) arrivé avec la v11. Les outils IA (ChatGPT, Claude, Copilot, etc.) génèrent souvent une syntaxe qui fonctionnait dans les anciennes versions de Mermaid mais échoue en v11 et au-delà. Voici les problèmes les plus courants et comment les corriger.
 
 ### 1. Labels non cités avec des caractères spéciaux
 
@@ -290,7 +288,7 @@ flowchart TD
 
 ### 2. Points-virgules de fin de ligne
 
-Les modèles IA ajoutent parfois des points-virgules en fin de ligne. Mermaid v11 ne les autorise pas.
+Les modèles IA ajoutent parfois des points-virgules en fin de ligne. Mermaid v11 et les versions ultérieures ne les autorisent pas.
 
 ````markdown
 <!-- Échoue -->

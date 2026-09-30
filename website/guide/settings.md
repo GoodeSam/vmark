@@ -2,7 +2,7 @@
 
 VMark's settings panel lets you customize every aspect of the editor. Open it with `Mod + ,` or via **VMark > Settings** in the menu bar.
 
-The settings window has a sidebar with sections grouped by topic — the most-used sections appear first, with About and Advanced at the bottom. Changes take effect immediately — there is no save button.
+The settings window has a sidebar listing the sections in alphabetical order (by their English names), with About at the bottom and Advanced below it when shown. Changes take effect immediately — there is no save button.
 
 Use the **search box** at the top of the sidebar to filter settings across every panel by name or description — matching rows are stacked together so you don't need to know which category a setting lives in. To restore everything to factory defaults, use **Reset to Defaults** in the About section.
 
@@ -23,6 +23,10 @@ Choose one of six color themes. The active theme is indicated by a ring around i
 | Night | `#23262B` | Dark slate for low light |
 | Solarized | `#002B36` | Solarized Dark, the classic palette |
 
+::: info Windows and Linux offer White and Night only
+On Windows and Linux the system draws the title bar (and, on Windows, the menu bar), and it can only be light or dark. So those platforms offer just **White** and **Night**, and a theme that cannot match the system chrome is shown as the nearest of the two: Paper, Mint and Sepia display as White, Solarized as Night. Your saved choice is not changed — on macOS the full catalog is available.
+:::
+
 #### Follow system appearance
 
 | Setting | Description | Default |
@@ -30,12 +34,6 @@ Choose one of six color themes. The active theme is indicated by a ring around i
 | Follow system appearance | Switch between your light and dark themes automatically with the system | Off |
 
 When enabled, the single theme row is replaced by two rows — **Light theme** (used while the system is in light mode, default Paper) and **Dark theme** (used in dark mode, default Night). VMark switches between them the moment the system appearance changes; your manual theme choice is kept and restored when you turn the option off.
-
-### Language
-
-| Setting | Description | Default | Options |
-|---------|-------------|---------|---------|
-| Language | Changes the UI language for menus, labels, and messages. Takes effect immediately | English | English, 简体中文, 繁體中文, 日本語, 한국어, Español, Français, Deutsch, Italiano, Português (Brasil) |
 
 ### Window
 
@@ -56,7 +54,7 @@ changes) always appears there, and VMark adds no title strip of its own.
 
 ## Editor
 
-Typography, display, editing behavior, and whitespace settings.
+Typography, display, editing behavior, whitespace, and large-file settings.
 
 ### Typography
 
@@ -136,6 +134,15 @@ Editor Width is measured in `em`, so the line length in *characters* depends on 
 ::: tip
 Two spaces is the most compatible hard break style — it works on GitHub, GitLab, and all major Markdown renderers. The backslash style may fail on Reddit, Jekyll, and some older parsers.
 :::
+
+### Large Files
+
+| Setting | Description | Default | Options |
+|---------|-------------|---------|---------|
+| Auto Source mode | Open files over 1 MB in Source mode (skips WYSIWYG to keep performance smooth). You can switch to WYSIWYG from the status bar at any time | On | On / Off |
+| Warn above size | Show a confirmation prompt before opening files over 5 MB. Files of 50 MB or more are always refused | On | On / Off |
+
+See [Large Files](/guide/large-files) for the full breakdown of how large files are handled.
 
 ## Markdown
 
@@ -234,7 +241,7 @@ The setting does not appear on macOS or Linux.
 | Setting | Description | Default | Options |
 |---------|-------------|---------|---------|
 | Enable auto-save | Automatically save files after editing | On | On / Off |
-| Stamp identity block on save | Let a save insert a `vmark:` identity block into the file's frontmatter and create a `.vmark` folder in the workspace, so the coherence layer can track the document from disk. AI and MCP writes are captured once a workspace ledger exists, whether or not this is on | Off | On / Off |
+| Stamp identity block on save | Let VMark insert a `vmark:` identity block into a file's frontmatter and create a `.vmark` folder in the workspace, so the coherence layer can track the document. Covers every write — saves, AI and MCP edits, version restores and new files. When off, nothing is stamped and no `.vmark` folder is created; a workspace that already has one keeps recording changes to the documents it tracks — a document it has recorded before, or one that already carries its own `vmark:` identity, such as a tracked file you moved or checked out. See [Coherence](/guide/coherence#how-it-works-30-seconds) | Off | On / Off |
 | Save interval | Time between automatic saves. Only available when auto-save is enabled | 30 seconds | 10s, 30s, 1 min, 2 min, 5 min |
 | Keep document history | Track document versions for undo and recovery | On | On / Off |
 | Maximum versions | Number of history snapshots to keep per document | 50 versions | 10, 25, 50, 100 |
@@ -253,15 +260,6 @@ The setting does not appear on macOS or Linux.
 ::: tip
 Enable **Auto-resize on paste** if you frequently paste screenshots or photos — it keeps your assets folder lightweight without manual resizing.
 :::
-
-### Large Files
-
-| Setting | Description | Default | Options |
-|---------|-------------|---------|---------|
-| Warn above size | Show a confirmation prompt before opening files over 5 MB | On | On / Off |
-| Auto Source mode | Automatically open files above the threshold in Source mode (skips WYSIWYG to keep performance smooth) | On | On / Off |
-
-See [Large Files](/guide/large-files) for the full breakdown of how large files are handled.
 
 ### Document Tools
 
@@ -299,7 +297,7 @@ Configure which AI provider powers [AI Genies](/guide/ai-genies). Only one provi
 
 **CLI Providers** — Use locally installed AI CLI tools (Claude, Codex, Gemini). Click **Detect** to scan your `$PATH` for available CLIs. CLI providers use your subscription plan and require no API key.
 
-**REST API Providers** — Connect directly to cloud APIs (Anthropic, OpenAI, Google AI, Ollama API). Each requires an endpoint, API key, and model name.
+**REST API Providers** — Connect directly to an API: Anthropic, OpenAI, an **OpenAI-compatible** service (DeepSeek, Groq, OpenRouter, …), Google AI, or a local Ollama server (Ollama API). Each needs a model name and an API key — except Ollama, where the key is optional. All but Google AI also take an endpoint, pre-filled where the provider has a standard one (the OpenAI-compatible slot has none, so you enter it).
 
 See [AI Providers](/guide/ai-providers) for detailed setup instructions for each provider.
 
@@ -311,13 +309,13 @@ Markdown, plain text, and YAML/YML are **always** registered — the calm defaul
 
 For the full list of formats and their previews, see [Supported Formats](/guide/formats).
 
-### Format support
+### Format Support
 
 | Toggle | Default | Enables |
 |---|---|---|
 | **Data formats** | Off | `.json`, `.jsonl`, `.toml` — split-pane source + navigable tree. Schema-aware previews for `Cargo.toml`, `package.json`, `pyproject.toml`. |
 | **Diagrams & SVG** | Off | `.mmd` (Mermaid) and `.svg` — split-pane source + sanitized live render. |
-| **HTML preview** | Off | `.html` and `.htm` — sandboxed iframe preview (`sandbox=""` empty allow-list, DOMPurify, CSP `<meta>`). OWASP top-20 verified — see [Security model for HTML](/guide/formats#security-model-for-html). |
+| **HTML preview** | Off | `.html` and `.htm` — sandboxed iframe preview (`sandbox=""` empty allow-list, DOMPurify, CSP `<meta>`). Its security sign-off is still pending, and the preview says so — see [Security model for HTML](/guide/formats#security-model-for-html). |
 | **Code viewers** | Off | 12 read-only viewers (`.ts`, `.tsx`, `.js`, `.jsx`, `.py`, `.rs`, `.go`, `.css`, `.sh`, `.bash`, `.rb`, `.lua`). Open in a syntax-highlighted viewer with **Enable editing** and **Open in external editor** buttons. |
 
 When a category is off, the matching extensions fall through to the plain-text fallback so the file still opens — just without the schema view.
@@ -354,7 +352,19 @@ The **Formats** panel lists every override you've set, each as `key → format`.
 
 ## Language
 
-CJK (Chinese, Japanese, Korean) formatting rules. These rules are applied when you run **Format → Format CJK Selection** (`Cmd+Shift+F`) on a selection, or **Format → Format CJK Document** (`Alt+Cmd+Shift+F`) on the whole file.
+The interface language, and the CJK (Chinese, Japanese, Korean) formatting rules.
+
+### Interface language
+
+| Setting | Description | Default | Options |
+|---------|-------------|---------|---------|
+| Interface language | Changes the UI language for menus, labels, and messages. Takes effect immediately | System language | English, 简体中文, 繁體中文, 日本語, 한국어, Español, Français, Deutsch, Italiano, Português (Brasil) |
+
+On first launch VMark picks the first language in your system's preferred-language list that it ships, and falls back to English when none match. Once you choose a language here, your choice is kept.
+
+### CJK formatting
+
+The rules below are applied when you run **Format → CJK → Format Selection** (`Cmd+Shift+F`) on a selection, or **Format → CJK → Format Entire File** (`Alt+Cmd+Shift+F`) on the whole file.
 
 ::: tip
 The Language section contains 20+ fine-grained formatting toggles. For a full explanation of each rule with examples, see [CJK Formatting](/guide/cjk-formatting).
@@ -439,7 +449,7 @@ Configure the integrated terminal panel. Open the terminal with `` Ctrl + ` ``.
 | Scrollback | Number of lines of output each session keeps in its scroll history. Higher values use more memory | 5,000 | 1,000 / 5,000 / 10,000 / 50,000 |
 | Screen Reader Mode | Expose terminal output to assistive technology (VoiceOver). Off by default for performance | Off | On / Off |
 
-Two macOS/Unix-only toggles also appear here: **Option as Meta Key** (macOS only — treat the Option key as Meta for `Alt`-prefixed shortcuts) and **Shell Integration** (hidden on Windows — inject OSC marks for prompt navigation, exit-status decorations, and cwd tracking in zsh).
+Two platform-specific toggles also appear here, both on by default: **Option as Meta Key** (macOS only — treat the Option key as Meta, which tools like emacs and tmux expect for `Alt`-prefixed shortcuts and word navigation; turn it off if you need Option dead-key accents such as `Option + E`) and **Shell Integration** (hidden on Windows — inject command markers into zsh and bash for prompt navigation, exit-status decorations, and current-directory tracking; takes effect in new terminal sessions).
 
 ### Accessibility
 
@@ -483,7 +493,7 @@ On Linux, updating a `.deb` or `.rpm` install runs the system package manager, s
 
 #### If an update gets stuck
 
-Checking and downloading both go over the network, and a connection that hangs rather than failing outright can leave the status bar indicator spinning indefinitely. If it stops making progress, the indicator becomes clickable and its tooltip reads **Update stalled — click to reset**. Clicking it returns the updater to idle so you can try again; it does not change anything you have already downloaded, and a retry starts from a fresh check.
+Checking and downloading both go over the network, and a connection that hangs rather than failing outright could otherwise leave the update in progress forever. If a check makes no progress for a minute, or a download or install for three minutes, VMark shows a sticky **Update stalled** notification in the document window. Its **Retry** button returns the updater to idle so you can try again — **Check Now** in this section, or the next automatic check, starts over from a fresh check.
 
 Update activity is written to the log file, so if the problem repeats, the log is worth attaching to a bug report:
 
@@ -497,7 +507,9 @@ Update activity is written to the log file, so if the problem repeats, the log i
 
 | Setting | Description |
 |---------|-------------|
-| Reset to Defaults | Restore every setting to its default value. A confirmation prompt appears first — this cannot be undone |
+| Reset to Defaults | Restore the settings in these panes to their default values. A confirmation prompt appears first — this cannot be undone |
+
+Three things are stored separately and are **not** reset: keyboard shortcut customizations (use **Reset All** in the [Shortcuts](#shortcuts) pane), your AI provider configuration, and the per-workspace file-browser settings (**Show hidden files**, **Show all files**). The interface language returns to your system language.
 
 ## Advanced
 
@@ -511,9 +523,11 @@ Developer and system-level configuration.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| Custom link protocols | Additional URL protocols VMark should recognize when inserting links. Enter each protocol as a tag | `obsidian`, `vscode`, `dict`, `x-dictionary` |
+| Custom link protocols | Additional URL protocols VMark treats as links. Enter each protocol as a tag | `obsidian`, `vscode`, `dict`, `x-dictionary` |
 
-This lets you create links like `obsidian://open?vault=...` or `vscode://file/...` that VMark will treat as valid URLs.
+The list does two things. When you insert a link, a clipboard URL with one of these protocols is recognized as a link, just like `https://`. And when you open a link, VMark hands it to your system only if its protocol is `http`, `https`, `mailto`, or on this list — so `obsidian://open?vault=...` and `vscode://file/...` links open in their apps, while any other protocol is refused. A few protocols can never be enabled this way, whatever the list says: `javascript:`, `data:`, `file:` and similar.
+
+The four defaults are always included: removing one lasts only until VMark restarts.
 
 ### Performance
 
@@ -547,16 +561,18 @@ separate execution engine.
 | Setting | Description | Default | Options |
 |---------|-------------|---------|---------|
 | Preserve YAML formatting | When saving workflow edits made via the form panel, preserve the original YAML's comments, anchors, key order, and blank lines via the CST round-trip pipeline. When off, save uses a compact serializer (faster but lossy) | On | On / Off |
-| Workflow engine | Run VMark's own YAML workflow files: adds the Run/Cancel side panel and lets workflow genies execute. Steps can call AI providers and write files, so it stays off until you ask for it | Off | On / Off |
+| Workflow engine | Run VMark's own YAML workflow files: a workflow file opens with its step graph and a Run / Cancel toolbar beside the source, and workflow genies can execute. Steps can call AI providers and write files, so it stays off until you ask for it | Off | On / Off |
 
-The engine does not change what the viewer shows. With the engine off, VMark
-refuses workflow-execution requests outright rather than merely hiding the
-button — including requests that arrive over MCP — and reports "The workflow
-engine is turned off in Settings".
+The engine does not change what the viewer shows: GitHub Actions files open in
+the viewer either way, and with the engine off a VMark workflow file shows as a
+plain YAML tree. With the engine off, VMark also refuses workflow-execution
+requests outright rather than merely hiding the button — including requests
+that arrive over MCP — and reports "The workflow engine is turned off in
+Settings".
 
 Both rows live under **Developer Tools** (see below) — turn Developer Tools
-on to reveal them. See [Workflow Viewer](/guide/workflow-viewer) for the full
-feature surface.
+on to reveal them. See [Workflow Viewer](/guide/workflow-viewer) for the
+viewer and [Genie Workflows](/guide/workflows) for the engine.
 
 ### Embedded Browser
 
@@ -575,8 +591,9 @@ See [Embedded Browser](/guide/browser) for the full feature surface.
 
 | Setting | Description | Default | Platforms |
 |---------|-------------|---------|-----------|
-| Clear macOS quarantine on open | When opening a file that carries the macOS quarantine attribute (`com.apple.quarantine`), strip it before reading. Helpful for files downloaded from the web that VMark would otherwise be blocked from opening | On | macOS |
-| Mac Option as Meta (terminal) | Treat the macOS Option key as Meta in the integrated terminal. Required for tools like emacs and tmux that expect Alt-prefixed shortcuts | On | macOS |
+| Clear macOS quarantine on open | When you open a workspace, remove the macOS download-quarantine attribute (`com.apple.quarantine`) from the workspace folder and the files directly inside it that VMark can open (subfolders are not touched). Without this, macOS can silently drop a Finder double-click on a downloaded file while VMark is running. Shown in the UI as **Clear download quarantine on workspace open**, under **Advanced → macOS** | On | macOS |
+
+The terminal's **Option as Meta Key** setting lives in the [Terminal](#terminal) pane.
 
 ### Developer Tools
 

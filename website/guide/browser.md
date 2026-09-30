@@ -2,8 +2,8 @@
 
 VMark can host a real web browser **inside** a document window — a web page becomes a first-class tab alongside your markdown documents. It is a genuine native webview (macOS `WKWebView`), not an external Chrome window and not an embedded frame.
 
-::: warning Experimental
-The embedded browser is an early feature and is **macOS-only** in this build. Windows and Linux support comes later — on those platforms the settings below do not appear at all.
+::: info macOS only
+The embedded browser is available on **macOS**, where it is on by default. It is not available on Windows or Linux: there, the settings below and the **New Browser Tab** command do not appear at all.
 :::
 
 
@@ -34,7 +34,7 @@ window that owns them.
 
 ## Using it
 
-A browser tab opens in the editor area, alongside your documents — the sidebar, tab strip, terminal, and status bar all stay where they are. Its controls sit **above the page**: on macOS they share the window's title bar, since VMark draws that itself. Where the system draws the title bar instead (Windows, Linux), they sit inside the window above the page, the way every other desktop browser arranges them.
+A browser tab opens in the editor area, alongside your documents — the sidebar, tab strip, terminal, and status bar all stay where they are. Its controls sit **above the page**, sharing the window's title bar, which VMark draws itself.
 
 | Control | Action |
 |---------|--------|
@@ -73,7 +73,7 @@ If a page's web content process dies, the tab shows a **"This page crashed"** ov
 
 VMark creates the platform webview itself and adds it as a native child of the window — it does **not** ask the app framework for one. That matters for privacy: a framework-created webview would inject an internal messaging bridge into every page, handing any site a channel into the app. Because VMark owns a freshly-constructed webview with no such bridge, **a browsed page has no channel into VMark**. The page is driven strictly one-directionally (the app can read and act on the page; the page cannot reach back).
 
-Sessions (logins, cookies) persist per profile in the OS webview's own data store, so you log into each site once. VMark stores no credentials itself.
+Sessions (logins, cookies) persist per profile in the OS webview's own data store, so you log into each site once. VMark keeps no password or cookie store of its own; the one exception is a session you explicitly approve saving for an AI (see *Session save / load* below), whose cookies and `localStorage` go into the **OS keychain**, never into a file.
 
 ## Driving the browser with AI
 
@@ -177,13 +177,15 @@ This is the intended shape of AI browser use in VMark: the agent proposes, the p
 
 An offline network, a bad hostname, a rejected certificate, or a refused connection all
 produce a message in the browser pane saying what went wrong, with a **Try again**
-button. Earlier builds showed a blank pane instead, which was indistinguishable from a
-page that was merely slow.
+button, so a failed load never looks like a page that is merely slow.
 
 ## Current limitations
 
 - macOS only in this build.
 - JavaScript `alert()` and `confirm()` dialogs are shown and answered by you; `prompt()` is suppressed for now. Pop-ups (`window.open`) are blocked, with the blocked address offered as a new tab.
+- A page protected by HTTP basic authentication fails to load — there is no username/password prompt yet.
+- Find-in-page and page zoom are not implemented.
+- VMark does not yet decide camera, microphone, location or notification requests itself; the system webview's default handling applies.
 - Downloads, printing, and per-request network policy are not yet implemented. Hover and drag actions have no AI verb yet.
 
 These are being filled in incrementally; the page above describes what works today.

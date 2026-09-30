@@ -50,7 +50,7 @@ export const pyprojectTomlSchemaDetector: SchemaDetector = (
   return "pyproject-toml";
 };
 
-export interface PythonDependency {
+interface PythonDependency {
   /** PEP 508 / Poetry name. */
   name: string;
   /** Version spec (e.g. ">=2.31.0", "^4.2"). Empty when only a name is given. */

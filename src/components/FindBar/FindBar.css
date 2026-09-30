@@ -1,9 +1,11 @@
 .find-bar {
   --find-bar-height: 38px; /* 5px padding + 28px row + 5px padding */
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  /* IN FLOW inside the bottom lane (EditorArea gives the lane a 40px
+     minimum), so its replace row or wrapped controls grow the lane and push
+     the editor up. It was absolute and rose over the document instead —
+     measured by src/shell/bottomLaneLayout.webkit.test.tsx. Relative +
+     z-index keeps it above the StatusBar it shares the lane with. */
+  position: relative;
   min-height: var(--find-bar-height);
   z-index: var(--z-bar); /* Same level as StatusBar */
   background: var(--bg-color);
@@ -99,7 +101,7 @@
 
 /* Active state: U-shaped underline */
 .find-bar-toggle.active {
-  color: var(--accent-primary);
+  color: var(--accent-primary); /* ui-ok(state): icon-only toggle — the icon is the indicator */
 }
 
 .find-bar-toggle.active::after {

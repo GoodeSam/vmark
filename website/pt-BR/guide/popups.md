@@ -169,8 +169,8 @@ Edite links no estilo wiki para conexões internas de documentos.
 Ações rápidas de edição de tabelas.
 
 **Ativação:**
-- **WYSIWYG:** Use a barra de ferramentas ou atalhos de teclado
-- **Fonte:** Clique com o botão direito na célula da tabela
+- **WYSIWYG:** Clique com o botão direito em uma célula da tabela (as mesmas ações também estão na barra de ferramentas e têm atalhos de teclado)
+- **Fonte:** Clique com o botão direito em uma célula da tabela
 
 **Ações:**
 | Ação | Descrição |
@@ -183,6 +183,7 @@ Ações rápidas de edição de tabelas.
 | Alinhar Coluna à Esquerda/Centro/Direita | Definir alinhamento para a coluna atual |
 | Alinhar Todas à Esquerda/Centro/Direita | Definir alinhamento para todas as colunas |
 | Formatar Tabela | Alinhar automaticamente as colunas da tabela (embelezar markdown) |
+| Ajustar à largura / Largura natural | Apenas no WYSIWYG: fixar esta tabela na largura do editor com colunas proporcionais ao conteúdo, ou devolvê-la à sua largura natural |
 
 ## Popup de Verificação Ortográfica
 

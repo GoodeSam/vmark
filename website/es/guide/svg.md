@@ -98,7 +98,7 @@ En el modo Fuente, cuando el cursor está dentro de un bloque de código ` ```sv
 | **Zoom** | Botones `−` y `+`, o `Cmd/Ctrl` + desplazar (10% a 300%) |
 
 ::: info
-La vista previa de diagrama en modo Fuente debe estar habilitada. Actívala con el botón **Vista Previa de Diagrama** en la barra de estado.
+La vista previa de diagramas en modo Fuente está desactivada por defecto. Actívala con **Vista → Alternar vista previa de diagramas** (`Alt + Mod + P`) o desde la paleta de comandos.
 :::
 
 ## Validación SVG

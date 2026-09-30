@@ -1,13 +1,13 @@
 # Lint de Markdown
 
-O VMark traz um motor de lint integrado que detecta **problemas de correção**, não preferências de estilo. O lint é executado sob demanda (Cmd-Shift-L ou **Ferramentas → Verificar Markdown**) e exibe os resultados inline como sublinhados ondulados na medianiz, com um indicador na barra de status e navegação por F2 entre as ocorrências.
+O VMark traz um motor de lint integrado que detecta **problemas de correção**, não preferências de estilo. O lint é executado sob demanda (`Alt + Mod + V` ou **Visualizar → Verificar Markdown**) e exibe os resultados inline — uma barra colorida ao lado de cada bloco afetado no modo WYSIWYG, um sublinhado ondulado sob o trecho exato no modo Fonte — com um indicador na barra de status e navegação por F2 entre as ocorrências.
 
 ## O que o lint é e o que não é
 
 O lint do VMark é um verificador de **correção**:
 
 - Referências cruzadas quebradas
-- Referências indefinidas de links / notas de rodapé
+- Referências de links indefinidas (referências de notas de rodapé não são verificadas)
 - Cercas de código não fechadas
 - Tabelas com contagem de colunas inconsistente
 - Níveis de cabeçalho que pulam (h1 → h3)
@@ -50,14 +50,14 @@ Para verificação de estilo, use uma ferramenta separada como `prettier --check
 
 | Acionador | Ação |
 |-----------|------|
-| `Cmd + Shift + L` (macOS) / `Ctrl + Shift + L` (Win/Linux) | Executa o lint no documento ativo |
-| **Ferramentas → Verificar Markdown** | Igual ao atalho |
+| `Alt + Mod + V` | Executa o lint no documento ativo |
+| **Visualizar → Verificar Markdown** | Igual ao atalho |
 | `F2` | Pula para o próximo diagnóstico |
 | `Shift + F2` | Pula para o diagnóstico anterior |
 
 Para arquivos markdown com caminhos de arquivo, a verificação de existência de links roda automaticamente junto com as regras síncronas — veja [Verificação de Links](/pt-BR/guide/link-check).
 
-Para arquivos YAML, erros de análise aparecem ao vivo na medianiz conforme você digita, e o mesmo atalho `Cmd-Shift-L` preenche o indicador + a navegação por F2.
+Para arquivos YAML, erros de análise aparecem ao vivo na medianiz conforme você digita, e o mesmo atalho `Alt + Mod + V` preenche o indicador + a navegação por F2.
 
 ## Configurações
 
@@ -65,7 +65,7 @@ O motor de lint tem um único interruptor visível para o usuário:
 
 - **Configurações → Markdown → Habilitar lint de markdown** — liga ou desliga o motor por completo
 
-Quando desabilitado, o atalho vira um no-op e nenhum diagnóstico aparece na medianiz.
+Quando desabilitado, o atalho vira um no-op e nenhum diagnóstico aparece no editor.
 
 ## Veja também
 

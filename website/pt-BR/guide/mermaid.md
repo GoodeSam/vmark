@@ -8,7 +8,11 @@ O VMark suporta diagramas [Mermaid](https://mermaid.js.org/) para criar fluxogra
 
 ## Inserindo um Diagrama
 
-### Usando Atalho de Teclado
+### Usando o Menu ou o Atalho
+
+Escolha **Inserir → Diagrama** ou pressione `Alt + Mod + Shift + D`. O VMark insere um bloco de código `mermaid` com um fluxograma inicial para você editar. Se houver texto selecionado, a seleção passa a ser o código-fonte do diagrama.
+
+### Digitando um Bloco de Código
 
 Digite um bloco de código delimitado com o identificador de linguagem `mermaid`:
 
@@ -21,21 +25,15 @@ graph TD
 ```
 ````
 
-### Usando Comando Slash
-
-1. Digite `/` para abrir o menu de comandos
-2. Selecione **Diagrama Mermaid**
-3. Um diagrama modelo é inserido para você editar
-
 ## Modos de Edição
 
 ### Modo Texto Rico (WYSIWYG)
 
-No modo WYSIWYG, os diagramas Mermaid são renderizados inline enquanto você digita. Clique em um diagrama para editar seu código-fonte.
+No modo WYSIWYG, os diagramas Mermaid são renderizados inline. Dê um duplo clique em um diagrama para editar seu código-fonte; o cabeçalho de edição tem os botões **Copiar**, **Cancelar** e **Salvar**.
 
 ### Modo Fonte com Prévia ao Vivo
 
-No modo Fonte, um painel de prévia flutuante aparece quando o cursor está dentro de um bloco de código mermaid:
+No modo Fonte, um painel de prévia flutuante mostra o diagrama enquanto o cursor está dentro de um bloco de código mermaid. A prévia vem **desativada por padrão** — ative-a com **Visualizar → Alternar pré-visualização de diagrama** (`Alt + Mod + P`) ou pela paleta de comandos. Ela permanece ativa nessa janela até você desativá-la novamente.
 
 ![Painel de prévia ao vivo no modo Fonte](/screenshots/mermaid-source-preview.png)
 
@@ -44,7 +42,7 @@ No modo Fonte, um painel de prévia flutuante aparece quando o cursor está dent
 | **Prévia ao Vivo** | Veja o diagrama renderizado enquanto digita (debounce de 200ms) |
 | **Arrastar para Mover** | Arraste o cabeçalho para reposicionar a prévia |
 | **Redimensionar** | Arraste qualquer borda ou canto para redimensionar |
-| **Zoom** | Use os botões `−` e `+` (10% a 300%) |
+| **Zoom** | Use os botões `−` e `+`, ou `Cmd/Ctrl` + scroll (10% a 300%) |
 
 O painel de prévia lembra sua posição se você o mover, facilitando a organização do espaço de trabalho.
 
@@ -235,7 +233,7 @@ No modo WYSIWYG, diagramas renderizados suportam navegação interativa:
 
 | Ação | Como |
 |------|------|
-| **Pan** | Role ou clique e arraste o diagrama |
+| **Pan** | Clique e arraste o diagrama (uma rolagem simples rola o documento, não o diagrama) |
 | **Zoom** | Segure `Cmd` (macOS) ou `Ctrl` (Windows/Linux) e role |
 | **Resetar** | Clique no botão de reset que aparece ao passar o mouse (canto superior direito) |
 
@@ -264,7 +262,7 @@ Ao exportar o documento completo para HTML ou PDF, os diagramas Mermaid são ren
 
 ## Corrigindo Diagramas Gerados por IA
 
-O VMark usa **Mermaid v11**, que tem um parser mais estrito (Langium) do que versões mais antigas. Ferramentas de IA (ChatGPT, Claude, Copilot, etc.) frequentemente geram sintaxe que funcionava em versões mais antigas do Mermaid, mas falha na v11. Aqui estão os problemas mais comuns e como corrigi-los.
+O VMark usa **Mermaid v12**, que mantém o parser mais estrito (Langium) introduzido na v11. Ferramentas de IA (ChatGPT, Claude, Copilot, etc.) frequentemente geram sintaxe que funcionava em versões mais antigas do Mermaid, mas falha na v11 e posteriores. Aqui estão os problemas mais comuns e como corrigi-los.
 
 ### 1. Rótulos sem Aspas com Caracteres Especiais
 
@@ -290,7 +288,7 @@ flowchart TD
 
 ### 2. Ponto e Vírgula no Final
 
-Modelos de IA às vezes adicionam ponto e vírgula no final das linhas. O Mermaid v11 não os permite.
+Modelos de IA às vezes adicionam ponto e vírgula no final das linhas. O Mermaid v11 e posteriores não os permitem.
 
 ````markdown
 <!-- Falha -->

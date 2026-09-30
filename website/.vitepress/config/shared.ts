@@ -3,6 +3,7 @@ import { vitepressMarkmapPreview } from "vitepress-markmap-preview";
 import type { UserConfig } from "vitepress";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { slugify } from "./slugify";
 
 const pkg = JSON.parse(
   readFileSync(resolve(__dirname, "../../../package.json"), "utf-8")
@@ -21,6 +22,7 @@ export const shared: UserConfig = {
   appearance: false, // We use our own theme switcher
 
   markdown: {
+    anchor: { slugify },
     config: (md: any) => {
       md.use(footnote);
       vitepressMarkmapPreview(md);

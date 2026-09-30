@@ -2,8 +2,8 @@
 
 VMark kann einen echten Webbrowser **innerhalb** eines Dokumentfensters betreiben — eine Webseite wird zu einem vollwertigen Tab neben Ihren Markdown-Dokumenten. Es ist eine echte native Webview (macOS `WKWebView`), kein externes Chrome-Fenster und kein eingebetteter Frame.
 
-::: warning Experimentell
-Der integrierte Browser ist eine frühe Funktion und in diesem Build **nur für macOS** verfügbar. Unterstützung für Windows und Linux folgt später — auf diesen Plattformen erscheinen die unten stehenden Einstellungen überhaupt nicht.
+::: info Nur macOS
+Der integrierte Browser ist auf **macOS** verfügbar und dort standardmäßig aktiviert. Unter Windows und Linux ist er nicht verfügbar: Dort erscheinen weder die unten stehenden Einstellungen noch der Befehl **Neuer Browser-Tab**.
 :::
 
 
@@ -35,7 +35,7 @@ Browser-Seitenleiste, in dem Fenster, dem sie gehören.
 
 ## Verwendung
 
-Ein Browser-Tab öffnet sich im Editorbereich, neben Ihren Dokumenten — die Seitenleiste, die Tab-Leiste, das Terminal und die Statusleiste bleiben alle an ihrem Platz. Seine Bedienelemente sitzen **über der Seite**: Auf macOS teilen sie sich die Titelleiste des Fensters, da VMark diese selbst zeichnet. Wo stattdessen das System die Titelleiste zeichnet (Windows, Linux), sitzen sie innerhalb des Fensters über der Seite — so, wie jeder andere Desktop-Browser sie anordnet.
+Ein Browser-Tab öffnet sich im Editorbereich, neben Ihren Dokumenten — die Seitenleiste, die Tab-Leiste, das Terminal und die Statusleiste bleiben alle an ihrem Platz. Seine Bedienelemente sitzen **über der Seite** und teilen sich die Titelleiste des Fensters, die VMark selbst zeichnet.
 
 | Bedienelement | Aktion |
 |---------|--------|
@@ -70,7 +70,7 @@ Wenn der Webinhaltsprozess einer Seite stirbt, zeigt der Tab eine Überlagerung 
 
 VMark erstellt die Plattform-Webview selbst und fügt sie als natives Kind des Fensters hinzu — es fragt das App-Framework **nicht** danach. Das ist für den Datenschutz entscheidend: Eine vom Framework erstellte Webview würde in jede Seite eine interne Nachrichtenbrücke injizieren und damit jeder Website einen Kanal in die App geben. Weil VMark eine frisch konstruierte Webview ohne eine solche Brücke besitzt, **hat eine besuchte Seite keinen Kanal in VMark**. Die Seite wird streng einseitig gesteuert (die App kann die Seite lesen und auf ihr handeln; die Seite kann nicht zurückgreifen).
 
-Sitzungen (Anmeldungen, Cookies) bleiben pro Profil im eigenen Datenspeicher der OS-Webview erhalten, sodass Sie sich bei jeder Website einmal anmelden. VMark speichert selbst keine Anmeldedaten.
+Sitzungen (Anmeldungen, Cookies) bleiben pro Profil im eigenen Datenspeicher der OS-Webview erhalten, sodass Sie sich bei jeder Website einmal anmelden. VMark führt keinen eigenen Passwort- oder Cookie-Speicher; die einzige Ausnahme ist eine Sitzung, deren Speicherung Sie für eine KI ausdrücklich freigeben (siehe *Sitzung speichern/laden* unten) — deren Cookies und `localStorage` landen im **OS-Keychain**, niemals in einer Datei.
 
 ## Den Browser mit KI steuern
 
@@ -163,13 +163,16 @@ Das ist die beabsichtigte Form der KI-Browsernutzung in VMark: Der Agent schläg
 
 Ein offline Netzwerk, ein falscher Hostname, ein abgelehntes Zertifikat oder eine verweigerte
 Verbindung erzeugen alle eine Meldung im Browser-Bereich, die angibt, was schiefgelaufen ist,
-mit einer Schaltfläche **Erneut versuchen**. Frühere Builds zeigten stattdessen einen leeren
-Bereich, der von einer Seite, die bloß langsam war, nicht zu unterscheiden war.
+mit einer Schaltfläche **Erneut versuchen**, sodass ein fehlgeschlagener Ladevorgang nie
+wie eine Seite aussieht, die bloß langsam ist.
 
 ## Aktuelle Einschränkungen
 
 - In diesem Build nur macOS.
-- JavaScript-Dialoge `confirm()` / `prompt()` werden vorerst unterdrückt (nur `alert()` wird angezeigt); Pop-ups (`window.open`) werden blockiert, statt als neue Tabs geöffnet zu werden.
-- Downloads, Drucken und eine Netzwerkrichtlinie pro Anfrage sind noch nicht implementiert.
+- JavaScript-Dialoge `alert()` und `confirm()` werden angezeigt und von Ihnen beantwortet; `prompt()` wird vorerst unterdrückt. Pop-ups (`window.open`) werden blockiert, und die blockierte Adresse wird als neuer Tab angeboten.
+- Eine durch HTTP-Basic-Authentifizierung geschützte Seite lädt nicht — eine Abfrage von Benutzername und Passwort gibt es noch nicht.
+- Suche auf der Seite und Seitenzoom sind nicht implementiert.
+- Anfragen nach Kamera, Mikrofon, Standort oder Benachrichtigungen entscheidet VMark noch nicht selbst; es gilt die Standardbehandlung der System-Webview.
+- Downloads, Drucken und eine Netzwerkrichtlinie pro Anfrage sind noch nicht implementiert. Hover- und Drag-Aktionen haben noch kein KI-Verb.
 
 Diese werden schrittweise ergänzt; die obige Seite beschreibt, was heute funktioniert.

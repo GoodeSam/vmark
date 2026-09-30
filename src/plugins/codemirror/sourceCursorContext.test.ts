@@ -33,6 +33,7 @@ import { EditorView } from "@codemirror/view";
 import { useEditorStore } from "@/stores/editorStore";
 import { createSourceCursorContextPlugin } from "./sourceCursorContext";
 import { bindPluginHostSettings } from "@/services/assembly/bindHostSettings";
+import { bindSplitSourceView } from "@/hooks/useSourcePaneFocus";
 
 // These drive the REAL stores; bind them to the seams the plugin reads,
 // which is what the app does at startup.
@@ -46,7 +47,9 @@ afterEach(() => {
   useEditorStore.getState().clearSourceContext();
 });
 
-function createView(content: string, cursorPos?: number): EditorView {
+/** A Source view; `focused` registers it as the window's active source view,
+ *  as the app does for the focused editor. */
+function createView(content: string, cursorPos?: number, focused = true): EditorView {
   const pos = cursorPos ?? 0;
   const state = EditorState.create({
     doc: content,
@@ -57,6 +60,7 @@ function createView(content: string, cursorPos?: number): EditorView {
   document.body.appendChild(container);
   const view = new EditorView({ state, parent: container });
   createdViews.push(view);
+  if (focused) useEditorStore.getState().setActiveSourceView(view, "tab");
   return view;
 }
 
@@ -174,5 +178,44 @@ describe("createSourceCursorContextPlugin", () => {
     // The listener should fire because store.source.editorView !== update.view
     expect(mockComputeSourceCursorContext).toHaveBeenCalledWith(view2);
     expect(useEditorStore.getState().source.editorView).toBe(view2);
+  });
+});
+
+// Audit 20260928 #99 (round 2) — a non-markdown pane taking focus drops the
+// markdown pane's context, but the markdown view's own listener re-published
+// it on its next update (any selection or doc change, or merely because the
+// slot no longer named it), so the toolbar and context menu again acted on a
+// pane the user had left. Only the ACTIVE source view may publish.
+describe("createSourceCursorContextPlugin — only the active view publishes (#99)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useEditorStore.getState().clearActiveEditors();
+    useEditorStore.getState().clearSourceContext();
+  });
+
+  it("an unfocused markdown view's later updates never re-publish its context", () => {
+    const markdown = createView("# notes", 0, true);
+    markdown.dispatch({ selection: { anchor: 2 } });
+    expect(useEditorStore.getState().source.editorView).toBe(markdown);
+
+    // A yaml pane takes focus: it is the active view, and the markdown context goes.
+    const yaml = createView("name: x", 0, false);
+    bindSplitSourceView(yaml, "yaml-tab", true);
+    expect(useEditorStore.getState().source.editorView).toBeNull();
+
+    mockComputeSourceCursorContext.mockClear();
+    markdown.dispatch({ selection: { anchor: 4 } });
+    markdown.dispatch({ changes: { from: 0, insert: "x" } });
+    expect(useEditorStore.getState().source.editorView).toBeNull();
+    expect(mockComputeSourceCursorContext).not.toHaveBeenCalled();
+  });
+
+  it("the markdown view publishes again once it is the active view again", () => {
+    const markdown = createView("# notes", 0, false);
+    markdown.dispatch({ selection: { anchor: 2 } });
+    expect(useEditorStore.getState().source.editorView).toBeNull();
+    useEditorStore.getState().setActiveSourceView(markdown, "md-tab");
+    markdown.dispatch({ selection: { anchor: 3 } });
+    expect(useEditorStore.getState().source.editorView).toBe(markdown);
   });
 });

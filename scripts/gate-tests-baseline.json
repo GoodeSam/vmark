@@ -7,7 +7,6 @@
   "test (or left check:static) is stale and fails too."
  ],
  "untested": [
-  "check-emdash-spacing.mjs",
   "check-extension-budget.mjs",
   "check-hooks-react-purity.mjs",
   "check-i18n-keys.ts",

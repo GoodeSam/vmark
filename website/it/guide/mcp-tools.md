@@ -147,6 +147,8 @@ chiamata**; una volta che l'utente approva, il nuovo tentativo apre la cartella.
 richiesta negata continua a fallire finché non viene ri-approvata. Non c'è un'opzione
 «ricorda» — ogni apertura viene approvata individualmente.
 
+**Accesso alle cartelle.** Approvare la finestra di dialogo non basta perché VMark possa leggere una cartella fuori dai percorsi sempre leggibili (la tua cartella utente e i volumi montati). Per una cartella del genere, il nuovo tentativo approvato apre il selettore di cartelle di VMark su quella cartella e risponde `APPROVAL_REQUIRED`, chiedendo all'utente di sceglierla lì; fatto questo, il tentativo successivo la apre. Se è già aperta un'altra finestra di selezione cartelle, non viene mostrato nulla e la risposta è `BUSY` — l'approvazione resta valida, quindi riprova dopo che l'utente ha chiuso quella finestra. `BUSY` è anche la risposta mentre nella finestra è già in corso un cambio di spazio di lavoro.
+
 ### `save`
 
 Salva una scheda nel suo percorso esistente.
@@ -428,7 +430,7 @@ capo, così l'IA non può mai registrarti in silenzio. Finché non lo consenti, 
 `needsApproval`; una volta fatto, VMark arma uno shim di cattura dormiente nel mondo della pagina e
 inizia a registrare i **clic e le modifiche ai campi** che esegui. `stop` restituisce
 `{source, inputs, eventCount}` — il `source` è testo del workflow che puoi salvare o passare
-direttamente a [`workflow_run`](#workflow-run).
+direttamente a [`workflow_run`](#workflow-run-workflow-cancel).
 
 La registrazione è **priva di valori per costruzione**, e non è un filtro che si fida della pagina:
 nulla di ciò che digiti viene mai catturato. Ogni campo di testo diventa una variabile `{input}` con
@@ -713,7 +715,8 @@ Compaiono due forme di errore:
 | `INVALID_PATCH` | busta | `workflow.apply_patch` ha ricevuto un array `patches` malformato |
 | `INVALID_TAB` | busta | `tabId` non poteva essere risolto |
 | `INVALID_PATH` | busta | Un `filePath` non poteva essere letto, o è al di fuori dell'ambito del workspace aperto / del documento |
-| `APPROVAL_REQUIRED` | busta | `save_as` verso una nuova posizione mentre **Approva automaticamente le modifiche** è disattivato |
+| `APPROVAL_REQUIRED` | busta | `save_as` verso una nuova posizione mentre **Approva automaticamente i salvataggi in una nuova posizione e i risultati dei geni** è disattivato; oppure `open_workspace` attende l'approvazione dell'utente, o che scelga la cartella nel selettore di cartelle di VMark |
+| `BUSY` | busta | `open_workspace` non ha potuto procedere: è aperta un'altra finestra di selezione cartelle, o nella finestra è in corso un cambio di spazio di lavoro; l'approvazione resta valida — riprova |
 | `NOT_WORKFLOW` | busta | `workflow.*` è stato chiamato su una scheda non YAML-workflow |
 | `READ_ONLY` | busta | È stata tentata una mutazione su un documento di sola lettura |
 | `NO_EDITOR` | busta | `selection.*` è stato chiamato ma la scheda in primo piano non ha un editor attivo |

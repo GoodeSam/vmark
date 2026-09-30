@@ -12,7 +12,7 @@
   "genies.togglePicker": "切換精靈選擇器",
   "genies.openPicker": "搜尋精靈",
   "export.html": "匯出為 HTML",
-  "export.pdf": "列印為 PDF",
+  "export.pdf": "列印…",
   "export.pdfNative": "匯出為 PDF",
   "export.copyHtml": "複製為 HTML",
   "export.pandocHint": "安裝 Pandoc",

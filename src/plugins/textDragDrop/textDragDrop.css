@@ -1,5 +1,6 @@
 /* Drop cursor shown during text drag */
 .text-drag-drop-cursor {
+  /* ui-ok(float): transient drag feedback — the drop caret shown during a text drag */
   position: fixed;
   width: 2px;
   background: var(--primary-color);

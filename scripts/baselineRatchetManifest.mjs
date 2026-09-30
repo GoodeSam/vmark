@@ -107,17 +107,14 @@ export const MANIFEST = {
       checks: [{ mode: "per-key-count", at: "", onAdd: "fail" }],
     },
     {
-      // Counts only. The collectors (collectBespokeButtons /
-      // collectStyledButtonClasses) already return class→file maps, so an
-      // identity conversion is cheap — but it changes the checker's contract
-      // and its failure messages, which is a checker redesign and out of
-      // scope here. Registered as scalars; convert when that gate is next
-      // touched.
+      // IDENTITY lists, only shrink. They were scalar counts, which let a
+      // swap through — delete one bespoke button, write another, total held.
+      // An addition fails here as well as in the gate itself.
       path: "scripts/bespoke-buttons-baseline.json",
       checks: [
-        { mode: "scalar", at: "maxBespokeButtonClasses" },
-        { mode: "scalar", at: "maxStyledButtonClasses" },
-        { mode: "scalar", at: "maxShapeDriftClasses" },
+        { mode: "identity", at: "bespokeButtonClasses", shape: "strings", onAdd: "fail" },
+        { mode: "identity", at: "styledButtonClasses", shape: "strings", onAdd: "fail" },
+        { mode: "identity", at: "shapeDriftClasses", shape: "strings", onAdd: "fail" },
       ],
     },
     {

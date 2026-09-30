@@ -17,13 +17,18 @@
   color: var(--text-color);
 }
 
-/* Floating Source/Split/Preview picker, top-right of the surface. Sits above
- * the panes so it stays reachable in any mode. */
-.split-pane-editor__mode-toggle {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-3);
-  z-index: var(--z-toolbar);
+/* Source/Split/Preview picker, in its own header row above the panes. It
+ * used to float absolutely over the top-right corner, which laid it across
+ * whatever the panes drew there — the HTML trust bar, the read-only banner,
+ * source text in Source mode. In flow, nothing can sit under it. */
+.split-pane-editor__header {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-bottom: var(--border-thin) solid var(--border-color);
+  background: var(--bg-color);
 }
 
 .split-pane-editor__body {

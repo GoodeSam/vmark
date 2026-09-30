@@ -155,7 +155,7 @@
   "src/plugins/htmlPaste/tiptap.test.ts": 2,
   "src/plugins/imageHandler/imageHandlerInsert.test.ts": 3,
   "src/plugins/imageHandler/imageHandlerToast.test.ts": 9,
-  "src/plugins/imageHandler/tiptap.test.ts": 22,
+  "src/plugins/imageHandler/tiptap.test.ts": 21,
   "src/plugins/imagePasteToast/__tests__/ImagePasteToastView.test.ts": 1,
   "src/plugins/imagePreview/__tests__/ImagePreviewView.test.ts": 6,
   "src/plugins/imageView/tiptap.test.ts": 2,

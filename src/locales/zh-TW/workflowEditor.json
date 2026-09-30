@@ -24,6 +24,8 @@
   "panel.exportMermaid": "複製為 Mermaid",
   "panel.exportMermaidLossy": "Mermaid 匯出會省略執行狀態、Action 圖示、自訂徽章以及矩陣展開的細節。",
   "panel.exportSvgLossy": "SVG 匯出使用 foreignObject;若需原生向量圖元,請改為匯出 PNG。",
+  "panel.layout.leftToRight": "由左至右排列",
+  "panel.layout.topToBottom": "由上至下排列",
   "panel.matrix.expand": "展開矩陣({count} 種組合)",
   "panel.matrix.collapse": "收合矩陣",
   "panel.matrix.dynamic": "動態矩陣",
@@ -155,5 +157,18 @@
   "form.job.add.submit": "新增",
   "form.job.add.duplicate": "已有使用該 ID 的作業",
   "form.job.add.invalid": "以字母或底線開頭，其後可用字母、數字、連字號或底線",
-  "diagnosticsBanner.actionlintTimedOut": "actionlint 未在時限內回應，VMark 已停止等待"
+  "diagnosticsBanner.actionlintTimedOut": "actionlint 未在時限內回應，VMark 已停止等待",
+  "form.concurrency.label": "並行",
+  "form.concurrency.group": "群組",
+  "form.concurrency.cancelInProgress": "取消進行中的執行",
+  "form.concurrency.expressionLocked": "（運算式 — 請在原始碼中編輯）",
+  "form.job.delete.label": "刪除作業",
+  "form.job.steps.add": "新增步驟",
+  "form.job.steps.delete": "刪除步驟",
+  "form.job.steps.moveUp": "上移步驟",
+  "form.job.steps.moveDown": "下移步驟",
+  "form.permissions.label": "權限",
+  "form.permissions.default": "預設",
+  "form.permissions.custom": "自訂（依範圍）",
+  "form.permissions.unset": "（未設定）"
 }

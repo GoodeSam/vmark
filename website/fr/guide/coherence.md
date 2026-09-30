@@ -9,14 +9,35 @@ artefacts aval pourraient désormais être obsolètes. Rien n'est jamais mis
 
 ## Comment ça marche (30 secondes)
 
-- Chaque enregistrement, application de genie, suggestion IA acceptée,
-  écriture MCP et étape `save-file` de workflow est consigné comme une
-  **transformation** dans un registre en texte brut au sein de votre
-  espace de travail (`.vmark/` — JSONL lisible par l'humain et compatible
-  git&nbsp;; supprimer l'`index.db` dérivé ne perd rien).
+- **Le suivi de provenance est facultatif.** Activez d'abord *Paramètres
+  → Fichiers et images → Enregistrement → Insérer le bloc d'identité à
+  l'enregistrement*. D'ici là, aucune écriture — enregistrement,
+  application de genie, suggestion IA acceptée, écriture MCP,
+  rétablissement d'une version antérieure ou nouveau fichier créé depuis
+  l'explorateur de fichiers — ne marque vos fichiers ni ne crée
+  `.vmark/`.
+- Une fois le réglage activé, chaque enregistrement, application de
+  genie, suggestion IA acceptée, écriture MCP, rétablissement d'une
+  version antérieure et étape `save-file` de workflow est consigné comme
+  une **transformation** dans un registre en texte brut au sein de votre
+  espace de travail (`.vmark/` — JSONL lisible par l'humain et
+  compatible git&nbsp;; supprimer l'`index.db` dérivé ne perd rien).
+- **Un espace de travail qui possède déjà un registre** — un `.vmark/`
+  que vous avez créé plus tôt ou qu'un collaborateur a commité —
+  continue d'enregistrer les écritures sur les documents qu'il suit,
+  même réglage désactivé. Un document compte comme suivi quand le
+  registre l'a déjà enregistré, ou quand le fichier porte déjà sa
+  propre identité `vmark:` — un fichier suivi que vous avez déplacé,
+  copié dans l'espace de travail ou récupéré par un checkout&nbsp;; le
+  scan du registre lui-même adopte exactement ceux-là. Il ne marque
+  rien&nbsp;: un document sans identité est laissé de côté, et une
+  écriture dont les entrées sont de ce fait incomplètes est consignée
+  comme `inferred` plutôt que `exact`.
 - Quand une IA écrit un document en en lisant d'autres, ces lectures
   deviennent des **arêtes de dépendance**, épinglées à la révision exacte
-  qui a été lue.
+  qui a été lue. Les chemins instrumentés dans l'application consignent
+  des entrées `exact`&nbsp;; les écritures MCP consignent honnêtement un
+  ensemble de lectures `inferred`, observé au cours de la session.
 - Quand un document amont avance au-delà d'une révision épinglée, l'arête
   devient **obsolète**. Si deux révisions ont évolué en parallèle (par ex.
   sur des branches git), l'arête est **divergente** — signalée, jamais
@@ -55,13 +76,75 @@ l'historique&nbsp;:
 - **Réviser** — ouvre l'artefact pour que vous puissiez le mettre à jour.
   Enregistrer une nouvelle version retire l'ancienne arête.
 - **Exempter** — consigne une divergence intentionnelle avec un **motif
-  obligatoire** (les narrateurs peu fiables existent). Les éléments
-  exemptés restent visibles, marqués distinctement, et se rouvrent si
-  l'amont bouge à nouveau.
+  obligatoire** (les narrateurs peu fiables existent). Dans la v0, une
+  exemption est volontairement étroite&nbsp;: elle ne s'applique qu'à
+  cette arête et à la révision amont précise par rapport à laquelle elle
+  est résolue. Les éléments exemptés restent visibles, marqués
+  distinctement, et se rouvrent si l'amont bouge à nouveau.
 
 Accepter la plus récente et Exempter sont désactivés quand l'amont a
 plusieurs versions actuelles — il n'y a pas de révision unique contre
 laquelle résoudre&nbsp;; révisez (ou réconciliez les versions) d'abord.
+
+## Faire taire les signalements inutiles
+
+Deux commandes présentes sur chaque ligne du Détail restreignent ce sur
+quoi la couche vous interroge. Toutes deux sont réservées à l'humain —
+aucun outil MCP ne peut les définir.
+
+**Marquer comme terminé (cycle de vie du document).** Quand un document
+aval est achevé — un chapitre publié, un rapport livré —, choisissez
+**Marquer comme terminé** sur n'importe laquelle de ses lignes. Cela met
+en sourdine toutes les dépendances vers ce document, y compris celles qui
+ne sont pas listées actuellement, et c'est pourquoi une confirmation vous
+est demandée. Ses arêtes passent dans le groupe replié **Aucune question
+à ce sujet**, en bas du panneau, avec la mention *document terminé*&nbsp;:
+toujours suivies, toujours visibles sur demande, mais sans plus vous
+interrompre. **Rouvrir** les ramène d'un seul clic et sans confirmation,
+puisque rouvrir ne fait jamais que rétablir des interruptions. Le cycle
+de vie est consigné dans le registre, pas dans le frontmatter&nbsp;;
+marquer un document comme terminé ne crée donc pas de nouvelle révision
+de celui-ci.
+
+**Ancres de section.** Une arête non ancrée pose la question « le fichier
+amont a-t-il changé ? ». **Ancrer à une section** la restreint à « la
+section dont je dépends a-t-elle changé ? »&nbsp;: choisissez un titre du
+document amont, et l'arête est épinglée au chemin de ce titre. Tant que
+la section ancrée est inchangée, une modification de l'amont ailleurs
+laisse l'arête dans le groupe mis en sourdine avec la mention *section
+dont dépend l'élément inchangée*&nbsp;; une modification à l'intérieur de
+la section la fait remonter avec la mention *section ancrée modifiée*.
+Si le titre disparaît, l'arête est signalée *ancre perdue* au lieu de
+revenir discrètement au comportement portant sur le fichier entier.
+**Changer l'ancre** la réépingle et **Fichier entier** la supprime. Les
+ancres sont des entrées de registre à part entière, elles-mêmes
+révisables&nbsp;; elles suivent donc l'arête au fil des révisions
+ultérieures.
+
+## Le journal de cohérence et le jugement des signalements
+
+Le **Journal de cohérence** (une section dépliable du panneau Détail) est
+l'historique par arête que conserve le registre&nbsp;: chaque
+vérification, ratification et exemption, le nombre de fois où chaque
+arête a été résolue (*résolu 3 fois*), et le nombre d'arêtes résolues
+plus d'une fois — le remous, qui est le vrai fardeau d'un graphe de
+dépendances bruyant. Une vérification sémantique à laquelle le modèle a
+répondu sous le seuil de confiance est affichée avec son verdict et sa
+confiance conservés (*le modèle a répondu … à …, sous le seuil*), de
+sorte que « aucun signal » et « une réponse, mais pas assez sûre »
+restent distincts. Le journal est lu à partir de l'ensemble du registre&nbsp;;
+il ne se charge donc que lorsque vous le dépliez, et se recharge à chaque
+dépliage.
+
+**Ce signalement était-il utile ?** Chaque ligne affichée propose
+**Signalement utile ?** avec trois réponses — **Oui**, **Non**,
+**Incertain** — et volontairement aucune valeur par défaut. Vos réponses
+sont consignées comme des entrées de registre à part entière et
+totalisées dans le journal (*Jugés : pertinent … · bruit … · incertain …
+· non jugé …*). C'est la mesure de pertinence de l'obsolescence sur
+laquelle la couche est calibrée&nbsp;: un signalement que vous jugez être
+du bruit est candidat à une ancre de section ou à un marquage comme
+terminé.
 
 ## Vérification sémantique, affirmations et contextes
 
@@ -107,13 +190,14 @@ Trois choses gardent la couche de cohérence honnête à mesure qu'un projet év
 
 **Récupération de la provenance.** Quand vous modifiez un document dérivé à la main (dans VMark ou un éditeur externe), la modification perd à juste titre ses entrées enregistrées — les anciennes arêtes de dépendance ne décrivent plus le nouveau texte. Le groupe *Provenance inconnue* du Détail propose de les restaurer&nbsp;: appuyez sur **Suggérer des entrées** et VMark propose le jeu d'entrées antérieur le plus récent du document (rôles préservés), pré-coché et modifiable. **Confirmer la provenance** rattache les arêtes à la version actuelle sans créer de nouvelle révision, de sorte que les documents en aval du document ne voient jamais de changement fallacieux. Les documents qui n'ont jamais eu d'entrées ne sont jamais listés — il n'y a rien à récupérer et rien pour vous harceler.
 
-**Délégation d'agent.** Par défaut, vous seul pouvez résoudre les arêtes obsolètes. Si vous voulez qu'un agent IA accepte la plus récente ou exempte en votre nom (via la surface MCP « lecture seule plus `resolve` »), accordez-lui depuis le Détail une **délégation à durée limitée**&nbsp;: nommez l'agent, choisissez la portée (accepter la plus récente et/ou exempter) et fixez une expiration (7 jours par défaut, jamais « pour toujours »). Chaque résolution déléguée est consignée au titre de la délégation, si bien que la piste d'audit montre toujours qui a agi sous l'autorité de qui. Révoquez n'importe quelle délégation d'un clic. Les affirmations canoniques et les contextes restent exclusivement humains — un agent ne peut jamais promouvoir une affirmation ni appliquer un contexte.
+**Délégation d'agent.** Par défaut, vous seul pouvez résoudre les arêtes obsolètes. Si vous voulez qu'un agent IA accepte la plus récente ou exempte en votre nom (via l'outil MCP `coherence_resolve`), accordez-lui depuis le Détail une **délégation à durée limitée**&nbsp;: nommez l'agent, choisissez la portée (accepter la plus récente et/ou exempter) et fixez une expiration (7 jours par défaut, jamais « pour toujours »). Chaque résolution déléguée est consignée au titre de la délégation, si bien que la piste d'audit montre toujours qui a agi sous l'autorité de qui. Révoquez n'importe quelle délégation d'un clic. Les affirmations canoniques et les contextes restent exclusivement humains — un agent ne peut jamais promouvoir une affirmation ni appliquer un contexte.
 
 **Contextes de branche.** Un contexte peut être associé à une branche git. Quand vous basculez sur une branche associée, le Détail affiche une **puce candidate** proposant de changer — il ne change jamais de lui-même. Si la branche n'a pas encore de contexte, la puce propose d'en créer un à son nom. Quand une vraie fusion (non fast-forward) aboutit, une bannière que vous pouvez ignorer vous invite à examiner le Détail&nbsp;; la divergence et l'obsolescence qu'elle expose sont les états normaux du Détail — rien de nouveau ne s'exécute donc, vous êtes simplement guidé vers l'examen.
 
 ## Identité dans le frontmatter
 
-La première fois qu'un fichier est capturé, VMark ajoute un petit bloc
+Une fois *Insérer le bloc d'identité à l'enregistrement* activé, la
+première fois qu'un fichier est capturé, VMark ajoute un petit bloc
 d'identité à son frontmatter&nbsp;:
 
 ```yaml
@@ -127,6 +211,12 @@ contenu (l'ajouter ne crée pas de « changement »), et tout le reste de
 votre frontmatter est laissé intact. Si vous copiez un fichier, l'ID
 dupliqué est détecté et vous est signalé pour résolution — jamais corrigé
 automatiquement.
+
+Si vous préférez que VMark ne touche jamais à vos fichiers, laissez
+*Insérer le bloc d'identité à l'enregistrement* désactivé — c'est le
+réglage par défaut. VMark n'ajoute alors ce bloc à aucun fichier, quelle
+que soit la manière dont il est écrit — pas même aux fichiers qu'une
+modification par l'IA ou MCP s'est contentée de lire.
 
 ## Interopérabilité git
 
@@ -142,10 +232,23 @@ automatiquement.
 ## Pour les agents IA (MCP)
 
 Les agents externes peuvent interroger l'état de cohérence via
-[l'outil MCP `coherence`](/fr/guide/mcp-tools#coherence) (actions `status`
-et `edges`), pour les espaces de travail que vous avez ouverts dans VMark.
-`status` est une lecture pure&nbsp;; `edges` rapproche d'abord — il peut
-ajouter des enregistrements de provenance au registre propre de l'espace
-de travail, mais ne touche jamais vos documents. La résolution
-(ratifier/exempter) n'est délibérément *pas* exposée via MCP dans cette
-version — les décisions restent à l'humain, dans l'application.
+[l'outil MCP `coherence`](/fr/guide/mcp-tools#coherence) (actions `status`,
+`edges`, `claims` et `contexts`), pour les espaces de travail que vous
+avez ouverts dans VMark. `status` est une lecture pure&nbsp;; `edges`
+rapproche d'abord — il peut ajouter des enregistrements de provenance au
+registre propre de l'espace de travail, mais ne touche jamais vos
+documents. L'outil déclare `readOnlyHint: true`, de sorte qu'un client
+peut l'approuver automatiquement.
+
+La résolution (ratifier/exempter) relève d'un outil **distinct**,
+[`coherence_resolve`](/fr/guide/mcp-tools#coherence-resolve), et reste
+par défaut entre les mains de l'humain&nbsp;: un agent ne peut l'appeler
+qu'après que vous avez accordé à cet agent précis une délégation à durée
+limitée, et chaque résolution est consignée dans le journal d'audit au
+titre de cette délégation. C'est parce qu'elle est tenue hors de
+`coherence` que l'outil de lecture peut être approuvé automatiquement
+sans qu'un agent acquière discrètement la capacité d'écrire dans votre
+registre.
+
+Les affirmations canoniques et les contextes ne sont jamais modifiables
+via MCP.

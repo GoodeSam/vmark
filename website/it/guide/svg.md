@@ -98,7 +98,7 @@ In modalità Sorgente, quando il cursore è all'interno di un blocco di codice `
 | **Zoom** | Pulsanti `−` e `+`, o `Cmd/Ctrl` + scroll (dal 10% al 300%) |
 
 ::: info
-L'anteprima del diagramma in modalità Sorgente deve essere abilitata. Attivala con il pulsante **Anteprima Diagramma** nella barra di stato.
+L'anteprima del diagramma in modalità Sorgente è disattivata per impostazione predefinita. Attivala con **Vista → Mostra/Nascondi anteprima diagramma** (`Alt + Mod + P`) o dalla palette dei comandi.
 :::
 
 ## Validazione SVG

@@ -18,7 +18,12 @@
  *     collapsed view (state default false) — visual parity preserved.
  *   - keyboard nav: Enter / Space activate selection; the chevron has
  *     its own focus stop and Enter/Space toggles expand. Escape clears
- *     selection (a11y per .claude/rules/33-focus-indicators.md).
+ *     selection (a11y per .claude/rules/33-focus-indicators.md) and hands
+ *     focus to THIS pane's source view (`paneSourceView`), never another
+ *     document's under a split (WI-LX2.4).
+ *   - Edge handles sit where xyflow's `targetPosition`/`sourcePosition`
+ *     say — top/bottom by default, left/right when the canvas is laid out
+ *     left to right. The fence snapshot passes neither and stays top-down.
  *
  * @module components/Editor/WorkflowPanel/JobNode
  */
@@ -29,7 +34,7 @@ import { ChevronRight, ChevronDown } from "lucide-react";
 import type { JobIR, StepIR } from "@/lib/ghaWorkflow/types";
 import type { JobNodeData } from "@/lib/ghaWorkflow/render/toGraph";
 import { useWorkflowStore } from "@/stores/workflowStore";
-import { useEditorStore } from "@/stores/editorStore";
+import { paneSourceView } from "./paneSourceView";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import "./job-node.css";
@@ -118,15 +123,10 @@ export function JobNode(props: JobNodeProps): ReactElement {
     if (e.key === "Escape") {
       e.preventDefault();
       useWorkflowStore.getState().clearSelection();
-      // Hand focus back to the active source CodeMirror via the
-      // activeEditorStore — using a global querySelector picked up
-      // the first .cm-editor in the DOM, which in multi-window /
-      // multi-editor layouts could be the wrong editor (Codex audit
-      // round 5 finding).
-      const view = useEditorStore.getState().active.activeSourceView;
-      if (view?.dom?.isConnected) {
-        view.focus();
-      }
+      // Hand focus back to this workbench's own source view. A global
+      // querySelector picked up the first .cm-editor in the DOM (Codex audit
+      // round 5), and the bare active view can be the other pane's document.
+      paneSourceView(e.currentTarget)?.focus();
     }
   };
 
@@ -150,12 +150,10 @@ export function JobNode(props: JobNodeProps): ReactElement {
       {/* Edge attachment points. Without these, xyflow has nowhere to
           route edges from the toGraph IR, and the dependency arrows
           between jobs disappear. Hidden visually via CSS — they're
-          structural only. Layout direction is TD so target is top,
-          source is bottom; LR mode re-uses these and just rotates
-          edges, which xyflow handles internally. */}
+          structural only. Their sides follow the layout direction. */}
       <Handle
         type="target"
-        position={Position.Top}
+        position={props.targetPosition ?? Position.Top}
         isConnectable={false}
         className="gha-job-node__handle"
       />
@@ -250,7 +248,7 @@ export function JobNode(props: JobNodeProps): ReactElement {
       )}
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={props.sourcePosition ?? Position.Bottom}
         isConnectable={false}
         className="gha-job-node__handle"
       />

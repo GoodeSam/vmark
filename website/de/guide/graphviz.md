@@ -28,7 +28,7 @@ Beide Fence-Sprachen verhalten sich identisch:
 ## Bearbeitungsmodi
 
 - **WYSIWYG-Modus** — der Code-Block wird als Diagramm gerendert. Doppelklicken Sie darauf, um den DOT-Quellcode mit einer entprellten Live-Vorschau zu bearbeiten; speichern oder abbrechen Sie über die Bearbeitungskopfzeile.
-- **Quellmodus** — platzieren Sie den Cursor innerhalb eines ` ```dot `-Fence, um die schwebende Diagrammvorschau zu erhalten (ziehen, Größe ändern, zoomen), genau wie bei Mermaid.
+- **Quellmodus** — platzieren Sie den Cursor innerhalb eines ` ```dot `-Fence, um die schwebende Diagrammvorschau zu erhalten (ziehen, Größe ändern, zoomen), genau wie bei Mermaid. Die Vorschau ist standardmäßig ausgeschaltet; schalten Sie sie mit **Ansicht → Diagramm-Vorschau umschalten** (`Alt + Mod + P`) ein.
 
 ## Schwenken, Zoomen und Exportieren
 

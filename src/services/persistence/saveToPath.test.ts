@@ -175,42 +175,34 @@ describe("saveToPath", () => {
     });
   });
 
-  it("reports the write to the coherence capture funnel when capture is ENABLED (WI-1.6)", async () => {
-    vi.mocked(invoke).mockResolvedValue(undefined);
-    vi.mocked(useSettingsStore.getState).mockReturnValue(
-      makeSettings({ general: { coherenceCaptureOnSave: true } }),
-    );
+  // WI-LX1.4: the capture-on-save setting is enforced ONCE, in the coherence
+  // funnel + kernel (`coherence/capture_policy.rs`), for every write path. A save
+  // therefore always reports to the funnel; with the setting off the kernel
+  // creates no `.vmark/` and stamps nothing (see captureFunnel.test.ts and
+  // capture_policy.test.rs). Gating here as well was the per-caller check that
+  // left every OTHER write path ungated.
+  it.each([
+    { enabled: true, saveType: "manual" as const, summary: "manual save" },
+    { enabled: false, saveType: "manual" as const, summary: "manual save" },
+    { enabled: false, saveType: "auto" as const, summary: "auto save" },
+  ])(
+    "reports the write to the capture funnel (setting on=$enabled, $saveType) — the funnel owns the gate",
+    async ({ enabled, saveType, summary }) => {
+      vi.mocked(invoke).mockResolvedValue(undefined);
+      vi.mocked(useSettingsStore.getState).mockReturnValue(
+        makeSettings({ general: { coherenceCaptureOnSave: enabled } }),
+      );
 
-    await saveToPath("tab-1", "/tmp/doc.md", "Hello", "manual");
+      await saveToPath("tab-1", "/tmp/doc.md", "Hello", saveType);
 
-    expect(mockCaptureWrite).toHaveBeenCalledWith({
-      absolutePath: "/tmp/doc.md",
-      content: "Hello",
-      agent: { type: "human" },
-      intent: { kind: "editor-save", summary: "manual save" },
-    });
-  });
-
-  // Capture is OPT-IN (v0.9.6): saving must not rewrite the user's file to
-  // inject a `vmark:` frontmatter id unless they asked for provenance tracking.
-  // Default-on stamping modified users' markdown silently, on autosave.
-  it("does NOT capture on save by default — no silent frontmatter stamping", async () => {
-    vi.mocked(invoke).mockResolvedValue(undefined);
-
-    await saveToPath("tab-1", "/tmp/doc.md", "Hello", "manual");
-
-    expect(mockCaptureWrite).not.toHaveBeenCalled();
-  });
-
-  it("does NOT capture on AUTOSAVE either when disabled", async () => {
-    // Autosave is on by default at 30s, so a default-on capture stamped files
-    // without the user ever pressing save.
-    vi.mocked(invoke).mockResolvedValue(undefined);
-
-    await saveToPath("tab-1", "/tmp/doc.md", "Hello", "auto");
-
-    expect(mockCaptureWrite).not.toHaveBeenCalled();
-  });
+      expect(mockCaptureWrite).toHaveBeenCalledWith({
+        absolutePath: "/tmp/doc.md",
+        content: "Hello",
+        agent: { type: "human" },
+        intent: { kind: "editor-save", summary },
+      });
+    },
+  );
 
   it("save succeeds even when the coherence funnel rejects", async () => {
     vi.mocked(invoke).mockResolvedValue(undefined);

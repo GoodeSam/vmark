@@ -8,6 +8,11 @@
  * destroying an existing one. The allowed roots include the parent directory
  * of every open document, so without that split an auto-approved save_as
  * could silently overwrite any sibling of any open file (audit 20260728 §1.5).
+ *
+ * A successful write is handed to `captureMcpWrite` like every other MCP write
+ * (audit #152), so it records provenance and obeys the capture-on-save setting.
+ *
+ * @coordinates-with services/coherence/mcpCapture.ts — inferred MCP capture under the capture policy (WI-1.6, WI-LX1.4)
  */
 
 import {
@@ -22,6 +27,7 @@ import { getFileName, normalizePath } from "@/utils/paths";
 import { registerPendingSave, clearPendingSave } from "@/utils/pendingSaves";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { checkBridgePath } from "@/services/mcpBridge/bridgePathGuard";
+import { captureMcpWrite } from "@/services/coherence/mcpCapture";
 import { imeToast } from "@/services/ime/imeToast";
 import i18n from "@/i18n";
 import { respond } from "@/services/mcpBridge/utils";
@@ -143,6 +149,13 @@ export async function handleWorkspaceSaveAs(
     docState.setFilePath(tabId, filePath);
     // Verbatim write: both snapshots are the same string here.
     docState.markSaved(tabId, { editorSnapshot: doc.content, diskSnapshot: doc.content });
+    // Coherence (WI-1.6): inferred capture, session-read inputs. Fire-and-forget:
+    // a failed capture never fails the save (the scan heals the gap).
+    void captureMcpWrite({
+      absolutePath: filePath,
+      content: doc.content,
+      toolName: "workspace.save_as",
+    }).catch(() => {});
     const revision = useRevisionStore.getState().getRevision(tabId);
     await respond({ id, success: true, data: { revision } });
   });

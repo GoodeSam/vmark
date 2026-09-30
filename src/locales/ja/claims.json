@@ -14,7 +14,7 @@
   "actions.retire": "終了",
   "actions.hide": "非表示",
   "actions.show": "表示",
-  "promoteTitle": "確立済みに昇格 — 制約になれるのは確立済みの設定のみです（D4）",
+  "promoteTitle": "確立済みに昇格 — 制約になれるのは確立済みの設定のみです",
   "correctPlaceholder": "修正後の記述",
   "correctConfirm": "修正を確定",
   "create.heading": "選択範囲から新しい設定",

@@ -18,6 +18,9 @@
  *     must not overwrite the position the editable surface owns.
  *   - The tab id is the one PINNED to this editor (#1081), never the currently
  *     active tab — a late teardown after a tab switch must write to its own tab.
+ *   - It also hands over the `.ProseMirror` under the wrapper, so the block at
+ *     the top is remembered with the offset (#1473) — found by query, for the
+ *     same reason the container is.
  *
  * @coordinates-with services/editor/scrollPosition.ts — the offset store
  * @coordinates-with TiptapEditor.tsx — sole consumer
@@ -34,6 +37,7 @@ export function useWysiwygScrollMemory(
 ): void {
   useEffect(() => {
     if (!enabled) return;
-    return trackEditorScroll(findScrollContainer(containerRef.current), tabId, "wysiwyg");
+    const blocks = () => containerRef.current?.querySelector(".ProseMirror") ?? null;
+    return trackEditorScroll(findScrollContainer(containerRef.current), tabId, "wysiwyg", blocks);
   }, [containerRef, tabId, enabled]);
 }

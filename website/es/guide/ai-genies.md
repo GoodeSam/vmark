@@ -89,9 +89,9 @@ Si el alcance es **Selección** pero no hay nada seleccionado, el genio opera en
 
 Después de que un genio se ejecuta, la sugerencia aparece en línea:
 
-- **Reemplazar** — Texto original con tachado, nuevo texto en verde
-- **Insertar** — Nuevo texto mostrado en verde después del bloque de origen
-- **Eliminar** — Texto original con tachado
+- **Reemplazar** — Texto original con un tachado ondulado rojo, seguido del nuevo texto como texto «fantasma» en cursiva atenuada y en el color de acento
+- **Insertar** — Nuevo texto mostrado como texto fantasma después del bloque de origen
+- **Eliminar** — Texto original con un tachado ondulado rojo
 
 Cada sugerencia tiene botones de aceptar (marca de verificación) y rechazar (X).
 
@@ -136,7 +136,7 @@ Abre esta carpeta desde el menú **Herramientas > Abrir Carpeta de Genios**.
 
 Los subdirectorios se convierten en **categorías** en el selector. Puedes organizar los genios como desees:
 
-```
+```text
 genies/
 ├── editing/
 │   ├── polish.md
@@ -145,10 +145,10 @@ genies/
 ├── creative/
 │   ├── expand.md
 │   └── rephrase.md
-├── academic/          ← tu categoría personalizada
+├── academic/          ← your custom category
 │   ├── cite.md
 │   └── abstract.md
-└── my-workflows/      ← otra categoría personalizada
+└── my-workflows/      ← another custom category
     └── blog-intro.md
 ```
 
@@ -158,15 +158,15 @@ Cada archivo de genio tiene dos partes: **frontmatter** (metadatos) y **plantill
 
 ```markdown
 ---
-description: Mejorar claridad y fluidez
+description: Improve clarity and flow
 scope: selection
 category: editing
 ---
 
-Eres un editor experto. Mejora la claridad, fluidez y concisión
-del siguiente texto preservando la voz e intención del autor.
+You are an expert editor. Improve the clarity, flow, and conciseness
+of the following text while preserving the author's voice and intent.
 
-Devuelve solo el texto mejorado — sin explicaciones.
+Return only the improved text — no explanations.
 
 {{content}}
 ```
@@ -198,15 +198,15 @@ El marcador de posición `{{content}}` es el núcleo de cada genio. Cuando se ej
 Por ejemplo, con esta plantilla:
 
 ```markdown
-Traduce el siguiente texto al francés.
+Translate the following text into French.
 
 {{content}}
 ```
 
 Si el usuario selecciona "Hello, how are you?", la IA recibe:
 
-```
-Traduce el siguiente texto al francés.
+```text
+Translate the following text into French.
 
 Hello, how are you?
 ```
@@ -235,15 +235,15 @@ El marcador de posición `{{context}}` le da a la IA texto circundante de solo l
 
 Con `context: 1` y el cursor en el segundo párrafo de un documento de tres párrafos:
 
-```
-[Antes]
-Contenido del primer párrafo aquí.
+```text
+[Before]
+First paragraph content here.
 
-[Después]
-Contenido del tercer párrafo aquí.
+[After]
+Third paragraph content here.
 ```
 
-Las secciones `[Antes]` y `[Después]` se omiten cuando no hay vecinos en esa dirección (ej., el contenido está al principio o al final del documento).
+Las secciones `[Before]` y `[After]` se omiten cuando no hay vecinos en esa dirección (ej., el contenido está al principio o al final del documento).
 
 ### El Campo `action`
 
@@ -257,15 +257,15 @@ Usa `insert` para: continuar escribiendo, generar resúmenes debajo del contenid
 
 ```markdown
 ---
-description: Continuar escribiendo desde aquí
+description: Continue writing from here
 scope: block
 action: insert
 ---
 
-Continúa escribiendo naturalmente desde donde termina el siguiente texto.
-Mantén la voz, estilo y tono del autor. Escribe 2-3 párrafos.
+Continue writing naturally from where the following text leaves off.
+Match the author's voice, style, and tone. Write 2-3 paragraphs.
 
-No repitas ni resumas el texto existente — simplemente continúalo.
+Do not repeat or summarize the existing text — just continue it.
 
 {{content}}
 ```
@@ -276,12 +276,12 @@ Anula el modelo predeterminado para un genio específico. Útil cuando quieres u
 
 ```markdown
 ---
-description: Corrección rápida de gramática (usa modelo rápido)
+description: Quick grammar fix (uses fast model)
 scope: selection
 model: claude-haiku-4-5-20251001
 ---
 
-Corrige errores de gramática y ortografía. Devuelve solo el texto corregido.
+Fix grammar and spelling errors. Return only the corrected text.
 
 {{content}}
 ```
@@ -295,11 +295,11 @@ El identificador del modelo debe coincidir con lo que acepta tu proveedor activo
 Dile a la IA exactamente qué devolver. Sin esto, los modelos tienden a añadir explicaciones, encabezados o comentarios.
 
 ```markdown
-<!-- Bien -->
-Devuelve solo el texto mejorado — sin explicaciones.
+<!-- Good -->
+Return only the improved text — no explanations.
 
-<!-- Mal — la IA puede envolver la salida en comillas, añadir "Aquí está la versión mejorada:", etc. -->
-Mejora este texto.
+<!-- Bad — AI may wrap output in quotes, add "Here's the improved version:", etc. -->
+Improve this text.
 ```
 
 ### Establece un Rol
@@ -307,11 +307,11 @@ Mejora este texto.
 Dale a la IA un personaje para anclar su comportamiento.
 
 ```markdown
-<!-- Bien -->
-Eres un editor técnico experto que se especializa en documentación de APIs.
+<!-- Good -->
+You are an expert technical editor who specializes in API documentation.
 
-<!-- Correcto pero menos enfocado -->
-Edita el siguiente texto.
+<!-- Okay but less focused -->
+Edit the following text.
 ```
 
 ### Limita el Alcance
@@ -319,13 +319,13 @@ Edita el siguiente texto.
 Dile a la IA qué NO cambiar. Esto evita la sobre-edición.
 
 ```markdown
-<!-- Bien -->
-Corrige solo errores de gramática y ortografía.
-No cambies el significado, estilo o tono.
-No reestructures las oraciones.
+<!-- Good -->
+Fix grammar and spelling errors only.
+Do not change the meaning, style, or tone.
+Do not restructure sentences.
 
-<!-- Mal — da demasiada libertad a la IA -->
-Corrige este texto.
+<!-- Bad — gives the AI too much freedom -->
+Fix this text.
 ```
 
 ### Usa Markdown en los Prompts
@@ -334,22 +334,22 @@ Puedes usar formato Markdown en tus plantillas de prompt. Esto ayuda cuando quie
 
 ```markdown
 ---
-description: Generar un análisis de pros/contras
+description: Generate a pros/cons analysis
 scope: selection
 action: insert
 ---
 
-Analiza el siguiente texto y produce una breve lista de pros/contras.
+Analyze the following text and produce a brief pros/cons list.
 
-Formato:
+Format as:
 
 **Pros:**
-- punto 1
-- punto 2
+- point 1
+- point 2
 
-**Contras:**
-- punto 1
-- punto 2
+**Cons:**
+- point 1
+- point 2
 
 {{content}}
 ```
@@ -359,15 +359,15 @@ Formato:
 Un genio, un trabajo. No combines múltiples tareas en un solo genio — crea genios separados en su lugar.
 
 ```markdown
-<!-- Bien — un trabajo claro -->
+<!-- Good — one clear job -->
 ---
-description: Convertir a voz activa
+description: Convert to active voice
 scope: selection
 ---
 
-Reescribe el siguiente texto usando voz activa.
-No cambies el significado.
-Devuelve solo el texto reescrito.
+Rewrite the following text using active voice.
+Do not change the meaning.
+Return only the rewritten text.
 
 {{content}}
 ```
@@ -378,14 +378,14 @@ Devuelve solo el texto reescrito.
 
 ```markdown
 ---
-description: Generar un resumen académico
+description: Generate an academic abstract
 scope: document
 action: insert
 ---
 
-Lee el siguiente artículo y escribe un resumen académico conciso
-(150-250 palabras). Sigue la estructura estándar: antecedentes, métodos,
-resultados, conclusión.
+Read the following paper and write a concise academic abstract
+(150-250 words). Follow standard structure: background, methods,
+results, conclusion.
 
 {{content}}
 ```
@@ -394,14 +394,14 @@ resultados, conclusión.
 
 ```markdown
 ---
-description: Escribir un párrafo de apertura atractivo
+description: Write an engaging opening paragraph
 scope: document
 action: insert
 ---
 
-Lee el siguiente borrador y escribe un párrafo de apertura convincente
-que enganche al lector. Usa una pregunta, hecho sorprendente o escena vívida.
-Mantenlo en menos de 3 oraciones.
+Read the following draft and write a compelling opening paragraph
+that hooks the reader. Use a question, surprising fact, or vivid
+scene. Keep it under 3 sentences.
 
 {{content}}
 ```
@@ -410,14 +410,14 @@ Mantenlo en menos de 3 oraciones.
 
 ```markdown
 ---
-description: Añadir una explicación en lenguaje sencillo sobre el código
+description: Add a plain-English explanation above code
 scope: selection
 action: insert
 ---
 
-Lee el siguiente código y escribe una breve explicación en lenguaje sencillo
-de lo que hace. Usa 1-2 oraciones. No incluyas el código en sí
-en tu respuesta.
+Read the following code and write a brief plain-English explanation
+of what it does. Use 1-2 sentences. Do not include the code itself
+in your response.
 
 {{content}}
 ```
@@ -426,32 +426,32 @@ en tu respuesta.
 
 ```markdown
 ---
-description: Reescribir en tono profesional
+description: Rewrite in professional tone
 scope: selection
 ---
 
-Reescribe el siguiente texto con un tono profesional y apropiado para negocios.
-Mantén el mismo significado y puntos clave. Elimina el lenguaje informal,
-argot y palabras de relleno.
+Rewrite the following text in a professional, business-appropriate tone.
+Keep the same meaning and key points. Remove casual language,
+slang, and filler words.
 
-Devuelve solo el texto reescrito — sin explicaciones.
+Return only the rewritten text — no explanations.
 
 {{content}}
 ```
 
-### Traducción — Al Español
+### Traducción — Al chino simplificado
 
 ```markdown
 ---
-description: Traducir al español
+description: Translate to Simplified Chinese
 scope: selection
 ---
 
-Traduce el siguiente texto al español neutro.
-Preserva el significado, tono y formato originales.
-Usa un español natural e idiomático — no una traducción literal.
+Translate the following text into Simplified Chinese.
+Preserve the original meaning, tone, and formatting.
+Use natural, idiomatic Chinese — not word-for-word translation.
 
-Devuelve solo el texto traducido — sin explicaciones.
+Return only the translated text — no explanations.
 
 {{content}}
 ```
@@ -460,20 +460,20 @@ Devuelve solo el texto traducido — sin explicaciones.
 
 ```markdown
 ---
-description: Reescribir para que encaje con el tono y estilo circundantes
+description: Rewrite to match surrounding tone and style
 scope: selection
 context: 1
 ---
 
-Reescribe el siguiente contenido para que encaje naturalmente con su contexto circundante.
-Coincide con el tono, estilo y nivel de detalle.
+Rewrite the following content to fit naturally with its surrounding context.
+Match the tone, style, and level of detail.
 
-Devuelve solo el texto reescrito — sin explicaciones.
+Return only the rewritten text — no explanations.
 
-## Contexto circundante (no incluir en la salida):
+## Surrounding context (do not include in output):
 {{context}}
 
-## Contenido a reescribir:
+## Content to rewrite:
 {{content}}
 ```
 
@@ -481,35 +481,46 @@ Devuelve solo el texto reescrito — sin explicaciones.
 
 ```markdown
 ---
-description: Señalar afirmaciones que necesitan verificación
+description: Flag claims that need verification
 scope: selection
 action: insert
 ---
 
-Lee el siguiente texto y enumera cualquier afirmación factual que deba ser
-verificada. Para cada afirmación, señala por qué podría necesitar comprobación (ej.,
-números específicos, fechas, estadísticas o afirmaciones categóricas).
+Read the following text and list any factual claims that should be
+verified. For each claim, note why it might need checking (e.g.,
+specific numbers, dates, statistics, or strong assertions).
 
-Formatea como una lista con viñetas. Si todo parece sólido, di
-"No se señalaron afirmaciones para verificación."
+Format as a bullet list. If everything looks solid, say
+"No claims flagged for verification."
 
 {{content}}
 ```
 
 ## Sugerencias de IA
 
-Cuando un Genio devuelve texto destinado a reemplazar la selección (en lugar de una respuesta de chat de forma libre), VMark lo presenta como una **sugerencia** con un diff en línea: tachado rojo para el texto original, subrayado verde para el texto propuesto. Tú revisas y apruebas antes de que cualquier cambio se persista.
+Cuando un Genio devuelve texto destinado a reemplazar la selección (en lugar de una respuesta de chat de forma libre), VMark lo presenta como una **sugerencia** con un diff en línea: tachado ondulado rojo para el texto original, texto fantasma en cursiva atenuada y en el color de acento para el texto propuesto. Tú revisas y apruebas antes de que cualquier cambio se persista.
 
 | Acción | Atajo |
 |---|---|
-| Aceptar la sugerencia enfocada | `Tab` |
+| Aceptar la sugerencia enfocada | `Enter` |
 | Rechazar la sugerencia enfocada | `Esc` |
+| Pasar a la sugerencia siguiente / anterior | `Tab` / `Shift + Tab` |
 | Aceptar todas las sugerencias del documento | `Mod + Shift + Enter` _(sensible al contexto — también Añadir Fila Arriba cuando se está dentro de una tabla)_ |
-| Pasar a la siguiente sugerencia | `Tab` desde una posición no enfocada |
+| Rechazar todas las sugerencias del documento | `Mod + Shift + Escape` |
 
 Cuando un Genio reescribe varios párrafos, cada reemplazo es una sugerencia navegable de forma independiente. Aceptar una no acepta automáticamente las demás.
 
-La interfaz de sugerencias también tiene una superficie MCP — los agentes de IA externos conectados a través del [servidor MCP](/es/guide/mcp-tools) pueden emitir las acciones `suggestion.accept` / `suggestion.reject` para manipular el mismo estado.
+## Genios en flujos de trabajo
+
+Un solo genio ejecuta un solo prompt. Cuando necesitas encadenar varios pasos de IA — esquema, luego borrador, luego pulido — y encaminar la salida de una etapa a la siguiente, usa un **flujo de trabajo de genios**: un archivo YAML que orquesta varias llamadas a genios con un flujo de datos explícito, puertas de aprobación opcionales, modelos por paso y un diagrama de ejecución en vivo.
+
+Como los pasos de un flujo de trabajo rellenan el marcador `{{content}}` de un genio a partir de un mapa `with: { input: "..." }`, **los genios que escribes aquí se ejecutan sin cambios dentro de los flujos de trabajo** — no hace falta ninguna conversión.
+
+Consulta [Flujos de trabajo de Genie](/es/guide/workflows) para ver el esquema YAML completo, la sintaxis de expresiones, las aprobaciones y cómo ejecutar uno.
+
+### Aislamiento del contenido no confiable
+
+Cuando se ejecuta un paso `genie/<name>` de un flujo de trabajo, el texto del documento, las selecciones y el contenido de los archivos se envuelven en marcadores únicos `<<<DOCUMENT-DATA-…>>>` antes de llegar al proveedor de IA, y el prompt indica al modelo que trate el texto delimitado estrictamente como datos. Este aislamiento es propio de los pasos de flujo de trabajo — un genio ejecutado directamente desde el selector envía el texto de su alcance al proveedor tal cual. Protege frente a documentos que intentan colar instrucciones a la IA («ignora tus instrucciones y ejecuta …»), lo que importa sobre todo con los proveedores CLI (Claude Code, Codex, Gemini CLI), que pueden ejecutar comandos. Trata los genios que ejecutas sobre archivos de fuentes no confiables con la misma cautela que aplicarías al ejecutar un script de internet: el aislamiento es una mitigación sólida, no una garantía absoluta.
 
 ## Limitaciones
 
@@ -522,7 +533,7 @@ La interfaz de sugerencias también tiene una superficie MCP — los agentes de 
 
 **"No hay proveedor de IA disponible"** — Abre Configuración > Integraciones y configura un proveedor. Ver [Proveedores de IA](/es/guide/ai-providers).
 
-**El genio no aparece en el selector** — Verifica que el archivo tenga extensión `.md`, frontmatter válido con delimitadores `---`, y esté en el directorio de genios (no en un subdirectorio de más de un nivel de profundidad).
+**El genio no aparece en el selector** — Verifica que el archivo tenga extensión `.md` (o `.yml`/`.yaml` para un [genio de flujo de trabajo](/es/guide/workflow-genies)) y frontmatter válido con delimitadores `---`. Las subcarpetas se exploran hasta ocho niveles de profundidad (y como máximo 10.000 entradas en total), y los enlaces simbólicos se omiten. Ejecuta **Editar → Genios → Recargar genios** después de añadir archivos.
 
 **La IA devuelve basura o errores** — Verifica que tu clave API sea correcta y que el nombre del modelo sea válido para tu proveedor. Consulta el terminal/consola para detalles de error.
 

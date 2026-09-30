@@ -1,13 +1,13 @@
 # Markdown Lint
 
-VMark ships a built-in lint engine that catches **correctness issues**, not style preferences. Lint runs on demand (`Alt + Mod + V` or **Tools → Check Markdown**) and surfaces results inline as gutter squiggles, with a status bar badge and F2 navigation between findings.
+VMark ships a built-in lint engine that catches **correctness issues**, not style preferences. Lint runs on demand (`Alt + Mod + V` or **View → Check Markdown**) and surfaces results inline — a coloured bar down the side of each affected block in WYSIWYG mode, a wavy underline under the exact text in Source mode — with a status bar badge and F2 navigation between findings.
 
 ## What lint is and isn't
 
 VMark's lint is a **correctness** checker:
 
 - Broken cross-references
-- Undefined link / footnote references
+- Undefined link references (footnote references are not checked)
 - Unclosed code fences
 - Tables with mismatched column counts
 - Heading levels that skip (h1 → h3)
@@ -53,7 +53,7 @@ For style enforcement, use a separate tool like `prettier --check` outside VMark
 | Trigger | Action |
 |---|---|
 | `Alt + Mod + V` | Run lint on the active document |
-| **Tools → Check Markdown** | Same as the shortcut |
+| **View → Check Markdown** | Same as the shortcut |
 | `F2` | Jump to the next diagnostic |
 | `Shift + F2` | Jump to the previous diagnostic |
 
@@ -67,7 +67,7 @@ The lint engine has a single user-facing toggle:
 
 - **Settings → Markdown → Enable markdown lint** — turn the engine on or off entirely
 
-When disabled, the shortcut becomes a no-op and no diagnostics appear in the gutter.
+When disabled, the shortcut becomes a no-op and no diagnostics appear in the editor.
 
 ## See also
 

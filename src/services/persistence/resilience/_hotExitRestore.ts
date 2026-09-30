@@ -40,6 +40,24 @@ import {
 import { hydrateWorkspaceInstanceContext } from '@/services/workspaces/hydrateWorkspaceInstanceContext';
 import { restoreInstanceContextState } from '@/services/persistence/hotExit/instanceContextState';
 import { errorMessage } from "@/utils/errorMessage";
+import { awaitWorkspaceGrants } from '@/services/workspaces/workspaceAccess';
+import type { WindowState } from '../hotExit/types';
+
+/**
+ * How long a window's restore waits for its workspaces' grants (audit F2 #38).
+ * Launch re-grants recorded roots within its own bounded wait; a root on a
+ * slow mount is granted late, and this is how long the restore waits for it
+ * before activating that workspace. A dead mount's check can hold for minutes,
+ * so past this the restore goes on and the grant lands whenever it does.
+ */
+export const RESTORED_GRANT_WAIT_MS = 5000;
+
+/** The workspace roots a window's saved state restores. */
+function restoredWorkspaceRoots(windowState: WindowState): string[] {
+  return (windowState.workspace_instances ?? [])
+    .map((instance) => instance.rootPath)
+    .filter((root): root is string => typeof root === 'string' && root.length > 0);
+}
 
 /** Module-level flag to prevent double-restore of main window */
 let mainWindowRestoreStarted = false;
@@ -65,6 +83,9 @@ async function pullAndRestore(windowLabel: string): Promise<boolean> {
   }
 
   hotExitLog(`Window '${windowLabel}' found pending state, restoring...`);
+  // #38: the workspaces are activated below and their trees read at once, so
+  // their grants come first — waited for, within RESTORED_GRANT_WAIT_MS.
+  await awaitWorkspaceGrants(restoredWorkspaceRoots(windowState), RESTORED_GRANT_WAIT_MS);
   // WI-13.2 ordering: instances → tabs → reconcile ids → ONE final hydrate.
   // Rail clicks are declined while the context is half-built; the guard is
   // released in `finally` so a failed restore can never wedge switching.

@@ -45,8 +45,10 @@ Select all occurrences of the current word or selection at once:
 
 1. Select a word or text
 2. Press `Mod + Shift + L`
-3. All matching occurrences in the current block are selected
+3. All matching occurrences in the document are selected — or, inside a code block, all matches in that block (see [Scoping](#scoping))
 4. Type to replace all at once
+
+To stay within the paragraph, heading or list item you are in, use `Alt + Mod + Shift + L` instead.
 
 ### Alt + Click
 
@@ -205,7 +207,7 @@ In dark mode, cursor and selection colors automatically adjust for visibility.
 
 - **Atom nodes**: Cannot place cursors inside images, embedded content, or math blocks in WYSIWYG mode
 - **IME input**: When using input methods (Chinese, Japanese, etc.), composition only affects the primary cursor
-- **Document-wide**: Selections are scoped to blocks, not the entire document
+- **Code blocks**: Inside a code block (WYSIWYG) or fenced block (Source), occurrence matching never leaves that block
 
 ## Keyboard Reference
 

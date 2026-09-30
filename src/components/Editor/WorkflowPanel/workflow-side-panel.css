@@ -37,9 +37,29 @@
 
 .workflow-side-panel__content {
   flex: 1;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+/* The graph takes what the toolbar leaves, rather than 100% of the panel. */
+.workflow-side-panel__content > .workflow-preview-canvas {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+/* Why Run is off, or how the last run ended (WI-LX2.1). */
+.workflow-side-panel__status {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
 }
 
 .workflow-side-panel__error {

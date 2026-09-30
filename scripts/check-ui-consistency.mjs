@@ -13,6 +13,8 @@
  *   C10  every focusable JSX element resolves to a painting :focus rule, a
  *        Tailwind focus-visible: class, the caret-only marker, or ui-ok(focus)
  *   C11  bar-height literals outside index.css; z-index literals (zero-tol)
+ *   C12  positioned elements at or above --z-bar outside overlay families
+ *        state why they may cover content (ui-ok(float))
  *
  * One comment-stripped CSS rule walk (scripts/lib/uiConsistencyCss.mjs, on the
  * shared cssRules grammar) + one TS-AST walk (scripts/lib/uiConsistencyTsx.mjs).
@@ -29,7 +31,6 @@
  * check-deleted-names.mjs.
  */
 import { readFileSync, writeFileSync, globSync, statSync } from "node:fs";
-import { pathToFileURL } from "node:url";
 import {
   indexTokens,
   checkFontSize,
@@ -38,12 +39,14 @@ import {
   checkTargets,
   checkStateVocabulary,
   checkHeightsAndZ,
+  checkFloatingOverContent,
   focusPaintedClasses,
 } from "./lib/uiConsistencyCss.mjs";
 import { checkIconSizes, collectFocusables } from "./lib/uiConsistencyTsx.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 const BASELINE_PATH = "scripts/ui-consistency-baseline.json";
-const CHECK_KEYS = ["C3", "C4", "C5", "C7", "C8", "C9", "C10", "C11"];
+const CHECK_KEYS = ["C3", "C4", "C5", "C7", "C8", "C9", "C10", "C11", "C12"];
 
 /** The export bundle and generated dirs are outside every UI gate's scope. */
 const EXCLUDED = [/^src\/export\//, /^src\/test\//, /\/generated\//];
@@ -81,6 +84,7 @@ export function runChecks({ cssFiles, tsxFiles, indexCssText, read = (p) => read
     findings.push(...checkTargets(css, file, tokens, ctx));
     findings.push(...checkStateVocabulary(css, file, ctx));
     findings.push(...checkHeightsAndZ(css, file, ctx));
+    findings.push(...checkFloatingOverContent(css, file, tokens, ctx));
     for (const cls of focusPaintedClasses(css)) focusPaint.add(cls);
     for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
       if (/\bsvg\s*$/.test(m[1].trim()) && /(?:^|[;{])\s*width\s*:\s*\d+px/.test(m[2])) {
@@ -162,7 +166,7 @@ export function compareBaseline(findings, baseline) {
   return { newFindings, stale };
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+if (isMainModule(import.meta.url)) {
   const args = process.argv.slice(2);
   const started = Date.now();
   const cssFiles = files("src/**/*.css");

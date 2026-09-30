@@ -28,7 +28,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { globSync, statSync } from "node:fs";
 
-import { pathToFileURL } from "node:url";
 import {
   findColorFnLiterals,
   findDuplicateDeclarations,
@@ -38,6 +37,7 @@ import {
   rule31Parity,
 } from "./lib/designTokenChecks.mjs";
 import { findClassNameLiterals } from "./lib/designTokensTsx.mjs";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 /**
  * CSS custom properties DEFINED from JS in `source`: `setProperty("--x", …)`
@@ -218,7 +218,7 @@ export function readScannedFile(file) {
 // Main guard: this module EXPORTS collectJsDefinedVars for tests, so importing
 // it must not run the checker. Without it the importer's argv leaked in —
 // vitest's "run" was treated as a CSS path and the import threw ENOENT.
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+if (isMainModule(import.meta.url)) {
   const args = process.argv.slice(2);
   const fileArgs = args.filter((a) => !a.startsWith("--"));
   const fixtureMode = fileArgs.length > 0;

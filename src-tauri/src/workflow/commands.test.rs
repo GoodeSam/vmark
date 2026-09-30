@@ -361,6 +361,7 @@ mod through_the_command {
             root(&ws).to_string(),
             None,
             Some("run-a".into()),
+            None,
             app.state(),
         )
         .await
@@ -396,6 +397,7 @@ mod through_the_command {
                 root(&ws).to_string(),
                 None,
                 Some(id.to_string()),
+                None,
                 app.state(),
             )
         };
@@ -428,6 +430,7 @@ mod through_the_command {
             root(&ws).to_string(),
             None,
             Some("../../evil".into()),
+            None,
             app.state(),
         )
         .await
@@ -454,6 +457,7 @@ mod through_the_command {
             root(&ws).to_string(),
             None,
             None,
+            None,
             app.state(),
         )
         .await
@@ -464,6 +468,163 @@ mod through_the_command {
             .state::<WorkflowRunnerState>()
             .running
             .load(Ordering::SeqCst));
+    }
+
+    /// A mock app whose app-data directory is `app_data`, with coherence
+    /// managed. A save-file run snapshots its target under app data first, and
+    /// a test must never write the real one: the resolver JOINS the identifier
+    /// onto the platform data directory, and joining an absolute path yields
+    /// that path.
+    fn mock_app_in(
+        state: WorkflowRunnerState,
+        app_data: &std::path::Path,
+    ) -> tauri::App<tauri::test::MockRuntime> {
+        let mut context = tauri::test::mock_context(tauri::test::noop_assets());
+        context.config_mut().identifier = app_data.to_string_lossy().into_owned();
+        let app = tauri::test::mock_builder()
+            .build(context)
+            .expect("build mock app");
+        app.manage(state);
+        app.manage(crate::coherence::commands::CoherenceState {
+            registry: crate::coherence::state::KernelRegistry::default(),
+            writer: crate::coherence::types::WriterId(uuid::Uuid::from_u128(11)),
+            sweep_in_flight: std::sync::atomic::AtomicBool::new(false),
+        });
+        assert_eq!(
+            app.path().app_data_dir().expect("app data"),
+            app_data,
+            "the redirect must hold, or this test writes real app data"
+        );
+        app
+    }
+
+    /// WI-LX1.4 end to end (#64/#69/#79): the caller's policy reaches the
+    /// save-file capture through the command, the runner and the capture
+    /// layer, judged by what lands on disk rather than by an intermediate
+    /// slot. Omitted and `tracked-only` leave a fresh workspace untouched;
+    /// `adopt` creates the ledger and stamps the output.
+    #[tokio::test]
+    async fn a_save_file_run_captures_under_the_callers_policy_and_omitted_is_off() {
+        use crate::coherence::capture_policy::CapturePolicy;
+        const SAVE: &str = "name: Save\nsteps:\n  - id: save\n    uses: action/save-file\n    with:\n      path: out.md\n      input: generated\n";
+        for (id, policy, adopted) in [
+            ("cap-omitted", None, false),
+            ("cap-tracked", Some(CapturePolicy::TrackedOnly), false),
+            ("cap-adopt", Some(CapturePolicy::Adopt), true),
+        ] {
+            let app_data = tempfile::tempdir().expect("app data");
+            let app = mock_app_in(engine_on(), app_data.path());
+            let ws = workspace();
+
+            run_workflow(
+                app.handle().clone(),
+                SAVE.into(),
+                HashMap::new(),
+                root(&ws).to_string(),
+                None,
+                Some(id.to_string()),
+                policy,
+                app.state(),
+            )
+            .await
+            .expect("a save-file workflow starts");
+            wait_until_idle(&app).await;
+
+            let out = std::fs::read_to_string(ws.path().join("out.md"))
+                .unwrap_or_else(|e| panic!("{id}: the step wrote its file: {e}"));
+            assert_eq!(
+                ws.path().join(".vmark").exists(),
+                adopted,
+                "{id}: the ledger exists only when the caller adopted"
+            );
+            assert_eq!(
+                out.contains("vmark:"),
+                adopted,
+                "{id}: the output is stamped only when the caller adopted: {out:?}"
+            );
+        }
+    }
+
+    /// WI-LX1.1 through the command (#68): a root that CONTAINS the
+    /// workspace-grant list is refused with `permission-denied` — a save-file
+    /// step there could rewrite the list — and the refusal leaves nothing
+    /// claimed or published. `admit_run`'s tests cannot see this check: it
+    /// needs the managed `WorkspaceGrants` with a resolved list file.
+    #[tokio::test]
+    async fn a_root_containing_the_grant_list_is_refused_and_nothing_is_claimed() {
+        let ws = workspace();
+        let app_data = ws.path().join("app-data");
+        std::fs::create_dir(&app_data).expect("app data inside the root");
+        let app = mock_app(engine_on());
+        app.manage(crate::workspace_grants::WorkspaceGrants::default());
+        crate::workspace_grants::restore_from(
+            app.handle(),
+            app_data.join(crate::workspace_grants::GRANTS_FILE),
+            std::time::Duration::from_secs(5),
+        );
+
+        let err = run_workflow(
+            app.handle().clone(),
+            VALID.into(),
+            HashMap::new(),
+            root(&ws).to_string(),
+            None,
+            Some("run-over-the-list".into()),
+            None,
+            app.state(),
+        )
+        .await
+        .expect_err("the root holds the grant list");
+
+        assert_eq!(err.code(), ErrorCode::PermissionDenied);
+        assert_eq!(err.i18n_key(), Some("errors.workspaceAccess.listProtected"));
+        let state = app.state::<WorkflowRunnerState>();
+        assert!(!state.running.load(Ordering::SeqCst), "nothing is claimed");
+        assert!(state.current_execution.lock().unwrap().is_none());
+
+        // The same app still admits a root beside the list, not over it — and
+        // the refused start's id is FREE for that retry (#91): a refusal must
+        // not use up an id no run ever carried.
+        let beside = workspace();
+        run_workflow(
+            app.handle().clone(),
+            VALID.into(),
+            HashMap::new(),
+            root(&beside).to_string(),
+            None,
+            Some("run-over-the-list".into()),
+            None,
+            app.state(),
+        )
+        .await
+        .expect("a root that does not contain the list starts, under the same id");
+        wait_until_idle(&app).await;
+    }
+
+    /// #91 — a refusal AFTER the claim (here, invalid YAML; the canonical root
+    /// check and a failed snapshot take the same path) releases the id with
+    /// the claim, so the corrected retry can reuse it.
+    #[tokio::test]
+    async fn a_start_refused_after_admission_leaves_its_id_free_for_the_retry() {
+        let app = mock_app(engine_on());
+        let ws = workspace();
+        let start = |yaml: &str| {
+            run_workflow(
+                app.handle().clone(),
+                yaml.into(),
+                HashMap::new(),
+                root(&ws).to_string(),
+                None,
+                Some("retry-me".into()),
+                None,
+                app.state(),
+            )
+        };
+        let err = start("name: [unclosed").await.expect_err("invalid YAML");
+        assert_eq!(err.code(), ErrorCode::InvalidInput);
+        let id = start(VALID).await.expect("the same id, now valid, starts");
+        assert_eq!(id, "retry-me");
+        wait_until_idle(&app).await;
     }
 
     /// No caller id: the command mints one, returns it, and it is the id the
@@ -478,6 +639,7 @@ mod through_the_command {
             VALID.into(),
             HashMap::new(),
             root(&ws).to_string(),
+            None,
             None,
             None,
             app.state(),

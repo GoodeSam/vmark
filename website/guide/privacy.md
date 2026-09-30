@@ -99,9 +99,9 @@ An assistant connected over MCP acts only within what you have already opened: i
 
 VMark's file access is a narrow capability scope, not the whole disk:
 
-- **Static scope**: your home folder (`$HOME/**`) plus mounted volumes — `/Volumes/**` on macOS, `/mnt/**` and `/media/**` on Linux. On Windows `$HOME` is `C:\Users\<you>`, so other drive letters are outside the static scope.
-- **Runtime grants**: anything you open explicitly — a file from Finder or Explorer, the `vmark` command line, a file dialog, a workspace on another drive — gets an in-memory grant for exactly that file, or that folder tree for a workspace. Grants are re-issued on every launch (session-restored and recent workspaces go through the same path), so nothing accumulates on disk.
-- **Media previews** get asset access only for files with a media extension; a request for any other path is refused rather than widening the scope.
+- **Static scope**: your home folder (`$HOME/**`) plus mounted volumes — `/Volumes/**` on macOS, `/mnt/**` and `/media/**` on Linux. On Windows it also covers drives `C:\` through `F:\`, so only `G:\` and later drives, and network shares, need a runtime grant. On macOS and Linux, anything inside a hidden folder (one whose name starts with `.`) is outside the static scope.
+- **Runtime grants**: a file you open explicitly — from Finder or Explorer, the `vmark` command line, or a file dialog — gets a grant for exactly that file. A **folder** is granted only when VMark can tell that you chose it: you picked it in VMark's folder dialog, or opened it from Finder. VMark keeps a list of those folders (`workspace-grants.json` in its app data folder) and grants them again at every launch, so your restored session and **Open Recent** keep working. A recent workspace that is not on that list, and that the static scope does not cover, opens the folder dialog at that folder — choose it to confirm. When an AI assistant asks to open such a folder, VMark does the same after you approve the request.
+- **Images and media**: local images, video and audio are shown through VMark's asset protocol, which reaches the same places — the static scope plus the runtime grants above. The media viewer adds a grant for the one file it shows, and only for a file with a media extension; a request for any other path is refused rather than widening the scope. An image outside those places, such as one next to a document you opened on its own from outside the static scope, is not shown until you open its folder as a workspace.
 
 Nothing here is sent anywhere; the scope decides what the app itself may read.
 
@@ -111,7 +111,7 @@ VMark is fully open source. You can verify everything described here:
 
 - Update endpoint configuration: [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json)
 - Machine hash generation: [`src-tauri/src/app_setup.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/app_setup.rs) — search for `machine_id_hash`
-- Filesystem scope: [`src-tauri/capabilities/default.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/capabilities/default.json) and [`src-tauri/src/fs_scope.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/fs_scope.rs)
+- Filesystem and asset scope: [`src-tauri/capabilities/default.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/capabilities/default.json), the `assetProtocol` entry in [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json), [`src-tauri/src/fs_scope.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/fs_scope.rs) and [`src-tauri/src/workspace_grants/`](https://github.com/xiaolai/vmark/tree/main/src-tauri/src/workspace_grants)
 - Keychain storage: [`src-tauri/src/secure_store.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/secure_store.rs)
 - Server-side stats aggregation: [`scripts/vmark-stats-json`](https://github.com/xiaolai/vmark/blob/main/scripts/vmark-stats-json) — the exact script that runs on our server to produce the [public stats](https://log.vmark.app/api/stats)
 - The network call sites are the ones listed above — search the repository for `reqwest` (Rust) and `fetch(` (TypeScript) to check for yourself

@@ -12,21 +12,25 @@ use super::command_errors::{
     classify_write, kernel_poisoned, ledger_unavailable, rejected_argument, workspace_unavailable,
 };
 use super::command_types::{actor_identity, CoherenceStatus, ResolveReceipt, ResolveRequest};
-use super::commands::{perform_breakdown_in, perform_resolve, perform_status, CoherenceState};
+use super::commands::{
+    perform_breakdown_in, perform_head, perform_resolve, perform_status, CoherenceState,
+};
 use crate::command_error::CommandError;
 
-use serde_json::json;
-
-use super::capture::{capture, CaptureReceipt, CaptureRequest};
+use super::capture::{CaptureReceipt, CaptureRequest};
+use super::capture_policy::{capture_with_policy, scan_on_change, CapturePolicy};
 use super::index_query::EdgeRow;
-use super::scan::{scan_workspace, ScanReport};
+use super::scan::ScanReport;
 
+/// `Ok(None)` = declined by `policy` (capture-on-save off and nothing to follow
+/// — see `capture_policy.rs`); nothing was written.
 #[tauri::command]
 pub async fn coherence_capture(
     state: tauri::State<'_, CoherenceState>,
     workspace_root: String,
     request: CaptureRequest,
-) -> Result<CaptureReceipt, CommandError> {
+    policy: CapturePolicy,
+) -> Result<Option<CaptureReceipt>, CommandError> {
     let kernel = state
         .registry
         .kernel_for(std::path::Path::new(&workspace_root), state.writer)
@@ -35,7 +39,8 @@ pub async fn coherence_capture(
     // `capture` validates the REQUEST before any side effect (8R-9: input caps,
     // `confidence=unknown` is scan-only, unknown object), so a rejected argument
     // is the dominant caller-actionable failure.
-    capture(&mut kernel, request).map_err(|e| classify_write(&kernel, rejected_argument, e))
+    capture_with_policy(&mut kernel, request, policy)
+        .map_err(|e| classify_write(&kernel, rejected_argument, e))
 }
 
 #[tauri::command]
@@ -85,15 +90,16 @@ pub async fn coherence_status(
     perform_status(&mut kernel).map_err(ledger_unavailable)
 }
 
-/// Read-time head lookup (audit T5): MCP reads pin the revision that was
-/// actually served, so a later upstream edit cannot be misattributed as
-/// the write's input. Null when the path is not a known single-headed
-/// object.
+/// Read-time head lookup (audit T5) — see `head_pin.rs`. `content` is what the
+/// MCP client was served and `base_content` the saved content an unsaved buffer
+/// was edited from; the revision matching either is pinned.
 #[tauri::command]
 pub async fn coherence_head(
     state: tauri::State<'_, CoherenceState>,
     workspace_root: String,
     path: String,
+    content: Option<String>,
+    base_content: Option<String>,
 ) -> Result<Option<serde_json::Value>, CommandError> {
     let kernel = state
         .registry
@@ -101,27 +107,18 @@ pub async fn coherence_head(
         .map_err(workspace_unavailable)?;
     let kernel = kernel.lock().map_err(|_| kernel_poisoned())?;
     kernel.ensure_available().map_err(ledger_unavailable)?; // 8R-5: never serve a half-rebuilt index
-    let registry = kernel
-        .index()
-        .registry_state()
-        .map_err(ledger_unavailable)?;
-    // An unknown path is NOT an error: `null` is the documented answer for "not
-    // a known single-headed object" (audit T5), and turning it into `not-found`
-    // would make every read of an untracked file look like a failure.
-    let Some(object) = registry.object_at.get(&path) else {
-        return Ok(None);
-    };
-    let heads = kernel.index().heads(object).map_err(ledger_unavailable)?;
-    match heads.as_slice() {
-        [only] => Ok(Some(json!({ "object": object, "revision": only }))),
-        _ => Ok(None),
-    }
+                                                            // An unknown path is NOT an error: `null` is the documented answer for "not
+                                                            // a known object" (audit T5), and turning it into `not-found` would make
+                                                            // every read of an untracked file look like a failure.
+    perform_head(&kernel, &path, content.as_deref(), base_content.as_deref())
+        .map_err(ledger_unavailable)
 }
 
 #[tauri::command]
 pub async fn coherence_scan(
     state: tauri::State<'_, CoherenceState>,
     workspace_root: String,
+    policy: CapturePolicy,
 ) -> Result<ScanReport, CommandError> {
     let kernel = state
         .registry
@@ -131,5 +128,6 @@ pub async fn coherence_scan(
     // A scan walks the workspace and appends its findings; a failure is the
     // environment (unreadable tree, ledger) rather than the caller's argument,
     // which is only a workspace root the registry already accepted.
-    scan_workspace(&mut kernel).map_err(|e| classify_write(&kernel, ledger_unavailable, e))
+    // Watcher-driven, so it obeys the capture-on-save setting (WI-LX1.4).
+    scan_on_change(&mut kernel, policy).map_err(|e| classify_write(&kernel, ledger_unavailable, e))
 }

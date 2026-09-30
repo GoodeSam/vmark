@@ -11,11 +11,20 @@
  * Key decisions:
  *   - Anchor-based compensation: measure the first block intersecting the
  *     viewport before the class flip, re-measure after, and add the delta to
- *     the scroll container's scrollTop. Client rects already reflect any
- *     native scroll-anchoring adjustment the engine made during the forced
- *     layout, so the residual delta is exactly what remains to correct —
- *     self-correcting on Chromium/WebView2, and the whole fix on WebKit,
- *     which has no scroll anchoring at all.
+ *     the scroll container's scrollTop. In the measured toggles (Chromium and
+ *     WebKit) native scroll anchoring had not corrected the anchor by the
+ *     re-measure, so this write is the correction on both engines, and
+ *     landing the anchor first leaves the engine nothing to redo.
+ *   - The write is only as good as the layout it is measured in, and a
+ *     scrollTop that layout cannot hold is clamped. The re-add measures a
+ *     layout in which every block the engine has not yet found relevant is
+ *     skipped at its `contain-intrinsic-size`, until the engine's next
+ *     rendering update. At bare 2.5em estimates that layout was far too short
+ *     near the document's end, the write clamped, and the view moved by
+ *     hundreds of pixels (#1472). editor.css keeps the sizing rule on outside
+ *     `.cv-idle` for as long as `.cv-enabled` marks the editor, so a block
+ *     skipped again comes back at the size it last rendered at and the re-add
+ *     measures only what changed since.
  *   - The anchor search early-exits at the first block whose bottom clears
  *     the scroller's top edge — O(blocks above the viewport), so a full walk
  *     happens only with the reader at the document's very end. Each visited
@@ -36,6 +45,7 @@
  *
  * @coordinates-with tiptapEditorHelpers.ts — suppressCvIdleDuringEdit wraps
  *   both of its class toggles (the edit-time strip and the idle re-add) here
+ * @coordinates-with editor.css — the content-visibility and sizing rules
  * @module components/Editor/cvIdleViewportLock
  */
 import { findScrollContainer } from "@/services/editor/scrollPosition";
@@ -52,8 +62,8 @@ export function setCvIdlePreservingViewport(container: HTMLElement, enabled: boo
   container.classList.toggle("cv-idle", enabled);
 
   if (!scroller || !anchor) return;
-  // Reading the rect here forces the layout the class flip invalidated, so
-  // the delta is measured against settled geometry.
+  // Reading the rect here forces the layout the class flip invalidated; on
+  // the re-add that is the pre-relevance layout the header describes.
   const delta = anchor.getBoundingClientRect().top - beforeTop;
   if (delta !== 0) scroller.scrollTop += delta;
 }

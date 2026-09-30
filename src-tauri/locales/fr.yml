@@ -299,6 +299,13 @@ errors:
   workflow.noPendingApproval: "Aucune demande d'approbation en attente ne correspond"
   workflow.appDataDirUnavailable: "Impossible de résoudre le répertoire de données de l'application : %{detail}"
   workflow.snapshotFailed: "Impossible de sauvegarder les fichiers que ce flux de travail va modifier ; il n’a donc pas été exécuté : %{detail}"
+  workflow.snapshotNotFound: "Cet instantané de flux de travail n’existe plus"
+  workflow.snapshotUnreadable: "Impossible de lire l’enregistrement de l’instantané du flux de travail : %{detail}"
+  workflow.snapshotNoWorkspace: "Cet instantané a été créé par une version antérieure de VMark et ne peut pas être restauré"
+  workflow.snapshotWorkspaceMissing: "Le dossier auquel appartient cet instantané n’existe plus : %{path}"
+  workflow.snapshotListFailed: "Impossible de lister les instantanés de flux de travail : %{detail}"
+  workflow.restoreWhileRunning: "Un flux de travail est en cours. Attendez qu’il se termine ou annulez-le avant de restaurer des fichiers."
+  workflow.restoreSuperseded: "Un autre flux de travail s’est exécuté depuis cet instantané ; le restaurer pourrait annuler ses modifications. Rien n’a été restauré."
 
   # === Chemin d'enregistrement (file_write.rs, WI-14 CommandError) ===
   save.parentMissing: "Le dossier de ce fichier n'existe plus : %{dir}"
@@ -404,6 +411,17 @@ errors:
 
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "L’accès au trousseau a été refusé. Autorisez VMark dans l’invite du trousseau ou accordez-lui l’accès dans Trousseaux d’accès, puis réessayez."
+
+  # === Autorisations des espaces de travail (workspace_grants/commands.rs, WI-LX1.1) ===
+  workspaceAccess.notGranted: "VMark n’a pas accès à « %{path} ». Choisissez le dossier avec Fichier → Ouvrir un espace de travail... pour l’autoriser."
+  workspaceAccess.pickerBusy: "Une boîte de dialogue de dossier est déjà ouverte"
+  workspaceAccess.checkBusy: "VMark vérifie encore l’accès à ce dossier. Réessayez dans un instant"
+  workspaceAccess.listProtected: "Seul VMark peut modifier sa liste des dossiers qu’il est autorisé à ouvrir"
+
+# WI-LX1.1 — the folder picker Rust shows for workspace access
+workspaceAccess:
+  pickTitle: "Ouvrir le dossier de l’espace de travail"
+  confirmTitle: "Autoriser VMark à ouvrir ce dossier"
 
 window:
   settings.title: "Réglages"

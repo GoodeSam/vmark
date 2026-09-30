@@ -12,7 +12,7 @@
   "genies.togglePicker": "切换 Genies 选择器",
   "genies.openPicker": "搜索 Genies",
   "export.html": "导出为 HTML",
-  "export.pdf": "打印为 PDF",
+  "export.pdf": "打印…",
   "export.pdfNative": "导出为 PDF",
   "export.copyHtml": "复制为 HTML",
   "export.pandocHint": "安装 Pandoc",

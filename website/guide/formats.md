@@ -59,8 +59,8 @@ no toggle appears.
 Open a picture, video, or audio file and VMark shows it inline — like Quick
 Look in Finder. Two ways to preview:
 
-- **Open it** (double-click / Enter in the file explorer, `Cmd+O`, or drag-in)
-  to view it in a tab.
+- **Open it** (click it in the file explorer, use **File → Open File…**, or
+  drag it in) to view it in a tab.
 - **Quick Look**: select a file in the explorer and press **Space** for a
   full-window preview overlay. Press **Space**, **Esc**, or click the backdrop
   to close.
@@ -149,7 +149,7 @@ Overrides are remembered per file family (by extension, or by dotfile stem for f
 
 ## Find, save, content search
 
-- **Cmd+O** filters: a single "All Supported" preset covering every registered format. Save-As filters and the default save extension are derived from the active tab's format adapter, so saving a `.toml` file proposes `.toml` as the extension.
+- **File → Open File…** offers two filters: **All Supported** (every registered format) and **Markdown**. The item has no default shortcut — `Mod + O` is Quick Open — but you can assign one in **Settings → Shortcuts**. Save-As filters and the default save extension are derived from the active tab's format adapter, so saving a `.toml` file proposes `.toml` as the extension.
 - **Drag-drop** accepts any registered extension.
 - **Save As** filters and the default extension on save are derived from the active tab's format adapter.
 - **Cmd+Shift+H** content search ("Find in Files") indexes every text-like format (markdown, txt, json, yaml, toml, html, svg, mermaid). Code files are excluded by default — they're code-viewer mode.
@@ -162,7 +162,9 @@ Per ADR-4 in the multi-format plan, HTML preview rests on three independent laye
 2. **DOMPurify sanitization** runs first — strips `<script>`, `javascript:` URLs, inline event handlers, base-href tricks.
 3. **CSP `<meta>` injection** — `default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; base-uri 'none';` — restricts in-iframe resource loading.
 
-The validator surfaces script tags, `javascript:` URLs, and inline event handlers as warnings so you can see what's being blocked.
+The validator surfaces script tags, `javascript:` URLs, and inline event handlers as warnings so you can see what's being blocked. Once you [trust the file](#trusted-html-preview-opt-in) they are shown as information instead, so nothing contradicts the trusted banner. Two messages say what the preview never allows, trusted or not: an external script (`<script src="…">`) is never loaded, since no script comes from a file or URL, and a `javascript:` link aimed at another window or the top page (`target="_top"`, `_blank`, or a `<base target>`) never navigates, since the preview cannot leave itself. Detection reads the page's tags approximately; it labels findings and never decides what runs — the sandbox does.
+
+The formal security sign-off for this preview is still pending, and the preview says so in a notice above the rendered page: **HTML preview is sandboxed but pending OWASP sign-off**. The three layers above are in place; the outstanding step is confirming them against the OWASP XSS payloads inside the running app's webview.
 
 ### Trusted HTML preview (opt-in)
 

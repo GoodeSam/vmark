@@ -14,7 +14,7 @@
   "actions.retire": "Retire",
   "actions.hide": "Hide",
   "actions.show": "Show",
-  "promoteTitle": "Promote to established — only established claims can constrain (D4)",
+  "promoteTitle": "Promote to established — only established claims can constrain",
   "correctPlaceholder": "Corrected statement",
   "correctConfirm": "Confirm correction",
   "create.heading": "New claim from selection",

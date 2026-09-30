@@ -8,9 +8,34 @@ import {
   IMAGE_EXTENSIONS_DOTTED,
   fileExtension,
 } from "./mediaExtensions";
+import MEDIA from "./mediaExtensions.json";
 import { hasImageExtension } from "./imagePathDetection";
 import { isImageFile } from "./imageUtils";
 import { getMediaType, hasVideoExtension } from "./mediaPathDetection";
+
+describe("the shared data file both TypeScript and Rust read", () => {
+  // src-tauri/src/asset_access.rs embeds this SAME file with include_str! and
+  // applies the same rules, so a format added here is grantable there — there
+  // is no second list to keep in step.
+  it("holds exactly the three kinds, each a list of lowercase bare extensions", () => {
+    expect(Object.keys(MEDIA).sort()).toEqual(["audio", "image", "video"]);
+    for (const [kind, list] of Object.entries(MEDIA)) {
+      expect(list.length, kind).toBeGreaterThan(0);
+      for (const ext of list) expect(ext, `${kind}: ${ext}`).toMatch(/^[a-z0-9]+$/);
+    }
+  });
+
+  it("names no extension twice, within a kind or across kinds", () => {
+    const all = [...MEDIA.image, ...MEDIA.video, ...MEDIA.audio];
+    expect(new Set(all).size).toBe(all.length);
+  });
+
+  it("is what the module exports", () => {
+    expect([...IMAGE_EXTENSIONS]).toEqual(MEDIA.image);
+    expect([...VIDEO_EXTENSIONS]).toEqual(MEDIA.video);
+    expect([...AUDIO_EXTENSIONS]).toEqual(MEDIA.audio);
+  });
+});
 
 describe("mediaExtensions canonical sets", () => {
   it("IMAGE is the agreed union, broadened for the media viewer", () => {

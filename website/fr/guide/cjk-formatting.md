@@ -4,9 +4,9 @@ VMark inclut un ensemble complet de règles de mise en forme pour les textes chi
 
 ## Démarrage rapide
 
-Utilisez **Format → Formater le document CJK** ou appuyez sur `Alt + Mod + Shift + F` pour formater l'intégralité du document.
+Utilisez **Format → CJK → Mettre en forme le fichier entier** ou appuyez sur `Alt + Mod + Shift + F` pour formater l'intégralité du document.
 
-`Mod + Shift + F` met en forme **les blocs que votre sélection recouvre** — le paragraphe, la liste ou le tableau entier que le curseur ou la sélection touche, et non les caractères exactement sélectionnés. L'espacement CJK est une propriété de la frontière *entre* deux caractères adjacents, et une sélection à mi-mot ne contient aucune frontière de ce type ; la commande désigne donc une région à corriger plutôt qu'un texte à réécrire. Sans sélection, elle met en forme le bloc où se trouve le curseur.
+**Format → CJK → Mettre en forme la sélection** (`Mod + Shift + F`) met en forme **les blocs que votre sélection recouvre** — le paragraphe, la liste ou le tableau entier que le curseur ou la sélection touche, et non les caractères exactement sélectionnés. L'espacement CJK est une propriété de la frontière *entre* deux caractères adjacents, et une sélection à mi-mot ne contient aucune frontière de ce type ; la commande désigne donc une région à corriger plutôt qu'un texte à réécrire. Sans sélection, elle met en forme le bloc où se trouve le curseur.
 
 Les deux commandes protègent exactement les mêmes éléments (voir « Contenu protégé »), donc tout sélectionner avant `Mod + Shift + F` est sans risque.
 
@@ -119,12 +119,19 @@ Limite les signes de ponctuation consécutifs (limite configurable).
 
 Le contenu suivant **n'est pas** affecté par la mise en forme :
 
-- Blocs de code (```)
+- Blocs de code (```) — y compris une clôture **non fermée**, qui s'étend jusqu'à la fin du document, comme le prévoit CommonMark
 - Code en ligne (`)
 - URL des liens
 - Chemins d'images
 - Balises HTML
-- Frontmatter YAML
+- Frontmatter — aussi bien YAML (`---`) que TOML (`+++`)
+- Mathématiques en ligne (`$…$`), détectées selon la même règle que le moteur de rendu de VMark, de sorte qu'une paire de montants comme `价格是 $100 和 $200 元` n'est *pas* prise pour des mathématiques
+- Mathématiques en bloc (`$$…$$`)
+- Blocs de code indentés
+- Liens wiki (`[[target]]`, `[[target|display]]`)
+- Marqueurs de notes de bas de page — les références comme `[^1]` et l'étiquette `[^1]:` d'une définition (le texte de la définition elle-même est mis en forme)
+- Références de caractères HTML (`&amp;`, `&#x5176;`)
+- Séparateurs thématiques (`---`, `***`)
 - Ponctuation échappée par barre oblique inverse (ex. `\,` reste `,`)
 
 ### Constructions techniques
@@ -164,13 +171,13 @@ Préfixez n'importe quelle ponctuation avec `\` pour empêcher la conversion :
 
 Lorsque le [serveur MCP](/fr/guide/mcp-setup) est connecté, les assistants IA peuvent appliquer la mise en forme CJK de manière programmatique via l'outil `document.transform` avec l'une des trois valeurs `kind`&nbsp;:
 
-- `"cjk-format"` — normalisation CJK complète (espacement + ponctuation + guillemets intelligents selon vos paramètres)
-- `"cjk-spacing"` — ajuste uniquement les espaces autour des frontières CJK ↔ Latin/chiffres
-- `"cjk-punctuation"` — convertit la ponctuation entre pleine largeur et demi-largeur selon les règles
+- `"cjk-format"` — normalisation CJK complète (espacement + ponctuation + guillemets intelligents), le même formateur que celui qu'exécute la commande de menu, selon vos paramètres dans Paramètres → Langue
+- `"cjk-spacing"` — insère une espace partout où un caractère CJK rencontre une lettre latine ou un chiffre, et rien d'autre
+- `"cjk-punctuation"` — convertit les caractères demi-largeur `,` `.` `!` `?` `;` `:` `(` `)` voisins d'un caractère CJK en leur forme pleine largeur ; il ne convertit jamais la pleine largeur en demi-largeur
 
-Chaque transformation fait passer le document actif par un aller-retour sérialisation-formatage-analyse afin de préserver les marques en ligne (gras, liens, maths, etc.) et de respecter vos règles de mise en forme configurées.
+Seul `cjk-format` lit vos paramètres de mise en forme. `cjk-spacing` et `cjk-punctuation` sont des règles fixes qui les ignorent et, contrairement au formateur, traitent aussi le hangeul coréen comme du CJK. Les trois opèrent sur la source markdown du document et laissent le [contenu protégé](#contenu-protege) intact.
 
-Consultez la [Référence des outils MCP](/fr/guide/mcp-tools#document-tool) pour la forme complète de la requête — `document.transform` prend `tabId`, `kind` et un `expected_revision` pour la concurrence optimiste.
+Consultez la [Référence des outils MCP](/fr/guide/mcp-tools#transform) pour la forme complète de la requête — `document.transform` prend `tabId`, `kind` et un `expected_revision` pour la concurrence optimiste.
 
 ## Configuration
 
@@ -278,7 +285,7 @@ Les apostrophes dans les contractions (comme « it's » ou « don't ») sont cor
 
 ### Basculer le style de guillemets au curseur
 
-Vous pouvez rapidement basculer le style de guillemets des guillemets existants sans reformater l'intégralité du document. Placez votre curseur à l'intérieur d'une paire de guillemets et appuyez sur `Shift + Mod + '` pour basculer.
+Vous pouvez rapidement basculer le style de guillemets des guillemets existants sans reformater l'intégralité du document. Placez votre curseur à l'intérieur d'une paire de guillemets et appuyez sur `Shift + Mod + '` pour basculer. Cela ne fonctionne qu'en mode WYSIWYG ; le mode Source n'a pas de bascule des guillemets.
 
 **Mode simple** (par défaut) : Bascule entre les guillemets droits et votre style préféré.
 

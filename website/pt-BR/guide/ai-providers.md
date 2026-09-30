@@ -68,15 +68,15 @@ Quando você seleciona um provedor REST, três campos aparecem:
 
 ### Preenchimento Automático de Variáveis de Ambiente
 
-O VMark lê variáveis de ambiente padrão ao iniciar. Se `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` ou `GEMINI_API_KEY` estiver definida no seu perfil de shell, o campo de chave de API é preenchido automaticamente ao selecionar esse provedor.
+O VMark lê variáveis de ambiente padrão do ambiente do próprio processo. Se `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` ou `GOOGLE_API_KEY` / `GEMINI_API_KEY` (verificadas nessa ordem) estiver definida, o campo de chave de API é preenchido automaticamente ao selecionar esse provedor.
 
-Isso significa que você pode definir sua chave uma vez em `~/.zshrc` ou `~/.bashrc`:
+Quais variáveis o VMark enxerga depende de como ele foi iniciado. Uma chave exportada em um perfil de shell como `~/.zshrc` ou `~/.bashrc`:
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-Depois reinicie o VMark — sem necessidade de entrada manual de chave.
+só chega ao VMark quando você abre o aplicativo a partir desse shell. Iniciado pelo Dock, pelo Finder, pelo Spotlight ou por um lançador da área de trabalho, o VMark não lê seu perfil de shell, então o campo fica vazio — cole a chave. No Windows, uma variável de ambiente de usuário ou de sistema funciona independentemente de como o VMark é iniciado.
 
 ### Configuração: Anthropic (REST)
 

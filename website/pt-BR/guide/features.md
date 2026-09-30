@@ -71,9 +71,17 @@ Edite vários locais simultaneamente — o VMark suporta múltiplos cursores com
 | Desfazer último cursor | `Alt + Mod + Z` |
 | Colapsar para cursor único | `Escape` |
 
-Toda a edição padrão (digitação, exclusão, área de transferência, navegação) funciona em cada cursor independentemente. Com escopo de bloco por padrão para evitar edições não intencionais entre seções.
+Toda a edição padrão (digitação, exclusão, área de transferência, navegação) funciona em cada cursor independentemente. Na prosa, `Mod + D` e `Mod + Shift + L` pesquisam o documento inteiro; dentro de um bloco de código, ficam restritos a esse bloco. `Alt + Mod + Shift + L` seleciona todas as correspondências apenas no bloco atual.
 
 [Saiba mais →](/pt-BR/guide/multi-cursor)
+
+## Selecionar Tudo Inteligente
+
+No modo WYSIWYG, `Mod + A` expande a seleção um contêiner por vez em vez de saltar direto para o documento inteiro: dentro de uma tabela, seleciona a célula, depois a linha, depois a tabela e, por fim, o documento. `Mod + Z` desfaz uma expansão e `Escape` reduz a seleção a um cursor.
+
+No modo Fonte, `Mod + A` primeiro seleciona o bloco que envolve o cursor — um bloco de código delimitado, uma tabela, uma citação ou uma lista — e depois o documento inteiro; ali também `Mod + Z` desfaz uma expansão.
+
+Esse atalho pertence ao editor e não é personalizável.
 
 ## Auto-Par e Escape de Tab
 
@@ -140,8 +148,10 @@ Manipulação poderosa de linhas via Editar → Linhas:
 | Excluir Linha | `Mod + Shift + K` |
 | Unir Linhas | `Mod + J` |
 | Remover Linhas em Branco | — |
-| Ordenar Linhas Crescente | `F4` |
-| Ordenar Linhas Decrescente | `Shift + F4` |
+| Ordenar Linhas Crescente | `F4` _(somente no modo Fonte)_ |
+| Ordenar Linhas Decrescente | `Shift + F4` _(somente no modo Fonte)_ |
+
+A ordenação trabalha com linhas de texto simples, por isso está disponível apenas no modo Fonte.
 
 ## Tabelas
 
@@ -152,7 +162,7 @@ Edição completa de tabelas:
 - Alinhamento de células (esquerda, centro, direita)
 - Redimensionar colunas arrastando
 - Barra de ferramentas contextual para ações rápidas
-- Navegação por teclado (Tab, setas, Enter)
+- Navegação por teclado — `Tab` / `Shift + Tab` movem entre as células, as setas saem da tabela nas bordas e `Mod + Enter` / `Mod + Shift + Enter` adicionam uma linha abaixo / acima
 
 ## Imagens
 
@@ -240,6 +250,15 @@ Renderize SVG bruto inline via blocos de código ` ```svg `:
 - Ideal para gráficos gerados por IA e ilustrações personalizadas
 - [Saiba mais →](/pt-BR/guide/svg)
 
+### Sumário Inline
+
+Digite `[TOC]` sozinho em uma linha, ou escolha **Inserir → Sumário**, para inserir um sumário dinâmico (o item de menu não tem atalho padrão; atribua um em Configurações → Atalhos):
+
+- Gerado automaticamente a partir dos títulos do documento, com o aninhamento correto
+- Clique em qualquer título para rolar diretamente até ele
+- Atualiza em tempo real enquanto você edita
+- Renderiza no WYSIWYG e na exportação (HTML/PDF), e o modo Fonte preserva o conteúdo sem perdas
+
 ## Gênios de IA
 
 Assistência de escrita com IA integrada com base no seu provedor escolhido:
@@ -253,7 +272,7 @@ Assistência de escrita com IA integrada com base no seu provedor escolhido:
 
 ## Pesquisar e Substituir
 
-Abra a barra de pesquisa com `Mod + F`. Ela aparece inline na parte superior da área do editor e funciona nos modos WYSIWYG e Fonte.
+Abra a barra de pesquisa com `Mod + F`. Ela abre na barra da parte inferior da janela e funciona nos modos WYSIWYG e Fonte.
 
 **Navegação:**
 
@@ -272,7 +291,7 @@ Abra a barra de pesquisa com `Mod + F`. Ela aparece inline na parte superior da 
 
 **Substituir:**
 
-Clique no chevron de expansão na barra de pesquisa para revelar a linha de substituição. Digite o texto de substituição, então use **Substituir** (única correspondência) ou **Substituir Tudo** (todas as correspondências de uma vez). O contador de correspondências exibe a posição atual e o total (por exemplo, "3 de 12") para que você sempre saiba onde está.
+O campo de substituição fica ao lado do campo de pesquisa — ambos estão sempre visíveis, e `Tab` passa de um para o outro. Digite o texto de substituição, então use **Substituir** (única correspondência) ou **Substituir Tudo** (todas as correspondências de uma vez). O contador de correspondências exibe a posição atual e o total (por exemplo, "3 de 12") para que você sempre saiba onde está.
 
 ## Lint de Markdown
 
@@ -303,7 +322,7 @@ Ao executar uma verificação lint, diagnósticos aparecem como destaques inline
 - Blocos de código delimitados não fechados
 - Links de fragmento quebrados (`#ancora` que não corresponde a nenhum título)
 
-Os resultados do lint são efêmeros e limpos quando você edita o documento. Execute a verificação novamente a qualquer momento com `Alt + Mod + V`.
+Os resultados do lint não são atualizados enquanto você digita. No modo Fonte, uma edição os limpa. No modo WYSIWYG, uma edição remove os destaques, mas a contagem de problemas na barra de status e os alvos de `F2` / `Shift + F2` permanecem da última execução até você executar a verificação novamente ou fechar a aba. Execute a verificação novamente a qualquer momento com `Alt + Mod + V`.
 
 ## Barra de Ferramentas Universal
 
@@ -361,7 +380,7 @@ Ferramentas de formatação de texto em Chinês/Japonês/Coreano integradas:
 O VMark salva automaticamente snapshots dos seus documentos para que você possa recuperar versões anteriores.
 
 - **Salvamento automático** com intervalo configurável captura snapshots em segundo plano
-- **Histórico por documento** armazenado localmente em formato JSONL
+- **Histórico por documento** armazenado localmente na pasta de dados do aplicativo do VMark — um arquivo de índice mais um arquivo Markdown por snapshot
 - Abra a barra lateral de Histórico com `Ctrl + Shift + 3` para navegar por versões anteriores
 - Os snapshots são **agrupados por dia** com carimbos de data/hora mostrando o momento exato de cada versão salva
 - **Restaure** uma versão anterior clicando no botão de restaurar ao lado de qualquer snapshot (um diálogo de confirmação previne reversões acidentais)
@@ -372,9 +391,9 @@ O VMark salva automaticamente snapshots dos seus documentos para que você possa
 
 ## Recuperação de Sessão (Hot Exit)
 
-Quando você sai do VMark ou ele fecha inesperadamente, sua sessão é preservada e restaurada no próximo lançamento.
+Quando o VMark reinicia para instalar uma atualização, ou fecha inesperadamente, seu trabalho é preservado e restaurado no próximo lançamento.
 
-**O que é salvo:**
+**O que uma reinicialização para atualização salva:**
 - Todas as abas abertas e seu conteúdo (incluindo alterações não salvas)
 - Posições do cursor e histórico de desfazer/refazer
 - Layout da interface: estado da barra lateral, visibilidade do esquema, modo fonte/foco/máquina de escrever, estado do terminal
@@ -382,10 +401,11 @@ Quando você sai do VMark ou ele fecha inesperadamente, sua sessão é preservad
 - Área de trabalho ativa e configurações do explorador de arquivos
 
 **Como funciona:**
-- Ao sair, o VMark captura o estado completo da sessão de todas as janelas
+- Quando você escolhe reiniciar e instalar uma atualização, o VMark primeiro captura o estado completo da sessão de todas as janelas
 - Ao relançar, as abas são restauradas exatamente como você as deixou, com documentos modificados (não salvos) marcados adequadamente
-- A recuperação de falhas é executada automaticamente após uma saída inesperada, restaurando documentos a partir de snapshots de recuperação periódicos
+- As alterações não salvas também são gravadas em snapshots de recuperação a cada 10 segundos. Após uma saída inesperada, o VMark as restaura no próximo lançamento como abas não salvas
 - Snapshots de recuperação com mais de 7 dias são limpos automaticamente
+- Um encerramento comum não captura a sessão: o VMark pede que você salve primeiro os documentos não salvos. As abas abertas de uma área de trabalho ainda voltam na próxima vez que você a abrir (veja [Restauração de Sessão](/pt-BR/guide/workspace-management#restauracao-de-sessao))
 
 Nenhuma configuração necessária. A recuperação de sessão está sempre ativa.
 
@@ -445,9 +465,9 @@ O VMark inclui utilitários para limpeza e formatação de texto, disponíveis n
 
 Ferramentas de formatação de texto em Chinês/Japonês/Coreano integradas. [Saiba mais →](/pt-BR/guide/cjk-formatting)
 
-### Limpeza de Imagens (Arquivo → Limpar Imagens Não Utilizadas)
+### Limpeza de Imagens (Formatar → Limpeza de texto → Limpar imagens não utilizadas...)
 
-Encontre e remova imagens órfãs da sua pasta de ativos.
+Encontre e remova imagens órfãs da sua pasta de ativos (também disponível na paleta de comandos). O VMark mostra o que encontrou e pergunta antes de excluir, e as imagens excluídas vão para a lixeira do sistema. Uma imagem que qualquer documento aberto ainda usa — incluindo alterações não salvas em outra janela do VMark — é mantida. Se o VMark não conseguir confirmar que uma imagem não é usada (por exemplo, outra janela não responde a tempo), ele não exclui nada.
 
 ## Terminal Integrado
 
@@ -471,6 +491,11 @@ O VMark verifica atualizações automaticamente e pode baixar e instalar dentro 
 
 [Saiba mais →](/pt-BR/guide/workspace-management)
 
+## Coerência, Base de Conhecimento e Slidev
+
+- **Coerência e visão de Detalhamento** — o rastreamento de proveniência, opcional, registra quais documentos cada geração de IA leu, sinaliza documentos derivados quando um documento de origem muda e acrescenta verificações semânticas, afirmações canônicas e contextos. Abra-o em **Janela → Detalhamento de coerência**. [Saiba mais →](/pt-BR/guide/coherence)
+- **Base de conhecimento** — serve uma área de trabalho aberta como um site com links cruzados (links wiki, backlinks, grafo de relações, pesquisa de texto completo) em `127.0.0.1`, em um painel (`Ctrl + Shift + 4`) ou no seu navegador, e pré-visualiza e exporta apresentações Slidev. Nenhuma versão de lançamento inclui ainda o runtime do servidor de conteúdo de que ela precisa, por isso o painel, seu item de menu, o comando da paleta e o atalho ficam ocultos, a menos que **Configurações → Avançado → Ferramentas de desenvolvedor** esteja ativado. [Saiba mais →](/pt-BR/guide/knowledge-base)
+
 ## Personalização
 
 ### Temas
@@ -490,6 +515,8 @@ Configure fontes separadas para:
 - Texto Latin
 - Texto CJK (Chinês/Japonês/Coreano)
 - Monoespaçado (código)
+
+Cada seletor oferece uma lista curta de fontes recomendadas, as fontes instaladas no seu computador e uma entrada **Personalizada…** onde você digita o nome de qualquer família de fontes. [Detalhes →](/pt-BR/guide/settings#tipografia)
 
 ### Layout
 

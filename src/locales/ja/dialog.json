@@ -211,7 +211,6 @@
   "common.pin": "ピン留め",
   "common.pinTooltip": "この通知を開いたままにする",
   "common.unpinTooltip": "ピン留め中 — 手動で閉じる",
-  "openWorkspaceFolder.title": "ワークスペースフォルダーを開く",
   "openWorkspace.approval.title": "フォルダをワークスペースとして開きますか?",
   "openWorkspace.approval.body": "AI アシスタントがこのフォルダをワークスペースとして開く許可を求めています。許可するとフォルダのファイルツリーへのアクセスを与えることになります:",
   "openWorkspace.approval.approve": "ワークスペースを開く",
@@ -262,5 +261,15 @@
   "error.title": "エラー",
   "error.saveMediaFailed": "メディアファイルの保存に失敗しました: {{error}}",
   "resetShortcuts.title": "ショートカットをリセット",
-  "resetSettings.title": "設定をリセット"
+  "resetSettings.title": "設定をリセット",
+  "exportError.lockBusy": "別のエクスポートがすでに {{destination}} に書き込んでいます。他にエクスポートが実行されていない場合は、{{lock}} を削除してからもう一度お試しください。",
+  "exportError.takenOver": "{{destination}} へのエクスポートは公開されませんでした。実行中に別のエクスポートがフォルダーを引き継ぎました。書き出し先は何も変更されていません。",
+  "exportError.notAFile": "{{path}} はフォルダーであり、このエクスポートが置き換えられるファイルではありません。移動するか名前を変更するか、別のフォルダーにエクスポートしてください。",
+  "exportError.publishFailed": "{{destination}} へのエクスポートを公開できませんでした：{{reason}}。{{rollback}}",
+  "exportError.rollbackFilesNotRestored": "次のファイルを復元できませんでした：{{files}}。",
+  "exportError.rollbackFoldersLeft": "ファイルは復元されましたが、エクスポートが作成した次のフォルダーが残っています：{{folders}}。",
+  "exportError.rollbackRestored": "それ以外は何も変更されていません。フォルダーは以前の内容に復元されました。",
+  "exportError.backupKeptAt": "{{path}}（以前の内容は {{backup}} に保管されています：{{reason}}）",
+  "exportError.backupGone": "{{path}}（{{backup}} のバックアップも失われています：{{reason}}）",
+  "exportError.listItem": "「{{item}}」"
 }

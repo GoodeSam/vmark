@@ -10,6 +10,7 @@
  *   - Click selects the image node, double-click opens the image editing popup
  *   - Right-click and click ask the HOST to open chrome, through `hostPopups`,
  *     rather than reaching the app's popup stores (ADR-015)
+ *   - `decoding = "async"`, as block images: decode off the main thread
  *
  * @coordinates-with imageView/resolveSrc.ts — src → asset URL, and its tests
  * @coordinates-with plugins/shared/hostPopups.ts — the chrome seam
@@ -52,6 +53,7 @@ export class ImageNodeView implements NodeView {
     // This simplifies DOM structure and helps with selection behavior
     this.dom = document.createElement("img");
     this.dom.className = "inline-image";
+    this.dom.decoding = "async"; // decode off the main thread, as block images do
     this.dom.alt = node.attrs.alt ?? "";
     this.dom.title = node.attrs.title ?? "";
 

@@ -20,7 +20,7 @@
 // source. The split fraction is held in component state and clamped to
 // [0.2, 0.8].
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { SourcePane } from "./SourcePane";
@@ -28,9 +28,12 @@ import { usePreviewModel } from "./usePreviewModel";
 import { ReadOnlyBanner } from "./ReadOnlyBanner";
 import { ValidationGutter } from "./ValidationGutter";
 import { ViewModeToggle } from "./ViewModeToggle";
+import { SplitPaneFrame } from "./SplitPaneFrame";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useHtmlTrustStore } from "@/stores/htmlTrustStore";
+import { presentDiagnostics } from "@/lib/formats/diagnosticPresentation";
 import { imeToast as toast } from "@/services/ime/imeToast";
 import {
   isSplitViewMode,
@@ -38,7 +41,6 @@ import {
   type SplitViewMode,
   type ValidationDiagnostic,
 } from "@/lib/formats/types";
-import "./split-pane-editor.css";
 import { errorMessage } from "@/utils/errorMessage";
 
 export interface SplitPaneEditorProps {
@@ -93,6 +95,14 @@ export function SplitPaneEditor({ tabId, formatConfig }: SplitPaneEditorProps) {
   );
   const filePath = useDocumentStore(
     (state) => state.documents?.[tabId]?.filePath ?? null,
+  );
+  // The list presents findings through the same trust-aware mapping as
+  // CodeMirror's lint (lib/formats/diagnosticPresentation.ts); grant and path
+  // are both reactive, so Save As re-presents them too.
+  const trusted = useHtmlTrustStore((s) => s.tokenFor(filePath) !== null);
+  const shownDiagnostics = useMemo(
+    () => presentDiagnostics(diagnostics, formatConfig.infoWhenTrusted, trusted),
+    [diagnostics, formatConfig.infoWhenTrusted, trusted],
   );
   // WI-1A.13 — an explicit schema choice (set via setTabActiveSchemaId, and
   // restored verbatim by hot-exit so the pick survives a restart) outranks the
@@ -191,45 +201,35 @@ export function SplitPaneEditor({ tabId, formatConfig }: SplitPaneEditorProps) {
   }, [filePath]);
 
   return (
-    <div
-      className="split-pane-editor"
-      role="group"
-      aria-label={t("splitPane.editorLabel", { format: formatConfig.id })}
-      data-format-id={formatConfig.id}
-      style={
-        {
-          // The CSS pairs `flex-grow: var(--f)` on the source with
-          // `flex-grow: calc(1 - var(--f))` on the preview, both with
-          // `flex-basis: 0`. A single-pane mode must therefore hand the whole
-          // share to the mounted pane: 1 when only the source shows, 0 when
-          // only the preview shows (1 would give the preview grow: 0 → a
-          // zero-width, invisible preview).
-          "--split-pane-source-fraction": String(
-            showResizeHandle ? fraction : showSource ? 1 : 0,
-          ),
-        } as React.CSSProperties
+    <SplitPaneFrame
+      ariaLabel={t("splitPane.editorLabel", { format: formatConfig.id })}
+      formatId={formatConfig.id}
+      // The CSS pairs `flex-grow: var(--f)` on the source with
+      // `flex-grow: calc(1 - var(--f))` on the preview, both with
+      // `flex-basis: 0`. A single-pane mode must therefore hand the whole
+      // share to the mounted pane: 1 when only the source shows, 0 when
+      // only the preview shows (1 would give the preview grow: 0 → a
+      // zero-width, invisible preview).
+      sourceFraction={showResizeHandle ? fraction : showSource ? 1 : 0}
+      banner={
+        showReadOnlyBanner ? (
+          <ReadOnlyBanner
+            formatNameI18nKey={formatConfig.nameI18nKey}
+            onEnableEditing={() =>
+              useTabStore.getState().setTabEditingEnabled(tabId, true)
+            }
+            onOpenExternal={filePath ? handleOpenExternal : undefined}
+          />
+        ) : undefined
       }
-    >
-      {showReadOnlyBanner && (
-        <ReadOnlyBanner
-          formatNameI18nKey={formatConfig.nameI18nKey}
-          onEnableEditing={() =>
-            useTabStore.getState().setTabEditingEnabled(tabId, true)
-          }
-          onOpenExternal={filePath ? handleOpenExternal : undefined}
-        />
-      )}
-      {hasPreview && (
-        <div className="split-pane-editor__mode-toggle">
+      header={
+        hasPreview ? (
           <ViewModeToggle mode={viewMode} onChange={handleViewModeChange} />
-        </div>
-      )}
-      {/* Row body: source | resize | preview. Separated from the banner so
-          the banner spans full width on top — the editor is a column, the
-          body is the row. */}
-      <div className="split-pane-editor__body">
-        {showSource && (
-          <div className="split-pane-editor__source">
+        ) : undefined
+      }
+      source={
+        showSource ? (
+          <>
             <SourcePane
               tabId={tabId}
               formatId={formatConfig.id}
@@ -238,12 +238,14 @@ export function SplitPaneEditor({ tabId, formatConfig }: SplitPaneEditorProps) {
               onJumpHandleReady={handleJumpHandleReady}
               editingEnabled={editingEnabled}
             />
-            {diagnostics.length > 0 && (
-              <ValidationGutter diagnostics={diagnostics} onJump={handleJump} />
+            {shownDiagnostics.length > 0 && (
+              <ValidationGutter diagnostics={shownDiagnostics} onJump={handleJump} />
             )}
-          </div>
-        )}
-        {showResizeHandle && (
+          </>
+        ) : undefined
+      }
+      resizeHandle={
+        showResizeHandle ? (
           <div
             className="split-pane-editor__resize-handle"
             role="separator"
@@ -255,19 +257,19 @@ export function SplitPaneEditor({ tabId, formatConfig }: SplitPaneEditorProps) {
             tabIndex={0}
             onKeyDown={onKeyDown}
           />
-        )}
-        {showPreview && Preview && (
-          <div className="split-pane-editor__preview">
-            <Preview
-              content={preview.content}
-              liveContent={preview.liveContent}
-              path={filePath}
-              diagnostics={preview.diagnostics}
-              tabId={tabId}
-            />
-          </div>
-        )}
-      </div>
-    </div>
+        ) : undefined
+      }
+      preview={
+        showPreview && Preview ? (
+          <Preview
+            content={preview.content}
+            liveContent={preview.liveContent}
+            path={filePath}
+            diagnostics={preview.diagnostics}
+            tabId={tabId}
+          />
+        ) : undefined
+      }
+    />
   );
 }

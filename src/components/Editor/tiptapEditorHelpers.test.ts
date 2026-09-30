@@ -16,8 +16,14 @@ import {
   spellcheckAttrForDocSize,
   suppressCvIdleDuringEdit,
   syncMarkdownToEditor,
+  usesContentVisibility,
 } from "./tiptapEditorHelpers";
 import { MAX_NESTING_DEPTH, nestingRefusal } from "@/utils/markdownPipeline/nestingDepth";
+
+/** `navigator.platform` for this test; setup pins macOS (src/test/platformDefault.ts). */
+function setPlatform(value: string): void {
+  Object.defineProperty(navigator, "platform", { value, configurable: true, writable: true });
+}
 
 describe("buildTiptapEditorProps", () => {
   it("snapshots the spellcheck attribute from the doc size", () => {
@@ -146,9 +152,27 @@ describe("suppressCvIdleDuringEdit", () => {
     return { scroller, container, writes, scrollerRect, anchorRect };
   }
 
+  // The optimization never engages on macOS; see usesContentVisibility.
+  beforeEach(() => setPlatform("Win32"));
+
   afterEach(() => {
     document.body.innerHTML = "";
     vi.useRealTimers();
+    setPlatform("MacIntel");
+  });
+
+  it("strips cv-idle but never re-adds it on macOS", () => {
+    setPlatform("MacIntel");
+    vi.useFakeTimers();
+    const { container } = buildCvDom();
+    const timeoutRef = { current: null as number | null };
+
+    suppressCvIdleDuringEdit({ current: container as HTMLDivElement }, CV_IDLE_CHAR_THRESHOLD * 4, timeoutRef);
+
+    expect(container.classList.contains("cv-idle")).toBe(false);
+    expect(timeoutRef.current).toBeNull();
+    vi.advanceTimersByTime(2000);
+    expect(container.classList.contains("cv-idle")).toBe(false);
   });
 
   it("compensates the viewport when stripping cv-idle, and again on the idle re-add", () => {
@@ -256,6 +280,83 @@ describe("suppressCvIdleDuringEdit", () => {
   });
 });
 
+// `.cv-enabled` scopes the contain-intrinsic-size rule (editor.css) to editors
+// that use content-visibility, and must survive every edit-time strip of
+// `.cv-idle` — the re-add needs each block's remembered size (#1472).
+describe("suppressCvIdleDuringEdit — the sizing marker", () => {
+  const cvState = (el: HTMLElement) => ({
+    enabled: el.classList.contains("cv-enabled"),
+    idle: el.classList.contains("cv-idle"),
+  });
+  function edit(className: string, docSize: number) {
+    const container = document.createElement("div");
+    container.className = className;
+    document.body.appendChild(container);
+    const timeoutRef = { current: null as number | null };
+    suppressCvIdleDuringEdit({ current: container as HTMLDivElement }, docSize, timeoutRef);
+    return { container, timeoutRef };
+  }
+
+  beforeEach(() => {
+    setPlatform("Win32");
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    document.body.innerHTML = "";
+    vi.useRealTimers();
+    setPlatform("MacIntel");
+  });
+
+  it("keeps the marker through the strip and the idle re-add", () => {
+    const { container } = edit("tiptap-editor cv-enabled cv-idle", CV_IDLE_CHAR_THRESHOLD);
+    expect(cvState(container)).toEqual({ enabled: true, idle: false });
+    vi.advanceTimersByTime(500);
+    expect(cvState(container)).toEqual({ enabled: true, idle: true });
+  });
+
+  it("never lets the sizing rule lapse across the strip, even on a container that lacked the marker", () => {
+    // Every class state the container passes through must carry the rule —
+    // through `.cv-idle` or the marker. A MutationObserver sees each write.
+    const container = document.createElement("div");
+    container.className = "tiptap-editor cv-idle";
+    document.body.appendChild(container);
+    const observer = new MutationObserver(() => {});
+    observer.observe(container, { attributes: true, attributeFilter: ["class"], attributeOldValue: true });
+
+    suppressCvIdleDuringEdit({ current: container as HTMLDivElement }, CV_IDLE_CHAR_THRESHOLD, { current: null });
+    const states = [...observer.takeRecords().map((record) => record.oldValue ?? ""), container.className];
+    observer.disconnect();
+
+    expect(states.filter((state) => !/\bcv-(idle|enabled)\b/.test(state))).toEqual([]);
+    expect(cvState(container)).toEqual({ enabled: true, idle: false });
+  });
+
+  it("marks a document that grows past the threshold at once, and re-adds cv-idle only after the idle window", () => {
+    const { container, timeoutRef } = edit("tiptap-editor", CV_IDLE_CHAR_THRESHOLD);
+    expect(cvState(container)).toEqual({ enabled: true, idle: false });
+    expect(timeoutRef.current).not.toBeNull();
+    vi.advanceTimersByTime(499);
+    expect(cvState(container)).toEqual({ enabled: true, idle: false });
+    vi.advanceTimersByTime(1);
+    expect(cvState(container)).toEqual({ enabled: true, idle: true });
+  });
+
+  it("unmarks a document that shrinks below the threshold, with nothing left to re-add", () => {
+    const { container, timeoutRef } = edit("tiptap-editor cv-enabled cv-idle", CV_IDLE_CHAR_THRESHOLD - 1);
+    expect(cvState(container)).toEqual({ enabled: false, idle: false });
+    expect(timeoutRef.current).toBeNull();
+    vi.advanceTimersByTime(2000);
+    expect(cvState(container)).toEqual({ enabled: false, idle: false });
+  });
+
+  it("never marks an editor on macOS, however large the document", () => {
+    setPlatform("MacIntel");
+    const { container, timeoutRef } = edit("tiptap-editor", CV_IDLE_CHAR_THRESHOLD * 10);
+    expect(cvState(container)).toEqual({ enabled: false, idle: false });
+    expect(timeoutRef.current).toBeNull();
+  });
+});
+
 describe("syncMarkdownToEditor on a document the parser refuses (#1407)", () => {
   let editor: Editor;
 
@@ -289,5 +390,21 @@ describe("syncMarkdownToEditor on a document the parser refuses (#1407)", () => 
     const lastExternalContent = { current: "" };
     expect(syncMarkdownToEditor(editor, "# fine\n", lastExternalContent, false, "tab-7")).toBe(true);
     expect(reportUnparseableDocument).not.toHaveBeenCalled();
+  });
+});
+
+describe("usesContentVisibility", () => {
+  afterEach(() => setPlatform("MacIntel"));
+
+  // macOS (WKWebView) never gets it: on a 4,042-block document every scrolled
+  // frame cost ~1.2 s with it and ~20 ms without. Elsewhere it is unmeasured.
+  it.each([
+    ["Win32", CV_IDLE_CHAR_THRESHOLD, true],
+    ["Win32", CV_IDLE_CHAR_THRESHOLD - 1, false],
+    ["Linux x86_64", CV_IDLE_CHAR_THRESHOLD, true],
+    ["MacIntel", CV_IDLE_CHAR_THRESHOLD * 10, false],
+  ])("platform %s, %i chars → %s", (platform, size, expected) => {
+    setPlatform(platform);
+    expect(usesContentVisibility(size)).toBe(expected);
   });
 });

@@ -1,0 +1,260 @@
+diff --git a/lib/index.js b/lib/index.js
+index af84ba60dd09bee196f7271555bd5ea70e870cf6..58329b1459266564a950f0cf78cdeedba9148a04 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -77,8 +77,18 @@ import {convert} from 'unist-util-is'
+  */
+ export function findAndReplace(tree, list, options) {
+   const settings = options || {}
+-  const ignored = convert(settings.ignore || [])
++  // VMark patch (#1473): read the test once, so `convert` and `readsIndex`
++  // judge the same one; see `readsIndex` and `indexIn` below.
++  const ignore = snapshotTest(settings.ignore)
++  const ignored = convert(ignore || [])
++  const ancestorIndexNeeded = readsIndex(ignore)
++  const ignoreRunsCallerCode = ancestorIndexNeeded || hasAccessor(ignore)
++  /** @type {Lookups} */
++  const lookups = {positions: new WeakMap(), callbacks: 0}
+   const pairs = toPairs(list)
++  const patternRunsCallerCode = pairs.map(function (pair) {
++    return !isBuiltInRegExp(pair[0])
++  })
+   let pairIndex = -1
+ 
+   while (++pairIndex < pairs.length) {
+@@ -95,14 +105,15 @@ export function findAndReplace(tree, list, options) {
+       const parent = parents[index]
+       /** @type {Array<Nodes> | undefined} */
+       const siblings = grandparent ? grandparent.children : undefined
++      const skip = ignored(
++        parent,
++        siblings && ancestorIndexNeeded ? siblings.indexOf(parent) : undefined,
++        grandparent
++      )
++      // VMark patch (#1473): caller code may have edited the tree.
++      if (ignoreRunsCallerCode) lookups.callbacks++
+ 
+-      if (
+-        ignored(
+-          parent,
+-          siblings ? siblings.indexOf(parent) : undefined,
+-          grandparent
+-        )
+-      ) {
++      if (skip) {
+         return
+       }
+ 
+@@ -131,7 +142,9 @@ export function findAndReplace(tree, list, options) {
+     let start = 0
+     /** @type {Array<Nodes>} */
+     const siblings = parent.children
+-    const index = siblings.indexOf(node)
++    const index = indexIn(lookups, siblings, node)
++    // VMark patch (#1473): whether caller code ran here after that lookup.
++    let ranCallerCode = patternRunsCallerCode[pairIndex]
+     let change = false
+     /** @type {Array<PhrasingContent>} */
+     let nodes = []
+@@ -149,6 +162,7 @@ export function findAndReplace(tree, list, options) {
+         stack: [...parents, node]
+       }
+       let value = replace(...match, matchObject)
++      ranCallerCode = true
+ 
+       if (typeof value === 'string') {
+         value = value.length > 0 ? {type: 'text', value} : undefined
+@@ -195,10 +209,193 @@ export function findAndReplace(tree, list, options) {
+       nodes = [node]
+     }
+ 
++    if (ranCallerCode) lookups.callbacks++
+     return index + nodes.length
+   }
+ }
+ 
++/*
++ * VMark patch (#1473): sibling indices without an `indexOf` per text node.
++ *
++ * For every text node, `findAndReplace` looked up each ancestor's index among
++ * its siblings (to pass to the `ignore` test) and the text node's own (to
++ * splice), each with an `indexOf` over the whole children array: O(text nodes
++ * × top-level blocks) on a long flat document, O(siblings²) in a paragraph of
++ * many inline nodes. The answers are unchanged:
++ *
++ * - An ancestor's index is only ever passed to `ignore`, and a type, property
++ *   or `null` test never reads it; only a test function can. So it is computed
++ *   — with `indexOf`, as before — exactly when the test contains a function,
++ *   and left `undefined` otherwise.
++ * - A text node's own index: while its siblings are distinct objects, the one
++ *   index holding it IS `indexOf`'s answer, and it is found by looking outward
++ *   from where the last one was — the traversal moves forward, so that is
++ *   usually a step or two. That shortcut is taken only for an array checked
++ *   to be distinct since caller code last ran: caller code may edit the tree,
++ *   so after it an array seen before goes back to `indexOf` for the rest of
++ *   the call. Caller code is every replace function; the `ignore` test when
++ *   it holds a function or a property test with an accessor; and a pattern
++ *   whose `exec` or `global` is not the built-in one (as they were when this
++ *   module loaded). Every splice here follows a replace call, so it needs no
++ *   tracking of its own. The distinctness check itself changes an answer
++ *   only where the unpatched code never ends (a text node without a match,
++ *   reached twice among the same siblings), and keeps that the same too.
++ *
++ * Nodes are taken to be plain data: unist requires every value in a tree to
++ * be "expressible in JSON values", so a node whose getter runs code is not a
++ * tree this function is defined on.
++ */
++
++const own = {}.hasOwnProperty
++const builtInExec = RegExp.prototype.exec
++const builtInGlobal = /** @type {PropertyDescriptor} */ (
++  Object.getOwnPropertyDescriptor(RegExp.prototype, 'global')
++).get
++
++/**
++ * Whether `find` is a plain RegExp running the built-in `exec` and `global`:
++ * the only pattern whose use runs no caller code.
++ *
++ * @param {RegExp} find
++ * @returns {boolean}
++ */
++function isBuiltInRegExp(find) {
++  const global = Object.getOwnPropertyDescriptor(RegExp.prototype, 'global')
++  return (
++    Object.getPrototypeOf(find) === RegExp.prototype &&
++    !own.call(find, 'exec') &&
++    !own.call(find, 'global') &&
++    RegExp.prototype.exec === builtInExec &&
++    global !== undefined &&
++    global.get === builtInGlobal
++  )
++}
++
++/**
++ * Whether an `ignore` test holds a property test that is not plain data (a
++ * property test reads its own properties on every check).
++ *
++ * @param {Test | null | undefined} test
++ * @returns {boolean}
++ */
++function hasAccessor(test) {
++  if (Array.isArray(test)) {
++    let index = -1
++    while (++index < test.length) {
++      if (hasAccessor(test[index])) return true
++    }
++
++    return false
++  }
++
++  if (!test || typeof test !== 'object') return false
++  const prototype = Object.getPrototypeOf(test)
++  if (prototype !== Object.prototype && prototype !== null) return true
++  const descriptors = Object.getOwnPropertyDescriptors(test)
++  for (const key of Reflect.ownKeys(descriptors)) {
++    // @ts-expect-error: `key` indexes `descriptors`.
++    if ('get' in descriptors[key] || 'set' in descriptors[key]) return true
++  }
++
++  return false
++}
++
++/**
++ * @typedef Lookups
++ *   State for one `findAndReplace` call.
++ * @property {WeakMap<Array<Nodes>, Position | null>} positions
++ *   Per children array; `null` once it must use `indexOf`.
++ * @property {number} callbacks
++ *   Calls into caller code so far.
++ *
++ * @typedef Position
++ * @property {number} hint
++ *   Where the last lookup left off.
++ * @property {number} callbacks
++ *   `Lookups.callbacks` when the array was checked distinct.
++ */
++
++/**
++ * The test with its arrays copied, each element read once: `convert` reads
++ * an array's elements once when it builds its check, and `readsIndex` must
++ * see the same elements.
++ *
++ * @param {Test | null | undefined} test
++ * @returns {Test | null | undefined}
++ */
++function snapshotTest(test) {
++  if (!Array.isArray(test)) return test
++  /** @type {Array<any>} */
++  const copy = []
++  let index = -1
++  while (++index < test.length) {
++    copy.push(snapshotTest(test[index]))
++  }
++
++  return copy
++}
++
++/**
++ * Whether an `ignore` test can observe the index it is given: only a test
++ * function can, including one inside an array of tests.
++ *
++ * @param {Test | null | undefined} test
++ * @returns {boolean}
++ */
++function readsIndex(test) {
++  if (typeof test === 'function') return true
++  if (!Array.isArray(test)) return false
++  let index = -1
++  while (++index < test.length) {
++    if (readsIndex(test[index])) return true
++  }
++
++  return false
++}
++
++/**
++ * `siblings.indexOf(child)`, looking outward from the last position when
++ * that is known to give the same answer.
++ *
++ * @param {Lookups} lookups
++ * @param {Array<Nodes>} siblings
++ * @param {Nodes} child
++ * @returns {number}
++ */
++function indexIn(lookups, siblings, child) {
++  let position = lookups.positions.get(siblings)
++
++  if (position === undefined) {
++    position =
++      new Set(siblings).size === siblings.length
++        ? {hint: 0, callbacks: lookups.callbacks}
++        : null
++    lookups.positions.set(siblings, position)
++  } else if (position && position.callbacks !== lookups.callbacks) {
++    position = null
++    lookups.positions.set(siblings, position)
++  }
++
++  if (position === null) return siblings.indexOf(child)
++
++  let after = position.hint
++  let before = after - 1
++
++  while (after < siblings.length || before >= 0) {
++    if (after < siblings.length) {
++      if (siblings[after] === child) return (position.hint = after)
++      after++
++    }
++
++    if (before >= 0) {
++      if (siblings[before] === child) return (position.hint = before)
++      before--
++    }
++  }
++
++  return -1
++}
++
+ /**
+  * Turn a tuple or a list of tuples into pairs.
+  *

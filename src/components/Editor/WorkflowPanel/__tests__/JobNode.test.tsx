@@ -11,7 +11,9 @@ import {
   screen,
   type RenderResult,
 } from "@testing-library/react";
-import { ReactFlowProvider, type NodeProps, type Node } from "@xyflow/react";
+import { Position, ReactFlowProvider, type NodeProps, type Node } from "@xyflow/react";
+import type { EditorView } from "@codemirror/view";
+import { useEditorStore } from "@/stores/editorStore";
 import type { ReactElement } from "react";
 import type { JobNodeData } from "@/lib/ghaWorkflow/render/toGraph";
 import { JobNode } from "../JobNode";
@@ -287,6 +289,63 @@ describe("JobNode", () => {
       expect(screen.getByText("Install dependencies")).toBeTruthy();
       expect(screen.getByText(/actions\/setup-node@v4/)).toBeTruthy();
       expect(screen.getByText(/pnpm test/)).toBeTruthy();
+    });
+  });
+
+  // WI-LX2.4 — the canvas's layout-direction toggle hands each node the side
+  // its edges attach to; the default stays top-down.
+  describe("edge handles follow the layout direction", () => {
+    it("defaults to target on top, source at the bottom", () => {
+      const { container } = render(<JobNode {...makeNode()} />);
+      expect(container.querySelector(".react-flow__handle-top")).not.toBeNull();
+      expect(container.querySelector(".react-flow__handle-bottom")).not.toBeNull();
+    });
+
+    it("uses the positions xyflow passes for a left-to-right layout", () => {
+      const node = { ...makeNode(), targetPosition: Position.Left, sourcePosition: Position.Right };
+      const { container } = render(<JobNode {...node} />);
+      expect(container.querySelector(".react-flow__handle-left")).not.toBeNull();
+      expect(container.querySelector(".react-flow__handle-right")).not.toBeNull();
+      expect(container.querySelector(".react-flow__handle-top")).toBeNull();
+    });
+  });
+
+  describe("keyboard — Escape returns focus to THIS pane's source (WI-LX2.4)", () => {
+    function registerSource(host: HTMLElement) {
+      const dom = document.createElement("div");
+      host.append(dom);
+      const focus = vi.fn();
+      useEditorStore.getState().setActiveSourceView({ dom, focus } as unknown as EditorView, "t");
+      return focus;
+    }
+
+    function inPane(): HTMLElement {
+      const pane = document.createElement("div");
+      pane.className = "split-pane-editor";
+      document.body.append(pane);
+      return pane;
+    }
+
+    it("focuses the source view in the node's own split pane", () => {
+      const pane = inPane();
+      const focus = registerSource(pane);
+      rtlRender(<ReactFlowProvider><JobNode {...makeNode()} /></ReactFlowProvider>, {
+        container: pane.appendChild(document.createElement("div")),
+      });
+      fireEvent.keyDown(screen.getAllByRole("button")[0], { key: "Escape" });
+      expect(focus).toHaveBeenCalled();
+      document.body.replaceChildren();
+    });
+
+    it("does not focus another pane's document", () => {
+      const focus = registerSource(inPane());
+      const own = inPane();
+      rtlRender(<ReactFlowProvider><JobNode {...makeNode()} /></ReactFlowProvider>, {
+        container: own.appendChild(document.createElement("div")),
+      });
+      fireEvent.keyDown(screen.getAllByRole("button")[0], { key: "Escape" });
+      expect(focus).not.toHaveBeenCalled();
+      document.body.replaceChildren();
     });
   });
 

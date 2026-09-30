@@ -15,12 +15,14 @@
  *
  * @coordinates-with src-tauri/src/coherence/scan.rs — the reconciliation pass
  * @coordinates-with useWindowFileWatcher.ts — emits the fs:changed events
+ * @coordinates-with capturePolicy.ts — the capture-on-save setting on the wire
  * @module services/coherence/scanOnChange
  */
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { coherenceLog } from "@/utils/debug";
+import { currentCapturePolicy } from "./capturePolicy";
 
 const DEBOUNCE_MS = 3000;
 
@@ -48,7 +50,9 @@ export function startCoherenceScanOnChange(
     }
     scanning = true;
     try {
-      await deps.invoke("coherence_scan", { workspaceRoot: root });
+      // Write-driven, so it obeys capture-on-save (WI-LX1.4): with the
+      // setting off, a workspace without a ledger is never initialized here.
+      await deps.invoke("coherence_scan", { workspaceRoot: root, policy: currentCapturePolicy() });
     } catch (error) {
       coherenceLog("scan-on-change failed (next pull retries):", error);
     } finally {

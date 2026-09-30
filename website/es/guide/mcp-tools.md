@@ -145,6 +145,8 @@ resueltos). El asistente debe preguntar al usuario y luego **reintentar la misma
 que el usuario aprueba, el reintento abre la carpeta. Una solicitud denegada seguirá fallando hasta
 que se vuelva a aprobar. No hay opción de «recordar» — cada apertura se aprueba individualmente.
 
+**Acceso a carpetas.** Aprobar el diálogo no basta para que VMark lea una carpeta fuera de los lugares que siempre puede leer (tu carpeta de usuario y los volúmenes montados). Para una carpeta así, el reintento aprobado abre el selector de carpetas de VMark en esa carpeta y responde `APPROVAL_REQUIRED`, pidiendo al usuario que la elija allí; una vez hecho, el siguiente reintento la abre. Si ya hay otro diálogo de carpetas abierto, no se muestra nada y la respuesta es `BUSY` — la aprobación se conserva, así que reintenta cuando el usuario haya cerrado ese diálogo. `BUSY` también es la respuesta mientras ya hay un cambio de espacio de trabajo en curso en esa ventana.
+
 ### `save`
 
 Guarda una pestaña en su ruta existente.
@@ -423,7 +425,7 @@ front-matter del flujo grabado; su valor predeterminado es `recording`).
 nunca puede grabarte en silencio. Hasta que lo permitas, `start` devuelve `needsApproval`; en cuanto lo
 haces, VMark arma un shim de captura latente en el mundo de la página y empieza a grabar los **clics y
 las ediciones de campos** que realizas. `stop` devuelve `{source, inputs, eventCount}` — el `source` es
-texto de flujo de trabajo que puedes guardar o pasar directamente a [`workflow_run`](#workflow-run).
+texto de flujo de trabajo que puedes guardar o pasar directamente a [`workflow_run`](#workflow-run-workflow-cancel).
 
 La grabación está **libre de valores por construcción**, y esto no es un filtro que confíe en la página:
 nada de lo que escribes se captura jamás. Cada campo de texto se convierte en una variable `{input}` con
@@ -704,7 +706,8 @@ Aparecen dos formas de error:
 | `INVALID_PATCH` | sobre | `workflow.apply_patch` recibió un array `patches` mal formado |
 | `INVALID_TAB` | sobre | No se pudo resolver `tabId` |
 | `INVALID_PATH` | sobre | No se pudo leer un `filePath`, o está fuera del alcance del espacio de trabajo abierto / del documento |
-| `APPROVAL_REQUIRED` | sobre | `save_as` a una ubicación nueva mientras **Aprobar ediciones automáticamente** está desactivado |
+| `APPROVAL_REQUIRED` | sobre | `save_as` a una ubicación nueva mientras **Aprobar automáticamente guardados en una ubicación nueva y resultados de genios** está desactivado; o `open_workspace` espera la aprobación del usuario, o que elija la carpeta en el diálogo de carpetas de VMark |
+| `BUSY` | sobre | `open_workspace` no pudo continuar: hay otro diálogo de carpetas abierto o un cambio de espacio de trabajo en curso en esa ventana; la aprobación se conserva — reintenta |
 | `NOT_WORKFLOW` | sobre | Se invocó `workflow.*` en una pestaña que no es YAML de flujo de trabajo |
 | `READ_ONLY` | sobre | Se intentó una mutación en un documento de solo lectura |
 | `NO_EDITOR` | sobre | Se invocó `selection.*` pero la pestaña enfocada no tiene un editor activo |

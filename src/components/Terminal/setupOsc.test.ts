@@ -2,8 +2,53 @@
 // WI-2.1 — OSC 7 cwd parsing + handler registration
 // WI-3.2 — OSC 133 command-boundary tracking
 import { describe, it, expect, vi } from "vitest";
+import { queryObjects } from "node:v8";
 import { parseOsc7Cwd, setupOsc7, setupOsc133, scrollToAdjacentCommand } from "./setupOsc";
 import type { CommandMark } from "./setupOsc";
+import type { IMarker } from "@xterm/xterm";
+import { createRealTerminal, writeParsed } from "./realXterm.testUtils";
+import { cpuMs } from "@/test/cpuClock";
+
+/**
+ * Growth exponent of `costAt` (CPU ms at size n) between `small` and `large`:
+ * 1 is linear, 2 quadratic. An exponent, never a duration — the method of
+ * htmlScaling.test.ts: contention and instrumentation move durations, they
+ * cannot turn cost ∝ n into cost ∝ n². Minimum of interleaved runs after a
+ * warm-up; the small sample is floored at 1 ms against timer resolution.
+ *
+ * Not the shared `measureGrowth`: each sample needs freshly registered marks
+ * to dispose, and repeating one run would bill that setup too. Samples are
+ * timed with the shared `cpuMs` (this thread's clock, brought up to date
+ * before each read). No garbage collection first: a forced full collection
+ * bills its sweeping to the samples that follow — under load it raised Node
+ * 22's median small and large samples from 1.52 and 7.52 ms to 2.62 and
+ * 11.93 ms, lowering the exponent by adding cost rather than measuring the
+ * bookkeeping better.
+ */
+function growthExponent(costAt: (n: number) => number, small: number, large: number) {
+  costAt(small); // warm-up: JIT
+  let bestSmall = Number.POSITIVE_INFINITY;
+  let bestLarge = Number.POSITIVE_INFINITY;
+  // Five interleaved rounds, minimum kept — htmlScaling.test.ts's `measure`.
+  for (let round = 0; round < 5; round += 1) {
+    bestSmall = Math.min(bestSmall, costAt(small));
+    bestLarge = Math.min(bestLarge, costAt(large));
+    bestSmall = Math.min(bestSmall, costAt(small));
+  }
+  const exponent = Math.log(bestLarge / Math.max(bestSmall, 1)) / Math.log(large / small);
+  return { exponent, small: bestSmall, large: bestLarge };
+}
+
+/**
+ * A full garbage collection WITHOUT `--expose-gc`, whose runtime toggle races
+ * between vitest's worker threads: `v8.queryObjects` collects before it counts
+ * (it exists for memory-leak regression tests). Prints one ExperimentalWarning
+ * per worker thread that calls it.
+ */
+class GcProbe {}
+function collectGarbage(): void {
+  queryObjects(GcProbe, { format: "count" });
+}
 
 describe("parseOsc7Cwd", () => {
   it("extracts the path from a file:// URL with a host", () => {
@@ -89,6 +134,7 @@ describe("setupOsc133", () => {
           if (id === 133) handler = h;
           return { dispose: vi.fn() };
         }),
+        registerEscHandler: vi.fn(() => ({ dispose: vi.fn() })),
       },
       registerMarker: vi.fn(() => {
         const line = nextLine++;
@@ -265,6 +311,155 @@ describe("setupOsc133", () => {
     expect(h.isRunning()).toBe(true);
     expect(h.getCommands()).toHaveLength(0);
     expect(term.registerMarker).not.toHaveBeenCalled();
+  });
+});
+
+// #1471 — a session restart resets the terminal with RIS (ESC c), and so does
+// `reset`/`tput reset` typed in the shell. RIS rebuilds xterm's buffers but
+// does NOT dispose their markers, so a mark kept its old line number and
+// pointed into text that no longer exists: prompt navigation jumped to the
+// wrong row and "Copy Command Output" copied the wrong lines. Real xterm here —
+// the question is what xterm does with a marker, which a mock can't answer.
+describe("setupOsc133 — full reset (RIS) invalidates command marks", () => {
+  const PROMPT = "\x1b]133;A\x07";
+  const RUNNING = "\x1b]133;C\x07";
+  const DONE_OK = "\x1b]133;D;0\x07";
+
+  it("drops every mark when RIS wipes the buffer they point into", async () => {
+    const term = createRealTerminal();
+    const osc = setupOsc133(term);
+    await writeParsed(term, `${PROMPT}$ ls\r\nout\r\n${DONE_OK}${PROMPT}$ codex\r\n${RUNNING}`);
+    expect(osc.getCommands()).toHaveLength(2);
+
+    await writeParsed(term, "\x1bc");
+
+    expect(osc.getCommands()).toEqual([]);
+  });
+
+  it("does not swallow the reset itself", async () => {
+    const term = createRealTerminal();
+    setupOsc133(term);
+    await writeParsed(term, "\x1b[?1003h\x1b[?2004h\x1bc");
+
+    expect(term.modes.mouseTrackingMode).toBe("none");
+    expect(term.modes.bracketedPasteMode).toBe(false);
+  });
+
+  it("tracks the next shell's prompts after the reset", async () => {
+    const term = createRealTerminal();
+    const osc = setupOsc133(term);
+    await writeParsed(term, `${PROMPT}$ codex\r\n${RUNNING}\x1bc${PROMPT}$ `);
+
+    expect(osc.getCommands()).toHaveLength(1);
+    expect(osc.getCommands()[0].marker.line).toBe(0);
+  });
+
+  it("drops its marks on RIS without disposing them one by one — a program's reset must not freeze the UI", async () => {
+    // Against REAL xterm markers: disposing them one by one splices xterm's
+    // own marker array each time — 1.6 s at 20k marks, quadratic in a count
+    // any program can inflate by printing OSC 133;A. The marks are dropped
+    // instead (the buffer they belong to is discarded by the reset). Asserted
+    // directly rather than timed: the dropped path is too cheap to time
+    // reliably, and the property IS "no per-mark dispose".
+    const term = createRealTerminal();
+    const markers: IMarker[] = [];
+    const registerMarker = term.registerMarker.bind(term);
+    term.registerMarker = (offset?: number) => {
+      const marker = registerMarker(offset);
+      if (marker) markers.push(marker);
+      return marker;
+    };
+    const osc = setupOsc133(term);
+    await writeParsed(term, PROMPT.repeat(5_000));
+
+    await writeParsed(term, "\x1bc");
+
+    expect(osc.getCommands()).toHaveLength(0);
+    expect(markers).toHaveLength(5_000);
+    expect(markers.filter((marker) => marker.isDisposed)).toHaveLength(0);
+    term.dispose();
+  });
+
+  it("a bulk disposal of marks (clear, a restart) costs linear time in OUR bookkeeping", () => {
+    // Filtering the mark list once per disposed marker made our share of a
+    // bulk disposal quadratic. Isolated from xterm on purpose: xterm's own
+    // clear() is itself superlinear in its marker count (measured 7→84→309 ms
+    // for 5k/20k/40k plain markers in 6.0.0). Only a user action runs it
+    // (Cmd+K, a restart — main's restart ran it too), though output decides
+    // how many markers it meets; that part is upstream's to fix.
+    const growth = growthExponent((count) => {
+      const disposers: Array<() => void> = [];
+      let osc: ((data: string) => boolean) | undefined;
+      const term = {
+        parser: {
+          registerOscHandler: (_id: number, handler: (data: string) => boolean) => (osc = handler),
+          registerEscHandler: () => ({ dispose: () => {} }),
+        },
+        registerMarker: () => ({ line: 0, onDispose: (cb: () => void) => disposers.push(cb) }),
+      } as unknown as import("@xterm/xterm").Terminal;
+      const handle = setupOsc133(term);
+      for (let i = 0; i < count; i += 1) osc?.("A");
+      return cpuMs(() => {
+        for (const fire of disposers) fire(); // what clearAllMarkers does
+        expect(handle.getCommands()).toHaveLength(0);
+      });
+    }, 20_000, 80_000); // big enough that the small sample is well above timer resolution
+    // 1.75, not the 1.35 htmlScaling uses: this path is linear but a V8 hash
+    // table's shrink-on-delete and memory effects bend it. On this thread
+    // clock, at load ~40 on Node 24 and 22: this file in full, 180 readings,
+    // max 1.41; the measurement alone, 1,000 readings, max 1.68. Quadratic is
+    // 2; the per-dispose filter it replaced measured 2.18–2.22.
+    expect(growth.exponent, `20k marks ${growth.small.toFixed(1)}ms, 80k ${growth.large.toFixed(1)}ms`).toBeLessThan(1.75);
+  });
+
+  it("lets go of a scrolled-out mark as its marker dies, even if nobody reads the list", async () => {
+    // A program can print prompts forever; marks whose line left the
+    // scrollback must not accumulate until the next getCommands(). Observed
+    // through the garbage collector — reading the list would compact it —
+    // each marker tracked by a WeakRef, so no other test's objects count.
+    const term = createRealTerminal({ rows: 5, scrollback: 10 });
+    const markers: Array<WeakRef<object>> = [];
+    const registerMarker = term.registerMarker.bind(term);
+    term.registerMarker = (offset?: number) => {
+      const marker = registerMarker(offset);
+      if (marker) markers.push(new WeakRef(marker));
+      return marker;
+    };
+    setupOsc133(term);
+    await writeParsed(term, `${PROMPT}$ \r\n`.repeat(200));
+    await new Promise((resolve) => setTimeout(resolve, 0)); // WeakRefs clear only after the job
+
+    collectGarbage();
+
+    const alive = markers
+      .slice(0, 150)
+      .map((ref) => ref.deref() as { isDisposed?: boolean } | undefined)
+      .filter((marker) => marker !== undefined);
+    // Every survivor died first — so onDispose ran and the mark left our list
+    // — and there are only a handful: xterm/V8 keep a few disposed markers
+    // alive on their own (up to 4, the same ones run after run). Keeping
+    // scrolled-out marks ourselves kept all 150.
+    expect(alive.every((marker) => marker.isDisposed === true)).toBe(true);
+    expect(alive.length).toBeLessThan(8);
+    term.dispose();
+  });
+
+  it("leaves a command that was running busy until the next prompt, so deferred idle work still flushes", async () => {
+    // Deliberate: RIS does not end the command. After a restart the new
+    // shell's first prompt is the idle signal that flushes a workspace `cd`
+    // deferred while the old command ran; clearing `running` on RIS would
+    // swallow that flush.
+    const term = createRealTerminal();
+    const osc = setupOsc133(term);
+    const onIdle = vi.fn();
+    osc.setOnIdle(onIdle);
+    await writeParsed(term, `${PROMPT}$ codex\r\n${RUNNING}\x1bc`);
+    expect(osc.isRunning()).toBe(true);
+
+    await writeParsed(term, PROMPT);
+
+    expect(onIdle).toHaveBeenCalledOnce();
+    expect(osc.isRunning()).toBe(false);
   });
 });
 

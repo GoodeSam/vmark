@@ -40,7 +40,7 @@ Il rifiuto rigido a 50 MB non è regolabile dall'utente. La webview non può con
 
 - Se devi continuare a modificare un file molto grande in WYSIWYG, valuta di suddividerlo in file più piccoli collegati da un documento indice. Markdown funziona bene come insieme di capitoli più brevi.
 - Se devi solo leggere o cercare in un file grande, la modalità Sorgente con il righello dei numeri di riga e `Find` (`Mod + F`) è di solito il flusso più veloce.
-- `Formato > Formatta testo CJK` e altri comandi che agiscono sull'intero documento funzionano correttamente anche sui documenti in modalità Sorgente.
+- **Formato → CJK → Formatta intero file** e altri comandi che agiscono sull'intero documento funzionano correttamente anche sui documenti in modalità Sorgente.
 
 ## Casi limite
 
@@ -52,4 +52,4 @@ Il rifiuto rigido a 50 MB non è regolabile dall'utente. La webview non può con
 ## Limitazioni note
 
 - Le soglie sono dimensioni in byte, che approssimano il costo reale (numero di blocchi). Un file da 600 KB con migliaia di blocchi brevi può essere più lento di un file da 1,2 MB di paragrafi lunghi. I valori predefiniti sono prudenti.
-- La fase C dell'iniziativa sui file grandi (rendering WYSIWYG differito) non è ancora rilasciata — vedi `dev-docs/plans/20260422-large-file-open-ux.md` per lo stato.
+- WYSIWYG costruisce ancora ogni blocco del documento all'apertura — solo le formule matematiche in linea vengono renderizzate più tardi, quando si avvicinano all'area visibile — quindi passare un file grande a WYSIWYG richiede tutto il tempo di apertura descritto sopra.

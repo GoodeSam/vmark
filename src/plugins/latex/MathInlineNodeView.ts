@@ -1,15 +1,13 @@
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { Selection } from "@tiptap/pm/state";
 import type { NodeView, EditorView } from "@tiptap/pm/view";
-import { loadKatex, isKatexLoaded } from "./katexLoader";
+import { scheduleInlineMathRender } from "./scheduleInlineMathRender";
 import { getMathPreviewView } from "@/plugins/mathPreview/MathPreviewView";
 import { isImeKeyEvent } from "@/utils/imeGuard";
 import { inlineNodeEditingKey } from "@/plugins/inlineNodeEditing/tiptap";
 import { hostShortcuts } from "@/plugins/shared/hostShortcuts";
 import { matchesShortcutEvent } from "@/utils/shortcutMatch";
 import type { InlineMathEditingRegistry } from "./inlineMathEditingRegistry";
-import { renderWarn } from "@/utils/debug";
-import { errorMessage } from "@/utils/errorMessage";
 
 /**
  * NodeView for inline math with inline editing support.
@@ -20,6 +18,10 @@ import { errorMessage } from "@/utils/errorMessage";
  *
  * The `.editing` class is added by the inlineNodeEditing plugin
  * when cursor is at the node.
+ *
+ * When KaTeX runs, and what the preview shows until then, is
+ * scheduleInlineMathRender's call: near the viewport in a scrolling editor
+ * (showing the source), on idle elsewhere.
  */
 export class MathInlineNodeView implements NodeView {
   dom: HTMLElement;
@@ -34,6 +36,7 @@ export class MathInlineNodeView implements NodeView {
   private exitingLeft = false; // Prevents re-entry when exiting left
   private exitingRight = false; // Prevents re-entry when exiting right
   private observer: MutationObserver | null = null;
+  private cancelDeferredRender: (() => void) | null = null;
 
   constructor(
     node: PMNode,
@@ -447,6 +450,9 @@ export class MathInlineNodeView implements NodeView {
   }
 
   private renderPreview(content: string): void {
+    this.cancelDeferredRender?.();
+    this.cancelDeferredRender = null;
+
     const trimmed = content.trim();
     if (!trimmed) {
       const placeholder = document.createElement("span");
@@ -460,43 +466,14 @@ export class MathInlineNodeView implements NodeView {
     const currentToken = ++this.renderToken;
     this.dom.classList.remove("math-error");
 
-    // Show loading indicator if KaTeX hasn't loaded yet
-    if (!isKatexLoaded()) {
-      const loading = document.createElement("span");
-      loading.className = "math-inline-loading";
-      loading.textContent = "…";
-      this.previewDom.replaceChildren(loading);
-    } else {
-      this.previewDom.textContent = trimmed;
-    }
-
-    const renderWithKatex = () => {
-      loadKatex()
-        .then((katex) => {
-          if (currentToken !== this.renderToken) return;
-          try {
-            katex.default.render(trimmed, this.previewDom, {
-              throwOnError: false,
-              displayMode: false,
-            });
-          } catch {
-            this.previewDom.textContent = trimmed;
-            this.dom.classList.add("math-error");
-          }
-        })
-        .catch((error: unknown) => {
-          if (currentToken !== this.renderToken) return;
-          renderWarn("Math inline render failed:", errorMessage(error));
-          this.previewDom.textContent = trimmed;
-          this.dom.classList.add("math-error");
-        });
-    };
-
-    if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(renderWithKatex, { timeout: 100 });
-    } else {
-      setTimeout(renderWithKatex, 0);
-    }
+    this.cancelDeferredRender = scheduleInlineMathRender({
+      latex: trimmed,
+      preview: this.previewDom,
+      host: this.dom,
+      editorDom: this.editorView?.dom ?? null,
+      isCurrent: () => currentToken === this.renderToken,
+      replacesRender: this.previewDom.querySelector(".katex, .katex-error") !== null,
+    });
   }
 
   update(node: PMNode): boolean {
@@ -512,8 +489,9 @@ export class MathInlineNodeView implements NodeView {
       this.exitEditMode();
     }
 
-    // Only update preview if not currently editing this node
-    if (!this.isEditing) {
+    // Only when not editing, and only for a new source: a decoration change
+    // around the node calls update() with the same node (no re-render needed).
+    if (!this.isEditing && newLatex !== this.currentLatex) {
       this.currentLatex = newLatex;
       this.updateAriaLabel(newLatex);
       this.renderPreview(newLatex);
@@ -537,6 +515,8 @@ export class MathInlineNodeView implements NodeView {
     }
 
     this.observer?.disconnect();
+    this.cancelDeferredRender?.();
+    this.cancelDeferredRender = null;
     this.dom.removeEventListener("click", this.handleClick);
     if (this.inputDom) {
       this.inputDom.removeEventListener("input", this.handleInput);

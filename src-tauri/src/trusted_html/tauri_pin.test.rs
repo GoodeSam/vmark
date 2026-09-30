@@ -42,7 +42,18 @@
 use std::path::Path;
 
 /// The tauri version the boundary above was measured against.
-const VERIFIED_TAURI: &str = "2.11.5";
+///
+/// 2.11.6 (re-verified with the procedure above, `pnpm tauri:dev`, macOS):
+/// the frame was `sandbox="allow-scripts"` on `vmark-trusted://`; its keyless
+/// `window_close_log` post was rejected (`missing field
+/// __TAURI_INVOKE_KEY__`) and its marker never reached the log, while the
+/// same command invoked WITH the key from the main window did log; from the
+/// frame, `window.parent.document` threw SecurityError and both
+/// `__TAURI_INTERNALS__` and `__TAURI_INVOKE_KEY__` were undefined. The
+/// 2.11.5 → 2.11.6 diff touches only `ipc/channel.rs` and `manager/mod.rs`
+/// (GHSA-w28w-mhc8-qvjv, channel-queue scoping), not the bootstrap injection
+/// or `on_message`.
+const VERIFIED_TAURI: &str = "2.11.6";
 
 /// Read the resolved `tauri` version out of the lockfile.
 fn locked_tauri_version() -> String {

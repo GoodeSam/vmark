@@ -81,7 +81,7 @@ export function bootstrapFormats(toggles?: Partial<FormatsToggles>): void {
     registerSvgFormat();
   }
 
-  // Phase 3 — HTML adapter (sandboxed; OWASP-verified per WI-3.4 / 2026-05-07).
+  // Phase 3 — HTML adapter (sandboxed; OWASP sign-off still pending — WI-3.4, surfaced as `preview.signOffPending`).
   if (t.htmlPreview) {
     registerHtmlFormat();
   }

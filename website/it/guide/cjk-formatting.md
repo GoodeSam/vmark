@@ -4,9 +4,9 @@ VMark include un insieme completo di regole di formattazione per testo cinese, g
 
 ## Avvio Rapido
 
-Usa **Formato → Formatta Documento CJK** o premi `Alt + Mod + Shift + F` per formattare l'intero documento.
+Usa **Formato → CJK → Formatta intero file** o premi `Alt + Mod + Shift + F` per formattare l'intero documento.
 
-`Mod + Shift + F` formatta **i blocchi attraversati dalla selezione** — l'intero paragrafo, elenco o tabella toccato dal cursore o dalla selezione, non i caratteri esattamente selezionati. La spaziatura CJK è una proprietà del confine *tra* due caratteri adiacenti, e una selezione a metà parola non contiene alcun confine di questo tipo: il comando indica quindi una regione da correggere anziché il testo da riscrivere. Senza selezione formatta il blocco in cui si trova il cursore.
+**Formato → CJK → Formatta selezione** (`Mod + Shift + F`) formatta **i blocchi attraversati dalla selezione** — l'intero paragrafo, elenco o tabella toccato dal cursore o dalla selezione, non i caratteri esattamente selezionati. La spaziatura CJK è una proprietà del confine *tra* due caratteri adiacenti, e una selezione a metà parola non contiene alcun confine di questo tipo: il comando indica quindi una regione da correggere anziché il testo da riscrivere. Senza selezione formatta il blocco in cui si trova il cursore.
 
 Entrambi i comandi proteggono esattamente le stesse cose (vedi «Contenuto protetto»), quindi selezionare tutto prima di `Mod + Shift + F` è sicuro.
 
@@ -119,12 +119,19 @@ Limita i segni di punteggiatura consecutivi (limite configurabile).
 
 Il seguente contenuto **non** è interessato dalla formattazione:
 
-- Blocchi di codice (```)
+- Blocchi di codice (```) — inclusa una recinzione **non chiusa**, che occupa il resto del documento, come previsto da CommonMark
 - Codice inline (`)
 - URL dei collegamenti
 - Percorsi delle immagini
 - Tag HTML
-- Frontmatter YAML
+- Frontmatter — sia YAML (`---`) sia TOML (`+++`)
+- Matematica inline (`$…$`), riconosciuta con la stessa regola usata dal renderer di VMark, così che una coppia di importi come `价格是 $100 和 $200 元` *non* venga scambiata per matematica
+- Matematica in blocco (`$$…$$`)
+- Blocchi di codice indentati
+- Wiki link (`[[target]]`, `[[target|display]]`)
+- Marcatori delle note a piè di pagina — riferimenti come `[^1]` e l'etichetta `[^1]:` di una definizione (il testo della definizione viene formattato)
+- Riferimenti a caratteri HTML (`&amp;`, `&#x5176;`)
+- Interruzioni tematiche (`---`, `***`)
 - Punteggiatura con escape backslash (es. `\,` rimane come `,`)
 
 ### Costrutti Tecnici
@@ -164,13 +171,13 @@ Prefissa qualsiasi punteggiatura con `\` per impedirne la conversione:
 
 Quando il [server MCP](/it/guide/mcp-setup) è connesso, gli assistenti IA possono applicare la formattazione CJK in modo programmatico tramite lo strumento `document.transform` con uno dei tre valori `kind`:
 
-- `"cjk-format"` — normalizzazione CJK completa (spaziatura + punteggiatura + virgolette tipografiche secondo le tue impostazioni)
-- `"cjk-spacing"` — regola solo gli spazi bianchi attorno ai confini CJK ↔ Latino/cifre
-- `"cjk-punctuation"` — converte la punteggiatura tra larghezza intera e mezza larghezza secondo le regole
+- `"cjk-format"` — normalizzazione CJK completa (spaziatura + punteggiatura + virgolette tipografiche), lo stesso formattatore eseguito dal comando di menu, secondo le tue impostazioni in Impostazioni → Lingua
+- `"cjk-spacing"` — inserisce uno spazio ovunque un carattere CJK incontri una lettera latina o una cifra, e nient'altro
+- `"cjk-punctuation"` — converte `,` `.` `!` `?` `;` `:` `(` `)` a mezza larghezza accanto a un carattere CJK nella loro forma a larghezza intera; non converte mai dalla larghezza intera alla mezza larghezza
 
-Ogni trasformazione esegue il documento attivo attraverso un percorso di andata e ritorno serializzazione-formattazione-analisi per preservare le marcature inline (grassetto, collegamenti, matematica, ecc.) e rispettare le regole di formattazione configurate.
+Solo `cjk-format` legge le tue impostazioni di formattazione. `cjk-spacing` e `cjk-punctuation` sono regole fisse che le ignorano e, a differenza del formattatore, trattano come CJK anche l'Hangul coreano. Tutte e tre operano sul sorgente markdown del documento e lasciano intatto il [contenuto protetto](#contenuto-protetto).
 
-Consulta il [Riferimento Strumenti MCP](/it/guide/mcp-tools#document-tool) per la forma completa della richiesta — `document.transform` accetta `tabId`, `kind` e un `expected_revision` per la concorrenza ottimistica.
+Consulta il [Riferimento Strumenti MCP](/it/guide/mcp-tools#transform) per la forma completa della richiesta — `document.transform` accetta `tabId`, `kind` e un `expected_revision` per la concorrenza ottimistica.
 
 ## Configurazione
 
@@ -278,7 +285,7 @@ Gli apostrofi nelle contrazioni (come "it's" o "don't") vengono preservati corre
 
 ### Attiva/Disattiva Stile Virgolette al Cursore
 
-Puoi cambiare rapidamente lo stile delle virgolette esistenti senza riformattare l'intero documento. Posiziona il cursore all'interno di qualsiasi coppia di virgolette e premi `Shift + Mod + '` per cambiare.
+Puoi cambiare rapidamente lo stile delle virgolette esistenti senza riformattare l'intero documento. Posiziona il cursore all'interno di qualsiasi coppia di virgolette e premi `Shift + Mod + '` per cambiare. Funziona solo in modalità WYSIWYG; la modalità Sorgente non ha un comando per alternare le virgolette.
 
 **Modalità semplice** (predefinita): Alterna tra virgolette dritte e il tuo stile preferito.
 

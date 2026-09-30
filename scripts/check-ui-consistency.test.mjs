@@ -3,9 +3,10 @@ import { describe, it, expect } from "vitest";
 import { execFileSync } from "node:child_process";
 import { runChecks, compareBaseline } from "./check-ui-consistency.mjs";
 import { focusPaintedClasses, uiOkMarkers } from "./lib/uiConsistencyCss.mjs";
+import { growthExponent, measureGrowth } from "../src/test/cpuClock.ts";
 
 const INDEX = `@theme inline { --text-sm: var(--font-size-base); --font-sans: var(--font-ui); --shadow-popup: var(--shadow-popup); }
-:root { --z-context-menu: 1000; --z-popup: 9999; --icon-size-sm: 22px; --font-size-sm: 12px; }
+:root { --z-resize-handle: 10; --z-bar: 100; --z-toolbar: 102; --z-context-menu: 1000; --z-popup: 9999; --icon-size-sm: 22px; --font-size-sm: 12px; }
 @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; } }`;
 
 /** Run the gate over in-memory fixtures. */
@@ -153,6 +154,244 @@ describe("C9 — state vocabulary", () => {
       "a.css": `.tab-pill.active { background: var(--bg-color); /* ui-ok(state): current-tab raised card */ }`,
     });
     expect(ids(card, "C9")).toEqual([]);
+  });
+
+  it("reads every selected-state spelling the ink half reads (BEM, ARIA, data-*)", () => {
+    const r = run({
+      "a.css": `.toggle__btn--active { background: var(--accent-primary); }
+        .chip[aria-pressed="true"] { background: var(--hover-bg); }
+        .pin[aria-checked="true"] { background: var(--subtle-bg); }`,
+    });
+    expect(ids(r, "C9")).toEqual([
+      "a.css:.toggle__btn--active",
+      'a.css:.chip[aria-pressed="true"]',
+      'a.css:.pin[aria-checked="true"]',
+    ]);
+  });
+
+  it("does not read a state inside :not() or an explicit false as a selection", () => {
+    const r = run({
+      "a.css": `.row:not(.active):hover { background: var(--hover-bg); }
+        .row[aria-selected="false"]:hover { background: var(--hover-bg); }`,
+    });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("exempts a semantic danger fill by its VALUE, not by a selector that says error", () => {
+    const r = run({
+      "a.css": `.delete-row:hover { background: var(--error-bg); }
+        .row-error.active { background: var(--accent-primary); }`,
+    });
+    expect(ids(r, "C9")).toEqual(["a.css:.row-error.active"]);
+  });
+});
+
+describe("C9 — selection keeps its ink (R6)", () => {
+  // Accent is for the selection's FILL and its icons/indicators; the label keeps
+  // --text-color. The background half of C9 never read `color:`, and its
+  // selected-state pattern missed BEM modifiers and ARIA states, so accent-ink
+  // selections shipped in the view-mode toggle, the pin list, the code-language
+  // list and the canonical .vm-chip--toggle.
+  it.each([
+    [".seg__btn--active", "BEM modifier"],
+    ['.pin-item[aria-checked="true"]', "aria-checked"],
+    ['.vm-chip--toggle[aria-pressed="true"]', "aria-pressed"],
+    ['.nav-link[aria-current="page"]', "aria-current"],
+    [".lang-item.active", "plain .active with no background"],
+    [".row.is-selected", ".is-* state"],
+  ])("flags accent-coloured text on %s (%s)", (selector) => {
+    const r = run({ "a.css": `${selector} { background: var(--accent-bg); color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([`a.css:${selector} (ink)`]);
+  });
+
+  it("also treats --primary-color as accent ink", () => {
+    const r = run({ "a.css": `.toc-item.active { color: var(--primary-color); }` });
+    expect(ids(r, "C9")).toEqual(["a.css:.toc-item.active (ink)"]);
+  });
+
+  it("accepts a selection that keeps --text-color", () => {
+    const r = run({ "a.css": `.seg__btn--active { background: var(--accent-bg); color: var(--text-color); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("accepts accent on the selection's icon or indicator", () => {
+    const r = run({
+      "a.css": `.item.active svg { color: var(--accent-primary); }
+        .item--active .item__icon { color: var(--accent-primary); }
+        .pin-item[aria-checked="true"] .pin-check { color: var(--accent-primary); }
+        .dropdown-item.active::before { color: var(--accent-primary); }`,
+    });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("accepts an icon-only control that says so with ui-ok(state)", () => {
+    const r = run({
+      "a.css": `.status-lock.active { color: var(--accent-primary); /* ui-ok(state): icon-only control — the glyph is the indicator */ }`,
+    });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("does not treat hover as a selection", () => {
+    const r = run({ "a.css": `.link:hover { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  // Codex review of #1465 (executed probes): the first version read the WHOLE
+  // selector list at once, matched `-check` in an ancestor, required one
+  // spelling of var(), and treated explicit false and non-selection states as
+  // selections.
+  it.each([
+    ['.row[aria-selected="false"]'],
+    ['.nav[aria-current="false"]'],
+    [".row.is-loading"],
+  ])("ignores a state that is not a selection: %s", (selector) => {
+    const r = run({ "a.css": `${selector} { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("judges each selector in a list on its own", () => {
+    const r = run({ "a.css": `.row.active .label, .row.active svg { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual(["a.css:.row.active .label (ink)"]);
+  });
+
+  it("reads the TARGET for indicator words, not an ancestor", () => {
+    const r = run({ "a.css": `.list-check .row.active { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual(["a.css:.list-check .row.active (ink)"]);
+  });
+
+  // Codex second pass on #1465.
+  it("does not read a negated state as a selection", () => {
+    const r = run({ "a.css": `.row:not(.active) { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("reads an attribute state written with spaces around '='", () => {
+    const r = run({ "a.css": `.row[aria-selected = "true"] { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([`a.css:.row[aria-selected = "true"] (ink)`]);
+  });
+
+  it("reads a spaced FALSE attribute as not selected (third pass)", () => {
+    const r = run({ "a.css": `.row[aria-selected = "false"] { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+
+  it("is not fooled by whitespace inside var()", () => {
+    const r = run({ "a.css": `.row.active { color: var( --accent-primary ); }` });
+    expect(ids(r, "C9")).toEqual(["a.css:.row.active (ink)"]);
+  });
+});
+
+describe("C12 — nothing floats over content without a stated reason", () => {
+  // The split-pane view-mode toggle was `position: absolute` at --z-toolbar,
+  // pinned top-right OVER the panes — across the HTML trust bar, the read-only
+  // banner, source text. C4 only looks at `fixed` overlays at --z-context-menu
+  // and above, so nothing read it. Overlay families (popups, menus, dialogs)
+  // are what the layer is for; everything else on a layer at or above --z-bar
+  // must say why it may cover content.
+  it("flags an absolutely positioned control on the toolbar layer", () => {
+    const r = run({
+      "a.css": `.pane__mode-toggle { position: absolute; top: var(--space-2); right: var(--space-3); z-index: var(--z-toolbar); }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane__mode-toggle"]);
+  });
+
+  it("flags a fixed element on the bar layer", () => {
+    const r = run({ "a.css": `.floating-hint { position: fixed; bottom: 0; z-index: var(--z-bar); }` });
+    expect(ids(r, "C12")).toEqual(["a.css:.floating-hint"]);
+  });
+
+  // Codex review of #1465 (executed probes).
+  it("judges each selector in a list on its own — an overlay neighbour exempts nothing", () => {
+    const r = run({
+      "a.css": `.pane__toggle, .help-tooltip { position: absolute; z-index: var(--z-toolbar); }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane__toggle"]);
+  });
+
+  it("joins position and z-index declared in separate rules for one selector", () => {
+    const r = run({
+      "a.css": `.pane__toggle { position: absolute; top: 0; right: 0; }
+        .pane__toggle { z-index: var(--z-toolbar); }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane__toggle"]);
+  });
+
+  it("resolves calc() around a z token", () => {
+    const r = run({ "a.css": `.pane__toggle { position: absolute; z-index: calc(var(--z-toolbar) + 1); }` });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane__toggle"]);
+  });
+
+  // Codex second pass on #1465: contexts are not interchangeable, and the
+  // LAST declaration in a context is the one that applies.
+  it("keeps @media contexts apart: a wide-screen overlay is flagged even if narrow screens reset it", () => {
+    const r = run({
+      "a.css": `.pane { position: absolute; z-index: var(--z-toolbar); }
+        @media (max-width: 600px) { .pane { position: static; z-index: 1; } }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane"]);
+  });
+
+  it("uses the effective declaration: a later position: static wins", () => {
+    const r = run({
+      "a.css": `.pane { position: absolute; }
+        .pane { position: static; z-index: var(--z-toolbar); }`,
+    });
+    expect(ids(r, "C12")).toEqual([]);
+  });
+
+  it("flags an overlay that exists only inside an @media block", () => {
+    const r = run({
+      "a.css": `@media (min-width: 900px) { .pane__toggle { position: absolute; z-index: var(--z-toolbar); } }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane__toggle"]);
+  });
+
+  // Codex third pass on #1465 — the cascade, not a merge.
+  it("takes the LAST declaration within one rule", () => {
+    const r = run({ "a.css": `.pane { position: static; position: absolute; z-index: 1; z-index: var(--z-toolbar); }` });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane"]);
+  });
+
+  it("a later unconditional reset overrides an earlier @media rule", () => {
+    const r = run({
+      "a.css": `@media (min-width: 900px) { .pane { position: absolute; z-index: var(--z-toolbar); } }
+        .pane { position: static; }`,
+    });
+    expect(ids(r, "C12")).toEqual([]);
+  });
+
+  it("composes nested contexts: @media position + nested @supports z-index", () => {
+    const r = run({
+      "a.css": `@media (min-width: 900px) { .pane { position: absolute; } @supports (display: grid) { .pane { z-index: var(--z-toolbar); } } }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane"]);
+  });
+
+  it("is not derailed by braces inside strings", () => {
+    const r = run({
+      "a.css": `.a { content: "}"; } .b { background: url("x{y}.png"); }
+        .pane { position: absolute; z-index: var(--z-toolbar); }
+        @media (max-width: 600px) { .pane { position: static; } }`,
+    });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane"]);
+  });
+
+  it("ignores @keyframes steps", () => {
+    const r = run({
+      "a.css": `@keyframes slide { from { position: absolute; z-index: var(--z-toolbar); } to { position: absolute; z-index: var(--z-toolbar); } }`,
+    });
+    expect(ids(r, "C12")).toEqual([]);
+  });
+
+  it("accepts overlay families, low layers, in-flow elements and stated reasons", () => {
+    const r = run({
+      "a.css": `.link-popup { position: fixed; z-index: var(--z-popup); }
+        .vm-menu { position: fixed; z-index: var(--z-context-menu); }
+        .resize-grip { position: absolute; z-index: var(--z-resize-handle); }
+        .pane__header { position: relative; z-index: var(--z-toolbar); }
+        .status-bar-container { position: fixed; z-index: var(--z-bar); /* ui-ok(float): layer owner — rule 32 z-table (StatusBar) */ }`,
+    });
+    expect(ids(r, "C12")).toEqual([]);
   });
 });
 
@@ -307,4 +546,79 @@ describe("focusPaintedClasses (C10's CSS half)", () => {
     expect(covered.has("a")).toBe(true);
     expect(covered.has("b")).toBe(true);
   });
+});
+
+describe("Codex fourth pass — C12 and C9 probes", () => {
+  it("C12: a quoted brace inside the floating rule does not end it", () => {
+    const r = run({ "a.css": `.pane { --label: "}"; position: absolute; z-index: var(--z-toolbar); }` });
+    expect(ids(r, "C12")).toEqual(["a.css:.pane"]);
+  });
+
+  it.each([
+    [`.pane { position: absolute; z-index: var(--z-toolbar) !important; }`],
+    [`.pane { position: absolute !important; position: static; z-index: var(--z-toolbar); }`],
+    [`.pane { position: absolute !important; z-index: var(--z-toolbar); } .pane { position: static; }`],
+  ])("C12: !important wins the cascade — floats: %s", (css) => {
+    expect(ids(run({ "a.css": css }), "C12")).toEqual(["a.css:.pane"]);
+  });
+
+  it("C12: an important static position keeps the element in flow", () => {
+    const r = run({ "a.css": `.pane { position: static !important; position: absolute; z-index: var(--z-toolbar); }` });
+    expect(ids(r, "C12")).toEqual([]);
+  });
+
+  // A GROWTH EXPONENT, not a duration (the method of pathologicalScaling.test.ts):
+  // CPU time of this thread (src/test/cpuClock.ts), five rounds of one small
+  // and one large sample with the minimum of each side kept. The cubic loop
+  // this replaced grew ~64× for 4× the rules; linear grows ~4×.
+  it("C12: scales linearly on a stylesheet of many @media rules", () => {
+    const sheet = (n) =>
+      Array.from({ length: n }, (_, i) => `@media (min-width: ${i}px) { .p${i} { position: relative; z-index: var(--z-bar); } }`).join("\n");
+    const small = sheet(400);
+    const large = sheet(1600);
+    const cost = measureGrowth((css) => expect(ids(run({ "a.css": css }), "C12")).toEqual([]), small, large);
+    const exponent = growthExponent(cost, small.length, large.length);
+    expect(
+      exponent,
+      `400 rules ${cost.smallMs.toFixed(1)}ms → 1600 rules ${cost.largeMs.toFixed(1)}ms on the ${cost.clock} clock`,
+    ).toBeLessThan(1.35);
+  });
+
+  it.each([[":is"], [":where"]])("C9: an icon alternative inside %s() does not exempt the selected label", (fn) => {
+    const selector = `${fn}(.row.selected, .row-icon)`;
+    const r = run({ "a.css": `${selector} { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([`a.css:${selector} (ink)`]);
+  });
+
+  it("C9: a selected row's icon, reached through :is(), is still an indicator", () => {
+    const r = run({ "a.css": `.row:is(.selected, .active) .row-icon { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+});
+
+describe("Codex fifth pass — C9 probes", () => {
+  it("background: a sanctioned :is() alternative exempts only itself", () => {
+    const r = run({ "a.css": `:is(.row[aria-selected="true"], .menu-item:hover) { background: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([`a.css::is(.row[aria-selected="true"], .menu-item:hover)`]);
+  });
+
+  it("background: a semantic token only as a var() fallback exempts nothing", () => {
+    const r = run({ "a.css": `.row[aria-selected="true"] { background: var(--accent-primary, var(--error-color)); }` });
+    expect(ids(r, "C9")).toEqual([`a.css:.row[aria-selected="true"]`]);
+  });
+
+  it("ink: spaces inside an attribute do not split the target compound", () => {
+    const r = run({ "a.css": `.row-icon[aria-selected = "true"] { color: var(--accent-primary); }` });
+    expect(ids(r, "C9")).toEqual([]);
+  });
+});
+
+describe("Codex sixth pass — C9 target reading", () => {
+  it.each([[`.row.selected:not(.row-icon .label)`], [`.row.selected:has(.row-icon)`]])(
+    "an icon named only inside :not()/:has() does not make %s an indicator",
+    (selector) => {
+      const r = run({ "a.css": `${selector} { color: var(--accent-primary); }` });
+      expect(ids(r, "C9")).toEqual([`a.css:${selector} (ink)`]);
+    },
+  );
 });

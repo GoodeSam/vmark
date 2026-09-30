@@ -14,7 +14,7 @@
   "actions.retire": "終止",
   "actions.hide": "隱藏",
   "actions.show": "顯示",
-  "promoteTitle": "提升為已確立 — 只有已確立的設定才能作為約束（D4）",
+  "promoteTitle": "提升為已確立 — 只有已確立的設定才能作為約束",
   "correctPlaceholder": "修正後的敘述",
   "correctConfirm": "確認修正",
   "create.heading": "從選取內容新增設定",

@@ -4,9 +4,9 @@ O VMark inclui um conjunto abrangente de regras de formatação para texto em Ch
 
 ## Início Rápido
 
-Use **Formatar → Formatar Documento CJK** ou pressione `Alt + Mod + Shift + F` para formatar todo o documento.
+Use **Formatar → CJK → Formatar arquivo inteiro** ou pressione `Alt + Mod + Shift + F` para formatar todo o documento.
 
-`Mod + Shift + F` formata **os blocos que sua seleção abrange** — o parágrafo, a lista ou a tabela inteira que o cursor ou a seleção toca, e não exatamente os caracteres selecionados. O espaçamento CJK é uma propriedade da fronteira *entre* dois caracteres adjacentes, e uma seleção no meio de uma palavra não contém essa fronteira; por isso o comando indica uma região a corrigir em vez do texto a reescrever. Sem seleção, ele formata o bloco onde está o cursor.
+**Formatar → CJK → Formatar seleção** (`Mod + Shift + F`) formata **os blocos que sua seleção abrange** — o parágrafo, a lista ou a tabela inteira que o cursor ou a seleção toca, e não exatamente os caracteres selecionados. O espaçamento CJK é uma propriedade da fronteira *entre* dois caracteres adjacentes, e uma seleção no meio de uma palavra não contém essa fronteira; por isso o comando indica uma região a corrigir em vez do texto a reescrever. Sem seleção, ele formata o bloco onde está o cursor.
 
 Os dois comandos protegem exatamente as mesmas coisas (veja «Conteúdo protegido»), então selecionar tudo antes de `Mod + Shift + F` é seguro.
 
@@ -119,12 +119,19 @@ Limita sinais de pontuação consecutivos (limite configurável).
 
 O seguinte conteúdo **não** é afetado pela formatação:
 
-- Blocos de código (```)
+- Blocos de código (```) — incluindo uma cerca **não fechada**, que ocupa o restante do documento, conforme especifica o CommonMark
 - Código inline (`)
 - URLs de links
 - Caminhos de imagem
 - Tags HTML
-- Frontmatter YAML
+- Frontmatter — tanto YAML (`---`) quanto TOML (`+++`)
+- Matemática inline (`$…$`), reconhecida pela mesma regra que o renderizador do VMark usa, de modo que um par de valores como `价格是 $100 和 $200 元` *não* é confundido com matemática
+- Matemática em bloco (`$$…$$`)
+- Blocos de código indentados
+- Wiki links (`[[target]]`, `[[target|display]]`)
+- Marcadores de nota de rodapé — referências como `[^1]` e o rótulo `[^1]:` de uma definição (o próprio texto da definição é formatado)
+- Referências de caracteres HTML (`&amp;`, `&#x5176;`)
+- Quebras temáticas (`---`, `***`)
 - Pontuação escapada com barra invertida (ex: `\,` permanece como `,`)
 
 ### Construtos Técnicos
@@ -164,13 +171,13 @@ Prefixe qualquer pontuação com `\` para evitar a conversão:
 
 Quando o [servidor MCP](/pt-BR/guide/mcp-setup) está conectado, assistentes de IA podem aplicar a formatação CJK programaticamente via a ferramenta `document.transform` com um destes três valores de `kind`:
 
-- `"cjk-format"` — normalização CJK completa (espaçamento + pontuação + aspas inteligentes conforme suas configurações)
-- `"cjk-spacing"` — ajusta apenas o espaço em branco nos limites CJK ↔ Latim/dígito
-- `"cjk-punctuation"` — converte a pontuação entre largura total e meia largura segundo as regras
+- `"cjk-format"` — normalização CJK completa (espaçamento + pontuação + aspas inteligentes), o mesmo formatador que o comando do menu executa, seguindo suas configurações em Configurações → Idioma
+- `"cjk-spacing"` — insere um espaço onde quer que um caractere CJK encontre uma letra latina ou um dígito, e nada mais
+- `"cjk-punctuation"` — converte `,` `.` `!` `?` `;` `:` `(` `)` de meia largura ao lado de um caractere CJK em sua forma de largura total; nunca converte de largura total de volta para meia largura
 
-Cada transformação executa um ciclo de serialização-formatação-análise no documento ativo para preservar as marcas inline (negrito, links, matemática, etc.) e respeitar suas regras de formatação configuradas.
+Apenas `cjk-format` lê suas configurações de formatação. `cjk-spacing` e `cjk-punctuation` são regras fixas que as ignoram e, ao contrário do formatador, também tratam o Hangul coreano como CJK. As três trabalham sobre o código-fonte markdown do documento e deixam o [conteúdo protegido](#conteudo-protegido) intacto.
 
-Consulte a [Referência de Ferramentas MCP](/pt-BR/guide/mcp-tools#document-tool) para o formato completo da requisição — `document.transform` recebe `tabId`, `kind` e um `expected_revision` para concorrência otimista.
+Consulte a [Referência de Ferramentas MCP](/pt-BR/guide/mcp-tools#transform) para o formato completo da requisição — `document.transform` recebe `tabId`, `kind` e um `expected_revision` para concorrência otimista.
 
 ## Configuração
 
@@ -278,7 +285,7 @@ Apóstrofos em contrações (como "it's" ou "don't") são preservados corretamen
 
 ### Alternar Estilo de Aspas no Cursor
 
-Você pode alternar rapidamente o estilo de aspas existentes sem reformatar todo o documento. Posicione o cursor dentro de qualquer par de aspas e pressione `Shift + Mod + '` para alternar.
+Você pode alternar rapidamente o estilo de aspas existentes sem reformatar todo o documento. Posicione o cursor dentro de qualquer par de aspas e pressione `Shift + Mod + '` para alternar. Isso funciona apenas no modo WYSIWYG; o modo Fonte não tem alternância de aspas.
 
 **Modo simples** (padrão): Alterna entre aspas retas e seu estilo preferido.
 

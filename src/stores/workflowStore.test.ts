@@ -7,13 +7,16 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { useWorkflowStore } from "./workflowStore";
+import { docPreview, useWorkflowStore } from "./workflowStore";
 import type { IRPatch } from "@/lib/ghaWorkflow/save/mutators";
 
 beforeEach(() => {
   useWorkflowStore.getState().resetGha();
   useWorkflowStore.getState().resetPreview();
   useWorkflowStore.getState().resetView();
+  // resetView keeps the direction on purpose (a reading preference), so a
+  // test that changes it must not leak it into the next one.
+  useWorkflowStore.getState().setLayoutDirection("TD");
   useWorkflowStore.getState().resetEdit();
   useWorkflowStore.getState().resetApproval();
 });
@@ -74,27 +77,28 @@ describe("gha slice", () => {
 /* ────────────────────────── preview slice ─────────────────────────────── */
 
 describe("preview slice", () => {
-  it("starts with empty graph/status", () => {
+  it("starts with no document preview and no statuses", () => {
     const s = useWorkflowStore.getState().preview;
-    expect(s.panelOpen).toBe(false);
-    expect(s.graph).toBeNull();
+    expect(s.docs).toEqual({});
+    expect(docPreview(s, "tab-1")).toEqual({ panelOpen: false, graph: null, parseError: null });
     expect(s.stepStatuses).toEqual({});
   });
 
-  it("previewOpen/Close/Toggle panel leave the gha slice untouched", () => {
-    useWorkflowStore.getState().previewOpenPanel();
-    expect(useWorkflowStore.getState().preview.panelOpen).toBe(true);
+  it("previewOpen/Close panel act on ONE tab and leave the gha slice untouched (#129)", () => {
+    useWorkflowStore.getState().previewOpenPanel("tab-1");
+    expect(docPreview(useWorkflowStore.getState().preview, "tab-1").panelOpen).toBe(true);
+    expect(docPreview(useWorkflowStore.getState().preview, "tab-2").panelOpen).toBe(false);
+    useWorkflowStore.getState().previewClosePanel("tab-1");
+    expect(useWorkflowStore.getState().preview.docs).toEqual({});
     expect(useWorkflowStore.getState().gha.byTab).toEqual({});
   });
 
-  it("setGraph clears active step and statuses", () => {
-    useWorkflowStore.getState().setActiveStepId("s1");
+  it("setGraph keeps the run's statuses", () => {
     useWorkflowStore.getState().setStepStatus("s1", { status: "running" });
     useWorkflowStore
       .getState()
-      .setGraph({ name: "n", steps: [] } as never);
-    expect(useWorkflowStore.getState().preview.activeStepId).toBeNull();
-    expect(useWorkflowStore.getState().preview.stepStatuses).toEqual({});
+      .setGraph("tab-1", { name: "n", steps: [] } as never);
+    expect(useWorkflowStore.getState().preview.stepStatuses).toEqual({ s1: { status: "running" } });
   });
 
   it("setExecution resets statuses", () => {
@@ -102,6 +106,15 @@ describe("preview slice", () => {
     useWorkflowStore.getState().setExecution("exec-1");
     expect(useWorkflowStore.getState().preview.executionId).toBe("exec-1");
     expect(useWorkflowStore.getState().preview.stepStatuses).toEqual({});
+  });
+
+  it("setExecution registers the run with the tab that started it (WI-LX2.1, #113)", () => {
+    useWorkflowStore.getState().setExecution("exec-1", { tabId: "tab-1", source: "y" });
+    expect(useWorkflowStore.getState().preview.runTabId).toBe("tab-1");
+    expect(useWorkflowStore.getState().preview.runSource).toBe("y");
+    useWorkflowStore.getState().finishExecution("exec-1", "completed");
+    expect(useWorkflowStore.getState().preview.lastExecutionId).toBe("exec-1");
+    expect(useWorkflowStore.getState().preview.runTabId).toBe("tab-1");
   });
 
   it("setStepStatus accumulates per stepId", () => {
@@ -121,7 +134,6 @@ describe("view slice", () => {
     const s = useWorkflowStore.getState().view;
     expect(s.selectedJobId).toBeNull();
     expect(s.selectedStepId).toBeNull();
-    expect(s.expandedMatrices.size).toBe(0);
     expect(s.layoutDirection).toBe("TD");
   });
 
@@ -145,15 +157,16 @@ describe("view slice", () => {
     expect(useWorkflowStore.getState().view.selectedStepId).toBeNull();
   });
 
-  it("toggleMatrix adds then removes", () => {
-    useWorkflowStore.getState().toggleMatrix("j1");
-    expect(useWorkflowStore.getState().view.expandedMatrices.has("j1")).toBe(true);
-    useWorkflowStore.getState().toggleMatrix("j1");
-    expect(useWorkflowStore.getState().view.expandedMatrices.has("j1")).toBe(false);
-  });
-
   it("setLayoutDirection", () => {
     useWorkflowStore.getState().setLayoutDirection("LR");
+    expect(useWorkflowStore.getState().view.layoutDirection).toBe("LR");
+  });
+
+  it("resetView keeps the layout direction the user chose (WI-LX2.4)", () => {
+    useWorkflowStore.getState().setLayoutDirection("LR");
+    useWorkflowStore.getState().selectJob("a");
+    useWorkflowStore.getState().resetView();
+    expect(useWorkflowStore.getState().view.selectedJobId).toBeNull();
     expect(useWorkflowStore.getState().view.layoutDirection).toBe("LR");
   });
 });
@@ -495,11 +508,40 @@ describe("setGraph during a run", () => {
   it("keeps executionId so the run can still be finished", () => {
     useWorkflowStore.getState().setExecution("exec-1");
 
-    useWorkflowStore.getState().setGraph({ name: "n", steps: [] } as never);
+    useWorkflowStore.getState().setGraph("tab-1", { name: "n", steps: [] } as never);
     expect(useWorkflowStore.getState().preview.executionId).toBe("exec-1");
 
     useWorkflowStore.getState().finishExecution("exec-1", "completed");
     expect(useWorkflowStore.getState().preview.executionId).toBeNull();
     expect(useWorkflowStore.getState().preview.lastRunOutcome).toBe("completed");
+  });
+});
+
+/* WI-LX2.4 — deleting two steps saves two deletions (dedup used to keep one). */
+describe("structural step edits survive the queue end to end", () => {
+  const THREE_STEPS = [
+    "name: CI",
+    "on: push",
+    "jobs:",
+    "  build:",
+    "    runs-on: ubuntu-latest",
+    "    steps:",
+    "      - run: a",
+    "      - run: b",
+    "      - run: c",
+    "",
+  ].join("\n");
+
+  it("two deletes at index 0 leave only the third step", () => {
+    const store = useWorkflowStore.getState();
+    store.bindToDocument("doc-steps");
+    store.queuePatch({ kind: "step.delete", jobId: "build", stepIndex: 0 } as IRPatch);
+    store.queuePatch({ kind: "step.delete", jobId: "build", stepIndex: 0 } as IRPatch);
+    const result = useWorkflowStore.getState().serializeWorkflowEdits(THREE_STEPS, "doc-steps");
+    expect(result.status).toBe("applied");
+    const yaml = result.status === "applied" ? result.yaml : "";
+    expect(yaml).toContain("run: c");
+    expect(yaml).not.toContain("run: a");
+    expect(yaml).not.toContain("run: b");
   });
 });

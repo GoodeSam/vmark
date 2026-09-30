@@ -12,7 +12,7 @@
   "genies.togglePicker": "Attiva/disattiva selettore geni",
   "genies.openPicker": "Cerca geni",
   "export.html": "Esporta come HTML",
-  "export.pdf": "Stampa in PDF",
+  "export.pdf": "Stampa…",
   "export.pdfNative": "Esporta come PDF",
   "export.copyHtml": "Copia come HTML",
   "export.pandocHint": "Installa Pandoc",

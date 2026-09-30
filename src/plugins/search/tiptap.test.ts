@@ -1460,7 +1460,7 @@ describe("search plugin view lifecycle", () => {
     // Run rAF callbacks
     vi.runAllTimers();
 
-    expect(scrollContainer.scrollTo).toHaveBeenCalled();
+    expect(scrollContainer.scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 300 - 200 / 3 }));
 
     viewResult.destroy!();
     vi.useRealTimers();

@@ -28,9 +28,9 @@ Digita un blocco di codice delimitato con l'identificatore di linguaggio `markma
 ```text
 ````
 
-### Usando lo Strumento MCP
+### Da un Assistente IA
 
-Usa lo strumento MCP `media` con `action: "markmap"` e il parametro `code` contenente intestazioni Markdown.
+Non esiste uno strumento dedicato alle mappe mentali. Un client IA collegato tramite il [server MCP di VMark](/it/guide/mcp-setup) inserisce una mappa mentale come inserisce qualsiasi altro Markdown — scrivendo un blocco di codice ` ```markmap ` nel documento con lo strumento `document` o `selection`.
 
 ## Modalità di Modifica
 
@@ -38,15 +38,15 @@ Usa lo strumento MCP `media` con `action: "markmap"` e il parametro `code` conte
 
 In modalità WYSIWYG, le mappe mentali Markmap vengono renderizzate come alberi SVG interattivi. Puoi:
 
-- **Fare pan** scorrendo o facendo clic e trascinando
-- **Fare zoom** tenendo premuto `Cmd`/`Ctrl` e scorrendo
+- **Fare pan** facendo clic e trascinando (un normale scorrimento fa scorrere il documento, non la mappa mentale)
+- **Fare zoom** tenendo premuto `Ctrl` e scorrendo
 - **Comprimere/espandere** i nodi facendo clic sul cerchio ad ogni ramo
 - **Adattare** la vista usando il pulsante di adattamento (angolo in alto a destra al passaggio)
 - **Doppio clic** sulla mappa mentale per modificare il sorgente
 
 ### Modalità Sorgente con Anteprima Live
 
-In modalità Sorgente, un pannello di anteprima fluttuante appare quando il cursore è all'interno di un blocco di codice markmap, aggiornandosi mentre digiti.
+In modalità Sorgente, un pannello di anteprima fluttuante mostra la mappa mentale mentre il cursore è all'interno di un blocco di codice markmap, aggiornandosi mentre digiti. L'anteprima è disattivata per impostazione predefinita — attivala con **Vista → Mostra/Nascondi anteprima diagramma** (`Alt + Mod + P`) o dalla palette dei comandi.
 
 ## Formato di Input
 
@@ -121,8 +121,8 @@ Ecco un markmap interattivo renderizzato direttamente in questa pagina — prova
 
 | Azione | Come |
 |--------|------|
-| **Pan** | Scorri o fai clic e trascina |
-| **Zoom** | `Cmd`/`Ctrl` + scroll |
+| **Pan** | Fai clic e trascina |
+| **Zoom** | `Ctrl` + scroll |
 | **Comprimi nodo** | Fai clic sul cerchio a un punto del ramo |
 | **Espandi nodo** | Fai di nuovo clic sul cerchio |
 | **Adatta alla vista** | Fai clic sul pulsante di adattamento (in alto a destra al passaggio) |

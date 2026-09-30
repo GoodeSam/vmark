@@ -70,15 +70,15 @@ REST 提供商直接连接到云端 API。每个提供商需要端点、API 密�
 
 ### 环境变量自动填充
 
-VMark 在启动时读取标准环境变量。如果你的 Shell 配置文件中设置了 `ANTHROPIC_API_KEY`、`OPENAI_API_KEY` 或 `GEMINI_API_KEY`，选择该提供商时 API 密钥字段会自动填充。
+VMark 从它自身的进程环境中读取标准环境变量。如果设置了 `ANTHROPIC_API_KEY`、`OPENAI_API_KEY`，或 `GOOGLE_API_KEY` / `GEMINI_API_KEY`（按此顺序检查），选择该提供商时 API 密钥字段会自动填充。
 
-这意味着你只需在 `~/.zshrc` 或 `~/.bashrc` 中设置一次密钥：
+VMark 能看到哪些变量，取决于它是如何启动的。在 `~/.zshrc` 或 `~/.bashrc` 等 Shell 配置文件中导出的密钥：
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-然后重启 VMark——无需手动输入密钥。
+只有当你从该 Shell 启动应用时才会传递给 VMark。如果从程序坞、访达、聚焦搜索或桌面启动器启动，VMark 不会读取你的 Shell 配置文件，该字段会保持为空——请直接粘贴密钥。在 Windows 上，无论 VMark 以何种方式启动，用户或系统环境变量都有效。
 
 ### 设置：Anthropic（REST）
 

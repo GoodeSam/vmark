@@ -127,6 +127,8 @@ VMark 對 AI 助理開放**九個複合 MCP 工具**：`session`、`workspace`�
 
 **核准流程。**第一次呼叫會回傳 `{needsApproval: true}`，並彈出一個同意對話框，標明*正規化*後的資料夾路徑（符號連結已解析）。助理應詢問使用者，然後**重試同一個呼叫**；一旦使用者核准，重試就會開啟該資料夾。被拒絕的請求會持續失敗，直到再次獲得核准。沒有「記住」選項——每次開啟都要個別核准。
 
+**資料夾存取。** 僅在對話框中核准，並不能讓 VMark 讀取其始終可讀位置（你的主資料夾與已掛載的磁碟區）以外的資料夾。對於這樣的資料夾，核准後的重試會在該資料夾處開啟 VMark 的資料夾選擇器，並傳回 `APPROVAL_REQUIRED`，請使用者在其中選擇該資料夾；選擇之後，下一次重試即可開啟。如果已有另一個資料夾對話框開啟，則不會顯示任何內容，傳回 `BUSY`——核准仍然保留，請在使用者關閉該對話框後重試。該視窗中已有工作區切換正在進行時，也會傳回 `BUSY`。
+
 ### `save`
 
 將分頁內容存回原本的路徑。
@@ -355,7 +357,7 @@ VMark 對 AI 助理開放**九個複合 MCP 工具**：`session`、`workspace`�
 
 在 AI 擁有的分頁上，把**你自己的操作**記錄成可重播的工作流程。參數：`tabId?`、`recordOp`（`"start"` 或 `"stop"`），以及 `site?`（所記錄工作流程的 front-matter 網站 id；預設為 `recording`）。
 
-`start` 受 `record` 權限的**同意把關**，而該權限——與 `execute_js` 和 `session` 一樣——**絕非常駐授權**：每一次記錄都會重新徵求你的同意，因此 AI 永遠無法在你不知情下記錄你。在你允許之前，`start` 會回傳 `needsApproval`；一旦你允許，VMark 就會啟用一段休眠的 page-world 擷取墊片，並開始記錄你執行的**點擊與欄位編輯**。`stop` 會回傳 `{source, inputs, eventCount}`——其中 `source` 是工作流程文字，你可以將它儲存，或直接交給 [`workflow_run`](#workflow-run)。
+`start` 受 `record` 權限的**同意把關**，而該權限——與 `execute_js` 和 `session` 一樣——**絕非常駐授權**：每一次記錄都會重新徵求你的同意，因此 AI 永遠無法在你不知情下記錄你。在你允許之前，`start` 會回傳 `needsApproval`；一旦你允許，VMark 就會啟用一段休眠的 page-world 擷取墊片，並開始記錄你執行的**點擊與欄位編輯**。`stop` 會回傳 `{source, inputs, eventCount}`——其中 `source` 是工作流程文字，你可以將它儲存，或直接交給 [`workflow_run`](#workflow-run-workflow-cancel)。
 
 這份記錄**在設計上即不含任何值**，而且這並不是一道信任頁面的過濾器：你所輸入的任何內容都絕不會被擷取。每個文字欄位都會變成一個具名的 `{input}` 變數（其值在重播時才提供，絕不記錄）；而**密碼或一次性驗證碼欄位**則會變成一個 `confirm:` 步驟——一道你在重播時親手完成的人工關卡——因此祕密甚至不會被參數化；而且每個 URL 都會被削減到只剩 origin + path，讓查詢字串中的權杖無法留存。所記錄的是你所碰觸的**定位器**（ARIA role + accessible name），絕非它們的資料。記錄會跟著你跨越頁面導覽，並且有其上限（每頁 200 個事件、每個工作階段 1,000 個）。
 
@@ -542,7 +544,8 @@ VMark 對 AI 助理開放**九個複合 MCP 工具**：`session`、`workspace`�
 | `INVALID_PATCH` | 結構化封包 | `workflow.apply_patch` 收到格式錯誤的 `patches` 陣列 |
 | `INVALID_TAB` | 結構化封包 | 無法解析 `tabId` |
 | `INVALID_PATH` | 結構化封包 | 無法讀取某個 `filePath`，或它位於已開啟的工作區／文件範圍之外 |
-| `APPROVAL_REQUIRED` | 結構化封包 | 在「自動核准編輯」關閉時，`save_as` 至新位置 |
+| `APPROVAL_REQUIRED` | 結構化封包 | 在「自動核准儲存至新位置與精靈結果」關閉時，`save_as` 至新位置；或 `open_workspace` 正在等待使用者核准，或等待使用者在 VMark 的資料夾選擇器中選擇該資料夾 |
+| `BUSY` | 結構化封包 | `open_workspace` 無法繼續：另一個資料夾對話框已開啟，或該視窗中正在切換工作區；核准仍保留——請重試 |
 | `NOT_WORKFLOW` | 結構化封包 | 在非 yaml-workflow 分頁上呼叫 `workflow.*` |
 | `READ_ONLY` | 結構化封包 | 對唯讀文件嘗試進行變更操作 |
 | `NO_EDITOR` | 結構化封包 | 呼叫了 `selection.*`，但聚焦中的分頁沒有實際運作的編輯器 |

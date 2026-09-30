@@ -299,6 +299,13 @@ errors:
   workflow.noPendingApproval: "没有匹配的待处理审批请求"
   workflow.appDataDirUnavailable: "无法解析应用数据目录：%{detail}"
   workflow.snapshotFailed: "无法为此工作流将修改的文件创建快照，因此未运行：%{detail}"
+  workflow.snapshotNotFound: "该工作流快照已不存在"
+  workflow.snapshotUnreadable: "无法读取工作流快照的记录：%{detail}"
+  workflow.snapshotNoWorkspace: "此快照由旧版 VMark 创建，无法恢复"
+  workflow.snapshotWorkspaceMissing: "此快照所属的文件夹已不存在：%{path}"
+  workflow.snapshotListFailed: "无法列出工作流快照：%{detail}"
+  workflow.restoreWhileRunning: "有工作流正在运行。请等待其完成或取消后再恢复文件。"
+  workflow.restoreSuperseded: "此快照之后又运行了其他工作流，恢复它可能会撤销该运行的更改。未恢复任何内容。"
 
   # === 保存路径（file_write.rs，WI-14 CommandError）===
   save.parentMissing: "该文件所在的文件夹已不存在：%{dir}"
@@ -404,6 +411,17 @@ errors:
 
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "钥匙串访问被拒绝。请在钥匙串提示中允许 VMark，或在“钥匙串访问”中授予访问权限，然后重试。"
+
+  # === 工作区访问授权 (workspace_grants/commands.rs, WI-LX1.1) ===
+  workspaceAccess.notGranted: "VMark 尚未获得访问“%{path}”的权限。请通过 文件 → 打开工作区... 选择该文件夹以授予权限。"
+  workspaceAccess.pickerBusy: "已有一个文件夹对话框处于打开状态"
+  workspaceAccess.checkBusy: "VMark 仍在检查对该文件夹的访问权限，请稍后再试"
+  workspaceAccess.listProtected: "VMark 可打开的文件夹列表只能由 VMark 自身修改"
+
+# WI-LX1.1 — the folder picker Rust shows for workspace access
+workspaceAccess:
+  pickTitle: "打开工作区文件夹"
+  confirmTitle: "允许 VMark 打开此文件夹"
 
 window:
   settings.title: "设置"

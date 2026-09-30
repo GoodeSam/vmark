@@ -23,7 +23,7 @@ VMark 處理 Markdown 內的圖片參照時,會區分以下兩種方向:
 
 要實作這項功能,VMark 必須在貼上時偵測本機圖片、上傳到遠端儲存,再把回傳的網址寫進 Markdown 取代 `./.assets/…` 路徑。聽起來不複雜,但實際上會在三個關鍵面向擴張 VMark 的職責:
 
-1. **長期憑證管理**。原生的 S3-compatible 上傳必須保存使用者的 access key 與 secret access key。VMark 目前不持有任何長期祕鑰——沒有 encryption-at-rest 的設計、沒有 OS keychain 整合、沒有金鑰輪替的操作流程,也沒有「金鑰意外寫進 Markdown」這類失敗情境的防範。一旦加入上傳功能,就等於跨過這條界線。
+1. **長期憑證管理**。原生的 S3-compatible 上傳必須保存使用者的 access key 與 secret access key。VMark 現在確實持有少數祕鑰——AI 供應商的 API 金鑰,以及你為 AI 儲存的瀏覽器工作階段,兩者都存放在 OS keychain 中——但其中沒有任何一項是能寫入你付費儲存 bucket 的憑證。上傳功能加入的恰恰就是這種東西:又一家供應商的金鑰需要保存、金鑰輪替的操作流程,以及「金鑰意外寫進 Markdown」這類失敗情境。
 
 2. **多家供應商支援的零碎開銷**。S3、Cloudflare R2、Backblaze B2、MinIO、DigitalOcean Spaces 都號稱 S3-compatible,但各自都有獨特的行為差異(path-style 與 virtual-hosted 的定址方式、ACL 語義、區域端點、CORS 規則)。要單一維護者長期扛起這片支援面,對一款寫作工具而言是不小的長期成本。
 

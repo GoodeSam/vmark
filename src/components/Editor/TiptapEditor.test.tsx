@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render } from "@testing-library/react";
 
 /**
@@ -539,6 +539,17 @@ describe("TiptapEditorInner — onSelectionUpdate", () => {
 });
 
 describe("TiptapEditorInner — content-visibility toggle", () => {
+  // It never engages on macOS (usesContentVisibility); setup pins macOS.
+  const setPlatform = (value: string) =>
+    Object.defineProperty(navigator, "platform", { value, configurable: true, writable: true });
+  afterEach(() => setPlatform("MacIntel"));
+
+  it("never applies cv-idle on macOS, however large the doc", () => {
+    mocks.useDocumentContent.mockReturnValueOnce("a".repeat(600_000));
+    const { container } = render(<TiptapEditorInner />);
+    expect(container.querySelector(".tiptap-editor")?.classList.contains("cv-idle")).toBe(false);
+  });
+
   it("skips cv-idle on small docs so the idle toggle does not shake the layout (#823)", () => {
     // Default useDocumentContent mock returns "# hello" — well below the
     // 50K-char threshold. Small docs don't need the optimization and the
@@ -548,7 +559,7 @@ describe("TiptapEditorInner — content-visibility toggle", () => {
   });
 
   it("applies cv-idle at mount when initial content is large enough to benefit", () => {
-    // Stuff the initial content with >50K chars so the optimization engages.
+    setPlatform("Win32"); // >50K chars off macOS: the optimization engages.
     mocks.useDocumentContent.mockReturnValueOnce("a".repeat(60_000));
     const { container } = render(<TiptapEditorInner />);
     expect(container.querySelector(".tiptap-editor")?.classList.contains("cv-idle")).toBe(true);
@@ -579,6 +590,7 @@ describe("TiptapEditorInner — content-visibility toggle", () => {
   });
 
   it("strips cv-idle on onUpdate and re-adds it after the idle timeout for large docs", () => {
+    setPlatform("Win32");
     vi.useFakeTimers();
     try {
       mocks.useDocumentContent.mockReturnValue("a".repeat(60_000));

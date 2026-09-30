@@ -23,6 +23,10 @@
 
 .json-tree-preview .vmark-json-view__key {
   color: var(--syntax-property);
+  /* Our class REPLACES the library's label class, and its spacing went with
+     it: keys rendered as `name:"demo"`. One character in the mono tree reads
+     as the space after a colon (jsonViewStyles.webkit.test.tsx measures it). */
+  margin-right: 1ch;
 }
 
 .json-tree-preview .vmark-json-view__string {

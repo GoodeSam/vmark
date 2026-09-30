@@ -19,6 +19,8 @@ import {
   BOOT_CHUNK_PATTERNS,
   findLazyOnlyViolations,
   LAZY_ONLY_CHUNK_PATTERNS,
+  MAX_EAGER_BYTES,
+  eagerBudgetViolation,
   // @ts-expect-error — plain .mjs module without type declarations
 } from "./check-eager-chunks.mjs";
 
@@ -368,5 +370,34 @@ describe("LAZY_ONLY_CHUNK_PATTERNS — the shipped list", () => {
     // a gate that can never go green.
     expect(DENYLIST as string[]).not.toContain("vendor-codemirror");
     expect(DENYLIST as string[]).not.toContain("vendor-tiptap");
+  });
+});
+
+describe("eager byte budget — what cold start loads, whatever the chunk shape", () => {
+  // Per-chunk budgets in .size-limit.cjs cannot tell "more code" from "the
+  // same code in fewer files": a bundler that merges shared chunks into their
+  // importers (vite 8.3 / rolldown 1.2.11 did) moves bytes between budgets.
+  // The static closure is what the app actually loads before it runs.
+  const MiB = 1024 * 1024;
+
+  it("accepts a closure at the budget", () => {
+    expect(eagerBudgetViolation(MAX_EAGER_BYTES)).toBeNull();
+  });
+
+  it("refuses one byte over it, naming both sizes", () => {
+    const message = eagerBudgetViolation(MAX_EAGER_BYTES + 1) as string;
+    expect(message).toMatch(/cold start/i);
+    expect(message).toContain((MAX_EAGER_BYTES / MiB).toFixed(2));
+  });
+
+  it("sits within ~5% of the measured cold-start closure (3.09 MiB), like every other budget", () => {
+    const measured = 3.09 * MiB;
+    expect(MAX_EAGER_BYTES).toBeGreaterThan(measured);
+    expect(MAX_EAGER_BYTES).toBeLessThanOrEqual(measured * 1.06);
+  });
+
+  it("takes an explicit budget, so the check is testable apart from the constant", () => {
+    expect(eagerBudgetViolation(10, 10)).toBeNull();
+    expect(eagerBudgetViolation(11, 10)).not.toBeNull();
   });
 });

@@ -2,8 +2,8 @@
 
 VMark puede alojar un navegador web real **dentro** de una ventana de documento — una página web se convierte en una pestaña de primera clase junto a tus documentos Markdown. Es una webview nativa auténtica (`WKWebView` de macOS), no una ventana externa de Chrome ni un marco incrustado.
 
-::: warning Experimental
-El navegador integrado es una función incipiente y **solo funciona en macOS** en esta compilación. La compatibilidad con Windows y Linux llegará más adelante — en esas plataformas los ajustes que se describen a continuación no aparecen en absoluto.
+::: info Solo macOS
+El navegador integrado está disponible en **macOS**, donde está activado de forma predeterminada. No está disponible en Windows ni en Linux: allí, los ajustes que se describen a continuación y el comando **Nueva pestaña del navegador** no aparecen en absoluto.
 :::
 
 
@@ -34,7 +34,7 @@ ventana que los posee.
 
 ## Cómo usarlo
 
-Una pestaña del navegador se abre en el área del editor, junto a tus documentos — la barra lateral, la tira de pestañas, el terminal y la barra de estado permanecen donde están. Sus controles se sitúan **encima de la página**: en macOS comparten la barra de título de la ventana, ya que VMark la dibuja por su cuenta. Cuando es el sistema quien dibuja la barra de título (Windows, Linux), se sitúan dentro de la ventana, encima de la página, tal como los disponen todos los demás navegadores de escritorio.
+Una pestaña del navegador se abre en el área del editor, junto a tus documentos — la barra lateral, la tira de pestañas, el terminal y la barra de estado permanecen donde están. Sus controles se sitúan **encima de la página**, compartiendo la barra de título de la ventana, que VMark dibuja por su cuenta.
 
 | Control | Acción |
 |---------|--------|
@@ -69,7 +69,7 @@ Si el proceso de contenido web de una página muere, la pestaña muestra una sup
 
 VMark crea la webview de la plataforma por su cuenta y la añade como hija nativa de la ventana — **no** le pide una al framework de la aplicación. Eso importa para la privacidad: una webview creada por el framework inyectaría un puente de mensajería interno en cada página, entregando a cualquier sitio un canal hacia la aplicación. Como VMark posee una webview recién construida sin semejante puente, **una página navegada no tiene ningún canal hacia VMark**. La página se controla estrictamente en una sola dirección (la aplicación puede leer y actuar sobre la página; la página no puede responder).
 
-Las sesiones (inicios de sesión, cookies) persisten por perfil en el propio almacén de datos de la webview del sistema operativo, así que inicias sesión en cada sitio una sola vez. VMark no almacena ninguna credencial por sí mismo.
+Las sesiones (inicios de sesión, cookies) persisten por perfil en el propio almacén de datos de la webview del sistema operativo, así que inicias sesión en cada sitio una sola vez. VMark no mantiene ningún almacén propio de contraseñas ni de cookies; la única excepción es una sesión que apruebas explícitamente guardar para una IA (consulta *Guardar / cargar sesión* más abajo), cuyas cookies y `localStorage` van al **keychain del sistema operativo**, nunca a un archivo.
 
 ## Controlar el navegador con IA
 
@@ -156,13 +156,15 @@ Esta es la forma prevista para el uso del navegador por la IA en VMark: el agent
 ## Cuando una página no carga
 
 Una red sin conexión, un nombre de host incorrecto, un certificado rechazado o una conexión rechazada producen todos
-un mensaje en el panel del navegador que indica qué salió mal, con un botón **Reintentar**. Las compilaciones
-anteriores mostraban en su lugar un panel en blanco, que era indistinguible de una página que simplemente iba lenta.
+un mensaje en el panel del navegador que indica qué salió mal, con un botón **Reintentar**, de modo que una carga fallida nunca parece una página que simplemente va lenta.
 
 ## Limitaciones actuales
 
 - Solo macOS en esta compilación.
-- Los diálogos `confirm()` / `prompt()` de JavaScript están suprimidos por ahora (solo se muestra `alert()`); las ventanas emergentes (`window.open`) se bloquean en lugar de abrirse como pestañas nuevas.
-- Las descargas, la impresión y la política de red por solicitud aún no están implementadas.
+- Los diálogos `alert()` y `confirm()` de JavaScript se muestran y los respondes tú; `prompt()` está suprimido por ahora. Las ventanas emergentes (`window.open`) se bloquean, y la dirección bloqueada se ofrece como una pestaña nueva.
+- Una página protegida con autenticación HTTP básica no carga — todavía no hay un aviso de usuario y contraseña.
+- La búsqueda en la página y el zoom de página no están implementados.
+- VMark todavía no decide por sí mismo las solicitudes de cámara, micrófono, ubicación o notificaciones; se aplica el comportamiento predeterminado de la webview del sistema.
+- Las descargas, la impresión y la política de red por solicitud aún no están implementadas. Las acciones de pasar el puntero y arrastrar todavía no tienen un verbo de IA.
 
 Estos aspectos se van completando de forma incremental; la página anterior describe lo que funciona hoy.

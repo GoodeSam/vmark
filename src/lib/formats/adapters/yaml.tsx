@@ -28,6 +28,9 @@ import {
   isWorkflowYaml,
   looksLikeWorkflowPath,
 } from "@/lib/ghaWorkflow/detection";
+import { isEngineWorkflow } from "@/lib/workflow/detection";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
 import { lintYaml } from "@/lib/lintEngine/yaml";
 import { registerFormat } from "../registry";
 import type {
@@ -84,9 +87,14 @@ export const yamlValidator: Validator = (content) => {
  *   2. Content detection on syntactically invalid content returns null
  *      — the regex-based shape check is gated on a successful YAML
  *      parse so a regex hit on broken YAML doesn't false-positive.
+ *
+ * WI-LX2.1 — between the two, a VMark ENGINE workflow (top-level `steps:`
+ * naming `genie/`/`action/`/`webhook/`, no `jobs:`) is `vmark-workflow`. The
+ * shapes are disjoint; `lib/workflow/detection.ts` states the rule.
  */
 export const yamlSchemaDetector: SchemaDetector = (path, content) => {
   if (looksLikeWorkflowPath(path)) return "gha-workflow";
+  if (isEngineWorkflow(path, content)) return "vmark-workflow";
   // Cheap shape pre-filter before the parse — if the regex doesn't
   // match, we can return null without paying for the YAML parse.
   if (!isWorkflowYaml(content)) return null;
@@ -150,6 +158,55 @@ function GhaWorkflowSchemaRenderer(props: PreviewRendererProps) {
   );
 }
 
+/**
+ * WI-LX2.1 — the `vmark-workflow` schema: the engine's Run/Cancel panel while
+ * `advanced.workflowEngine` is on, and otherwise the plain YAML tree the file
+ * always showed. Gated HERE, before the lazy import, so the panel's chunk is
+ * never fetched for a user who has not turned the engine on; read reactively,
+ * so flipping the setting swaps the pane without reopening the file.
+ *
+ * EXCEPT while this tab's run is live (audit 20260928 #124): switching the
+ * engine off reaches the backend asynchronously, and a lost push leaves the
+ * run going. The panel — and its Cancel — stays until the run ends, which is
+ * also what the backend does on acknowledging the disable. The generic preview
+ * keeps it too, for a run whose file stopped parsing mid-run.
+ */
+const loadEngineWorkflowRenderer = () =>
+  import("./yamlEngineRenderer").then((m) => ({
+    default: m.EngineWorkflowSchemaRenderer,
+  }));
+
+/** This tab owns the window's live workflow run. */
+function useLiveRunHere(tabId: string | null | undefined): boolean {
+  return useWorkflowStore(
+    (s) => tabId != null && s.preview.executionId !== null && s.preview.runTabId === tabId,
+  );
+}
+
+function EngineWorkflowSchemaRenderer(props: PreviewRendererProps) {
+  const engineEnabled = useSettingsStore((s) => s.advanced.workflowEngine);
+  const liveRunHere = useLiveRunHere(props.tabId);
+  if (!engineEnabled && !liveRunHere) return <YamlTreePreview {...props} />;
+  return <EngineRunPanel {...props} />;
+}
+
+/** Plain YAML — unless this tab's run is live, whose Cancel must stay reachable. */
+function YamlGenericPreview(props: PreviewRendererProps) {
+  return useLiveRunHere(props.tabId) ? <EngineRunPanel {...props} /> : <YamlTreePreview {...props} />;
+}
+
+function EngineRunPanel(props: PreviewRendererProps) {
+  return (
+    <RetryableLazy
+      feature="VMark workflow engine"
+      load={loadEngineWorkflowRenderer}
+      componentProps={props}
+      pending={null}
+      renderError={(retry) => <GhaWorkflowRendererError retry={retry} />}
+    />
+  );
+}
+
 function YamlTreePreview({ content, diagnostics }: PreviewRendererProps) {
   const { t } = useTranslation("editor");
   const isDark = useIsDarkTheme();
@@ -206,10 +263,11 @@ export const yamlFormat: FormatConfig = {
   // plugins must not carry themselves (lint:store-coupling).
   loadExtraExtensions: loadWorkflowSourceExtensions,
   validator: yamlValidator,
-  genericPreview: YamlTreePreview,
+  genericPreview: YamlGenericPreview,
   schemaDetector: yamlSchemaDetector,
   schemaRenderers: {
     "gha-workflow": GhaWorkflowSchemaRenderer,
+    "vmark-workflow": EngineWorkflowSchemaRenderer,
   },
   adapters: {
     saveDialogFilters: [{ nameI18nKey: "format.yaml", extensions: ["yaml", "yml"] }],

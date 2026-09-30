@@ -32,8 +32,8 @@
  *     the per-path queue cannot provide (audit 20260906, F3)
  * @coordinates-with saveHistorySnapshot.ts — version history snapshots
  * @coordinates-with services/coherence/captureFunnel.ts — fire-and-forget provenance capture
- *     (WI-1.6), gated on `general.coherenceCaptureOnSave` (default OFF): capture
- *     rewrites the file to insert a `vmark:` identity block, so it is opt-in
+ *     (WI-1.6). `general.coherenceCaptureOnSave` (default OFF) is enforced there
+ *     and in the kernel for EVERY write path (WI-LX1.4), not here
  * @module services/persistence/saveToPath
  */
 import { invoke } from "@tauri-apps/api/core";
@@ -198,20 +198,16 @@ async function performSave(
   // capture never fails the save; scan reconciliation heals gaps. The
   // trailing catch guards the contract even if captureWrite ever throws.
   //
-  // OPT-IN (`general.coherenceCaptureOnSave`, default off). Capture assigns a
-  // Semantic Object identity, and doing so REWRITES the user's file to insert a
-  // `vmark:` frontmatter block — prepending a whole block when the file has
-  // none — and creates `.vmark/` in their workspace. Because autosave is on by
-  // default, leaving this ungated stamped users' markdown silently, without
-  // them ever pressing save. Editing someone's document is a decision they make.
-  if (useSettingsStore.getState().general.coherenceCaptureOnSave) {
-    void captureWrite({
-      absolutePath: path,
-      content: normalized.output,
-      agent: { type: "human" },
-      intent: { kind: "editor-save", summary: saveType === "auto" ? "auto save" : "manual save" },
-    }).catch(() => {});
-  }
+  // Stamping a `vmark:` block into the user's file and creating `.vmark/` are
+  // OPT-IN (`general.coherenceCaptureOnSave`, default off) — autosave once made
+  // that rewrite silent. The setting is enforced ONCE, by the funnel and the
+  // kernel, for every write path (WI-LX1.4); a gate here covered saves only.
+  void captureWrite({
+    absolutePath: path,
+    content: normalized.output,
+    agent: { type: "human" },
+    intent: { kind: "editor-save", summary: saveType === "auto" ? "auto save" : "manual save" },
+  }).catch(() => {});
 
   return true;
 }

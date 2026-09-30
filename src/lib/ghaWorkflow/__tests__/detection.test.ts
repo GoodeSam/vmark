@@ -13,6 +13,12 @@ describe("looksLikeWorkflowPath", () => {
     expect(looksLikeWorkflowPath("/abs/.github/workflows/release.yaml")).toBe(true);
   });
 
+  it("matches a Windows path with backslash separators (WI-LX2.1)", () => {
+    expect(looksLikeWorkflowPath("C:\\repo\\.github\\workflows\\ci.yml")).toBe(true);
+    expect(looksLikeWorkflowPath(".github\\workflows\\release.yaml")).toBe(true);
+    expect(looksLikeWorkflowPath("C:\\repo\\.github\\workflows\\sub\\ci.yml")).toBe(false);
+  });
+
   it("rejects YAML files outside .github/workflows", () => {
     expect(looksLikeWorkflowPath("config/foo.yml")).toBe(false);
     expect(looksLikeWorkflowPath("docker-compose.yml")).toBe(false);

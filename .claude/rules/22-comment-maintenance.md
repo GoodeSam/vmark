@@ -1,3 +1,11 @@
+---
+paths:
+  - "src/**"
+  - "src-tauri/src/**"
+  - "scripts/**"
+  - "server/**"
+---
+
 # 22 - Comment Maintenance
 
 When modifying code in files that have AI-maintenance documentation comments, keep the comments in sync with the code.

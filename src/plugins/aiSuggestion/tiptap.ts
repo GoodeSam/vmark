@@ -19,6 +19,7 @@
  *
  * @coordinates-with types.ts — AiSuggestion interface and event name constants
  * @coordinates-with types.ts — the AiSuggestionStore PORT; widgets.ts — its DOM
+ * @coordinates-with utils/settledScroll.ts — scrolls to the focused suggestion
  * @module plugins/aiSuggestion/tiptap
  */
 
@@ -44,7 +45,7 @@ const aiSuggestionPluginKey = new PluginKey("aiSuggestion");
 
 export { applySuggestionToTr, computeSuggestionRemap, isValidPosition } from "./applySuggestion";
 import { applySuggestionToTr, computeSuggestionRemap, isValidPosition } from "./applySuggestion";
-import { scrollBehavior } from "@/utils/motion";
+import { scrollToSettled } from "@/utils/settledScroll";
 
 /**
  * Check if a DOM event targets a suggestion button.
@@ -349,19 +350,16 @@ export const aiSuggestionExtension = Extension.create<AiSuggestionOptions>({
             // Guard against stale positions after doc changes
             if (!isValidPosition(suggestion, editorView.state.doc.content.size)) return;
 
-            // Scroll to the focused suggestion
+            // Scroll the editor's scroll container — .ProseMirror never scrolls —
+            // settled, as content-visibility moves a far target mid-scroll (#1458)
+            const scroller = editorView.dom.closest<HTMLElement>(".editor-content");
+            if (!scroller) return;
             const coords = editorView.coordsAtPos(suggestion.from);
-            const editorRect = editorView.dom.getBoundingClientRect();
-
-            if (coords.top < editorRect.top || coords.bottom > editorRect.bottom) {
-              editorView.dom.scrollTo({
-                top:
-                  editorView.dom.scrollTop +
-                  coords.top -
-                  editorRect.top -
-                  editorRect.height / 3,
-                behavior: scrollBehavior(),
-              });
+            const rect = scroller.getBoundingClientRect();
+            if (coords.top < rect.top || coords.bottom > rect.bottom) {
+              scrollToSettled(scroller, () => (isValidPosition(suggestion, editorView.state.doc.content.size)
+                ? editorView.coordsAtPos(suggestion.from).top - scroller.getBoundingClientRect().top - rect.height / 3
+                : null), editorView.dom);
             }
           };
 

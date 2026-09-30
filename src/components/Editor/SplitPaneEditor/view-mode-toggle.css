@@ -1,7 +1,7 @@
 /* WI-2.1 — ViewModeToggle: segmented Source/Split/Preview control.
  *
- * Token-only; dark-mode parity is implicit. Positioned by the parent
- * (SplitPaneEditor floats it top-right of the body).
+ * Token-only; dark-mode parity is implicit. Placed by the parent, in
+ * SplitPaneEditor's header row above the panes.
  */
 
 .view-mode-toggle {
@@ -34,9 +34,11 @@
   color: var(--text-color);
 }
 
+/* Selection keeps its ink (rule 30, R6): accent background, text colour
+ * unchanged. Accent-coloured text read as a link, not a selected segment. */
 .view-mode-toggle__btn--active {
   background: var(--accent-bg);
-  color: var(--accent-primary);
+  color: var(--text-color);
 }
 
 /* Focus: U-shaped underline (matches toolbar/popup button idiom, rule 33). */

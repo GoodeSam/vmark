@@ -29,7 +29,8 @@ type PanelPosition = "top" | "bottom" | "left" | "right";
 export interface EditorAreaProps {
   /** The editor surface. */
   editor: ReactNode;
-  /** Bottom-bar mux (StatusBar / Toolbar / FindBar). Renders in 40px lane. */
+  /** Bottom-bar mux (StatusBar / Toolbar / FindBar), in a lane at least 40px
+   *  high that grows with the in-flow FindBar. */
   bottomBar: ReactNode;
   /** Optional side or bottom panel (terminal today). */
   panel?: ReactNode;
@@ -89,11 +90,18 @@ export function EditorArea({
         >
           {editor}
         </div>
+        {/* At LEAST one bar high: the in-flow FindBar grows it when its replace
+            row opens or its controls wrap, and the editor above shrinks — a
+            fixed 40px lane let the taller bar rise over the document. */}
         <div
           style={{
             position: "relative",
-            height: BOTTOM_BAR_HEIGHT,
+            minHeight: BOTTOM_BAR_HEIGHT,
             flexShrink: 0,
+            // Bottom-anchor in-flow bars, as the absolute FindBar was.
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
           }}
         >
           {bottomBar}

@@ -29,7 +29,7 @@ Parsing is not the bottleneck — it is ProseMirror's view construction. Moving 
 
 ## Settings
 
-Open **Settings → Editor → Large files**:
+Open **Settings → Editor → Large Files**:
 
 - **Open files over 1 MB in Source mode automatically** *(on by default)* — turn off if you prefer WYSIWYG for files up to 5 MB, accepting the longer open time.
 - **Warn before opening files over 5 MB** *(on by default)* — turn off to skip the confirmation dialog for files between 5 MB and 50 MB. They will still open in Source mode.
@@ -40,7 +40,7 @@ The 50 MB hard refusal is not user-adjustable. The webview cannot safely hold ar
 
 - If you have to keep editing a very large file in WYSIWYG, consider splitting it into smaller files linked from an index document. Markdown works well as a set of smaller chapters.
 - If you only need to read or search a large file, Source mode with the line-number ruler and `Find` (`Mod + F`) is usually the fastest workflow.
-- `Format > Format CJK Text` and other whole-document commands still run correctly on Source-mode documents.
+- **Format → CJK → Format Entire File** and other whole-document commands still run correctly on Source-mode documents.
 
 ## Edge cases
 
@@ -52,4 +52,4 @@ The 50 MB hard refusal is not user-adjustable. The webview cannot safely hold ar
 ## Known limitations
 
 - The thresholds are byte sizes, which are a proxy for the real cost (block count). A 600 KB file with thousands of short blocks can be slower than a 1.2 MB file of long paragraphs. The defaults are conservative.
-- Phase C of the large-file initiative (deferred WYSIWYG rendering) is not shipped yet — see `dev-docs/plans/20260422-large-file-open-ux.md` for status.
+- WYSIWYG still builds every block of the document when it opens — only inline math formulas render later, as they come near the visible area — so switching a large file to WYSIWYG costs the full open time described above.

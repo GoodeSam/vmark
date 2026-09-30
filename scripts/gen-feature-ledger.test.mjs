@@ -21,7 +21,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   CODE_EXTENSIONS,
   countLines,
@@ -40,6 +40,8 @@ import {
   verifyFlagDefaults,
 } from "./gen-feature-ledger.mjs";
 import { codeSpan, coverageCell, escapeCell, renderLedger } from "./lib/featureLedgerRender.mjs";
+import { parseLedger } from "./lib/featureLedgerDoc.mjs";
+import { CODE_EXTENSIONS as OWNERSHIP_CODE_EXTENSIONS } from "./lib/featureOwnership.mjs";
 
 const GENERATOR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "gen-feature-ledger.mjs");
 
@@ -301,6 +303,12 @@ describe("measurement commands fail loudly instead of measuring zero", () => {
 
 // ---------------------------------------------------------------- audit 20260907 (W2 #70, #71)
 
+describe("one code-extension policy", () => {
+  it("the generator's extension list IS the ownership module's, not a copy that could drift", () => {
+    expect(CODE_EXTENSIONS).toBe(OWNERSHIP_CODE_EXTENSIONS);
+  });
+});
+
 describe("file enumeration", () => {
   const scratch = () => {
     const root = mkdtempSync(join(tmpdir(), "ledger-files-"));
@@ -557,5 +565,175 @@ describe("rendering", () => {
     });
     const line = doc.split("\n").find((l) => l.startsWith("| M "));
     expect(line).toBe("| M | 10 | 1 | 1 | 0.50 | -- | -- | -- | -- | -- | -- | 2026-09-07 | always on |");
+  });
+});
+
+describe("ledger sections", () => {
+  const ledgerOf = (docsValues) => parseLedger(`## Area 1 — A\n\nVerified: \`abc1234\`\n\n${docsValues
+    .map((d, i) => `### B${i}\n- id: b${i}\n- feature: F\n- status: shipped-on, macos-only\n- docs: ${d}\n- tests: none\n`).join("\n")}`);
+  const cell = (doc, measure) => doc.split("\n").find((l) => l.startsWith(`| ${measure} |`))?.split("|")[2].trim();
+
+  it("counts a block as citing no website page by what it CITES, not by a leading `none`", () => {
+    const ledger = ledgerOf([
+      "none",                                                              // no page: counted
+      "`e2e/README.md`",                                                   // a doc, but not a website page: counted
+      "`e2e/lib/notes.md`",                                                // likewise: counted
+      "none in `website/guide/`",                                          // a directory, not a page: counted
+      "none directly; actions surface in `website/guide/features.md`",     // cites a page: NOT counted
+      "`website/guide/terminal.md` §Settings",                             // cites a page: not counted
+    ]);
+    const doc = renderLedger([], { since: "1 day ago", defaultsRel: "d.ts", covPresent: false, ledger });
+    // A `none` prefix test says 3 (it misses both e2e docs and counts the "none directly" page citation).
+    expect(cell(doc, "No website page cited")).toBe("4");
+    expect(cell(doc, "Status includes macos-only")).toBe("6");
+  });
+
+  it("claims only that the additive COUNT columns add up — ratios, coverage, dates and churn do not", () => {
+    const doc = renderLedger([], { since: "1 day ago", defaultsRel: "d.ts", covPresent: false });
+    expect(doc).not.toMatch(/so\s+column totals add up/);
+    expect(doc).toMatch(/Code, Src files, Test files, Oversized, Mocks and Layering add up across rows/);
+    expect(doc).toMatch(/a commit that touches two features counts under both/);
+  });
+});
+
+// ---------------------------------------------------------------- single ownership + ledger join (2026-09-27)
+
+describe("single ownership and the ledger join, end to end", () => {
+  /** A committed tree with valid (empty) baselines, a folder claim and a file claim inside it. */
+  function ownedTree({ ledger } = {}) {
+    const root = mkdtempSync(join(tmpdir(), "ledger-owned-"));
+    const put = (rel, body) => { mkdirSync(dirname(join(root, rel)), { recursive: true }); writeFileSync(join(root, rel), body); };
+    put("src/editor/a.ts", "export const a = 1;\n");
+    put("src/editor/table.ts", "export const t = 1;\n");
+    put("src/stores/settingsStore/defaults.ts", "export const initialState = {};\n");
+    put("scripts/feature-map.json", JSON.stringify({
+      features: [
+        { name: "Editor", paths: ["src/editor"], flag: null, flagDefault: null, doc: null },
+        { name: "Tables", paths: ["src/editor/table.ts"], flag: null, flagDefault: null, doc: null },
+      ],
+      infrastructure: { paths: ["src/stores"] },
+    }));
+    put("scripts/file-size-baseline.json", JSON.stringify({ files: {}, testFiles: {} }));
+    put("scripts/mock-boundaries-baseline.json", JSON.stringify({ entries: [] }));
+    put(".dependency-cruiser-known-violations.json", "[]");
+    put("scripts/plugin-store-coupling-baseline.json", JSON.stringify({ units: {} }));
+    const git = (...a) => spawnSync("git", ["-c", "user.email=g@example.test", "-c", "user.name=G", "-c", "commit.gpgsign=false", ...a], { cwd: root, encoding: "utf8" });
+    git("init", "-q", "-b", "main");
+    git("add", "-A");
+    git("commit", "-qm", "base");
+    const base = git("rev-parse", "--short", "HEAD").stdout.trim();
+    put("src/editor/table.ts", "export const t = 2;\n");
+    git("commit", "-qam", "touch the table");
+    if (ledger) put(".claude/feature-ledger.md", ledger(base));
+    return root;
+  }
+  const rowOf = (doc, name) => doc.split("\n").find((l) => l.startsWith(`| ${name} |`)) ?? "";
+
+  it("measures a file under ONE feature — the most specific claim — so rows add up", () => {
+    const root = ownedTree();
+    const res = spawnSync(process.execPath, [GENERATOR], { cwd: root, encoding: "utf8" });
+    expect(res.stderr).toBe("");
+    expect(res.status).toBe(0);
+    const doc = readFileSync(join(root, "dev-docs/feature-metrics.md"), "utf8");
+    // | name | code | src files | ...
+    expect(rowOf(doc, "Editor").split("|")[3].trim()).toBe("1");
+    expect(rowOf(doc, "Tables").split("|")[3].trim()).toBe("1");
+    expect(doc).toContain("feature-ledger.md` is absent, so the ledger tables are not rendered");
+  });
+
+  const blockFor = (feature, id, over = {}) => `### ${feature} block\n${Object.entries({
+    id, feature, summary: "s", capabilities: "c", status: "shipped-on, macos-only", gate: "always on", surfaces: "menu",
+    code: "`src/editor/a.ts`", rust: "none", docs: "none", tests: "none", notes: "none", ...over,
+  }).map(([k, v]) => `- ${k}: ${v}`).join("\n")}\n`;
+  const generate = (root) => spawnSync(process.execPath, [GENERATOR], { cwd: root, encoding: "utf8" });
+
+  it("renders ledger counts, the at-a-glance index and commits since each feature was verified", () => {
+    const root = ownedTree({ ledger: (sha) => `# Ledger\n\n## Area 1 — All\n\nVerified: \`${sha}\`\n\n${blockFor("Editor", "ed")}\n${blockFor("Tables", "tb")}` });
+    const res = spawnSync(process.execPath, [GENERATOR], { cwd: root, encoding: "utf8" });
+    expect(res.status).toBe(0);
+    const doc = readFileSync(join(root, "dev-docs/feature-metrics.md"), "utf8");
+    expect(doc).toMatch(/\| Status includes macos-only \| 2 \|/);
+    expect(doc).toMatch(/\| No website page cited \| 2 \|/);
+    // Only the table changed after the verified commit.
+    expect(doc).toMatch(/\| Tables \| 1 \| 1 \|/);
+    expect(doc).toMatch(/\| Editor \| 1 \| 0 \|/);
+    expect(doc).toMatch(/\| 1 \| Tables \| Tables block \(`tb`\) \| shipped-on, macos-only \| always on \|/);
+  });
+
+  it("refuses to render a ledger the gate would refuse — an unknown feature, a missing field, a duplicate area", () => {
+    const root = ownedTree({
+      ledger: (sha) => `# Ledger\n\n## Area 1 — All\n\nVerified: \`${sha}\`\n\n${blockFor("Editor", "ed")}\n${blockFor("Nope", "np")}` +
+        `\n## Area 1 — Again\n\nVerified: \`${sha}\`\n\n${blockFor("Tables", "tb").replace(/- notes: none\n/, "")}`,
+    });
+    const res = generate(root);
+    expect(res.status).toBe(65);
+    expect(res.stderr).toMatch(/feature "Nope" is not a spine feature/);
+    expect(res.stderr).toMatch(/"tb".*missing field "notes"/);
+    expect(res.stderr).toMatch(/Area 1 is declared twice/);
+  });
+
+  it("refuses a spine whose claims are ambiguous or fully shadowed before measuring anything", () => {
+    const root = ownedTree();
+    writeFileSync(join(root, "scripts/feature-map.json"), JSON.stringify({
+      features: [
+        { name: "Editor", paths: ["src/editor"], flag: null, flagDefault: null, doc: null },
+        { name: "Tables", paths: ["src/editor/table.ts"], flag: null, flagDefault: null, doc: null },
+        { name: "Grid", paths: ["src/editor/table.ts"], flag: null, flagDefault: null, doc: null },
+        { name: "Shadowed", paths: ["src/editor/a.ts", "src/editor"], flag: null, flagDefault: null, doc: null },
+      ],
+      infrastructure: { paths: ["src/stores"] },
+    }));
+    const res = generate(root);
+    expect(res.status).toBe(65);
+    expect(res.stderr).toMatch(/src\/editor\/table\.ts is claimed by both "Tables" and "Grid"/);
+    expect(res.stderr).toMatch(/src\/editor is claimed by both "Editor" and "Shadowed"/);
+  });
+
+  // Churn follows a file through deletion and rename. Commits 1-2 touch ONLY
+  // the pre-rename path, so they can be counted only through the rename; a
+  // deleted file is reachable only through history, not today's tree.
+  it("counts commits to a since-deleted file and to a file's pre-rename path", () => {
+    const root = mkdtempSync(join(tmpdir(), "ledger-history-"));
+    const put = (rel, body) => { mkdirSync(dirname(join(root, rel)), { recursive: true }); writeFileSync(join(root, rel), body); };
+    const git = (...a) => {
+      const r = spawnSync("git", ["-c", "user.email=g@example.test", "-c", "user.name=G", "-c", "commit.gpgsign=false", ...a], { cwd: root, encoding: "utf8" });
+      if (r.status !== 0) throw new Error(`git ${a.join(" ")}: ${r.stderr}`);
+      return r.stdout.trim();
+    };
+    put("src/old/b.ts", "export const b = 1;\n");
+    put("src/stores/settingsStore/defaults.ts", "export const initialState = {};\n");
+    put("scripts/file-size-baseline.json", JSON.stringify({ files: {}, testFiles: {} }));
+    put("scripts/mock-boundaries-baseline.json", JSON.stringify({ entries: [] }));
+    put(".dependency-cruiser-known-violations.json", "[]");
+    put("scripts/plugin-store-coupling-baseline.json", JSON.stringify({ units: {} }));
+    git("init", "-q", "-b", "main");
+    git("add", "-A");
+    git("commit", "-qm", "1: b is born outside the editor");
+    put("src/old/b.ts", "export const b = 2;\n");
+    git("commit", "-qam", "2: b changes, still outside");
+    const verified = git("rev-parse", "--short", "HEAD");
+    put("src/editor/gone.ts", "export const g = 1;\n");
+    git("add", "-A");
+    git("commit", "-qm", "3: add a file the feature later deletes");
+    git("rm", "-q", "src/editor/gone.ts");
+    git("commit", "-qm", "4: delete it");
+    mkdirSync(join(root, "src/editor"), { recursive: true }); // `git rm` removed the emptied directory
+    git("mv", "src/old/b.ts", "src/editor/b.ts");
+    git("commit", "-qm", "5: move b into the editor");
+    expect(git("show", "--name-status", "--format=", "HEAD")).toMatch(/^R100\tsrc\/old\/b\.ts\tsrc\/editor\/b\.ts$/);
+    put("scripts/feature-map.json", JSON.stringify({
+      features: [{ name: "Editor", paths: ["src/editor"], flag: null, flagDefault: null, doc: null }],
+      infrastructure: { paths: ["src/stores"] },
+    }));
+    put(".claude/feature-ledger.md", `# Ledger\n\n## Area 1 — All\n\nVerified: \`${verified}\`\n\n${blockFor("Editor", "ed", { code: "`src/editor/b.ts`" })}`);
+    const res = generate(root);
+    expect(res.stderr).toBe("");
+    expect(res.status).toBe(0);
+    const doc = readFileSync(join(root, "dev-docs/feature-metrics.md"), "utf8");
+    // All five. Today's files alone (b.ts) see only 5 → 1; history of deleted
+    // paths without the rename mapping sees 3, 4, 5 → 3.
+    expect(rowOf(doc, "Editor").split("|")[11].trim()).toBe("5");
+    // Since commit 2: 3, 4, 5.
+    expect(doc).toMatch(/\| Editor \| 1 \| 3 \|/);
   });
 });

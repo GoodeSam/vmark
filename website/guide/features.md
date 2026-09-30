@@ -115,13 +115,17 @@ Edit multiple locations simultaneously — VMark supports full multi-cursor in b
 | Undo last cursor | `Alt + Mod + Z` |
 | Collapse to single cursor | `Escape` |
 
-All standard editing (typing, deletion, clipboard, navigation) works at every cursor independently. Block-scoped by default to prevent unintended edits across sections.
+All standard editing (typing, deletion, clipboard, navigation) works at every cursor independently. In prose, `Mod + D` and `Mod + Shift + L` search the whole document; inside a code block they stay within that block. `Alt + Mod + Shift + L` selects every match in the current block only.
 
 [Learn more →](/guide/multi-cursor)
 
 ## Smart Select All
 
-In WYSIWYG mode, `Mod + A` grows the selection one container at a time instead of jumping straight to the whole document: inside a table it selects the cell, then the row, then the table, then the document. `Mod + Z` steps an expansion back and `Escape` collapses the selection to a cursor. The binding belongs to the editor and is not customizable.
+In WYSIWYG mode, `Mod + A` grows the selection one container at a time instead of jumping straight to the whole document: inside a table it selects the cell, then the row, then the table, then the document. `Mod + Z` steps an expansion back and `Escape` collapses the selection to a cursor.
+
+In Source mode, `Mod + A` first selects the enclosing block — a code fence, table, blockquote or list — and then the whole document; `Mod + Z` steps an expansion back there too.
+
+The binding belongs to the editor and is not customizable.
 
 ## Auto-Pair & Tab Escape
 
@@ -190,8 +194,10 @@ Powerful line manipulation via Edit → Lines:
 | Delete Line | `Mod + Shift + K` |
 | Join Lines | `Mod + J` |
 | Remove Blank Lines | — |
-| Sort Lines Ascending | `F4` |
-| Sort Lines Descending | `Shift + F4` |
+| Sort Lines Ascending | `F4` _(Source mode only)_ |
+| Sort Lines Descending | `Shift + F4` _(Source mode only)_ |
+
+Sorting works on plain text lines, so it is available only in Source mode.
 
 ## Tables
 
@@ -203,7 +209,7 @@ Full-featured table editing:
 - Columns auto-size to content; wide tables scroll horizontally
 - Fit to width — pin a table to the editor width with content-proportional columns (Settings → Markdown, or per-table via right-click)
 - Context toolbar for quick actions
-- Keyboard navigation (Tab, arrows, Enter)
+- Keyboard navigation — `Tab` / `Shift + Tab` move between cells, arrow keys leave the table at its edges, and `Mod + Enter` / `Mod + Shift + Enter` add a row below / above
 
 ## Images
 
@@ -300,7 +306,7 @@ Render raw SVG inline via ` ```svg ` code blocks:
 
 ### Inline Table of Contents
 
-Type `[TOC]` on its own line to insert a live table of contents:
+Type `[TOC]` on its own line, or choose **Insert → Table of Contents**, to insert a live table of contents (the menu item has no default shortcut; assign one in Settings → Shortcuts):
 
 - Auto-generated from document headings with proper nesting
 - Click any heading to scroll directly to it
@@ -320,7 +326,7 @@ Built-in AI writing assistance powered by your choice of provider:
 
 ## Search & Replace
 
-Open the find bar with `Mod + F`. It appears inline at the top of the editor area and works in both WYSIWYG and Source modes.
+Open the find bar with `Mod + F`. It opens in the bar at the bottom of the window and works in both WYSIWYG and Source modes.
 
 **Navigation:**
 
@@ -339,7 +345,7 @@ Open the find bar with `Mod + F`. It appears inline at the top of the editor are
 
 **Replace:**
 
-Click the expand chevron on the find bar to reveal the replace row. Type replacement text, then use **Replace** (single match) or **Replace All** (every match at once). The match counter displays the current position and total (e.g., "3 of 12") so you always know where you are.
+The replace field sits next to the find field — both are always visible, and `Tab` moves from one to the other. Type replacement text, then use **Replace** (single match) or **Replace All** (every match at once). The match counter displays the current position and total (e.g., "3 of 12") so you always know where you are.
 
 ## Markdown Lint
 
@@ -370,7 +376,7 @@ When you run a lint check, diagnostics appear as inline highlights and gutter ma
 - Unclosed fenced code blocks
 - Broken fragment links (`#anchor` not matching any heading)
 
-Lint results are ephemeral and cleared when you edit the document. Re-run the check at any time with `Alt + Mod + V`.
+Lint results are not updated as you type. In Source mode, an edit clears them. In WYSIWYG mode, an edit removes the highlights, but the issue count in the status bar and the `F2` / `Shift + F2` targets stay from the last run until you run the check again or close the tab. Re-run the check at any time with `Alt + Mod + V`.
 
 ## Universal Toolbar
 
@@ -441,7 +447,7 @@ Built-in Chinese/Japanese/Korean text formatting:
 VMark automatically saves snapshots of your documents so you can recover earlier versions.
 
 - **Auto-save** with configurable interval captures snapshots in the background
-- **Per-document history** stored locally in JSONL format
+- **Per-document history** stored locally in VMark's application data folder — an index file plus one Markdown file per snapshot
 - Open the History sidebar with `Ctrl + Shift + 3` to browse past versions
 - Snapshots are **grouped by day** with timestamps showing the exact time each version was saved
 - **Restore** a previous version by clicking the restore button next to any snapshot (a confirmation dialog prevents accidental reverts)
@@ -452,9 +458,9 @@ VMark automatically saves snapshots of your documents so you can recover earlier
 
 ## Session Recovery (Hot Exit)
 
-When you quit VMark or it exits unexpectedly, your session is preserved and restored on the next launch.
+When VMark restarts to install an update, or exits unexpectedly, your work is preserved and restored on the next launch.
 
-**What's saved:**
+**What an update restart saves:**
 - All open tabs and their content (including unsaved changes)
 - Cursor positions and undo/redo history
 - UI layout: sidebar state, outline visibility, source/focus/typewriter mode, terminal state
@@ -462,10 +468,11 @@ When you quit VMark or it exits unexpectedly, your session is preserved and rest
 - Active workspace and file explorer settings
 
 **How it works:**
-- On quit, VMark captures the complete session state from all windows
+- When you choose to restart and install an update, VMark captures the complete session state from all windows first
 - On relaunch, tabs are restored exactly as you left them, with dirty (unsaved) documents marked accordingly
-- Crash recovery runs automatically after an unexpected exit, restoring documents from periodic recovery snapshots
+- Unsaved changes are also written to recovery snapshots every 10 seconds. After an unexpected exit, VMark restores them on the next launch as unsaved tabs
 - Recovery snapshots older than 7 days are cleaned up automatically
+- An ordinary quit does not capture the session: VMark asks you to save unsaved documents first. A workspace's open tabs still come back the next time you open it (see [Session Restore](/guide/workspace-management#session-restore))
 
 No configuration needed. Session recovery is always active.
 
@@ -527,9 +534,9 @@ VMark includes utilities for text cleanup and formatting, available in the Forma
 
 Built-in Chinese/Japanese/Korean text formatting tools. [Learn more →](/guide/cjk-formatting)
 
-### Image Cleanup (File → Clean Up Unused Images)
+### Image Cleanup (Format → Text Cleanup → Clean Up Unused Images…)
 
-Find and remove orphaned images from your assets folder.
+Find and remove orphaned images from your assets folder (also available from the command palette). VMark shows what it found and asks before deleting, and deleted images go to the system trash. An image that any open document still uses — including unsaved changes in another VMark window — is kept. If VMark cannot confirm that an image is unused (for example, another window does not answer in time), it deletes nothing.
 
 ## Integrated Terminal
 
@@ -557,7 +564,7 @@ VMark automatically checks for updates and can download and install them in-app:
 ## Coherence, Knowledge Base & Slidev
 
 - **Coherence & Breakdown view** — opt-in provenance tracking records which documents each AI generation read, flags downstream documents when an upstream changes, and adds semantic checks, canon claims and contexts on top. Open it from **Window → Coherence Breakdown**. [Learn more →](/guide/coherence)
-- **Knowledge base** — serves an open workspace as a cross-linked site (wiki links, backlinks, relationship graph, full-text search) on `127.0.0.1`, in a panel (`Ctrl + Shift + 4`) or in your browser, and previews and exports Slidev decks. [Learn more →](/guide/knowledge-base)
+- **Knowledge base** — serves an open workspace as a cross-linked site (wiki links, backlinks, relationship graph, full-text search) on `127.0.0.1`, in a panel (`Ctrl + Shift + 4`) or in your browser, and previews and exports Slidev decks. No release build includes the content-server runtime it needs yet, so the panel, its menu item, palette command and shortcut are hidden unless **Settings → Advanced → Developer tools** is on. [Learn more →](/guide/knowledge-base)
 
 ## Customization
 
@@ -579,6 +586,8 @@ Configure separate fonts for:
 - Latin text
 - CJK (Chinese/Japanese/Korean) text
 - Monospace (code)
+
+Each picker offers a short list of recommended fonts, the fonts installed on your computer, and a **Custom…** entry where you type any font family name. [Details →](/guide/settings#typography)
 
 ### Layout
 

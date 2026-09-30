@@ -28,6 +28,8 @@
   "panel.exportMermaid": "Copy as Mermaid",
   "panel.exportMermaidLossy": "Mermaid export omits run status, action icons, custom badges, and matrix expansion details.",
   "panel.exportSvgLossy": "SVG export uses foreignObject; for native vector primitives, export as PNG instead.",
+  "panel.layout.leftToRight": "Lay out left to right",
+  "panel.layout.topToBottom": "Lay out top to bottom",
   "panel.aria.jobPrefix": "Job {{name}}",
   "panel.aria.runsOn": "runs on {{runner}}",
   "panel.aria.stepCount": "{{count}} steps",
@@ -155,5 +157,18 @@
   "form.job.add.submit": "Add",
   "form.job.add.duplicate": "A job with this ID already exists",
   "form.job.add.invalid": "Start with a letter or underscore, then letters, digits, hyphens or underscores",
-  "diagnosticsBanner.actionlintTimedOut": "actionlint did not answer in time; VMark stopped waiting for it"
+  "diagnosticsBanner.actionlintTimedOut": "actionlint did not answer in time; VMark stopped waiting for it",
+  "form.concurrency.label": "Concurrency",
+  "form.concurrency.group": "Group",
+  "form.concurrency.cancelInProgress": "Cancel in progress",
+  "form.concurrency.expressionLocked": "(expression — edit in source)",
+  "form.job.delete.label": "Delete job",
+  "form.job.steps.add": "Add step",
+  "form.job.steps.delete": "Delete step",
+  "form.job.steps.moveUp": "Move step up",
+  "form.job.steps.moveDown": "Move step down",
+  "form.permissions.label": "Permissions",
+  "form.permissions.default": "Default",
+  "form.permissions.custom": "Custom (per-scope)",
+  "form.permissions.unset": "(unset)"
 }

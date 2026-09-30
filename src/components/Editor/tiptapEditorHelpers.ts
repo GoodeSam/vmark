@@ -3,11 +3,15 @@
  *
  * Purpose: pure, editor-instance-level helpers extracted from TiptapEditor.tsx —
  * history-free content replacement, adaptive debounce sizing, the spellcheck
- * size cutoff, the viewport-preserving cv-idle toggle (#823, #1340), and
+ * size cutoff, the viewport-preserving cv-idle toggle (#823, #1340) with the
+ * `.cv-enabled` sizing marker that outlives it (#1472, #1473) and the
+ * platform gate that keeps both off macOS (usesContentVisibility), and
  * external markdown→editor sync. No React state; safe to call from effects
  * and callbacks.
  *
- * @coordinates-with TiptapEditor.tsx — sole consumer; behavior documented there
+ * @coordinates-with utils/platform.ts — isMacPlatform for the content-visibility gate
+ * @coordinates-with TiptapEditor.tsx — consumer; behavior documented there
+ * @coordinates-with useContentVisibilityMode.ts — applies the cv classes outside edits
  * @coordinates-with services/editor/unparseableDocument.ts — a refused sync lands in Source mode
  * @module components/Editor/tiptapEditorHelpers
  */
@@ -19,6 +23,7 @@ import { parseMarkdown } from "@/utils/markdownPipeline";
 import { getTiptapEditorView } from "@/services/editor/tiptapView";
 import { handleTableScrollToSelection } from "@/plugins/tableScroll/scrollGuard";
 import { setCvIdlePreservingViewport } from "./cvIdleViewportLock";
+import { isMacPlatform } from "@/utils/platform";
 import { reportUnparseableDocument } from "@/services/editor/unparseableDocument";
 
 /**
@@ -152,14 +157,68 @@ export function applySpellcheckForDocSize(
 export const CV_IDLE_CHAR_THRESHOLD = 50_000;
 
 /**
+ * Whether a document of `docSize` characters gets the content-visibility
+ * optimization at all: large enough (see {@link CV_IDLE_CHAR_THRESHOLD}) and
+ * NOT on macOS.
+ *
+ * In the macOS app (WKWebView) `content-visibility: auto` on every top-level
+ * block is the opposite of an optimization. Measured on a 420K-character
+ * document with 4,042 blocks (2540×1295 window at 2x): every scrolled frame
+ * cost ~1.2 s with it and ~20 ms without, and a static, script-free clone of
+ * the same DOM measured the same 1.2 s — the cost is the engine's layout, not
+ * the editor. Without it WebKit lays the whole document out once (~1 s at
+ * open) and scrolls from then on. Windows (WebView2) and Linux (WebKitGTK)
+ * were not measured and keep the optimization.
+ */
+export function usesContentVisibility(docSize: number): boolean {
+  return docSize >= CV_IDLE_CHAR_THRESHOLD && !isMacPlatform();
+}
+
+/**
+ * Marks an editor that uses content-visibility, for as long as it does. editor.css
+ * scopes `contain-intrinsic-size: auto` to it: remembered sizes survive the strip of
+ * `.cv-idle` (#1472), and editors that never skip a block record none (#1473).
+ */
+export const CV_ENABLED_CLASS = "cv-enabled";
+
+/** Mount: both classes at once — no block has been laid out, so no size to wait for. */
+export function applyContentVisibilityAtMount(container: HTMLElement, enabled: boolean): void {
+  container.classList.toggle(CV_ENABLED_CLASS, enabled);
+  container.classList.toggle("cv-idle", enabled);
+}
+
+/**
+ * Bring the classes to rest for `enabled` outside an edit (a document load, an
+ * editor shown again): an edit's transition across the threshold, or a fresh
+ * idle window when the marker is on but `.cv-idle` is neither applied nor due.
+ */
+export function followContentVisibility(
+  containerRef: MutableRefObject<HTMLDivElement | null>,
+  enabled: boolean,
+  cvIdleTimeoutRef: MutableRefObject<number | null>,
+): void {
+  const container = containerRef.current;
+  if (!container) return;
+  const idleOrDue = container.classList.contains("cv-idle") || cvIdleTimeoutRef.current !== null;
+  const atRest = container.classList.contains(CV_ENABLED_CLASS) === enabled && (!enabled || idleOrDue);
+  if (!atRest) setContentVisibility(containerRef, enabled, cvIdleTimeoutRef);
+}
+
+/**
  * Suppress content-visibility during active typing — keeping cv on during
  * edits costs O(blocks-after-insertion)/keystroke (378ms on a 2250-block
  * doc). Re-enables after 500ms idle so scroll/repaint keep the optimization.
  *
- * Small documents (<CV_IDLE_CHAR_THRESHOLD) skip the re-enable entirely:
- * the toggle causes visible shaking because `contain-intrinsic-size: auto`
- * fallbacks don't match real block heights when off-screen blocks have
- * never been rendered, and small docs don't need the optimization anyway (#823).
+ * Documents that do not get the optimization at all ({@link usesContentVisibility})
+ * skip the re-enable entirely: every document on macOS, and small ones
+ * (<CV_IDLE_CHAR_THRESHOLD) everywhere — for those the toggle causes visible
+ * shaking, as `contain-intrinsic-size: auto` fallbacks don't match real block
+ * heights when off-screen blocks have never been rendered, and small docs
+ * don't need the optimization anyway (#823).
+ *
+ * The same decision sets `.cv-enabled`: an edit that grows the document past the
+ * threshold marks it at once, and `.cv-idle` follows after the idle window with
+ * every block's size on record; one that shrinks it below drops both, and the re-add.
  *
  * Both class toggles go through {@link setCvIdlePreservingViewport}: on a
  * large doc the same estimate-vs-real height divergence changes the height of
@@ -169,27 +228,41 @@ export const CV_IDLE_CHAR_THRESHOLD = 50_000;
  * window (the per-keystroke hot path) it is already off and nothing is
  * measured or written.
  *
- * If the idle timer fires while the editor is hidden (Source mode toggled
- * within the window), display:none geometry yields no anchor and the re-add
- * is class-only — correct, since nothing is visible and returning to WYSIWYG
- * re-derives the viewport (cursor mapping, scroll restore). Unmount never
- * reaches the timer at all: useTiptapUnmountFlush clears it.
+ * Hiding the editor (Source mode toggled within the window) cancels the re-add
+ * and showing it starts a fresh window (useContentVisibilityMode); a timer
+ * that still fires on a display:none container re-adds class-only, with no
+ * anchor to measure. Unmount never reaches the timer: useTiptapUnmountFlush clears it.
  */
 export function suppressCvIdleDuringEdit(
   containerRef: MutableRefObject<HTMLDivElement | null>,
   docSize: number,
   cvIdleTimeoutRef: MutableRefObject<number | null>,
 ): void {
+  setContentVisibility(containerRef, usesContentVisibility(docSize), cvIdleTimeoutRef);
+}
+
+/**
+ * Strip `.cv-idle`; when `enabled`, bring it back after 500ms idle. The marker goes on before
+ * the strip and off after it, so the rule never lapses while the optimization is on and a
+ * re-add is pending only while it is set. A forced toggle writes nothing if the class matches.
+ */
+function setContentVisibility(
+  containerRef: MutableRefObject<HTMLDivElement | null>,
+  enabled: boolean,
+  cvIdleTimeoutRef: MutableRefObject<number | null>,
+): void {
   const container = containerRef.current;
   if (!container) return;
+  if (enabled) container.classList.toggle(CV_ENABLED_CLASS, true);
   if (container.classList.contains("cv-idle")) {
     setCvIdlePreservingViewport(container, false);
   }
+  if (!enabled) container.classList.toggle(CV_ENABLED_CLASS, false);
   if (cvIdleTimeoutRef.current !== null) {
     window.clearTimeout(cvIdleTimeoutRef.current);
     cvIdleTimeoutRef.current = null;
   }
-  if (docSize >= CV_IDLE_CHAR_THRESHOLD) {
+  if (enabled) {
     cvIdleTimeoutRef.current = window.setTimeout(() => {
       cvIdleTimeoutRef.current = null;
       const idleContainer = containerRef.current;

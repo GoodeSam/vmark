@@ -2,8 +2,8 @@
 
 VMark peut héberger un véritable navigateur web **à l'intérieur** d'une fenêtre de document — une page web devient un onglet de premier plan aux côtés de vos documents markdown. Il s'agit d'une véritable webview native (`WKWebView` sur macOS), pas d'une fenêtre Chrome externe ni d'un cadre intégré.
 
-::: warning Expérimental
-Le navigateur intégré est une fonctionnalité récente et est **réservé à macOS** dans cette version. La prise en charge de Windows et Linux viendra plus tard — sur ces plateformes, les paramètres ci-dessous n'apparaissent pas du tout.
+::: info macOS uniquement
+Le navigateur intégré est disponible sur **macOS**, où il est activé par défaut. Il n'est pas disponible sur Windows ni sur Linux : sur ces plateformes, les paramètres ci-dessous et la commande **Nouvel onglet de navigateur** n'apparaissent pas du tout.
 :::
 
 
@@ -35,7 +35,7 @@ navigateur, dans la fenêtre à laquelle elles appartiennent.
 
 ## L'utiliser
 
-Un onglet de navigateur s'ouvre dans la zone d'édition, aux côtés de vos documents — la barre latérale, la bande d'onglets, le terminal et la barre d'état restent tous à leur place. Ses commandes se trouvent **au-dessus de la page** : sur macOS, elles partagent la barre de titre de la fenêtre, puisque VMark la dessine lui-même. Là où le système dessine la barre de titre à la place (Windows, Linux), elles se trouvent à l'intérieur de la fenêtre au-dessus de la page, comme les dispose tout autre navigateur de bureau.
+Un onglet de navigateur s'ouvre dans la zone d'édition, aux côtés de vos documents — la barre latérale, la bande d'onglets, le terminal et la barre d'état restent tous à leur place. Ses commandes se trouvent **au-dessus de la page** et partagent la barre de titre de la fenêtre, que VMark dessine lui-même.
 
 | Commande | Action |
 |---------|--------|
@@ -70,7 +70,7 @@ Si le processus de contenu web d'une page meurt, l'onglet affiche une surcouche 
 
 VMark crée lui-même la webview de la plateforme et l'ajoute comme enfant natif de la fenêtre — il n'en **demande pas** une au framework de l'application. C'est important pour la confidentialité : une webview créée par le framework injecterait un pont de messagerie interne dans chaque page, offrant à n'importe quel site un canal vers l'application. Comme VMark possède une webview fraîchement construite dépourvue d'un tel pont, **une page consultée n'a aucun canal vers VMark**. La page est pilotée de manière strictement unidirectionnelle (l'application peut lire et agir sur la page ; la page ne peut pas répondre en retour).
 
-Les sessions (connexions, cookies) persistent par profil dans le magasin de données propre à la webview du système, de sorte que vous vous connectez à chaque site une seule fois. VMark ne stocke lui-même aucun identifiant.
+Les sessions (connexions, cookies) persistent par profil dans le magasin de données propre à la webview du système, de sorte que vous vous connectez à chaque site une seule fois. VMark ne tient aucun magasin de mots de passe ni de cookies qui lui soit propre ; la seule exception est une session dont vous approuvez explicitement l'enregistrement pour une IA (voir *Enregistrer / restaurer une session* ci-dessous), dont les cookies et le `localStorage` vont dans le **keychain du système**, jamais dans un fichier.
 
 ## Piloter le navigateur avec l'IA
 
@@ -158,14 +158,16 @@ C'est la forme voulue de l'utilisation du navigateur par l'IA dans VMark : l'age
 ## Lorsqu'une page ne parvient pas à se charger
 
 Un réseau hors ligne, un nom d'hôte incorrect, un certificat rejeté ou une connexion refusée
-produisent tous un message dans le panneau du navigateur indiquant ce qui n'a pas fonctionné, avec un bouton **Réessayer**.
-Les versions antérieures affichaient plutôt un panneau vide, impossible à distinguer d'une
+produisent tous un message dans le panneau du navigateur indiquant ce qui n'a pas fonctionné, avec un bouton **Réessayer**, de sorte qu'un chargement échoué ne ressemble jamais à une
 page simplement lente.
 
 ## Limitations actuelles
 
 - macOS uniquement dans cette version.
-- Les boîtes de dialogue JavaScript `confirm()` / `prompt()` sont supprimées pour l'instant (seul `alert()` est affiché) ; les pop-ups (`window.open`) sont bloquées plutôt qu'ouvertes comme de nouveaux onglets.
-- Les téléchargements, l'impression et la politique réseau par requête ne sont pas encore implémentés.
+- Les boîtes de dialogue JavaScript `alert()` et `confirm()` sont affichées et c'est vous qui y répondez ; `prompt()` est supprimé pour l'instant. Les pop-ups (`window.open`) sont bloquées, et l'adresse bloquée vous est proposée dans un nouvel onglet.
+- Une page protégée par l'authentification HTTP basique ne se charge pas — il n'y a pas encore d'invite de nom d'utilisateur et de mot de passe.
+- La recherche dans la page et le zoom de la page ne sont pas implémentés.
+- VMark ne décide pas encore lui-même des demandes d'accès à la caméra, au microphone, à la localisation ou aux notifications ; c'est le traitement par défaut de la webview du système qui s'applique.
+- Les téléchargements, l'impression et la politique réseau par requête ne sont pas encore implémentés. Le survol et le glisser-déposer n'ont pas encore de verbe pour l'IA.
 
 Ces éléments sont ajoutés progressivement ; la page ci-dessus décrit ce qui fonctionne aujourd'hui.

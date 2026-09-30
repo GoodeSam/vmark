@@ -15,6 +15,18 @@
  *      guard responds BUSY without consuming; an internal open failure fails
  *      closed (never a false success). The window is the one this request runs
  *      in (getCurrentWindowLabel), not a client-supplied label.
+ *   4. Before consuming, Rust is asked for access (WI-LX1.1). The approval
+ *      dialog is webview UI, so it cannot make Rust grant a folder: one nobody
+ *      chose and the static scope cannot read is confirmed in the folder
+ *      picker Rust shows, opened AT it. That cannot be waited for here, so the
+ *      retry fails now, the one-shot SURVIVES, and the retry after the pick
+ *      opens. Rust answers once the dialog is SHOWN, so the reply says what
+ *      actually happened: a dialog is waiting (APPROVAL_REQUIRED), another
+ *      dialog is in the way (BUSY), or none could be shown (INTERNAL). An
+ *      access check that cannot run fails closed.
+ *
+ * The callback reads as the flow above; each decision is a helper
+ * (`validateWorkspaceDir`, `accessRefusal`, `openApproved`, `outcomeRefusal`).
  *
  * Validation goes through the Rust `validate_workspace_dir` command, NOT a
  * webview `stat` — this is a boundary-EXPANDING operation that can't use the
@@ -28,7 +40,8 @@
  *
  * @coordinates-with stores/workspaceApprovalStore.ts — the one-shot store
  * @coordinates-with services/workspaces/openWorkspaceByPath.ts — the shared open sequence
- * @coordinates-with src-tauri/src/workspace.rs — validate_workspace_dir command
+ * @coordinates-with services/workspaces/workspaceAccess.ts — Rust access check + picker
+ * @coordinates-with src-tauri/src/workspace_validation.rs — validate_workspace_dir command
  * @module services/mcpBridge/v2/workspaceOpenFolder
  */
 import { invoke } from "@tauri-apps/api/core";
@@ -36,6 +49,11 @@ import {
   openWorkspaceByPath,
   WORKSPACE_TRANSITION_GUARD,
 } from "@/services/workspaces/openWorkspaceByPath";
+import {
+  requestWorkspaceConfirmation,
+  resolveWorkspaceAccess,
+  type ConfirmationRequest,
+} from "@/services/workspaces/workspaceAccess";
 import { useWorkspaceApprovalStore } from "@/stores/workspaceApprovalStore";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { withReentryGuard } from "@/utils/reentryGuard";
@@ -85,6 +103,90 @@ async function validateWorkspaceDir(
 }
 
 /**
+ * Why an approved open cannot go ahead yet, or `null` when it can (flow step
+ * 4). Asked BEFORE the one-shot is spent, so every refusal keeps it.
+ */
+async function accessRefusal(canonicalPath: string): Promise<V2Error | null> {
+  const access = await resolveWorkspaceAccess(canonicalPath);
+  switch (access.kind) {
+    case "granted":
+    case "readable":
+      return null;
+    case "missing":
+      return { error: "INVALID_PATH", message: `${canonicalPath} is no longer a folder.` };
+    case "unverified":
+      return {
+        error: "INTERNAL",
+        message: `Could not check access to ${canonicalPath}: ${commandErrorMessage(access.error)}`,
+      };
+    case "needs-confirmation":
+      return confirmationRefusal(canonicalPath, await requestWorkspaceConfirmation(canonicalPath));
+  }
+}
+
+/** What to tell the client about the folder dialog it needs the user to use. */
+function confirmationRefusal(canonicalPath: string, request: ConfirmationRequest): V2Error {
+  switch (request.kind) {
+    case "opened":
+      return {
+        error: "APPROVAL_REQUIRED",
+        message: `VMark opened a folder dialog at ${canonicalPath}. The user must choose that folder there before it can open as a workspace. Ask them to, then retry.`,
+      };
+    case "busy":
+      return {
+        error: "BUSY",
+        message: `Another folder dialog is already open in VMark, so none was shown for ${canonicalPath}. Ask the user to finish with it, then retry.`,
+      };
+    case "failed":
+      return {
+        error: "INTERNAL",
+        message: `Could not show a folder dialog at ${canonicalPath}: ${commandErrorMessage(request.error)}`,
+      };
+  }
+}
+
+type ApprovedOutcome = "opened" | "failed" | "gone" | undefined;
+
+/**
+ * Spend the one-shot and open, INSIDE the window's transition guard (flow step
+ * 3). `undefined` means the guard was busy and the one-shot was NOT spent.
+ */
+function openApproved(
+  canonicalPath: string,
+  windowLabel: string,
+  clientId: string,
+): Promise<ApprovedOutcome> {
+  return withReentryGuard(
+    windowLabel,
+    WORKSPACE_TRANSITION_GUARD,
+    async (): Promise<"opened" | "failed" | "gone"> => {
+      if (!useWorkspaceApprovalStore.getState().consumeOneShot(canonicalPath, windowLabel, clientId)) {
+        return "gone"; // spent by a concurrent retry between peek and here
+      }
+      return (await openWorkspaceByPath(canonicalPath, { windowLabel })) ? "opened" : "failed";
+    },
+  );
+}
+
+/** Every outcome but "opened" fails closed: the AI never hears of an open that did not happen. */
+function outcomeRefusal(canonicalPath: string, outcome: Exclude<ApprovedOutcome, "opened">): V2Error {
+  switch (outcome) {
+    case undefined:
+      return {
+        error: "BUSY",
+        message: `A workspace transition is already in progress in this window; retry shortly.`,
+      };
+    case "failed":
+      return { error: "INTERNAL", message: `Failed to open ${canonicalPath} as a workspace.` };
+    case "gone":
+      return {
+        error: "APPROVAL_REQUIRED",
+        message: `Opening ${canonicalPath} as a workspace needs user approval. Ask the user, then retry.`,
+      };
+  }
+}
+
+/**
  * Handle `vmark.workspace.open_workspace`. See module header for the flow.
  */
 export async function handleWorkspaceOpenWorkspace(
@@ -117,48 +219,20 @@ export async function handleWorkspaceOpenWorkspace(
     const clientId = ONE_SHOT_CLIENT_ID;
     const approvals = useWorkspaceApprovalStore.getState();
 
-    // Retry path: a matching one-shot authorizes this open. Acquire the
-    // transition guard FIRST, then consume + open INSIDE it — otherwise a
-    // concurrent menu "Open Folder" holding the guard makes withReentryGuard
-    // skip the open while we have already spent the grant, reporting a success
-    // that never happened (Codex M4).
+    // Retry path: a matching one-shot authorizes this open — once access is
+    // settled (step 4), spent and opened under the guard (step 3, Codex M4).
     if (approvals.hasOneShot(canonicalPath, windowLabel, clientId)) {
-      const outcome = await withReentryGuard(
-        windowLabel,
-        WORKSPACE_TRANSITION_GUARD,
-        async (): Promise<"opened" | "failed" | "gone"> => {
-          if (!approvals.consumeOneShot(canonicalPath, windowLabel, clientId)) {
-            return "gone"; // spent by a concurrent retry between peek and here
-          }
-          return (await openWorkspaceByPath(canonicalPath, { windowLabel }))
-            ? "opened"
-            : "failed";
-        },
-      );
-
-      if (outcome === undefined) {
-        // Guard busy — the grant was NOT consumed; the AI can retry shortly.
-        await structuredError(id, {
-          error: "BUSY",
-          message: `A workspace transition is already in progress in this window; retry shortly.`,
-        });
+      const refusal = await accessRefusal(canonicalPath);
+      if (refusal) {
+        await structuredError(id, refusal);
         return;
       }
+      const outcome = await openApproved(canonicalPath, windowLabel, clientId);
       if (outcome === "opened") {
         await respond({ id, success: true, data: { opened: true, folderPath: canonicalPath } });
         return;
       }
-      // "failed" (open threw internally) / "gone" (grant already spent): fail
-      // closed so the AI never believes a workspace opened that did not.
-      await structuredError(
-        id,
-        outcome === "failed"
-          ? { error: "INTERNAL", message: `Failed to open ${canonicalPath} as a workspace.` }
-          : {
-              error: "APPROVAL_REQUIRED",
-              message: `Opening ${canonicalPath} as a workspace needs user approval. Ask the user, then retry.`,
-            },
-      );
+      await structuredError(id, outcomeRefusal(canonicalPath, outcome));
       return;
     }
 

@@ -70,15 +70,15 @@ Quando selezioni un provider REST, appaiono tre campi:
 
 ### Compilazione Automatica tramite Variabili d'Ambiente
 
-VMark legge le variabili d'ambiente standard all'avvio. Se `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` o `GEMINI_API_KEY` è impostata nel tuo profilo shell, il campo della chiave API si compila automaticamente quando selezioni quel provider.
+VMark legge le variabili d'ambiente standard dall'ambiente del proprio processo. Se `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` o `GOOGLE_API_KEY` / `GEMINI_API_KEY` (controllate in quest'ordine) è impostata, il campo della chiave API si compila automaticamente quando selezioni quel provider.
 
-Ciò significa che puoi impostare la tua chiave una volta in `~/.zshrc` o `~/.bashrc`:
+Le variabili che VMark vede dipendono da come è stato avviato. Una chiave esportata in un profilo shell come `~/.zshrc` o `~/.bashrc`:
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-Poi riavvia VMark — nessuna inserzione manuale della chiave necessaria.
+raggiunge VMark solo quando avvii l'app da quella shell. Se viene avviato dal Dock, dal Finder, da Spotlight o da un launcher del desktop, VMark non legge il tuo profilo shell, quindi il campo resta vuoto — incolla invece la chiave. Su Windows, una variabile d'ambiente utente o di sistema funziona comunque venga avviato VMark.
 
 ### Configurazione: Anthropic (REST)
 

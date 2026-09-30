@@ -150,6 +150,12 @@ export function validateRowMap(rowMap) {
     if (!isPinned(r) && !isNotASetting(r) && !nonEmpty(entry.key)) {
       findings.push(`${where} "${entry.row}": key is required unless the row is { expected } or { notASetting }`);
     }
+    // A keyed pin names the initialiser that makes it a pin; without one the
+    // key is decoration that nothing compares (the language row carried one).
+    if (isPinned(r) && nonEmpty(entry.key) && !nonEmpty(entry.computedBy)) {
+      findings.push(`${where} "${entry.row}": a pinned entry with a key must name the initialiser that computes it (computedBy) — otherwise the key is checked by nothing`);
+    }
+    if (entry.computedBy !== undefined && !nonEmpty(entry.key)) findings.push(`${where} "${entry.row}": computedBy needs the key it describes`);
     const ident = `${entry.page}|${entry.heading ?? ""}|${entry.row}`;
     if (seen.has(ident)) findings.push(`${where} "${entry.row}": duplicate entry for ${entry.page}`);
     seen.add(ident);
@@ -160,8 +166,11 @@ export function validateRowMap(rowMap) {
 /**
  * Both directions over `pages` (`{ settings: Table[], terminal: Table[] }`)
  * against the resolved defaults object. `labels` names the files in findings.
+ * `raw` (dotted key → initialiser source text, from `parseSettingsDefaults`)
+ * lets a keyed pin check that its default is still COMPUTED the way it says;
+ * without it only the key's existence is checked.
  */
-export function compare(pages, defaults, rowMap, labels = {}) {
+export function compare(pages, defaults, rowMap, labels = {}, raw = null) {
   const findings = validateRowMap(rowMap);
   const info = [];
   const label = (page) => labels[page] ?? `${page}.md`;
@@ -190,6 +199,7 @@ export function compare(pages, defaults, rowMap, labels = {}) {
       if (hit.docDefault !== entry.render.expected) {
         findings.push(`${at}: doc says "${hit.docDefault}", the map pins "${entry.render.expected}" (${entry.render.reason})`);
       }
+      if (nonEmpty(entry.key)) findings.push(...pinnedKeyFindings(at, entry, defaults, raw));
       continue;
     }
     const value = lookup(defaults, entry.key);
@@ -218,6 +228,23 @@ export function compare(pages, defaults, rowMap, labels = {}) {
   }
   info.push(`${compared} defaults compared`);
   return { findings, info };
+}
+
+/**
+ * A pin that names a key is a claim about that key: it exists, and its
+ * initialiser is still the runtime computation the doc value was written for.
+ * Were `general.language` removed, or turned into a static `"en"`, the pinned
+ * "System language" would go on passing while describing nothing.
+ */
+function pinnedKeyFindings(at, entry, defaults, raw) {
+  if (lookup(defaults, entry.key) === undefined) {
+    return [`${at}: pinned key ${entry.key} is not in defaults.ts — the pin describes a setting that is gone`];
+  }
+  const text = raw?.get(entry.key);
+  if (raw && text !== entry.computedBy) {
+    return [`${at}: defaults.ts initialises ${entry.key} with ${text ?? "nothing it can read"}, not ${entry.computedBy} — the pinned doc value was written for the computed default`];
+  }
+  return [];
 }
 
 // ── Loading defaults.ts ────────────────────────────────────────────────────
@@ -278,7 +305,8 @@ export async function run({ root = REPO_ROOT, paths = DEFAULT_PATHS, deps = {} }
   const read = (rel) => readFileSync(resolve(root, rel), "utf8");
   const pages = { settings: parseTables(read(p.settingsDoc)), terminal: parseTables(read(p.terminalDoc)) };
   const loaded = deps.defaults ? { defaults: deps.defaults, via: "injected by the caller" } : await loadDefaults(root, p);
-  const { findings, info } = compare(pages, loaded.defaults, deps.rowMap ?? ROW_MAP, { settings: p.settingsDoc, terminal: p.terminalDoc });
+  const raw = deps.defaults ? null : parseSettingsDefaults(read(p.defaults));
+  const { findings, info } = compare(pages, loaded.defaults, deps.rowMap ?? ROW_MAP, { settings: p.settingsDoc, terminal: p.terminalDoc }, raw);
   info.push(`defaults: ${loaded.via}`);
   return { findings, info };
 }

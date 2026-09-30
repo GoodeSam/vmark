@@ -71,18 +71,14 @@ The export dialog shows the same progress stages — loading, generating,
 finishing, done — on all three platforms.
 
 ::: info Page size on macOS
-Until this release, the Page Size and Orientation controls had no effect on
-macOS — every export came out at whatever paper size your system was set to.
-If your Mac defaults to Letter and you had chosen A4, you were getting Letter.
-
-That is fixed, so your exports may now differ from what the same document
-produced before. They will match what the dialog says.
+The Page Size and Orientation you pick in the dialog decide the exported page
+on every platform. On macOS they override the paper size your system is set
+to — if your Mac defaults to Letter and you choose A4, the PDF is A4.
 :::
 
 **Sidebar outline.** Exported PDFs carry a heading outline — the clickable
 table of contents your PDF viewer shows in its sidebar — on all three
-platforms. It used to be macOS-only; Windows and Linux got the same document
-with an empty sidebar.
+platforms.
 
 #### Page numbers
 
@@ -104,8 +100,8 @@ The number is drawn with a standard PDF font that no viewer has to download,
 which is what keeps exports fast and self-contained — but that font cannot
 render Chinese, Japanese, Korean or Cyrillic. The two numeric formats work in
 every language. If your interface language writes `Page 7 of 12` in a script
-that font cannot draw, VMark leaves those pages unnumbered rather than printing
-blanks or wrong characters; choose `7` or `7 / 12` instead.
+that font cannot draw, VMark prints the numeric `7 / 12` form instead rather
+than blanks or wrong characters.
 :::
 
 ### Export via Pandoc
@@ -138,7 +134,7 @@ You can verify Pandoc is detected in **Settings → Files & Images → Document 
 
 ### Copy as HTML
 
-Press `Cmd/Ctrl + Shift + C` to copy the rendered HTML to clipboard for pasting into other applications.
+Press `Cmd/Ctrl + Shift + C` to copy the rendered document as HTML **source**. The markup goes onto the clipboard as plain text and unstyled, so paste it where HTML code is expected — a CMS's HTML view, a template, a code editor; a rich-text editor such as Word or Mail shows the tags literally. Local images are embedded as data URIs, so they still display once the HTML leaves VMark.
 
 ## VMark Reader
 

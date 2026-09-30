@@ -19,7 +19,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { isMainModule } from "./lib/isMainModule.mjs";
 
 // ─── Pure, testable core ───
 
@@ -258,6 +258,6 @@ function main() {
   );
 }
 
-if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   main();
 }

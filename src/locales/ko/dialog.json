@@ -211,7 +211,6 @@
   "common.pin": "고정",
   "common.pinTooltip": "이 알림을 계속 표시",
   "common.unpinTooltip": "고정됨 — 수동으로 닫기",
-  "openWorkspaceFolder.title": "작업 공간 폴더 열기",
   "openWorkspace.approval.title": "폴더를 워크스페이스로 열까요?",
   "openWorkspace.approval.body": "AI 어시스턴트가 이 폴더를 워크스페이스로 열도록 요청하고 있습니다. 허용하면 폴더의 파일 트리에 접근할 수 있게 됩니다:",
   "openWorkspace.approval.approve": "워크스페이스 열기",
@@ -262,5 +261,15 @@
   "error.title": "오류",
   "error.saveMediaFailed": "미디어 파일을 저장하지 못했습니다: {{error}}",
   "resetShortcuts.title": "단축키 재설정",
-  "resetSettings.title": "설정 재설정"
+  "resetSettings.title": "설정 재설정",
+  "exportError.lockBusy": "다른 내보내기가 이미 {{destination}}에 쓰고 있습니다. 실행 중인 다른 내보내기가 없다면 {{lock}}을(를) 삭제한 뒤 다시 시도하세요.",
+  "exportError.takenOver": "{{destination}}(으)로의 내보내기가 게시되지 않았습니다. 실행 중에 다른 내보내기가 폴더를 넘겨받았습니다. 대상 위치는 아무것도 변경되지 않았습니다.",
+  "exportError.notAFile": "{{path}}은(는) 폴더이며 이 내보내기가 교체할 수 있는 파일이 아닙니다. 이동하거나 이름을 바꾸거나 다른 폴더로 내보내세요.",
+  "exportError.publishFailed": "{{destination}}(으)로의 내보내기를 게시하지 못했습니다: {{reason}}. {{rollback}}",
+  "exportError.rollbackFilesNotRestored": "다음 파일을 복원하지 못했습니다: {{files}}.",
+  "exportError.rollbackFoldersLeft": "파일은 복원되었지만 내보내기가 만든 다음 폴더가 아직 남아 있습니다: {{folders}}.",
+  "exportError.rollbackRestored": "그 밖에는 아무것도 변경되지 않았으며, 폴더는 이전 내용으로 복원되었습니다.",
+  "exportError.backupKeptAt": "{{path}} (이전 내용은 {{backup}}에 보관되어 있습니다: {{reason}})",
+  "exportError.backupGone": "{{path}} ({{backup}}의 백업도 사라졌습니다: {{reason}})",
+  "exportError.listItem": "“{{item}}”"
 }

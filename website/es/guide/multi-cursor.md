@@ -9,6 +9,7 @@ VMark soporta una potente edición con multicursor tanto en el modo WYSIWYG como
 | Añadir cursor en la siguiente coincidencia | `Mod + D` |
 | Omitir coincidencia, saltar a la siguiente | `Mod + Shift + D` |
 | Añadir cursores en todas las coincidencias | `Mod + Shift + L` |
+| Añadir cursores en todas las coincidencias del bloque actual | `Alt + Mod + Shift + L` |
 | Deshacer la última adición de cursor | `Alt + Mod + Z` |
 | Añadir cursor arriba | `Mod + Alt + Arriba` |
 | Añadir cursor abajo | `Mod + Alt + Abajo` |
@@ -44,8 +45,10 @@ Selecciona todas las ocurrencias de la palabra o selección actual a la vez:
 
 1. Selecciona una palabra o texto
 2. Presiona `Mod + Shift + L`
-3. Todas las ocurrencias coincidentes en el bloque actual quedan seleccionadas
+3. Todas las ocurrencias coincidentes en el documento quedan seleccionadas — o, dentro de un bloque de código, todas las coincidencias de ese bloque (consulta [Alcance](#alcance))
 4. Escribe para reemplazarlas todas a la vez
+
+Para quedarte dentro del párrafo, encabezado o elemento de lista en el que estás, usa `Alt + Mod + Shift + L` en su lugar.
 
 ### Alt + Clic
 
@@ -112,7 +115,7 @@ El escape con Tab funciona independientemente para cada cursor:
 - Los cursores antes de los corchetes de cierre `)` `]` `}` saltan sobre ellos
 - Los cursores en texto sin formato permanecen en su lugar
 
-Esto te permite escapar de múltiples regiones formateadas simultáneamente. Consulta [Navegación Inteligente con Tab](./tab-navigation.md#multi-cursor-support) para más detalles.
+Esto te permite escapar de múltiples regiones formateadas simultáneamente. Consulta [Navegación Inteligente con Tab](./tab-navigation.md#soporte-multicursor) para más detalles.
 
 ### Portapapeles
 
@@ -123,21 +126,21 @@ Esto te permite escapar de múltiples regiones formateadas simultáneamente. Con
 - Si el portapapeles tiene el mismo número de líneas que cursores, cada línea va a cada cursor
 - De lo contrario, el contenido completo del portapapeles se pega en todos los cursores
 
-## Alcance de Bloque
+## Alcance
 
-Las operaciones de multicursor tienen **alcance al bloque actual** para evitar ediciones no deseadas en secciones no relacionadas.
+**El código tiene alcance limitado; la prosa no.** Dentro de un bloque de código (WYSIWYG) o de un bloque delimitado (Fuente), los cursores nunca cruzan la delimitación — buscar el nombre de una variable en un fragmento no puede colocar un cursor en otro. En la prosa normal, `Mod + D` y `Mod + Shift + L` buscan en **todo el documento**.
 
-### En el Modo WYSIWYG
-- Los cursores no pueden cruzar los límites de los bloques de código
-- Si el cursor principal está dentro de un bloque de código, los nuevos cursores permanecen dentro de ese bloque
+Eso suele ser lo que quieres, y a veces no: en un documento largo, buscar una palabra común coloca cursores en párrafos muy alejados de la pantalla.
 
-### En el Modo Fuente
-- Las líneas en blanco actúan como límites de bloque
-- `Mod + D` y `Mod + Shift + L` solo coinciden dentro del párrafo actual
+### Seleccionar Todas las Ocurrencias en el Bloque
+
+`Alt + Mod + Shift + L` selecciona todas las coincidencias **solo dentro del bloque actual** — el párrafo, encabezado o elemento de lista en el que está el cursor. En el modo Fuente, las líneas en blanco delimitan el bloque; en WYSIWYG lo delimita el bloque que lo contiene. Dentro de un bloque de código delimitado se comporta exactamente igual que `Mod + Shift + L`, ya que ese bloque ya es el bloque.
+
+Los dos atajos son hermanos, no un modo: `Mod + Shift + L` sigue abarcando todo el documento, así que nada de lo que ya usas cambia.
 
 <div class="feature-box">
-<strong>¿Por qué el alcance de bloque?</strong>
-<p>Esto evita editar accidentalmente el nombre de una variable en secciones de código no relacionadas o cambiar texto en párrafos diferentes que resultan coincidir.</p>
+<strong>¿Cuál usar?</strong>
+<p>Usa la versión limitada al bloque cuando la palabra es común — al renombrar una variable mencionada en la prosa, o al editar el patrón de un solo elemento de lista. Usa la de todo el documento cuando realmente quieres decir en todas partes.</p>
 </div>
 
 ## Colapsar Cursores
@@ -166,14 +169,15 @@ En el modo oscuro, los colores del cursor y la selección se ajustan automática
 | `Alt + Mod + Z` (Deshacer Suave) | ✓ | ✓ |
 | `Mod + Alt + Arriba/Abajo` | ✓ | ✓ |
 | `Alt + Clic` | ✓ | ✓ |
-| Alcance de bloque | Bloques de código | Líneas en blanco |
+| Alcance por delimitación | Bloques de código | Bloques de código delimitados |
+| Seleccionar todo limitado al bloque | `Alt + Mod + Shift + L` | `Alt + Mod + Shift + L` |
 | Búsqueda circular | ✓ | ✓ |
 
 ## Consejos y Mejores Prácticas
 
 ### Renombrar Variables
 1. Haz doble clic en el nombre de la variable
-2. `Mod + Shift + L` para seleccionar todas en el bloque
+2. `Alt + Mod + Shift + L` para seleccionar todas las coincidencias de este bloque (o `Mod + Shift + L` para todo el documento)
 3. Escribe el nuevo nombre
 
 ### Añadir Prefijos/Sufijos
@@ -192,7 +196,8 @@ En el modo oscuro, los colores del cursor y la selección se ajustan automática
 |-----------|-------------|
 | Selección cuidadosa e incremental | `Mod + D` |
 | Omitir coincidencia no deseada | `Mod + Shift + D` |
-| Reemplazar todas en el bloque | `Mod + Shift + L` |
+| Reemplazar todas en el bloque actual | `Alt + Mod + Shift + L` |
+| Reemplazar todas en el documento | `Mod + Shift + L` |
 | Deshacer el último paso del cursor | `Alt + Mod + Z` |
 | Editar líneas consecutivas | `Mod + Alt + Arriba/Abajo` |
 | Posiciones arbitrarias | `Alt + Clic` |
@@ -202,7 +207,7 @@ En el modo oscuro, los colores del cursor y la selección se ajustan automática
 
 - **Nodos atómicos**: No se pueden colocar cursores dentro de imágenes, contenido incrustado o bloques de matemáticas en el modo WYSIWYG
 - **Entrada IME**: Al usar métodos de entrada (chino, japonés, etc.), la composición solo afecta al cursor principal
-- **Alcance por documento**: Las selecciones están delimitadas a los bloques, no al documento completo
+- **Bloques de código**: Dentro de un bloque de código (WYSIWYG) o de un bloque delimitado (Fuente), la búsqueda de ocurrencias nunca sale de ese bloque
 
 ## Referencia de Teclado
 

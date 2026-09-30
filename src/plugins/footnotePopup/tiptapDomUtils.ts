@@ -6,23 +6,32 @@
  *
  * @coordinates-with tiptap.ts — uses these for hover detection and click navigation
  * @coordinates-with FootnotePopupView.ts — uses scrollToPosition for "go to definition" action
+ * @coordinates-with utils/settledScroll.ts — lands the target despite content-visibility
  * @module plugins/footnotePopup/tiptapDomUtils
  */
 
 import type { EditorView } from "@tiptap/pm/view";
 import type { Node as PMNode } from "@tiptap/pm/model";
-import { scrollBehavior } from "@/utils/motion";
+import { scrollToSettled } from "@/utils/settledScroll";
 
 const SCROLL_OFFSET_PX = 100;
 
+/**
+ * Scroll `view`'s own scroll container so `pos` sits SCROLL_OFFSET_PX below
+ * its top — settled, because content-visibility moves a far target while a
+ * smooth scroll is in flight (#1458).
+ */
 export function scrollToPosition(view: EditorView, pos: number) {
-  const coords = view.coordsAtPos(pos);
-  const editorContent = document.querySelector(".editor-content");
-  if (!coords || !editorContent) return;
+  const editorContent = view.dom.closest<HTMLElement>(".editor-content");
+  if (!editorContent) return;
 
-  const editorRect = editorContent.getBoundingClientRect();
-  const scrollTop = coords.top - editorRect.top + editorContent.scrollTop - SCROLL_OFFSET_PX;
-  editorContent.scrollTo({ top: scrollTop, behavior: scrollBehavior() });
+  const distance = () => {
+    if (pos > view.state.doc.content.size) return null;
+    const coords = view.coordsAtPos(pos);
+    if (!coords) return null;
+    return coords.top - editorContent.getBoundingClientRect().top - SCROLL_OFFSET_PX;
+  };
+  scrollToSettled(editorContent, distance, view.dom);
 }
 
 export function findFootnoteDefinition(view: EditorView, label: string): { content: string; pos: number } | null {

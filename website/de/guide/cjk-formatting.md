@@ -4,9 +4,9 @@ VMark enthält einen umfassenden Satz von Formatierungsregeln für chinesischen,
 
 ## Schnellstart
 
-Verwenden Sie **Format → CJK-Dokument formatieren** oder drücken Sie `Alt + Mod + Umschalt + F`, um das gesamte Dokument zu formatieren.
+Verwenden Sie **Format → CJK → Gesamte Datei formatieren** oder drücken Sie `Alt + Mod + Umschalt + F`, um das gesamte Dokument zu formatieren.
 
-`Mod + Umschalt + F` formatiert **die Blöcke, die Ihre Auswahl umfasst** — den gesamten Absatz, die Liste oder die Tabelle, die der Cursor oder die Auswahl berührt, nicht die exakt ausgewählten Zeichen. CJK-Abstand ist eine Eigenschaft der Grenze *zwischen* zwei benachbarten Zeichen, und eine Auswahl mitten im Wort enthält keine solche Grenze. Der Befehl benennt daher einen zu korrigierenden Bereich statt eines neu zu schreibenden Textes. Ohne Auswahl formatiert er den Block an der Cursorposition.
+**Format → CJK → Auswahl formatieren** (`Mod + Umschalt + F`) formatiert **die Blöcke, die Ihre Auswahl umfasst** — den gesamten Absatz, die Liste oder die Tabelle, die der Cursor oder die Auswahl berührt, nicht die exakt ausgewählten Zeichen. CJK-Abstand ist eine Eigenschaft der Grenze *zwischen* zwei benachbarten Zeichen, und eine Auswahl mitten im Wort enthält keine solche Grenze. Der Befehl benennt daher einen zu korrigierenden Bereich statt eines neu zu schreibenden Textes. Ohne Auswahl formatiert er den Block an der Cursorposition.
 
 Beide Befehle schützen genau dasselbe (siehe „Geschützte Inhalte“), ein Alles-Markieren vor `Mod + Umschalt + F` ist also unbedenklich.
 
@@ -119,12 +119,19 @@ Begrenzt aufeinanderfolgende Satzzeichen (konfigurierbares Limit).
 
 Der folgende Inhalt wird **nicht** durch Formatierung beeinflusst:
 
-- Code-Blöcke (```)
+- Code-Blöcke (```) — einschließlich eines **nicht geschlossenen** Code-Fence, der, wie CommonMark es vorschreibt, den Rest des Dokuments einnimmt
 - Inline-Code (`)
 - Link-URLs
 - Bildpfade
 - HTML-Tags
-- YAML-Frontmatter
+- Frontmatter — sowohl YAML (`---`) als auch TOML (`+++`)
+- Inline-Mathematik (`$…$`), erkannt nach derselben Regel, die der Renderer von VMark verwendet, sodass ein Betragspaar wie `价格是 $100 和 $200 元` *nicht* für Mathematik gehalten wird
+- Abgesetzte Mathematik (`$$…$$`)
+- Eingerückte Code-Blöcke
+- Wiki-Links (`[[target]]`, `[[target|display]]`)
+- Fußnotenmarkierungen — Verweise wie `[^1]` und das `[^1]:`-Label einer Definition (der Text der Definition selbst wird formatiert)
+- HTML-Zeichenreferenzen (`&amp;`, `&#x5176;`)
+- Thematische Umbrüche (`---`, `***`)
 - Backslash-maskierte Interpunktion (z.B. `\,` bleibt als `,`)
 
 ### Technische Konstrukte
@@ -164,13 +171,13 @@ Präfixieren Sie eine Interpunktion mit `\`, um die Konvertierung zu verhindern:
 
 Wenn der [MCP-Server](/de/guide/mcp-setup) verbunden ist, können KI-Assistenten die CJK-Formatierung programmatisch über das Werkzeug `document.transform` mit einem von drei `kind`-Werten anwenden:
 
-- `"cjk-format"` — vollständige CJK-Normalisierung (Abstände + Interpunktion + typografische Anführungszeichen gemäß Ihren Einstellungen)
-- `"cjk-spacing"` — passt nur Leerzeichen an Übergängen zwischen CJK ↔ Latein/Ziffer an
-- `"cjk-punctuation"` — konvertiert Interpunktion zwischen Voll- und Halbbreite gemäß den Regeln
+- `"cjk-format"` — vollständige CJK-Normalisierung (Abstände + Interpunktion + typografische Anführungszeichen), derselbe Formatierer, den der Menübefehl ausführt, gemäß Ihren Einstellungen unter Einstellungen → Sprache
+- `"cjk-spacing"` — fügt überall dort genau ein Leerzeichen ein, wo ein CJK-Zeichen auf einen lateinischen Buchstaben oder eine Ziffer trifft, und sonst nichts
+- `"cjk-punctuation"` — wandelt halbbreite `,` `.` `!` `?` `;` `:` `(` `)` neben einem CJK-Zeichen in ihre vollbreite Form um; vollbreite Zeichen wandelt es nie in halbbreite zurück
 
-Jede Transformation führt das aktive Dokument durch einen Serialisieren-Formatieren-Parsen-Roundtrip, um Inline-Markierungen (Fett, Links, Mathematik usw.) zu erhalten und Ihre konfigurierten Formatierungsregeln zu respektieren.
+Nur `cjk-format` liest Ihre Formatierungseinstellungen. `cjk-spacing` und `cjk-punctuation` sind feste Regeln, die sie ignorieren, und anders als der Formatierer behandeln sie auch koreanisches Hangul als CJK. Alle drei arbeiten auf dem Markdown-Quelltext des Dokuments und lassen [geschützten Inhalt](#geschutzter-inhalt) unangetastet.
 
-In der [MCP-Tools-Referenz](/de/guide/mcp-tools#document-tool) finden Sie die vollständige Anfrageform — `document.transform` nimmt `tabId`, `kind` und ein `expected_revision` für optimistische Nebenläufigkeit.
+In der [MCP-Tools-Referenz](/de/guide/mcp-tools#transform) finden Sie die vollständige Anfrageform — `document.transform` nimmt `tabId`, `kind` und ein `expected_revision` für optimistische Nebenläufigkeit.
 
 ## Konfiguration
 
@@ -278,7 +285,7 @@ Apostrophe in Kontraktionen (wie "it's" oder "don't") werden korrekt beibehalten
 
 ### Anführungszeichenstil am Cursor umschalten
 
-Sie können den Anführungszeichenstil vorhandener Anführungszeichen schnell umschalten, ohne das gesamte Dokument neu zu formatieren. Platzieren Sie Ihren Cursor innerhalb eines Anführungszeichenpaars und drücken Sie `Umschalt + Mod + '`, um umzuschalten.
+Sie können den Anführungszeichenstil vorhandener Anführungszeichen schnell umschalten, ohne das gesamte Dokument neu zu formatieren. Platzieren Sie Ihren Cursor innerhalb eines Anführungszeichenpaars und drücken Sie `Umschalt + Mod + '`, um umzuschalten. Dies funktioniert nur im WYSIWYG-Modus; im Quellmodus gibt es keine Umschaltung der Anführungszeichen.
 
 **Einfacher Modus** (Standard): Wechselt zwischen geraden Anführungszeichen und Ihrem bevorzugten Stil.
 

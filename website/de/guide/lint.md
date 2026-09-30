@@ -1,13 +1,13 @@
 # Markdown-Lint
 
-VMark bringt eine integrierte Lint-Engine mit, die **Korrektheitsprobleme** erkennt — keine Stilvorlieben. Lint läuft auf Anforderung (Cmd-Shift-L oder **Werkzeuge → Markdown prüfen**) und zeigt Ergebnisse inline als Wellenlinien am Rand an, mit einem Status-Badge in der Statusleiste und F2-Navigation zwischen den Befunden.
+VMark bringt eine integrierte Lint-Engine mit, die **Korrektheitsprobleme** erkennt — keine Stilvorlieben. Lint läuft auf Anforderung (`Alt + Mod + V` oder **Ansicht → Markdown prüfen**) und zeigt Ergebnisse inline an — im WYSIWYG-Modus als farbiger Balken an der Seite jedes betroffenen Blocks, im Quellmodus als Wellenlinie unter genau dem betroffenen Text — mit einem Status-Badge in der Statusleiste und F2-Navigation zwischen den Befunden.
 
 ## Was Lint ist und was nicht
 
 VMarks Lint ist ein **Korrektheits**-Prüfer:
 
 - Defekte Querverweise
-- Undefinierte Link-/Fußnotenreferenzen
+- Undefinierte Linkreferenzen (Fußnotenreferenzen werden nicht geprüft)
 - Nicht geschlossene Code-Blöcke
 - Tabellen mit nicht übereinstimmender Spaltenanzahl
 - Übersprungene Überschriftsebenen (h1 → h3)
@@ -50,14 +50,14 @@ Verwenden Sie für Stil-Erzwingung ein separates Werkzeug wie `prettier --check`
 
 | Auslöser | Aktion |
 |---|---|
-| `Cmd + Shift + L` (macOS) / `Ctrl + Shift + L` (Win/Linux) | Lint im aktiven Dokument ausführen |
-| **Werkzeuge → Markdown prüfen** | Wie das Tastenkürzel |
+| `Alt + Mod + V` | Lint im aktiven Dokument ausführen |
+| **Ansicht → Markdown prüfen** | Wie das Tastenkürzel |
 | `F2` | Zur nächsten Diagnose springen |
 | `Shift + F2` | Zur vorherigen Diagnose springen |
 
 Bei Markdown-Dateien mit Dateipfaden läuft die Link-Existenz-Prüfung automatisch parallel zu den synchronen Regeln — siehe [Link-Prüfung](/de/guide/link-check).
 
-Bei YAML-Dateien erscheinen Parse-Fehler live während der Eingabe am Rand, und dasselbe Tastenkürzel `Cmd-Shift-L` füllt das Badge und die F2-Navigation.
+Bei YAML-Dateien erscheinen Parse-Fehler live während der Eingabe am Rand, und dasselbe Tastenkürzel `Alt + Mod + V` füllt das Badge und die F2-Navigation.
 
 ## Einstellungen
 
@@ -65,7 +65,7 @@ Die Lint-Engine hat einen einzigen benutzerseitigen Schalter:
 
 - **Einstellungen → Markdown → Markdown-Lint aktivieren** — die Engine vollständig ein- oder ausschalten
 
-Wenn deaktiviert, wird das Tastenkürzel zu einem No-Op und es erscheinen keine Diagnosen am Rand.
+Wenn deaktiviert, wird das Tastenkürzel zu einem No-Op und es erscheinen keine Diagnosen im Editor.
 
 ## Siehe auch
 
