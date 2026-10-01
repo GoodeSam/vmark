@@ -148,7 +148,7 @@ describe("detectFootnoteTrigger (via plugin config)", () => {
 
     expect(result).not.toBeNull();
     expect(result!.from).toBe(0);
-    expect(result!.to).toBe(28);
+    expect(result!.to).toBe(7);
   });
 
   it("does not match definition syntax as reference (no false positive)", () => {
@@ -285,7 +285,9 @@ describe("openPopup callback (via plugin config)", () => {
       referencePos: 0,
     };
 
-    config.openPopup({ anchorRect: mockAnchorRect, data });
+    const view = createView("[^1]: test content", 2);
+    config.openPopup({ view, anchorRect: mockAnchorRect, data });
+    view.destroy();
 
     const openPopup = useFootnotePopupStore.getState().openPopup;
     expect(openPopup).toHaveBeenCalledWith("1", "test content", mockAnchorRect, 5, 0);

@@ -88,6 +88,12 @@ export class SourceFootnotePopupView extends SourcePopupView<FootnotePopupState>
     };
   }
 
+  protected override shouldFocusOnShow(): boolean {
+    // Pointer previews retain the source caret. Explicit autofocus below
+    // targets the textarea rather than the base class's first button.
+    return false;
+  }
+
   protected onShow(state: FootnotePopupState): void {
     // Set label display
     this.labelSpan.textContent = `[^${state.label}]`;
@@ -112,11 +118,13 @@ export class SourceFootnotePopupView extends SourcePopupView<FootnotePopupState>
       this.gotoBtn.style.display = state.referencePos !== null ? "flex" : "none";
     }
 
-    // Focus textarea after brief delay
-    requestAnimationFrame(() => {
-      this.textarea.focus();
-      this.textarea.select();
-    });
+    if (state.autoFocus) {
+      requestAnimationFrame(() => {
+        if (!this.isVisible() || !this.store.getState().autoFocus) return;
+        this.textarea.focus();
+        this.textarea.select();
+      });
+    }
   }
 
   protected onHide(): void {

@@ -42,9 +42,13 @@ function findFootnoteAtPos(view: EditorView, pos: number): FootnoteMatch | null 
   const definition = findFootnoteDefinitionAtPos(view, pos);
   if (definition) {
     const defLine = doc.lineAt(definition.from);
+    // Only the marker triggers a preview; the body and continuation lines
+    // remain ordinary editable source text (#1491).
+    const markerEnd = defLine.from + definition.label.length + 3;
+    if (pos < defLine.from || pos > markerEnd) return null;
     return {
       from: defLine.from,
-      to: defLine.to,
+      to: markerEnd,
       label: definition.label,
       isReference: false,
       content: definition.content,
@@ -154,6 +158,7 @@ export function createSourceFootnotePopupPlugin(store: StoreApi<FootnotePopupSta
     createView: (view, store) => new SourceFootnotePopupView(view, store),
     detectTrigger: detectFootnoteTrigger,
     detectTriggerAtPos: (view, pos) => {
+      if (view.state.selection.ranges.some((range) => !range.empty)) return null;
       const footnote = findFootnoteAtPos(view, pos);
       if (!footnote) return null;
       return { from: footnote.from, to: footnote.to };
@@ -164,7 +169,9 @@ export function createSourceFootnotePopupPlugin(store: StoreApi<FootnotePopupSta
         popupView.setOpenedOnReference(data.openedOnReference);
       }
     },
-    openPopup: ({ anchorRect, data }) => {
+    openPopup: ({ view, anchorRect, data }) => {
+      // A selection can begin after the hover timer was scheduled.
+      if (view.state.selection.ranges.some((range) => !range.empty)) return;
       store
         .getState()
         .openPopup(
