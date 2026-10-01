@@ -1,5 +1,4 @@
 {
-  "_cc_bridge_version": "1",
   "hooks": {
     "PreToolUse": [
       {
