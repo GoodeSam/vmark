@@ -13,10 +13,8 @@ import { Schema } from "@tiptap/pm/model";
 import { EditorState } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
 
-// Mock CSS
 vi.mock("./link-popup.css", () => ({}));
 
-// Mock LinkPopupView
 vi.mock("./LinkPopupView", () => ({
   LinkPopupView: class MockLinkPopupView {
     update = vi.fn();
@@ -38,13 +36,11 @@ const mockLinkCreatePopupState = {
 };
 const mockLinkCreateStore = { getState: () => mockLinkCreatePopupState };
 
-// Mock headingSlug
 vi.mock("@/utils/headingSlug", () => ({
   findHeadingById: vi.fn(() => null),
   navigateToHeadingById: vi.fn(() => false),
 }));
 
-// Mock tauri opener
 vi.mock("@tauri-apps/plugin-opener", () => ({
   openUrl: vi.fn(() => Promise.resolve()),
 }));
@@ -58,8 +54,7 @@ vi.mock("@/services/navigation/linkOpen", async () => {
   return {
     ...actual,
     openFilepathLink: mockOpenFilepathLink,
-    // The real opener, observed: handleClick fires it without awaiting, so a
-    // test awaits the promise it returned instead of polling on a budget.
+    // The real opener, observed: a test awaits the promise handleClick left un-awaited.
     openExternalLink: vi.fn(actual.openExternalLink),
   };
 });
@@ -422,11 +417,9 @@ describe("linkPopupExtension", () => {
       expect(result).toBe(true);
       expect(preventDefault).toHaveBeenCalled();
 
-      // Await the open handleClick started: it resolves true once the URL
-      // passed the scheme allowlist and reached the opener.
-      const opens = vi.mocked(openExternalLink).mock.results;
-      expect(opens).toHaveLength(1);
-      await expect(opens[0].value).resolves.toBe(true);
+      // The open resolves true once the URL passed the scheme allowlist and reached the opener.
+      expect(openExternalLink).toHaveBeenCalledTimes(1);
+      await expect(vi.mocked(openExternalLink).mock.results[0].value).resolves.toBe(true);
       expect(mockOpenUrl).toHaveBeenCalledWith("http://example.com");
     });
 

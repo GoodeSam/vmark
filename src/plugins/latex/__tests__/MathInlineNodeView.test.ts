@@ -151,6 +151,8 @@ describe("MathInlineNodeView", () => {
   let getPos: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    // Renders are scheduled on idle (a zero-delay timer here) or a frame: the tests drive that clock.
+    vi.useFakeTimers();
     vi.clearAllMocks();
     document.body.textContent = "";
     mockIsKatexLoaded.mockReturnValue(false);
@@ -165,6 +167,7 @@ describe("MathInlineNodeView", () => {
   afterEach(() => {
     nodeView?.destroy();
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   function createNodeView(attrs: Record<string, unknown> = {}) {
@@ -624,16 +627,6 @@ describe("MathInlineNodeView", () => {
   });
 
   describe("KaTeX rendering", () => {
-    // The render is scheduled on idle (stubbed to a zero-delay timer) or on a
-    // plain timer, then waits for KaTeX's load promise: drive that clock.
-    beforeEach(() => {
-      vi.useFakeTimers();
-    });
-
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
     it("renders with KaTeX when loaded", async () => {
       const mockRender = vi.fn();
       mockLoadKatex.mockResolvedValue({ default: { render: mockRender } });
@@ -873,7 +866,7 @@ describe("MathInlineNodeView", () => {
       input.dispatchEvent(new Event("blur", { bubbles: true }));
 
       // Wait for rAF
-      await new Promise((r) => requestAnimationFrame(r));
+      await vi.advanceTimersByTimeAsync(16);
 
       // Should have committed changes
       expect(mockView.state.tr.setNodeMarkup).toHaveBeenCalled();
@@ -898,7 +891,7 @@ describe("MathInlineNodeView", () => {
       vi.clearAllMocks();
       input.dispatchEvent(new Event("blur", { bubbles: true }));
 
-      await new Promise((r) => requestAnimationFrame(r));
+      await vi.advanceTimersByTimeAsync(16);
 
       // Should NOT commit since input is still focused
       expect(mockView.state.tr.setNodeMarkup).not.toHaveBeenCalled();
@@ -1126,14 +1119,6 @@ describe("MathInlineNodeView", () => {
   });
 
   describe("renderPreview - KaTeX load rejection with non-Error", () => {
-    beforeEach(() => {
-      vi.useFakeTimers();
-    });
-
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
     it("handles non-Error rejection from loadKatex", async () => {
       mockLoadKatex.mockRejectedValue("string error");
       mockIsKatexLoaded.mockReturnValue(false);
@@ -1194,22 +1179,16 @@ describe("MathInlineNodeView", () => {
       nodeView.dom.classList.add("editing");
 
       // The MutationObserver delivers its records asynchronously.
-      await vi.waitFor(() => {
-        expect(nodeView.dom.querySelector(".math-inline-input")).not.toBeNull();
-      });
+      await vi.waitFor(() => expect(nodeView.dom.querySelector(".math-inline-input")).not.toBeNull());
     });
 
     it("exits edit mode via MutationObserver when editing class is removed", async () => {
       createNodeView({ content: "x^2" });
       nodeView.dom.classList.add("editing");
-      await vi.waitFor(() => {
-        expect(nodeView.dom.querySelector(".math-inline-input")).not.toBeNull();
-      });
+      await vi.waitFor(() => expect(nodeView.dom.querySelector(".math-inline-input")).not.toBeNull());
 
       nodeView.dom.classList.remove("editing");
-      await vi.waitFor(() => {
-        expect(nodeView.dom.querySelector(".math-inline-input")).toBeNull();
-      });
+      await vi.waitFor(() => expect(nodeView.dom.querySelector(".math-inline-input")).toBeNull());
     });
   });
 });

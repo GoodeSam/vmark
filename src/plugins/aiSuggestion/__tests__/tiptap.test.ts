@@ -86,9 +86,6 @@ function createState(text: string) {
   return EditorState.create({ doc, schema, plugins: pluginUnderTest ? [pluginUnderTest] : [] });
 }
 
-/** A fixed instant: the plugin never reads `createdAt`, so the value only has to be stable. */
-const CREATED_AT = Date.UTC(2026, 0, 1);
-
 function makeSuggestion(overrides: Partial<AiSuggestion> = {}): AiSuggestion {
   return {
     id: "test-1",
@@ -96,7 +93,7 @@ function makeSuggestion(overrides: Partial<AiSuggestion> = {}): AiSuggestion {
     type: "insert",
     from: 0,
     to: 0,
-    createdAt: CREATED_AT,
+    createdAt: Date.UTC(2026, 0, 1), // fixed: the plugin never reads it
     ...overrides,
   };
 }

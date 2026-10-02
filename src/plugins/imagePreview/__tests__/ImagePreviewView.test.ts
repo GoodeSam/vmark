@@ -32,18 +32,10 @@ import { ImagePreviewView, getImagePreviewView, hideImagePreview } from "../Imag
 // so that resetMediaElements() doesn't throw when calling videoEl.pause() / audioEl.pause().
 HTMLMediaElement.prototype.pause = vi.fn();
 
-// Source resolution is a promise chain, a load fires its handler later, and
-// the popup repositions in an animation frame. The tests run that on a fake
-// clock — timers, frames and the microtasks between them — instead of
-// sleeping on the wall clock and hoping the work finished first.
-beforeEach(() => {
-  vi.useFakeTimers();
-});
-
-afterEach(() => {
-  vi.useRealTimers();
-});
-
+// Source resolution, load handlers and the reposition frame all run on a fake
+// clock the tests advance, instead of sleeping and hoping the work finished.
+beforeEach(() => void vi.useFakeTimers());
+afterEach(() => void vi.useRealTimers());
 /** Long enough on the fake clock for two animation frames to run. */
 const TWO_FRAMES_MS = 32;
 
@@ -88,9 +80,7 @@ describe("ImagePreviewView mounting", () => {
     container = createEditorContainer();
   });
 
-  afterEach(() => {
-    container.remove();
-  });
+  afterEach(() => container.remove());
 
   it("mounts inside editor-container when editorDom provided", () => {
     const view = new ImagePreviewView();
@@ -212,9 +202,7 @@ describe("ImagePreviewView loading states", () => {
     container = createEditorContainer();
   });
 
-  afterEach(() => {
-    container.remove();
-  });
+  afterEach(() => container.remove());
 
   it("shows loading state initially", () => {
     const view = new ImagePreviewView();
@@ -293,9 +281,7 @@ describe("ImagePreviewView media types", () => {
     container = createEditorContainer();
   });
 
-  afterEach(() => {
-    container.remove();
-  });
+  afterEach(() => container.remove());
 
   it("shows video element for video type", () => {
     const view = new ImagePreviewView();
@@ -383,9 +369,7 @@ describe("ImagePreviewView external URLs", () => {
     container = createEditorContainer();
   });
 
-  afterEach(() => {
-    container.remove();
-  });
+  afterEach(() => container.remove());
 
   it("loads external HTTP URL directly", async () => {
     const view = new ImagePreviewView();
@@ -433,9 +417,7 @@ describe("ImagePreviewView updateContent", () => {
     container = createEditorContainer();
   });
 
-  afterEach(() => {
-    container.remove();
-  });
+  afterEach(() => container.remove());
 
   it("updateContent triggers new load", async () => {
     const view = new ImagePreviewView();
@@ -499,9 +481,7 @@ describe("ImagePreviewView image loading", () => {
     container = createEditorContainer();
   });
 
-  afterEach(() => {
-    container.remove();
-  });
+  afterEach(() => container.remove());
 
   it("shows image on successful load via onload", async () => {
     // Override Image so that setting src triggers onload synchronously
@@ -637,9 +617,7 @@ describe("ImagePreviewView video/audio loading", () => {
     container = createEditorContainer();
   });
 
-  afterEach(() => {
-    container.remove();
-  });
+  afterEach(() => container.remove());
 
   it("shows video on loadedmetadata", async () => {
     const view = new ImagePreviewView();
@@ -779,9 +757,7 @@ describe("ImagePreviewView path resolution", () => {
     container = createEditorContainer();
   });
 
-  afterEach(() => {
-    container.remove();
-  });
+  afterEach(() => container.remove());
 
   it("resolves absolute path via convertFileSrc", async () => {
     const { convertFileSrc } = await import("@tauri-apps/api/core");
@@ -1008,9 +984,7 @@ describe("ImagePreviewView stale load cancellation", () => {
     container = createEditorContainer();
   });
 
-  afterEach(() => {
-    container.remove();
-  });
+  afterEach(() => container.remove());
 
   it("cancels pending image load on hide", async () => {
     const origImage = globalThis.Image;
@@ -1100,9 +1074,7 @@ describe("ImagePreviewView — rAF repositioning after load", () => {
     container = createEditorContainer();
   });
 
-  afterEach(() => {
-    container.remove();
-  });
+  afterEach(() => container.remove());
 
   it("repositions after image loads when visible and anchorRect exists", async () => {
     // Use mock Image that fires onload after rAF
@@ -1287,9 +1259,7 @@ describe("ImagePreviewView — remaining uncovered branches", () => {
     container = createEditorContainer();
   });
 
-  afterEach(() => {
-    container.remove();
-  });
+  afterEach(() => container.remove());
 
   it("getActiveFilePath returns null when getDocument returns object with no filePath (line 55 ?? branch)", async () => {
     // Branch 2: getDocument(tabId)?.filePath ?? null — ??(null) fires when filePath is undefined.
