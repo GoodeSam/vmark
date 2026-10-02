@@ -72,7 +72,8 @@ export function QuickOpen({ windowLabel }: QuickOpenProps) {
   const previousFocusRef = useRef<Element | null>(null);
   const ime = useImeComposition();
 
-  // Only load the workspace tree while open; this avoids an idle watcher.
+  // Only load the workspace tree while open: a closed palette holds no tree and
+  // no subscription.
   const { rootPath, isWorkspaceMode, excludeFolders, config } =
     useActiveWorkspaceScope(windowLabel);
   // #1428: the workspace tier is scoped by the SAME workspace config the file
@@ -85,7 +86,9 @@ export function QuickOpen({ windowLabel }: QuickOpenProps) {
     excludeFolders,
     showHidden: config?.showHiddenFiles ?? false,
     showAllFiles: config?.showAllFiles ?? false,
-    watchId: `quick-open-${windowLabel}`,
+    // The window's own watcher — the only one there is. Events are scoped by
+    // watcher id, so any other id is a subscription nothing ever fires.
+    watchId: windowLabel,
   });
 
   // Flatten workspace tree to file paths
