@@ -10,9 +10,16 @@
  *   - src/locales/{lang}/*.json  vs  src/locales/en/*.json  (all 8 namespaces)
  *   - src-tauri/locales/{lang}.yml  vs  src-tauri/locales/en.yml
  *
+ * A key that is present must also hold something: an empty or non-string
+ * value fails, and so does a YAML translation whose `%{name}` placeholders
+ * differ from English (scripts/i18nValueChecks.ts).
+ *
  * Exit codes:
  *   0  All good (or no translations to check)
- *   1  One or more translation files have missing keys
+ *   1  One or more checks failed: missing keys, placeholder or value problems,
+ *      untranslated values, dialog literals, copy conventions, fragments
+ *
+ * @coordinates-with scripts/check-i18n-keys.test.mjs — runs this whole script against a scratch tree
  */
 
 import { readFileSync, readdirSync, existsSync, writeFileSync } from "node:fs";
@@ -26,6 +33,7 @@ import {
   allowedEntries,
   staleExceptions,
 } from "./i18nIdenticalAllowlist.js";
+import { emptyValueIssues, yamlValueIssues } from "./i18nValueChecks.js";
 import { isMainModule } from "./lib/isMainModule.mjs";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -373,7 +381,21 @@ function checkJsonLocales(): boolean {
         console.error(`[ERROR] src/locales/${lang}/${file} — ${phIssues.length} placeholder mismatch(es):`);
         for (const issue of phIssues.slice(0, 10)) console.error(`          ${issue}`);
       }
-      if (result.missing.length > 0 || phIssues.length > 0) allOk = false;
+      // A present key with nothing in it renders as nothing. Skipped when the
+      // file yielded no keys: an unparseable file is already reported above
+      // as missing every key.
+      const emptyIssues =
+        targetKeys.length > 0
+          ? emptyValueIssues(
+              JSON.parse(readFileSync(join(enDir, file), "utf-8")) as unknown,
+              JSON.parse(readFileSync(targetPath, "utf-8")) as unknown,
+            )
+          : [];
+      if (emptyIssues.length > 0) {
+        console.error(`[ERROR] src/locales/${lang}/${file} — ${emptyIssues.length} empty or non-string value(s):`);
+        for (const issue of emptyIssues.slice(0, 10)) console.error(`          ${issue}`);
+      }
+      if (result.missing.length > 0 || phIssues.length > 0 || emptyIssues.length > 0) allOk = false;
     }
   }
 
@@ -405,13 +427,19 @@ function checkYamlLocales(): boolean {
   }
 
   let allOk = true;
+  const sourceValues = flattenYamlValues(readFileSync(enYml, "utf-8"));
 
   for (const ymlFile of otherYmls) {
     const targetPath = join(tauriLocalesDir, ymlFile);
     const targetKeys = loadYamlKeys(targetPath);
     const result = compareKeys(targetPath, sourceKeys, targetKeys);
     printResult(result);
-    if (result.missing.length > 0) allOk = false;
+    const valueIssues = yamlValueIssues(sourceValues, flattenYamlValues(readFileSync(targetPath, "utf-8")));
+    if (valueIssues.length > 0) {
+      console.error(`[ERROR] src-tauri/locales/${ymlFile} — ${valueIssues.length} value problem(s):`);
+      for (const issue of valueIssues.slice(0, 10)) console.error(`          ${issue}`);
+    }
+    if (result.missing.length > 0 || valueIssues.length > 0) allOk = false;
   }
 
   return allOk;
