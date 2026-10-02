@@ -46,7 +46,9 @@ type Sections = Record<string, Json>;
 const plain = (value: unknown): Sections => JSON.parse(JSON.stringify(value)) as Sections;
 const onDisk = (): { state: Sections; version: number } =>
   JSON.parse(localStorage.getItem(KEY) ?? "null") as { state: Sections; version: number };
-const seed = (state: unknown, version = 1) => localStorage.setItem(KEY, JSON.stringify({ state, version }));
+/** The persisted schema version this build writes (settingsStore SETTINGS_VERSION). */
+const VERSION = 2;
+const seed = (state: unknown, version = VERSION) => localStorage.setItem(KEY, JSON.stringify({ state, version }));
 /** The persisted blob with one section patched — what another window would write. */
 const withSection = (section: string, patch: Json): string => {
   const blob = onDisk();
@@ -115,7 +117,7 @@ describe("Tier-0 settings persistence — what a change writes and a restart rea
   it("writes changes under the real key in the versioned envelope, and a restart rehydrates all of them", async () => {
     const expected = await changeSeveral();
 
-    expect(onDisk()).toEqual({ state: expected, version: 1 });
+    expect(onDisk()).toEqual({ state: expected, version: VERSION });
     // Whole-state equality: every change survived AND everything else is still a default.
     expect((await launch()).live()).toEqual(expected);
   });
@@ -138,13 +140,13 @@ describe("Tier-0 settings persistence — what a change writes and a restart rea
     settings.getState().resetSettings();
 
     expect(live()).toEqual(defaults);
-    expect(onDisk()).toEqual({ state: defaults, version: 1 });
+    expect(onDisk()).toEqual({ state: defaults, version: VERSION });
     expect((await launch()).live()).toEqual(defaults);
   });
 });
 
 describe("Tier-0 settings persistence — blobs this build did not write", () => {
-  it("migrates a version-0 blob: renamed, relocated and retired keys, rewritten at version 1", async () => {
+  it("migrates a version-0 blob: renamed, relocated and retired keys, rewritten at the current version", async () => {
     seed(
       {
         appearance: { paragraphSpacing: 2, autoHideStatusBar: true, theme: "night" },
@@ -164,11 +166,11 @@ describe("Tier-0 settings persistence — blobs this build did not write", () =>
       advanced: { ...defaults.advanced, mcpServer: { autoStart: false, autoApproveEdits: false } },
     };
     expect(live()).toEqual(expected);
-    expect(onDisk()).toEqual({ state: expected, version: 1 });
+    expect(onDisk()).toEqual({ state: expected, version: VERSION });
   });
 
   it("drops a blob written by a newer build instead of merging it", async () => {
-    seed({ appearance: { fontSize: 30, theme: "night" }, general: { tabSize: 8 } }, 2);
+    seed({ appearance: { fontSize: 30, theme: "night" }, general: { tabSize: 8 } }, VERSION + 1);
 
     const { live, defaults } = await launch();
 
@@ -187,7 +189,7 @@ describe("Tier-0 settings persistence — blobs this build did not write", () =>
 
     expect(live()).toEqual(defaults);
     settings.getState().updateGeneralSetting("tabSize", 4);
-    expect(onDisk()).toEqual({ state: { ...defaults, general: { ...defaults.general, tabSize: 4 } }, version: 1 });
+    expect(onDisk()).toEqual({ state: { ...defaults, general: { ...defaults.general, tabSize: 4 } }, version: VERSION });
   });
 
   it("drops a wrong-typed section or leaf and keeps its valid siblings", async () => {
@@ -227,7 +229,8 @@ describe("Tier-0 settings persistence — blobs this build did not write", () =>
       terminal: { ...defaults.terminal, scrollback: 100, panelRatio: 0.1 },
       general: { ...defaults.general, autoSaveInterval: 5, coherenceCheckTau: 1, historyMaxAgeDays: 1 },
       browser: { ...defaults.browser, aiSession: "sandbox", aiAllowLoopback: true },
-      advanced: { ...defaults.advanced, customLinkProtocols: [...(defaults.advanced.customLinkProtocols as string[]), "zotero"] },
+      // A current-version list is the user's own: non-strings dropped, no defaults added.
+      advanced: { ...defaults.advanced, customLinkProtocols: ["zotero"] },
     });
   });
 });
