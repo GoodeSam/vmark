@@ -1361,11 +1361,6 @@
       "target": "src/utils/paths/index"
     },
     {
-      "file": "src/export/__tests__/htmlExportAssets.test.ts",
-      "api": "vi.mock",
-      "target": "src/export/fontEmbedder"
-    },
-    {
       "file": "src/export/__tests__/htmlExportCleanup.test.ts",
       "api": "vi.mock",
       "target": "src/export/fontEmbedder"
