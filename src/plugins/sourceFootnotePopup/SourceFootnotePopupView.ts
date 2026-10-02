@@ -10,6 +10,7 @@ import i18n from "@/i18n";
 import { SourcePopupView, type StoreApi } from "@/plugins/sourcePopup";
 import type { FootnotePopupState } from "@/plugins/shared/popupPorts";
 import { buildPopupIconButton, popupIcons } from "@/utils/popupComponents";
+import { isImeKeyEvent } from "@/utils/imeGuard";
 import {
   saveFootnoteContent,
   gotoFootnoteTarget,
@@ -144,6 +145,8 @@ export class SourceFootnotePopupView extends SourcePopupView<FootnotePopupState>
   }
 
   private handleTextareaKeydown(e: KeyboardEvent): void {
+    // The Enter that confirms an IME candidate is not a save.
+    if (isImeKeyEvent(e)) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       this.handleSave();
