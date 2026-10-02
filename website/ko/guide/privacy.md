@@ -87,3 +87,7 @@ VMark는 완전한 오픈 소스입니다. 여기서 설명한 모든 것을 확
 ## 업데이트 확인 비활성화
 
 자동 업데이트 확인을 완전히 비활성화하려면 네트워크 수준 (방화벽, `/etc/hosts`, 또는 DNS)에서 `log.vmark.app`을 차단할 수 있습니다. VMark는 없어도 정상적으로 계속 작동합니다 — 업데이트 알림만 받지 못합니다.
+
+## 보안 문제 신고
+
+VMark에서 취약점(예: MCP 브리지, 내장 브라우저, 업데이터, 파일 처리)을 발견했다면 공개 이슈를 만들지 말고 [GitHub의 비공개 취약점 신고](https://github.com/xiaolai/vmark/security/advisories/new)로 알려 주세요. 신고 대상 범위와 이후 절차는 [보안 정책](https://github.com/xiaolai/vmark/blob/main/SECURITY.md)에 나와 있습니다.

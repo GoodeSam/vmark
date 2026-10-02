@@ -66,6 +66,7 @@ When you file an issue, AI fixes it with full context of the project's conventio
 
 - **[Bug Report](.github/ISSUE_TEMPLATE/bug_report.yml)** · **[Feature Request](.github/ISSUE_TEMPLATE/feature_request.yml)**
 - Read more: **[Why Issues, Not PRs](https://vmark.app/guide/users-as-developers/why-issues-not-prs)**
+- **Security problems** are reported privately, not as issues — see **[SECURITY.md](SECURITY.md)**
 
 ---
 

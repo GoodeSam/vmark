@@ -87,3 +87,7 @@ VMark est entièrement open source. Vous pouvez vérifier tout ce qui est décri
 ## Désactiver les vérifications de mises à jour
 
 Si vous préférez désactiver entièrement les vérifications automatiques de mises à jour, vous pouvez bloquer `log.vmark.app` au niveau réseau (pare-feu, `/etc/hosts` ou DNS). VMark continuera à fonctionner normalement sans cela — vous ne recevrez simplement pas les notifications de mise à jour.
+
+## Signaler un problème de sécurité
+
+Si vous découvrez une vulnérabilité dans VMark, par exemple dans le pont MCP, le navigateur intégré, le programme de mise à jour ou la gestion des fichiers, signalez-la en privé via [le signalement privé de vulnérabilités de GitHub](https://github.com/xiaolai/vmark/security/advisories/new) plutôt que dans un ticket public. La [politique de sécurité](https://github.com/xiaolai/vmark/blob/main/SECURITY.md) précise ce qui est couvert et ce à quoi vous pouvez vous attendre.

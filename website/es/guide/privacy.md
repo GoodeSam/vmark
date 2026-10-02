@@ -87,3 +87,7 @@ VMark es completamente de código abierto. Puedes verificar todo lo descrito aqu
 ## Deshabilitar las Verificaciones de Actualizaciones
 
 Si prefieres deshabilitar completamente las verificaciones automáticas de actualizaciones, puedes bloquear `log.vmark.app` a nivel de red (cortafuegos, `/etc/hosts` o DNS). VMark continuará funcionando normalmente sin ellas — simplemente no recibirás notificaciones de actualización.
+
+## Informar de un problema de seguridad
+
+Si encuentra una vulnerabilidad en VMark, por ejemplo en el puente MCP, el navegador integrado, el actualizador o el manejo de archivos, comuníquela de forma privada mediante [el informe privado de vulnerabilidades de GitHub](https://github.com/xiaolai/vmark/security/advisories/new) en lugar de abrir una incidencia pública. La [política de seguridad](https://github.com/xiaolai/vmark/blob/main/SECURITY.md) indica qué entra en su alcance y qué puede esperar.
