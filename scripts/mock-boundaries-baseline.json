@@ -2086,11 +2086,6 @@
       "target": "src/plugins/toolbarActions/wysiwygAdapterUtils"
     },
     {
-      "file": "src/services/terminal/runInTerminal.test.ts",
-      "api": "vi.mock",
-      "target": "src/services/terminal/activeTerminal"
-    },
-    {
       "file": "src/services/workspaces/finalizeInstanceRemoval.test.ts",
       "api": "vi.mock",
       "target": "src/services/workspaces/hydrateWorkspaceInstanceContext"
