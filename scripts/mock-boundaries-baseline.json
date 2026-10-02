@@ -1394,16 +1394,6 @@
       "file": "src/plugins/sourcePopup/SourcePopupView.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/sourcePopup/sourcePopupUtils"
-    },
-    {
-      "file": "src/utils/cursorSync/codemirror.test.ts",
-      "api": "vi.mock",
-      "target": "src/utils/cursorSync/table"
-    },
-    {
-      "file": "src/utils/cursorSync/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/utils/cursorSync/tiptapAnchors"
     }
   ]
 }
