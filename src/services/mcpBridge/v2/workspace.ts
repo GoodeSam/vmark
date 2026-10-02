@@ -112,9 +112,9 @@ export { handleWorkspaceSave } from "./workspaceSave";
  * `force` is not true, we refuse the close with `{closed: false, reason}` —
  * `"DIRTY"` for unsaved changes, `"DIVERGENT"` for a clean document the user
  * kept over an external change — so the AI can decide whether to save first
- * or force. A pinned tab is never
- * closed, `force` or not: the reply is `{closed: false, reason: "PINNED"}`.
- * A browser tab is refused with `INVALID_TAB`. A tab that does close takes
+ * or force. A pinned tab is never closed, `force` or not: the reply is
+ * `{closed: false, reason: "PINNED"}`. A browser tab is refused with
+ * `INVALID_TAB`. A tab that does close takes
  * its document with it (the tab store's removal announcement frees per-tab
  * state).
  */
