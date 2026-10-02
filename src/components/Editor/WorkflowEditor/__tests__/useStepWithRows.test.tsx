@@ -10,15 +10,15 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: invokeMock }));
 
 import { useStepWithRows } from "../useStepWithRows";
 
+/** A step with only the required fields; optional ones are added by the caller. */
+const bareStep: StepIR = {
+  id: "checkout",
+  idSynthesized: false,
+  position: { startLine: 1, startCol: 1, endLine: 1, endCol: 1 },
+};
+
 function makeStep(overrides: Partial<StepIR> = {}): StepIR {
-  return {
-    id: "checkout",
-    idSynthesized: false,
-    uses: "actions/checkout@v4",
-    with: { "fetch-depth": "0" },
-    position: { startLine: 1, startCol: 1, endLine: 1, endCol: 1 },
-    ...overrides,
-  };
+  return { ...bareStep, uses: "actions/checkout@v4", with: { "fetch-depth": "0" }, ...overrides };
 }
 
 const metadataOk = {
@@ -91,7 +91,7 @@ describe("useStepWithRows — rows", () => {
   });
 
   it("adds a suggested key once", () => {
-    const { result } = setup(makeStep({ with: undefined }));
+    const { result } = setup({ ...bareStep, uses: "actions/checkout@v4" });
     act(() => result.current.addSuggestedKey("token"));
     act(() => result.current.addSuggestedKey("token"));
     expect(result.current.withRows.map((r) => r.key)).toEqual(["token"]);
@@ -100,7 +100,7 @@ describe("useStepWithRows — rows", () => {
 
 describe("useStepWithRows — action metadata", () => {
   it("has no inputs for a run step", () => {
-    const { result } = setup(makeStep({ uses: undefined, run: "make", with: undefined }));
+    const { result } = setup({ ...bareStep, run: "make" });
     expect(result.current.metadataResult.state).toBe("idle");
     expect(result.current.inputs).toBeNull();
     expect(result.current.knownInputKeys).toEqual([]);

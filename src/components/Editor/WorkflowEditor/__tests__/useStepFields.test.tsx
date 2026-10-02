@@ -5,17 +5,15 @@ import type { StepIR } from "@/lib/ghaWorkflow/types";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { useStepFields } from "../useStepFields";
 
+/** A step with only the required fields; optional ones are added by the caller. */
+const bareStep: StepIR = {
+  id: "build-step",
+  idSynthesized: false,
+  position: { startLine: 1, startCol: 1, endLine: 1, endCol: 1 },
+};
+
 function makeStep(overrides: Partial<StepIR> = {}): StepIR {
-  return {
-    id: "build-step",
-    idSynthesized: false,
-    name: "Build",
-    run: "make",
-    if: "success()",
-    workingDirectory: "src",
-    position: { startLine: 1, startCol: 1, endLine: 1, endCol: 1 },
-    ...overrides,
-  };
+  return { ...bareStep, name: "Build", run: "make", if: "success()", workingDirectory: "src", ...overrides };
 }
 
 const pending = () => useWorkflowStore.getState().edit.pendingPatches;
@@ -30,7 +28,7 @@ beforeEach(() => {
 
 describe("useStepFields", () => {
   it("starts from the step's values, empty when absent", () => {
-    const { result } = setup(makeStep({ name: undefined, workingDirectory: undefined }));
+    const { result } = setup({ ...bareStep, run: "make", if: "success()" });
     expect(result.current.name).toBe("");
     expect(result.current.run).toBe("make");
     expect(result.current.workingDir).toBe("");
@@ -71,7 +69,7 @@ describe("useStepFields", () => {
   });
 
   it("compares an absent baseline field as empty", () => {
-    const { result } = setup(makeStep({ if: undefined }), makeStep({ if: undefined }));
+    const { result } = setup({ ...bareStep, run: "make" });
     act(() => result.current.setExpand({ field: "if", value: "" }));
     act(() => result.current.handleExpandSave(""));
     expect(pending()).toEqual([]);
