@@ -1,4 +1,4 @@
-import type { LinkInfo } from "@/plugins/toolbarContext/types";
+import type { LinkInfo } from "@/plugins/shared/toolbarContextTypes";
 
 export interface LinkPopupPayload {
   href: string;

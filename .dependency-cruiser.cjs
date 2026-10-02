@@ -174,8 +174,6 @@ module.exports = {
           // Composes cross-plugin editor commands/keymaps (multiCursor,
           // syntaxReveal, toolbarActions policies) into the WYSIWYG editor.
           "src/plugins/editorPlugins/",
-          // WYSIWYG toolbar surface built on toolbarContext's intent types.
-          "src/plugins/formatToolbar/",
           // Fence-preview hub: dispatches rendering/export to the diagram
           // plugins (mermaid, graphviz, markmap, svg, latex) by design.
           "src/plugins/codePreview/",

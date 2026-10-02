@@ -982,7 +982,7 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - status: shipped-on
 - gate: always on where called
 - surfaces: indirect (Universal Toolbar List/Blockquote/Link groups, editor context menu, `editorStore.tiptapContext`)
-- code: `src/plugins/formatToolbar/nodeActions.tiptap.ts`; `src/plugins/formatToolbar/linkPopupUtils.ts`; `src/plugins/formatToolbar/tiptapContext.ts`; `src/plugins/formatToolbar/tiptapContextHelpers.ts`; `src/plugins/formatToolbar/listToggle.ts`; `src/plugins/formatToolbar/listRangeConversion.ts`; `src/plugins/toolbarContext/types.ts`
+- code: `src/plugins/formatToolbar/nodeActions.tiptap.ts`; `src/plugins/formatToolbar/linkPopupUtils.ts`; `src/plugins/formatToolbar/tiptapContext.ts`; `src/plugins/formatToolbar/tiptapContextHelpers.ts`; `src/plugins/formatToolbar/listToggle.ts`; `src/plugins/formatToolbar/listRangeConversion.ts`; `src/plugins/shared/toolbarContextTypes.ts`
 - rust: none
 - docs: none
 - tests: `src/plugins/formatToolbar/{nodeActions.tiptap,nodeActions.headingToList,listToggle,listRangeConversion,listOutdentDepth,tiptapContext,tiptapContextHelpers,linkPopupUtils}.test.ts`

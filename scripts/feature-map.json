@@ -493,7 +493,7 @@
         "src/components/Editor/UniversalToolbar",
         "src/plugins/formatToolbar",
         "src/plugins/toolbarActions",
-        "src/plugins/toolbarContext",
+        "src/plugins/shared/toolbarContextTypes.ts",
         "src/hooks/useUniversalToolbar.ts"
       ],
       "flag": null,
