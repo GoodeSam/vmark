@@ -111,13 +111,10 @@ import { getPopupHostForDom } from "@/plugins/shared/popupHostDom";
 import { mediaPopupWarn } from "@/utils/debug";
 import type { MediaPopupDom } from "./mediaPopupDom";
 
-/** The popup's real DOM. `dom` is private; tests read it to drive the
- *  controls a user would use, instead of replacing the DOM builder. */
-function popupDom(popup: MediaPopupView): MediaPopupDom {
-  return (popup as unknown as { dom: MediaPopupDom }).dom;
-}
+/** The popup's real (private) DOM, read to drive the controls a user would use. */
+const popupDom = (popup: MediaPopupView): MediaPopupDom => (popup as unknown as { dom: MediaPopupDom }).dom;
 
-/** Let a click's async handler (browse, copy) run to completion. */
+// Lets a click's async handler (browse, copy) run to completion.
 const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 /**
@@ -127,19 +124,16 @@ const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
  */
 function controls(popup: MediaPopupView) {
   const dom = popupDom(popup);
-  const [browseBtn, copyBtn, toggleBtn, deleteBtn] = Array.from(
-    dom.srcInput.parentElement!.querySelectorAll<HTMLButtonElement>("button"),
-  );
+  const buttons = dom.srcInput.parentElement!.querySelectorAll<HTMLButtonElement>("button");
+  const [browseBtn, copyBtn, toggleBtn, deleteBtn] = Array.from(buttons);
+  const clickAndSettle = (button: HTMLButtonElement) => () => {
+    button.click();
+    return settle();
+  };
   return {
     onInputKeydown: (event: KeyboardEvent) => dom.srcInput.dispatchEvent(event),
-    onBrowse: () => {
-      browseBtn.click();
-      return settle();
-    },
-    onCopy: () => {
-      copyBtn.click();
-      return settle();
-    },
+    onBrowse: clickAndSettle(browseBtn),
+    onCopy: clickAndSettle(copyBtn),
     onToggle: () => toggleBtn.click(),
     onRemove: () => deleteBtn.click(),
   };

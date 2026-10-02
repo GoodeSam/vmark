@@ -74,19 +74,25 @@ beforeEach(() => {
 });
 import { cleanupDescendants } from "@/plugins/shared/diagramCleanup";
 
-describe("MermaidPreviewView", () => {
-  let view: MermaidPreviewView;
-
+/** Each test gets fake timers and its own view, destroyed afterwards. */
+function freshViewPerTest(assign: (view: MermaidPreviewView) => void): void {
+  let current: MermaidPreviewView;
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    view = new MermaidPreviewView();
+    current = new MermaidPreviewView();
+    assign(current);
   });
-
   afterEach(() => {
-    view.destroy();
+    current.destroy();
     vi.useRealTimers();
   });
+}
+
+describe("MermaidPreviewView", () => {
+  let view: MermaidPreviewView;
+
+  freshViewPerTest((v) => (view = v));
 
   describe("show/hide lifecycle", () => {
     it("starts hidden", () => {
@@ -604,16 +610,7 @@ describe("getMermaidPreviewView", () => {
 describe("applyZoom — SVG with viewBox but no width/height (lines 235-250)", () => {
   let view: MermaidPreviewView;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    view = new MermaidPreviewView();
-  });
-
-  afterEach(() => {
-    view.destroy();
-    vi.useRealTimers();
-  });
+  freshViewPerTest((v) => (view = v));
 
   function injectSvg(attrs: Record<string, string> = {}) {
     view.show("graph TD", { top: 0, left: 0, width: 10, height: 10 });
@@ -709,16 +706,7 @@ describe("applyZoom — SVG with viewBox but no width/height (lines 235-250)", (
 describe("wheel zoom — boundary conditions", () => {
   let view: MermaidPreviewView;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    view = new MermaidPreviewView();
-  });
-
-  afterEach(() => {
-    view.destroy();
-    vi.useRealTimers();
-  });
+  freshViewPerTest((v) => (view = v));
 
   it("does not zoom when already at max and scrolling up", () => {
     view.show("graph TD", { top: 0, left: 0, width: 10, height: 10 });
@@ -768,16 +756,7 @@ describe("wheel zoom — boundary conditions", () => {
 describe("updatePosition — with editor container (line 277-279)", () => {
   let view: MermaidPreviewView;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    view = new MermaidPreviewView();
-  });
-
-  afterEach(() => {
-    view.destroy();
-    vi.useRealTimers();
-  });
+  freshViewPerTest((v) => (view = v));
 
   it("uses getBoundaryRects when editorDom has .editor-container ancestor", () => {
     const editorContainer = document.createElement("div");
@@ -816,16 +795,7 @@ describe("updatePosition — with editor container (line 277-279)", () => {
 describe("drag — small delta does not set hasDragged (line 106)", () => {
   let view: MermaidPreviewView;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    view = new MermaidPreviewView();
-  });
-
-  afterEach(() => {
-    view.destroy();
-    vi.useRealTimers();
-  });
+  freshViewPerTest((v) => (view = v));
 
   it("small mouse move (< 5px) does not mark as dragged", () => {
     view.show("graph TD", { top: 0, left: 0, width: 10, height: 10 });
@@ -853,16 +823,7 @@ describe("drag — small delta does not set hasDragged (line 106)", () => {
 describe("resize — missing data-corner attribute (line 129)", () => {
   let view: MermaidPreviewView;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    view = new MermaidPreviewView();
-  });
-
-  afterEach(() => {
-    view.destroy();
-    vi.useRealTimers();
-  });
+  freshViewPerTest((v) => (view = v));
 
   it("defaults to 'se' when resize handle has no data-corner", () => {
     view.show("graph TD", { top: 0, left: 0, width: 10, height: 10 });
@@ -891,16 +852,7 @@ describe("resize — missing data-corner attribute (line 129)", () => {
 describe("drag move — when not dragging (line 101)", () => {
   let view: MermaidPreviewView;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    view = new MermaidPreviewView();
-  });
-
-  afterEach(() => {
-    view.destroy();
-    vi.useRealTimers();
-  });
+  freshViewPerTest((v) => (view = v));
 
   it("ignores mousemove when not in drag state", () => {
     view.show("graph TD", { top: 0, left: 0, width: 10, height: 10 });
@@ -924,16 +876,7 @@ describe("drag move — when not dragging (line 101)", () => {
 describe("mouseup — when not dragging (line 112)", () => {
   let view: MermaidPreviewView;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    view = new MermaidPreviewView();
-  });
-
-  afterEach(() => {
-    view.destroy();
-    vi.useRealTimers();
-  });
+  freshViewPerTest((v) => (view = v));
 
   it("does nothing on mouseup when not in drag state", () => {
     view.show("graph TD", { top: 0, left: 0, width: 10, height: 10 });
@@ -955,16 +898,7 @@ describe("mouseup — when not dragging (line 112)", () => {
 describe("show — container parent check (line 262)", () => {
   let view: MermaidPreviewView;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    view = new MermaidPreviewView();
-  });
-
-  afterEach(() => {
-    view.destroy();
-    vi.useRealTimers();
-  });
+  freshViewPerTest((v) => (view = v));
 
   it("does not re-append when container is already in the correct host", () => {
     const anchor = { top: 0, left: 0, width: 10, height: 10 };
@@ -987,16 +921,7 @@ describe("show — container parent check (line 262)", () => {
 describe("doRender — stale results and zoom on landing", () => {
   let view: MermaidPreviewView;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    view = new MermaidPreviewView();
-  });
-
-  afterEach(() => {
-    view.destroy();
-    vi.useRealTimers();
-  });
+  freshViewPerTest((v) => (view = v));
 
   it("discards a mermaid result that lands after a newer render (live token)", async () => {
     view.show("graph TD", { top: 0, left: 0, width: 10, height: 10 });
@@ -1027,16 +952,7 @@ describe("doRender — stale results and zoom on landing", () => {
 describe("updateContent — language override (line 301)", () => {
   let view: MermaidPreviewView;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    view = new MermaidPreviewView();
-  });
-
-  afterEach(() => {
-    view.destroy();
-    vi.useRealTimers();
-  });
+  freshViewPerTest((v) => (view = v));
 
   it("does not update currentLanguage when language param is undefined", async () => {
     view.show("graph TD", { top: 0, left: 0, width: 10, height: 10 });
@@ -1059,16 +975,7 @@ describe("updateContent — language override (line 301)", () => {
 describe("resize — mousedown on non-handle element (line 126)", () => {
   let view: MermaidPreviewView;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    view = new MermaidPreviewView();
-  });
-
-  afterEach(() => {
-    view.destroy();
-    vi.useRealTimers();
-  });
+  freshViewPerTest((v) => (view = v));
 
   it("does not start resize when mousedown target is not a resize handle", () => {
     view.show("graph TD", { top: 0, left: 0, width: 10, height: 10 });

@@ -221,19 +221,15 @@ import { useImageContextMenuStore } from "@/stores/imageContextMenuStore";
 
 /** Open the real image context menu through its store, as a right-click does. */
 function openImageMenu() {
-  useImageContextMenuStore.getState().openMenu({
-    position: { x: 10, y: 10 },
-    imageSrc: "a.png",
-    imageNodePos: 1,
-  });
+  useImageContextMenuStore.getState().openMenu({ position: { x: 10, y: 10 }, imageSrc: "a.png", imageNodePos: 1 });
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
 
-
 describe("TiptapEditorInner", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useImageContextMenuStore.getState().closeMenu();
     mocks.mockEditor = createMockEditor();
     // Default: useEditor returns the mock editor
     mocks.useEditor.mockReturnValue(mocks.mockEditor);
@@ -276,28 +272,20 @@ describe("TiptapEditorInner", () => {
 
   it("does not render ImageContextMenu when hidden", () => {
     openImageMenu();
-    try {
-      const { queryByRole } = render(<TiptapEditorInner hidden={true} />);
-      expect(queryByRole("menu")).not.toBeInTheDocument();
-    } finally {
-      useImageContextMenuStore.getState().closeMenu();
-    }
+    const { queryByRole } = render(<TiptapEditorInner hidden={true} />);
+    expect(queryByRole("menu")).not.toBeInTheDocument();
   });
 
   it("renders ImageContextMenu when visible and routes its action to the image handler", () => {
     const handleAction = vi.fn();
     mocks.useImageContextMenu.mockReturnValue(handleAction);
     openImageMenu();
-    try {
-      const { getByRole, getAllByRole } = render(<TiptapEditorInner hidden={false} />);
-      expect(getByRole("menu")).toBeInTheDocument();
-      fireEvent.click(getAllByRole("menuitem")[0]);
-      expect(handleAction).toHaveBeenCalledWith("change");
-      // Activating an item closes the menu.
-      expect(useImageContextMenuStore.getState().isOpen).toBe(false);
-    } finally {
-      useImageContextMenuStore.getState().closeMenu();
-    }
+    const { getByRole, getAllByRole } = render(<TiptapEditorInner hidden={false} />);
+    expect(getByRole("menu")).toBeInTheDocument();
+    fireEvent.click(getAllByRole("menuitem")[0]);
+    expect(handleAction).toHaveBeenCalledWith("change");
+    // Activating an item closes the menu.
+    expect(useImageContextMenuStore.getState().isOpen).toBe(false);
   });
 
   // ── Hooks called ─────────────────────────────────────────────────
