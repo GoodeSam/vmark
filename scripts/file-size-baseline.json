@@ -21,7 +21,6 @@
     "src/components/Editor/TiptapEditor.tsx": 396,
     "src/components/Editor/WorkflowEditor/DiagnosticsBanner.tsx": 315,
     "src/components/Editor/WorkflowEditor/JobForm.tsx": 302,
-    "src/components/Editor/WorkflowEditor/StepForm.tsx": 395,
     "src/components/Editor/WorkflowEditor/TriggerForm.tsx": 356,
     "src/components/Sidebar/FileExplorer/useExplorerOperations.ts": 312,
     "src/components/StatusBar/StatusBar.tsx": 309,
