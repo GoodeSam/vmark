@@ -136,6 +136,15 @@ export default {
 
           // ── ground truth: the whole buffer on disk, BOM and every newline ──
           const onDisk = await readFile(filePath, "utf8");
+          if (BOM + onDisk === expectedOnDisk) {
+            // Named on its own because it has one cause: the document never
+            // learned it had a BOM, so the save had nothing to put back.
+            throw new Error(
+              `the file lost its BOM: every other byte is right, the leading U+FEFF is gone. ` +
+                `The save re-adds a BOM only when the document was opened with one (documentStore hasBom), ` +
+                `so check what the open path's file read hands the store for a file that starts with EF BB BF.`,
+            );
+          }
           if (onDisk !== expectedOnDisk) {
             throw new Error(
               `bytes on disk are not the client's text in the file's convention.\n` +

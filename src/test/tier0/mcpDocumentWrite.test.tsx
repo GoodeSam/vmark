@@ -10,6 +10,12 @@
 // boundary: the stateful in-memory disk, and an event bus that hands the
 // listener to the test.
 //
+// LIMIT OF THIS TIER: the in-memory disk hands `readTextFile` callers the text
+// with its leading U+FEFF. The BOM assertions below therefore hold from "the
+// document was opened knowing it had a BOM" onwards; whether the real file
+// read tells the document so is a property of the real plugin, and is what
+// e2e/journeys/41-mcp-document-write.mjs checks against a real file.
+//
 // The handler-level suite (services/mcpBridge/v2/__tests__/mcpSavePipeline)
 // keeps the per-handler branch coverage; this is the composition.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

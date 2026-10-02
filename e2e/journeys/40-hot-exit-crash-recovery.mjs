@@ -113,7 +113,9 @@ export default {
       return { skip: `workspace open (${root}) — Finder-open of an outside file would spawn a new window` };
     }
 
-    const appDataDir = await evalJs(client, `window.__TAURI__.path.appDataDir()`);
+    // An async function, not a bare promise: the bridge serializes what the
+    // script evaluates to, and a promise that is not awaited arrives as `{}`.
+    const appDataDir = await evalJs(client, `(async () => await window.__TAURI__.path.appDataDir())()`);
     if (typeof appDataDir !== "string" || appDataDir.length === 0) {
       throw new Error(`appDataDir() did not resolve to a path (got ${JSON.stringify(appDataDir)})`);
     }
