@@ -29,8 +29,8 @@ If you prefer keeping system functions on F-keys, you can customize VMark shortc
 | `F2` | Next Issue |
 | `Shift + F2` | Previous Issue |
 | `F3` | Toggle Invisibles |
-| `F4` | Sort Lines Ascending |
-| `Shift + F4` | Sort Lines Descending |
+| `F4` | Sort Lines Ascending _(Source mode only; does nothing in WYSIWYG)_ |
+| `Shift + F4` | Sort Lines Descending _(Source mode only; does nothing in WYSIWYG)_ |
 | `F5` | Source Peek |
 | `F6` | Source view (Markdown: WYSIWYG ⇄ Source; other formats: Source ⇄ Split) |
 | `Shift + F6` | Split / Preview (Markdown: split view; other formats: Preview ⇄ Split) |

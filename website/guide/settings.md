@@ -336,7 +336,7 @@ you can switch any tab with the on-screen toggle or `F6` / `Shift + F6`.
 
 ### External editor
 
-For the **Open in external editor** button on read-only code tabs, pick the editor that should launch. An app bundle (e.g. `/Applications/Visual Studio Code.app`) or an executable.
+For the **Open in external editor** button on read-only code tabs, pick the editor that should launch: the name of a known editor (`code`, `zed`, `subl`, `vim`, …) or the full path of an app bundle (e.g. `/Applications/Visual Studio Code.app`) or executable. Shells, interpreters and terminal emulators are refused, as is a path that does not exist.
 
 The GUI setting overrides any environment variables — explicit beats implicit. Leave it empty to use the env-var fallback chain `$VMARK_EXTERNAL_EDITOR → $VISUAL → $EDITOR → platform default`. See [Open in external editor](/guide/formats#open-in-external-editor) for the full resolution order and security gate.
 
@@ -436,7 +436,7 @@ Configure the integrated terminal panel. Open the terminal with `` Ctrl + ` ``.
 
 | Setting | Description | Default | Options |
 |---------|-------------|---------|---------|
-| Shell | Which shell to use. Requires a terminal restart to take effect | System Default | Auto-detected shells on your system (e.g., zsh, bash, fish) |
+| Shell | Which shell to use. Requires a terminal restart to take effect. A saved shell that is no longer available shows as *(unavailable)* and the default is used | System Default | Auto-detected shells on your system (e.g., zsh, bash, fish) |
 | Panel Position | Where to place the terminal panel | Auto | Auto (based on window aspect ratio), Top, Bottom, Left, Right |
 | Panel Size | Proportion of available space the terminal occupies. Drag-resizing the panel also updates this value | 40% | 10% to 80% |
 | Font Size | Text size in the terminal | 13px | 10px to 24px |

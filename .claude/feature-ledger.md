@@ -59,7 +59,7 @@ A claim the inspector could not confirm is marked **unverified** in place rather
 
 ## Open findings
 
-Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 178 open.
+Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 166 open.
 
 ### Security boundaries (14)
 
@@ -99,31 +99,17 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 14) `useLintStore.runLint` and `runYamlLint` (`src/stores/documentStore/lint.ts`) have no production caller; only `src/stores/__tests__/lintStore.test.ts` reaches them.
 - (area 15) `register_dock_recent` exists only on macOS, but `registerDockRecent` (`src/stores/workspaceStoreHelpers.ts`) calls it on every platform and swallows the rejection.
 
-### Documentation that disagrees with the code (4)
 
-- (area 1) `website/guide/popups.md` §"Media Popup (Images, Video, Audio)" says Source mode shows a floating preview for video/audio "on hover". The Source-mode preview (`src/plugins/codemirror/sourceImagePreview.ts`, `src/plugins/imagePreview/ImagePreviewView.ts`) also covers images and follows the cursor inside `![alt](path)`, not the mouse; no guide page describes it as such.
-- (area 2) `website/guide/shortcuts.md` §"F-Key Quick Reference" lists `F4` / `Shift + F4` Sort Lines with no mode caveat; sorting is Source-only (`src/plugins/toolbarActions/adapterActions.ts`; `src/plugins/editorPlugins.tiptap.ts` binds none), as the same page's §"Line Operations" and `website/guide/features.md` §"Line Operations" now say.
-- (area 3) `website/guide/formats.md` §"Schema-aware previews" lists GitHub Actions, `Cargo.toml`, `package.json` and `pyproject.toml` but not the yaml adapter's `vmark-workflow` schema (the engine Run/Cancel panel, `src/lib/formats/adapters/yamlEngineRenderer.tsx`); only `website/guide/workflows.md` describes it.
-- (area 12) `website/guide/workflows.md` §"Running a workflow" says that while one workflow runs, "Run is disabled in every other workflow file"; the busy state comes from the window's own store (`src/components/Editor/WorkflowPanel/useWorkflowRunControls.ts`), so a workflow file in another window keeps Run enabled and the start is refused by the backend with a toast.
+### User-facing behaviour with no guide page (8)
 
-### User-facing behaviour with no guide page (16)
-
-- (area 2) Inactive-selection overlay (`src/plugins/inactiveSelection/`) and the inline-code left-boundary behaviour (`src/plugins/inlineCodeBoundary/`) have no guide mention.
-- (area 3) The markdown pipeline has no guide coverage; its spine page `website/guide/formats.md` never mentions parsing, the dialect, or the 1000-level nesting refusal (only `website/guide/large-files.md` states the limit; code in `src/utils/markdownPipeline/nestingDepth.ts`).
 - (area 5) The tab context menu (pin, bulk close, Move to New Window, Copy Path, Revert to Saved, Restore to Disk, Rename) and tab pinning have no guide page; only Open to the Side is described (`website/guide/tab-navigation.md` §"Two documents side by side"). Evidence: `src/components/Tabs/useTabContextMenuActions.ts`.
 - (area 5) The save-on-close prompts (Save / Don't Save / Cancel, multi-document aggregate prompt, one folder picker for several untitled files, pinned-tabs confirmation on window close) have no guide section; `website/guide/features.md` §"Session Recovery (Hot Exit)" says only that a quit asks you to save first, and `website/guide/shortcuts.md` has the Save All and Quit row — code in `src/services/windowClose/closeSave.ts`, `src/services/windowClose/windowCloseFlow.ts`.
 - (area 8) The start page (`NEW_BROWSER_TAB_URL` in `src/services/commands/browserCommands.ts`) and the omnibox search provider (`SEARCH_URL_BASE` in `src/lib/browser/omnibox.ts`) are hardcoded DuckDuckGo; no guide page says so and no setting changes either.
 - (area 9) The prompt-history dropdown's Clear button (`src/components/GeniePicker/PromptHistoryDropdown.tsx`) is not mentioned in `website/guide/ai-genies.md` §"The Genie Picker".
 - (area 10) Install writes a per-client secret (`env.VMARK_MCP_TOKEN`) into each AI client's config file, and delegated coherence actions authorize against it; no guide page mentions it (`src-tauri/src/mcp_config/client_tokens.rs`, `src-tauri/src/mcp_config/vmark_entry.rs`).
 - (area 11) The Claims panel's only entry point, palette command "Canon Claims" (`view.toggleClaims`, `src/services/commands/claimCommands.ts`), is not named in `website/guide/coherence.md` (only *Extract Claim from Selection* is).
-- (area 12) `website/guide/formats.md` §"Schema-aware previews" lists the yaml adapter's GitHub Actions schema but not its `vmark-workflow` schema (`src/lib/formats/adapters/yaml.tsx`, `src/lib/workflow/detection.ts`); the rule is documented only in `website/guide/workflows.md` §"Workflow file or GitHub Actions file?".
-- (area 13) OS reduced-motion support (`src/utils/motion.ts`, the `prefers-reduced-motion` block in `src/styles/index.css`) is on no guide page.
 - (area 13) Double-click rename in the macOS title bar (`src/components/TitleBar/useTitleBarRename.ts`) is on no guide page.
 - (area 13) Shortcut import errors use a raw `window.alert` (`handleImport` in `src/pages/settings/ShortcutsSettings.tsx`), and a rejected `update_menu_accelerators` is only logged (`shortcutsWarn` in `src/stores/settingsStore/shortcuts.ts`) — neither reaches the app's dialog/toast surface.
-- (area 13) No guide section describes the status bar's right-side indicators as a whole (counts popover, lint badge, AI indicator, MCP tooltip and history, mode toggle, read-only lock, auto-save label); `website/guide/index.md` has one bullet.
-- (area 14) Editor IME composition handling (composition guard, grace period, empty-table-cell commit fix, IME-safe toasts) has no guide page; only `website/guide/multi-cursor.md` and the chord-guard entry in `website/guide/troubleshooting.md` mention IME — `src/plugins/compositionGuard/tiptap.ts`.
-- (area 14) The verified monospace stack (#1334) appears on no guide page — `src/services/fonts/verifiedMonoStack.ts`.
-- (area 15) No guide page lists the OS file associations VMark registers, or that the Windows installer hands the default back to an existing handler while keeping VMark in Open With (#1378) — `src-tauri/tauri.conf.json`, `src-tauri/windows/installer-hooks.nsh`.
 
 ### Platform coverage (20)
 
@@ -615,9 +601,9 @@ Every WYSIWYG block plugin below is registered in `src/services/assembly/tiptapE
 - surfaces: cursor position in Source mode
 - code: `src/plugins/imagePreview/{ImagePreviewView,resolveSrc,containerDom}.ts`, `src/plugins/codemirror/sourceImagePreview.ts`, `src/services/assembly/modeSwitchCleanup.ts`
 - rust: none
-- docs: `website/guide/popups.md` §"Media Popup (Images, Video, Audio)" — one sentence, which names only video/audio and says "on hover"
+- docs: `website/guide/popups.md` §"Media Popup (Images, Video, Audio)" → "Source Mode"
 - tests: `src/plugins/imagePreview/resolveSrc.test.ts`, `src/plugins/imagePreview/__tests__/ImagePreviewView.test.ts`, `src/plugins/codemirror/sourceImagePreview.test.ts`
-- notes: The preview follows the cursor inside `![alt](path)`, not the mouse, and covers images too; the one guide sentence describes neither.
+- notes: Two triggers: the cursor inside `![alt](path)` with a collapsed selection, and mouse hover over the syntax; the cursor's preview takes priority. Only a recognized media extension or a `data:image/` URL previews. Hidden while the Source media popup is open.
 
 ### Media file viewer (image / video / audio tabs)
 - id: media-file-viewer
@@ -677,7 +663,7 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - surfaces: automatic
 - code: `src/plugins/inlineCodeBoundary/plugin.ts`; `src/plugins/inlineCodeBoundary/tiptap.ts`
 - rust: none
-- docs: none
+- docs: `website/guide/features.md` §"Editing Details"
 - tests: `src/plugins/inlineCodeBoundary/__tests__/inlineCodeBoundary.test.ts`
 - notes: The IME skip cites upstream ProseMirror #1476 (setting `storedMarks` mid-composition corrupts mark state). `src/plugins/tabIndent/shiftTabEscape.ts` relies on the `storedMarks` this plugin sets for single-cursor Shift+Tab escape; multi-cursor reads `nodeAfter.marks` instead.
 
@@ -943,9 +929,9 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - surfaces: automatic
 - code: `src/plugins/inactiveSelection/inactiveSelectionPlugin.ts`; `src/plugins/inactiveSelection/constants.ts`; `src/plugins/inactiveSelection/tiptap.ts`; `src/plugins/codemirror/inactiveSelectionPlugin.ts`
 - rust: none
-- docs: none
+- docs: `website/guide/features.md` §"Editing Details"
 - tests: `src/plugins/inactiveSelection/inactiveSelectionPlugin.test.ts`; `src/plugins/codemirror/inactiveSelectionPlugin.test.ts`
-- notes: Multi-range selections are out of scope — multi-cursor draws its own highlights.
+- notes: The WYSIWYG overlay draws the one main range (multi-cursor draws its own highlights); the Source-mode counterpart `src/plugins/codemirror/inactiveSelectionPlugin.ts` draws every non-empty range.
 
 ### Universal Toolbar
 - id: universal-toolbar
@@ -1299,7 +1285,7 @@ Every document tab resolves to a format through `src/lib/formats/registry.ts`; `
 - surfaces: Settings → Formats toggles; automatic on open; read-only banner for viewers; `HtmlTrustBar` for trusted HTML
 - code: `src/lib/formats/adapters/{markdown,json,yaml,toml,mermaid,svg,html,HtmlPreview,HtmlTrustBar,DepList,cargoToml,packageJson,pyprojectToml,yamlWorkflowRenderer,yamlEngineRenderer}.tsx`; `src/lib/workflow/detection.ts` (engine-workflow shape, area 12); `src/lib/formats/adapters/{txt,code,media,htmlTrust,useHtmlTrust,jsonViewStyles,yamlWorkflowExtensions}.ts`; `src/components/Editor/MediaViewer/MediaViewer.tsx`
 - rust: `src-tauri/src/trusted_html/protocol.rs` (trusted HTML scheme); asset protocol for media
-- docs: `website/guide/formats.md` §"At a glance", §"Schema-aware previews", §"Security model for HTML", §"Trusted HTML preview (opt-in)"; `website/guide/media-support.md`; `website/guide/workflow-viewer.md`; `website/guide/workflows.md` (engine-workflow files); `website/guide/settings.md` §"Format support"
+- docs: `website/guide/formats.md` §"At a glance", §"Schema-aware previews" (incl. "VMark workflow"), §"Security model for HTML", §"Trusted HTML preview (opt-in)"; `website/guide/media-support.md`; `website/guide/workflow-viewer.md`; `website/guide/workflows.md` (engine-workflow files); `website/guide/settings.md` §"Format support"
 - tests: `src/lib/formats/adapters/*.test.ts`, `src/lib/formats/adapters/*.test.tsx` (incl. `src/lib/formats/adapters/yamlEngineRenderer.test.tsx`), `src/lib/formats/adapters/__tests__/darkThemeStyles.test.tsx`, `src/lib/formats/adapters/__tests__/parserRobustness.webkit.test.ts`, `src/lib/formats/adapters/__tests__/trustedHtmlIsolation.webkit.test.ts`
 - notes: markdown/txt/yaml/media are on; data, diagram, HTML and code-viewer adapters ship off. `.zig` is deliberately out of scope (no maintained language pack). Workflow authoring aids load as individually degradable chunks (`yamlWorkflowExtensions.ts`). HTML preview's OWASP sign-off (WI-3.4) is pending, and the adapter header, the settings description, the in-preview notice (`preview.signOffPending`) and `formats.md` §"Security model for HTML" all say so. The engine renderer's chunk is not fetched while `advanced.workflowEngine` is off, except to keep a live run's Cancel reachable in the tab that owns it. `formats.md` §"Schema-aware previews" does not list the engine-workflow schema. Trusted HTML preview is disabled on Windows (area 15 platform notes).
 
@@ -1315,7 +1301,7 @@ Every document tab resolves to a format through `src/lib/formats/registry.ts`; `
 - rust: `external_editor::open_in_external_editor` (async, `spawn_blocking`, legacy `Result<(), String>`)
 - docs: `website/guide/formats.md` §"Open in external editor", §"Security gate"; `website/guide/settings.md` §"External editor"
 - tests: `src-tauri/src/external_editor.test.rs`, `src/components/Editor/SplitPaneEditor/ReadOnlyBanner.test.tsx`, `src/components/Editor/SplitPaneEditor/SplitPaneEditor.test.tsx`, `src/pages/settings/FormatsSettings.test.tsx`
-- notes: Platform defaults — macOS `open -t`, Windows `notepad.exe`, else `xdg-open`; `maybe_open_app_bundle` is macOS-only. Known limitation (`external_editor.rs` header): env-var editor commands split on whitespace with no quoting, so an executable path containing a space breaks; the GUI override (single token) is the workaround. Security gate: override must be one token, no shell metacharacters, no leading `-`; the path is canonicalized and checked against `is_openable_supported`.
+- notes: Platform defaults — macOS `open -t`, Windows `notepad.exe`, else `xdg-open`; `maybe_open_app_bundle` is macOS-only. Known limitation (`external_editor.rs` header): env-var editor commands split on whitespace with no quoting, so an executable path containing a space breaks; the GUI override (single token) is the workaround. Security gate: the override (`src-tauri/src/external_editor/override_guard.rs`) must be one token with no shell metacharacters and no leading `-`, and either a bare name in `KNOWN_EDITORS` or an existing absolute path without `..` whose spelled and resolved names are not in `RUNS_ITS_ARGUMENT` (shells, interpreters, launchers, terminal emulators — `src-tauri/src/external_editor/program_names.rs`); the env-var chain is not restricted. The file path is canonicalized and checked against `is_openable_supported`. Both rules are in `website/guide/formats.md` §"Security gate".
 
 ### Set File Type override
 - id: format-associations
@@ -1439,7 +1425,7 @@ Every document tab resolves to a format through `src/lib/formats/registry.ts`; `
 - surfaces: automatic
 - code: `src/utils/markdownPipeline/{index,adapter,parser,serializer,dialect,dialectDescriptors,dialectQueries,nestingDepth,mdastToProseMirror,proseMirrorToMdast}.ts`; `src/utils/markdownPipeline/parser/fastPaths/**`; `src/utils/markdownPipeline/plugins/**`; `patches/micromark@4.0.2.patch`; `patches/micromark-extension-gfm-autolink-literal@2.1.0.patch`; `patches/mdast-util-from-markdown@2.0.3.patch`; `patches/mdast-util-find-and-replace@3.0.2.patch`; `patches/mdast-util-to-markdown@2.1.2.patch`
 - rust: none
-- docs: `website/guide/large-files.md` (nesting limit only); no guide page describes the pipeline or its dialect
+- docs: `website/guide/formats.md` §"Markdown dialect" (dialect and the 1000-level nesting limit); `website/guide/large-files.md` (nesting limit)
 - tests: `src/utils/markdownPipeline/__tests__/**` (conformance, characterization corpus, fidelity, spec, round-trip property tests, pathological scaling), `src/utils/markdownPipeline/parser/fastPaths/inlineFastPaths.test.ts`, `src/utils/markdownPipeline/parser/*.test.ts`
 - notes: Five `pnpm` patches cover costs no extension API reaches; a Dependabot bump of `micromark`, `micromark-extension-gfm-autolink-literal`, `mdast-util-from-markdown`, `mdast-util-find-and-replace` or `mdast-util-to-markdown` fails install until its patch is re-made. The `mdast-util-from-markdown` patch has a recorded unpatched reference (`listPreparation.differential.test.ts`); upstream's own list fix (syntax-tree/mdast-util-from-markdown#51) batches per list and does not replace it. The `mdast-util-find-and-replace` patch has one too (`findAndReplace.differential.test.ts`). `nested-strong-emph` and `nested-brackets` remain super-linear (upstream algorithm), and so does one paragraph of tens of thousands of inline siblings: `remarkResolveReferences` walks every node with `unist-util-visit`, whose index lookup is an `indexOf` over the siblings (linear on realistic documents, so not patched). The spine names `website/guide/formats.md` as this feature's page, but that page says nothing about the pipeline.
 
@@ -4120,14 +4106,14 @@ Two unrelated features share the word "workflow", and the yaml adapter (`src/lib
 - feature: Workflow engine (bespoke YAML)
 - summary: `with:` values interpolate earlier step outputs and env vars; `if:` conditions skip a step; `model`/`approval`/`limits` resolve down a precedence chain.
 - capabilities: `${{ steps.ID.outputs.FIELD }}`, `${{ steps.ID.output }}`, `${{ env.NAME }}`, legacy `${VAR}` and bare `stepId.output`; unknown refs fatal; condition grammar with `success()`/`failure()`/`always()`, literals, comparisons, `&&`/`||`/`!`/parens, capped depth; unparseable condition fails the step; timeout step → defaults → 300 s; 5 MB cap on one step's output; `max_tokens` enforced for REST providers only
-- status: shipped-off, partial
+- status: shipped-off
 - gate: `advanced.workflowEngine = false`
 - surfaces: automatic (inside a run)
 - code: none frontend
-- rust: `src-tauri/src/workflow/{expressions.rs,condition.rs,condition_lexer.rs,step_config.rs}`
+- rust: `src-tauri/src/workflow/{expressions.rs,condition.rs,condition_lexer.rs,condition_status.rs,run_context.rs,step_preflight.rs,step_config.rs}`
 - docs: `website/guide/workflows.md` §"Wiring steps together: expressions", §"Conditions", §"Per-step settings", §"Timeouts"
-- tests: `src-tauri/src/workflow/condition.test.rs` (36); inline tests in `expressions.rs` (15) and `step_config.rs` (21)
-- notes: `failure()` and `always()` never fire: the runner skips every remaining step once one fails, before evaluating `if:` (documented in the guide as a current limitation).
+- tests: `src-tauri/src/workflow/condition.test.rs` (45), `src-tauri/src/workflow/expressions.test.rs` (25), `src-tauri/src/workflow/runner_flow.test.rs` (21 — status functions across `needs`, timeouts and cancel), `src-tauri/src/workflow/step_preflight.test.rs` (5); inline tests in `step_config.rs` (21)
+- notes: GitHub Actions rules: `success()` is implied when an `if:` names no status function, and is false when a needed step did not complete; `failure()` is true once any earlier step failed; `always()` and `failure()` steps run after a needed step failed. A cancel is checked before the `if:` and skips every remaining step, `always()` included. A run with a failed step still ends failed, naming the first one.
 
 ### Workflow file snapshots and Restore Files
 - id: workflow-snapshots
@@ -4439,9 +4425,9 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - surfaces: automatic
 - code: `src/utils/motion.ts`, `src/styles/index.css`
 - rust: none
-- docs: none
+- docs: `website/guide/features.md` §"Editing Details" (Reduced motion)
 - tests: `src/utils/motion.test.ts`
-- notes: The behaviour is not documented on any guide page.
+- notes: OS setting only; there is no in-app reduced-motion setting.
 
 ### Localization (i18n)
 - id: localization
@@ -4803,7 +4789,7 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - surfaces: status bar; shortcut `toggleStatusBar` = `F7` → `view.toggleStatusBar`
 - code: `src/components/StatusBar/StatusBar.tsx`, `src/components/StatusBar/StatusBarRight.tsx`, `src/components/StatusBar/StatusBarCounts.tsx`, `src/components/StatusBar/StatusBarAiIndicator.tsx`, `src/components/StatusBar/WordCountPopover.tsx`, `src/components/StatusBar/LintBadge.tsx`, `src/components/StatusBar/useAutoSaveDisplay.ts`, `src/components/StatusBar/useQuitFeedback.ts`, `src/components/StatusBar/FileLoadIndicator.tsx`, `src/components/StatusBar/SourceModeUpgrade.tsx`, `src/components/BottomBar/BottomBar.tsx`
 - rust: none (listens for `app:quit-first-press` emitted by `src-tauri/src/quit.rs`)
-- docs: `website/guide/index.md` (Status Bar bullet); `website/guide/large-files.md` §"Status bar cues"; `website/guide/tab-navigation.md`; `website/guide/shortcuts.md` (F7); no guide section describes the right-side indicators as a whole
+- docs: `website/guide/index.md` (Status Bar bullet); `website/guide/large-files.md` §"Status bar cues"; `website/guide/tab-navigation.md`; `website/guide/shortcuts.md` (F7); `website/guide/features.md` §"Status Bar" (every right-side indicator)
 - tests: `src/components/StatusBar/StatusBar.test.tsx`, `src/components/StatusBar/StatusBar.a11y.test.tsx`, `src/components/StatusBar/StatusBarRight.test.tsx`, `src/components/StatusBar/StatusBarCounts.test.tsx`, `src/components/StatusBar/WordCountPopover.test.tsx`, `src/components/StatusBar/useAutoSaveDisplay.test.ts`, `src/components/StatusBar/useQuitFeedback.test.ts`, `src/components/StatusBar/FileLoadIndicator.test.tsx`, `src/components/StatusBar/SourceModeUpgrade.test.tsx`, `src/components/StatusBar/LintBadge.test.tsx`, `src/components/StatusBar/incrementalTextMetrics.test.ts`, `src/components/StatusBar/statusTextMetrics.test.ts`, `src/components/StatusBar/__tests__/mcpTooltip.test.ts`, `src/components/BottomBar/BottomBar.test.tsx`
 - notes: the tab strip inside the status bar (`src/components/StatusBar/StatusBarTabStrip.tsx`, drag, keyboard) is spine-owned by this feature but described by the tab-strip block in area 5. Rare states (update lifecycle, auto-save paused, divergent) are toasts — see `resilient-chrome`. The `src/components/BottomBar/BottomBar.tsx` header still says "StatusBar and FindBar always render"; FindBar is withheld on a browser tab.
 
@@ -4991,7 +4977,7 @@ Lint runs only on demand through the `lint.check` command (`src/services/lint/ru
 - surfaces: automatic
 - code: `src/plugins/compositionGuard/tiptap.ts`, `src/plugins/compositionGuard/compositionKeys.ts`, `src/plugins/compositionGuard/splitBlockFix.ts`, `src/utils/imeGuard.ts`, `src/plugins/codemirror/imeGuard.ts`, `src/hooks/useImeComposition.ts`
 - rust: none
-- docs: none — no guide page covers editor IME handling (`website/guide/multi-cursor.md` notes composition affects only the primary cursor)
+- docs: `website/guide/features.md` §"Editing Details" (Input methods); `website/guide/multi-cursor.md` (composition affects only the primary cursor)
 - tests: `src/plugins/compositionGuard/__tests__/tiptap.test.ts`, `src/plugins/compositionGuard/__tests__/tiptap.imecleanup.test.ts`, `src/plugins/compositionGuard/__tests__/tiptap.splitblock.test.ts`, `src/plugins/compositionGuard/__tests__/tiptap.tablefix.test.ts`, `src/plugins/compositionGuard/__tests__/tiptap.domreconciliation.test.ts`, `src/plugins/compositionGuard/__tests__/compositionKeys.test.ts`, `src/plugins/compositionGuard/__tests__/splitBlockFix.test.ts`, `src/utils/imeGuard.test.ts`, `src/hooks/useImeComposition.test.ts`; real-engine tiers in block `ime-test-tiers`
 - notes: stated known limitation in `src/plugins/compositionGuard/tiptap.ts`: the Safari table-header fix uses heuristic position detection and may not cover all edge cases. The `tiptap.ts` header summary does not yet mention the dispatched-event rule in `compositionKeys.ts`.
 
@@ -5005,7 +4991,7 @@ Lint runs only on demand through the `lint.check` command (`src/services/lint/ru
 - surfaces: toast (the app-wide toast entry point — about 70 production modules import it)
 - code: `src/services/ime/imeToast.ts`, `src/services/ime/imeToastPinAction.tsx`
 - rust: none
-- docs: none
+- docs: `website/guide/features.md` §"Editing Details" (Input methods)
 - tests: `src/services/ime/imeToast.test.ts`
 - notes: `imeToastPinAction.tsx` imports `i18next` directly rather than `@/i18n` to break a dependency cycle. `src/plugins/toolbarActions/cjkFormatFeedback.ts` calls sonner directly, which is safe only because it emits `error` (never deferred anyway).
 
@@ -5075,7 +5061,7 @@ Lint runs only on demand through the `lint.check` command (`src/services/lint/ru
 - surfaces: automatic — `--font-mono` (code blocks, Source mode), terminal creation and live terminal font sync
 - code: `src/services/fonts/verifiedMonoStack.ts`, `src/hooks/useTheme.ts`, `src/components/Terminal/createTerminalInstance.ts`, `src/components/Terminal/terminalSessionStoreSync.ts`
 - rust: none
-- docs: none — no guide page mentions the verification
+- docs: `website/guide/features.md` §"Fonts"
 - tests: `src/services/fonts/verifiedMonoStack.test.ts` (injectable `rendersMonospace`); `src/services/fonts/verifiedMonoStack.webkit.test.ts` leads a stack with `sans-serif` so the guard fails on every engine
 - notes: #1334. The memo assumes the installed font set is session-stable; a font installed while VMark runs is measured against a stale cache until restart. Sibling block *terminal-theme-font* (area 7) covers the terminal side.
 
@@ -5361,7 +5347,7 @@ The Rust composition root is `src-tauri/src/lib.rs` (`run`, `manage_state`), wit
 - surfaces: Finder / Explorer / desktop launcher double-click, Open With
 - code: `src-tauri/tauri.conf.json`, `src-tauri/windows/installer-hooks.nsh`
 - rust: consumed by `file_open` and `supported_files::filter_supported_args`
-- docs: `website/guide/workspace-management.md` §"Opening a file from outside the current workspace" (single-instance handoff only); nothing lists the associated types or the Windows installer behaviour
+- docs: `website/guide/workspace-management.md` §"Opening a file from outside the current workspace" (single-instance handoff only); `website/guide/formats.md` §"Opening files from your system" (the associated types and the Windows installer behaviour)
 - tests: `scripts/release-smoke-windows-installer.test.mjs` (hook macros, the smoke job's extension list and `fileAssociations` must agree), `.github/workflows/release-smoke.yml` job `windows-installer` (two install/uninstall cycles against the published installer)
 - notes: Verified on a real Windows runner by release-smoke from v0.9.67 on. The `.nsh` header still says "Both repairs below run from NSIS_HOOK_POSTUNINSTALL" although the file now holds a third, POSTINSTALL repair; the `windows-installer` job header still says the hook "had never run on Windows".
 
