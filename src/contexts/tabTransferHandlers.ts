@@ -86,14 +86,15 @@ export async function applyTabTransferData(
 /**
  * Claim transfer data from Rust and create the tab + document.
  * Returns true if a transfer was handled (caller should skip normal init).
+ *
+ * The claim names no window: Rust hands over the payload registered for the
+ * window the call came from, so one window cannot take another's transfer.
  */
 export async function handleTabTransfer(label: string): Promise<boolean> {
   const urlParams = new URLSearchParams(globalThis.location?.search || "");
   if (!urlParams.has("transfer")) return false;
 
-  const data = await invoke<TabTransferPayload | null>("claim_tab_transfer", {
-    windowLabel: label,
-  });
+  const data = await invoke<TabTransferPayload | null>("claim_tab_transfer");
   if (!data) return false;
   await applyTabTransferData(label, data);
 

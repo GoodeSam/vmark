@@ -98,9 +98,9 @@ export async function claimWorkspaceTransferForWindow(
   const urlParams = new URLSearchParams(globalThis.location?.search || "");
   if (!urlParams.has("workspaceTransfer")) return false;
 
-  const payload = await invoke<WorkspaceTransferPayload | null>("claim_workspace_transfer", {
-    windowLabel,
-  });
+  // No label is sent: Rust claims for the window the call came from, so one
+  // window cannot take another's transfer.
+  const payload = await invoke<WorkspaceTransferPayload | null>("claim_workspace_transfer");
   if (!payload) return false;
 
   await applyClaimedWorkspaceTransfer(windowLabel, payload, openWorkspace);

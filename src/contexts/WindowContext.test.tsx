@@ -785,7 +785,7 @@ describe("WindowContext", () => {
 
       await vi.advanceTimersByTimeAsync(200);
 
-      expect(invoke).toHaveBeenCalledWith("claim_tab_transfer", { windowLabel: "doc-new" });
+      expect(vi.mocked(invoke).mock.calls).toContainEqual(["claim_tab_transfer"]);
 
       vi.useRealTimers();
     });
@@ -1433,7 +1433,7 @@ describe("WindowContext", () => {
       await vi.advanceTimersByTimeAsync(200);
 
       // invoke was called for claim_tab_transfer (returned null)
-      expect(invoke).toHaveBeenCalledWith("claim_tab_transfer", { windowLabel: "doc-nulltransfer" });
+      expect(vi.mocked(invoke).mock.calls).toContainEqual(["claim_tab_transfer"]);
       // Should fall through to normal init and create a tab
       expect(mockCreateTab).toHaveBeenCalled();
 

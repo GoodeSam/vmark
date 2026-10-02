@@ -23,6 +23,7 @@
 use sha2::{Digest, Sha256};
 use tauri::{Listener, Manager};
 
+use crate::peer_text::peer_message;
 use crate::{menu, menu_events, pty, quit, tab_transfer, window_status, workspace_transfer};
 
 /// Compute a stable, anonymous machine identifier hash.
@@ -109,20 +110,13 @@ pub(crate) fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::
     #[cfg(not(target_os = "macos"))]
     {
         let file_args = crate::supported_files::filter_supported_args(std::env::args().skip(1));
-
-        if !file_args.is_empty() {
-            if let Ok(mut state) = crate::file_open::FILE_OPEN_STATE.lock() {
-                for path_str in file_args {
-                    crate::allow_fs_read(app.handle(), &path_str);
-                    let workspace_root =
-                        crate::window_manager::get_workspace_root_for_file(&path_str);
-                    state.pending.push(crate::PendingFileOpen {
-                        path: path_str,
-                        workspace_root,
-                    });
-                }
-            }
+        // Grant before queueing, and outside the state lock: the frontend can
+        // only drain the queue after setup returns, so every queued path is
+        // readable by the time it is read.
+        for path_str in &file_args {
+            crate::allow_fs_read(app.handle(), path_str);
         }
+        crate::window_manager::file_open_state(app.handle()).queue_launch_file_args(file_args);
     }
 
     // Record, once per launch, whether the Knowledge Base could start here:
@@ -142,9 +136,7 @@ pub(crate) fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::
     // The payload contains the window label as a string
     let app_handle = app.handle().clone();
     app.listen("ready", move |event| {
-        // The payload is the window label
-        if let Ok(label) = serde_json::from_str::<String>(event.payload()) {
-            log::debug!("[Tauri] Window '{}' is ready", label);
+        if let Some(label) = crate::window_manager::ready_window_label(event.payload()) {
             menu_events::mark_window_ready(&app_handle, &label);
             crate::file_open::record_ready_document_window(&app_handle, &label);
         }
@@ -201,7 +193,7 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
             event: tauri::WindowEvent::Destroyed,
             ..
         } => {
-            crate::file_open::remove_document_window(&label);
+            crate::file_open::remove_document_window(app, &label);
             quit::handle_window_destroyed(app, &label);
             menu_events::clear_window_ready(&label);
             tab_transfer::clear_unclaimed_transfer(&label);
@@ -230,6 +222,7 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
             event: tauri::WindowEvent::Focused(focused),
             ..
         } => crate::file_open::record_document_window_focus(
+            app,
             &label,
             focused,
             menu_events::is_window_ready(&label),
@@ -249,10 +242,13 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
 ///
 /// Lives here rather than in `lib.rs` so that file stays a declarative
 /// composition root — the same reason the setup/event handlers were extracted.
+///
+/// Like its two siblings below, the message is whatever a webview sent, so it
+/// is logged escaped and bounded (`peer_text.rs`): one message, one line.
 #[cfg(debug_assertions)]
 #[tauri::command]
 pub fn debug_log(message: String) {
-    log::debug!("[Frontend] {}", message);
+    log::debug!("[Frontend] {}", peer_message(&message));
 }
 
 /// Window-close milestones from the frontend, at INFO (#1253).
@@ -268,7 +264,7 @@ pub fn debug_log(message: String) {
 /// close attempt.
 #[tauri::command]
 pub fn window_close_log(message: String) {
-    log::info!("[WindowClose] {}", message);
+    log::info!("[WindowClose] {}", peer_message(&message));
 }
 
 /// Update-flow milestones from the frontend, at INFO (#1270).
@@ -287,7 +283,7 @@ pub fn window_close_log(message: String) {
 /// Kept to state transitions: download progress events are not logged.
 #[tauri::command]
 pub fn update_log(message: String) {
-    log::info!("[Update] {}", message);
+    log::info!("[Update] {}", peer_message(&message));
 }
 
 #[cfg(test)]

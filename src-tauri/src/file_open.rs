@@ -17,8 +17,11 @@
 //!     mount's timeout, freezing every window, so the handler hands the whole
 //!     batch to the blocking pool (`off_event_loop`) and returns. Two batches
 //!     can then overlap; each routes its files atomically, as before.
-//!   - File opens from Finder are queued in `FILE_OPEN_STATE` until the frontend
-//!     signals readiness, solving a cold-start race condition. Only files with a
+//!   - File opens from Finder are queued in the app's `FileOpenStore` while a
+//!     `main` window is booting, and drained by it when its frontend mounts,
+//!     solving a cold-start race condition. When that window is destroyed the
+//!     queue has no owner, and the next open brings a new one up instead of
+//!     waiting for a window that is gone. Only files with a
 //!     registered extension are accepted; others are skipped. Hot opens (app
 //!     already running) target the last focused document window, attach that
 //!     label to an `app.emit()` global broadcast, and bring the native window
@@ -28,9 +31,7 @@
 //!     `window_manager::pick_reopen_workspace_root` so closing the last tab and
 //!     re-clicking the dock doesn't drop them into an orphan untitled doc.
 
-use std::sync::Mutex;
-
-use crate::window_manager;
+use crate::window_manager::{self, file_open_state};
 
 #[cfg(target_os = "macos")]
 use crate::supported_files::is_openable_supported;
@@ -50,40 +51,45 @@ pub struct PendingFileOpen {
     pub workspace_root: Option<String>,
 }
 
-/// Combined Finder file-open state — the readiness flag and the pending queue
-/// live behind ONE mutex so the readiness check and the queue insertion happen
-/// in a single critical section (WI-0.8, C3). See `window_manager::FileOpenState`.
-pub(crate) static FILE_OPEN_STATE: Mutex<window_manager::FileOpenState> =
-    Mutex::new(window_manager::FileOpenState::new());
-
 /// Get and clear pending file opens - called by frontend when ready.
-/// Marks the frontend ready and drains the queue atomically (one lock) so a
-/// Finder open landing mid-call is never dropped or double-delivered.
+/// Settles the queue's owner and drains the queue atomically (one lock) so a
+/// Finder open landing mid-call is never dropped or double-delivered. The
+/// calling window is recorded as listening for hot opens from here on.
 #[tauri::command]
-pub fn get_pending_file_opens() -> Vec<PendingFileOpen> {
-    let mut state = FILE_OPEN_STATE.lock().unwrap_or_else(|p| p.into_inner());
-    window_manager::mark_ready_and_drain(&mut state)
+pub fn get_pending_file_opens<R: tauri::Runtime>(window: tauri::Window<R>) -> Vec<PendingFileOpen> {
+    let store = file_open_state(window.app_handle());
+    let mut state = store.lock();
+    window_manager::mark_ready_and_drain(&mut state, window.label())
 }
 
 /// Update Finder's preferred hot-open destination from a native focus event.
-pub(crate) fn record_document_window_focus(label: &str, focused: bool, listener_ready: bool) {
-    let mut state = FILE_OPEN_STATE.lock().unwrap_or_else(|p| p.into_inner());
-    state.record_window_focus(label, focused, listener_ready);
+pub(crate) fn record_document_window_focus<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    label: &str,
+    focused: bool,
+    listener_ready: bool,
+) {
+    file_open_state(app)
+        .lock()
+        .record_window_focus(label, focused, listener_ready);
 }
 
 /// Seed focus history when a frontend reports that its listeners are ready.
-pub(crate) fn record_ready_document_window(app: &tauri::AppHandle, label: &str) {
+pub(crate) fn record_ready_document_window<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    label: &str,
+) {
     let focused = app
         .get_webview_window(label)
         .and_then(|window| window.is_focused().ok())
         .unwrap_or(false);
-    record_document_window_focus(label, focused, true);
+    record_document_window_focus(app, label, focused, true);
 }
 
-/// Remove a destroyed window from Finder's focus history.
-pub(crate) fn remove_document_window(label: &str) {
-    let mut state = FILE_OPEN_STATE.lock().unwrap_or_else(|p| p.into_inner());
-    state.remove_window(label);
+/// Forget a destroyed window: it is no longer a hot-open target, and if it
+/// was `main`, the cold-start queue no longer has a window booting for it.
+pub(crate) fn remove_document_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>, label: &str) {
+    file_open_state(app).lock().remove_window(label);
 }
 
 /// macOS dock-icon reactivation with no visible windows: recreate a window,
@@ -94,20 +100,18 @@ pub(crate) fn handle_reopen(app: &tauri::AppHandle, has_visible_windows: bool) {
         return;
     }
     // Prefer creating a "main" window so useFinderFileOpen works. Fall back to
-    // doc-N if "main" already exists.
+    // doc-N if "main" already exists. Building main resets file-open readiness
+    // (`ensure_main_window`), so Opened events from here on are queued until
+    // the new window's React mounts and drains them.
     let ws = window_manager::pick_reopen_workspace_root();
-    if app.get_webview_window("main").is_none() {
-        // Reset readiness so any subsequent Opened events are queued until the
-        // new main window's React mounts and drains them.
-        FILE_OPEN_STATE
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .frontend_ready = false;
-        if let Err(e) = window_manager::create_main_window(app, ws.as_deref()) {
-            log::error!("[Reopen] Failed to create main window: {}", e);
+    match window_manager::ensure_main_window(app, ws.as_deref()) {
+        Ok(window_manager::Ensured::Created(_)) => {}
+        Ok(_) => {
+            if let Err(e) = window_manager::create_document_window(app, None, ws.as_deref()) {
+                log::error!("[Reopen] Failed to create document window: {}", e);
+            }
         }
-    } else if let Err(e) = window_manager::create_document_window(app, None, ws.as_deref()) {
-        log::error!("[Reopen] Failed to create document window: {}", e);
+        Err(e) => log::error!("[Reopen] Failed to create main window: {}", e),
     }
 }
 
@@ -161,7 +165,7 @@ pub(crate) fn partition_opened_urls(
 /// Convert Finder `RunEvent::Opened` URLs into queued/emitted file opens, off
 /// the event loop (see module docs). Directories open immediately; supported
 /// files are grouped by workspace root and routed through the atomic
-/// `FILE_OPEN_STATE` decision.
+/// `FileOpenState` decision.
 #[cfg(target_os = "macos")]
 pub(crate) fn handle_finder_opened(app: &tauri::AppHandle, urls: Vec<tauri::Url>) {
     let app = app.clone();
@@ -179,14 +183,22 @@ pub(crate) fn off_event_loop(job: impl FnOnce() + Send + 'static) {
 fn open_finder_urls(app: &tauri::AppHandle, urls: Vec<tauri::Url>) {
     let opened = partition_opened_urls(urls, |p| p.is_dir(), is_openable_supported);
 
-    for skipped in &opened.skipped {
-        log::warn!("[Finder] Skipping unsupported open request: {}", skipped);
-    }
+    log_skipped_opens(&opened.skipped);
     for dir in &opened.dirs {
         open_finder_directory(app, dir);
     }
 
     route_file_opens(app, opened.files);
+}
+
+/// Say which open requests were refused. Each is a URL or path the OS handed
+/// over, so it is logged as escaped, bounded text.
+#[cfg(any(target_os = "macos", test))]
+fn log_skipped_opens(skipped: &[String]) {
+    for request in skipped {
+        let request = crate::peer_text::peer_message(request);
+        log::warn!("[Finder] Skipping unsupported open request: {request}");
+    }
 }
 
 /// Open a folder handed over by Finder as a workspace window (WI-LX1.1).
@@ -200,20 +212,21 @@ fn open_finder_urls(app: &tauri::AppHandle, urls: Vec<tauri::Url>) {
 /// (which need MockRuntime, and so skip Windows).
 #[cfg(any(target_os = "macos", all(test, not(target_os = "windows"))))]
 pub(crate) fn open_finder_directory<R: tauri::Runtime>(app: &tauri::AppHandle<R>, dir: &str) {
+    use crate::peer_text::peer_message;
+
     let root = match crate::workspace_grants::grant_chosen_root(app, std::path::Path::new(dir)) {
         Ok(root) => root,
         Err(e) => {
-            log::error!("[Finder] Not opening directory {}: {}", dir, e.message());
+            // The error text quotes the path it refused, so both go escaped.
+            let (dir, why) = (peer_message(dir), peer_message(e.message()));
+            log::error!("[Finder] Not opening directory {dir}: {why}");
             return;
         }
     };
-    log::info!("[Finder] Opening directory: {}", root);
+    let shown = peer_message(&root);
+    log::info!("[Finder] Opening directory: {shown}");
     if let Err(e) = window_manager::create_document_window(app, None, Some(&root)) {
-        log::error!(
-            "[Finder] Failed to create window for directory {}: {}",
-            root,
-            e
-        );
+        log::error!("[Finder] Failed to create window for directory {shown}: {e}");
     }
 }
 
@@ -225,7 +238,10 @@ pub(crate) fn open_finder_directory<R: tauri::Runtime>(app: &tauri::AppHandle<R>
 /// same point by different roads — Finder hands macOS a URL list, Explorer
 /// hands a second `vmark` process an argv. Both then need the identical
 /// grouping, atomic decide, and emit-or-queue behaviour, so it lives once.
-pub(crate) fn route_file_opens(app: &tauri::AppHandle, file_paths: Vec<String>) {
+pub(crate) fn route_file_opens<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    file_paths: Vec<String>,
+) {
     if file_paths.is_empty() {
         return;
     }
@@ -250,7 +266,8 @@ pub(crate) fn route_file_opens(app: &tauri::AppHandle, file_paths: Vec<String>) 
         // double-deliver.
         let live_labels: Vec<String> = app.webview_windows().keys().cloned().collect();
         let outcome = {
-            let mut state = FILE_OPEN_STATE.lock().unwrap_or_else(|p| p.into_inner());
+            let store = file_open_state(app);
+            let mut state = store.lock();
             let has_ready_target = state.finder_window_target(&live_labels).is_some();
             window_manager::decide_file_open_locked(&mut state, has_ready_target, paths, ws)
         };
@@ -261,19 +278,9 @@ pub(crate) fn route_file_opens(app: &tauri::AppHandle, file_paths: Vec<String>) 
             }
             window_manager::FileOpenOutcome::Queued { create_window } => {
                 if create_window {
-                    if app.get_webview_window("main").is_none() {
-                        log::info!("[FileOpen] Queueing files, creating main window");
-                        if let Err(e) = window_manager::create_main_window(app, None) {
-                            log::error!(
-                                "[FileOpen] Failed to create main window for queued opens: {}",
-                                e
-                            );
-                        }
-                    } else {
-                        log::info!("[FileOpen] Queueing files until main window is ready");
-                    }
+                    window_manager::bring_up_queue_owner(app);
                 } else {
-                    log::info!("[FileOpen] Queueing files (frontend not ready)");
+                    log::info!("[FileOpen] Queueing files (main window is booting)");
                 }
             }
         }

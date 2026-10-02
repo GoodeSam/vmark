@@ -55,6 +55,33 @@ fn close_window_error_names_the_label_for_diagnosis() {
     );
 }
 
+/// WI-RA7.7 — the label is the frontend's argument. `{:?}` already kept it to
+/// one line; nothing kept it to a bounded one, so a megabyte label was a
+/// megabyte of log.
+#[test]
+fn close_window_logs_a_hostile_label_as_one_bounded_line() {
+    let app = mock_app();
+    let label = format!(
+        "doc-1\n[Tauri] window \"main\" destroy result: Ok(())\x1b[2K{}",
+        "z".repeat(1024 * 1024)
+    );
+
+    let lines = crate::peer_text::log_capture::captured_logs(|| {
+        let _ = close_window(app.handle().clone(), label);
+    });
+
+    assert_eq!(lines.len(), 1, "{} records", lines.len());
+    assert!(lines[0].starts_with("[Tauri] close_window called for "));
+    for raw in ['\n', '\x1b'] {
+        assert!(!lines[0].contains(raw), "{raw:?} reached the log");
+    }
+    assert!(
+        lines[0].chars().count() < crate::peer_text::MAX_PEER_TEXT + 64,
+        "{} characters reached the log",
+        lines[0].chars().count()
+    );
+}
+
 // -- #249: the three creation commands, on a mock runtime --------------------
 //
 // The commands are generic over the runtime, so the mock app runs the REAL

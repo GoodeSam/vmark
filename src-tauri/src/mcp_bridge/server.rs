@@ -14,16 +14,16 @@
 //!
 //! @coordinates-with mcp_bridge/identify.rs — the `identify` envelope
 //! @coordinates-with mcp_bridge/routed_request.rs — the request that reaches a window
-//! @coordinates-with mcp_bridge/peer_text.rs — how client text may be logged
+//! @coordinates-with peer_text.rs — how client text may be logged
 //! @module mcp_bridge::server
 
 use super::delivery::{deliver_response, send_error_response};
 use super::identify::handle_identify;
 use super::managed::{bridge, McpBridgeState};
-use super::peer_text::peer_text;
 use super::routing::answer_rust_side;
 use super::token_file::remove_port_file;
 use super::types::{McpRequest, McpResponse, WsMessage};
+use crate::peer_text::peer_text;
 use tauri::AppHandle;
 use tokio::sync::mpsc;
 

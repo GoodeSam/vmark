@@ -127,24 +127,26 @@ pub fn open_workspace_with_files_in_new_window<R: tauri::Runtime>(
 /// result" pair is what distinguishes a frontend that never got here from a
 /// `destroy()` that never came back.
 ///
-/// The label is printed with `{:?}`, not inside quotes of our own (#484). It is
-/// frontend-supplied, and `'{}'` let it carry a NEWLINE — so a caller could
-/// write log lines of its own, in VMark's own format, between the "called" and
-/// "destroy result" pair a reader uses to diagnose a stalled close. `{:?}` on a
-/// `str` escapes the newline and quotes the value, so it can only ever be one
-/// token on one line.
+/// The label is logged through `peer_text`, not inside quotes of our own
+/// (#484). It is frontend-supplied, and `'{}'` let it carry a NEWLINE — so a
+/// caller could write log lines of its own, in VMark's own format, between the
+/// "called" and "destroy result" pair a reader uses to diagnose a stalled
+/// close. `peer_text` escapes the newline and quotes the value, so it can only
+/// ever be one token on one line — and bounds it, so it cannot be a megabyte
+/// one either.
 #[tauri::command]
 pub fn close_window<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     label: String,
 ) -> Result<(), CommandError> {
-    log::info!("[Tauri] close_window called for {label:?}");
+    let shown = crate::peer_text::peer_text(&label);
+    log::info!("[Tauri] close_window called for {shown}");
 
     if let Some(window) = app.get_webview_window(&label) {
         let result = window
             .destroy()
             .map_err(|e| CommandError::internal(e.to_string()));
-        log::info!("[Tauri] window {label:?} destroy result: {result:?}");
+        log::info!("[Tauri] window {shown} destroy result: {result:?}");
         result
     } else {
         // The label names no live window: absent, not malformed.

@@ -251,3 +251,86 @@ fn allocate_window_label_is_the_same_allocation_as_the_creation_path() {
     let (_, b) = next_window_label();
     assert_ne!(a, b, "two allocations must never collide");
 }
+
+// -- ensure_main_window (WI-RA7.1) -------------------------------------------
+//
+// `main` is asked for by the Dock icon, a Finder open, a re-queued open and a
+// second launch, on different threads. Each used to check for it and then
+// build it, and Tauri registers a label unconditionally after the check, so
+// two of them arriving together built two windows named `main`.
+
+// `tauri::test` does not exist on Windows (see Cargo.toml's target-specific
+// dev-dependency); every mock-runtime test in this crate is gated to match.
+#[cfg(not(target_os = "windows"))]
+mod main_window {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::{Arc, Barrier};
+
+    use tauri::{Listener, Manager};
+
+    use super::super::{ensure_main_window, MAIN_LABEL};
+    use crate::window_manager::Ensured;
+
+    fn mock_app() -> tauri::App<tauri::test::MockRuntime> {
+        tauri::test::mock_builder()
+            .build(tauri::test::mock_context(tauri::test::noop_assets()))
+            .expect("build mock app")
+    }
+
+    #[test]
+    fn the_first_call_builds_main_and_the_next_finds_it() {
+        let app = mock_app();
+
+        let first = ensure_main_window(app.handle(), Some("/repo 文档")).expect("first");
+        let Ensured::Created(window) = first else {
+            panic!("no main window existed, so this call builds it");
+        };
+        assert_eq!(window.label(), MAIN_LABEL);
+        let url = window.url().expect("url");
+        assert!(
+            url.query().is_some_and(|q| q.contains("workspaceRoot=")),
+            "the new main is scoped to the workspace it was asked for: {url}"
+        );
+
+        let second = ensure_main_window(app.handle(), None).expect("second");
+        assert!(matches!(second, Ensured::Existing(_)));
+        assert_eq!(app.webview_windows().len(), 1);
+    }
+
+    #[test]
+    fn callers_racing_for_main_build_it_once() {
+        const CALLERS: usize = 12;
+        for round in 0..40 {
+            let app = mock_app();
+            let built = Arc::new(AtomicUsize::new(0));
+            let seen = Arc::clone(&built);
+            app.listen_any("tauri://window-created", move |event| {
+                let payload: serde_json::Value =
+                    serde_json::from_str(event.payload()).expect("a JSON payload");
+                if payload["label"] == MAIN_LABEL {
+                    seen.fetch_add(1, Ordering::SeqCst);
+                }
+            });
+            let start = Arc::new(Barrier::new(CALLERS));
+
+            let callers: Vec<_> = (0..CALLERS)
+                .map(|_| {
+                    let handle = app.handle().clone();
+                    let start = Arc::clone(&start);
+                    std::thread::spawn(move || {
+                        start.wait();
+                        matches!(ensure_main_window(&handle, None), Ok(Ensured::Created(_)))
+                    })
+                })
+                .collect();
+            let created = callers
+                .into_iter()
+                .map(|caller| caller.join().expect("no caller panics"))
+                .filter(|created| *created)
+                .count();
+
+            assert_eq!(created, 1, "round {round}: one caller builds main");
+            assert_eq!(built.load(Ordering::SeqCst), 1, "round {round}");
+        }
+    }
+}
