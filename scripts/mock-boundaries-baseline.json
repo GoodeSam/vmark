@@ -2186,11 +2186,6 @@
       "target": "src/services/commands/CommandBus"
     },
     {
-      "file": "src/services/editor/clipboardUrl.test.ts",
-      "api": "vi.mock",
-      "target": "src/services/editor/urlDetection"
-    },
-    {
       "file": "src/services/persistence/hotExit/restoreTabs.isolation.test.ts",
       "api": "vi.mock",
       "target": "src/services/persistence/hotExit/restoreDocumentState"
