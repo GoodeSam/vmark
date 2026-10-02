@@ -3,8 +3,8 @@
  *
  * Purpose: the single answer to "which documents are open here" — the document
  *   of each live tab, in every window this webview's stores hold — for flows
- *   that read every open buffer or warn about unsaved work before in-memory
- *   state is destroyed.
+ *   that read every open buffer, grant access by what the user has open, or
+ *   warn about unsaved work before in-memory state is destroyed.
  *
  * Key decisions:
  *   - TABS are iterated, never the document store. A document with no live tab
