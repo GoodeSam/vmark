@@ -1386,11 +1386,6 @@
       "target": "src/plugins/multiCursor/textSearch"
     },
     {
-      "file": "src/plugins/sourcePeekInline/sourcePeekActions.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/sourcePeekInline/sourcePeekEditor"
-    },
-    {
       "file": "src/plugins/sourcePeekInline/tiptap.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/sourcePeekInline/sourcePeekEditor"
