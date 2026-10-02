@@ -1316,31 +1316,6 @@
       "target": "src/components/Editor/wysiwygPendingNav"
     },
     {
-      "file": "src/contexts/WindowContext.restoredGrant.test.tsx",
-      "api": "vi.mock",
-      "target": "src/contexts/startupFileOpen"
-    },
-    {
-      "file": "src/contexts/WindowContext.restoredGrant.test.tsx",
-      "api": "vi.mock",
-      "target": "src/utils/openPolicy"
-    },
-    {
-      "file": "src/contexts/WindowContext.test.tsx",
-      "api": "vi.mock",
-      "target": "src/contexts/startupFileOpen"
-    },
-    {
-      "file": "src/contexts/WindowContext.test.tsx",
-      "api": "vi.mock",
-      "target": "src/utils/openPolicy"
-    },
-    {
-      "file": "src/contexts/WindowContext.test.tsx",
-      "api": "vi.mock",
-      "target": "src/utils/paths/index"
-    },
-    {
       "file": "src/plugins/latex/__tests__/MathInlineNodeView.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/latex/katexLoader"
