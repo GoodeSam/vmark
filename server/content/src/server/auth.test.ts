@@ -175,3 +175,139 @@ describe("the next= destination of /__auth", () => {
     }
   });
 });
+
+// WI-RA8.4 — a browser that can hold the cookie is never handed the session
+// token in a URL; a client that cannot is, because it has no other credential.
+describe("how /__auth hands over the session", () => {
+  const NAVIGATION = { "sec-fetch-mode": "navigate" };
+
+  /** The `name=value` pair a browser would send back for a Set-Cookie header. */
+  function cookieFrom(res: Response): string {
+    const pair = /^([^=]+=[^;]+)/.exec(res.headers.get("set-cookie") ?? "");
+    expect(pair, "the bootstrap set no cookie").not.toBeNull();
+    return pair![1];
+  }
+
+  /** First hop of a browser navigation; returns the response. */
+  async function navigate(app: Hono, suffix = ""): Promise<Response> {
+    const nonce = await mint(app);
+    return app.request(`/__auth?t=${nonce}${suffix}`, { redirect: "manual", headers: NAVIGATION });
+  }
+
+  it("answers a browser navigation with a probe, not with the token", async () => {
+    const { app, guard } = appWith(() => 0);
+    const res = await navigate(app);
+    expect(res.status).toBe(302);
+    const location = res.headers.get("location") ?? "";
+    expect(location).toMatch(/^\/__auth\?c=[0-9a-f]{64}$/);
+    expect(location).not.toContain(guard.sessionToken);
+    expect(res.headers.get("set-cookie") ?? "").toContain(SESSION_COOKIE);
+  });
+
+  it("lands a browser that returns the cookie on a URL with no token", async () => {
+    const { app, guard } = appWith(() => 0);
+    const first = await navigate(app, "&next=/slidev/");
+    const second = await app.request(first.headers.get("location")!, {
+      redirect: "manual",
+      headers: { ...NAVIGATION, cookie: cookieFrom(first) },
+    });
+    expect(second.status).toBe(302);
+    expect(second.headers.get("location")).toBe("/slidev/");
+    expect(second.headers.get("location")).not.toContain(guard.sessionToken);
+    // And the cookie alone then authenticates.
+    const page = await app.request("/__health", { headers: { cookie: cookieFrom(first) } });
+    expect(page.status).toBe(200);
+  });
+
+  it("gives the token to a navigation that cannot return the cookie (the in-app frame)", async () => {
+    const { app, guard } = appWith(() => 0);
+    const first = await navigate(app, "&next=/note/A.md");
+    const second = await app.request(first.headers.get("location")!, {
+      redirect: "manual",
+      headers: NAVIGATION,
+    });
+    expect(second.headers.get("location")).toBe(`/note/A.md?s=${guard.sessionToken}`);
+  });
+
+  it("does not accept a wrong cookie as proof", async () => {
+    const { app, guard } = appWith(() => 0);
+    const first = await navigate(app);
+    const second = await app.request(first.headers.get("location")!, {
+      redirect: "manual",
+      headers: { ...NAVIGATION, cookie: `${guard.cookieName}=not-the-session` },
+    });
+    // No working cookie was shown, so this client still needs the token.
+    expect(second.headers.get("location")).toBe(`/?s=${guard.sessionToken}`);
+  });
+
+  it("a probe is single-use", async () => {
+    const { app } = appWith(() => 0);
+    const first = await navigate(app);
+    const probe = first.headers.get("location")!;
+    expect((await app.request(probe, { redirect: "manual", headers: NAVIGATION })).status).toBe(302);
+    expect((await app.request(probe, { redirect: "manual", headers: NAVIGATION })).status).toBe(403);
+  });
+
+  it("a probe expires", async () => {
+    let t = 1_000;
+    const { app } = appWith(() => t);
+    const first = await navigate(app);
+    t += NONCE_TTL_MS + 1;
+    const second = await app.request(first.headers.get("location")!, {
+      redirect: "manual",
+      headers: NAVIGATION,
+    });
+    expect(second.status).toBe(403);
+  });
+
+  it.each([
+    ["an invented probe", "/__auth?c=" + "0".repeat(64)],
+    ["an empty probe", "/__auth?c="],
+    ["the bootstrap token as a probe", `/__auth?c=${BOOTSTRAP}`],
+  ])("refuses %s", async (_label, url) => {
+    const { app } = appWith(() => 0);
+    expect((await app.request(url, { redirect: "manual", headers: NAVIGATION })).status).toBe(403);
+  });
+
+  it("a nonce is not a probe, and a probe is not a nonce", async () => {
+    const { app } = appWith(() => 0);
+    const nonce = await mint(app);
+    expect((await app.request(`/__auth?c=${nonce}`, { redirect: "manual" })).status).toBe(403);
+    const first = await navigate(app);
+    const probe = /c=([0-9a-f]+)/.exec(first.headers.get("location")!)![1];
+    expect((await app.request(`/__auth?t=${probe}`, { redirect: "manual" })).status).toBe(403);
+  });
+
+  it("carries a validated destination through the probe, never the request's own", async () => {
+    const { app, guard } = appWith(() => 0);
+    const first = await navigate(app, `&next=${encodeURIComponent("/\\evil.com")}`);
+    const second = await app.request(`${first.headers.get("location")!}&next=//evil.com`, {
+      redirect: "manual",
+      headers: { ...NAVIGATION, cookie: cookieFrom(first) },
+    });
+    expect(second.headers.get("location")).toBe("/");
+    expect(second.headers.get("location")).not.toContain(guard.sessionToken);
+  });
+
+  it.each([
+    ["no Sec-Fetch-Mode (the app's own loopback client)", {}],
+    ["a fetch, not a navigation", { "sec-fetch-mode": "cors" }],
+  ])("answers %s with the token in one hop", async (_label, headers) => {
+    // The app reads the session off this redirect without following it, to
+    // fetch the relationship graph; it has no cookie jar to be probed.
+    const { app, guard } = appWith(() => 0);
+    const nonce = await mint(app);
+    const res = await app.request(`/__auth?t=${nonce}`, { redirect: "manual", headers });
+    expect(res.headers.get("location")).toBe(`/?s=${guard.sessionToken}`);
+  });
+
+  it("does not let abandoned probes accumulate", async () => {
+    let t = 0;
+    const { app, guard } = appWith(() => t);
+    for (let i = 0; i < 50; i++) await navigate(app);
+    expect(guard.pendingProbes()).toBe(50);
+    t += NONCE_TTL_MS + 1;
+    await navigate(app);
+    expect(guard.pendingProbes()).toBe(1);
+  });
+});
