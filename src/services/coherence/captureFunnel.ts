@@ -31,7 +31,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
-import { registerPendingSave, clearPendingSave } from "@/utils/pendingSaves";
+import { registerPendingSave, clearPendingSaveAfterGrace } from "@/utils/pendingSaves";
 import { coherenceLog } from "@/utils/debug";
 import { currentCapturePolicy } from "./capturePolicy";
 
@@ -144,7 +144,7 @@ export async function captureWrite(
       if (receipt?.content_with_identity) {
         // The kernel rewrote the file on disk; let the watcher match it.
         const token = registerPendingSave(args.absolutePath, receipt.content_with_identity);
-        setTimeout(() => clearPendingSave(args.absolutePath, token), 1000);
+        clearPendingSaveAfterGrace(args.absolutePath, token);
       }
       return receipt;
     });
