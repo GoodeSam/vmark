@@ -1,10 +1,12 @@
 // @vitest-environment node
 // WI-RA9B.4 — the one menu clamp: never negative, never NaN, and a menu that
 // cannot fit lands on the near margin instead of off screen.
+// WI-RA18.6 — bounds narrowed to a menu's container, for menus drawn inside one.
 import { describe, expect, it } from "vitest";
 import {
   MENU_VIEWPORT_MARGIN,
   clampMenuPosition,
+  menuBoundsWithin,
   viewportMenuBounds,
   type MenuBounds,
   type MenuPoint,
@@ -23,6 +25,29 @@ describe("viewportMenuBounds", () => {
 
   it("honours a caller-supplied margin", () => {
     expect(viewportMenuBounds(VIEWPORT, 8)).toEqual({ left: 8, top: 8, right: 992, bottom: 792 });
+  });
+});
+
+describe("menuBoundsWithin", () => {
+  it("insets the container by the margin where it is inside the bounds", () => {
+    expect(menuBoundsWithin(BOUNDS, { left: 100, top: 50, right: 600, bottom: 400 })).toEqual({
+      left: 110, top: 60, right: 590, bottom: 390,
+    });
+  });
+
+  it("keeps the outer bounds where the container reaches past them", () => {
+    expect(menuBoundsWithin(BOUNDS, { left: -300, top: -50, right: 1400, bottom: 2000 })).toEqual(BOUNDS);
+  });
+
+  it("honours a caller-supplied margin", () => {
+    expect(menuBoundsWithin(BOUNDS, { left: 100, top: 50, right: 600, bottom: 400 }, 4)).toEqual({
+      left: 104, top: 54, right: 596, bottom: 396,
+    });
+  });
+
+  it("feeds the clamp: a menu wider than its container lands on the container's near margin", () => {
+    const within = menuBoundsWithin(BOUNDS, { left: 100, top: 50, right: 300, bottom: 400 });
+    expect(clampMenuPosition({ x: 250, y: 60 }, MENU, within)).toEqual({ x: 110, y: 60 });
   });
 });
 

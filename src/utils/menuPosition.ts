@@ -22,7 +22,8 @@
  *     so the clamp has no direction-dependent branch.
  *
  * @coordinates-with hooks/useMenuPosition.ts — applies this to a React menu element
- * @coordinates-with plugins/tableUI/TiptapTableContextMenu.ts — the imperative caller
+ * @coordinates-with plugins/tableUI/TiptapTableContextMenu.ts — an imperative caller
+ * @coordinates-with plugins/codemirror/sourceTableContextMenu.ts — an imperative caller, inside its host
  * @module utils/menuPosition
  */
 
@@ -59,6 +60,24 @@ export function viewportMenuBounds(
     top: margin,
     right: viewport.width - margin,
     bottom: viewport.height - margin,
+  };
+}
+
+/**
+ * `bounds` narrowed to `container` inset by `margin` — for a menu drawn inside
+ * a container (an editor's popup host) that may be offset, scrolled or partly
+ * off screen. Where the container reaches past `bounds`, `bounds` wins.
+ */
+export function menuBoundsWithin(
+  bounds: MenuBounds,
+  container: MenuBounds,
+  margin: number = MENU_VIEWPORT_MARGIN,
+): MenuBounds {
+  return {
+    left: Math.max(bounds.left, container.left + margin),
+    top: Math.max(bounds.top, container.top + margin),
+    right: Math.min(bounds.right, container.right - margin),
+    bottom: Math.min(bounds.bottom, container.bottom - margin),
   };
 }
 
