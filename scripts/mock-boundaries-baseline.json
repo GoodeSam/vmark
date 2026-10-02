@@ -754,11 +754,6 @@
       "target": "src/stores/mcpStore"
     },
     {
-      "file": "src/plugins/autoPair/__tests__/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/settingsStore"
-    },
-    {
       "file": "src/plugins/codemirror/__tests__/listSmartIndent.test.ts",
       "api": "vi.mock",
       "target": "src/stores/settingsStore"
@@ -1379,16 +1374,6 @@
       "file": "src/main.boot.test.tsx",
       "api": "vi.mock",
       "target": "src/services/assembly/bindHostSettings"
-    },
-    {
-      "file": "src/plugins/autoPair/__tests__/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/autoPair/handlers"
-    },
-    {
-      "file": "src/plugins/autoPair/__tests__/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/autoPair/keyHandler"
     },
     {
       "file": "src/plugins/blockImage/tiptap.test.ts",
