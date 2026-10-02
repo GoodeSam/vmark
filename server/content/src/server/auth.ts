@@ -20,6 +20,7 @@
 import { createMiddleware } from "hono/factory";
 import { getCookie, setCookie } from "hono/cookie";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { sameOriginPath, withSessionToken } from "./redirectTarget";
 
 /**
  * The base session cookie name. Instances append a namespace — see
@@ -158,12 +159,9 @@ export function createAuthGuard(options: AuthOptions): AuthGuard {
       sameSite: "Strict",
       path: "/",
     });
-    // Optional same-origin `next` path (e.g. /slidev/) — reject anything that
-    // isn't a single-leading-slash relative path (no `//` open-redirect).
-    const next = c.req.query("next");
-    const dest = next && /^\/[^/]/.test(next) ? next : redirectTo;
-    const sep = dest.includes("?") ? "&" : "?";
-    return c.redirect(`${dest}${sep}s=${sessionToken}`, 302);
+    // Optional `next` (e.g. /slidev/): a path on this server, or it is ignored.
+    const dest = sameOriginPath(c.req.query("next")) ?? redirectTo;
+    return c.redirect(withSessionToken(dest, sessionToken), 302);
   };
 
   const checkBearer = (c: import("hono").Context): boolean => {
