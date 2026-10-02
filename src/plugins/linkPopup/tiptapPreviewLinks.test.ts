@@ -21,12 +21,8 @@ vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl: openUrlMock }));
 vi.mock("@/services/navigation/openFileEvent", () => ({
   emitOpenFileInCurrentWindow: emitOpenFileMock,
 }));
-vi.mock("./LinkPopupView", () => ({
-  LinkPopupView: class MockLinkPopupView {
-    destroy = vi.fn();
-  },
-}));
 
+import { createStore as createZustandStore } from "zustand/vanilla";
 import { linkPopupExtension } from "./tiptap";
 
 const schema = new Schema({
@@ -66,8 +62,9 @@ const previewNodeView = (node: PMNode) => {
 };
 
 const popupState = { isOpen: false, linkFrom: 0, linkTo: 0, openPopup: vi.fn(), closePopup: vi.fn() };
-const popupStore = { getState: () => popupState };
-const createStore = { getState: () => ({ isOpen: false, closePopup: vi.fn() }) };
+// Real store objects around the test state: the popup view subscribes to its port.
+const popupStore = createZustandStore(() => popupState);
+const createStore = createZustandStore(() => ({ isOpen: false, closePopup: vi.fn() }));
 
 function mount(html: string) {
   const addPlugins = linkPopupExtension.config.addProseMirrorPlugins as unknown as (

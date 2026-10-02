@@ -22,7 +22,21 @@
  */
 import { createVMarkMcpServer, EXPECTED_TOOL_COUNT, TOOL_REGISTRY } from '../index.js';
 
-export async function runHealthCheck(version: string): Promise<void> {
+/** The part of the server factory the health check uses. */
+export type HealthCheckServerFactory = (
+  bridge: Parameters<typeof createVMarkMcpServer>[0],
+  options: { version: string },
+) => Pick<ReturnType<typeof createVMarkMcpServer>, 'listTools'>;
+
+/**
+ * `createServer` defaults to the real factory; it is a parameter so a test can
+ * hand the validation a malformed surface (a wrong name, a duplicate) that the
+ * real registry, by construction, never produces.
+ */
+export async function runHealthCheck(
+  version: string,
+  createServer: HealthCheckServerFactory = createVMarkMcpServer,
+): Promise<void> {
   // Note: no import self-test here. The server module is statically imported
   // below (hoisted, evaluated before any of this runs), so an import failure
   // crashes the process before runHealthCheck — a dynamic re-import could
@@ -40,7 +54,7 @@ export async function runHealthCheck(version: string): Promise<void> {
     };
 
     // 2. Can we instantiate the server and list tools?
-    const server = createVMarkMcpServer(mockBridge, { version });
+    const server = createServer(mockBridge, { version });
     const allTools = server.listTools();
 
     // 3. Validate the registered tools are EXACTLY the declared surface.

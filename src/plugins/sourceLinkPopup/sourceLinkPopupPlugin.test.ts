@@ -21,12 +21,6 @@ const mockStore = {
   subscribe: vi.fn(() => () => {}),
 } as never;
 
-vi.mock("./SourceLinkPopupView", () => ({
-  SourceLinkPopupView: vi.fn().mockImplementation(() => ({
-    destroy: vi.fn(),
-  })),
-}));
-
 vi.mock("@/utils/markdownLinkPatterns", () => ({
   findMarkdownLinkAtPosition: vi.fn(),
 }));
@@ -48,6 +42,7 @@ import { createSourcePopupPlugin } from "@/plugins/shared/createSourcePopupPlugi
 import { createSourceLinkPopupPlugin } from "./sourceLinkPopupPlugin";
 import { findMarkdownLinkAtPosition } from "@/utils/markdownLinkPatterns";
 import { bindHostDocument, resetHostDocument } from "@/plugins/shared/hostDocument";
+import { SourceLinkPopupView } from "./SourceLinkPopupView";
 
 // Helper to create a CM6 view
 function createView(doc: string, cursorPos?: number): EditorView {
@@ -63,6 +58,27 @@ function createView(doc: string, cursorPos?: number): EditorView {
 describe("createSourceLinkPopupPlugin", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("createView builds the real link popup view on the given store", () => {
+    createSourceLinkPopupPlugin(mockStore);
+    const config = (createSourcePopupPlugin as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const view = createView("[a](https://example.com)", 1);
+    const unsubscribe = vi.fn();
+    const store = {
+      getState: () => ({ isOpen: false, anchorRect: null }),
+      subscribe: vi.fn(() => unsubscribe),
+    };
+
+    const popupView = config.createView(view, store);
+
+    expect(popupView).toBeInstanceOf(SourceLinkPopupView);
+    // The base view and the link view's reshow watcher each subscribe
+    expect(store.subscribe).toHaveBeenCalledTimes(2);
+    popupView.destroy();
+    // ...and destroy releases every subscription it took
+    expect(unsubscribe).toHaveBeenCalledTimes(2);
+    view.destroy();
   });
 
   it("returns an array extension (CmdClick + range-sync + popup plugin)", () => {

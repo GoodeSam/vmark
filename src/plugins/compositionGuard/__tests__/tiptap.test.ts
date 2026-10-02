@@ -24,12 +24,6 @@ vi.mock("@/utils/imeGuard", () => ({
   markProseMirrorCompositionEnd: (...args: unknown[]) => mockMarkProseMirrorCompositionEnd(...args),
 }));
 
-// Mock splitBlockFix
-const mockFixCompositionSplitBlock = vi.fn((..._args: unknown[]): unknown => null);
-vi.mock("../splitBlockFix", () => ({
-  fixCompositionSplitBlock: (...args: unknown[]) => mockFixCompositionSplitBlock(...args),
-}));
-
 // Mock splitBlock from ProseMirror commands (used for Korean deferred Enter)
 const mockSplitBlock = vi.fn();
 vi.mock("@tiptap/pm/commands", () => ({

@@ -1241,6 +1241,7 @@
         "src/shell",
         "src/App.tsx",
         "src/main.tsx",
+        "src/bootstrap.tsx",
         "src/stores/uiStore.ts",
         "src/stores/uiStore",
         "src/components/FeatureErrorBoundary.tsx",

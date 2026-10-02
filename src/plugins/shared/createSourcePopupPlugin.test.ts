@@ -9,19 +9,10 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import type { EditorView, ViewUpdate } from "@codemirror/view";
 import type { SourcePopupView } from "./SourcePopupView";
 
-// Mock sourcePopupUtils
-vi.mock("./sourcePopupUtils", () => ({
-  getAnchorRectFromRange: vi.fn(
-    (_view: unknown, from: number, to: number) =>
-      ({ top: 100 + from, left: 50, bottom: 120 + to, right: 200 })
-  ),
-}));
-
 import {
   createSourcePopupPlugin,
   type PopupTriggerConfig,
 } from "./createSourcePopupPlugin";
-import { getAnchorRectFromRange } from "./sourcePopupUtils";
 import {
   type TestState,
   createMockStore,
@@ -401,6 +392,8 @@ describe("createSourcePopupPlugin — click handler logic", () => {
         expect.objectContaining({
           range: { from: 0, to: 10 },
           data: { href: "test" },
+          // Top-left from the range start (0), bottom-right from its end (10)
+          anchorRect: { top: 100, left: 50, bottom: 130, right: 210 },
         })
       );
     }
@@ -513,18 +506,18 @@ describe("createSourcePopupPlugin — click handler logic", () => {
     }
   });
 
-  it("click handler returns early when getAnchorRectFromRange returns null", () => {
+  it("click handler returns early when the range has no screen coordinates", () => {
     const customOpen = vi.fn();
     const detectTrigger = vi.fn(() => ({ from: 0, to: 10 }));
-
-    // Mock getAnchorRectFromRange to return null
-    (getAnchorRectFromRange as ReturnType<typeof vi.fn>).mockReturnValueOnce(null);
 
     const { view } = instantiatePlugin({
       detectTrigger,
       openPopup: customOpen,
       triggerOnClick: true,
     });
+
+    // The view cannot place the range (e.g. scrolled out of layout)
+    vi.mocked(view.coordsAtPos).mockReturnValue(null);
 
     const calls = (view.dom.addEventListener as ReturnType<typeof vi.fn>).mock.calls;
     const clickHandler = calls.find((c: unknown[]) => c[0] === "click")?.[1] as (e: MouseEvent) => void;

@@ -69,9 +69,6 @@ export function selectNextOccurrence(state: EditorState): Transaction | null {
       searchText = word.text;
       currentFrom = word.from;
       currentTo = word.to;
-      if (bounds && (word.from < bounds.from || word.to > bounds.to)) {
-        return null;
-      }
       const $from = state.doc.resolve(word.from);
       const $to = state.doc.resolve(word.to);
       existingRanges.push(new SelectionRange($from, $to));
@@ -168,10 +165,6 @@ function selectAllOccurrencesWithin(
     // Empty selection - get word under cursor
     const word = getWordAtCursor(state);
     if (!word) return null;
-
-    if (bounds && (word.from < bounds.from || word.to > bounds.to)) {
-      return null;
-    }
 
     searchText = word.text;
     initialFrom = word.from;

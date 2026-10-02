@@ -13,7 +13,7 @@
 // source extensions behind dynamic imports inside `loadExtraExtensions` —
 // which was already async, so nothing but the import site changed.
 
-import { useMemo } from "react";
+import { useMemo, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import type { Extension } from "@codemirror/state";
 import { parse as parseYaml } from "yaml";
@@ -121,12 +121,10 @@ export const yamlSchemaDetector: SchemaDetector = (path, content) => {
  * lazy component would suspend — and REJECT — into whichever boundary happened
  * to be above it.
  *
- * Audit 20260804-F3: it used to be a bare `Suspense` over a module-level
- * `React.lazy`, so a rejected import escaped to the editor-wide boundary,
- * whose "try again" remounted the SAME lazy object and replayed its cached
- * rejection forever. `RetryableLazy` gives it the FormatSurface discipline
- * instead: a fresh lazy per attempt behind a local, retryable boundary, so the
- * failure stays inside the preview pane and the retry can actually succeed.
+ * Audit 20260804-F3: a bare `Suspense` over a module-level `React.lazy` let a
+ * rejected import escape to the editor-wide boundary, whose retry replayed the
+ * cached rejection forever. `RetryableLazy` mounts a fresh lazy per attempt
+ * behind a local boundary, so the failure stays in the pane and retry works.
  */
 const loadGhaWorkflowRenderer = () =>
   import("./yamlWorkflowRenderer").then((m) => ({
@@ -145,18 +143,26 @@ function GhaWorkflowRendererError({ retry }: { retry: () => void }) {
   );
 }
 
-function GhaWorkflowSchemaRenderer(props: PreviewRendererProps) {
-  return (
-    <RetryableLazy
-      feature="GitHub Actions workflow"
-      load={loadGhaWorkflowRenderer}
-      componentProps={props}
-      // Fallback is null — the split pane already shows the source side.
-      pending={null}
-      renderError={(retry) => <GhaWorkflowRendererError retry={retry} />}
-    />
-  );
+/** The workflow preview over a chunk loader — a parameter, because a module
+ *  registry never re-fails a module that resolved once, and failure is tested. */
+export function ghaWorkflowRendererOver(
+  load: () => Promise<{ default: ComponentType<PreviewRendererProps> }>,
+): ComponentType<PreviewRendererProps> {
+  return function GhaWorkflowSchemaRenderer(props: PreviewRendererProps) {
+    return (
+      <RetryableLazy
+        feature="GitHub Actions workflow"
+        load={load}
+        componentProps={props}
+        // Fallback is null — the split pane already shows the source side.
+        pending={null}
+        renderError={(retry) => <GhaWorkflowRendererError retry={retry} />}
+      />
+    );
+  };
 }
+
+const GhaWorkflowSchemaRenderer = ghaWorkflowRendererOver(loadGhaWorkflowRenderer);
 
 /**
  * WI-LX2.1 — the `vmark-workflow` schema: the engine's Run/Cancel panel while

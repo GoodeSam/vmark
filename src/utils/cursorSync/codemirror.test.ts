@@ -1,15 +1,9 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach } from "vitest";
-
-vi.mock("./table", () => ({
-  getTableAnchorForLine: vi.fn(() => undefined),
-  restoreTableColumnFromAnchor: vi.fn(() => null),
-}));
+import { describe, it, expect, vi } from "vitest";
 
 import { EditorState } from "@codemirror/state";
 import { getCursorInfoFromCodeMirror, restoreCursorInCodeMirror } from "./codemirror";
 import type { CursorInfo } from "@/types/cursorSync";
-import { getTableAnchorForLine, restoreTableColumnFromAnchor } from "./table";
 
 // --- EditorView stand-in: a real editor state, a recorded dispatch ---
 
@@ -29,11 +23,6 @@ function buildMockView(opts: MockViewOptions) {
     _dispatched: dispatched,
   };
 }
-
-beforeEach(() => {
-  vi.mocked(getTableAnchorForLine).mockReturnValue(undefined);
-  vi.mocked(restoreTableColumnFromAnchor).mockReturnValue(null);
-});
 
 describe("getCursorInfoFromCodeMirror", () => {
   it("extracts cursor info from a simple paragraph", () => {
@@ -105,19 +94,27 @@ describe("getCursorInfoFromCodeMirror", () => {
     expect((info.blockAnchor as { columnInLine: number }).columnInLine).toBe(0);
   });
 
-  it("detects table node type when table anchor is returned", () => {
+  it("detects a table cell and anchors the cursor by row, column and offset", () => {
     const content = "| a | b |\n|---|---|\n| 1 | 2 |";
-    vi.mocked(getTableAnchorForLine).mockReturnValue({
-      kind: "table",
-      row: 0,
-      col: 0,
-      offsetInCell: 1,
-    });
-    const view = buildMockView({ content, cursorPos: 2 });
+    // Line 3 starts at offset 20; offset 26 is the "2" in the second cell.
+    const view = buildMockView({ content, cursorPos: 26 });
     const info = getCursorInfoFromCodeMirror(view as never);
     expect(info.nodeType).toBe("table_cell");
-    expect(info.blockAnchor).toBeDefined();
-    expect(info.blockAnchor!.kind).toBe("table");
+    expect(info.blockAnchor).toEqual({ kind: "table", row: 1, col: 1, offsetInCell: 0 });
+  });
+
+  it("anchors the header row as row 0", () => {
+    const content = "| a | b |\n|---|---|\n| 1 | 2 |";
+    const view = buildMockView({ content, cursorPos: 3 });
+    const info = getCursorInfoFromCodeMirror(view as never);
+    expect(info.blockAnchor).toEqual({ kind: "table", row: 0, col: 0, offsetInCell: 1 });
+  });
+
+  it("does not report a table anchor for a pipe line with no separator row", () => {
+    const view = buildMockView({ content: "a | b", cursorPos: 1 });
+    const info = getCursorInfoFromCodeMirror(view as never);
+    expect(info.nodeType).toBe("paragraph");
+    expect(info.blockAnchor).toBeUndefined();
   });
 
   it("calculates percentInLine for non-empty stripped text", () => {
@@ -258,9 +255,9 @@ describe("restoreCursorInCodeMirror", () => {
     expect(view.dispatch).toHaveBeenCalled();
   });
 
-  it("falls back to generic restore when table anchor column returns null", () => {
-    const content = "| a | b |";
-    vi.mocked(restoreTableColumnFromAnchor).mockReturnValue(null);
+  it("falls back to generic restore when the target line has no table cells", () => {
+    // A table anchor pointing at a line without any pipe: no cell to land in.
+    const content = "plain words here";
     const view = buildMockView({ content, cursorPos: 0 });
     const info: CursorInfo = {
       sourceLine: 1,
@@ -278,13 +275,33 @@ describe("restoreCursorInCodeMirror", () => {
       },
     };
     restoreCursorInCodeMirror(view as never, info);
-    // Falls back to generic restore via percentage
-    expect(view.dispatch).toHaveBeenCalled();
+    // Falls back to generic restore: same landing as the anchor-less restore.
+    const generic = buildMockView({ content, cursorPos: 0 });
+    restoreCursorInCodeMirror(generic as never, { ...info, nodeType: "paragraph", blockAnchor: undefined });
+    expect(view.dispatch).toHaveBeenCalledTimes(1);
+    expect(view.dispatch.mock.calls[0][0].selection).toEqual(generic.dispatch.mock.calls[0][0].selection);
+  });
+
+  it("clamps an out-of-range table column to the last cell", () => {
+    const content = "| a | b |";
+    const view = buildMockView({ content, cursorPos: 0 });
+    const info: CursorInfo = {
+      sourceLine: 1,
+      wordAtCursor: "",
+      offsetInWord: 0,
+      nodeType: "table_cell",
+      percentInLine: 0,
+      contextBefore: "",
+      contextAfter: "",
+      blockAnchor: { kind: "table", row: 0, col: 99, offsetInCell: 0 },
+    };
+    restoreCursorInCodeMirror(view as never, info);
+    // Last cell's content "b" starts at column 6.
+    expect(view.dispatch.mock.calls[0][0].selection.anchor).toBe(6);
   });
 
   it("restores cursor in table using block anchor", () => {
     const content = "| a | b |\n|---|---|\n| 1 | 2 |";
-    vi.mocked(restoreTableColumnFromAnchor).mockReturnValue(4);
     const view = buildMockView({ content, cursorPos: 0 });
     const info: CursorInfo = {
       sourceLine: 1,
@@ -304,8 +321,8 @@ describe("restoreCursorInCodeMirror", () => {
     restoreCursorInCodeMirror(view as never, info);
     expect(view.dispatch).toHaveBeenCalled();
     const selection = view.dispatch.mock.calls[0][0].selection;
-    // restoreTableColumnFromAnchor returned 4, so anchor = line.from + 4
-    expect(selection.anchor).toBe(4);
+    // Cell 1 content "b" starts at column 6; offsetInCell 1 lands after it.
+    expect(selection.anchor).toBe(7);
   });
 
   it("uses context matching for column within heading", () => {
