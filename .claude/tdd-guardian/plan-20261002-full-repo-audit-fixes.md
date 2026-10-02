@@ -223,6 +223,19 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 - **WI-RA16.4 — Rust coverage has a liveness marker and a ratcheting floor.** Audit §7 Medium #1.
 - **WI-RA16.5 — E2E: the darwin journeys run on macOS, the 16 unscheduled journeys run, `pdf-smoke` triggers on `PdfExportPage.tsx`.** Audit §7 Medium #4. (D6)
 
+#### Phase RA18 — follow-ups found by earlier lanes (TS)
+- **WI-RA18.1 — the MCP path guard derives allowed roots from live tabs only.**
+- **WI-RA18.2 — external writers respect an in-progress IME composition; Source popups guard Enter.**
+- **WI-RA18.3 — code-fence meta and loose lists round-trip; residual round-trip losses fixed.**
+- **WI-RA18.4 — Source copy-on-select and hard-break detection use the parser.**
+- **WI-RA18.5 — the remaining sanitizers parse in an inert document.**
+- **WI-RA18.6 — the Source table menu uses the shared clamp.**
+- **WI-RA18.7 — remaining truncations are surrogate-safe.**
+- **WI-RA18.8 — bridge comment and handler cleanup.**
+- **WI-RA18.9 — bundle headroom restored without raising a budget.**
+- **WI-RA18.10 — content-server lint is clean and gated; subresource tokens.**
+- **WI-RA18.11 — MCP history snapshots have their own kind.**
+
 ### Wave 3
 
 #### Phase RA17 — Maintainability (TS)
