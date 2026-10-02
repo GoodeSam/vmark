@@ -452,7 +452,7 @@ Klicken Sie mit der rechten Maustaste auf einen Tab, um sein Menü zu öffnen. P
 | Andere schließen | Schließt jeden anderen nicht angehefteten Tab. | Ein weiterer nicht angehefteter Tab existiert |
 | Tabs rechts schließen | Schließt die nicht angehefteten Tabs rechts davon. | Einer existiert |
 | Alle nicht angehefteten Tabs schließen | Schließt jeden nicht angehefteten Tab, diesen eingeschlossen. | Ein nicht angehefteter Tab existiert |
-| Alle schließen | Schließt jeden Tab. Ein angehefteter Tab lässt sich nicht schließen; solange also ein Tab angeheftet ist, verwenden Sie stattdessen **Alle nicht angehefteten Tabs schließen**. | Immer |
+| Alle schließen | Schließt jeden Tab außer den angehefteten; diese bleiben offen, bis Sie sie lösen. | Ein nicht angehefteter Tab existiert |
 
 Sammelschließungen wirken auf die Tabs des aktuellen Arbeitsbereichs und schließen sie nacheinander. Jeder Tab mit nicht gespeicherten Änderungen fragt vorher nach, und das Abbrechen einer dieser Abfragen stoppt den Rest.
 

@@ -453,7 +453,7 @@ Clique com o botão direito em uma aba para abrir seu menu. As teclas de seta, H
 | Fechar outras | Fecha todas as outras abas não fixadas. | Existe outra aba não fixada |
 | Fechar guias à direita | Fecha as abas não fixadas à sua direita. | Existe alguma |
 | Fechar guias não fixadas | Fecha todas as abas não fixadas, inclusive esta. | Existe uma aba não fixada |
-| Fechar todas | Fecha todas as abas. Uma aba fixada se recusa a fechar, então, enquanto houver alguma aba fixada, use **Fechar guias não fixadas**. | Sempre |
+| Fechar todas | Fecha todas as abas, exceto as fixadas, que continuam abertas até você desafixá-las. | Existe uma aba não fixada |
 
 Os fechamentos em massa atuam sobre as abas do workspace atual e as fecham uma de cada vez. Cada aba com alterações não salvas pergunta antes, e cancelar qualquer uma dessas perguntas interrompe o restante.
 

@@ -451,7 +451,7 @@ Faites un clic droit sur un onglet pour ouvrir son menu. Les touches fléchées,
 | Fermer les autres | Ferme tous les autres onglets non épinglés. | Un autre onglet non épinglé existe |
 | Fermer les onglets à droite | Ferme les onglets non épinglés situés à sa droite. | Il en existe un |
 | Fermer les onglets non épinglés | Ferme tous les onglets non épinglés, celui-ci compris. | Un onglet non épinglé existe |
-| Tout fermer | Ferme tous les onglets. Un onglet épinglé refuse de se fermer : tant qu'un onglet est épinglé, utilisez plutôt **Fermer les onglets non épinglés**. | Toujours |
+| Tout fermer | Ferme tous les onglets sauf les onglets épinglés, qui restent ouverts tant que vous ne les désépinglez pas. | Un onglet non épinglé existe |
 
 Les fermetures groupées agissent sur les onglets de l'espace de travail actuel et les ferment un par un. Chaque onglet ayant des modifications non enregistrées demande d'abord, et annuler l'une de ces demandes arrête les suivantes.
 

@@ -451,7 +451,7 @@ Right-click a tab to open its menu. Arrow keys, Home and End move through it; En
 | Close Others | Closes every other unpinned tab. | Another unpinned tab exists |
 | Close Tabs to the Right | Closes the unpinned tabs to its right. | One exists |
 | Close All Unpinned Tabs | Closes every unpinned tab, this one included. | An unpinned tab exists |
-| Close All | Closes every tab. A pinned tab refuses to close, so while any tab is pinned, use **Close All Unpinned Tabs** instead. | Always |
+| Close All | Closes every tab except pinned ones, which stay open until you unpin them. | An unpinned tab exists |
 
 Bulk closes act on the tabs of the current workspace and close them one at a time. Each tab with unsaved changes asks first, and cancelling any of those prompts stops the rest.
 

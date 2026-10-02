@@ -451,7 +451,7 @@ Fai clic destro su una scheda per aprirne il menu. I tasti freccia, Home e Fine 
 | Chiudi altre | Chiude tutte le altre schede non fissate. | Esiste un'altra scheda non fissata |
 | Chiudi schede a destra | Chiude le schede non fissate alla sua destra. | Ne esiste almeno una |
 | Chiudi schede non fissate | Chiude tutte le schede non fissate, compresa questa. | Esiste una scheda non fissata |
-| Chiudi tutto | Chiude tutte le schede. Una scheda fissata si rifiuta di chiudersi, quindi finché una scheda è fissata usa invece **Chiudi schede non fissate**. | Sempre |
+| Chiudi tutto | Chiude tutte le schede tranne quelle fissate, che restano aperte finché non le sblocchi. | Esiste una scheda non fissata |
 
 Le chiusure multiple agiscono sulle schede dello spazio di lavoro corrente e le chiudono una alla volta. Ogni scheda con modifiche non salvate chiede prima conferma, e annullare una qualsiasi di queste richieste interrompe le restanti.
 

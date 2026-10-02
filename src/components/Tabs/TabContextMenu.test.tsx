@@ -435,7 +435,7 @@ describe("TabContextMenu", () => {
       expect(item).not.toBeDisabled();
     });
 
-    it("closes all tabs including pinned", async () => {
+    it("closes every unpinned tab and leaves the pinned one open", async () => {
       // Pin tab-1
       useTabStore.getState().togglePin("main", "tab-1");
       expect(useTabStore.getState().tabs.main[0]?.isPinned).toBe(true);
@@ -453,7 +453,7 @@ describe("TabContextMenu", () => {
       fireEvent.click(screen.getByRole("menuitem", { name: "Close All" }));
 
       await waitFor(() => {
-        expect(mocks.closeTabsWithDirtyCheck).toHaveBeenCalledWith("main", ["tab-1", "tab-2"]);
+        expect(mocks.closeTabsWithDirtyCheck).toHaveBeenCalledWith("main", ["tab-2"]);
       });
       expect(onClose).toHaveBeenCalled();
     });

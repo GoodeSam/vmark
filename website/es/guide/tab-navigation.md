@@ -451,7 +451,7 @@ Haz clic derecho en una pestaña para abrir su menú. Las teclas de flecha, Inic
 | Cerrar otras | Cierra todas las demás pestañas no fijadas. | Existe otra pestaña no fijada |
 | Cerrar pestañas a la derecha | Cierra las pestañas no fijadas situadas a su derecha. | Existe alguna |
 | Cerrar pestañas no fijadas | Cierra todas las pestañas no fijadas, incluida esta. | Existe una pestaña no fijada |
-| Cerrar todo | Cierra todas las pestañas. Una pestaña fijada se niega a cerrarse, así que mientras haya alguna pestaña fijada, usa **Cerrar pestañas no fijadas** en su lugar. | Siempre |
+| Cerrar todo | Cierra todas las pestañas salvo las fijadas, que siguen abiertas hasta que las desfijes. | Existe una pestaña no fijada |
 
 Los cierres en bloque actúan sobre las pestañas del espacio de trabajo actual y las cierran de una en una. Cada pestaña con cambios sin guardar pregunta primero, y cancelar cualquiera de esas preguntas detiene el resto.
 

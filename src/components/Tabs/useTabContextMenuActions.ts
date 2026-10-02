@@ -4,6 +4,9 @@
  * Builds the tab context-menu items with state-driven availability and
  * getState()-based actions (each calls onClose()): Move-to-New-Window needs a
  * doc; Copy Relative Path needs a workspace file; Rename needs a saved file.
+ * Close All leaves pinned tabs open, like every bulk close: a pinned tab
+ * refuses to close until it is unpinned, and the bulk close stops at the
+ * first refusal, so handing it pinned ids made Close All close nothing.
  *
  * @coordinates-with TabContextMenu.tsx, tabTransferActions.ts, tabCleanup.ts
  * @module components/Tabs/useTabContextMenuActions
@@ -128,12 +131,6 @@ export function useTabContextMenuActions({
     openToTheSide(windowLabel, tab.id);
     onClose();
   }, [onClose, tab.id, windowLabel]);
-
-  const handleCloseAll = useCallback(async () => {
-    const allTabIds = tabs.map((entry) => entry.id);
-    await closeTabsWithDirtyCheck(windowLabel, allTabIds);
-    onClose();
-  }, [onClose, tabs, windowLabel]);
 
   const handleCopyPath = useCallback(async () => {
     if (!filePath) return;
@@ -265,7 +262,8 @@ export function useTabContextMenuActions({
     {
       id: "closeAll",
       label: i18n.t("tabMenu.closeAll"),
-      action: handleCloseAll,
+      action: handleCloseAllUnpinned,
+      disabled: !hasUnpinnedTabs,
     },
   ], [
     canCopyRelativePath,
@@ -275,7 +273,6 @@ export function useTabContextMenuActions({
     doc?.isMissing,
     filePath,
     handleClose,
-    handleCloseAll,
     handleCloseAllUnpinned,
     handleCloseOthers,
     handleCloseToRight,
