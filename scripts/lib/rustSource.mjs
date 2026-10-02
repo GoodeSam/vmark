@@ -32,9 +32,10 @@
  * it does not know tokens, only where comments and literals begin and end,
  * which is all that blanking them needs.
  *
- * @coordinates-with scripts/dod-syntax.mjs — the DoD probes over Rust files
- * @coordinates-with scripts/check-keybinding-manifest.mjs — the menu label scan
- * @coordinates-with scripts/lib/headerReferences.mjs — blanks Rust literals before its comment scan
+ * @coordinates-with scripts/lib/dodSyntaxRust.mjs — the DoD probes over Rust files
+ * @coordinates-with scripts/lib/keybindingManifest/realMenu.mjs — the menu accelerator and label scan
+ * @coordinates-with scripts/lib/headerComments.mjs — blanks Rust literals before its comment scan
+ * @coordinates-with scripts/lib/headerReferences.mjs — reads `#[path]` mounts outside comments and literals
  * @coordinates-with scripts/dod-syntax.test.mjs — the self-test
  * @module scripts/lib/rustSource
  */
