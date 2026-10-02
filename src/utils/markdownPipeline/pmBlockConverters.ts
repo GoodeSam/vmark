@@ -77,9 +77,12 @@ export function convertCodeBlock(node: PMNode): Code | Math {
     };
   }
 
+  const meta = (node.attrs.meta as string | null | undefined) ?? null;
   return {
     type: "code",
     lang: lang || undefined,
+    // A fence cannot carry meta without a language to precede it.
+    ...(lang && meta ? { meta } : {}),
     value: node.textContent,
   };
 }
@@ -128,8 +131,9 @@ export function convertList(context: PmToMdastContext, node: PMNode, ordered: bo
     }
   });
 
-  // Derive list spread from children: loose only if any child item is spread
-  const spread = children.some((item) => item.spread === true);
+  // Loose when the list was loose (where the schema records it) or any item
+  // holds more than one block.
+  const spread = node.attrs.spread === true || children.some((item) => item.spread === true);
   const list: List = {
     type: "list",
     ordered,
