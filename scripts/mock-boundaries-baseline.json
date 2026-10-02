@@ -1371,11 +1371,6 @@
       "target": "src/services/assembly/bindHostSettings"
     },
     {
-      "file": "src/plugins/imageHandler/imageHandlerToast.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/imageHandler/imageHandlerInsert"
-    },
-    {
       "file": "src/plugins/imageHandler/tiptap.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/imageHandler/imageHandlerInsert"
