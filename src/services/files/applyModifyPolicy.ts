@@ -29,14 +29,27 @@
  *     field. A flush serializes the whole document; an echo of our own save or
  *     a sync daemon touching line endings needs no decision and must not pay
  *     for one.
+ *   - While an IME composition is in progress in the editor showing this tab,
+ *     the decision WAITS until it has ended and been cleaned up. Mid-
+ *     composition the flush writes the uncommitted preedit text into the store
+ *     as if it were typing, and a reload replaces the document under the text
+ *     the browser is still composing. The unchanged-on-disk check still runs
+ *     at once: it touches the store, never the editor.
  *
  * @coordinates-with hooks/useExternalFileChanges.ts — sole caller
  * @coordinates-with utils/openPolicy — resolveExternalChangeAction
  * @coordinates-with utils/wysiwygFlush.ts — brings pending keystrokes into the store
+ * @coordinates-with services/ime/compositionWriteGate.ts — holds the decision while composing
  * @module services/files/applyModifyPolicy
  */
+import type { EditorView } from "@tiptap/pm/view";
 import { useDocumentStore } from "@/stores/documentStore";
+import { useEditorStore } from "@/stores/editorStore";
 import { imeToast as toast } from "@/services/ime/imeToast";
+import {
+  isCompositionInProgress,
+  writeWhenCompositionSettles,
+} from "@/services/ime/compositionWriteGate";
 import i18n from "@/i18n";
 import { getFileName } from "@/utils/paths";
 import { softContentEquals } from "@/utils/linebreaks";
@@ -45,6 +58,14 @@ import { flushAllWysiwygNow } from "@/utils/wysiwygFlush";
 
 /** Ask the user about a conflict on this tab (debounced and batched). */
 export type QueueDirtyChange = (tabId: string, filePath: string) => void;
+
+/** The live WYSIWYG view showing `tabId`, if an IME composition is in progress in it. */
+function composingViewFor(tabId: string): EditorView | null {
+  const { activeWysiwygEditor, activeWysiwygTabId } = useEditorStore.getState().active;
+  if (activeWysiwygTabId !== tabId) return null;
+  const view = activeWysiwygEditor?.view;
+  return view && isCompositionInProgress(view) ? view : null;
+}
 
 /**
  * Apply the reaction policy for a modify-like event.
@@ -70,6 +91,16 @@ export function applyModifyPolicy(
     if (diskContent !== unflushed.lastDiskContent) {
       useDocumentStore.getState().updateLastDiskContent(tabId, diskContent);
     }
+    return;
+  }
+
+  // Mid-composition the decision waits — see the header. The deferred call
+  // starts over, so it decides on the document as it is then.
+  const composingView = composingViewFor(tabId);
+  if (composingView) {
+    writeWhenCompositionSettles(composingView, () =>
+      applyModifyPolicy(tabId, changedPath, diskContent, queueDirtyChange),
+    );
     return;
   }
 
