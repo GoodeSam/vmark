@@ -13,21 +13,9 @@
       "module": "vite",
       "reason": "Dev-server path traversal in the website's VitePress toolchain. Same non-shipped dev-server surface as GHSA-fx2h-pf6j-xcff."
     },
-    "GHSA-5p2g-fcmc-qvqq": {
-      "module": "image-size",
-      "reason": "Same unfixed pptxgenjs>image-size chain as GHSA-w3rx-r6r6-pgpr, with the same unproven reachability."
-    },
     "GHSA-67mh-4wv8-2f99": {
       "module": "esbuild",
       "reason": "esbuild dev server, reached through website>vitepress>vite. Build-time only; no esbuild server runs in the app or in CI's built output."
-    },
-    "GHSA-73wf-gq98-2v4g": {
-      "module": "browserslist",
-      "reason": "Same dev-only Stryker/Babel chain as GHSA-c83g-rgw3-j3cx."
-    },
-    "GHSA-c83g-rgw3-j3cx": {
-      "module": "browserslist",
-      "reason": "Reached through @stryker-mutator/core>@babel/core. Dev-time transform only; inputs are this repo's own browserslist config."
     },
     "GHSA-fx2h-pf6j-xcff": {
       "module": "vite",
@@ -40,10 +28,6 @@
     "GHSA-v6wh-96g9-6wx3": {
       "module": "vite",
       "reason": "launch-editor UNC handling reachable only from Vite's dev-server error overlay in the website toolchain. Not shipped."
-    },
-    "GHSA-w3rx-r6r6-pgpr": {
-      "module": "image-size",
-      "reason": "No patched version exists (advisory lists <0.0.0). Reached via server__content>@slidev/cli>pptxgenjs; the 20260906 MCP audit traced Slidev's PPTX path to Playwright-generated PNG buffers and found no executable image-size call in the installed pptxgenjs dist. Re-check when pptxgenjs bumps image-size."
     }
   }
 }
