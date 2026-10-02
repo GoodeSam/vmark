@@ -1,5 +1,5 @@
 /**
- * A hard break directly before inline HTML — keeping its line ending.
+ * A line ending directly before inline HTML — keeping it.
  *
  * Purpose: mdast-util-to-markdown replaces a line ending that comes directly
  * before an inline `html` node with a space, because a tag at the start of a
@@ -7,6 +7,8 @@
  * leaves `\ ` — a literal backslash and a space — or three spaces: the break
  * is gone, and in the backslash spelling a backslash has been added to the
  * text. `text\` followed by `<kbd>…` on the next line is ordinary writing.
+ * After a soft line ending the author's line break becomes a space, and a
+ * literal backslash before it is escaped on that save and not on the next.
  *
  * Most tags cannot do what upstream guards against: only some HTML starts a
  * block that may interrupt a paragraph (`<div>`, `<pre>`, a comment), and
@@ -14,9 +16,9 @@
  * break can be kept.
  *
  * How: upstream decides by node TYPE. Before serializing, an `html` node that
- * follows a `break` and may safely start a line is given another type, with a
- * handler that writes the same text. Upstream then leaves the line ending
- * alone.
+ * follows a line ending — a `break`, or text that ends in one — and may
+ * safely start a line is given another type, with a handler that writes the
+ * same text. Upstream then leaves the line ending alone.
  *
  * Key decisions:
  *   - "May this start a line inside a paragraph?" is asked of the parser, on a
@@ -69,10 +71,16 @@ function canFollowLineEnding(html: string): boolean {
   return answer;
 }
 
+/** True when `previous` is written with a line ending last: a break, or text that ends in one. */
+function endsWithLineEnding(previous: TreeNode | undefined): boolean {
+  if (previous?.type === "break") return true;
+  return previous?.type === "text" && /[\r\n]$/.test(previous.value ?? "");
+}
+
 /**
- * `node` with every inline `html` that follows a `break`, and may keep the
- * line ending between them, retyped as HTML_AFTER_BREAK. Returns `node` itself
- * when nothing below it changes.
+ * `node` with every inline `html` that follows a line ending, and may keep it,
+ * retyped as HTML_AFTER_BREAK. Returns `node` itself when nothing below it
+ * changes.
  */
 export function keepLineEndingsBeforeHtml<T extends TreeNode>(node: T): T {
   const children = node.children;
@@ -84,7 +92,7 @@ export function keepLineEndingsBeforeHtml<T extends TreeNode>(node: T): T {
     let replacement = keepLineEndingsBeforeHtml(child);
     if (
       child.type === "html" &&
-      children[index - 1]?.type === "break" &&
+      endsWithLineEnding(children[index - 1]) &&
       canFollowLineEnding(child.value ?? "")
     ) {
       replacement = { ...child, type: HTML_AFTER_BREAK };

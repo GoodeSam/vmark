@@ -250,6 +250,19 @@ describe("hard-break style — real hard breaks", () => {
       }
     });
 
+    // The same replacement hits a SOFT line ending before a tag: the author's
+    // line break became a space, and a literal backslash before it was escaped
+    // on the first save and not on the second.
+    it.each([
+      ["a tag pair", "line one\n<b>x</b> two\n"],
+      ["a closing tag", "line one\n</b> two\n"],
+      ["text ending in a literal backslash", "C:\\dir\\\\\n<b>x</b>\n"],
+      ["inside a blockquote", "> line one\n> <b>x</b>\n"],
+    ])("keeps a soft line ending before %s", (_label, source) => {
+      expect(roundTrip(source, BACKSLASH)).toBe(source);
+      expect(roundTrip(source, TWO_SPACES)).toBe(source);
+    });
+
     it("does not change the tree it is given", () => {
       const tree = root([paragraph([text("a"), hardBreak, { type: "html", value: "<b>" }, text("b")])]);
       const copy = structuredClone(tree);
