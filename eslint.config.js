@@ -48,6 +48,36 @@ export default tseslint.config(
       ],
     },
   },
+  // The exported reader ships verbatim inside every exported document: a
+  // classic browser script with no imports, so it cannot use the TypeScript
+  // block above. Without a block of its own ESLint matched the file and
+  // applied no rules at all. Types come from `// @ts-check` + JSDoc;
+  // `readerStaticChecks.test.ts` pins both this block and the type-check.
+  {
+    files: ["src/export/reader/vmark-reader.js"],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2020,
+      sourceType: "script",
+      globals: globals.browser,
+    },
+    rules: {
+      "no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "prefer-const": "error",
+      eqeqeq: "error",
+      "no-implicit-globals": "error",
+      // The reader cannot import @/utils/motion, so it carries its own
+      // scrollBehavior(); a literal "smooth" would skip it (R10).
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: 'Property[key.name="behavior"] > Literal[value="smooth"]',
+          message:
+            'Use the reader\'s scrollBehavior() — a literal "smooth" ignores prefers-reduced-motion (R10).',
+        },
+      ],
+    },
+  },
   // The one module that owns the literal.
   {
     files: ["src/utils/motion.ts"],
