@@ -1371,11 +1371,6 @@
       "target": "src/services/assembly/bindHostSettings"
     },
     {
-      "file": "src/plugins/graphviz/graphvizExport.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/graphviz/index"
-    },
-    {
       "file": "src/plugins/imageHandler/imageHandlerToast.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/imageHandler/imageHandlerInsert"
