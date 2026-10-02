@@ -520,6 +520,8 @@
   "about.checking": "Checking…",
   "about.website": "Website",
   "about.github": "GitHub",
+  "about.thirdPartyNotices": "Third-party notices",
+  "about.thirdPartyNoticesFailed": "Could not open the third-party notices",
   "shortcuts.hint": "Click a shortcut to change it.",
   "shortcuts.searchPlaceholder": "Search shortcuts…",
   "shortcuts.export": "Export",

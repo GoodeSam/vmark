@@ -520,6 +520,8 @@
   "about.checking": "检查中...",
   "about.website": "网站",
   "about.github": "GitHub",
+  "about.thirdPartyNotices": "第三方声明",
+  "about.thirdPartyNoticesFailed": "无法打开第三方声明",
   "shortcuts.hint": "单击快捷键以更改它。",
   "shortcuts.searchPlaceholder": "搜索快捷键...",
   "shortcuts.export": "导出",

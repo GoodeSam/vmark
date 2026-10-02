@@ -520,6 +520,8 @@
   "about.checking": "Verifica in corso...",
   "about.website": "Sito web",
   "about.github": "GitHub",
+  "about.thirdPartyNotices": "Note di terze parti",
+  "about.thirdPartyNoticesFailed": "Impossibile aprire le note di terze parti",
   "shortcuts.hint": "Clicca su una scorciatoia per cambiarla.",
   "shortcuts.searchPlaceholder": "Cerca scorciatoie...",
   "shortcuts.export": "Esporta",

@@ -68,6 +68,7 @@ mod tab_transfer;
 mod task;
 mod temp_html;
 mod terminal_transcript;
+mod third_party_notices;
 mod trusted_html; // #1273 opt-in origin-isolated execution for standalone HTML
 mod watcher;
 mod webview_edit;

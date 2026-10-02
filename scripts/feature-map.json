@@ -1427,6 +1427,7 @@
         "src/stores/settingsShortcutLabels.ts",
         "src/hooks/useSettingsSync.ts",
         "src-tauri/src/window_manager/settings_window.rs",
+        "src-tauri/src/third_party_notices.rs",
         "src/stores/settingsStore.browser.test.ts",
         "src/stores/settingsStore.test.ts",
         "src/stores/__tests__/settingsStore.clamp.test.ts",
@@ -1436,7 +1437,8 @@
         "src/stores/settingsStore/defaults.test.ts",
         "src/stores/settingsStore/migrations.test.ts",
         "src/hooks/useSettingsSync.test.ts",
-        "src-tauri/src/window_manager/settings_window.test.rs"
+        "src-tauri/src/window_manager/settings_window.test.rs",
+        "src-tauri/src/third_party_notices.test.rs"
       ],
       "doc": "website/guide/settings.md"
     },

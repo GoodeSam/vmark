@@ -520,6 +520,8 @@
   "about.checking": "Wird geprüft...",
   "about.website": "Website",
   "about.github": "GitHub",
+  "about.thirdPartyNotices": "Hinweise zu Drittanbietern",
+  "about.thirdPartyNoticesFailed": "Die Hinweise zu Drittanbietern konnten nicht geöffnet werden",
   "shortcuts.hint": "Auf ein Tastenkürzel klicken, um es zu ändern.",
   "shortcuts.searchPlaceholder": "Tastenkürzel suchen...",
   "shortcuts.export": "Exportieren",
