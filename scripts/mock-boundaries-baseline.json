@@ -1209,11 +1209,6 @@
       "target": "src/stores/uiStore"
     },
     {
-      "file": "src/services/persistence/renameFile.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/tabStore"
-    },
-    {
       "file": "src/services/persistence/saveToPath.ordering.test.ts",
       "api": "vi.mock",
       "target": "src/stores/documentStore"
@@ -2114,11 +2109,6 @@
       "file": "src/services/persistence/hotExit/restoreTabs.isolation.test.ts",
       "api": "vi.mock",
       "target": "src/services/persistence/hotExit/restoreTabsHelpers"
-    },
-    {
-      "file": "src/services/persistence/renameFile.test.ts",
-      "api": "vi.mock",
-      "target": "src/services/persistence/applyPathReconciliation"
     },
     {
       "file": "src/services/persistence/resilience/_hotExitRestore.grant.test.ts",
