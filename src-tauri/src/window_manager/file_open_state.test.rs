@@ -348,3 +348,76 @@ fn queue_empty_file_paths_is_noop() {
     queue_pending_file_opens(&mut pending, vec![], Some("/a"));
     assert!(pending.is_empty());
 }
+
+// -- queue_launch_file_args (WI-RA7.6) ---------------------------------------
+
+use std::sync::Mutex;
+
+/// A mutex some earlier holder panicked under. `std::sync::Mutex` marks it
+/// poisoned and every later `lock()` returns `Err` — the state a launch must
+/// still queue its files in.
+fn poisoned_state() -> Mutex<FileOpenState> {
+    let state = Mutex::new(FileOpenState::new());
+    let outcome = std::thread::scope(|scope| {
+        scope
+            .spawn(|| {
+                let _guard = state.lock().expect("fresh mutex");
+                panic!("poison the file-open state (expected by this test)");
+            })
+            .join()
+    });
+    assert!(outcome.is_err(), "the holder must have panicked");
+    assert!(state.is_poisoned(), "premise: the mutex is poisoned");
+    state
+}
+
+fn queued(state: &Mutex<FileOpenState>) -> Vec<(String, Option<String>)> {
+    state
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .pending
+        .iter()
+        .map(|open| (open.path.clone(), open.workspace_root.clone()))
+        .collect()
+}
+
+#[test]
+fn launch_file_args_are_queued_with_their_workspace_roots() {
+    let state = Mutex::new(FileOpenState::new());
+    queue_launch_file_args(
+        &state,
+        vec!["/docs/notes/a.md".to_string(), "/b.md".to_string()],
+    );
+    assert_eq!(
+        queued(&state),
+        vec![
+            (
+                "/docs/notes/a.md".to_string(),
+                Some("/docs/notes".to_string())
+            ),
+            // Root-level file: no workspace, so `/` is never opened as one.
+            ("/b.md".to_string(), None),
+        ]
+    );
+}
+
+#[test]
+fn launch_file_args_survive_a_poisoned_state_mutex() {
+    let state = poisoned_state();
+    queue_launch_file_args(&state, vec!["/docs/笔记/日记.md".to_string()]);
+    assert_eq!(
+        queued(&state),
+        vec![(
+            "/docs/笔记/日记.md".to_string(),
+            Some("/docs/笔记".to_string())
+        )],
+        "a poisoned mutex must not drop the file the app was launched to open"
+    );
+}
+
+#[test]
+fn no_launch_file_args_queue_nothing() {
+    let state = Mutex::new(FileOpenState::new());
+    queue_launch_file_args(&state, Vec::new());
+    assert!(queued(&state).is_empty());
+}

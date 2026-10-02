@@ -223,6 +223,31 @@ pub fn mark_ready_and_drain(state: &mut FileOpenState) -> Vec<PendingFileOpen> {
     std::mem::take(&mut state.pending)
 }
 
+/// Queue the openable files a cold launch was handed on its command line
+/// (Windows/Linux: an Explorer double-click starts `vmark <path>`), so the
+/// first window's frontend drains them once it mounts.
+///
+/// Takes the mutex rather than a guard so the poison rule lives here, beside
+/// the queueing: a panic elsewhere while the state was locked must not cost
+/// the user the file they launched the app to open.
+///
+/// Compiled where it runs — macOS receives its opens as `RunEvent::Opened`,
+/// never as argv — and in the tests.
+#[cfg(any(not(target_os = "macos"), test))]
+pub fn queue_launch_file_args(state: &std::sync::Mutex<FileOpenState>, file_args: Vec<String>) {
+    if file_args.is_empty() {
+        return;
+    }
+    let mut state = state.lock().unwrap_or_else(|p| p.into_inner());
+    for path in file_args {
+        let workspace_root = get_workspace_root_for_file(&path);
+        state.pending.push(PendingFileOpen {
+            path,
+            workspace_root,
+        });
+    }
+}
+
 #[cfg(test)]
 #[path = "file_open_state.test.rs"]
 mod tests;

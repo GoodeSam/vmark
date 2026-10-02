@@ -109,20 +109,16 @@ pub(crate) fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::
     #[cfg(not(target_os = "macos"))]
     {
         let file_args = crate::supported_files::filter_supported_args(std::env::args().skip(1));
-
-        if !file_args.is_empty() {
-            if let Ok(mut state) = crate::file_open::FILE_OPEN_STATE.lock() {
-                for path_str in file_args {
-                    crate::allow_fs_read(app.handle(), &path_str);
-                    let workspace_root =
-                        crate::window_manager::get_workspace_root_for_file(&path_str);
-                    state.pending.push(crate::PendingFileOpen {
-                        path: path_str,
-                        workspace_root,
-                    });
-                }
-            }
+        // Grant before queueing, and outside the state lock: the frontend can
+        // only drain the queue after setup returns, so every queued path is
+        // readable by the time it is read.
+        for path_str in &file_args {
+            crate::allow_fs_read(app.handle(), path_str);
         }
+        crate::window_manager::queue_launch_file_args(
+            &crate::file_open::FILE_OPEN_STATE,
+            file_args,
+        );
     }
 
     // Record, once per launch, whether the Knowledge Base could start here:
