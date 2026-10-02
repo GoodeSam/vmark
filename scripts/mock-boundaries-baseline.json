@@ -1311,16 +1311,6 @@
       "target": "server/mcp/src/index"
     },
     {
-      "file": "src/components/Browser/AppTitleBar.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Browser/BrowserChrome"
-    },
-    {
-      "file": "src/components/Browser/AppTitleBar.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Browser/useBrowserWorkspaceState"
-    },
-    {
       "file": "src/components/Browser/BrowserWorkspaceSurface.test.tsx",
       "api": "vi.mock",
       "target": "src/components/Browser/BrowserChrome"
