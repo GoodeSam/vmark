@@ -365,7 +365,7 @@ singleton, not a copy:
 ```js
 // inside webview_execute_js against the dev app
 const { useSettingsStore } = await import("/src/stores/settingsStore.ts");
-useSettingsStore.getState().updateSetting("theme", "solarized");
+useSettingsStore.getState().updateSetting("theme", themeId); // an id from src/theme/themes/
 ```
 
 The same import reaches any store (`tabStore`, `documentStore`) for arranging fixture state.
