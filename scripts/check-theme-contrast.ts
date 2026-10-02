@@ -40,62 +40,21 @@ import type { ThemeTokens } from "../src/theme/tokens";
 import { themeTokensToColors } from "../src/theme/themeColorsAdapter";
 import { computeCoreColorVars, computeModeColorVars } from "../src/theme/legacyModeColors";
 import { isMainModule } from "./lib/isMainModule.mjs";
+import { compositeOver, contrastRatio, parseColor, type RGB, type RGBA } from "./lib/contrastColor";
+import {
+  checkMinimumContrastFloor,
+  compareWithBaseline,
+  type ContrastBaseline,
+  type ContrastFinding,
+} from "./lib/themeContrastBaseline";
 
-type RGBA = [number, number, number, number];
-type RGB = [number, number, number];
-
-export function parseColor(raw: string): RGBA {
-  const s = raw.trim().toLowerCase();
-  if (s === "white") return [255, 255, 255, 1];
-  if (s === "black") return [0, 0, 0, 1];
-  let m = /^#([0-9a-f]{3})$/.exec(s);
-  if (m) {
-    const [r, g, b] = m[1].split("").map((c) => parseInt(c + c, 16));
-    return [r, g, b, 1];
-  }
-  m = /^#([0-9a-f]{6})([0-9a-f]{2})?$/.exec(s);
-  if (m) {
-    const n = parseInt(m[1], 16);
-    const a = m[2] ? parseInt(m[2], 16) / 255 : 1;
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255, a];
-  }
-  m = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/.exec(s);
-  if (m) return [Number(m[1]), Number(m[2]), Number(m[3]), m[4] === undefined ? 1 : Number(m[4])];
-  throw new Error(`unparseable colour "${raw}"`);
-}
-
-export function compositeOver(fg: RGBA, bg: RGBA): RGB {
-  const a = fg[3];
-  return [0, 1, 2].map((i) => Math.round(fg[i] * a + bg[i] * (1 - a))) as unknown as RGB;
-}
-
-function luminance([r, g, b]: RGB): number {
-  const lin = (v: number) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  };
-  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-}
-
-export function contrastRatio(a: RGB, b: RGB): number {
-  const la = luminance(a);
-  const lb = luminance(b);
-  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
-}
-
-export interface ContrastFinding {
-  theme: string;
-  id: string;
-  ratio: number;
-  needed: number;
-  message: string;
-}
-
-export interface ContrastBaseline {
-  failing?: Record<string, string[]>;
-  ansiFloor?: Record<string, { value: number; reason?: string }>;
-  exempt?: Record<string, { id: string; reason?: string }[]>;
-}
+export { compositeOver, contrastRatio, parseColor } from "./lib/contrastColor";
+export {
+  checkMinimumContrastFloor,
+  compareWithBaseline,
+  type ContrastBaseline,
+  type ContrastFinding,
+} from "./lib/themeContrastBaseline";
 
 /** Token paths measured at the 4.5 text floor (C1a). */
 const TEXT_TOKENS: [string, (t: ThemeTokens) => string][] = [
@@ -269,33 +228,6 @@ export function contrastFindings(
     findings.push(...raw.filter((f) => !exemptIds.has(f.id)));
   }
   return { findings, problems };
-}
-
-export function compareWithBaseline(
-  findings: ContrastFinding[],
-  baseline: ContrastBaseline,
-  themeIds: string[],
-): { newFindings: ContrastFinding[]; stale: { theme: string; id: string }[] } {
-  const failing = baseline.failing ?? {};
-  const newFindings = findings.filter((f) => !(failing[f.theme] ?? []).includes(f.id));
-  const stale: { theme: string; id: string }[] = [];
-  for (const [theme, ids] of Object.entries(failing)) {
-    for (const id of ids) {
-      const live = themeIds.includes(theme) && findings.some((f) => f.theme === theme && f.id === id);
-      if (!live) stale.push({ theme, id });
-    }
-  }
-  return { newFindings, stale };
-}
-
-/** D10: the ANSI floors assume xterm lifts foregrounds to ≥ 4.5 at paint time. */
-export function checkMinimumContrastFloor(defaultsSource: string): string | null {
-  const m = /minimumContrastRatio:\s*([\d.]+)/.exec(defaultsSource);
-  if (!m) return "could not find minimumContrastRatio in src/stores/settingsStore/defaults.ts — the ANSI floors rest on it (D10).";
-  if (Number(m[1]) < 4.5) {
-    return `minimumContrastRatio default is ${m[1]} but the ANSI floors in theme-contrast-baseline.json assume >= 4.5 (D10).`;
-  }
-  return null;
 }
 
 const BASELINE_PATH = "scripts/theme-contrast-baseline.json";
