@@ -139,6 +139,16 @@ Owns: `src/utils/{svgSanitize,styleSafety,htmlAllowlists,htmlToMarkdown}.ts`, pr
 - **WI-RA8.4 — the session token is not appended for the external browser.** Audit §2 Low.
 - **WI-RA8.5 — clipboard HTML is parsed with `DOMParser`.** Audit §2 Low.
 
+#### Phase RA1C — MCP bridge and document-lifecycle follow-ups (TS)
+Found by wave-1 lanes outside their ownership.
+
+- **WI-RA1C.1 — a programmatic load does not bump the MCP revision.**
+- **WI-RA1C.2 — the remaining bridge handlers use the shared tab guard and payload parse.**
+- **WI-RA1C.3 — genie `fillTemplate` resolves in one pass and never interprets `$` patterns in content.**
+- **WI-RA1C.4 — redundant explicit cleanup removed; document-iterating sites reviewed.**
+- **WI-RA1C.5 — Save All and Quit across windows verified; MCP close of a divergent document decided.**
+- **WI-RA1C.6 — `workspace.close` documents every refusal reason.**
+
 #### Phase RA9a — Drifted and duplicated editor plugins (TS)
 Owns: `src/plugins/shared/WysiwygPopupView.ts`, `mathPopup/**`, `codemirror/smartPasteImage.ts`, `imageHandler/**`, `editorPlugins/linkCommands.ts`, `imagePreview/resolveSrc.ts`, `imageView/resolveSrc.ts`, `src/services/media/resolveMediaSrc.ts`, `footnotePopup/tiptapCleanup.ts`, `multiCursor/inputHandling.ts`.
 
