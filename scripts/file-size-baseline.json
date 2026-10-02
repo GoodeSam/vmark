@@ -71,7 +71,7 @@
     "src/components/Editor/WorkflowEditor/__tests__/StepForm.test.tsx": 893,
     "src/components/GeniePicker/GeniePicker.test.tsx": 1278,
     "src/components/Tabs/TabContextMenu.test.tsx": 1480,
-    "src/components/Tabs/useTabContextMenuActions.test.ts": 837,
+    "src/components/Tabs/useTabContextMenuActions.test.ts": 827,
     "src/components/Terminal/TerminalContextMenu.test.tsx": 889,
     "src/components/Terminal/createTerminalInstance.test.ts": 1116,
     "src/components/Terminal/spawnPty.test.ts": 811,

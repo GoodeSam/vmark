@@ -451,7 +451,7 @@ Fai clic destro su una scheda per aprirne il menu. I tasti freccia, Home e Fine 
 | Chiudi altre | Chiude tutte le altre schede non fissate. | Esiste un'altra scheda non fissata |
 | Chiudi schede a destra | Chiude le schede non fissate alla sua destra. | Ne esiste almeno una |
 | Chiudi schede non fissate | Chiude tutte le schede non fissate, compresa questa. | Esiste una scheda non fissata |
-| Chiudi tutto | Chiude tutte le schede tranne quelle fissate, che restano aperte finché non le sblocchi. | Esiste una scheda non fissata |
+| Chiudi tutto | Chiude tutte le schede, comprese quelle fissate. Se verrebbe chiusa una scheda fissata, prima chiede conferma indicando quante sono; annullando non si chiude nulla. | Sempre |
 
 Le chiusure multiple agiscono sulle schede dello spazio di lavoro corrente e le chiudono una alla volta. Ogni scheda con modifiche non salvate chiede prima conferma, e annullare una qualsiasi di queste richieste interrompe le restanti.
 
@@ -460,7 +460,7 @@ Le chiusure multiple agiscono sulle schede dello spazio di lavoro corrente e le 
 Fissa una scheda dal suo menu contestuale per tenerla a portata di mano:
 
 - Si sposta nel gruppo delle schede fissate a sinistra della barra, mostra un'icona a forma di puntina e perde il pulsante di chiusura. Le schede non possono essere trascinate oltre il confine tra schede fissate e non fissate (*"Le schede fissate rimangono a sinistra. Rilascio bloccato."*), e una scheda fissata non può essere trascinata fuori dalla sua finestra.
-- Non può essere chiusa in alcun modo — `Mod + W`, clic centrale, **Chiudi** o una chiusura multipla — finché non la sblocchi; il tentativo mostra *"Sblocca prima di chiudere"*.
+- Non può essere chiusa in alcun modo — `Mod + W`, clic centrale, **Chiudi** o una chiusura multipla — finché non la sblocchi; il tentativo mostra *"Sblocca prima di chiudere"*. L'unica eccezione è **Chiudi tutto**, che dopo la tua conferma chiude anche le schede fissate.
 - Chiudere una finestra che contiene schede fissate chiede conferma — *"Questa finestra ha N schede fissate. Chiudere comunque?"* — a meno che non sia già stata mostrata una finestra di salvataggio.
 - Una scheda resta fissata se la sposti in un'altra finestra o in un altro spazio di lavoro e dopo un riavvio per aggiornamento, ma non quando esci da VMark: le schede riaperte all'avvio successivo non sono fissate.
 

@@ -451,7 +451,7 @@ Right-click a tab to open its menu. Arrow keys, Home and End move through it; En
 | Close Others | Closes every other unpinned tab. | Another unpinned tab exists |
 | Close Tabs to the Right | Closes the unpinned tabs to its right. | One exists |
 | Close All Unpinned Tabs | Closes every unpinned tab, this one included. | An unpinned tab exists |
-| Close All | Closes every tab except pinned ones, which stay open until you unpin them. | An unpinned tab exists |
+| Close All | Closes every tab, pinned ones included. If a pinned tab would close, it asks first and names how many; cancelling closes nothing. | Always |
 
 Bulk closes act on the tabs of the current workspace and close them one at a time. Each tab with unsaved changes asks first, and cancelling any of those prompts stops the rest.
 
@@ -460,7 +460,7 @@ Bulk closes act on the tabs of the current workspace and close them one at a tim
 Pin a tab from its context menu to keep it at hand:
 
 - It moves to the pinned group at the left of the strip, shows a pin icon, and loses its close button. Tabs cannot be dragged across the boundary between pinned and unpinned tabs (*"Pinned tabs stay at the left. Drop blocked."*), and a pinned tab cannot be dragged out of its window.
-- It cannot be closed by any means — `Mod + W`, middle-click, **Close**, or a bulk close — until you unpin it; trying shows *"Unpin tab before closing"*.
+- It cannot be closed by any means — `Mod + W`, middle-click, **Close**, or a bulk close — until you unpin it; trying shows *"Unpin tab before closing"*. The one exception is **Close All**, which closes pinned tabs too once you confirm.
 - Closing a window that holds pinned tabs asks for confirmation — *"This window has N pinned tabs. Close anyway?"* — unless a save dialog was already shown.
 - A pin survives moving the tab to another window or workspace and an update restart, but not quitting VMark: tabs reopened at the next launch are unpinned.
 

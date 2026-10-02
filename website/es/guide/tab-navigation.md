@@ -451,7 +451,7 @@ Haz clic derecho en una pestaña para abrir su menú. Las teclas de flecha, Inic
 | Cerrar otras | Cierra todas las demás pestañas no fijadas. | Existe otra pestaña no fijada |
 | Cerrar pestañas a la derecha | Cierra las pestañas no fijadas situadas a su derecha. | Existe alguna |
 | Cerrar pestañas no fijadas | Cierra todas las pestañas no fijadas, incluida esta. | Existe una pestaña no fijada |
-| Cerrar todo | Cierra todas las pestañas salvo las fijadas, que siguen abiertas hasta que las desfijes. | Existe una pestaña no fijada |
+| Cerrar todo | Cierra todas las pestañas, incluidas las fijadas. Si se va a cerrar alguna pestaña fijada, primero pide confirmación e indica cuántas son; al cancelar no se cierra nada. | Siempre |
 
 Los cierres en bloque actúan sobre las pestañas del espacio de trabajo actual y las cierran de una en una. Cada pestaña con cambios sin guardar pregunta primero, y cancelar cualquiera de esas preguntas detiene el resto.
 
@@ -460,7 +460,7 @@ Los cierres en bloque actúan sobre las pestañas del espacio de trabajo actual 
 Fija una pestaña desde su menú contextual para tenerla a mano:
 
 - Se mueve al grupo de pestañas fijadas a la izquierda de la tira, muestra un icono de chincheta y pierde su botón de cierre. Las pestañas no se pueden arrastrar a través del límite entre pestañas fijadas y no fijadas (*«Las pestañas fijadas permanecen a la izquierda. Soltar bloqueado.»*), y una pestaña fijada no se puede arrastrar fuera de su ventana.
-- No se puede cerrar por ningún medio — `Mod + W`, clic central, **Cerrar** o un cierre en bloque — hasta que la desfijes; al intentarlo se muestra *«Desanclar antes de cerrar»*.
+- No se puede cerrar por ningún medio — `Mod + W`, clic central, **Cerrar** o un cierre en bloque — hasta que la desfijes; al intentarlo se muestra *«Desanclar antes de cerrar»*. La única excepción es **Cerrar todo**, que también cierra las pestañas fijadas una vez que confirmas.
 - Cerrar una ventana que contiene pestañas fijadas pide confirmación — *«Esta ventana tiene N pestañas fijadas. ¿Cerrar de todos modos?»* — salvo que ya se haya mostrado un diálogo de guardado.
 - Una pestaña fijada sigue fijada al moverla a otra ventana o espacio de trabajo y tras un reinicio por actualización, pero no al salir de VMark: las pestañas que se vuelven a abrir en el siguiente inicio no están fijadas.
 
