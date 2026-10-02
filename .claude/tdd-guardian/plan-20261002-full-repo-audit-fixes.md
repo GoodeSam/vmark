@@ -293,6 +293,16 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 - **WI-RA20.5 — the untitled fallback filename is translated.**
 - **WI-RA20.6 — the AI response listener is released on cancel.**
 
+#### Phase RA21 — BOM lost on open, and defects the journeys found
+- **WI-RA21.1 — a file's BOM is detected from bytes at every open path.**
+- **WI-RA21.2 — the filesystem test fake matches the real plugin.**
+- **WI-RA21.3 — Replace keeps its place and never re-matches inserted text.**
+- **WI-RA21.4 — the last requested language wins.**
+- **WI-RA21.5 — persisted settings choices survive restart and cross-window reset.**
+- **WI-RA21.6 — a skipped update is not announced.**
+- **WI-RA21.7 — PDF export failure states and accessible names.**
+- **WI-RA21.8 — an unsaved document has no export containment root.**
+
 ### Wave 4 (cross-cutting, strictly serial, after everything else merged)
 
 Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), RA12B, RA17F, RA17E, RA17G, then the DoD script and the final gate pass. Ownership for wave 3 and 4 lanes is in each lane brief.
