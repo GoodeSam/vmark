@@ -358,7 +358,13 @@ errors:
 
   # === CLI install ===
   cli.noFile: "Installation appeared to succeed but the file was not created."
-  cli.mismatch: "Installation completed but file content does not match expected script."
+  cli.mismatch: "The installed command did not match the expected script, so it was removed."
+  cli.mismatchNotRemoved: "The file at “%{path}” does not match the expected script and could not be removed. Delete it manually."
+
+  # === External editor ===
+  externalEditor.unknownName: "“%{name}” is not an editor VMark knows by name — enter the full path to the editor instead"
+  externalEditor.notAnEditor: "“%{name}” runs the files it is given instead of opening them, so it cannot be the external editor"
+  externalEditor.notPlainPath: "The external editor must be an editor name or a full path, with no “..” and no trailing slash"
 
   # === Genies ===
   genie.pathBlocked: "Genie path is outside allowed directories"

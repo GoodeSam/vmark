@@ -357,7 +357,13 @@ errors:
 
   # === CLI install ===
   cli.noFile: "Installation schien erfolgreich zu sein, aber die Datei wurde nicht erstellt."
-  cli.mismatch: "Installation abgeschlossen, aber Dateiinhalt stimmt nicht mit erwartetem Skript überein."
+  cli.mismatch: "Der installierte Befehl entsprach nicht dem erwarteten Skript und wurde deshalb entfernt."
+  cli.mismatchNotRemoved: "Die Datei „%{path}“ entspricht nicht dem erwarteten Skript und konnte nicht entfernt werden. Bitte löschen Sie sie manuell."
+
+  # === External editor ===
+  externalEditor.unknownName: "„%{name}“ ist kein Editor, den VMark dem Namen nach kennt – geben Sie stattdessen den vollständigen Pfad zum Editor an"
+  externalEditor.notAnEditor: "„%{name}“ führt die übergebenen Dateien aus, statt sie zu öffnen, und kann daher nicht als externer Editor verwendet werden"
+  externalEditor.notPlainPath: "Der externe Editor muss ein Editorname oder ein vollständiger Pfad sein, ohne „..“ und ohne abschließenden Schrägstrich"
 
   # === Genies ===
   genie.pathBlocked: "Genie-Pfad liegt außerhalb der erlaubten Verzeichnisse"

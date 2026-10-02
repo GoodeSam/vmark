@@ -357,7 +357,13 @@ errors:
 
   # === CLI install ===
   cli.noFile: "L'installation semble avoir réussi mais le fichier n'a pas été créé."
-  cli.mismatch: "Installation terminée, mais le contenu du fichier ne correspond pas au script attendu."
+  cli.mismatch: "La commande installée ne correspondait pas au script attendu ; elle a donc été supprimée."
+  cli.mismatchNotRemoved: "Le fichier « %{path} » ne correspond pas au script attendu et n’a pas pu être supprimé. Veuillez le supprimer manuellement."
+
+  # === External editor ===
+  externalEditor.unknownName: "« %{name} » n’est pas un éditeur que VMark reconnaît par son nom : saisissez plutôt le chemin complet de l’éditeur"
+  externalEditor.notAnEditor: "« %{name} » exécute les fichiers qu’il reçoit au lieu de les ouvrir ; il ne peut donc pas servir d’éditeur externe"
+  externalEditor.notPlainPath: "L’éditeur externe doit être un nom d’éditeur ou un chemin complet, sans « .. » ni barre oblique finale"
 
   # === Genies ===
   genie.pathBlocked: "Le chemin Genie se trouve en dehors des répertoires autorisés"
