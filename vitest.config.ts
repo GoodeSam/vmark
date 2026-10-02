@@ -1,6 +1,16 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
-import { LIVENESS_TIMEOUT_MS, maxWorkers, sourceAliases, suffixGlob, testGlob } from "./vitest.shared.ts";
+import {
+  LIVENESS_TIMEOUT_MS,
+  maxWorkers,
+  pinTestClockEnvironment,
+  sourceAliases,
+  suffixGlob,
+  testGlob,
+} from "./vitest.shared.ts";
+
+// Before `defineConfig`, so every forked worker inherits it; see the function.
+pinTestClockEnvironment();
 
 /**
  * Worker count, extension list and the measurements behind them live in

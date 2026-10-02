@@ -176,3 +176,27 @@ export function sourceAliases(rootDir: string): Record<string, string> {
     "@shared": resolve(rootDir, "./src/shared"),
   };
 }
+
+/** Time zone every app-tier test runs in. UTC matches the CI runners. */
+export const TEST_TIME_ZONE = "UTC";
+
+/** Default locale every app-tier test formats with (ICU's default locale). */
+export const TEST_LOCALE = "en-US";
+
+/**
+ * Pin the time zone and default locale for the worker processes.
+ *
+ * Unpinned, a test that formats a date or a number reads the developer's
+ * machine settings, so an assertion on the actual string passes on one
+ * machine and fails on the next. This must run in the MAIN process, before
+ * any worker is forked: workers inherit the environment at spawn, and ICU
+ * reads its default locale from `LC_ALL`/`LANG` once per process — setting
+ * it later, from a setup file inside the worker, changes nothing.
+ * `src/test/clockEnvironmentPin.test.ts` asserts the pin reaches the workers.
+ */
+export function pinTestClockEnvironment(env: NodeJS.ProcessEnv = process.env): void {
+  const posixLocale = `${TEST_LOCALE.replace("-", "_")}.UTF-8`;
+  env.TZ = TEST_TIME_ZONE;
+  env.LC_ALL = posixLocale;
+  env.LANG = posixLocale;
+}
