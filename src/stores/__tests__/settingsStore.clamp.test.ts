@@ -122,7 +122,7 @@ describe("historyMaxAgeDays has a floor of one day", () => {
     useSettingsStore.persist.rehydrate();
 
     const { maxAgeDays } = buildHistorySettings(useSettingsStore.getState().general);
-    const now = Date.now();
+    const now = Date.UTC(2026, 0, 2, 3, 4, 5);
     const cutoff = now - maxAgeDays * 24 * 60 * 60 * 1000;
 
     // The prune keeps `timestamp >= cutoff`; a snapshot stamped a moment ago
