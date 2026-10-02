@@ -6,7 +6,5 @@
   "assertion in check-scripts-parity.test.mjs; an entry whose gate gained a",
   "test (or left check:static) is stale and fails too."
  ],
- "untested": [
-  "check-test-timer-isolation.mjs"
- ]
+ "untested": []
 }
