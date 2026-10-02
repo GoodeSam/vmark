@@ -9,9 +9,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock imeGuard before importing the extension
 const mockFlushProseMirrorCompositionQueue = vi.fn();
-const mockGetImeCleanupPrefixLength = vi.fn(() => 0);
-const mockIsImeKeyEvent = vi.fn(() => false);
-const mockIsProseMirrorInCompositionGrace = vi.fn(() => false);
+const mockGetImeCleanupPrefixLength = vi.fn((..._args: unknown[]): number | null => 0);
+const mockIsImeKeyEvent = vi.fn((..._args: unknown[]) => false);
+const mockIsProseMirrorInCompositionGrace = vi.fn((..._args: unknown[]) => false);
 const mockMarkProseMirrorCompositionEnd = vi.fn();
 
 vi.mock("@/utils/imeGuard", () => ({
@@ -25,7 +25,7 @@ vi.mock("@/utils/imeGuard", () => ({
 }));
 
 // Mock splitBlockFix
-const mockFixCompositionSplitBlock = vi.fn(() => null);
+const mockFixCompositionSplitBlock = vi.fn((..._args: unknown[]): unknown => null);
 vi.mock("../splitBlockFix", () => ({
   fixCompositionSplitBlock: (...args: unknown[]) => mockFixCompositionSplitBlock(...args),
 }));
@@ -92,25 +92,25 @@ describe("compositionGuardExtension addProseMirrorPlugins", () => {
 
   it("plugin has filterTransaction", () => {
     const plugins = createPlugins();
-    const plugin = plugins[0] as { spec: { filterTransaction?: unknown } };
+    const plugin = plugins[0] as unknown as { spec: { filterTransaction?: unknown } };
     expect(plugin.spec.filterTransaction).toBeDefined();
   });
 
   it("plugin has appendTransaction", () => {
     const plugins = createPlugins();
-    const plugin = plugins[0] as { spec: { appendTransaction?: unknown } };
+    const plugin = plugins[0] as unknown as { spec: { appendTransaction?: unknown } };
     expect(plugin.spec.appendTransaction).toBeDefined();
   });
 
   it("plugin has handleKeyDown prop", () => {
     const plugins = createPlugins();
-    const plugin = plugins[0] as { props: { handleKeyDown?: unknown } };
+    const plugin = plugins[0] as unknown as { props: { handleKeyDown?: unknown } };
     expect(plugin.props.handleKeyDown).toBeDefined();
   });
 
   it("plugin has handleDOMEvents prop", () => {
     const plugins = createPlugins();
-    const plugin = plugins[0] as { props: { handleDOMEvents?: Record<string, unknown> } };
+    const plugin = plugins[0] as unknown as { props: { handleDOMEvents?: Record<string, unknown> } };
     expect(plugin.props.handleDOMEvents).toBeDefined();
     expect(plugin.props.handleDOMEvents!.compositionstart).toBeDefined();
     expect(plugin.props.handleDOMEvents!.compositionupdate).toBeDefined();
@@ -133,7 +133,7 @@ describe("compositionGuard handleKeyDown", () => {
       type: undefined,
       parent: undefined,
     } as never);
-    return (plugins[0] as { props: { handleKeyDown: (view: unknown, event: unknown) => boolean } }).props.handleKeyDown;
+    return (plugins[0] as unknown as { props: { handleKeyDown: (view: unknown, event: unknown) => boolean } }).props.handleKeyDown;
   }
 
   it("returns true (block) for IME key events", () => {
@@ -174,7 +174,7 @@ describe("compositionGuard Korean Hangul deferred Enter", () => {
       type: undefined,
       parent: undefined,
     } as never);
-    const plugin = plugins[0] as {
+    const plugin = plugins[0] as unknown as {
       props: {
         handleKeyDown: (view: unknown, event: unknown) => boolean;
         handleDOMEvents: {
@@ -268,7 +268,7 @@ describe("compositionGuard Korean Hangul deferred Enter", () => {
       type: undefined,
       parent: undefined,
     } as never);
-    const plugin = plugins[0] as {
+    const plugin = plugins[0] as unknown as {
       props: {
         handleKeyDown: (view: unknown, event: unknown) => boolean;
         handleDOMEvents: {
@@ -308,7 +308,7 @@ describe("compositionGuard filterTransaction", () => {
       type: undefined,
       parent: undefined,
     } as never);
-    return (plugins[0] as { spec: { filterTransaction: (tr: unknown) => boolean } }).spec.filterTransaction;
+    return (plugins[0] as unknown as { spec: { filterTransaction: (tr: unknown) => boolean } }).spec.filterTransaction;
   }
 
   function getDomEvents() {
@@ -320,7 +320,7 @@ describe("compositionGuard filterTransaction", () => {
       type: undefined,
       parent: undefined,
     } as never);
-    const plugin = plugins[0] as {
+    const plugin = plugins[0] as unknown as {
       props: {
         handleDOMEvents: {
           compositionstart: (view: unknown) => boolean;
@@ -356,13 +356,15 @@ describe("compositionGuard filterTransaction", () => {
 
   it("allows doc-changing transactions during composing", () => {
     const { compositionstart, filterTransaction } = getDomEvents();
-    const mockView = { state: { selection: { from: 0 } } };
+    // The transaction is built on the document the composition started in.
+    const before = { childCount: 1 };
+    const mockView = { state: { selection: { from: 0 }, doc: before } };
     compositionstart(mockView);
 
     const tr = {
       getMeta: () => undefined,
       docChanged: true,
-      before: { childCount: 1 },
+      before,
       doc: { childCount: 1, content: { size: 10 } },
     };
     expect(filterTransaction(tr)).toBe(true);
@@ -431,7 +433,7 @@ describe("compositionGuard compositionstart", () => {
       type: undefined,
       parent: undefined,
     } as never);
-    return (plugins[0] as {
+    return (plugins[0] as unknown as {
       props: {
         handleDOMEvents: Record<string, (view: unknown, event?: unknown) => boolean>;
       };
@@ -507,7 +509,7 @@ describe("compositionGuard compositionupdate", () => {
       type: undefined,
       parent: undefined,
     } as never);
-    return (plugins[0] as {
+    return (plugins[0] as unknown as {
       props: {
         handleDOMEvents: Record<string, (view: unknown, event?: unknown) => boolean>;
       };
@@ -535,7 +537,7 @@ describe("compositionGuard compositionend", () => {
       type: undefined,
       parent: undefined,
     } as never);
-    return (plugins[0] as {
+    return (plugins[0] as unknown as {
       props: {
         handleDOMEvents: Record<string, (view: unknown, event?: unknown) => boolean>;
       };
@@ -599,7 +601,7 @@ describe("compositionGuard blur", () => {
       type: undefined,
       parent: undefined,
     } as never);
-    return (plugins[0] as {
+    return (plugins[0] as unknown as {
       props: {
         handleDOMEvents: Record<string, (view: unknown, event?: unknown) => boolean>;
       };
