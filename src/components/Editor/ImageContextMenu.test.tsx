@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   position: { x: 100, y: 100 } as { x: number; y: number } | null,
   closeMenu: vi.fn(),
   isImeKeyEvent: vi.fn((..._args: unknown[]) => false),
-  getRevealInFileManagerLabel: vi.fn(() => "Reveal in Finder"),
+  revealInFileManagerKey: vi.fn((): string => "sidebar:contextMenu.revealInFinder"),
 }));
 
 vi.mock("@/stores/imageContextMenuStore", () => {
@@ -43,7 +43,7 @@ vi.mock("@/utils/imeGuard", () => ({
 }));
 
 vi.mock("@/utils/pathUtils", () => ({
-  getRevealInFileManagerLabel: () => mocks.getRevealInFileManagerLabel(),
+  revealInFileManagerKey: () => mocks.revealInFileManagerKey(),
 }));
 
 vi.mock("@/components/Sidebar/FileExplorer/ContextMenu.css", () => ({}));
@@ -60,7 +60,7 @@ describe("ImageContextMenu", () => {
     onAction = vi.fn<(action: string) => void>();
     mocks.isOpen = true;
     mocks.position = { x: 100, y: 100 };
-    mocks.getRevealInFileManagerLabel.mockReturnValue("Reveal in Finder");
+    mocks.revealInFileManagerKey.mockReturnValue("sidebar:contextMenu.revealInFinder");
     mocks.isImeKeyEvent.mockReturnValue(false);
   });
 
@@ -107,12 +107,10 @@ describe("ImageContextMenu", () => {
 
   // ── Platform-specific label ──────────────────────────────────────
 
-  it("uses platform-appropriate reveal label", () => {
-    mocks.getRevealInFileManagerLabel.mockReturnValue("Show in Explorer");
-    const { rerender } = render(<ImageContextMenu onAction={onAction} />);
-    // The label is memoized on first render, so we need a fresh mount
-    rerender(<ImageContextMenu onAction={onAction} />);
-    // On macOS test env it will use whatever the mock returns
+  // WI-RA19.4 — the label is the platform's translation key, translated.
+  it("uses the translated platform-appropriate reveal label", () => {
+    mocks.revealInFileManagerKey.mockReturnValue("sidebar:contextMenu.showInExplorer");
+    render(<ImageContextMenu onAction={onAction} />);
     expect(screen.getByText("Show in Explorer")).toBeInTheDocument();
   });
 
@@ -141,8 +139,7 @@ describe("ImageContextMenu", () => {
 
   it("calls onAction with 'revealInFinder' on Reveal click", () => {
     render(<ImageContextMenu onAction={onAction} />);
-    // The label comes from the mock — match whatever it returns
-    const revealItem = screen.getByText(mocks.getRevealInFileManagerLabel());
+    const revealItem = screen.getByText("Reveal in Finder");
     fireEvent.click(revealItem);
     expect(onAction).toHaveBeenCalledWith("revealInFinder");
     expect(mocks.closeMenu).toHaveBeenCalled();

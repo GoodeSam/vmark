@@ -271,5 +271,19 @@
   "exportError.rollbackRestored": "그 밖에는 아무것도 변경되지 않았으며, 폴더는 이전 내용으로 복원되었습니다.",
   "exportError.backupKeptAt": "{{path}} (이전 내용은 {{backup}}에 보관되어 있습니다: {{reason}})",
   "exportError.backupGone": "{{path}} ({{backup}}의 백업도 사라졌습니다: {{reason}})",
-  "exportError.listItem": "“{{item}}”"
+  "exportError.listItem": "“{{item}}”",
+  "unsavedChanges.buttonSave": "저장",
+  "unsavedChanges.buttonDontSave": "저장 안 함",
+  "unsavedChanges.buttonSaveAll": "모두 저장",
+  "unsavedChanges.buttonCancel": "취소",
+  "fileError.fileExists": "“{{name}}” 파일이 이미 있습니다.",
+  "fileError.folderExists": "“{{name}}” 폴더가 이미 있습니다.",
+  "fileError.createFailed": "“{{name}}”을(를) 만들지 못했습니다.",
+  "fileError.renameFailed": "“{{name}}”의 이름을 바꾸지 못했습니다.",
+  "fileError.deleteFailed": "“{{name}}”을(를) 삭제하지 못했습니다.",
+  "fileError.moveFailed": "“{{name}}”을(를) 이동하지 못했습니다.",
+  "fileError.duplicateFailed": "“{{name}}”을(를) 복제하지 못했습니다.",
+  "fileError.copyFailed": "클립보드에 복사하지 못했습니다.",
+  "fileError.exportFailed": "{{format}}(으)로 내보내지 못했습니다.",
+  "fileError.tooManyCopies": "“{{name}}”의 사본이 너무 많습니다. 먼저 일부를 삭제하세요."
 }

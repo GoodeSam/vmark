@@ -38,6 +38,7 @@ import { useDismissOnOutsideOrEscape } from "@/hooks/useDismissOnOutsideOrEscape
 import { useMenuRovingFocus } from "@/hooks/useMenuRovingFocus";
 import { useMenuPosition } from "@/hooks/useMenuPosition";
 import { canOpenTerminalHere } from "@/services/terminal/openTerminalHere";
+import { revealInFileManagerKey } from "@/utils/pathUtils";
 import "./ContextMenu.css";
 
 /** Determines which menu items are shown: file actions, folder actions, or empty-area actions. */
@@ -134,14 +135,6 @@ function getMenuItems(
   }
 }
 
-/** Platform-appropriate translation key for the "reveal in file manager" action. */
-function revealLabelKey(): string {
-  const platform = typeof navigator !== "undefined" ? navigator.platform.toLowerCase() : "";
-  if (platform.includes("mac")) return "contextMenu.revealInFinder";
-  if (platform.includes("win")) return "contextMenu.showInExplorer";
-  return "contextMenu.showInFileManager";
-}
-
 interface ContextMenuProps {
   type: ContextMenuType;
   position: ContextMenuPosition;
@@ -158,7 +151,7 @@ export function ContextMenu({ type, position, onAction, onClose }: ContextMenuPr
   // Resolve platform-appropriate "reveal in file manager" label via translation keys.
   // The React Compiler auto-memoizes the component, so no manual useMemo is needed —
   // and a useMemo reading the `navigator` global can't be preserved by the compiler (#1063).
-  const revealLabel = t(revealLabelKey());
+  const revealLabel = t(revealInFileManagerKey());
 
   const menuLabels = useMemo(() => ({
     open: t("contextMenu.open"),

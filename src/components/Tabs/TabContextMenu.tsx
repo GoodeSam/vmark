@@ -47,7 +47,7 @@ import { tabFilePath, type Tab } from "@/stores/tabStore";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { isImeKeyEvent } from "@/utils/imeGuard";
 import { useDismissOnOutsideOrEscape } from "@/hooks/useDismissOnOutsideOrEscape";
-import { getRevealInFileManagerLabel } from "@/utils/pathUtils";
+import { revealInFileManagerKey } from "@/utils/pathUtils";
 import { tabContextError } from "@/utils/debug";
 import { useTabContextMenuActions, type TabMenuItem } from "./useTabContextMenuActions";
 import { useMenuPosition, type ContextMenuPosition } from "./useMenuPosition";
@@ -97,7 +97,7 @@ export function TabContextMenu({ tab, position, windowLabel, onClose }: TabConte
   const workspaceRoot = useWorkspaceStore((state) => state.rootPath);
   const closeShortcut = useShortcutsStore((state) => state.getShortcut("closeFile"));
 
-  const revealLabel = useMemo(() => getRevealInFileManagerLabel(), []);
+  const revealLabel = t(revealInFileManagerKey());
   const closeShortcutLabel = useMemo(() => formatKeyForDisplay(closeShortcut), [closeShortcut]);
   const filePath = tabFilePath(tab) ?? doc?.filePath ?? null;
 

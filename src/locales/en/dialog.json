@@ -271,5 +271,19 @@
   "exportError.rollbackRestored": "Nothing else was changed — the folder was restored to its previous contents.",
   "exportError.backupKeptAt": "{{path}} (its previous contents are kept at {{backup}}: {{reason}})",
   "exportError.backupGone": "{{path}} (its backup at {{backup}} is gone too: {{reason}})",
-  "exportError.listItem": "“{{item}}”"
+  "exportError.listItem": "“{{item}}”",
+  "unsavedChanges.buttonSave": "Save",
+  "unsavedChanges.buttonDontSave": "Don't Save",
+  "unsavedChanges.buttonSaveAll": "Save All",
+  "unsavedChanges.buttonCancel": "Cancel",
+  "fileError.fileExists": "A file named “{{name}}” already exists.",
+  "fileError.folderExists": "A folder named “{{name}}” already exists.",
+  "fileError.createFailed": "Failed to create “{{name}}”.",
+  "fileError.renameFailed": "Failed to rename “{{name}}”.",
+  "fileError.deleteFailed": "Failed to delete “{{name}}”.",
+  "fileError.moveFailed": "Failed to move “{{name}}”.",
+  "fileError.duplicateFailed": "Failed to duplicate “{{name}}”.",
+  "fileError.copyFailed": "Failed to copy to clipboard.",
+  "fileError.exportFailed": "Failed to export to {{format}}.",
+  "fileError.tooManyCopies": "Too many copies of “{{name}}” exist. Please delete some first."
 }

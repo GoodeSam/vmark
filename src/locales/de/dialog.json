@@ -271,5 +271,19 @@
   "exportError.rollbackRestored": "Sonst wurde nichts verändert – der Ordner wurde auf seinen vorherigen Inhalt zurückgesetzt.",
   "exportError.backupKeptAt": "{{path}} (der vorherige Inhalt liegt unter {{backup}}: {{reason}})",
   "exportError.backupGone": "{{path}} (auch die Sicherung unter {{backup}} fehlt: {{reason}})",
-  "exportError.listItem": "„{{item}}“"
+  "exportError.listItem": "„{{item}}“",
+  "unsavedChanges.buttonSave": "Speichern",
+  "unsavedChanges.buttonDontSave": "Nicht speichern",
+  "unsavedChanges.buttonSaveAll": "Alle speichern",
+  "unsavedChanges.buttonCancel": "Abbrechen",
+  "fileError.fileExists": "Eine Datei namens „{{name}}“ existiert bereits.",
+  "fileError.folderExists": "Ein Ordner namens „{{name}}“ existiert bereits.",
+  "fileError.createFailed": "„{{name}}“ konnte nicht erstellt werden.",
+  "fileError.renameFailed": "„{{name}}“ konnte nicht umbenannt werden.",
+  "fileError.deleteFailed": "„{{name}}“ konnte nicht gelöscht werden.",
+  "fileError.moveFailed": "„{{name}}“ konnte nicht verschoben werden.",
+  "fileError.duplicateFailed": "„{{name}}“ konnte nicht dupliziert werden.",
+  "fileError.copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen.",
+  "fileError.exportFailed": "Export nach {{format}} fehlgeschlagen.",
+  "fileError.tooManyCopies": "Es gibt zu viele Kopien von „{{name}}“. Bitte löschen Sie zuerst einige."
 }
