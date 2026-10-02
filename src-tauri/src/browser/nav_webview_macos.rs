@@ -24,6 +24,8 @@ pub(super) fn observed_web_view(object: &AnyObject) -> Option<&WKWebView> {
 }
 
 pub(super) fn current_url(web_view: &WKWebView) -> String {
+    // SAFETY: a property read on a live webview; `WKWebView` is a
+    // main-thread-only type, so holding `&WKWebView` means this is that thread.
     unsafe { web_view.URL() }
         .and_then(|u| u.absoluteString())
         .map(|s| s.to_string())
@@ -31,6 +33,8 @@ pub(super) fn current_url(web_view: &WKWebView) -> String {
 }
 
 pub(super) fn current_title(web_view: &WKWebView) -> String {
+    // SAFETY: as `current_url` — a property read on a live webview on the main
+    // thread.
     unsafe { web_view.title() }
         .map(|s| s.to_string())
         .unwrap_or_default()
@@ -41,6 +45,8 @@ pub(super) fn current_title(web_view: &WKWebView) -> String {
 /// The omnibox disables its history controls from these, so a stale mirror would be
 /// worse than no state at all — hence the direct read.
 pub(super) fn history_state(web_view: &WKWebView) -> (bool, bool) {
+    // SAFETY: as `current_url` — two property reads on a live webview on the
+    // main thread.
     unsafe { (web_view.canGoBack(), web_view.canGoForward()) }
 }
 

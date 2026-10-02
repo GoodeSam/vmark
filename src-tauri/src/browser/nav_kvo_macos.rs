@@ -80,7 +80,7 @@ impl NavDelegate {
         }
         pump(web_view);
         let saw_start = ivars.starts.get() != starts_before;
-        let still_loading = unsafe { web_view.isLoading() };
+        let still_loading = super::super::super::webkit_calls::is_loading(web_view);
         match owned.settle(&ivars.loading, saw_start, still_loading) {
             Settlement::CrossDocument | Settlement::Pending => {}
             Settlement::SameDocument { observe_now } => {

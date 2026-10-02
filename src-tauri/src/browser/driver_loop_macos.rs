@@ -108,7 +108,7 @@ pub(super) fn drive_load(webview: &WKWebView, run_loop: &NSRunLoop) {
     let start = Instant::now();
     loop {
         pump(run_loop, 0.1);
-        let loading = unsafe { webview.isLoading() };
+        let loading = super::webkit_calls::is_loading(webview);
         if progress.observe(start.elapsed(), loading) {
             return;
         }

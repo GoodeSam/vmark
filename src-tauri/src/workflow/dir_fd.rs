@@ -122,9 +122,9 @@ impl Dir {
             )
         };
         let fd = checked_fd(fd)?;
-        // SAFETY: `fd` is a fresh, valid descriptor this call just took
-        // ownership of, and nothing else holds it.
         Ok(Self {
+            // SAFETY: `fd` is a fresh, valid descriptor this call just took
+            // ownership of, and nothing else holds it.
             file: unsafe { File::from_raw_fd(fd) },
         })
     }
@@ -156,6 +156,8 @@ impl Dir {
         let want = file
             .metadata()
             .map_err(|e| format!("cannot stat the temp file: {e}"))?;
+        // SAFETY: `libc::stat` is a C struct of integers, for which all-zero
+        // bytes are a valid value.
         let mut found: libc::stat = unsafe { std::mem::zeroed() };
         // SAFETY: `self.fd()` is an open directory descriptor, `name` is a
         // NUL-terminated C string that outlives the call, and `found` is a
@@ -180,6 +182,8 @@ impl Dir {
     /// regular file? `None` when nothing is there. A snapshot restore deletes
     /// only a regular file the run made — never a link's target (#75).
     pub(super) fn is_regular_file(&self, name: &CString) -> Result<Option<bool>, String> {
+        // SAFETY: `libc::stat` is a C struct of integers, for which all-zero
+        // bytes are a valid value.
         let mut found: libc::stat = unsafe { std::mem::zeroed() };
         // SAFETY: as `holds` — an open directory descriptor, a NUL-terminated
         // name that outlives the call, and a live `libc::stat` to fill in.

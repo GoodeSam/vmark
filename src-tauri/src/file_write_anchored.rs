@@ -72,6 +72,9 @@ impl HeldDir {
         // owned by the `File` built from it and closed on drop.
         let fd = cvt(unsafe { libc::open(path.as_ptr(), flags) })?;
         Ok(Self {
+            // SAFETY: `fd` is the descriptor `open` just returned (`cvt` turned
+            // the error value into `Err`), and nothing else owns it; the `File`
+            // takes sole ownership and closes it on drop.
             dir: unsafe { File::from_raw_fd(fd) },
         })
     }
@@ -99,6 +102,7 @@ impl HeldDir {
         };
         match cvt(result) {
             Ok(_) => {
+                // SAFETY: `fstatat` returned success, so it wrote the whole struct.
                 let stat = unsafe { stat.assume_init() };
                 // `dev_t`/`ino_t` differ in width and sign across Unixes
                 // (`dev_t` is `i32` on macOS, `u64` on Linux); the casts give
@@ -117,6 +121,8 @@ impl HeldDir {
         // SAFETY: valid dir fd and NUL-terminated name; the fd is owned by the
         // returned `File`.
         let fd = cvt(unsafe { libc::openat(self.dir.as_raw_fd(), name.as_ptr(), flags, mode) })?;
+        // SAFETY: `fd` is the descriptor `openat` just returned (`cvt` turned the
+        // error value into `Err`), and nothing else owns it.
         Ok(unsafe { File::from_raw_fd(fd) })
     }
 

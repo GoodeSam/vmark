@@ -54,6 +54,10 @@ fn submit_js(webview: &WKWebView, script: &str, world: &WKContentWorld) -> Sink 
     let handler = block2::RcBlock::new(move |value: *mut AnyObject, error: *mut NSError| {
         *sink.borrow_mut() = Some(js_result_to_outcome(value, error));
     });
+    // SAFETY: `webview`, `body` and `world` are live; the two `None`s (no
+    // arguments, the main frame) are permitted. WebKit copies the block and calls
+    // it once, on the main thread — the thread that owns the `Rc` sink it
+    // captures — with pointers `js_result_to_outcome` null-checks before use.
     unsafe {
         webview.callAsyncJavaScript_arguments_inFrame_inContentWorld_completionHandler(
             &body,
@@ -138,6 +142,8 @@ pub fn eval(
         // it was inline here, deleting the check left every test green.
         let webview = webview_for(&tab_id)?;
         let run_loop = NSRunLoop::mainRunLoop();
+        // SAFETY: a class method taking a live name string; `mtm` proves the main
+        // thread. WebKit returns the one world of that name, creating it if needed.
         let world =
             unsafe { WKContentWorld::worldWithName(&NSString::from_str("vmark-agent"), mtm) };
         // Check + enqueue happen together under the registry guard, so no other

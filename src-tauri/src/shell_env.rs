@@ -68,6 +68,8 @@ fn login_shell_from_passwd() -> Option<String> {
     let uid = unsafe { libc::getuid() };
 
     // Start with sysconf hint, fall back to 1024
+    // SAFETY: `sysconf` takes an integer name and touches no memory; a name it
+    // does not know, or a limit that is indeterminate, comes back as -1.
     let init_size = unsafe { libc::sysconf(libc::_SC_GETPW_R_SIZE_MAX) };
     let mut buf_size = if init_size > 0 {
         init_size as usize

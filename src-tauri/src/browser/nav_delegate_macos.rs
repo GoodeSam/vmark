@@ -11,6 +11,7 @@ use objc2_web_kit::{
     WKUIDelegate, WKWebView, WKWebViewConfiguration, WKWindowFeatures,
 };
 
+use super::webkit_calls::{action_url, stop_loading, targets_main_frame};
 use crate::browser::recovery::RecoveryAction;
 use crate::browser::redact;
 use crate::browser::registry::Lifecycle;
@@ -73,23 +74,16 @@ define_class!(
             navigation_action: &WKNavigationAction,
             decision_handler: &block2::DynBlock<dyn Fn(WKNavigationActionPolicy)>,
         ) {
-            let request = unsafe { navigation_action.request() };
-            let url = request.URL()
-                .and_then(|url| url.absoluteString())
-                .map(|url| url.to_string())
-                .unwrap_or_default();
+            let url = action_url(navigation_action);
             // Nil target frames are blocked popups; they must not mint navigation tickets.
             // A SUBFRAME on an AI-owned tab meets the same destination policy as the
             // main frame (audit 20260903 P-01) — no ticket, no failure event, just a
             // cancelled frame load.
-            let target_frame = unsafe { navigation_action.targetFrame() };
-            let main_frame = target_frame
-                .as_ref()
-                .map(|frame| unsafe { frame.isMainFrame() })
-                .unwrap_or(false);
-            let allowed = match target_frame.as_ref() {
-                Some(_) if main_frame => self.prepare_navigation_action(&url),
-                Some(_) => self.subframe_load_allowed(&url),
+            let target = targets_main_frame(navigation_action);
+            let main_frame = target == Some(true);
+            let allowed = match target {
+                Some(true) => self.prepare_navigation_action(&url),
+                Some(false) => self.subframe_load_allowed(&url),
                 None => false,
             };
             if !allowed {
@@ -138,7 +132,7 @@ define_class!(
             ivars.loading.set(false); // committed: a URL change after this is same-document
             let url = current_url(web_view);
             let Some(generation) = self.commit_navigation(&url, &navigation_id) else {
-                unsafe { web_view.stopLoading() };
+                stop_loading(web_view);
                 self.emit_policy_failed("AI navigation destination blocked by policy");
                 return;
             };
@@ -227,11 +221,7 @@ define_class!(
             _features: &WKWindowFeatures,
         ) -> Option<Retained<WKWebView>> {
             let ivars = self.ivars();
-            let url = unsafe { action.request() }
-                .URL()
-                .and_then(|u| u.absoluteString())
-                .map(|s| s.to_string())
-                .unwrap_or_default();
+            let url = action_url(action);
             log::debug!(
                 "[browser] popup blocked for {} → {}",
                 ivars.tab_id,

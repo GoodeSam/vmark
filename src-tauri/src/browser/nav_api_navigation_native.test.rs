@@ -96,6 +96,8 @@ impl ProbeDelegate {
             starts: Cell::new(0),
             finishes: Cell::new(0),
         };
+        // SAFETY: the ivars are set before `init` is sent to the superclass, and
+        // `NSObject`'s `init` takes no arguments and returns the receiver.
         unsafe { objc2::msg_send![super(Self::alloc(mtm).set_ivars(counters)), init] }
     }
     fn snapshot(&self) -> (u32, u32) {
@@ -148,6 +150,7 @@ fn serve_pages() -> String {
 }
 
 fn url_of(web_view: &WKWebView) -> String {
+    // SAFETY: a property read on a live webview on the main thread.
     unsafe { web_view.URL() }
         .and_then(|u| u.absoluteString())
         .map(|s| s.to_string())
@@ -156,6 +159,8 @@ fn url_of(web_view: &WKWebView) -> String {
 
 fn load(web_view: &WKWebView, url: &str) -> bool {
     let ns = NSURL::URLWithString(&NSString::from_str(url)).expect("a valid URL");
+    // SAFETY: a live webview on the main thread and a live request, which
+    // WebKit copies.
     unsafe { web_view.loadRequest(&NSURLRequest::requestWithURL(&ns)) }.is_some()
 }
 
@@ -166,6 +171,9 @@ fn push_state(web_view: &WKWebView, path: &str) {
         sink.set(true);
     });
     let js = NSString::from_str(&format!("history.pushState({{}}, '', '{path}')"));
+    // SAFETY: a live webview and script string. WebKit copies the block and
+    // calls it once, on this (main) thread, which owns the `Rc` it captures; the
+    // block ignores both pointers.
     unsafe { web_view.evaluateJavaScript_completionHandler(&js, Some(&handler)) };
     pump_until(&NSRunLoop::currentRunLoop(), LOAD_TIMEOUT, 0.02, || {
         done.get()
@@ -183,9 +191,11 @@ fn phase(
     let before = delegate.snapshot();
     let returned_navigation = call();
     let url_after_call = url_of(web_view);
+    // SAFETY: a property read on a live webview on the main thread.
     let loading_after_call = unsafe { web_view.isLoading() };
     let idle_after_pump = pump_until(&NSRunLoop::currentRunLoop(), LOAD_TIMEOUT, 0.02, || {
         let (starts, finishes) = delegate.snapshot();
+        // SAFETY: a property read on a live webview on the main thread.
         !unsafe { web_view.isLoading() } && (starts == before.0 || finishes > before.1)
     });
     let after = delegate.snapshot();
@@ -206,11 +216,17 @@ fn run_probe(mtm: MainThreadMarker) -> ProbeReport {
     let page_a = format!("{origin}/a");
     let page_b = format!("{origin}/b");
     let pushed_url = format!("{origin}/a-pushed");
+    // SAFETY: `new` on a main-thread-only class; `mtm` proves the main thread.
     let config = unsafe { WKWebViewConfiguration::new(mtm) };
+    // SAFETY: initializes the webview allocated on the next line exactly once,
+    // with the live configuration above, which WebKit copies.
     let web_view: Retained<WKWebView> = unsafe {
         WKWebView::initWithFrame_configuration(WKWebView::alloc(mtm), CGRect::ZERO, &config)
     };
     let delegate = ProbeDelegate::new(mtm);
+    // SAFETY: `ProbeDelegate` implements `WKNavigationDelegate` (above). The
+    // webview holds its delegate weakly, so it cannot dangle; `delegate` stays
+    // alive until this function returns, after the last phase has gone idle.
     unsafe { web_view.setNavigationDelegate(Some(ProtocolObject::from_ref(&*delegate))) };
 
     let mut phases = Vec::new();
@@ -221,6 +237,7 @@ fn run_probe(mtm: MainThreadMarker) -> ProbeReport {
         load(&web_view, &page_b)
     }));
     phases.push(phase("back-cross", &web_view, &delegate, || {
+        // SAFETY: a live webview on the main thread; nil when there is no item.
         unsafe { web_view.goBack() }.is_some()
     }));
     push_state(&web_view, "/a-pushed");
@@ -228,9 +245,11 @@ fn run_probe(mtm: MainThreadMarker) -> ProbeReport {
         url_of(&web_view) == pushed_url
     });
     phases.push(phase("back-same", &web_view, &delegate, || {
+        // SAFETY: a live webview on the main thread; nil when there is no item.
         unsafe { web_view.goBack() }.is_some()
     }));
     phases.push(phase("forward-same", &web_view, &delegate, || {
+        // SAFETY: a live webview on the main thread; nil when there is no item.
         unsafe { web_view.goForward() }.is_some()
     }));
 

@@ -114,6 +114,10 @@ async fn dispatch(window: tauri::Window, action: EditAction) -> Result<(), Strin
         let ns_app = NSApplication::sharedApplication(mtm);
         // Target `None` = first responder of the key window — which the
         // gate above just proved is the invoking window.
+        // SAFETY: the selector is one of `cut:`, `copy:`, `paste:`, `selectAll:`
+        // — standard actions taking one `id` sender — so whichever responder
+        // AppKit resolves is messaged with the signature it implements. A nil
+        // target and a nil sender are permitted; `mtm` proves the main thread.
         let handled = unsafe { ns_app.sendAction_to_from(action.selector(), None, None) };
         let _ = tx.send(SendOutcome::Handled(handled));
     })

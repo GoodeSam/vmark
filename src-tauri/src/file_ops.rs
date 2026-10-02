@@ -149,6 +149,7 @@ mod tests {
 
         // Skip on systems where the running user is effectively root (rare in CI,
         // but possible): root bypasses permission checks.
+        // SAFETY: `geteuid` takes no arguments, cannot fail and touches no memory.
         if unsafe { libc::geteuid() } == 0 {
             eprintln!("skipping permission_denied_returns_err under euid 0");
             return;

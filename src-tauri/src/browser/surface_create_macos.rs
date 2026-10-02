@@ -87,6 +87,7 @@ fn create_webview(
         let req = NSURLRequest::requestWithURL(&url_obj);
 
         // Start at zero size; the frontend supplies the measured browser rect immediately.
+        // SAFETY: `new` on a main-thread-only class; `mtm` proves the main thread.
         let config = unsafe { WKWebViewConfiguration::new(mtm) };
         // Fails closed if the named-store cap is exceeded (never shares the sandbox
         // store) — WI-P6.1 H2. Checked before any native object is registered.
@@ -103,6 +104,8 @@ fn create_webview(
         // Native takeover signal (WI-NB5.2): installed once, at the first browser
         // surface creation — before that no browser view exists to click into.
         super::user_input_monitor::ensure_installed(&app_handle, mtm);
+        // SAFETY: initializes the webview allocated on this line exactly once, with
+        // a live configuration that WebKit copies; `mtm` proves the main thread.
         let webview = unsafe {
             WKWebView::initWithFrame_configuration(WKWebView::alloc(mtm), CGRect::ZERO, &config)
         };
@@ -113,6 +116,10 @@ fn create_webview(
         // events (commit/finish/fail) fire for that load too. Held in DELEGATES
         // because WKWebView's navigationDelegate reference is weak.
         let delegate = super::NavDelegate::new(mtm, tab_id.clone(), app_handle);
+        // SAFETY: `delegate` implements both protocols (`define_class!` in
+        // nav_delegate_macos.rs). The webview holds its delegates weakly, so it
+        // never keeps a dangling pointer; `DELEGATES`, filled just below, is what
+        // keeps the delegate alive while the webview can still call it.
         unsafe {
             webview.setNavigationDelegate(Some(delegate.as_protocol()));
             webview.setUIDelegate(Some(delegate.as_ui_protocol()));
@@ -128,7 +135,7 @@ fn create_webview(
         // paint with a bounded run-loop pump (nav_api_navigation.rs).
         delegate.api_navigation(
             &webview,
-            || unsafe { webview.loadRequest(&req) }.is_some(),
+            || super::webkit_calls::load_request(&webview, &req),
             |wv| super::drive_load(wv, &NSRunLoop::mainRunLoop()),
         );
         Ok(())
