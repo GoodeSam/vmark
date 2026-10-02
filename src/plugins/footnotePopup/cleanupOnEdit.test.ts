@@ -5,13 +5,6 @@ import { describe, it, expect, vi } from "vitest";
 import { Schema, type Node as PMNode } from "@tiptap/pm/model";
 import { EditorState, type Plugin, type Transaction } from "@tiptap/pm/state";
 import { growthExponent, measureGrowth } from "@/test/cpuClock";
-
-vi.mock("./FootnotePopupView", () => ({
-  FootnotePopupView: class {
-    update = vi.fn();
-    destroy = vi.fn();
-  },
-}));
 vi.mock("./footnote-popup.css", () => ({}));
 
 import { footnotePopupExtension } from "./tiptap";

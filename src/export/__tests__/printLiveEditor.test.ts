@@ -32,7 +32,6 @@ vi.mock("../renderMarkdownToHtml", () => ({
 vi.mock("@/services/ime/imeToast", () => ({
   imeToast: { error: vi.fn(), errorDetail: vi.fn(), success: vi.fn(), warning: vi.fn() },
 }));
-vi.mock("../themeSnapshot", () => ({ captureThemeCSS: () => "", isDarkTheme: () => false }));
 vi.mock("../htmlExportStyles", () => ({ getEditorContentCSS: () => "" }));
 vi.mock("../pdfHtmlTemplate", () => ({
   getKatexCSS: () => "",

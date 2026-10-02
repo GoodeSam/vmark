@@ -46,10 +46,6 @@ vi.mock("./OutlineView", () => ({
   OutlineView: () => null,
 }));
 
-vi.mock("./HistoryView", () => ({
-  HistoryView: () => null,
-}));
-
 // useDocumentFilePath reaches into editor/tab state we don't want to
 // bootstrap here — keep it null for the default view.
 vi.mock("@/hooks/useDocumentState", () => ({

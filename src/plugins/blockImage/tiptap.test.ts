@@ -14,9 +14,6 @@ vi.mock("./block-image.css", () => ({}));
 vi.mock("./BlockImageNodeView", () => ({
   BlockImageNodeView: MockBlockImageNodeView,
 }));
-vi.mock("../shared/sourceLineAttr", () => ({
-  sourceLineAttr: {},
-}));
 
 import { blockImageExtension } from "./tiptap";
 import { NodeSelection } from "@tiptap/pm/state";

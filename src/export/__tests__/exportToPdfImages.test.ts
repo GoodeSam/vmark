@@ -54,11 +54,6 @@ vi.mock("@/services/ime/imeToast", () => ({
   imeToast: { error: mockToastError, success: vi.fn(), warning: mockToastWarning },
 }));
 
-vi.mock("../themeSnapshot", () => ({
-  captureThemeCSS: () => "",
-  isDarkTheme: () => false,
-}));
-
 vi.mock("../htmlExportStyles", () => ({
   getEditorContentCSS: () => "",
 }));
