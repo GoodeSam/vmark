@@ -65,7 +65,7 @@
     "src/plugins/toolbarActions/enableRules.ts": 319,
     "src/plugins/toolbarActions/sourceAdapterLinks.ts": 370,
     "src/plugins/toolbarActions/sourceImageActions.ts": 328,
-    "src/services/history/historyOperations.ts": 369,
+    "src/services/history/historyOperations.ts": 333,
     "src/services/mcpBridge/v2/workflow.ts": 317,
     "src/stores/aiStore/provider.ts": 327,
     "src/stores/aiStore/suggestion.ts": 336,
