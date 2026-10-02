@@ -764,11 +764,6 @@
       "target": "src/stores/settingsStore"
     },
     {
-      "file": "src/plugins/codemirror/smartPaste.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/settingsStore"
-    },
-    {
       "file": "src/plugins/codemirror/sourceShortcutsHelpers.test.ts",
       "api": "vi.mock",
       "target": "src/stores/documentStore"
@@ -1374,16 +1369,6 @@
       "file": "src/main.boot.test.tsx",
       "api": "vi.mock",
       "target": "src/services/assembly/bindHostSettings"
-    },
-    {
-      "file": "src/plugins/codemirror/smartPaste.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/codemirror/smartPasteImage"
-    },
-    {
-      "file": "src/plugins/codemirror/smartPaste.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/codemirror/smartPasteUtils"
     },
     {
       "file": "src/plugins/codemirror/smartPasteClipboardImage.test.ts",
