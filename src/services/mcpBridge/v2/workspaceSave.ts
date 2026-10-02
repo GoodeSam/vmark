@@ -1,23 +1,21 @@
 /**
  * Purpose: `vmark.workspace.save` handler — persist a tab's buffer to
- * its file path. Extracted from workspace.ts (size baseline); re-exported
- * there so dispatch imports are unchanged.
+ * its file path, through the same save pipeline a human save uses.
+ * Extracted from workspace.ts (size baseline); re-exported there so dispatch
+ * imports are unchanged.
  *
  * @coordinates-with workspace.ts — sibling workspace handlers
- * @coordinates-with services/coherence/mcpCapture.ts — inferred MCP capture under the capture policy (WI-1.6, WI-LX1.4)
+ * @coordinates-with bridgeSave.ts — the path guard and the save pipeline
  * @module services/mcpBridge/v2/workspaceSave
  */
 
-import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
-import { registerPendingSave, clearPendingSaveAfterGrace } from "@/utils/pendingSaves";
-import { captureMcpWrite } from "@/services/coherence/mcpCapture";
-import { checkBridgePath } from "@/services/mcpBridge/bridgePathGuard";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { respond } from "@/services/mcpBridge/utils";
 import { v2ErrorString } from "./types";
 import { wrapHandler } from "./wrapHandler";
+import { respondSaveFailed, saveTabForBridge } from "./bridgeSave";
 import type { V2Error } from "./types";
 
 function structuredError(id: string, err: V2Error): Promise<void> {
@@ -82,36 +80,15 @@ export async function handleWorkspaceSave(
       await structuredError(id, resolved);
       return;
     }
-    // Defense in depth: a tab's own path is always within an allowed root,
-    // but guard the write anyway so every bridge disk write goes through the
-    // same scope check.
-    const saveDecision = await checkBridgePath(resolved.filePath);
-    if (!saveDecision.allowed) {
-      await structuredError(id, {
-        error: "INVALID_PATH",
-        message: saveDecision.reason,
-      });
+    const outcome = await saveTabForBridge(
+      resolved.tabId,
+      resolved.filePath,
+      resolved.content,
+      "workspace.save",
+    );
+    if (!outcome.saved) {
+      await respondSaveFailed(id, outcome);
       return;
-    }
-    const saveToken = registerPendingSave(resolved.filePath, resolved.content);
-    try {
-      await writeTextFile(resolved.filePath, resolved.content);
-      // Verbatim write: both snapshots are the same string here.
-      useDocumentStore
-        .getState()
-        .markSaved(resolved.tabId, {
-          editorSnapshot: resolved.content,
-          diskSnapshot: resolved.content,
-        });
-      // Coherence (WI-1.6): inferred capture, session-read inputs.
-      void captureMcpWrite({
-        absolutePath: resolved.filePath,
-        content: resolved.content,
-        toolName: "workspace.save",
-      }).catch(() => {});
-    } finally {
-      // Delayed clear (audit T9): late FSEvents can still match this save.
-      clearPendingSaveAfterGrace(resolved.filePath, saveToken);
     }
     const revision = useRevisionStore.getState().getRevision(resolved.tabId);
     await respond({

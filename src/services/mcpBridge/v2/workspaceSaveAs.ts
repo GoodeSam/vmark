@@ -9,29 +9,30 @@
  * of every open document, so without that split an auto-approved save_as
  * could silently overwrite any sibling of any open file (audit 20260728 §1.5).
  *
- * A successful write is handed to `captureMcpWrite` like every other MCP write
- * (audit #152), so it records provenance and obeys the capture-on-save setting.
+ * Key decision: the write itself is the app's own save (`bridgeSave.ts`). The
+ * save pipeline re-points the document and its tab at the new path, and only
+ * when this save is still the newest one requested for the document — so an
+ * autosave to the old path that lands later cannot pull the tab back, and of
+ * two Save As requests the one asked for last wins. It also keeps the
+ * document's line endings and byte-order mark, records history, and captures
+ * provenance under the capture-on-save setting like every other MCP write.
  *
- * @coordinates-with services/coherence/mcpCapture.ts — inferred MCP capture under the capture policy (WI-1.6, WI-LX1.4)
+ * @coordinates-with bridgeSave.ts — the path guard and the save pipeline
+ * @coordinates-with services/persistence/applyPostSaveState.ts — re-points the document and tab
  */
 
-import {
-  reassignTabOwnershipForPath,
-  windowLabelForTab,
-} from "@/services/workspaces/reassignTabOwnershipForPath";
-import { exists, writeTextFile } from "@tauri-apps/plugin-fs";
+import { exists } from "@tauri-apps/plugin-fs";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { getFileName, normalizePath } from "@/utils/paths";
-import { registerPendingSave, clearPendingSave } from "@/utils/pendingSaves";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { checkBridgePath } from "@/services/mcpBridge/bridgePathGuard";
-import { captureMcpWrite } from "@/services/coherence/mcpCapture";
 import { imeToast } from "@/services/ime/imeToast";
 import i18n from "@/i18n";
 import { respond } from "@/services/mcpBridge/utils";
 import { wrapHandler } from "./wrapHandler";
+import { respondSaveFailed, saveTabForBridge } from "./bridgeSave";
 import { v2ErrorString } from "./types";
 import type { V2Error } from "./types";
 
@@ -80,9 +81,7 @@ export async function handleWorkspaceSaveAs(
       return;
     }
 
-    const tabState = useTabStore.getState();
-    const docState = useDocumentStore.getState();
-    const doc = docState.documents[tabId];
+    const doc = useDocumentStore.getState().documents[tabId];
     if (!doc) {
       await structuredError(id, {
         error: "INVALID_TAB",
@@ -130,32 +129,11 @@ export async function handleWorkspaceSaveAs(
       return;
     }
 
-    const saveToken = registerPendingSave(filePath, doc.content);
-    try {
-      await writeTextFile(filePath, doc.content);
-    } finally {
-      clearPendingSave(filePath, saveToken);
+    const outcome = await saveTabForBridge(tabId, filePath, doc.content, "workspace.save_as");
+    if (!outcome.saved) {
+      await respondSaveFailed(id, outcome);
+      return;
     }
-    tabState.updateTabPath(tabId, filePath);
-    // WI-13.4/D10: AI-driven Save As reclassifies ownership but never yanks
-    // the human's visible workspace.
-    {
-      const ownerWindow = windowLabelForTab(tabId);
-      if (ownerWindow) {
-        reassignTabOwnershipForPath(ownerWindow, tabId, filePath, { allowVisibleSwitch: false });
-      }
-    }
-    tabState.updateTabTitle(tabId, getFileName(filePath) || "Untitled");
-    docState.setFilePath(tabId, filePath);
-    // Verbatim write: both snapshots are the same string here.
-    docState.markSaved(tabId, { editorSnapshot: doc.content, diskSnapshot: doc.content });
-    // Coherence (WI-1.6): inferred capture, session-read inputs. Fire-and-forget:
-    // a failed capture never fails the save (the scan heals the gap).
-    void captureMcpWrite({
-      absolutePath: filePath,
-      content: doc.content,
-      toolName: "workspace.save_as",
-    }).catch(() => {});
     const revision = useRevisionStore.getState().getRevision(tabId);
     await respond({ id, success: true, data: { revision } });
   });

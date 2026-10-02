@@ -58,7 +58,10 @@ function mayRepointDocument(
 
 /**
  * Update stores after a successful write: file path, line metadata, saved
- * markers, deferred pending-save clear, tab path sync, and recent files.
+ * markers, deferred pending-save clear, tab path sync, workspace ownership and
+ * recent files. An autosave records `lastAutoSave`; a manual save joins the
+ * recent files; an MCP save does neither and never switches the visible
+ * workspace.
  *
  * `editorSnapshot` is the PRE-normalisation content the caller handed to the
  * writer — not a fresh store read, which would defeat the TOCTOU check: an
@@ -100,13 +103,20 @@ export function applyPostSaveState(
   // Update tab path for title sync
   useTabStore.getState().updateTabPath(tabId, path);
   // WI-13.4: Save As across a workspace boundary reassigns ownership; the
-  // visible context follows when this is the active tab.
+  // visible context follows when this is the active tab — unless an AI client
+  // asked for the save, which reclassifies ownership but must never yank the
+  // human's visible workspace.
   {
     const ownerWindow = windowLabelForTab(tabId);
-    if (ownerWindow) reassignTabOwnershipForPath(ownerWindow, tabId, path);
+    if (ownerWindow) {
+      reassignTabOwnershipForPath(ownerWindow, tabId, path, {
+        allowVisibleSwitch: saveType !== "mcp",
+      });
+    }
   }
 
-  // Add to recent files (skip for auto-save to avoid noise)
+  // Add to recent files. Only for a save the user asked for: an autosave is
+  // noise, and an AI client's file activity is not the human's history.
   if (saveType === "manual") {
     useRecentFilesStore.getState().addFile(path);
   }

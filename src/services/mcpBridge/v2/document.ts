@@ -25,26 +25,30 @@
  *     failure does NOT fail the write: the buffer is updated, the
  *     response carries `saved: false` plus EITHER `save_skipped`
  *     (we didn't attempt — opt-out or untitled tab) OR `save_error`
- *     (we attempted and the FS rejected). The two fields are mutually
- *     exclusive so AI clients can branch without parsing free-form text.
+ *     (we attempted and it was refused or rejected). The two fields are
+ *     mutually exclusive so AI clients can branch without parsing free-form
+ *     text.
+ *   - The save is the app's own save (`bridgeSave.ts`), so the file keeps
+ *     its line endings and byte-order mark, the write is atomic and ordered
+ *     with every other save, and history and provenance are recorded there.
+ *     What is saved is the BUFFER as this write left it — the store's
+ *     canonical text, not the raw string the client sent.
  *
  * @coordinates-with stores/documentStore/revision.ts — current revision + isCurrentRevision
  * @coordinates-with documentTransform.ts — CJK transform helpers (extracted)
  * @coordinates-with utils/markdownPipeline/index.ts — parseMarkdown / serializeMarkdown
  * @coordinates-with stores/documentStore.ts — content + dirty state
  * @coordinates-with stores/tabStore.ts — tab → window resolution
- * @coordinates-with services/coherence/mcpCapture.ts — MCP read/write capture under the capture policy (WI-LX1.4)
+ * @coordinates-with bridgeSave.ts — the path guard and the save pipeline
+ * @coordinates-with services/coherence/mcpCapture.ts — MCP read capture; the write is captured by the save pipeline
  * @module services/mcpBridge/v2/document
  */
 
-import { writeTextFile } from "@tauri-apps/plugin-fs";
-import { registerPendingSave, clearPendingSaveAfterGrace } from "@/utils/pendingSaves";
-import { captureMcpWrite, recordMcpRead } from "@/services/coherence/mcpCapture";
+import { recordMcpRead } from "@/services/coherence/mcpCapture";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
 import { useEditorStore } from "@/stores/editorStore";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
-import { checkBridgePath } from "@/services/mcpBridge/bridgePathGuard";
 import {
   isWorkflowYaml,
   looksLikeWorkflowPath,
@@ -53,13 +57,13 @@ import { parseMarkdown } from "@/utils/markdownPipeline";
 import { getSerializeOptions } from "@/plugins/toolbarActions/wysiwygAdapterUtils";
 import { respond } from "@/services/mcpBridge/utils";
 import { wrapHandler } from "./wrapHandler";
+import { saveTabForBridge } from "./bridgeSave";
 import { readOperationArgs } from "./readOperationArgs";
 import { v2ErrorString } from "./types";
 import type { DocumentKind, V2Error } from "./types";
 import { useMcpStore } from "@/stores/mcpStore";
 import { appendCheckpoint } from "@/stores/mcpCheckpointPersistence";
 import type { CheckpointTool } from "@/stores/mcpStore";
-import { errorMessage } from "@/utils/errorMessage";
 
 interface ResolvedTab {
   tabId: string;
@@ -240,9 +244,9 @@ export async function handleDocumentRead(
  *
  * Args: `{tabId?, content: string, expected_revision?: string, save?: boolean}`.
  *
- * `save` defaults to `true`: after the buffer is updated we persist to
- * disk and call `markSaved` so the dirty flag clears. Untitled tabs (no
- * filePath) skip the save with `saved: false` so the AI can decide
+ * `save` defaults to `true`: after the buffer is updated it is saved
+ * through the app's save pipeline, which clears the dirty flag. Untitled
+ * tabs (no filePath) skip the save with `saved: false` so the AI can decide
  * whether to call `workspace.save_as`. Save failure leaves the buffer
  * updated; the response surfaces `saved: false, save_error` instead of
  * throwing — re-writing on a transient FS error would lose intent.
@@ -300,6 +304,10 @@ export async function handleDocumentWrite(
       await structuredError(id, result);
       return;
     }
+    // The buffer this write produced, read back from the store BEFORE any
+    // await: canonical text (a client may send CRLF), and this request's own
+    // — a later request can replace the buffer while the save is in flight.
+    const buffer = useDocumentStore.getState().documents[resolved.tabId]?.content ?? content;
     if (contentBefore !== content) {
       recordCheckpoint({
         resolved: { ...resolved, kind: writeKind },
@@ -316,7 +324,7 @@ export async function handleDocumentWrite(
     //   - saved: true                            → buffer updated AND on disk
     //   - saved: false, save_skipped: "opt_out"  → caller passed save:false
     //   - saved: false, save_skipped: "untitled" → no filePath; call save_as
-    //   - saved: false, save_error: <message>    → disk write attempted & failed
+    //   - saved: false, save_error: <message>    → the save was refused or failed
     // save_skipped and save_error are mutually exclusive — the former
     // means "we never tried", the latter means "we tried and failed".
     let saved = false;
@@ -326,32 +334,15 @@ export async function handleDocumentWrite(
       saveSkipped = "opt_out";
     } else if (!resolved.filePath) {
       saveSkipped = "untitled";
-    } else if (!(await checkBridgePath(resolved.filePath)).allowed) {
-      // Defense in depth: even document.write's already-open path goes through
-      // the workspace/open-document guard before disk persistence.
-      saveError = "Path is outside the workspace and open documents";
     } else {
-      try {
-        const saveToken = registerPendingSave(resolved.filePath, content);
-        try {
-          await writeTextFile(resolved.filePath, content);
-          const snap = { editorSnapshot: content, diskSnapshot: content };
-          useDocumentStore.getState().markSaved(resolved.tabId, snap);
-          saved = true;
-          // Coherence (WI-1.6): inferred capture with the session-read
-          // input set (G1 finding 2). Fire-and-forget.
-          void captureMcpWrite({
-            absolutePath: resolved.filePath,
-            content: content,
-            toolName: "document.write",
-          }).catch(() => {});
-        } finally {
-          // Delayed clear (audit T9): late FSEvents can still match this save.
-          clearPendingSaveAfterGrace(resolved.filePath, saveToken);
-        }
-      } catch (err) {
-        saveError = errorMessage(err);
-      }
+      const outcome = await saveTabForBridge(
+        resolved.tabId,
+        resolved.filePath,
+        buffer,
+        "document.write",
+      );
+      if (outcome.saved) saved = true;
+      else saveError = outcome.message;
     }
 
     await respond({
