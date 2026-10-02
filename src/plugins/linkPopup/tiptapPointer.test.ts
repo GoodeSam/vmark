@@ -6,7 +6,7 @@
  * view's reaction to edits made while a click-opened popup is showing.
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll } from "vitest";
 import { Schema } from "@tiptap/pm/model";
 import { EditorState, TextSelection, type Plugin } from "@tiptap/pm/state";
 import { EditorView } from "@tiptap/pm/view";
@@ -21,6 +21,14 @@ vi.mock("./LinkPopupView", () => ({
 }));
 
 import { linkPopupExtension } from "./tiptap";
+
+// The opener reads the user's custom protocols from the settings store, which
+// it imports lazily. The first import transforms that store's whole module
+// graph, and that took longer than the poll for the open that follows it — so
+// the test that clicked first failed on a cold cache. It is paid here instead.
+beforeAll(async () => {
+  await import("@/stores/settingsStore");
+});
 
 const schema = new Schema({
   nodes: {
