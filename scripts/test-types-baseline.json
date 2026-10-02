@@ -58,7 +58,6 @@
   "src/hooks/useExternalFileChanges.test.ts": 24,
   "src/hooks/useFinderFileOpen.test.ts": 38,
   "src/hooks/useFormatsUpgradeNudge.test.ts": 1,
-  "src/hooks/useGenieShortcuts.invokeGenie.test.ts": 3,
   "src/hooks/useImageContextMenu.test.ts": 5,
   "src/hooks/useImageDragDrop.test.ts": 4,
   "src/hooks/useKeybindingRouter.test.ts": 1,

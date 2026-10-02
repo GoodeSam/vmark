@@ -624,36 +624,6 @@
       "target": "src/stores/workspaceStore"
     },
     {
-      "file": "src/hooks/useGenieShortcuts.invokeGenie.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/aiStore"
-    },
-    {
-      "file": "src/hooks/useGenieShortcuts.invokeGenie.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/editorStore"
-    },
-    {
-      "file": "src/hooks/useGenieShortcuts.invokeGenie.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/geniePickerStore"
-    },
-    {
-      "file": "src/hooks/useGenieShortcuts.invokeGenie.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/settingsStore"
-    },
-    {
-      "file": "src/hooks/useGenieShortcuts.invokeGenie.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/tabStore"
-    },
-    {
-      "file": "src/hooks/useGenieShortcuts.invokeGenie.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/uiStore"
-    },
-    {
       "file": "src/hooks/useGenieShortcuts.test.ts",
       "api": "vi.mock",
       "target": "src/stores/settingsStore"
