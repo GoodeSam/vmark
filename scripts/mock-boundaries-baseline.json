@@ -1361,21 +1361,6 @@
       "target": "src/components/Terminal/fileLinkProvider"
     },
     {
-      "file": "src/components/Terminal/TerminalPanel.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Terminal/TerminalTabBar"
-    },
-    {
-      "file": "src/components/Terminal/TerminalPanel.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Terminal/useTerminalResize"
-    },
-    {
-      "file": "src/components/Terminal/TerminalPanel.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Terminal/useTerminalSessions"
-    },
-    {
       "file": "src/components/Terminal/TerminalPanel.transcript.test.tsx",
       "api": "vi.mock",
       "target": "src/components/Terminal/TerminalSearchBar"
