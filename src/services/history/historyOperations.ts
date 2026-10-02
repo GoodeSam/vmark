@@ -264,7 +264,7 @@ export async function loadSnapshot(
 }
 
 /**
- * Revert to a snapshot (creates a new snapshot of current state first)
+ * Revert to a snapshot (also snapshots the current state as a safety copy)
  */
 export async function revertToSnapshot(
   documentPath: string,
@@ -272,11 +272,11 @@ export async function revertToSnapshot(
   currentContent: string,
   settings: HistorySettings
 ): Promise<string | null> {
-  // Save current state before reverting
+  // Read the target FIRST: the safety snapshot prunes, and at the snapshot
+  // limit the prune removes the oldest entry — possibly the one being restored.
+  const restored = await loadSnapshot(documentPath, snapshotId);
   await createSnapshot(documentPath, currentContent, "revert", settings);
-
-  // Load the target snapshot
-  return await loadSnapshot(documentPath, snapshotId);
+  return restored;
 }
 
 /**
