@@ -1,23 +1,6 @@
 [
   {
     "type": "dependency",
-    "from": "src/plugins/aiSuggestion/applySuggestion.ts",
-    "to": "src/plugins/markdownPaste/tiptap.ts",
-    "unresolvedTo": "@/plugins/markdownPaste/tiptap",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/plugins/aiSuggestion/widgets.ts",
     "to": "src/plugins/markdownCopy/tiptap.ts",
     "unresolvedTo": "@/plugins/markdownCopy/tiptap",
@@ -180,40 +163,6 @@
       "aliased-tsconfig-paths",
       "local",
       "type-only",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/htmlPaste/tiptap.test.ts",
-    "to": "src/plugins/markdownPaste/tiptap.ts",
-    "unresolvedTo": "@/plugins/markdownPaste/tiptap",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "type-import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/htmlPaste/tiptap.ts",
-    "to": "src/plugins/markdownPaste/tiptap.ts",
-    "unresolvedTo": "@/plugins/markdownPaste/tiptap",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
       "import"
     ],
     "rule": {
@@ -453,57 +402,6 @@
       "aliased-tsconfig-paths",
       "local",
       "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/shared/pasteSettings.test.ts",
-    "to": "src/plugins/codePaste/tiptap.ts",
-    "unresolvedTo": "@/plugins/codePaste/tiptap",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/shared/pasteSettings.test.ts",
-    "to": "src/plugins/htmlPaste/tiptap.ts",
-    "unresolvedTo": "@/plugins/htmlPaste/tiptap",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/shared/pasteSettings.test.ts",
-    "to": "src/plugins/markdownPaste/tiptap.ts",
-    "unresolvedTo": "@/plugins/markdownPaste/tiptap",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "dynamic-import"
     ],
     "rule": {
       "severity": "error",

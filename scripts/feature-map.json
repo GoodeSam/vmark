@@ -444,6 +444,8 @@
         "src/plugins/smartPaste",
         "src/plugins/htmlPaste",
         "src/plugins/markdownPaste",
+        "src/plugins/shared/markdownPasteSlice.ts",
+        "src/plugins/shared/markdownPasteSlice.test.ts",
         "src/plugins/codePaste",
         "src/plugins/markdownCopy",
         "src/plugins/textDragDrop",

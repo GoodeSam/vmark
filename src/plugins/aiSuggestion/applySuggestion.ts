@@ -8,7 +8,7 @@
  */
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import type { Mapping } from "@tiptap/pm/transform";
-import { createMarkdownPasteSlice } from "@/plugins/markdownPaste/tiptap";
+import { createMarkdownPasteSlice } from "@/plugins/shared/markdownPasteSlice";
 import type { AiSuggestion } from "./types";
 
 /**
