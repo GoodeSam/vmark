@@ -260,6 +260,31 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 - **WI-RA15B.6 — release notes reach `latest.json`; the bump rule has a notes step.** Audit §9 Medium.
 - **WI-RA15C.10 — the 16 undocumented behaviours and 4 contradicting pages, in all locales; the trigger table in rule 21 gains their rows.** Audit §9 Medium.
 
+#### Phase RA19 — TypeScript defects found by the docs and component lanes
+- **WI-RA19.1 — shortcut import errors use the app's dialog convention.**
+- **WI-RA19.2 — Close All closes every unpinned tab.**
+- **WI-RA19.3 — AI Retry re-runs the failed invocation.**
+- **WI-RA19.4 — remaining hard-coded English strings are translated.**
+- **WI-RA19.5 — title-bar rename reports a name collision.**
+- **WI-RA19.6 — combined save dialog path display verified.**
+- **WI-RA19.7 — Korean punctuation.**
+- **WI-RA19.8 — website deploys when its imported app sources change; About docs.**
+- **WI-RA19.9 — a size budget that matches no file fails.**
+- **WI-RA19.10 — StepForm under the size limit.**
+
+#### Phase RA7C — Rust class sweep
+- **WI-RA7C.1 — lock poison recovered everywhere, and gated.**
+- **WI-RA7C.2 — no unescaped external text in logs.**
+- **WI-RA7C.3 — durable renames.**
+- **WI-RA7C.4 — no blocking work on the IPC thread or async workers.**
+- **WI-RA7C.5 — commands take the calling window, not a label.**
+- **WI-RA7C.6 — terminal exit detection, bounded writes, transcript delta parse.**
+- **WI-RA7C.7 — rescan re-checks open documents; dead watcher subscription.**
+- **WI-RA7C.8 — quit readiness tied to the close listeners.**
+
+#### Phase RA14E — remove the frozen sibling mocks
+- **WI-RA14E.1 — zero sibling mocks of app logic, no baseline.**
+
 ### Wave 4 (cross-cutting, strictly serial, after everything else merged)
 
 Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), RA12B, RA17F, RA17E, RA17G, then the DoD script and the final gate pass. Ownership for wave 3 and 4 lanes is in each lane brief.
