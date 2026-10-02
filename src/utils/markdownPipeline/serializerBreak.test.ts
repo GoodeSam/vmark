@@ -12,6 +12,7 @@ import type { Root } from "mdast";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { parseMarkdown, serializeMarkdown } from "./adapter";
 import { serializeMdastToMarkdown } from "./serializer";
+import { dropBlockFinalBreaks } from "./serializerBlockFinalBreak";
 import { getProductionSchema } from "@/test/productionSchema";
 
 const schema = getProductionSchema();
@@ -317,6 +318,72 @@ describe("hard-break style — real hard breaks", () => {
     for (const options of [TWO_SPACES, BACKSLASH]) {
       const once = roundTrip(source, options);
       expect(roundTrip(once, options)).toBe(once);
+    }
+  });
+});
+
+// WI-RA2.3 — a hard break at the end of its block. Markdown has no way to
+// write one: a backslash there is a literal backslash, and trailing spaces are
+// dropped. The editor can hold one (Shift+Enter at the end of a paragraph).
+describe("a hard break at the end of its block", () => {
+  const pmBreak = () => schema.nodes.hardBreak.create();
+  const pmDoc = (...blocks: PMNode[]) => schema.topNodeType.create(null, blocks);
+  const pmParagraph = (...inline: PMNode[]) => schema.nodes.paragraph.create(null, inline);
+
+  it.each([
+    ["one break", () => [schema.text("foo"), pmBreak()], "foo\n"],
+    ["two breaks", () => [schema.text("foo"), pmBreak(), pmBreak()], "foo\n"],
+    ["a break after a break in the text", () => [schema.text("a"), pmBreak(), schema.text("b"), pmBreak()], null],
+    ["CJK text", () => [schema.text("中文"), pmBreak()], "中文\n"],
+    ["text ending in a backslash", () => [schema.text("C:\\dir\\"), pmBreak()], null],
+  ])("adds nothing to the text for %s, in either style", (_label, inline, expected) => {
+    const doc = pmDoc(pmParagraph(...inline()), pmParagraph(schema.text("next")));
+    const textBefore = doc.firstChild?.textContent;
+    for (const options of [TWO_SPACES, BACKSLASH]) {
+      const once = serializeMarkdown(schema, doc, options);
+      if (expected !== null) expect(once).toBe(`${expected}\nnext\n`);
+      const after = parseMarkdown(schema, once);
+      expect(after.childCount).toBe(2);
+      expect(after.firstChild?.textContent).toBe(textBefore);
+      expect(serializeMarkdown(schema, after, options)).toBe(once);
+    }
+  });
+
+  it("keeps the breaks that are not at the end", () => {
+    const doc = pmDoc(pmParagraph(schema.text("a"), pmBreak(), schema.text("b"), pmBreak()));
+    for (const options of [TWO_SPACES, BACKSLASH]) {
+      expect(countHardBreaks(parseMarkdown(schema, serializeMarkdown(schema, doc, options)))).toBe(1);
+    }
+  });
+
+  it("adds nothing to a heading that ends in a break", () => {
+    const heading = schema.nodes.heading.create({ level: 2 }, [schema.text("Title"), pmBreak()]);
+    for (const options of [TWO_SPACES, BACKSLASH]) {
+      const once = serializeMarkdown(schema, pmDoc(heading), options);
+      expect(once).toBe("## Title\n");
+    }
+  });
+
+  it("leaves a break that ends a mark in the middle of a paragraph", () => {
+    // Not at the end of its block: only the block's own trailing breaks go.
+    const tree = root([
+      paragraph([{ type: "emphasis", children: [text("a"), hardBreak] }, text("b")]),
+    ]);
+    expect(dropBlockFinalBreaks(tree)).toBe(tree);
+  });
+
+  it("does not change the tree it is given", () => {
+    const tree = root([paragraph([text("a"), hardBreak]), paragraph([text("b")])]);
+    const copy = structuredClone(tree);
+    expect(serializeMdastToMarkdown(tree, BACKSLASH)).toBe("a\n\nb\n");
+    expect(tree).toEqual(copy);
+  });
+
+  it("writes a paragraph that holds only a break as an empty paragraph would be", () => {
+    const empty = serializeMarkdown(schema, pmDoc(pmParagraph(), pmParagraph(schema.text("x"))), BACKSLASH);
+    for (const options of [TWO_SPACES, BACKSLASH]) {
+      const onlyBreak = pmDoc(pmParagraph(pmBreak()), pmParagraph(schema.text("x")));
+      expect(serializeMarkdown(schema, onlyBreak, options)).toBe(empty);
     }
   });
 });
