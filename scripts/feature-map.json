@@ -1486,6 +1486,7 @@
       "src/utils/lruCache.ts",
       "src/utils/structuralEqual.ts",
       "src/utils/reentryGuard.ts",
+      "src/utils/readinessBarrier.ts",
       "src/utils/safeUnlisten.ts",
       "src/utils/voidAsync.ts",
       "src/utils/stringifyUnknown.ts",
