@@ -2,29 +2,39 @@
 // WI-RA2.1 — how many whole-document parses respelling costs. Each one is paid
 // synchronously on the save path, so the count is part of the contract.
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Processor } from "unified";
 
-// Pass-through spies: the real functions run, and their calls are counted.
-vi.mock("./hardBreakRanges", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./hardBreakRanges")>();
-  return { ...actual, findHardBreakRanges: vi.fn(actual.findHardBreakRanges) };
-});
-vi.mock("./parser", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./parser")>();
-  return { ...actual, parseMarkdownToMdast: vi.fn(actual.parseMarkdownToMdast) };
+// Every markdown parse VMark runs goes through remark-parse's parser — the
+// candidate search over the text as written, the document parses that verify
+// the result, and any probe parse either of them needs. A pass-through wrapper
+// on that third-party boundary counts them all, so the count is the real cost
+// a save pays, not the number of calls into one VMark function.
+const parses = vi.hoisted(() => ({ count: 0 }));
+vi.mock("remark-parse", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("remark-parse")>();
+  function countedRemarkParse(this: Processor, ...args: Parameters<typeof actual.default>) {
+    actual.default.apply(this, args);
+    const parser = this.parser;
+    if (parser === undefined) throw new Error("remark-parse installed no parser");
+    this.parser = (document, file) => {
+      parses.count += 1;
+      return parser(document, file);
+    };
+  }
+  return { ...actual, default: countedRemarkParse };
 });
 
-import { findHardBreakRanges } from "./hardBreakRanges";
-import { parseMarkdownToMdast } from "./parser";
 import { respellHardBreaks } from "./hardBreakRespell";
 
-/** Parses of the text as written, to find candidate breaks. */
-const finds = (): number => vi.mocked(findHardBreakRanges).mock.calls.length;
-/** Document parses, to verify an edited text against the original. */
-const verifies = (): number => vi.mocked(parseMarkdownToMdast).mock.calls.length;
+/**
+ * Whole-document parses so far. A respelling that edits pays one parse of the
+ * text as written to find candidate breaks, then two document parses (the
+ * original and the edited text) to verify the edit changed nothing else.
+ */
+const total = (): number => parses.count;
 
 beforeEach(() => {
-  vi.mocked(findHardBreakRanges).mockClear();
-  vi.mocked(parseMarkdownToMdast).mockClear();
+  parses.count = 0;
 });
 
 describe("respellHardBreaks — parse count", () => {
@@ -35,7 +45,7 @@ describe("respellHardBreaks — parse count", () => {
     ["breaks already in the target spelling", "a\\\nb\n", "backslash"],
   ] as const)("does not parse a document with %s", (_label, source, target) => {
     expect(respellHardBreaks(source, target)).toBe(source);
-    expect([finds(), verifies()]).toEqual([0, 0]);
+    expect(total()).toBe(0);
   });
 
   it.each([
@@ -43,15 +53,15 @@ describe("respellHardBreaks — parse count", () => {
     ["a backslash that ends a line of code", "```\na \\\nb\n```\n", "twoSpaces"],
   ] as const)("parses once when %s turns out to hold no break", (_label, source, target) => {
     expect(respellHardBreaks(source, target)).toBe(source);
-    expect([finds(), verifies()]).toEqual([1, 0]);
+    expect(total()).toBe(1);
   });
 
   it.each([
     ["twoSpaces", "a\\\nb\n", "a  \nb\n"],
     ["backslash", "a  \nb\n", "a\\\nb\n"],
-  ] as const)("converts to %s with one finding parse and two verifying ones", (target, source, expected) => {
+  ] as const)("converts to %s with one finding parse and two verifying ones (three parses)", (target, source, expected) => {
     expect(respellHardBreaks(source, target)).toBe(expected);
-    expect([finds(), verifies()]).toEqual([1, 2]);
+    expect(total()).toBe(3);
   });
 
   // Each of these respellings would change the tree. Not attempting it leaves
@@ -69,7 +79,7 @@ describe("respellHardBreaks — parse count", () => {
     ["a two-space break after an unpaired backslash", "a\\  \nb\n", "backslash"],
   ] as const)("does not attempt %s, so there is nothing to verify", (_label, source, target) => {
     expect(respellHardBreaks(source, target)).toBe(source);
-    expect([finds(), verifies()]).toEqual([1, 0]);
+    expect(total()).toBe(1);
   });
 
   // The same rules, seen from the output: the break that cannot be respelled
@@ -80,7 +90,7 @@ describe("respellHardBreaks — parse count", () => {
     ["a break after an unpaired backslash", "a  \nb\\  \nc\n", "backslash", "a\\\nb\\  \nc\n"],
   ] as const)("skips %s and converts its neighbour", (_label, source, target, expected) => {
     expect(respellHardBreaks(source, target)).toBe(expected);
-    expect([finds(), verifies()]).toEqual([1, 2]);
+    expect(total()).toBe(3);
   });
 
   it("verifies once and gives up when an unforeseen edit changes the document", () => {
@@ -88,6 +98,6 @@ describe("respellHardBreaks — parse count", () => {
     // verification refuses, and the whole document is left as written.
     const source = "a\\\nb\n\n| h |\\\n| - |\n";
     expect(respellHardBreaks(source, "twoSpaces")).toBe(source);
-    expect([finds(), verifies()]).toEqual([1, 2]);
+    expect(total()).toBe(3);
   });
 });
