@@ -12,12 +12,15 @@
  *     custom handler rewrote every autolink and bare GFM URL literal to
  *     `[https\://…](https://…)` — losing the authored form and injecting
  *     escapes into the label (#1102).
- *   - Destinations, image alt text, and titles are escaped: a raw
- *     destination cannot hold whitespace, control chars, unbalanced parens,
- *     or a leading `<` (those switch to the `<…>` literal form with `\`,
- *     `<`, `>` escaped and CR/LF percent-encoded); `"` in titles and
- *     `[`/`]` in alt text are backslash-escaped so they cannot terminate
- *     the construct early.
+ *   - Destinations and titles are escaped: a raw destination cannot hold
+ *     whitespace, control chars, unbalanced parens, or a leading `<` (those
+ *     switch to the `<…>` literal form with `\`, `<`, `>` escaped and CR/LF
+ *     percent-encoded); `"` in titles is backslash-escaped so it cannot
+ *     terminate the construct early.
+ *   - Image alt text is escaped by the serializer's own text escaping, inside
+ *     the label construct. An alt is read back as inline markdown and
+ *     flattened to text, so every character that could start markup has to be
+ *     escaped, not only the brackets: `_c_` came back as `c`.
  *   - Raw HTML is written as it is, except that a `|` inside a table cell is
  *     escaped: a pipe ends the cell wherever it stands.
  *   - The handlers carry a `peek` function (upstream Handle contract) so
@@ -41,6 +44,8 @@ export interface ToMarkdownState {
   ) => string;
   /** Push a construct onto the state stack; returns the matching exit. */
   enter: (construct: string) => () => void;
+  /** Escape `value` for the constructs currently on the stack. */
+  safe: (value: string, info: { before: string; after: string }) => string;
 }
 
 /**
@@ -144,11 +149,6 @@ function formatTitle(title: string): string {
   return title.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-/** Escape image alt text for the `![…]` label position. */
-function formatAltText(alt: string): string {
-  return alt.replace(/[\\[\]]/g, "\\$&");
-}
-
 /**
  * The text to place inside `<…>` when the link round-trips as an autolink,
  * or null when it must stay in `[text](url)` resource form. Mirrors
@@ -170,8 +170,14 @@ function autolinkValue(node: Link): string | null {
  * Custom image handler: escaped alt/title, angle-bracket destination when
  * the raw form cannot represent the URL.
  */
-function imageHandler(node: Image): string {
-  const alt = formatAltText(node.alt || "");
+function imageHandler(node: Image, _parent: Parents | undefined, state: ToMarkdownState): string {
+  // The alt text is read back as inline markdown and flattened to text, so it
+  // is escaped the way label text is: `_c_` would otherwise come back as `c`.
+  const exit = state.enter("image");
+  const subexit = state.enter("label");
+  const alt = state.safe(node.alt || "", { before: "![", after: "]" });
+  subexit();
+  exit();
   const formattedUrl = formatDestination(node.url);
 
   if (node.title) {
