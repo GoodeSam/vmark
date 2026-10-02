@@ -52,6 +52,7 @@ mod mcp_server;
 mod menu;
 mod menu_events;
 mod pandoc;
+mod peer_text;
 mod pty;
 mod quarantine;
 mod quit;

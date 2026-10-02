@@ -179,12 +179,9 @@ pub(crate) fn surface_a_window<R: Runtime>(app: &tauri::AppHandle<R>) {
 /// building a second one beside it.
 fn choose_target<R: Runtime>(app: &tauri::AppHandle<R>) -> Option<String> {
     let live_labels: Vec<String> = app.webview_windows().keys().cloned().collect();
-    let ready = {
-        let state = file_open::FILE_OPEN_STATE
-            .lock()
-            .unwrap_or_else(|p| p.into_inner());
-        state.finder_window_target(&live_labels)
-    };
+    let ready = window_manager::file_open_state(app)
+        .lock()
+        .finder_window_target(&live_labels);
     ready.or_else(|| {
         live_labels
             .iter()
@@ -217,24 +214,31 @@ pub(crate) fn reveal_or_retry<R: Runtime>(app: &tauri::AppHandle<R>, label: &str
 /// Build the main window — and, when another path built it first, surface
 /// THAT one (#478).
 ///
-/// Creation is check-then-create against every other window-creating path in
-/// the process, so losing the race is a real outcome and not an error: the
-/// user asked for a window and there is one. Reporting
-/// `WindowLabelAlreadyExists` to the log and stopping left the second launch
-/// with nothing on screen, which is the same failure #479 describes one step
-/// further on. The same idempotent-creation rule the Settings window follows
-/// (`AGENTS.md`, the window-thread gate).
+/// Every other window-creating path in the process can ask for `main` at the
+/// same moment, so finding it already there is a real outcome and not an
+/// error: the user asked for a window and there is one. Stopping there left
+/// the second launch with nothing on screen, which is the same failure #479
+/// describes one step further on. `ensure_main_window` makes the check and the
+/// build one step, so this path can neither build a second `main` beside
+/// another path's nor mistake theirs for a failure.
 pub(crate) fn create_and_reveal_main<R: Runtime>(app: &tauri::AppHandle<R>) {
+    use window_manager::Ensured;
+
     log::info!("[SingleInstance] no document window left — creating one");
-    let Err(error) = window_manager::create_main_window(app, None) else {
-        return;
-    };
-    if let Some(window) = app.get_webview_window("main") {
-        log::info!("[SingleInstance] another path created the main window first — surfacing it");
-        window_manager::reveal_window(&window, "main");
-        return;
+    match window_manager::ensure_main_window(app, None) {
+        // A new window opens focused; there is nothing more to surface.
+        Ok(Ensured::Created(_)) => {}
+        Ok(Ensured::Existing(window)) => {
+            log::info!(
+                "[SingleInstance] another path created the main window first — surfacing it"
+            );
+            window_manager::reveal_window(&window, window_manager::MAIN_LABEL);
+        }
+        Ok(Ensured::Pending) => {
+            log::info!("[SingleInstance] another path is creating the main window");
+        }
+        Err(error) => log::error!("[SingleInstance] failed to create main window: {error}"),
     }
-    log::error!("[SingleInstance] failed to create main window: {error}");
 }
 
 #[cfg(test)]

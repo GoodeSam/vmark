@@ -26,6 +26,21 @@ fn intercepts_close(label: &str) -> bool {
     crate::quit::is_document_window_label(label)
 }
 
+/// The window label a frontend's `ready` event carries, sent once that
+/// window's listeners are mounted. `None` for a payload that is not a JSON
+/// string.
+///
+/// The label is whatever the webview chose to send, not a label Tauri
+/// validated, so it is logged as an escaped, bounded token.
+pub(crate) fn ready_window_label(payload: &str) -> Option<String> {
+    let label = serde_json::from_str::<String>(payload).ok()?;
+    log::debug!(
+        "[Tauri] Window {} is ready",
+        crate::peer_text::peer_text(&label)
+    );
+    Some(label)
+}
+
 /// Intercept close requests for document windows so the frontend can run its
 /// save/confirm flow — or, on Windows with close-to-tray on, park the last one
 /// in the tray. Non-document windows (settings) close normally.

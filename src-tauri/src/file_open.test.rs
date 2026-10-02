@@ -251,4 +251,62 @@ mod finder_directory {
             .covers(root.to_str().expect("utf-8")));
         assert_eq!(app.webview_windows().len(), 1);
     }
+
+    // -- WI-RA7.7: a path is text the OS handed over, and a file name may
+    // contain a newline. It reaches the log escaped.
+
+    fn assert_no_raw_line_break(lines: &[String]) {
+        assert!(!lines.is_empty(), "the open was logged");
+        for line in lines {
+            assert!(
+                !line.contains('\n') && !line.contains('\r'),
+                "a path forged a log line: {line:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_refused_folder_whose_name_holds_a_newline_is_one_log_line() {
+        let app = mock_app();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let gone = dir.path().join("gone\n[Finder] Opening directory: /etc\r");
+
+        let lines = crate::peer_text::log_capture::captured_logs(|| {
+            open_finder_directory(app.handle(), gone.to_str().expect("utf-8"));
+        });
+
+        assert!(app.webview_windows().is_empty());
+        assert_no_raw_line_break(&lines);
+    }
+
+    #[cfg(unix)] // a newline is a legal file-name character only here
+    #[test]
+    fn an_opened_folder_whose_name_holds_a_newline_is_one_log_line() {
+        let app = mock_app();
+        let dir = tempfile::tempdir().expect("tempdir");
+        // One path component: a `/` in it would name a nested directory.
+        let odd = dir.path().join("notes\n[Finder] Opening directory: etc");
+        std::fs::create_dir(&odd).expect("mkdir");
+
+        let lines = crate::peer_text::log_capture::captured_logs(|| {
+            open_finder_directory(app.handle(), odd.to_str().expect("utf-8"));
+        });
+
+        assert_eq!(app.webview_windows().len(), 1, "the folder still opens");
+        assert_no_raw_line_break(&lines);
+    }
+}
+
+#[test]
+fn a_skipped_open_request_whose_name_holds_a_newline_is_one_log_line() {
+    let skipped = vec![
+        "/tmp/a.exe\n[Finder] Opening directory: /etc".to_string(),
+        "/tmp/文档.bin".to_string(),
+    ];
+    let lines = crate::peer_text::log_capture::captured_logs(|| {
+        super::log_skipped_opens(&skipped);
+    });
+    assert_eq!(lines.len(), 2, "one record per refused request: {lines:?}");
+    assert!(lines.iter().all(|line| !line.contains('\n')), "{lines:?}");
+    assert!(lines[1].contains("文档.bin"), "{}", lines[1]);
 }

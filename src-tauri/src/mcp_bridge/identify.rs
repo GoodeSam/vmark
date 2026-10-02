@@ -22,15 +22,15 @@
 //!     re-reads the whole client list on each one.
 //!
 //! @coordinates-with mcp_bridge/server.rs — the envelope dispatcher
-//! @coordinates-with mcp_bridge/peer_text.rs — the bound and the escaping
+//! @coordinates-with peer_text.rs — the bound and the escaping
 //! @module mcp_bridge::identify
 
 use tauri::AppHandle;
 use tauri::Emitter;
 
 use super::managed::bridge;
-use super::peer_text::{peer_label, peer_text};
 use super::types::ClientIdentity;
+use crate::peer_text::{peer_label, peer_text};
 
 /// The event the frontend re-reads its client list on.
 const CLIENTS_CHANGED: &str = "mcp-bridge:clients-changed";
