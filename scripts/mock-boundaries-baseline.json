@@ -1381,11 +1381,6 @@
       "target": "src/plugins/latex/katexLoader"
     },
     {
-      "file": "src/plugins/mermaid/mermaidExport.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/mermaid/index"
-    },
-    {
       "file": "src/plugins/mermaidPreview/__tests__/MermaidPreviewView.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/mermaidPreview/mermaidPreviewRender"
