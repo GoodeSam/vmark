@@ -1,15 +1,14 @@
 // @vitest-environment node
 // WI-RA2.3 — code-fence meta and list looseness pass through the converters
 // for a schema that can hold them.
+// WI-RA18.3 — the production schema holds both: the code block declares
+// `meta`, the bullet and ordered lists declare `spread`.
 /**
- * The production schema has no attribute for either today: the code block
- * keeps only its language, and lists keep no tight/loose flag. The spec
- * round-trip ledger records both as `model-limit` data loss. The converters
- * are the half of the fix this module owns; the attributes are declared on
- * the editor's node extensions, so these tests run on the pipeline's test
- * schema with the two attributes added — the shape those extensions need.
- * Until then the converters pass nothing, because ProseMirror ignores an
- * attribute a node type does not declare.
+ * The converters carry a fence's meta and a list's looseness as attributes;
+ * ProseMirror ignores an attribute a node type does not declare, so the
+ * schema decides whether they survive. The pipeline's test schema is
+ * extended here with the two attributes; the production schema (the app's
+ * own extensions) must declare them itself.
  */
 import { describe, it, expect } from "vitest";
 import { Schema, type NodeSpec } from "@tiptap/pm/model";
@@ -52,8 +51,14 @@ describe("code-fence meta", () => {
     expect(parseMarkdown(schema, "```js\ncode\n```\n").firstChild?.attrs.meta).toBeNull();
   });
 
-  it("is still dropped by the production schema, which has no attribute for it", () => {
-    expect(roundTrip("```js {1,3}\ncode\n```\n", getProductionSchema())).toBe("```js\ncode\n```\n");
+  it.each([
+    ["line highlights", "```js {1,3}\ncode\n```\n"],
+    ["CJK", "```python 标题\nprint(1)\n```\n"],
+    ["no meta", "```js\ncode\n```\n"],
+  ])("is kept by the production schema: %s", (_label, source) => {
+    const production = getProductionSchema();
+    expect(roundTrip(source, production)).toBe(source);
+    expect(roundTrip(roundTrip(source, production), production)).toBe(source);
   });
 });
 
@@ -76,7 +81,14 @@ describe("list looseness", () => {
     expect(roundTrip("- a\n\n  more\n- b\n")).toBe("- a\n\n  more\n\n- b\n");
   });
 
-  it("is still lost by the production schema, which has no attribute for it", () => {
-    expect(roundTrip("- a\n\n- b\n", getProductionSchema())).toBe("- a\n- b\n");
+  it.each([
+    ["a loose bullet list", "- a\n\n- b\n"],
+    ["a loose ordered list", "1. a\n\n2. b\n"],
+    ["a tight bullet list", "- a\n- b\n"],
+    ["a loose list of CJK items", "- 甲\n\n- 乙\n"],
+  ])("is kept by the production schema: %s", (_label, source) => {
+    const production = getProductionSchema();
+    expect(roundTrip(source, production)).toBe(source);
+    expect(roundTrip(roundTrip(source, production), production)).toBe(source);
   });
 });

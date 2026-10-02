@@ -7,7 +7,9 @@
 2. Ordered second
 
 - [ ] Unchecked task
+
 - [x] Checked task
+
 - Outer item
   - Nested item
     - Deeply nested item
@@ -15,4 +17,5 @@
 Loose list follows:
 
 - First loose item
+
 - Second loose item

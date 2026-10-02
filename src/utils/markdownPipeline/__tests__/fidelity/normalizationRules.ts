@@ -27,6 +27,7 @@ import type { Hunk } from "./hunkDiff";
 /** Every deviation class the corpus has been reviewed against. */
 export type RuleName =
   | "blankLineCollapse"
+  | "looseListRespaced"
   | "tableFormatting"
   | "alertQuoteContinuation"
   | "providerEmbedRewrite"
@@ -71,9 +72,17 @@ const orderedItemText = (l: string): string | null => {
  * the gate fails on a rule nothing uses, so dead classifiers cannot accumulate.
  */
 export const RULES: Record<RuleName, (hunk: Hunk) => boolean> = {
-  /** Blank-line preservation is opt-in; runs of blank lines collapse. */
+  /** Blank-line preservation is opt-in; runs of blank lines collapse (lines REMOVED). */
   blankLineCollapse: (h) =>
-    h.before.every(isBlank) && h.after.every(isBlank) && h.before.length !== h.after.length,
+    h.before.every(isBlank) && h.after.every(isBlank) && h.after.length < h.before.length,
+
+  /**
+   * A loose list is written with a blank line between EVERY pair of items
+   * (lines ADDED). CommonMark makes a whole list loose when any two of its
+   * items are separated by a blank line, so an author who separated only
+   * some of them wrote the same loose list; the fingerprint confirms it.
+   */
+  looseListRespaced: (h) => h.before.length === 0 && h.after.length > 0 && h.after.every(isBlank),
 
   /** Cell padding and delimiter-run width are re-laid-out; cell text is kept. */
   tableFormatting: (h) =>

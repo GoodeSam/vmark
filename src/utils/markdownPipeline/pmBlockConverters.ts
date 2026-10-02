@@ -16,6 +16,9 @@
  *     expressed in image syntax (poster, controls=false, non-default preload)
  *   - Video embed nodes serialize to provider-specific <iframe> HTML
  *   - TOC nodes serialize to `toc` MDAST type (remarkTocBlock handles markdown output)
+ *   - A list item is written spread when it holds more than one non-list block,
+ *     or a block after a nested list: written tight, that block would join the
+ *     nested list's last item on re-parse
  *
  * @coordinates-with mdastBlockConverters.ts — reverse direction (MDAST → PM)
  * @coordinates-with pmInlineConverters.ts — handles inline content within blocks
@@ -166,12 +169,17 @@ export function convertListItem(context: PmToMdastContext, node: PMNode): ListIt
   const safeChildren: BlockContent[] =
     children.length > 0 ? children : [{ type: "paragraph", children: [] }];
 
-  // Spread: true only if the item has multiple non-list block children
-  // (e.g., multi-paragraph items). Single paragraph + nested list = tight.
+  // Spread: true if the item has multiple non-list block children (e.g.,
+  // multi-paragraph items), or a block AFTER a nested list — written tight, a
+  // paragraph there is a lazy continuation of the nested list's last item.
+  // Single paragraph + nested list = tight.
   const nonListChildren = safeChildren.filter((c) => c.type !== "list");
+  const blockAfterList = safeChildren.some(
+    (child, index) => index > 0 && child.type !== "list" && safeChildren[index - 1].type === "list",
+  );
   const listItem: ListItem = {
     type: "listItem",
-    spread: nonListChildren.length > 1,
+    spread: nonListChildren.length > 1 || blockAfterList,
     children: safeChildren,
   };
   const checked = node.attrs.checked;
