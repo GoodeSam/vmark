@@ -144,6 +144,32 @@ describe("useHistoryOperations", () => {
       expect(mockWriteTextFile).toHaveBeenCalled();
     });
 
+    // WI-RA18.11 — an AI client's save keeps a manual save's guarantees.
+    it("does NOT skip an mcp snapshot when file size exceeds limit", async () => {
+      mockExists.mockResolvedValue(false);
+      await createSnapshot("/test/doc.md", "x".repeat(2000), "mcp", {
+        ...defaultSettings,
+        maxFileSizeKB: 1,
+      });
+      expect(mockWriteTextFile).toHaveBeenCalled();
+    });
+
+    it.each([
+      ["an mcp snapshot into a previous auto one", "auto", "mcp"],
+      ["an auto snapshot into a previous mcp one", "mcp", "auto"],
+    ] as const)("does not merge %s", async (_label, previousType, type) => {
+      const now = Date.now();
+      const index = makeIndex({
+        snapshots: [{ id: "prev-id", timestamp: now - 10000, type: previousType, size: 100, preview: "old" }],
+      });
+      mockExists.mockResolvedValue(true);
+      mockReadTextFile.mockResolvedValue(JSON.stringify(index));
+
+      await createSnapshot("/test/doc.md", "new content", type, { ...defaultSettings, mergeWindowSeconds: 60 });
+
+      expect(mockRemove).not.toHaveBeenCalled();
+    });
+
     it("merges with previous auto snapshot within merge window", async () => {
       const now = Date.now();
       const prevSnapshot = {
