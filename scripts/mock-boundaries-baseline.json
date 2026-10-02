@@ -1396,11 +1396,6 @@
       "target": "src/plugins/sourcePopup/sourcePopupUtils"
     },
     {
-      "file": "src/plugins/toolbarActions/wysiwygAdapterLinkEditor.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/wysiwygAdapterUtils"
-    },
-    {
       "file": "src/utils/cursorSync/codemirror.test.ts",
       "api": "vi.mock",
       "target": "src/utils/cursorSync/table"
