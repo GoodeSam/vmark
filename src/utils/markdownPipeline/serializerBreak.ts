@@ -17,28 +17,52 @@
  *     break degrades to a space exactly as upstream's own handler does.
  *     `serializerBreak.test.ts` holds the backslash style to stock
  *     remark-stringify's output for every construct a break can sit in.
+ *   - One more place takes no line ending: directly before inline HTML that
+ *     would start an HTML block on a line of its own. Upstream replaces the
+ *     line ending there with a space AFTER this handler has run, which turns a
+ *     backslash break into a literal backslash and a space. So the break is
+ *     written as the space itself. (HTML that may start a line is handled in
+ *     serializerBreakBeforeHtml.ts, and the break before it is kept.)
  *   - Two trailing spaces say "hard break" only directly after a
- *     non-whitespace character, so a break is written with a backslash,
- *     whatever the style, in the two places they cannot:
- *       · at the start of its line (first in a paragraph, or right after
- *         another break) — spaces alone make a BLANK line, the paragraph
- *         splits and the break is gone;
+ *     non-whitespace character that leaves them alone. Where they cannot say
+ *     it, the break is written with a backslash whatever the style
+ *     (`mustBeBackslash`):
+ *       · first in its parent, or right after another break — spaces alone on
+ *         a line make a BLANK line; the paragraph splits and the break is gone;
  *       · after text that ends in a space or tab — the spaces join that run
  *         and are read back as part of the break, so the text loses its own
- *         whitespace, and after a tab no break is read back at all.
- *   - `peek` answers lookahead without running the handler. Lookahead has no
- *     `before`, so running the handler for it would report a backslash, and the
- *     text before a two-space break would escape a trailing literal backslash
- *     it has no need to. `peek` therefore cannot know about the two fallbacks
- *     above and still answers a space for them. That is harmless: the only
- *     use of the answer is to decide whether a preceding literal backslash
- *     needs escaping, and in neither fallback does the preceding output end
- *     in a backslash — it is empty, a line ending, or whitespace.
+ *         whitespace, and after a tab no break is read back at all;
+ *       · after emphasis, strong or strikethrough whose text ends in
+ *         whitespace — that delimiter then has whitespace on both sides, and
+ *         its handler has both written as character references
+ *         (serializerAttention.ts, `encodeSides`); `&#x20;` plus one space is
+ *         not a hard break. `*italic \` continued on the next line is ordinary
+ *         writing;
+ *       · after an inline tag that opens its paragraph — a line holding one
+ *         complete tag and then only whitespace starts an HTML block.
+ *   - `peek` tells the truth. It is the first character the node BEFORE the
+ *     break is told to expect, and that node decides its own escaping by it:
+ *     `1.` or `-` is text only while something other than whitespace follows,
+ *     and must escape itself before a two-space break. So the rule above is
+ *     decided from the tree — the break's place among its siblings — which
+ *     `peek` can see as well as the handler can, and the two share it.
+ *     Answering a backslash always, or a space always, each loses breaks: the
+ *     first turns `1.` into an empty list item, the second is the emphasis
+ *     case.
+ *   - The handler also refuses two spaces when the output so far ends in
+ *     whitespace or is empty, whatever the tree says. That is the one place it
+ *     can differ from `peek`, and only for a sibling shape the rule does not
+ *     know: a backslash is then written where a space was announced, to a
+ *     neighbour whose output ended in whitespace.
  *
  * @coordinates-with serializer.ts — installs this handler, one processor per style
+ * @coordinates-with serializerAttention.ts — the delimiters that encode their neighbours
+ * @coordinates-with serializerBreakBeforeHtml.ts — keeps the line ending before inline HTML
  * @coordinates-with serializerText.ts — text line endings, the sibling concern
  * @module utils/markdownPipeline/serializerBreak
  */
+
+import { ATTENTION_NODE_TYPES, siblingIndex } from "./serializerAttention";
 
 /** How a hard break is spelled. */
 export type HardBreakSpelling = "backslash" | "twoSpaces";
@@ -46,6 +70,8 @@ export type HardBreakSpelling = "backslash" | "twoSpaces";
 /** The slice of mdast-util-to-markdown's `State` this handler uses. */
 interface BreakState {
   safe: (value: string, info: BreakInfo) => string;
+  /** Index of the child being serialized, per open container. */
+  indexStack: number[];
 }
 
 /** The characters around the node being serialized. */
@@ -54,37 +80,76 @@ interface BreakInfo {
   after: string;
 }
 
+/** A phrasing node as far as this handler looks at one. */
+interface PhrasingNode {
+  type: string;
+  value?: string;
+  children?: readonly PhrasingNode[];
+}
+
 const BACKSLASH_BREAK = "\\\n";
 const TWO_SPACE_BREAK = "  \n";
 
+const endsInWhitespace = (value: string | undefined): boolean => /[ \t\r\n]$/.test(value ?? "");
+
 /**
- * True when two trailing spaces written after `before` are read back as
- * exactly one hard break and nothing else: `before` must end in a character
- * that is neither a line ending (or nothing) nor a space or tab.
+ * True when no line ending can be written here because the node after the
+ * break is inline HTML that would start an HTML block on a line of its own.
+ * HTML that may start a line has been given another type by then
+ * (serializerBreakBeforeHtml.ts), so an `html` sibling here is one that may
+ * not — and upstream would turn the line ending into a space in any case.
  */
-function canTakeTrailingSpaces(before: string): boolean {
-  return before !== "" && !/[ \t\r\n]$/.test(before);
+function cannotEndLine(node: unknown, parent: PhrasingNode | undefined, state: BreakState): boolean {
+  const siblings = parent?.children ?? [];
+  return siblings[siblingIndex(node, parent, state) + 1]?.type === "html";
+}
+
+/**
+ * True when this break cannot be written as two trailing spaces, judged from
+ * its place among its siblings. See the module header for each case.
+ */
+function mustBeBackslash(node: unknown, parent: PhrasingNode | undefined, state: BreakState): boolean {
+  const siblings = parent?.children ?? [];
+  const index = siblingIndex(node, parent, state);
+  const previous = siblings[index - 1];
+  if (previous === undefined || previous.type === "break") return true;
+  if (previous.type === "text") return endsInWhitespace(previous.value);
+  // A tag that opens its paragraph, then only whitespace: an HTML block.
+  if (previous.type === "html") return index === 1;
+  if (ATTENTION_NODE_TYPES.has(previous.type)) {
+    const last = previous.children?.[previous.children.length - 1];
+    return last?.type === "text" && endsInWhitespace(last.value);
+  }
+  return false;
 }
 
 /** Build the `break` handler for one hard-break spelling. */
 export function createBreakHandler(spelling: HardBreakSpelling) {
   const handle = (
-    _node: unknown,
-    _parent: unknown,
+    node: unknown,
+    parent: PhrasingNode | undefined,
     state: BreakState,
     info: BreakInfo,
   ): string => {
-    // A construct that cannot hold a line ending (a table cell) gets a space,
-    // or nothing when whitespace already separates the two sides.
-    if (state.safe("\n", info) !== "\n") {
+    // Where no line ending can be written — a table cell, or before HTML
+    // that would start a block — the break becomes a space, or nothing when
+    // whitespace already separates the two sides.
+    if (state.safe("\n", info) !== "\n" || cannotEndLine(node, parent, state)) {
       return /[ \t]/.test(info.before) ? "" : " ";
     }
-    if (spelling === "twoSpaces" && canTakeTrailingSpaces(info.before)) {
+    if (
+      spelling === "twoSpaces" &&
+      !mustBeBackslash(node, parent, state) &&
+      info.before !== "" &&
+      !endsInWhitespace(info.before)
+    ) {
       return TWO_SPACE_BREAK;
     }
     return BACKSLASH_BREAK;
   };
-  return Object.assign(handle, {
-    peek: (): string => (spelling === "twoSpaces" ? " " : "\\"),
-  });
+  const peek = (node: unknown, parent: PhrasingNode | undefined, state: BreakState): string => {
+    if (cannotEndLine(node, parent, state)) return " ";
+    return spelling === "twoSpaces" && !mustBeBackslash(node, parent, state) ? " " : "\\";
+  };
+  return Object.assign(handle, { peek });
 }

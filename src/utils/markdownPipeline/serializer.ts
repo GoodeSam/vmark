@@ -21,6 +21,9 @@
  *   - hardBreakStyle picks the spelling of a `break` NODE (serializerBreak.ts).
  *     It is never applied to the finished string, where a hard break cannot be
  *     told from math, HTML or a literal backslash that ends a line
+ *   - Before stringifying, inline HTML that follows a hard break is retyped so
+ *     upstream does not swallow the break's line ending
+ *     (serializerBreakBeforeHtml.ts). The tree passed in is not changed
  *   - join re-emits captured blank-line runs (blankLinesJoin, ADR-1a), and
  *     keeps a list that cannot interrupt a paragraph off its last line
  *     (listInterruptJoin, CommonMark §5.2)
@@ -32,6 +35,7 @@
  * @coordinates-with listInterruptJoin.ts — blank line before a non-interrupting list
  * @coordinates-with serializerText.ts — text line endings that would make a blank line
  * @coordinates-with serializerBreak.ts — the `break` handler, one per hard-break style
+ * @coordinates-with serializerBreakBeforeHtml.ts — the line ending between a break and inline HTML
  * @module utils/markdownPipeline/serializer
  */
 
@@ -50,6 +54,11 @@ import type { MarkdownPipelineOptions } from "./types";
 import { parseMarkdownToMdast } from "./parser";
 import { applyCosmeticPass } from "./serializerCosmetics";
 import { createBreakHandler, type HardBreakSpelling } from "./serializerBreak";
+import {
+  HTML_AFTER_BREAK,
+  handleHtmlAfterBreak,
+  keepLineEndingsBeforeHtml,
+} from "./serializerBreakBeforeHtml";
 
 /**
  * Build the unified processor configured for VMark markdown serialization.
@@ -94,6 +103,7 @@ function buildSerializer(hardBreak: HardBreakSpelling) {
         // The hard-break spelling belongs to the node, not to a pass over the
         // finished string (serializerBreak.ts).
         break: createBreakHandler(hardBreak),
+        [HTML_AFTER_BREAK]: handleHtmlAfterBreak,
         ...tocToMarkdown.handlers,
       } as Record<string, unknown>,
       // Joins are consulted last-first: listInterruptJoin can raise a captured
@@ -137,7 +147,7 @@ export function serializeMdastToMarkdown(
   options: MarkdownPipelineOptions = {}
 ): string {
   const processor = getSerializer(options.hardBreakStyle ?? "backslash");
-  let result = processor.stringify(mdast);
+  let result = processor.stringify(keepLineEndingsBeforeHtml(mdast));
   // No split-surrogate repair pass: attention neighbours are encoded as whole
   // code points when they are encoded (serializerAttention.ts and the
   // mdast-util-to-markdown patch), which a string repair afterwards could not

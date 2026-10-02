@@ -130,6 +130,156 @@ describe("hard-break style — real hard breaks", () => {
     }
   });
 
+  // A delimiter run with whitespace on both sides cannot form, so the mark's
+  // handler writes both neighbours as character references. If the break
+  // offers a space as its first character, that space is one of them, and
+  // `&#x20;` plus one space is not a hard break.
+  describe.each([
+    ["emphasis", "emphasis"],
+    ["strong", "strong"],
+    ["strikethrough", "delete"],
+  ])("a break directly after %s", (_label, type) => {
+    it.each([
+      ["a space", "a "],
+      ["punctuation", "a."],
+      ["a letter", "a"],
+      ["CJK", "中"],
+    ])("survives when the marked text ends in %s", (_ending, value) => {
+      const tree = root([
+        paragraph([{ type, children: [text(value)] }, hardBreak, { type, children: [text("b")] }]),
+      ]);
+      for (const options of [TWO_SPACES, BACKSLASH]) {
+        const once = serializeMdastToMarkdown(structuredClone(tree), options);
+        const doc = parseMarkdown(schema, once);
+        expect(countHardBreaks(doc)).toBe(1);
+        expect(doc.textContent).toBe(`${value}b`);
+        // Stable from the document's own form on. The tree above is built by
+        // hand; a document never holds whitespace at the edge of a
+        // strikethrough (markEdgeWhitespace.ts moves it out), so the first
+        // serialization of that one tree is not yet the canonical text.
+        const twice = serializeMarkdown(schema, doc, options);
+        const again = parseMarkdown(schema, twice);
+        expect(countHardBreaks(again)).toBe(1);
+        expect(again.textContent).toBe(`${value}b`);
+        expect(serializeMarkdown(schema, again, options)).toBe(twice);
+        if (type !== "delete") expect(twice).toBe(once);
+      }
+    });
+  });
+
+  it.each([
+    ["emphasis", "x *y \\\nz* w\n"],
+    ["strong", "x **y \\\nz** w\n"],
+    ["strikethrough", "x ~~y \\\nz~~ w\n"],
+  ])("keeps a break inside %s that follows a space, from a document", (_label, source) => {
+    // The mark spans the break. It comes back as one run per side, and the
+    // first run's text ends in the space.
+    const before = parseMarkdown(schema, source);
+    expect(countHardBreaks(before)).toBe(1);
+    for (const options of [TWO_SPACES, BACKSLASH]) {
+      const once = serializeMarkdown(schema, before, options);
+      const after = parseMarkdown(schema, once);
+      expect(countHardBreaks(after)).toBe(1);
+      expect(after.textContent).toBe(before.textContent);
+      expect(serializeMarkdown(schema, after, options)).toBe(once);
+    }
+  });
+
+  // Text that is only text because something follows it on its line. Before a
+  // two-space break what follows is whitespace, so the text has to escape
+  // itself — which it can only do if the break says a space comes next.
+  it.each([
+    ["an ordered-list marker", "1.\\\nx\n"],
+    ["a bullet", "-\\\nx\n"],
+    ["a plus", "+\\\nx\n"],
+    ["a bullet inside a list item", "- -\\\n  x\n"],
+    ["a heading marker", "#\\\nx\n"],
+    ["a thematic break look-alike", "\\---\\\nx\n"],
+    ["a quote marker", "\\>\\\nx\n"],
+  ])("keeps %s before a break as text, in either style", (_label, source) => {
+    const before = parseMarkdown(schema, source);
+    expect(countHardBreaks(before)).toBe(1);
+    for (const options of [TWO_SPACES, BACKSLASH]) {
+      const once = serializeMarkdown(schema, before, options);
+      const after = parseMarkdown(schema, once);
+      expect(after.toJSON()).toEqual(before.toJSON());
+      expect(serializeMarkdown(schema, after, options)).toBe(once);
+    }
+  });
+
+  // mdast-util-to-markdown replaces a line ending that comes directly before
+  // an inline `html` node with a space, in case the tag would start an HTML
+  // block. For a hard break that leaves `\ ` — a literal backslash — or three
+  // spaces, and no break.
+  describe("a break directly before inline HTML", () => {
+    it.each([
+      ["an opening tag", "a\\\n<b>x</b> y\n"],
+      ["a closing tag", "a\\\n</b> y\n"],
+      ["a tag with attributes", 'a\\\n<span title="t">x</span>\n'],
+      ["a tag pair, two-space source", "a  \n<kbd>K</kbd>\n"],
+      ["CJK text", "中文\\\n<b>日本語</b>\n"],
+      ["inside a blockquote", "> a\\\n> <b>x</b>\n"],
+      ["inside a list item", "- a\\\n  <b>x</b>\n"],
+    ])("keeps the break before %s, in either style", (_label, source) => {
+      const before = parseMarkdown(schema, source);
+      expect(countHardBreaks(before)).toBe(1);
+      for (const options of [TWO_SPACES, BACKSLASH]) {
+        const once = serializeMarkdown(schema, before, options);
+        const after = parseMarkdown(schema, once);
+        expect(after.toJSON()).toEqual(before.toJSON());
+        expect(serializeMarkdown(schema, after, options)).toBe(once);
+      }
+    });
+
+    it.each([
+      ["a block-level tag", "<div>"],
+      ["a comment", "<!-- c -->"],
+      ["a raw-text tag", "<pre>"],
+    ])("drops the break before %s without leaving a backslash", (_label, tag) => {
+      // On its own line such a tag starts an HTML block, which ends the
+      // paragraph: break-then-tag cannot be written. Only an editor document
+      // can hold it; markdown source never parses to it.
+      const tree = root([paragraph([text("a"), hardBreak, { type: "html", value: tag }, text("b")])]);
+      for (const options of [TWO_SPACES, BACKSLASH]) {
+        const once = serializeMdastToMarkdown(structuredClone(tree), options);
+        expect(once).toBe(`a ${tag}b\n`);
+        const doc = parseMarkdown(schema, once);
+        expect(doc.childCount).toBe(1);
+        expect(serializeMarkdown(schema, doc, options)).toBe(once);
+      }
+    });
+
+    it("does not change the tree it is given", () => {
+      const tree = root([paragraph([text("a"), hardBreak, { type: "html", value: "<b>" }, text("b")])]);
+      const copy = structuredClone(tree);
+      serializeMdastToMarkdown(tree, TWO_SPACES);
+      expect(tree).toEqual(copy);
+    });
+  });
+
+  // A line that holds one complete tag and then only whitespace starts an
+  // HTML block. Two trailing spaces after a tag that begins its line make
+  // exactly that line.
+  it.each([
+    ["a closing tag", "</b>\\\nx\n"],
+    ["an opening tag", "<b>\\\nx\n"],
+    ["a tag in a blockquote", "> <b>\\\n> x\n"],
+    ["a tag in a list item", "- </b>\\\n  x\n"],
+    ["a tag after another break", "a\\\n<b>\\\nx\n"],
+  ])("keeps a break after %s that begins its line, in either style", (_label, source) => {
+    const before = parseMarkdown(schema, source);
+    for (const options of [TWO_SPACES, BACKSLASH]) {
+      const once = serializeMarkdown(schema, before, options);
+      const after = parseMarkdown(schema, once);
+      expect(after.toJSON()).toEqual(before.toJSON());
+      expect(serializeMarkdown(schema, after, options)).toBe(once);
+    }
+  });
+
+  it("still writes two spaces after a tag that follows text on its line", () => {
+    expect(roundTrip("a <b>x</b>\\\ny\n", TWO_SPACES)).toBe("a <b>x</b>  \ny\n");
+  });
+
   it("is stable for a paragraph line that only looks like a table header", () => {
     // `| h | \` has two cells against a one-cell delimiter row, so this is a
     // paragraph whose first line ends in a hard break.
