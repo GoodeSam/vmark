@@ -98,6 +98,24 @@ jobs:
           check "server/mcp/src/cli.ts"   "$(grep -m1 'const VERSION' server/mcp/src/cli.ts | sed "s/.*['\"]\(.*\)['\"].*/\1/")"
           [ "$fail" -eq 0 ]
 
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # The release notes are the tag's CHANGELOG.md section, written at bump
+      # time (.claude/rules/40-version-bump.md). A tag without one fails here,
+      # before the draft or any build exists: the alternative is a release
+      # whose update card says "See release notes at <url>" instead of what
+      # changed.
+      - name: Extract release notes from CHANGELOG.md
+        env:
+          TAG: ${{ steps.get-version.outputs.version }}
+        run: |
+          set -euo pipefail
+          node scripts/extract-changelog-section.mjs "$TAG" > release-notes.md
+          cat release-notes.md
+
       # No longer skipped on manual dispatch. Skipping it there was how a
       # dispatch could silently REPUBLISH an existing version and swap assets
       # under clients that had already downloaded them — the exact thing this
@@ -144,6 +162,9 @@ jobs:
           name: VMark ${{ steps.get-version.outputs.version }}
           draft: true
           prerelease: false
+          # The CHANGELOG section leads; GitHub's list of merged pull requests
+          # follows it.
+          body_path: release-notes.md
           generate_release_notes: true
 
   build-tauri:
@@ -555,6 +576,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      # The tagged tree, for its CHANGELOG.md and the extractor.
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ needs.create-release.outputs.version }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
       - name: Generate and upload latest.json
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -563,6 +595,15 @@ jobs:
           REPO="${{ github.repository }}"
 
           echo "Generating latest.json for $VERSION..."
+
+          # The update card's "what's new" text: the tag's CHANGELOG.md section
+          # in plain text (the card renders text, not markdown). create-release
+          # already refused a tag without one; this fails the same way if the
+          # section vanished in between.
+          if ! NOTES=$(node scripts/extract-changelog-section.mjs "$VERSION" --plain); then
+            echo "::error::no CHANGELOG.md section for $VERSION — latest.json would have no release notes."
+            exit 1
+          fi
 
           # Download all .sig files to get signatures.
           # Hard-fail on download failure: an empty `sigs/` directory used to
@@ -629,7 +670,7 @@ jobs:
           # it as a legal JSON string.
           MANIFEST=$(jq -n \
             --arg version "$VER" \
-            --arg notes "See release notes at https://github.com/$REPO/releases/tag/$VERSION" \
+            --arg notes "$NOTES" \
             --arg pub_date "$PUB_DATE" \
             '{version: $version, notes: $notes, pub_date: $pub_date, platforms: {}}')
 
