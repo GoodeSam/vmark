@@ -1406,21 +1406,6 @@
       "target": "src/plugins/codemirror/sourceShortcutsHelpers"
     },
     {
-      "file": "src/plugins/codePreview/__tests__/livePreviewPerElement.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/codePreview/renderers/renderGraphvizPreview"
-    },
-    {
-      "file": "src/plugins/codePreview/__tests__/livePreviewPerElement.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/codePreview/renderers/renderLatex"
-    },
-    {
-      "file": "src/plugins/codePreview/__tests__/livePreviewPerElement.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/codePreview/renderers/renderWorkflowPreview"
-    },
-    {
       "file": "src/plugins/codePreview/liveErrorHandling.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/codePreview/renderers/renderMermaidPreview"
