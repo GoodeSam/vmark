@@ -259,6 +259,14 @@ tauri = { version = "2", features = ["protocol-asset", "test"] }
 #   cli_install, workflow approval) to keep a panicking background task from
 #   taking down the whole app; `panic = "abort"` would defeat all of it for a
 #   ~2–3% size win.
+# Every `unsafe` block and `unsafe impl` states, in a `// SAFETY:` comment
+# directly above it, the invariant that makes it sound and who upholds it. The
+# lint applies to every target of the package (lib, bins, tests) and is checked
+# for Windows-only code by scripts/check-cross-target.sh, which runs clippy for
+# that target.
+[lints.clippy]
+undocumented_unsafe_blocks = "deny"
+
 [profile.release]
 lto = "thin"
 codegen-units = 1
