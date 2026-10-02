@@ -430,19 +430,27 @@ describe("the report-only switch", () => {
     expect(r.out).toContain("unknown rule: real-sleeps");
   });
 
-  it("with no flag the script uses its committed REPORT_ONLY_RULES", async () => {
-    const { REPORT_ONLY_RULES } = await import("./check-test-timer-isolation.mjs");
+  it("with no flag the script uses its committed REPORT_ONLY_RULES: every rule fails", () => {
     const r = run(VIOLATING, { args: [] });
-    const expected = REPORT_ONLY_RULES.length === 3 ? 0 : 1;
-    expect(r.status, r.out).toBe(expected);
+    expect(r.status, r.out).toBe(1);
+    expect(r.out).toContain("3 finding(s) in enforced rules");
+    expect(r.out).not.toContain("REPORT-ONLY");
   });
 
   // The committed state of the switch. Flipping a rule to enforcing is a
   // one-line change in the gate AND a change here, so it is a reviewed diff.
-  it("PIN: which rules are report-only today", async () => {
+  it("PIN: no rule is report-only today — all four are enforced", async () => {
     const { REPORT_ONLY_RULES, RULES } = await import("./check-test-timer-isolation.mjs");
     expect(RULES).toEqual(["race-sibling", "race-widened", "wall-clock-read", "real-sleep"]);
-    expect(REPORT_ONLY_RULES).toEqual(["race-widened", "wall-clock-read", "real-sleep"]);
+    expect(REPORT_ONLY_RULES).toEqual([]);
+  });
+
+  it("the repository itself has no finding under any rule", () => {
+    const r = spawnSync(process.execPath, [SCRIPT, "--report-only", "none"], { encoding: "utf8" });
+    expect(r.status, `${r.stdout}${r.stderr}`).toBe(0);
+    for (const rule of ["race-sibling", "race-widened", "wall-clock-read", "real-sleep"]) {
+      expect(r.stdout).toContain(`  ${rule}: 0\n`);
+    }
   });
 
   it("the wired-in gate passes no flag of its own — the switch lives in one place", () => {

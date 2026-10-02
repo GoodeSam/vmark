@@ -50,8 +50,9 @@
  * finding, on every run — but do not fail. It exists so a rule can land before
  * the last of its findings is fixed. It is two-way: a report-only rule with no
  * findings left FAILS the run until its name is removed from the list, so the
- * switch cannot outlive its reason. `--report-only <a,b|none>` overrides the
- * list for this gate's own tests.
+ * switch cannot outlive its reason. The list is empty today — all four rules
+ * fail the run. `--report-only <a,b|none>` overrides the list for this gate's
+ * own tests.
  *
  * Usage: node scripts/check-test-timer-isolation.mjs [--root <dir>] [--report-only <rules|none>]
  *
@@ -68,8 +69,11 @@ import { importedSleepHelpers } from "./lib/timerIsolationImports.mjs";
 
 export const RULES = ["race-sibling", "race-widened", "wall-clock-read", "real-sleep"];
 
-/** Rules that report without failing. Remove a name to enforce that rule. */
-export const REPORT_ONLY_RULES = ["race-widened", "wall-clock-read", "real-sleep"];
+/**
+ * Rules that report without failing. Empty: every rule is enforced. A new rule
+ * may be listed here while its findings are being fixed, and no longer.
+ */
+export const REPORT_ONLY_RULES = [];
 
 /** A sleep shorter than this is a tick, not a wait on the wall clock. */
 export const SLEEP_THRESHOLD_MS = 100;
