@@ -1396,16 +1396,6 @@
       "target": "src/plugins/sourcePopup/sourcePopupUtils"
     },
     {
-      "file": "src/plugins/tabIndent/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/tabIndent/shiftTabEscape"
-    },
-    {
-      "file": "src/plugins/tabIndent/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/tabIndent/tabEscape"
-    },
-    {
       "file": "src/plugins/tableUI/__tests__/TiptapTableContextMenu.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/tableUI/tableActions.tiptap"
