@@ -114,6 +114,33 @@ describe("hard-break style — real hard breaks", () => {
     expect(countHardBreaks(doc)).toBe(expected);
   });
 
+  it.each([
+    ["a space", "a "],
+    ["a tab", "a\t"],
+    ["several spaces", "a   "],
+  ])("keeps text that ends in %s before a break, in either style", (_label, value) => {
+    // Trailing spaces written before a two-space break join its run and are
+    // read back as part of the break, so the text would lose them.
+    const tree = root([paragraph([text(value), hardBreak, text("b")])]);
+    for (const options of [TWO_SPACES, BACKSLASH]) {
+      const once = serializeMdastToMarkdown(structuredClone(tree), options);
+      const doc = parseMarkdown(schema, once);
+      expect(countHardBreaks(doc)).toBe(1);
+      expect(serializeMarkdown(schema, doc, options)).toBe(once);
+    }
+  });
+
+  it("is stable for a paragraph line that only looks like a table header", () => {
+    // `| h | \` has two cells against a one-cell delimiter row, so this is a
+    // paragraph whose first line ends in a hard break.
+    const source = "| h | \\\n| - |\n| alpha |\n";
+    for (const options of [TWO_SPACES, BACKSLASH]) {
+      const once = roundTrip(source, options);
+      expect(roundTrip(once, options)).toBe(once);
+      expect(parseMarkdown(schema, once).firstChild?.type.name).toBe("paragraph");
+    }
+  });
+
   it("writes a break in a table cell as a space, never a line ending", () => {
     const cell = (children: unknown[]) => ({ type: "tableCell", children });
     const row = (cells: unknown[]) => ({ type: "tableRow", children: cells });
