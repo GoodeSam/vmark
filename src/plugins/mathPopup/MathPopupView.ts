@@ -116,6 +116,14 @@ export class MathPopupView extends WysiwygPopupView<MathPopupState> {
     // No special cleanup needed
   }
 
+  /**
+   * Click-outside commits the edit, as the Source math popup does. The base
+   * default would discard the textarea content the user just typed.
+   */
+  protected override onClickOutside(): void {
+    this.handleSave();
+  }
+
   private renderPreview(latex: string): void {
     const trimmed = latex.trim();
     this.error.textContent = "";
@@ -183,12 +191,16 @@ export class MathPopupView extends WysiwygPopupView<MathPopupState> {
       return;
     }
 
-    const tr = editorState.tr.setNodeMarkup(nodePos, undefined, {
-      ...node.attrs,
-      content: latex,
-    });
-
-    dispatch(tr);
+    // An unchanged formula needs no transaction: dispatching one would dirty
+    // the document and add an undo step for every click-away.
+    if (node.attrs.content !== latex) {
+      dispatch(
+        editorState.tr.setNodeMarkup(nodePos, undefined, {
+          ...node.attrs,
+          content: latex,
+        })
+      );
+    }
     state.closePopup();
     this.focusEditor();
   }

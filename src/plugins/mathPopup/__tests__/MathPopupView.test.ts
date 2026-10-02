@@ -366,6 +366,71 @@ describe("MathPopupView", () => {
       expect(mockClosePopup).toHaveBeenCalled();
     });
 
+    // WI-RA9A.1 — clicking away commits the edit, as the Source popup does.
+    async function openAndClickOutside(latex: string) {
+      emitStateChange({ isOpen: true, latex, nodePos: 7, anchorRect });
+      await new Promise((r) => requestAnimationFrame(r));
+      await new Promise((r) => requestAnimationFrame(r));
+
+      const outsideEl = document.createElement("div");
+      document.body.appendChild(outsideEl);
+      const mousedownEvent = new MouseEvent("mousedown", { bubbles: true });
+      Object.defineProperty(mousedownEvent, "target", { value: outsideEl });
+      document.dispatchEvent(mousedownEvent);
+    }
+
+    it.each([
+      ["ascii", "a^2 + b^2"],
+      ["CJK", "\\text{面积} = \\pi r^2"],
+      ["multi-line", "a\n+ b"],
+      ["emptied", ""],
+    ])("commits the typed latex (%s) to the node when clicking outside", async (_label, latex) => {
+      view.state.doc.nodeAt = vi.fn(() => ({
+        type: { name: "math_inline" },
+        attrs: { content: "before" },
+        nodeSize: 1,
+      }));
+
+      await openAndClickOutside(latex);
+
+      expect(view.state.tr.setNodeMarkup).toHaveBeenCalledWith(7, undefined, { content: latex });
+      expect(view.dispatch).toHaveBeenCalledTimes(1);
+      expect(mockClosePopup).toHaveBeenCalledTimes(1);
+    });
+
+    it("closes without a transaction when clicking outside with the latex unchanged", async () => {
+      view.state.doc.nodeAt = vi.fn(() => ({
+        type: { name: "math_inline" },
+        attrs: { content: "x^2" },
+        nodeSize: 1,
+      }));
+
+      await openAndClickOutside("x^2");
+
+      expect(view.dispatch).not.toHaveBeenCalled();
+      expect(mockClosePopup).toHaveBeenCalledTimes(1);
+    });
+
+    it("closes without a transaction when the math node is gone at click-outside time", async () => {
+      view.state.doc.nodeAt = vi.fn(() => null);
+
+      await openAndClickOutside("y");
+
+      expect(view.dispatch).not.toHaveBeenCalled();
+      expect(mockClosePopup).toHaveBeenCalledTimes(1);
+    });
+
+    it("still discards the edit on Escape", async () => {
+      emitStateChange({ isOpen: true, latex: "discard me", nodePos: 7, anchorRect });
+      await new Promise((r) => requestAnimationFrame(r));
+
+      const textarea = dom.container.querySelector(".math-popup-input") as HTMLTextAreaElement;
+      textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+
+      expect(view.dispatch).not.toHaveBeenCalled();
+      expect(mockClosePopup).toHaveBeenCalled();
+    });
+
     it("does not close when clicking inside popup", async () => {
       emitStateChange({ isOpen: true, latex: "x", nodePos: 1, anchorRect });
       await new Promise((r) => requestAnimationFrame(r));

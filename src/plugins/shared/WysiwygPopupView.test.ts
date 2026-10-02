@@ -203,6 +203,33 @@ describe("WysiwygPopupView", () => {
       expect(storeApi.store.getState().closePopup).toHaveBeenCalled();
     });
 
+    // WI-RA9A.1 — the click-outside behaviour is a hook a subclass can replace.
+    it("routes a click outside through onClickOutside so a subclass can commit instead of discarding", () => {
+      class CommittingPopupView extends TestPopupView {
+        committed = 0;
+        protected override onClickOutside(): void {
+          this.committed += 1;
+        }
+      }
+      vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+        cb(0);
+        return 0;
+      });
+      const committing = new CommittingPopupView(view, storeApi.store);
+      popup.destroy();
+      storeApi.emit({ isOpen: true, anchorRect });
+
+      const outsideEl = document.createElement("div");
+      document.body.appendChild(outsideEl);
+      const mousedownEvent = new MouseEvent("mousedown", { bubbles: true });
+      Object.defineProperty(mousedownEvent, "target", { value: outsideEl });
+      document.dispatchEvent(mousedownEvent);
+
+      expect(committing.committed).toBe(1);
+      expect(storeApi.store.getState().closePopup).not.toHaveBeenCalled();
+      committing.destroy();
+    });
+
     it("does not close on click inside container", () => {
       storeApi.emit({ isOpen: true, anchorRect });
 
