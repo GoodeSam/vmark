@@ -520,6 +520,8 @@
   "about.checking": "確認中...",
   "about.website": "ウェブサイト",
   "about.github": "GitHub",
+  "about.thirdPartyNotices": "サードパーティ通知",
+  "about.thirdPartyNoticesFailed": "サードパーティ通知を開けませんでした",
   "shortcuts.hint": "ショートカットをクリックして変更します。",
   "shortcuts.searchPlaceholder": "ショートカットを検索...",
   "shortcuts.export": "エクスポート",

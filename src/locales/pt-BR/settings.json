@@ -520,6 +520,8 @@
   "about.checking": "Verificando...",
   "about.website": "Site",
   "about.github": "GitHub",
+  "about.thirdPartyNotices": "Avisos de terceiros",
+  "about.thirdPartyNoticesFailed": "Não foi possível abrir os avisos de terceiros",
   "shortcuts.hint": "Clique em um atalho para alterá-lo.",
   "shortcuts.searchPlaceholder": "Pesquisar atalhos...",
   "shortcuts.export": "Exportar",

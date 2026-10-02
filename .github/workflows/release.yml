@@ -260,6 +260,37 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
+      # The third-party notices the app bundles (Settings → About). MIT, BSD,
+      # ISC and Apache require them in a binary distribution. Regenerated here
+      # so the shipped copy is exact for this tag's lockfiles even when the
+      # tracked copy is behind, and it fails the release when any bundled
+      # component has no license text. Every leg writes the same bytes:
+      # src-tauri/about.toml lists all four release targets.
+      - name: Install cargo-about
+        uses: taiki-e/install-action@7623a79cdfecb99d681017af368ca353d9f49bb5 # v2.87.19
+        with:
+          tool: cargo-about@0.8.2
+
+      # Decided from the checked-out tree, like the macOS layout above: a tree
+      # that bundles the notices must have the generator, and one that has
+      # neither predates them. Half of the pair fails.
+      - name: Generate third-party notices
+        id: notices
+        shell: bash
+        run: |
+          set -euo pipefail
+          GENERATOR=scripts/gen-third-party-licenses.mjs
+          if [ -f "$GENERATOR" ]; then
+            node "$GENERATOR"
+            echo "verify=true" >> "$GITHUB_OUTPUT"
+          elif ! grep -q THIRD_PARTY_LICENSES src-tauri/tauri.conf.json; then
+            echo "::notice::This tag predates the bundled third-party notices: building without them."
+            echo "verify=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::tauri.conf.json bundles THIRD_PARTY_LICENSES but $GENERATOR is missing."
+            exit 1
+          fi
+
       # Build MCP server sidecar for the target platform
       # NOTE: pkg binaries cannot be combined with lipo, so we build arch-specific binaries
       - name: Build MCP server sidecar (macOS)
@@ -427,6 +458,20 @@ jobs:
           set -euo pipefail
           TARGET="${MATRIX_ARGS##*--target }"
           scripts/verify-macos-bundle-entitlements.sh "src-tauri/target/$TARGET/release/bundle/macos/VMark.app"
+
+      # The notices the bundle carries must be the ones generated for this tag:
+      # a resource entry that bundled a stale or empty file would pass every
+      # earlier step.
+      - name: Verify bundled third-party notices (macOS)
+        if: matrix.platform == 'macos-latest' && steps.notices.outputs.verify == 'true'
+        env:
+          MATRIX_ARGS: ${{ matrix.args }}
+        run: |
+          set -euo pipefail
+          TARGET="${MATRIX_ARGS##*--target }"
+          BUNDLED="src-tauri/target/$TARGET/release/bundle/macos/VMark.app/Contents/Resources/resources/generated/THIRD_PARTY_LICENSES.txt"
+          test -s "$BUNDLED" || { echo "::error::$BUNDLED is missing or empty"; exit 1; }
+          cmp "$BUNDLED" src-tauri/resources/generated/THIRD_PARTY_LICENSES.txt
 
       # tauri-action signs, notarizes and staples the .app, and signs the .dmg —
       # but it never notarizes the disk image itself. A signed-but-unnotarized

@@ -520,6 +520,8 @@
   "about.checking": "Vérification...",
   "about.website": "Site web",
   "about.github": "GitHub",
+  "about.thirdPartyNotices": "Mentions de tiers",
+  "about.thirdPartyNoticesFailed": "Impossible d’ouvrir les mentions de tiers",
   "shortcuts.hint": "Cliquez sur un raccourci pour le modifier.",
   "shortcuts.searchPlaceholder": "Rechercher des raccourcis...",
   "shortcuts.export": "Exporter",
