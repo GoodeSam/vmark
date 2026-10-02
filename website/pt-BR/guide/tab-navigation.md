@@ -472,7 +472,7 @@ Não há atalho de teclado para fixar.
 
 Escolha **Renomear** no menu de contexto de uma aba. O nome fica editável na aba, com a parte antes da extensão selecionada. Enter ou clicar fora confirma; Escape cancela. O arquivo é renomeado no disco e todas as abas abertas que apontam para ele acompanham. O VMark nunca sobrescreve: se o nome já estiver em uso, uma caixa de diálogo diz *Já existe um arquivo chamado "X".* Um nome vazio, inalterado, `.` ou `..`, ou que contenha `/` ou `\` é recusado ou ignorado. O que você digita é o nome inteiro — apague a extensão e o arquivo fica sem ela.
 
-No **macOS**, com **Configurações → Aparência → Mostrar nome do arquivo na barra de título** ativado, você também pode dar um clique duplo no nome do arquivo na barra de título para renomeá-lo. As mesmas regras se aplicam, exceto que uma colisão ou um erro não mostra mensagem — o nome simplesmente continua editável — e, se **Mostrar extensões de arquivo** estiver desativado, a extensão original é mantida quando você digita um nome sem extensão. Um clique duplo no título de um documento não salvo abre **Salvar** em vez disso.
+No **macOS**, com **Configurações → Aparência → Mostrar nome do arquivo na barra de título** ativado, você também pode dar um clique duplo no nome do arquivo na barra de título para renomeá-lo. As mesmas regras e mensagens se aplicam; depois de uma colisão ou de um erro o nome continua editável para você tentar outro. Se **Mostrar extensões de arquivo** estiver desativado, a extensão original é mantida quando você digita um nome sem extensão. Um clique duplo no título de um documento não salvo abre **Salvar** em vez disso.
 
 ## Fechando abas e janelas
 
