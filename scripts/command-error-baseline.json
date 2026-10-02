@@ -13,7 +13,7 @@
     "src-tauri/src/content_search.rs": 2,
     "src-tauri/src/external_editor.rs": 1,
     "src-tauri/src/file_ops.rs": 2,
-    "src-tauri/src/gha_workflow/commands.rs": 2,
+    "src-tauri/src/gha_workflow/commands.rs": 1,
     "src-tauri/src/live_docs.rs": 2,
     "src-tauri/src/mcp_bridge_path_guard.rs": 1,
     "src-tauri/src/menu/dynamic.rs": 2,
