@@ -20,6 +20,9 @@
  *     that has not reached the store yet is unsaved work like any other.
  *   - `close` reports the tab store's verdict, not the request: a pinned tab
  *     the store refuses to close answers `{closed: false, reason: "PINNED"}`.
+ *   - `close` refuses a browser tab. Those are closed through the browser
+ *     surface, which never closes a tab the user opened and waits for the
+ *     page to be torn down; closing one here went around both.
  *   - `new` and `open` accept an optional `windowLabel` so a
  *     multi-window workflow can target a specific window; default is
  *     focused.
@@ -41,7 +44,7 @@
  */
 
 import { useTabStore } from "@/stores/tabStore";
-import type { Tab } from "@/stores/tabStoreTypes";
+import { isBrowserTab, type Tab } from "@/stores/tabStoreTypes";
 import { useWorkspaceInstancesStore } from "@/stores/workspaceInstancesStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
@@ -105,8 +108,9 @@ export { handleWorkspaceSave } from "./workspaceSave";
  * is not true, we refuse the close with `{closed: false, reason: "DIRTY"}`
  * so the AI can decide whether to save first or force. A pinned tab is never
  * closed, `force` or not: the reply is `{closed: false, reason: "PINNED"}`.
- * A tab that does close takes its document with it (the tab store's removal
- * announcement frees per-tab state).
+ * A browser tab is refused with `INVALID_TAB`. A tab that does close takes
+ * its document with it (the tab store's removal announcement frees per-tab
+ * state).
  */
 export async function handleWorkspaceClose(
   id: string,
@@ -120,6 +124,13 @@ export async function handleWorkspaceClose(
       return;
     }
     const { windowLabel, tab } = owned;
+    if (isBrowserTab(tab)) {
+      await structuredError(id, {
+        error: "INVALID_TAB",
+        message: "tabId names a browser tab; close it with the browser tool's close action",
+      });
+      return;
+    }
     // Keystrokes the editor has not handed to the store yet are unsaved work:
     // without them the tab reads as clean and the close would drop them.
     flushLiveEditors();

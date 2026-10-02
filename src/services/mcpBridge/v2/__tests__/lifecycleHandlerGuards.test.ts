@@ -277,6 +277,26 @@ describe("workspace.close", () => {
 
     expect(errorOf("req-bad")).toEqual({ error: "INVALID_TAB", message });
   });
+
+  it.each([
+    { owner: "human", force: false },
+    { owner: "human", force: true },
+    { owner: "ai-sandbox", force: true },
+  ] as const)(
+    "refuses a $owner browser tab (force: $force): the browser tool closes those",
+    async ({ owner, force }) => {
+      const browserTabId = useTabStore
+        .getState()
+        .createBrowserTab(MAIN, "https://example.com/", "Example", owner);
+
+      await handleWorkspaceClose("req-browser", { tabId: browserTabId, force });
+
+      const err = errorOf("req-browser");
+      expect(err.error).toBe("INVALID_TAB");
+      expect(err.message).toContain("browser tab");
+      expect(useTabStore.getState().findTabById(browserTabId)).not.toBeNull();
+    },
+  );
 });
 
 describe("workspace.open", () => {
