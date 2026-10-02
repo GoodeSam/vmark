@@ -15,6 +15,7 @@
  * @coordinates-with cursorSync/tiptap.ts — the WYSIWYG counterpart of these functions
  * @coordinates-with cursorSync/markdown.ts — provides markdown syntax stripping
  * @coordinates-with cursorSync/fenceIndex.ts — which code block a line is in
+ * @coordinates-with cursorSync/pmHelpers.ts — the column matcher both editors share
  * @module utils/cursorSync/codemirror
  */
 
@@ -22,7 +23,7 @@ import type { EditorView } from "@codemirror/view";
 import type { CursorInfo, BlockAnchor } from "@/types/cursorSync";
 import { detectNodeType, stripMarkdownSyntax } from "./markdown";
 import { extractCursorContext } from "./matching";
-import { MIN_CONTEXT_PATTERN_LENGTH } from "./pmHelpers";
+import { findColumnInLine } from "./pmHelpers";
 import { getTableAnchorForLine, restoreTableColumnFromAnchor } from "./table";
 import { fenceStartLineAt } from "./fenceIndex";
 
@@ -190,7 +191,8 @@ export function restoreCursorInCodeMirror(view: EditorView, cursorInfo: CursorIn
   const lineText = docLine.text;
 
   // Find column within the line using word/context matching (in stripped space)
-  const strippedColumn = findColumnInLine(lineText, cursorInfo);
+  const { text: strippedText } = stripMarkdownSyntax(lineText, lineText.length);
+  const strippedColumn = findColumnInLine(strippedText, cursorInfo);
 
   // Map column from stripped text back to original line
   // Only leading markers (heading #, list -, blockquote >) affect position mapping
@@ -233,56 +235,4 @@ function getLeadingMarkerLength(lineText: string): number {
   }
 
   return total;
-}
-
-/**
- * Find the occurrence of `needle` in `haystack` closest to `expectedCol`.
- * Scans all occurrences and returns the index of the nearest one.
- * Returns -1 if `needle` is not found at all.
- */
-function findNearestIndexOf(haystack: string, needle: string, expectedCol: number): number {
-  let bestIdx = -1;
-  let bestDist = Infinity;
-  let from = 0;
-  while (from <= haystack.length) {
-    const idx = haystack.indexOf(needle, from);
-    if (idx === -1) break;
-    const dist = Math.abs(idx - expectedCol);
-    if (dist < bestDist) {
-      bestDist = dist;
-      bestIdx = idx;
-    }
-    from = idx + 1;
-  }
-  return bestIdx;
-}
-
-/**
- * Find the best column position in a line using word/context matching.
- * When multiple occurrences exist, picks the one closest to the expected
- * column (derived from percentInLine) to avoid jumping to the wrong repeat.
- */
-function findColumnInLine(lineText: string, cursorInfo: CursorInfo): number {
-  const { text: strippedText } = stripMarkdownSyntax(lineText, lineText.length);
-  const expectedCol = Math.round(cursorInfo.percentInLine * strippedText.length);
-
-  // Strategy 1: Context match
-  const pattern = cursorInfo.contextBefore + cursorInfo.contextAfter;
-  if (pattern.length >= MIN_CONTEXT_PATTERN_LENGTH) {
-    const idx = findNearestIndexOf(strippedText, pattern, expectedCol);
-    if (idx !== -1) {
-      return idx + cursorInfo.contextBefore.length;
-    }
-  }
-
-  // Strategy 2: Word match
-  if (cursorInfo.wordAtCursor) {
-    const idx = findNearestIndexOf(strippedText, cursorInfo.wordAtCursor, expectedCol);
-    if (idx !== -1) {
-      return idx + cursorInfo.offsetInWord;
-    }
-  }
-
-  // Strategy 3: Percentage fallback
-  return expectedCol;
 }

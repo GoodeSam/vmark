@@ -10,6 +10,8 @@
  *   - Leading/trailing pipe handling follows GFM conventions
  *   - Row index is relative to the table header (row 0 = header row)
  *   - Header detection scans upward through all preceding rows (supports tables of any size)
+ *   - Lines are read one at a time through a LineSource, so the editor can ask
+ *     about the cursor's table without splitting the whole document into lines
  *
  * @coordinates-with cursorSync/tiptapAnchors.ts — the WYSIWYG counterpart
  * @module utils/cursorSync/table
