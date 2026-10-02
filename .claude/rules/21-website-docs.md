@@ -50,6 +50,8 @@ Update website docs when:
 | Change a status-bar indicator | `website/guide/features.md` (`Status Bar`) |
 | Change IME handling, reduced motion, the inactive-selection overlay or the inline-code boundary | `website/guide/features.md` (`Editing Details`) |
 | Change the monospace-font verification | `website/guide/features.md` (`Fonts`) |
+| Change the tab context menu, pinning, or tab / title-bar rename | `website/guide/tab-navigation.md` (`The tab context menu`, `Pinned tabs`, `Renaming a file`) |
+| Change save-on-close prompts, quit confirmation, or the pinned-tabs close guard | `website/guide/tab-navigation.md` (`Closing tabs and windows`) |
 | Add new release post / launch note | `website/blog/<YYYY-MM>-<slug>.md` + entry in `website/blog/index.md` |
 | New major feature | Consider adding new guide page |
 
@@ -62,7 +64,9 @@ Update website docs when:
 | `src-tauri/src/mcp_bridge/`, `mcp_config/`, `mcp_server.rs` | `website/guide/mcp-tools.md` |
 | Popup components | `website/guide/popups.md` |
 | Multi-cursor hooks | `website/guide/multi-cursor.md` |
-| `src/components/Tabs/` | `website/guide/tab-navigation.md` |
+| `src/components/Tabs/`, `src/services/tabs/` | `website/guide/tab-navigation.md` |
+| `src/components/TitleBar/useTitleBarRename.ts` | `website/guide/tab-navigation.md` (Renaming a file) |
+| `src/services/windowClose/`, `src-tauri/src/quit.rs` | `website/guide/tab-navigation.md` (Closing tabs and windows) |
 | `src/export/` | `website/guide/export.md` |
 | `src-tauri/src/ai_provider/` | `website/guide/ai-providers.md` |
 | `src/components/GeniePicker/` | `website/guide/ai-genies.md` |

@@ -59,7 +59,7 @@ A claim the inspector could not confirm is marked **unverified** in place rather
 
 ## Open findings
 
-Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 166 open.
+Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 163 open.
 
 ### Security boundaries (14)
 
@@ -100,15 +100,12 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 15) `register_dock_recent` exists only on macOS, but `registerDockRecent` (`src/stores/workspaceStoreHelpers.ts`) calls it on every platform and swallows the rejection.
 
 
-### User-facing behaviour with no guide page (8)
+### User-facing behaviour with no guide page (5)
 
-- (area 5) The tab context menu (pin, bulk close, Move to New Window, Copy Path, Revert to Saved, Restore to Disk, Rename) and tab pinning have no guide page; only Open to the Side is described (`website/guide/tab-navigation.md` §"Two documents side by side"). Evidence: `src/components/Tabs/useTabContextMenuActions.ts`.
-- (area 5) The save-on-close prompts (Save / Don't Save / Cancel, multi-document aggregate prompt, one folder picker for several untitled files, pinned-tabs confirmation on window close) have no guide section; `website/guide/features.md` §"Session Recovery (Hot Exit)" says only that a quit asks you to save first, and `website/guide/shortcuts.md` has the Save All and Quit row — code in `src/services/windowClose/closeSave.ts`, `src/services/windowClose/windowCloseFlow.ts`.
 - (area 8) The start page (`NEW_BROWSER_TAB_URL` in `src/services/commands/browserCommands.ts`) and the omnibox search provider (`SEARCH_URL_BASE` in `src/lib/browser/omnibox.ts`) are hardcoded DuckDuckGo; no guide page says so and no setting changes either.
 - (area 9) The prompt-history dropdown's Clear button (`src/components/GeniePicker/PromptHistoryDropdown.tsx`) is not mentioned in `website/guide/ai-genies.md` §"The Genie Picker".
 - (area 10) Install writes a per-client secret (`env.VMARK_MCP_TOKEN`) into each AI client's config file, and delegated coherence actions authorize against it; no guide page mentions it (`src-tauri/src/mcp_config/client_tokens.rs`, `src-tauri/src/mcp_config/vmark_entry.rs`).
 - (area 11) The Claims panel's only entry point, palette command "Canon Claims" (`view.toggleClaims`, `src/services/commands/claimCommands.ts`), is not named in `website/guide/coherence.md` (only *Extract Claim from Selection* is).
-- (area 13) Double-click rename in the macOS title bar (`src/components/TitleBar/useTitleBarRename.ts`) is on no guide page.
 - (area 13) Shortcut import errors use a raw `window.alert` (`handleImport` in `src/pages/settings/ShortcutsSettings.tsx`), and a rejected `update_menu_accelerators` is only logged (`shortcutsWarn` in `src/stores/settingsStore/shortcuts.ts`) — neither reaches the app's dialog/toast surface.
 
 ### Platform coverage (20)
@@ -1661,7 +1658,7 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - surfaces: shortcuts `newTab` = Mod-T (`tab.new`), `closeFile` = Mod-W (`tab.close`, menu id `close`); tab context menu; status-bar "+"
 - code: `src/stores/tabStore.ts`, `src/stores/tabStoreHelpers.ts`, `src/stores/tabStoreTypes.ts`, `src/services/tabs/tabOperations.ts`, `src/services/commands/tabCommands.ts`, `src/services/windowClose/tabCleanup.ts`, `src/stores/tabRemovalBus.ts`
 - rust: none
-- docs: `website/guide/workspace-management.md` §"Detaching Tabs into New Windows" (pinned tabs cannot be dragged); closing and pinning themselves are not described in any guide page
+- docs: `website/guide/workspace-management.md` §"Detaching Tabs into New Windows" (pinned tabs cannot be dragged); `website/guide/tab-navigation.md` §"Pinned tabs", §"Closing tabs and windows"
 - tests: `src/stores/tabStore.test.ts`, `src/stores/__tests__/tabStore.test.ts`, `src/stores/tabStore.closeReturn.test.ts`, `src/stores/tabStore.titleIdentity.test.ts`, `src/stores/tabStoreHelpers.test.ts`, `src/stores/tabStoreTypes.test.ts`, `src/services/tabs/tabOperations.test.ts`, `src/services/tabs/tabOperations.resolution.test.ts`, `src/stores/paneTabIntegration.test.ts`, `src/stores/tabRemovalBus.test.ts`, `src/services/windowClose/tabCleanup.test.ts`, `src/services/commands/tabCommands.test.ts`; e2e `e2e/journeys/02-scratch-tab-roundtrip.mjs`, `e2e/journeys/04-tab-lifecycle.mjs`, `e2e/journeys/15-dirty-file-close-guard.mjs`
 - notes: limitations stated in the `tabStore.ts` header — there is no cross-window dedup, so one file can be open in several windows. The same header still says tabs are restored "via workspaceStore.lastOpenTabs"; restore now prefers the additive `sessionTabs` field (`src/services/persistence/sessionTabs.ts`).
 
@@ -1675,9 +1672,9 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - surfaces: context menu (right-click a tab pill)
 - code: `src/components/Tabs/TabContextMenu.tsx`, `src/components/Tabs/useTabContextMenuActions.ts`, `src/components/Tabs/TabRenameInput.tsx`, `src/stores/tabRenameStore.ts`, `src/services/tabs/bulkCloseSelectors.ts`, `src/services/tabs/tabDiskActions.ts`, `src/services/tabs/openToTheSide.ts`, `src/services/tabs/moveTabToNewWindow.ts`
 - rust: `detach_tab_to_new_window`, `close_window`
-- docs: `website/guide/tab-navigation.md` §"Two documents side by side" (Open to the Side only); the rest of the menu is undocumented
+- docs: `website/guide/tab-navigation.md` §"The tab context menu", §"Pinned tabs", §"Renaming a file", §"Two documents side by side"
 - tests: `src/components/Tabs/TabContextMenu.test.tsx`, `src/components/Tabs/useTabContextMenuActions.test.ts`, `src/components/Tabs/TabRenameInput.test.tsx`, `src/hooks/useMenuPosition.test.tsx`, `src/stores/tabRenameStore.test.ts`, `src/services/tabs/bulkCloseSelectors.test.ts`, `src/services/tabs/tabDiskActions.test.ts`, `src/services/tabs/openToTheSide.test.ts`, `src/services/tabs/moveTabToNewWindow.test.ts`
-- notes: pinned tabs are excluded from every bulk-close selector because `closeTab` refuses them.
+- notes: pinned tabs are excluded from every bulk-close selector because `closeTab` refuses them — except **Close All**, which passes every tab, pinned ones first (they sit at the left), so `closeTabsWithDirtyCheck` stops at the first refused pin and closes nothing while any tab is pinned (`src/components/Tabs/useTabContextMenuActions.ts` `handleCloseAll`, `src/services/tabs/tabOperations.ts`); the guide steers to Close All Unpinned Tabs. Pins are not part of the persisted session record (`src/services/persistence/sessionTabs.ts`), so they last until quit (and through an update restart).
 
 ### Tab drag: reorder, detach, cross-window transfer
 - id: tab-drag-transfer
@@ -1843,7 +1840,7 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - surfaces: menu id `save-all-quit` (`saveAllQuit` = Alt-Mod-Shift-Q; File menu, and the app menu on macOS) → `file.saveAllQuit`; window close button; Mod-W; Mod-Q
 - code: `src/services/windowClose/closeSave.ts`, `src/services/windowClose/closeSaveBatch.ts`, `src/services/windowClose/closeSaveShared.ts`, `src/services/windowClose/reserveBatchDestinations.ts`, `src/services/files/fileSave.ts`, `src/services/commands/fileCommands.ts`
 - rust: `create_file_exclusive`, `force_quit`
-- docs: `website/guide/shortcuts.md` (Save All and Quit row); `website/guide/features.md` §"Session Recovery (Hot Exit)" says only that a quit asks you to save first — the prompts themselves are undocumented
+- docs: `website/guide/tab-navigation.md` §"Closing tabs and windows"; `website/guide/shortcuts.md` (Save All and Quit row); `website/guide/features.md` §"Session Recovery (Hot Exit)"
 - tests: `src/services/windowClose/closeSave.test.ts`, `src/services/windowClose/reserveBatchDestinations.test.ts`, `src/services/windowClose/windowCloseFlow.test.ts`, `src/services/files/fileSave.test.ts`; e2e `e2e/journeys/15-dirty-file-close-guard.mjs`, `e2e/journeys/14-multi-doc-save-integrity.mjs`
 - notes: Save All and Quit collects dirty documents only; a divergent-but-clean document is not saved before the quit. The `closeSave.ts` header names a `decideOnClose()` util that no longer exists.
 
@@ -1857,7 +1854,7 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - surfaces: window close button; Mod-W (`menu:close`); Mod-Q; workspace-instance removal
 - code: `src/hooks/useWindowClose.ts`, `src/services/windowClose/windowCloseFlow.ts`, `src/services/windowClose/tabCleanup.ts`, `src-tauri/src/window_manager/window_events.rs`, `src-tauri/src/app_setup.rs`
 - rust: `close_window`, `window_close_log`; `window_manager::window_events::handle_document_window_close_event`
-- docs: `website/guide/workspace-management.md` §"Empty Workspace Window" (closing the window)
+- docs: `website/guide/tab-navigation.md` §"Closing tabs and windows"; `website/guide/workspace-management.md` §"Empty Workspace Window" (closing the window)
 - tests: `src/hooks/useWindowClose.comprehensive.test.tsx`, `src/hooks/useWindowClose.lifecycle.test.tsx`, `src/services/windowClose/windowCloseFlow.test.ts`, `src/services/windowClose/tabCleanup.test.ts`, `src-tauri/src/window_manager/window_events.test.rs`
 - notes: `prevent_close` hands the outcome to the frontend with no timeout and no fallback, which is why the close is logged in release builds (`#1253`). On Windows with `general.closeToTray` on, the last document window is hidden instead of closed and no save flow runs — see `src-tauri/src/close_to_tray/mod.rs` (area 15, `#1419`).
 
@@ -4775,7 +4772,7 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - surfaces: title bar strip; double-click rename; Settings → Appearance → Show filename in titlebar
 - code: `src/components/TitleBar/TitleBar.tsx`, `src/components/TitleBar/useTitleBarRename.ts`, `src/components/Browser/AppTitleBar.tsx`, `src/services/persistence/renameFile.ts`, `src/shell/trafficLights.ts`, `src-tauri/src/window_manager/traffic_lights.rs`
 - rust: `window_manager::traffic_lights` (`#[cfg(target_os = "macos")]`, needs the `macos-private-api` tauri feature)
-- docs: `website/guide/settings.md` §Appearance ("Show filename in titlebar", macOS only); title-bar rename is not documented on any guide page
+- docs: `website/guide/settings.md` §Appearance ("Show filename in titlebar", macOS only); `website/guide/tab-navigation.md` §"Renaming a file" (title-bar double-click rename)
 - tests: `src/components/TitleBar/TitleBar.a11y.test.tsx`, `src/components/TitleBar/TitleBar.filename.test.tsx`, `src/components/TitleBar/titleBarShellOffset.test.ts`, `src/components/TitleBar/useTitleBarRename.test.ts`, `src/components/Browser/AppTitleBar.test.tsx`, `src/shell/trafficLights.test.ts`
 - notes: `#1224` (extension policy on rename). The traffic-light position is declared in three places — `src-tauri/tauri.conf.json`, `src-tauri/src/window_manager/mod.rs`, `src/shell/trafficLights.ts` — and `src/shell/trafficLights.test.ts` fails if they disagree. OS chrome theming off macOS is *native-chrome-theme*. `AppTitleBar.tsx` is owned by the Embedded browser feature.
 
