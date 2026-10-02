@@ -401,6 +401,30 @@ describe("TiptapTableContextMenu — rAF position adjustment", () => {
     expect(container.style.left).toBe("720px");
   });
 
+  // WI-RA9B.4 — a window smaller than the menu must not park it off screen.
+  it("never positions the menu at a negative coordinate on a tiny window", () => {
+    const container = (menu2 as unknown as { container: HTMLElement }).container;
+    vi.spyOn(container, "getBoundingClientRect").mockReturnValue({
+      top: 50, bottom: 250, left: 50, right: 200,
+      width: 150, height: 200,
+      x: 50, y: 50, toJSON: () => {},
+    } as DOMRect);
+    Object.defineProperty(window, "innerWidth", { value: 100, writable: true });
+    Object.defineProperty(window, "innerHeight", { value: 100, writable: true });
+
+    let rafCallback: FrameRequestCallback | null = null;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+      rafCallback = cb;
+      return 1;
+    });
+
+    menu2.show(50, 50);
+    (rafCallback as FrameRequestCallback | null)?.(0);
+
+    expect(container.style.left).toBe("10px");
+    expect(container.style.top).toBe("10px");
+  });
+
   it("adjusts top position when container extends beyond viewport bottom edge (line 176)", () => {
     const container = (menu2 as unknown as { container: HTMLElement }).container;
     vi.spyOn(container, "getBoundingClientRect").mockReturnValue({
@@ -482,8 +506,11 @@ describe("TiptapTableContextMenu — rAF position adjustment", () => {
     menu2.show(750, 100);
     if (rafCallback) rafCallback(0);
 
-    // toHostCoordsForDom should have been called for right-edge adjustment
-    expect(toHostCoordsForDom).toHaveBeenCalledWith(hostEl, { top: 0, left: 720 });
+    // The clamped viewport point is converted to host coordinates as a whole,
+    // and only the axis that moved is written.
+    expect(toHostCoordsForDom).toHaveBeenCalledWith(hostEl, { top: 100, left: 720 });
+    expect(container.style.left).toBe("720px");
+    expect(container.style.top).toBe("100px");
   });
 
   it("adjusts top via toHostCoordsForDom when host is not document.body and overflows bottom", () => {
@@ -511,7 +538,9 @@ describe("TiptapTableContextMenu — rAF position adjustment", () => {
     if (rafCallback) rafCallback(0);
 
     // maxBottom = 590, newTop = 590 - 140 = 450
-    expect(toHostCoordsForDom).toHaveBeenCalledWith(hostEl, { top: 450, left: 0 });
+    expect(toHostCoordsForDom).toHaveBeenCalledWith(hostEl, { top: 450, left: 100 });
+    expect(container.style.top).toBe("450px");
+    expect(container.style.left).toBe("100px");
   });
 
   it("uses editorContainer bottom as maxBottom when available", () => {

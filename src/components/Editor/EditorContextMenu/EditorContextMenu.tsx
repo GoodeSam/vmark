@@ -30,6 +30,8 @@ import { useShortcutsStore, formatKeyForDisplay } from "@/stores/settingsStore";
 import { useTabStore } from "@/stores/tabStore";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { useDismissOnOutsideOrEscape } from "@/hooks/useDismissOnOutsideOrEscape";
+import { useMenuPosition } from "@/hooks/useMenuPosition";
+import { MENU_VIEWPORT_MARGIN } from "@/utils/menuPosition";
 import "@/components/Sidebar/FileExplorer/ContextMenu.css";
 import "./editor-context-menu.css";
 import { buildEditorContextMenu, type EditorMenuAction } from "./menuModel";
@@ -39,7 +41,7 @@ import { focusEditorSurface } from "./clipboardBridge";
 import { useMenuNavigation } from "./useMenuNavigation";
 import { MenuTopItem, type MenuItemCallbacks } from "./MenuItems";
 
-const VIEWPORT_INSET = 10;
+const VIEWPORT_INSET = MENU_VIEWPORT_MARGIN;
 
 export function EditorContextMenu() {
   const { t } = useTranslation("editor");
@@ -137,16 +139,8 @@ export function EditorContextMenu() {
   }, [isOpen, focusFirst, reset]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Keep viewport clamping in sync with the reported position.
-  useEffect(() => {
-    const menu = menuRef.current;
-    if (!menu || !position) return;
-    const rect = menu.getBoundingClientRect();
-    const x = Math.min(position.x, window.innerWidth - rect.width - VIEWPORT_INSET);
-    const y = Math.min(position.y, window.innerHeight - rect.height - VIEWPORT_INSET);
-    menu.style.left = `${Math.max(VIEWPORT_INSET, x)}px`;
-    menu.style.top = `${Math.max(VIEWPORT_INSET, y)}px`;
-  }, [position, isOpen]);
+  // Placement, clamped into the viewport (see useMenuPosition).
+  useMenuPosition(menuRef, position, { open: isOpen });
 
   // Keep the submenu inside the window: flip horizontally when its right
   // edge would overflow, shift it up when its bottom would. Measures the

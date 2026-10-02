@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   isOpen: true,
   position: { x: 100, y: 100 } as { x: number; y: number } | null,
   closeMenu: vi.fn(),
-  isImeKeyEvent: vi.fn(() => false),
+  isImeKeyEvent: vi.fn((..._args: unknown[]) => false),
   getRevealInFileManagerLabel: vi.fn(() => "Reveal in Finder"),
 }));
 
@@ -53,11 +53,11 @@ import { ImageContextMenu } from "./ImageContextMenu";
 // ── Tests ────────────────────────────────────────────────────────────
 
 describe("ImageContextMenu", () => {
-  let onAction: ReturnType<typeof vi.fn>;
+  let onAction: Mock<(action: string) => void>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    onAction = vi.fn();
+    onAction = vi.fn<(action: string) => void>();
     mocks.isOpen = true;
     mocks.position = { x: 100, y: 100 };
     mocks.getRevealInFileManagerLabel.mockReturnValue("Reveal in Finder");
@@ -232,6 +232,28 @@ describe("ImageContextMenu", () => {
     const { container } = render(<ImageContextMenu onAction={onAction} />);
     const menu = container.querySelector(".context-menu") as HTMLElement;
     expect(menu).toBeInTheDocument();
+  });
+
+  // WI-RA9B.4 — a window smaller than the menu must not park it off screen.
+  it("never positions the menu at a negative coordinate on a tiny window", () => {
+    const rectSpy = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 180, height: 160, x: 0, y: 0, top: 0, left: 0, right: 180, bottom: 160,
+      toJSON: () => ({}),
+    } as DOMRect);
+    const { innerWidth, innerHeight } = window;
+    window.innerWidth = 120;
+    window.innerHeight = 90;
+    try {
+      mocks.position = { x: 60, y: 40 };
+      const { container } = render(<ImageContextMenu onAction={onAction} />);
+      const menu = container.querySelector(".context-menu") as HTMLElement;
+      expect(menu.style.left).toBe("10px");
+      expect(menu.style.top).toBe("10px");
+    } finally {
+      rectSpy.mockRestore();
+      window.innerWidth = innerWidth;
+      window.innerHeight = innerHeight;
+    }
   });
 
   // ── Accessibility: ARIA roles ────────────────────────────────────

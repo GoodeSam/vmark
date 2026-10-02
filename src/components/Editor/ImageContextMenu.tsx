@@ -18,7 +18,6 @@
  */
 
 import {
-  useEffect,
   useRef,
   useCallback,
   useMemo,
@@ -29,6 +28,7 @@ import { useImageContextMenuStore } from "@/stores/imageContextMenuStore";
 import "@/components/Sidebar/FileExplorer/ContextMenu.css";
 import { useDismissOnOutsideOrEscape } from "@/hooks/useDismissOnOutsideOrEscape";
 import { useMenuRovingFocus } from "@/hooks/useMenuRovingFocus";
+import { useMenuPosition } from "@/hooks/useMenuPosition";
 import { getRevealInFileManagerLabel } from "@/utils/pathUtils";
 
 interface MenuItem {
@@ -90,31 +90,8 @@ export function ImageContextMenu({ onAction }: ImageContextMenuProps) {
   // Click-outside only; Escape/Tab are owned by the roving hook.
   useDismissOnOutsideOrEscape(isOpen, menuRef, closeMenu, { escape: false });
 
-  // Position adjustment to keep menu in viewport
-  useEffect(() => {
-    if (!menuRef.current || !position) return;
-
-    const menu = menuRef.current;
-    const rect = menu.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    let adjustedX = position.x;
-    let adjustedY = position.y;
-
-    // Adjust horizontal position
-    if (position.x + rect.width > viewportWidth - 10) {
-      adjustedX = viewportWidth - rect.width - 10;
-    }
-
-    // Adjust vertical position
-    if (position.y + rect.height > viewportHeight - 10) {
-      adjustedY = viewportHeight - rect.height - 10;
-    }
-
-    menu.style.left = `${adjustedX}px`;
-    menu.style.top = `${adjustedY}px`;
-  }, [position]);
+  // Placement, clamped into the viewport (see useMenuPosition).
+  useMenuPosition(menuRef, position, { open: isOpen });
 
   const handleItemClick = useCallback(
     (id: string) => {
