@@ -18,15 +18,15 @@
  * Mapping properties live in `multiSelectionMapping.property.test.ts`; the
  * contract itself is stated once in `multiSelectionInvariants.ts`.
  *
- * @coordinates-with ../MultiSelection.ts — the structure under test
- * @coordinates-with ../rangeUtils.ts — normalizeRangesWithPrimary enforces the rules
+ * @coordinates-with shared/MultiSelection.ts — the structure under test
+ * @coordinates-with shared/rangeUtils.ts — normalizeRangesWithPrimary enforces the rules
  * @coordinates-with ./multiSelectionInvariants.ts — the contract
  * @module plugins/multiCursor/__tests__/multiSelection.property.test
  */
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { SelectionRange } from "@tiptap/pm/state";
-import { MultiSelection } from "../MultiSelection";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
 import { checkInvariants, formatViolations } from "./multiSelectionInvariants";
 import { build, docArb, makeDoc, rangesArb, PROPERTY_TIMEOUT_MS } from "./multiSelectionArbitraries";
 

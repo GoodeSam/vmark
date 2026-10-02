@@ -7,8 +7,8 @@
  */
 import { SelectionRange } from "@tiptap/pm/state";
 import type { Node } from "@tiptap/pm/model";
-import { MultiSelection } from "./MultiSelection";
-import { normalizeRangesWithPrimary } from "./rangeUtils";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
+import { normalizeRangesWithPrimary } from "@/plugins/shared/rangeUtils";
 
 /**
  * Check if a range is already in the MultiSelection.

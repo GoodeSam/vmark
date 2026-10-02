@@ -11,7 +11,7 @@ import type { EditorView } from "@tiptap/pm/view";
 import { readText } from "@tauri-apps/plugin-clipboard-manager";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { Node as PMNode } from "@tiptap/pm/model";
-import { MultiSelection } from "@/plugins/multiCursor/MultiSelection";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
 import type { MarkdownPasteMode } from "@/stores/settingsStore";
 import { createMarkdownPasteTransaction } from "@/plugins/shared/markdownPasteSlice";
 import {

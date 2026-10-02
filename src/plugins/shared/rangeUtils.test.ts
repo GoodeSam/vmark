@@ -2,13 +2,12 @@
 import { describe, it, expect } from "vitest";
 import { Schema } from "@tiptap/pm/model";
 import { EditorState, SelectionRange } from "@tiptap/pm/state";
-import { multiCursorPlugin } from "../multiCursorPlugin";
 import {
   mergeOverlappingRanges,
   sortAndDedupeRanges,
   normalizeRangesWithPrimary,
   remapBackwardFlags,
-} from "../rangeUtils";
+} from "./rangeUtils";
 
 // Simple schema for testing
 const schema = new Schema({
@@ -29,7 +28,6 @@ function createState(text: string) {
   return EditorState.create({
     doc: createDoc(text),
     schema,
-    plugins: [multiCursorPlugin()],
   });
 }
 

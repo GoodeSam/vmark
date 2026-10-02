@@ -10,15 +10,15 @@
  *   - Backward flags are remapped through normalization via remapBackwardFlags()
  *
  * @coordinates-with keymap.ts — binds arrow key combos to these handlers
- * @coordinates-with rangeUtils.ts — normalizes resulting ranges and remaps backward flags
+ * @coordinates-with shared/rangeUtils.ts — normalizes resulting ranges and remaps backward flags
  * @module plugins/multiCursor/horizontalMovement
  */
 import { Selection, SelectionRange } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import { findWordEdge } from "@/utils/wordSegmentation";
-import { MultiSelection } from "./MultiSelection";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
 import { graphemeStepTarget } from "./graphemeMovement";
-import { normalizeRangesWithPrimary, remapBackwardFlags } from "./rangeUtils";
+import { normalizeRangesWithPrimary, remapBackwardFlags } from "@/plugins/shared/rangeUtils";
 
 export type HorizontalUnit = "char" | "word" | "line";
 

@@ -32,7 +32,7 @@ import {
 } from "./keymapUtils";
 import { canRunActionInMultiSelection } from "@/plugins/toolbarActions/multiSelectionPolicy";
 import { findAnyMarkRangeAtCursor } from "@/plugins/syntaxReveal/marks";
-import { MultiSelection } from "@/plugins/multiCursor/MultiSelection";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
 import { collapseMultiSelection } from "@/plugins/multiCursor/commands";
 import type { Command } from "@tiptap/pm/state";
 

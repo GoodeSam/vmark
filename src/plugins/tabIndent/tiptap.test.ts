@@ -47,7 +47,7 @@ vi.mock("./shiftTabEscape", () => ({
 }));
 
 // Mock multiCursor
-vi.mock("@/plugins/multiCursor/MultiSelection", () => ({
+vi.mock("@/plugins/shared/MultiSelection", () => ({
   MultiSelection: class MockMultiSelection {
     ranges: unknown[];
     primaryIndex: number;
@@ -395,7 +395,7 @@ describe("tabIndentExtension", () => {
   describe("multi-cursor tab escape", () => {
     it("handles MultiSelection result from canTabEscape", async () => {
       const { MultiSelection } = await import(
-        "@/plugins/multiCursor/MultiSelection"
+        "@/plugins/shared/MultiSelection"
       );
       const ms = new MultiSelection([], 0);
       mockCanTabEscape.mockReturnValue(ms);
@@ -656,7 +656,7 @@ describe("tabIndent plugin handler integration", () => {
   });
 
   it("handles MultiSelection from canShiftTabEscape", async () => {
-    const { MultiSelection } = await import("@/plugins/multiCursor/MultiSelection");
+    const { MultiSelection } = await import("@/plugins/shared/MultiSelection");
     const ms = new MultiSelection([], 0);
     mockCanShiftTabEscape.mockReturnValue(ms);
 
@@ -752,7 +752,7 @@ describe("tabIndent plugin handler integration", () => {
     // The MultiSelection branch requires a proper PM Selection subclass,
     // which cannot be fully constructed in jsdom. We verify canTabEscape
     // is called and verify the instanceof check branch exists.
-    const { MultiSelection } = await import("@/plugins/multiCursor/MultiSelection");
+    const { MultiSelection } = await import("@/plugins/shared/MultiSelection");
     const ms = new MultiSelection([], 0);
     expect(ms).toBeInstanceOf(MultiSelection);
     // When canTabEscape returns a non-MultiSelection result, it uses the single-cursor path
@@ -793,7 +793,7 @@ describe("tabIndent plugin handler integration", () => {
   });
 
   it("handles MultiSelection from canTabEscape (dispatches and clears link marks)", async () => {
-    const { MultiSelection } = await import("@/plugins/multiCursor/MultiSelection");
+    const { MultiSelection } = await import("@/plugins/shared/MultiSelection");
     const ms = new MultiSelection([], 0);
     mockCanTabEscape.mockReturnValue(ms);
 
@@ -965,7 +965,7 @@ describe("tabIndent plugin handler integration", () => {
 
   it("MultiSelection canTabEscape without link mark (line 92 false branch)", async () => {
     // Covers line 92: if (linkMarkType) — the FALSE branch (schema has no link mark)
-    const { MultiSelection } = await import("@/plugins/multiCursor/MultiSelection");
+    const { MultiSelection } = await import("@/plugins/shared/MultiSelection");
     const ms = new MultiSelection([], 0);
     mockCanTabEscape.mockReturnValue(ms);
 

@@ -6,7 +6,7 @@
  */
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { EditorState } from "@tiptap/pm/state";
-import { MultiSelection } from "./MultiSelection";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
 
 /** CSS class for cursor widget */
 const CURSOR_CLASS = "multi-cursor-caret";

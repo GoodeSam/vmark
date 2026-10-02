@@ -130,7 +130,11 @@
     {
       "name": "Multi-cursor editing",
       "paths": [
-        "src/plugins/multiCursor"
+        "src/plugins/multiCursor",
+        "src/plugins/shared/MultiSelection.ts",
+        "src/plugins/shared/MultiSelection.test.ts",
+        "src/plugins/shared/rangeUtils.ts",
+        "src/plugins/shared/rangeUtils.test.ts"
       ],
       "flag": null,
       "flagDefault": null,

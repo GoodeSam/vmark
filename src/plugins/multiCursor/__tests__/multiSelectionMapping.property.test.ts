@@ -13,7 +13,7 @@
  * document, an arbitrary set of ranges, and an arbitrary insertion, then assert
  * the mapped selection is still structurally valid.
  *
- * @coordinates-with ../MultiSelection.ts — map()
+ * @coordinates-with shared/MultiSelection.ts — map()
  * @coordinates-with ./multiSelectionInvariants.ts — the contract
  * @coordinates-with ./multiSelectionArbitraries.ts — shared generators
  * @module plugins/multiCursor/__tests__/multiSelectionMapping.property.test
@@ -21,7 +21,7 @@
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { SelectionRange } from "@tiptap/pm/state";
-import type { MultiSelection } from "../MultiSelection";
+import type { MultiSelection } from "@/plugins/shared/MultiSelection";
 import { checkInvariants, formatViolations } from "./multiSelectionInvariants";
 import {
   build,
