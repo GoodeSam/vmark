@@ -1411,11 +1411,6 @@
       "target": "src/components/Editor/ImageContextMenu"
     },
     {
-      "file": "src/components/Editor/useTiptapContentSync.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Editor/tiptapEditorHelpers"
-    },
-    {
       "file": "src/components/KnowledgeBasePanel/KbGraphChunkFailure.test.tsx",
       "api": "vi.mock",
       "target": "src/components/KnowledgeBasePanel/KbGraphView"

@@ -36,10 +36,6 @@ vi.mock("@/services/persistence/workspaceStorage", () => ({
   getCurrentWindowLabel: () => "main",
 }));
 
-vi.mock("@/stores/mcpCheckpointPersistence", () => ({
-  appendCheckpoint: vi.fn(async () => undefined),
-}));
-
 import { respond } from "@/services/mcpBridge/utils";
 
 let editor: Editor | null = null;
