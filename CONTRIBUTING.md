@@ -36,6 +36,20 @@ For coding conventions, style rules and architectural patterns, see
 | pnpm | 10.x (`>=10 <11`) | `corepack enable` picks the pinned version. `engines` is enforced (`engine-strict`), so pnpm 9 or 11 fails at install |
 | Tauri v2 system deps | — | [Platform-specific prerequisites](https://v2.tauri.app/start/prerequisites/) |
 
+That is enough to build and run VMark and to use `pnpm check:fast`. The full
+gate and the release path need a few more programs. None of them is installed
+by `pnpm install`, and the tests that use them **fail rather than skip** when
+one is missing, so `pnpm check:all` cannot go green without them:
+
+| Tool | Needed by | Why |
+|------|-----------|-----|
+| `zsh`, `bash`, `python3` | `pnpm test:gates` (inside `check:static`, so inside `check:all`) | `scripts/shell-integration-smoke.test.mjs` starts a real interactive zsh and bash under a pseudo-terminal (Python's `pty`) to prove the terminal's shell integration actually runs. macOS has all three; on Linux install `zsh` |
+| [`tokei`](https://github.com/XAMPPRocky/tokei) | `pnpm test:gates`; `pnpm gen:feature-ledger` | `scripts/gen-feature-ledger.test.mjs` reproduces a line-count measurement against the real tool. `brew install tokei` or `cargo install tokei` |
+| [`gh`](https://cli.github.com/), authenticated | pushing a `v*` tag | `.githooks/pre-push` runs `scripts/check-tag-green.sh`, which asks GitHub whether the required checks passed on the tagged commit. Without `gh` it refuses the push; `VMARK_OFFLINE_GATE=1` runs the full local gate instead |
+
+`scripts/check-gates-tier-binaries.test.mjs` keeps the first two rows honest: a
+program the gates tier executes must be installed by CI's `fe-static` job.
+
 ## Setup
 
 ```bash
@@ -130,6 +144,23 @@ runs the same groups as separate jobs, and `main` only accepts a commit whose
 `frontend` and `rust` checks are green. Use `check:fast` while working and
 `check:all` to confirm; the table in [AGENTS.md](AGENTS.md) says which narrower
 command covers which kind of change.
+
+### Environment variables
+
+Read by the gates, hooks and harnesses. None is needed for a normal build.
+
+| Variable | Read by | Effect |
+|----------|---------|--------|
+| `VMARK_CHANGED_BASE` | `scripts/test-changed.mjs` (`pnpm test:changed`, `pnpm check:fast`) | The ref the diff is taken against. Default `origin/main` — `git fetch` first, or the selection is stale |
+| `VMARK_OFFLINE_GATE=1` | `.githooks/pre-push` | Run the full local gate (cross-target check, `cargo fmt`, `cargo clippy`, `pnpm check:all`) instead of asking GitHub for CI's verdict. For when `gh` or the network is unavailable |
+| `VMARK_GH_TIMEOUT` | `scripts/check-tag-green.sh` | Seconds to wait for the `gh api` call before failing closed. Default `30` |
+| `VMARK_UI_PHASE_NO_DEVDOCS=1` | `scripts/check-ui-phase.sh` | Skip the assertions that read fixtures under the maintainer-local `dev-docs/`. They are skipped anyway where `dev-docs/README.md` is absent; the variable forces it |
+| `VMARK_APP_IDENTIFIER` | the MCP sidecar, `e2e/lib/vmarkMcp.mjs` | Which app's `mcp-port` file to read. `app.vmark.dev` reaches a `tauri dev` build |
+| `VMARK_REAL_IME=1` | `e2e/run-ime.mjs` (`pnpm e2e:ime`) | Opt-in for the real-IME run, which injects keystrokes system-wide; it refuses without it. Dedicated, unattended macOS machine only |
+| `VMARK_IME_PROFILE` | `e2e/run-ime.mjs` | Path to the machine profile that run requires. Default `.vmark/ime-machine-profile.json` |
+
+The E2E harnesses and the dev-app identity are described in
+[e2e/README.md](e2e/README.md).
 
 ### Internationalization (i18n)
 

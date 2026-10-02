@@ -88,6 +88,8 @@ pnpm tauri build      # Production
 pnpm check:all        # Lint + test + build
 ```
 
+`pnpm check:all` runs tests that execute `zsh` and [`tokei`](https://github.com/XAMPPRocky/tokei) and fail without them; [CONTRIBUTING.md](CONTRIBUTING.md#prerequisites) lists what the full gate needs beyond a build.
+
 **Tech Stack:** Tauri v2 (Rust), React 19, TypeScript, Zustand v5, Tiptap, CodeMirror 6, Tailwind CSS v4
 
 **AI-Assisted Development:** The repo ships with full configuration for Claude Code, Codex CLI, and Antigravity. See `AGENTS.md` for conventions and `.claude/` for rules, skills, and subagents.

@@ -33,6 +33,8 @@ that enforces it; the pre-cleanup long form is `git show 12c98051e:AGENTS.md`.
 | Rust, adding a `tauri::test` mock-runtime test | the row above, plus `bash scripts/check-cross-target.sh` |
 | Before pushing | `pnpm check:predelta` (every static gate in parallel, all failures at once), then one `pnpm check:all` |
 
+`check:all` needs `zsh`, `python3` and `tokei` on PATH (gates-tier tests execute them and fail rather than skip); pushing a `v*` tag needs an authenticated `gh`. Environment variables (`VMARK_CHANGED_BASE`, `VMARK_GH_TIMEOUT`, …) are tabled in `CONTRIBUTING.md`.
+
 `check:fast` cannot see: tests that read their subject at runtime (baselines, `ci.yml`), coverage, `check:servers`/`check:build`/size-limit, WebKit, Rust, soak. `test:changed` diffs against `origin/main` — `git fetch` first.
 
 ## Testing infrastructure
