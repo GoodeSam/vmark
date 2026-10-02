@@ -86,10 +86,9 @@ mod tests {
         fs::write(&hidden, "hidden by attribute").unwrap();
         fs::write(dir.path().join("plain.md"), "visible").unwrap();
 
-        // Set FILE_ATTRIBUTE_HIDDEN via attrib (no direct std API).
-        let status = std::process::Command::new("attrib")
-            .arg("+h")
-            .arg(&hidden)
+        // Set FILE_ATTRIBUTE_HIDDEN via attrib (no direct std API), through
+        // the crate's one process builder rather than a bare `Command::new`.
+        let status = crate::ai_provider::build_command("attrib", &["+h", hidden.to_str().unwrap()])
             .status()
             .expect("attrib must be available on Windows");
         assert!(status.success());

@@ -7,7 +7,6 @@
     "server/content/src/server/createServer.ts": 384,
     "src-tauri/src/ai_provider/sink.rs": 304,
     "src-tauri/src/browser/origin_guard.rs": 303,
-    "src-tauri/src/content_search.rs": 374,
     "src-tauri/src/genies/parsing.rs": 396,
     "src-tauri/src/genies/tests.rs": 392,
     "src-tauri/src/gha_workflow/action_fetch.rs": 418,

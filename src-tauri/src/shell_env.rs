@@ -35,7 +35,13 @@ pub async fn get_login_shell_path() -> String {
 ///   `getpwuid` reads the login shell from the user database, which is
 ///   reliable even in GUI apps where `$SHELL` may not be set.
 /// - Windows: `%COMSPEC%` → `%SystemRoot%\System32\cmd.exe` → `C:\Windows\System32\cmd.exe`
-#[tauri::command]
+///
+/// `#[tauri::command(async)]`: the user-database lookup can go to a directory
+/// service and each candidate is stat'ed, none of which may hold the IPC
+/// thread, which is where a plain sync command runs. The attribute runs it on
+/// the async runtime instead while the function stays synchronous, because
+/// `shell_integration` calls it from its own blocking task.
+#[tauri::command(async)]
 pub fn get_default_shell() -> String {
     if cfg!(target_os = "windows") {
         // Prefer %COMSPEC%, fall back to absolute cmd.exe path (never bare "cmd.exe")
@@ -169,7 +175,11 @@ fn shell_path_is_valid(path: &str) -> bool {
 ///   validates as an existing executable.
 /// - Windows: checks for known shell executables via `where.exe` (absolute path);
 ///   `%COMSPEC%` is included only if it validates too.
-#[tauri::command]
+///
+/// `#[tauri::command(async)]` for the reason `get_default_shell` gives: it
+/// reads `/etc/shells`, stats every entry and on Windows spawns `where.exe`
+/// three times — never on the IPC thread.
+#[tauri::command(async)]
 pub fn list_available_shells() -> Vec<String> {
     if cfg!(target_os = "windows") {
         let resolved = ["powershell.exe", "pwsh.exe", "cmd.exe"]
@@ -254,3 +264,7 @@ fn is_executable(_path: &std::path::Path) -> bool {
 #[cfg(test)]
 #[path = "shell_env.test.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "ipc_thread.test.rs"]
+mod ipc_thread_tests;

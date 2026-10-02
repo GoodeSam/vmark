@@ -1,22 +1,88 @@
-//! Migration from the in-workspace `.vmark` config formats.
+//! # Workspace config — legacy layouts
 //!
-//! Purpose: releases up to 0.4.17 kept a workspace's config inside the workspace
-//! itself — first as a plain `.vmark` file, then as
-//! `.vmark/vmark.code-workspace`. Config now lives in app data
-//! (`workspace.rs`); this module reads the two old shapes once, so the first
-//! open after an upgrade keeps the user's excludes, tabs, AI settings and
-//! identity, and removes the old file once the new one is durably written.
+//! Purpose: everything that reads or retires an OLD on-disk form of a
+//! workspace config: the 8-byte hash filename used by releases <= 0.7.22, the
+//! `.vmark/vmark.code-workspace` directory format and the ancient plain
+//! `.vmark` file. Split out of `workspace.rs` so the commands there stay small.
 //!
-//! Sunset: delete this file, its `mod` line and the migration branch of
-//! `read_workspace_config` once no supported upgrade path starts below 0.4.18.
-//! Nothing else depends on it.
+//! Sunset: the `.vmark` half (`clean_excludes`, `migrate_from_legacy`,
+//! `cleanup_old_vmark`) goes once no supported upgrade path starts below
+//! 0.4.18 (the last release that wrote that layout was 0.4.17); the hash half
+//! once none starts below 0.7.23.
 //!
-//! A `#[path]` child of workspace.rs.
+//! @coordinates-with workspace.rs — `read_workspace_config` migrates through these
+//! @module workspace/legacy
+
+use std::fs;
+use std::path::{Path, PathBuf};
+
+use serde::Deserialize;
 
 use super::{WorkspaceConfig, WorkspaceIdentity};
-use serde::Deserialize;
-use std::fs;
-use std::path::Path;
+
+/// Outcome of a hash-filename migration. `RenameFailed` is load-bearing: the caller
+/// must fall back to the legacy file rather than treat it as absent.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum HashMigrationOutcome {
+    /// New-layout file already exists; nothing to do.
+    AlreadyMigrated,
+    /// No legacy file present; nothing to do.
+    NoLegacyFile,
+    /// Renamed legacy → new successfully.
+    Renamed,
+    /// Tried to rename but the syscall failed; legacy file left in place.
+    RenameFailed,
+}
+
+/// Pure-paths migration helper: if `legacy_path` exists and `new_path` does
+/// not, rename one to the other. Split out from `migrate_legacy_hash_filename`
+/// so unit tests can exercise every branch without a Tauri AppHandle.
+pub(super) fn try_rename_legacy_hash(
+    legacy_path: &std::path::Path,
+    new_path: &std::path::Path,
+) -> HashMigrationOutcome {
+    if new_path.exists() {
+        return HashMigrationOutcome::AlreadyMigrated;
+    }
+    if !legacy_path.exists() {
+        return HashMigrationOutcome::NoLegacyFile;
+    }
+    match fs::rename(legacy_path, new_path) {
+        Ok(()) => {
+            log::info!(
+                "[workspace] migrated config to 16-byte hash: {} -> {}",
+                legacy_path.display(),
+                new_path.display()
+            );
+            HashMigrationOutcome::Renamed
+        }
+        Err(e) => {
+            log::warn!(
+                "[workspace] failed to migrate legacy config {}: {}",
+                legacy_path.display(),
+                e
+            );
+            HashMigrationOutcome::RenameFailed
+        }
+    }
+}
+
+/// Migrate the legacy-hash file to `new_path`, and hand back the legacy path ONLY when
+/// the rename failed and the file is therefore still sitting there. The caller MUST read
+/// from it: treating a failed rename as "no config" returns `None`, and the next write
+/// then buries the user's excludes, tabs and identity/trust grant under a fresh default.
+///
+/// AppHandle-free so the fallback decision itself is unit-testable.
+pub(super) fn fallback_after_rename(legacy: PathBuf, new_path: &Path) -> Option<PathBuf> {
+    match try_rename_legacy_hash(&legacy, new_path) {
+        HashMigrationOutcome::RenameFailed => Some(legacy),
+        _ => None,
+    }
+}
+
+// ============================================================================
+// Legacy migration types (kept private)
+// ============================================================================
 
 /// VS Code-compatible workspace file — legacy `.vmark/vmark.code-workspace`.
 #[derive(Debug, Deserialize)]
@@ -51,6 +117,10 @@ struct AncientLegacyConfig {
     #[serde(default)]
     ai: Option<serde_json::Value>,
 }
+
+// ============================================================================
+// Legacy migration
+// ============================================================================
 
 /// Strip `.vmark` from a legacy exclude list — the directory no longer exists.
 pub(super) fn clean_excludes(folders: Vec<String>) -> Vec<String> {

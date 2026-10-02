@@ -13,6 +13,10 @@
 //! that Windows `rename` refuses an existing target — and fixing one copy
 //! (audit 20260906 B1) left the other live for a year. One rule, one place.
 //!
+//! Publication is two steps, and both live here: the rename that swaps the
+//! new file in, and the sync of the parent directory that makes the rename
+//! survive a crash (see `persist_with_retry`).
+//!
 //! @coordinates-with atomic_replace.rs — the document writer
 //! @coordinates-with mcp_bridge/token_file.rs — the credential writer
 //! @module atomic_persist
@@ -27,6 +31,82 @@ use crate::atomic_replace::AtomicReplaceError;
 /// conflict clears in; a real permission failure simply costs that long.
 #[cfg(windows)]
 const PERSIST_ATTEMPTS: u32 = 8;
+
+#[cfg(test)]
+thread_local! {
+    /// Every directory `sync_directory` was asked to sync on this thread, so a
+    /// test of ANY writer built on this module can see that its rename was
+    /// made durable. Per thread: tests run in parallel and must not see each
+    /// other's writes.
+    pub(crate) static SYNCED_DIRECTORIES: std::cell::RefCell<Vec<std::path::PathBuf>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// Atomically replace `target` with `temp` and make the replacement durable.
+///
+/// A rename is an edit of the PARENT DIRECTORY, not of the file. The temp
+/// file's own `sync_all` makes its contents durable, but until the directory
+/// is synced a crash can come back with the old entry — the previous file, or
+/// no file at all for a first write. So the directory is synced after the
+/// rename, which is what the document save path (`file_write_anchored`) and
+/// hot-exit already do for their own renames.
+///
+/// The sync is best-effort: by the time it runs the new file IS in place, and
+/// reporting the write as failed would be a lie the caller acts on. Some
+/// filesystems refuse a directory sync outright; that is logged, not returned.
+///
+/// Unix only. On Windows a directory cannot be opened as a plain file handle
+/// to flush, so nothing is done there and the rename's durability is whatever
+/// `MoveFileExW` and the filesystem journal provide.
+pub(crate) fn persist_with_retry(
+    temp: NamedTempFile,
+    target: &Path,
+) -> Result<(), AtomicReplaceError> {
+    persist_durably(temp, target, sync_directory)
+}
+
+/// `persist_with_retry` with the directory sync injected, so a test can see
+/// that it runs, when, and on which directory.
+fn persist_durably(
+    temp: NamedTempFile,
+    target: &Path,
+    sync_dir: impl FnOnce(&Path) -> std::io::Result<()>,
+) -> Result<(), AtomicReplaceError> {
+    rename_with_retry(temp, target)?;
+    let parent = parent_directory(target);
+    if let Err(e) = sync_dir(parent) {
+        log::warn!(
+            "Failed to sync directory {:?} after replacing {:?}: {}",
+            parent,
+            target,
+            e
+        );
+    }
+    Ok(())
+}
+
+/// The directory whose entry a rename of `target` changes. A bare file name
+/// has an empty parent, which names the current directory.
+fn parent_directory(target: &Path) -> &Path {
+    match target.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => parent,
+        _ => Path::new("."),
+    }
+}
+
+/// Flush a directory's entries to disk.
+#[cfg(unix)]
+fn sync_directory(dir: &Path) -> std::io::Result<()> {
+    #[cfg(test)]
+    SYNCED_DIRECTORIES.with(|synced| synced.borrow_mut().push(dir.to_path_buf()));
+    std::fs::File::open(dir)?.sync_all()
+}
+
+/// Windows has no way to flush a directory through a plain file handle.
+#[cfg(not(unix))]
+fn sync_directory(_dir: &Path) -> std::io::Result<()> {
+    Ok(())
+}
 
 /// Atomically replace `target`, retrying a TRANSIENT Windows sharing refusal.
 ///
@@ -51,10 +131,7 @@ const PERSIST_ATTEMPTS: u32 = 8;
 /// only delay a real error.
 ///
 #[cfg(windows)]
-pub(crate) fn persist_with_retry(
-    temp: NamedTempFile,
-    target: &Path,
-) -> Result<(), AtomicReplaceError> {
+fn rename_with_retry(temp: NamedTempFile, target: &Path) -> Result<(), AtomicReplaceError> {
     use std::io::ErrorKind;
 
     let mut candidate = temp;
@@ -84,11 +161,12 @@ pub(crate) fn persist_with_retry(
 }
 
 #[cfg(not(windows))]
-pub(crate) fn persist_with_retry(
-    temp: NamedTempFile,
-    target: &Path,
-) -> Result<(), AtomicReplaceError> {
+fn rename_with_retry(temp: NamedTempFile, target: &Path) -> Result<(), AtomicReplaceError> {
     temp.persist(target)
         .map(|_| ())
         .map_err(AtomicReplaceError::Persist)
 }
+
+#[cfg(test)]
+#[path = "atomic_persist.test.rs"]
+mod tests;

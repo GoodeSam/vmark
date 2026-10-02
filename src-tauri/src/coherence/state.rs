@@ -82,6 +82,8 @@ pub struct WorkspaceKernel {
     pub last_git: Option<GitObservation>,
     /// Quarantined-line count from the last ledger read (status surface).
     pub quarantined: usize,
+    /// What scans already read, so an unchanged file is not read again.
+    pub(super) scan_cache: super::scan_cache::ScanCache,
 }
 
 impl WorkspaceKernel {
@@ -164,6 +166,7 @@ impl WorkspaceKernel {
             ignore_rules_unchecked,
             last_git: None,
             quarantined,
+            scan_cache: Default::default(),
         })
     }
 

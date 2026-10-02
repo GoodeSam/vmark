@@ -9,7 +9,8 @@
 //! reusing the Phase-1 `check_sweep` governance) and surfaces contradictions for
 //! human resolution (WI-5.3) — it **never** auto-reconciles (§14).
 
-use super::command_errors::{kernel_poisoned, ledger_unavailable, workspace_unavailable};
+use super::blocking::with_kernel;
+use super::command_errors::ledger_unavailable;
 use crate::command_error::CommandError;
 use std::collections::HashMap;
 use std::path::Path;
@@ -68,28 +69,26 @@ pub struct MergeAffectedEdge {
 /// `check_sweep` governance); this command surfaces *which* edges a merge
 /// touched, for the human/checker to act on — it never auto-reconciles (§14).
 #[tauri::command]
-pub async fn coherence_merge_audit(
-    state: tauri::State<'_, super::commands::CoherenceState>,
+pub async fn coherence_merge_audit<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
     workspace_root: String,
 ) -> Result<Vec<MergeAffectedEdge>, CommandError> {
-    let root = std::path::PathBuf::from(&workspace_root);
-    let kernel_arc = state
-        .registry
-        .kernel_for(&root, state.writer)
-        .map_err(workspace_unavailable)?;
-    let kernel = kernel_arc.lock().map_err(|_| kernel_poisoned())?;
-    kernel.ensure_available().map_err(ledger_unavailable)?; // 9R-4: never serve a poisoned, half-rebuilt index
-    let edges = merge_affected_edges(kernel.index(), kernel.root()).map_err(ledger_unavailable)?;
-    Ok(edges
-        .into_iter()
-        .map(|e| MergeAffectedEdge {
-            txf: e.txf.to_string(),
-            input: e.input,
-            upstream: e.upstream,
-            downstream: e.downstream,
-            kind: e.kind.as_str().to_string(),
-        })
-        .collect())
+    with_kernel(app, workspace_root, move |_state, kernel| {
+        kernel.ensure_available().map_err(ledger_unavailable)?; // 9R-4: never serve a poisoned, half-rebuilt index
+        let edges =
+            merge_affected_edges(kernel.index(), kernel.root()).map_err(ledger_unavailable)?;
+        Ok(edges
+            .into_iter()
+            .map(|e| MergeAffectedEdge {
+                txf: e.txf.to_string(),
+                input: e.input,
+                upstream: e.upstream,
+                downstream: e.downstream,
+                kind: e.kind.as_str().to_string(),
+            })
+            .collect())
+    })
+    .await
 }
 
 #[cfg(test)]

@@ -74,7 +74,8 @@ fn get_legacy_dir() -> Option<PathBuf> {
 }
 
 /// Write a file atomically using temp file + sync + rename pattern.
-/// This prevents partial reads by other processes.
+/// This prevents partial reads by other processes. The rename is made durable
+/// by a sync of the parent directory (Unix; see `atomic_persist`).
 ///
 /// Thin wrapper over `atomic_replace::atomic_replace` — the shared core also
 /// backs `file_write::atomic_write_file_sync`; only the error strings here
@@ -136,6 +137,24 @@ mod tests {
 
         let contents = fs::read_to_string(&path).unwrap();
         assert_eq!(contents, "new content");
+    }
+
+    /// The workspace config and the MCP port file are written through here. A
+    /// rename that is not followed by a sync of its directory can be undone by
+    /// a crash, which for a first write means no file at all.
+    #[cfg(unix)]
+    #[test]
+    fn test_atomic_write_syncs_the_parent_directory() {
+        use crate::atomic_persist::SYNCED_DIRECTORIES;
+
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("mcp-port");
+        SYNCED_DIRECTORIES.with(|synced| synced.borrow_mut().clear());
+
+        atomic_write_file(&path, b"49152").unwrap();
+
+        let synced = SYNCED_DIRECTORIES.with(|synced| synced.borrow().clone());
+        assert_eq!(synced, vec![dir.path().to_path_buf()]);
     }
 
     #[test]
