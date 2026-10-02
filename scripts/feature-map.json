@@ -105,6 +105,7 @@
         "src/hooks/useTiptapUnmountFlush.ts",
         "src/hooks/useWysiwygFlusherRegistration.ts",
         "src/utils/wysiwygFlush.ts",
+        "src/utils/wysiwygEditPending.ts",
         "src/utils/editorText.ts",
         "src/utils/sourceSelection.ts",
         "src/components/Editor/index.ts",
