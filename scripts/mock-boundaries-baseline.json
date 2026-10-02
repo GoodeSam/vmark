@@ -1371,16 +1371,6 @@
       "target": "src/services/assembly/bindHostSettings"
     },
     {
-      "file": "src/plugins/imageHandler/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/imageHandler/imageHandlerInsert"
-    },
-    {
-      "file": "src/plugins/imageHandler/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/imageHandler/imageHandlerToast"
-    },
-    {
       "file": "src/plugins/latex/__tests__/MathInlineNodeView.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/latex/katexLoader"
