@@ -10,6 +10,7 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 
+use crate::peer_text::peer_text;
 use crate::window_manager;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -159,8 +160,13 @@ pub fn claim_workspace_transfer(window_label: String) -> Option<WorkspaceTransfe
         .and_then(|map| map.remove(&window_label))
 }
 
+/// Generic over the runtime so `workspace_transfer.test.rs` drives the real
+/// command on a mock app; the `#[tauri::command]` wrapper resolves to `Wry`.
 #[tauri::command]
-pub fn ack_workspace_transfer(app: AppHandle, data: WorkspaceTransferAck) -> Result<(), String> {
+pub fn ack_workspace_transfer<R: tauri::Runtime>(
+    app: AppHandle<R>,
+    data: WorkspaceTransferAck,
+) -> Result<(), String> {
     // Validate the ack against the registered route BEFORE mutating anything.
     // A wrong or stale ack (mismatched target window label or workspace
     // instance id) must not remove the route or notify the source — otherwise
@@ -178,11 +184,12 @@ pub fn ack_workspace_transfer(app: AppHandle, data: WorkspaceTransferAck) -> Res
     };
 
     if !route_matches {
+        // All three fields are the acking webview's own words.
         log::warn!(
-            "[WorkspaceTransfer] Ignoring mismatched ack for request '{}' (target '{}', instance '{}')",
-            data.request_id,
-            data.target_window_label,
-            data.workspace_instance_id
+            "[WorkspaceTransfer] Ignoring mismatched ack for request {} (target {}, instance {})",
+            peer_text(&data.request_id),
+            peer_text(&data.target_window_label),
+            peer_text(&data.workspace_instance_id)
         );
         return Ok(());
     }

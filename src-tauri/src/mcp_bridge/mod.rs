@@ -22,7 +22,6 @@ mod identify;
 mod lifecycle;
 pub(crate) mod managed;
 mod message_loop;
-mod peer_text;
 mod principal;
 mod routed_request;
 mod routing;

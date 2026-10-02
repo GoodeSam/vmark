@@ -63,7 +63,7 @@ mod removal;
 pub use drop_target::*;
 pub use removal::TabRemovalAck;
 use removal::{
-    drop_pending_ack, register_pending_ack, route_ack, validate_phase, TabRemovalRequest,
+    drop_pending_ack, register_pending_ack, route_ack_payload, validate_phase, TabRemovalRequest,
     REMOVAL_ACK_TIMEOUT_MS, REMOVE_ACK_EVENT, REMOVE_EVENT,
 };
 
@@ -187,12 +187,7 @@ pub async fn remove_tab_from_window(
     let rx = register_pending_ack(&request_id);
 
     // Listen before emitting so a fast destination cannot answer into the void.
-    let listener = app.listen(REMOVE_ACK_EVENT, |event| {
-        match serde_json::from_str::<TabRemovalAck>(event.payload()) {
-            Ok(ack) => route_ack(ack),
-            Err(e) => log::error!("[TabTransfer] Malformed tab-removal ack: {}", e),
-        }
-    });
+    let listener = app.listen(REMOVE_ACK_EVENT, |event| route_ack_payload(event.payload()));
 
     let emitted = window.emit(
         REMOVE_EVENT,

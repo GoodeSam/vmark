@@ -188,3 +188,53 @@ fn matching_ack_passes_validation_gate() {
     assert!(matches, "a correct ack must pass the validation gate");
     reset_transfer_state();
 }
+
+// ---------------------------------------------------------------------------
+// The ack is webview text (WI-RA7.7)
+
+// `tauri::test` does not exist on Windows (see Cargo.toml's target-specific
+// dev-dependency); every caller is gated to match.
+#[cfg(not(target_os = "windows"))]
+fn mock_app() -> tauri::App<tauri::test::MockRuntime> {
+    tauri::test::mock_builder()
+        .build(tauri::test::mock_context(tauri::test::noop_assets()))
+        .expect("build mock app")
+}
+
+#[cfg(not(target_os = "windows"))]
+#[test]
+fn a_mismatched_ack_is_refused_in_one_escaped_log_line() {
+    let _lock = acquire_test_lock();
+    reset_transfer_state();
+    let data = transfer_data("req-forge");
+    register_routes("doc-1", &data);
+    let app = mock_app();
+
+    let lines = crate::peer_text::log_capture::captured_logs(|| {
+        ack_workspace_transfer(
+            app.handle().clone(),
+            WorkspaceTransferAck {
+                request_id: "req-forge".to_string(),
+                target_window_label: "doc-9'\n[WorkspaceTransfer] ack accepted for 'doc-1"
+                    .to_string(),
+                workspace_instance_id: format!("wsi-\r\x1b[2K{}", "w".repeat(4096)),
+            },
+        )
+        .expect("a refused ack is not an error");
+    });
+
+    assert_eq!(lines.len(), 1, "{lines:?}");
+    for raw in ['\n', '\r', '\x1b'] {
+        assert!(!lines[0].contains(raw), "{raw:?} reached the log");
+    }
+    assert!(
+        lines[0].chars().count() < 3 * crate::peer_text::MAX_PEER_TEXT + 128,
+        "{} characters reached the log",
+        lines[0].chars().count()
+    );
+    // And the refusal itself: the pending route is untouched.
+    assert!(ack_routes()
+        .as_ref()
+        .is_some_and(|m| m.contains_key("req-forge")));
+    reset_transfer_state();
+}

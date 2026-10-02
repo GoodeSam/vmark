@@ -179,14 +179,22 @@ pub(crate) fn off_event_loop(job: impl FnOnce() + Send + 'static) {
 fn open_finder_urls(app: &tauri::AppHandle, urls: Vec<tauri::Url>) {
     let opened = partition_opened_urls(urls, |p| p.is_dir(), is_openable_supported);
 
-    for skipped in &opened.skipped {
-        log::warn!("[Finder] Skipping unsupported open request: {}", skipped);
-    }
+    log_skipped_opens(&opened.skipped);
     for dir in &opened.dirs {
         open_finder_directory(app, dir);
     }
 
     route_file_opens(app, opened.files);
+}
+
+/// Say which open requests were refused. Each is a URL or path the OS handed
+/// over, so it is logged as escaped, bounded text.
+#[cfg(any(target_os = "macos", test))]
+fn log_skipped_opens(skipped: &[String]) {
+    for request in skipped {
+        let request = crate::peer_text::peer_message(request);
+        log::warn!("[Finder] Skipping unsupported open request: {request}");
+    }
 }
 
 /// Open a folder handed over by Finder as a workspace window (WI-LX1.1).
@@ -200,20 +208,21 @@ fn open_finder_urls(app: &tauri::AppHandle, urls: Vec<tauri::Url>) {
 /// (which need MockRuntime, and so skip Windows).
 #[cfg(any(target_os = "macos", all(test, not(target_os = "windows"))))]
 pub(crate) fn open_finder_directory<R: tauri::Runtime>(app: &tauri::AppHandle<R>, dir: &str) {
+    use crate::peer_text::peer_message;
+
     let root = match crate::workspace_grants::grant_chosen_root(app, std::path::Path::new(dir)) {
         Ok(root) => root,
         Err(e) => {
-            log::error!("[Finder] Not opening directory {}: {}", dir, e.message());
+            // The error text quotes the path it refused, so both go escaped.
+            let (dir, why) = (peer_message(dir), peer_message(e.message()));
+            log::error!("[Finder] Not opening directory {dir}: {why}");
             return;
         }
     };
-    log::info!("[Finder] Opening directory: {}", root);
+    let shown = peer_message(&root);
+    log::info!("[Finder] Opening directory: {shown}");
     if let Err(e) = window_manager::create_document_window(app, None, Some(&root)) {
-        log::error!(
-            "[Finder] Failed to create window for directory {}: {}",
-            root,
-            e
-        );
+        log::error!("[Finder] Failed to create window for directory {shown}: {e}");
     }
 }
 

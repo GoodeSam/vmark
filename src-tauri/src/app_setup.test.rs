@@ -3,9 +3,71 @@
 //! WI-FL5.9 — `machine_id_hash` is the only fact about a machine VMark ever
 //! sends (the `X-Machine-Id` header on update checks). It must be stable
 //! across launches and releases, opaque, and carry no PII.
+//!
+//! WI-RA7.7 — the frontend's log commands write what a webview sent, so a
+//! message must reach the log as one escaped, bounded line.
 
 use crate::app_setup::machine_id_hash;
+use crate::peer_text::log_capture::captured_logs;
 use sha2::{Digest, Sha256};
+
+/// A message shaped like the attack: its second line reads as a log line the
+/// app wrote itself, and its tail would recolour a terminal that renders ANSI.
+const FORGED: &str = "close confirmed\n[WindowClose] destroy result: Ok(())\r\x1b[31m";
+
+/// One log line, carrying none of the characters that end a line or drive a
+/// terminal, and still naming the channel it came through.
+fn assert_one_escaped_line(lines: &[String], prefix: &str) {
+    assert_eq!(lines.len(), 1, "exactly one record: {lines:?}");
+    let line = &lines[0];
+    assert!(line.starts_with(prefix), "{line}");
+    for raw in ['\n', '\r', '\x1b'] {
+        assert!(!line.contains(raw), "{raw:?} reached the log: {line:?}");
+    }
+    assert!(line.contains("close confirmed"), "{line}");
+}
+
+#[test]
+fn a_window_close_message_cannot_forge_a_second_log_line() {
+    let lines = captured_logs(|| crate::app_setup::window_close_log(FORGED.to_string()));
+    assert_one_escaped_line(&lines, "[WindowClose] ");
+}
+
+#[test]
+fn an_update_message_cannot_forge_a_second_log_line() {
+    let lines = captured_logs(|| crate::app_setup::update_log(FORGED.to_string()));
+    assert_one_escaped_line(&lines, "[Update] ");
+}
+
+#[cfg(debug_assertions)]
+#[test]
+fn a_frontend_debug_message_cannot_forge_a_second_log_line() {
+    let lines = captured_logs(|| crate::app_setup::debug_log(FORGED.to_string()));
+    assert_one_escaped_line(&lines, "[Frontend] ");
+}
+
+#[test]
+fn a_megabyte_frontend_message_costs_the_log_a_bounded_line() {
+    let huge = "x".repeat(1024 * 1024);
+    let lines = captured_logs(|| crate::app_setup::update_log(huge));
+    assert_eq!(lines.len(), 1);
+    assert!(
+        lines[0].chars().count() < crate::peer_text::MAX_PEER_MESSAGE + 64,
+        "{} characters reached the log",
+        lines[0].chars().count()
+    );
+}
+
+#[test]
+fn an_ordinary_milestone_is_logged_whole() {
+    let lines = captured_logs(|| {
+        crate::app_setup::update_log("[check:returned] {\"found\":true}".to_string());
+    });
+    assert_eq!(
+        lines,
+        vec!["[Update] \"[check:returned] {\\\"found\\\":true}\"".to_string()]
+    );
+}
 
 fn is_lowercase_hex(s: &str) -> bool {
     s.bytes()

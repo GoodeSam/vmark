@@ -1453,6 +1453,7 @@
       "src/utils/perfLog.ts",
       "src/utils/devDebugHandle.ts",
       "src-tauri/src/automation_port.rs",
+      "src-tauri/src/peer_text.rs",
       "src/utils/debounce.ts",
       "src/utils/deepMerge.ts",
       "src/utils/lruCache.ts",

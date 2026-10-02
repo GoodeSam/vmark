@@ -3173,10 +3173,10 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - status: shipped-on
 - gate: always on
 - surfaces: automatic; connected-client names in Settings → Integrations and the status-bar tooltip
-- code: `src-tauri/src/mcp_bridge/handshake.rs`, `src-tauri/src/mcp_bridge/principal.rs`, `src-tauri/src/mcp_bridge/connection.rs`, `src-tauri/src/mcp_bridge/identify.rs`, `src-tauri/src/mcp_bridge/peer_text.rs`, `src-tauri/src/mcp_config/client_tokens.rs`, `server/mcp/src/utils/clientIdentity.ts`, `server/mcp/src/bridge/authHandshake.ts`
+- code: `src-tauri/src/mcp_bridge/handshake.rs`, `src-tauri/src/mcp_bridge/principal.rs`, `src-tauri/src/mcp_bridge/connection.rs`, `src-tauri/src/mcp_bridge/identify.rs`, `src-tauri/src/peer_text.rs`, `src-tauri/src/mcp_config/client_tokens.rs`, `server/mcp/src/utils/clientIdentity.ts`, `server/mcp/src/bridge/authHandshake.ts`
 - rust: `mcp_bridge::handshake`, `mcp_bridge::principal`, `mcp_bridge::identify`, `mcp_config::client_tokens::{snapshot, refresh, mint_client_token}`
 - docs: none — the per-client credential is not described on any guide page
-- tests: `src-tauri/src/mcp_bridge/handshake.test.rs`, `src-tauri/src/mcp_bridge/principal.test.rs`, `src-tauri/src/mcp_bridge/connection.test.rs`, `src-tauri/src/mcp_bridge/identify.test.rs`, `src-tauri/src/mcp_bridge/peer_text.test.rs`, `src-tauri/src/mcp_config/client_tokens.test.rs`, `src-tauri/src/mcp_config/client_token_field.test.rs`, `server/mcp/__tests__/unit/utils/clientIdentity.test.ts`, `server/mcp/__tests__/unit/utils/parentProcess.test.ts`
+- tests: `src-tauri/src/mcp_bridge/handshake.test.rs`, `src-tauri/src/mcp_bridge/principal.test.rs`, `src-tauri/src/mcp_bridge/connection.test.rs`, `src-tauri/src/mcp_bridge/identify.test.rs`, `src-tauri/src/peer_text.test.rs`, `src-tauri/src/mcp_config/client_tokens.test.rs`, `src-tauri/src/mcp_config/client_token_field.test.rs`, `server/mcp/__tests__/unit/utils/clientIdentity.test.ts`, `server/mcp/__tests__/unit/utils/parentProcess.test.ts`
 - notes: The client configs are the token store — no keychain entry, no separate secret file. The registry is refreshed before the accept loop starts; a panic in the refresh publishes an empty registry. Installs predating the mechanism connect as `Anonymous` and lose only delegated actions. No server-side rate limit; the token bucket is sidecar-side.
 
 ### Webview bridge dispatcher and route table

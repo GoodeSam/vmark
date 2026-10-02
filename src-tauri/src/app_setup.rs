@@ -23,6 +23,7 @@
 use sha2::{Digest, Sha256};
 use tauri::{Listener, Manager};
 
+use crate::peer_text::peer_message;
 use crate::{menu, menu_events, pty, quit, tab_transfer, window_status, workspace_transfer};
 
 /// Compute a stable, anonymous machine identifier hash.
@@ -138,9 +139,7 @@ pub(crate) fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::
     // The payload contains the window label as a string
     let app_handle = app.handle().clone();
     app.listen("ready", move |event| {
-        // The payload is the window label
-        if let Ok(label) = serde_json::from_str::<String>(event.payload()) {
-            log::debug!("[Tauri] Window '{}' is ready", label);
+        if let Some(label) = crate::window_manager::ready_window_label(event.payload()) {
             menu_events::mark_window_ready(&app_handle, &label);
             crate::file_open::record_ready_document_window(&app_handle, &label);
         }
@@ -245,10 +244,13 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
 ///
 /// Lives here rather than in `lib.rs` so that file stays a declarative
 /// composition root — the same reason the setup/event handlers were extracted.
+///
+/// Like its two siblings below, the message is whatever a webview sent, so it
+/// is logged escaped and bounded (`peer_text.rs`): one message, one line.
 #[cfg(debug_assertions)]
 #[tauri::command]
 pub fn debug_log(message: String) {
-    log::debug!("[Frontend] {}", message);
+    log::debug!("[Frontend] {}", peer_message(&message));
 }
 
 /// Window-close milestones from the frontend, at INFO (#1253).
@@ -264,7 +266,7 @@ pub fn debug_log(message: String) {
 /// close attempt.
 #[tauri::command]
 pub fn window_close_log(message: String) {
-    log::info!("[WindowClose] {}", message);
+    log::info!("[WindowClose] {}", peer_message(&message));
 }
 
 /// Update-flow milestones from the frontend, at INFO (#1270).
@@ -283,7 +285,7 @@ pub fn window_close_log(message: String) {
 /// Kept to state transitions: download progress events are not logged.
 #[tauri::command]
 pub fn update_log(message: String) {
-    log::info!("[Update] {}", message);
+    log::info!("[Update] {}", peer_message(&message));
 }
 
 #[cfg(test)]

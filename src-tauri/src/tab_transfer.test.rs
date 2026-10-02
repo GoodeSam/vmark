@@ -292,3 +292,38 @@ fn the_transfer_route_is_what_the_frontend_claims_on() {
     assert!(TRANSFER_URL.contains("transfer=true"));
     assert!(TRANSFER_URL.starts_with('/'));
 }
+
+// ---------------------------------------------------------------------------
+// The ack payload is webview text (WI-RA7.7)
+
+#[test]
+fn a_well_formed_ack_payload_reaches_the_waiting_request() {
+    let _lock = acquire_test_lock();
+    reset_pending();
+
+    let mut rx = register_pending_ack("req-payload");
+    let payload =
+        serde_json::to_string(&prepare_ack("req-payload", "# Live")).expect("encode the ack");
+    super::removal::route_ack_payload(&payload);
+
+    assert!(rx.try_recv().expect("the ack is delivered").accepted);
+    reset_pending();
+}
+
+#[test]
+fn a_malformed_ack_payload_costs_the_log_one_bounded_line() {
+    // serde's error quotes the value it could not use, so a megabyte payload of
+    // the wrong shape used to become a megabyte log line.
+    let payload = serde_json::to_string(&"A".repeat(1024 * 1024)).expect("encode");
+    let lines = crate::peer_text::log_capture::captured_logs(|| {
+        super::removal::route_ack_payload(&payload);
+    });
+    assert_eq!(lines.len(), 1, "{} records", lines.len());
+    assert!(lines[0].starts_with("[TabTransfer] Malformed tab-removal ack: "));
+    assert!(
+        lines[0].chars().count() < crate::peer_text::MAX_PEER_MESSAGE + 64,
+        "{} characters reached the log",
+        lines[0].chars().count()
+    );
+    assert!(!lines[0].contains('\n'));
+}
