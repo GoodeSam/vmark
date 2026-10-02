@@ -195,10 +195,13 @@ export function useCommandBootstrap(): void {
     });
 
     // The window-lifetime services (grant/policy mirrors, tab events and
-    // lifecycle, recorder, coherence, workspace sync, menu mirror) — one list,
-    // one disposer (services/runtimeWiring.ts). If they fail to start, this
-    // effect never returns its cleanup, so the editor batch — the one
-    // registration that owns resources — is disposed here before the error
+    // lifecycle, recorder, coherence, workspace sync, menu mirror, per-tab
+    // state cleanup) — one list, one disposer (services/runtimeWiring.ts).
+    // They start HERE, synchronously with the window's first effects, which is
+    // what lets every later tab removal — a session restore included — rely on
+    // the cleanup instead of freeing a tab's state itself. If they fail to
+    // start, this effect never returns its cleanup, so the editor batch — the
+    // one registration that owns resources — is disposed here before the error
     // propagates (audit #358); the services themselves roll back inside
     // startRuntimeServices.
     let stopRuntimeServices: () => void;

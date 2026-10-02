@@ -29,10 +29,16 @@ const DEFAULT_ACK_TIMEOUT_MS = 8_000;
 // (instanceOperationLock.ts, R2-14) — one set across close, move and
 // duplicate, so a close cannot start during a move's ack wait either.
 
+/**
+ * What a move or a duplicate accepts. Per-tab cleanup is not among it: a moved
+ * tab's state is freed by the tab store's removal announcement, not here.
+ */
+type WindowActionOptions = Pick<WorkspaceActionOptions, "timeoutMs">;
+
 export async function moveWorkspaceInstanceToNewWindow(
   windowLabel: string,
   workspaceInstanceId: string,
-  options: WorkspaceActionOptions = {},
+  options: WindowActionOptions = {},
 ): Promise<WorkspaceWindowActionResult> {
   if (!acquireInstanceOperation(workspaceInstanceId)) {
     return { ok: false, reason: "busy" };
@@ -44,9 +50,11 @@ export async function moveWorkspaceInstanceToNewWindow(
     const result = await createWindowAndWaitForAck(payload, options.timeoutMs);
     if (!result.ok) return result;
 
+    // The target window holds its own copy now. Detaching announces each
+    // removal, and the tab-state cleanup frees the document and every other
+    // piece of per-tab state this window kept for it.
     for (const tab of payload.tabs) {
       useTabStore.getState().detachTab(windowLabel, tab.tabId);
-      cleanupMovedTab(tab.tabId, options.cleanupTab);
     }
     // WI-TS2.3 (D-T6): PTY/xterm state cannot cross webviews, so the moved
     // instance's terminal sessions are killed in the SOURCE, strictly after
@@ -69,7 +77,7 @@ export async function moveWorkspaceInstanceToNewWindow(
 export async function duplicateWorkspaceInstanceToNewWindow(
   windowLabel: string,
   workspaceInstanceId: string,
-  options: WorkspaceActionOptions = {},
+  options: WindowActionOptions = {},
 ): Promise<WorkspaceWindowActionResult> {
   if (!acquireInstanceOperation(workspaceInstanceId)) {
     return { ok: false, reason: "busy" };
@@ -188,14 +196,6 @@ async function ackWorkspaceTransferWithRetry(data: {
   // then drive its own recovery (cancel + keep tabs) instead of silently
   // duplicating.
   workspaceError("Failed to ack workspace transfer after retries:", lastError);
-}
-
-function cleanupMovedTab(tabId: string, cleanupTab?: (tabId: string) => void): void {
-  if (cleanupTab) {
-    cleanupTab(tabId);
-  } else {
-    useDocumentStore.getState().removeDocument(tabId);
-  }
 }
 
 function disabledOrMissingResult(workspaceInstanceId: string): WorkspaceWindowActionResult {

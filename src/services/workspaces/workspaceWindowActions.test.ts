@@ -2,7 +2,7 @@
 // WI-TS2.3 — moving an instance out kills its terminal sessions AFTER the
 // ack (never on timeout/cancel) and realigns to the promoted successor.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useDocumentStore } from "@/stores/documentStore";
+import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
 import { resetTerminalSessionStore, useUIStore } from "@/stores/uiStore";
 import {
   selectWindowWorkspaceState,
@@ -70,20 +70,26 @@ describe("workspace window actions", () => {
       .toMatchObject({ activeWorkspaceInstanceId: expect.stringMatching(/^wsi-placeholder-/) });
   });
 
-  it("uses a caller-provided cleanup callback after acknowledged move", async () => {
-    const cleanupTab = vi.fn();
+  // WI-RA1C.4 — the move does not free the moved tabs' state itself; detaching
+  // them announces their removal, and the tab-state cleanup frees ALL of it.
+  it("frees every piece of a moved tab's state, and none of a kept tab's", async () => {
     setRailMode(true);
     addInstance("main", "wsi-repo", "/repo");
-    const tabId = addTab("main", "/repo/a.md", "A");
+    const movedTabId = addTab("main", "/repo/a.md", "A", { dirty: true });
+    const keptTabId = addTab("main", "/other/b.md", "B");
+    const keptRevision = useRevisionStore.getState().getRevision(keptTabId);
+    useRevisionStore.getState().getRevision(movedTabId);
     mockInvoke.mockResolvedValueOnce("doc-2");
 
-    const move = moveWorkspaceInstanceToNewWindow("main", "wsi-repo", { cleanupTab });
+    const move = moveWorkspaceInstanceToNewWindow("main", "wsi-repo");
     await vi.waitFor(() => expect(mockInvoke).toHaveBeenCalled());
     ackTransfer(mockInvoke.mock.calls[0][1].data as WorkspaceTransferPayload);
     await expect(move).resolves.toMatchObject({ ok: true });
 
-    expect(cleanupTab).toHaveBeenCalledWith(tabId);
-    expect(useDocumentStore.getState().getDocument(tabId)).toBeDefined();
+    expect(useDocumentStore.getState().getDocument(movedTabId)).toBeUndefined();
+    expect(useRevisionStore.getState().revisions[movedTabId]).toBeUndefined();
+    expect(useDocumentStore.getState().getDocument(keptTabId)).toBeDefined();
+    expect(useRevisionStore.getState().revisions[keptTabId]?.revision).toBe(keptRevision);
   });
 
   it("keeps the source intact when a move times out before ack", async () => {
