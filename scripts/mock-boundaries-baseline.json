@@ -1351,21 +1351,6 @@
       "target": "src/components/Browser/BrowserChrome"
     },
     {
-      "file": "src/components/Editor/cvSizingScope.webkit.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Editor/ImageContextMenu"
-    },
-    {
-      "file": "src/components/Editor/cvSizingScope.webkit.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Editor/useTiptapFlush"
-    },
-    {
-      "file": "src/components/Editor/cvSizingScope.webkit.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Editor/useWysiwygScrollMemory"
-    },
-    {
       "file": "src/components/Editor/DocumentSplit/DocumentSplitContainer.test.tsx",
       "api": "vi.mock",
       "target": "src/components/Editor/Editor"
