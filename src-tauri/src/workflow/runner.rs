@@ -10,12 +10,14 @@
 //!   - Event emission failures are logged, not silently dropped
 //!   - `genie/*` steps run via `genie_step`; `webhook/*` returns Err, not fake Ok
 //!   - Returns Err when any step fails (not Ok with silent failure)
-//!   - Env substitution uses regex for embedded `${VAR}` patterns
-//!   - Cancellation checked before each step via shared AtomicBool
+//!   - A step's `if:` decides whether it runs (`success()` when absent), so
+//!     `failure()` / `always()` steps run after a failure; the run still fails
+//!   - Cancellation checked before each step via shared AtomicBool, and before
+//!     its condition: a cancel stops `always()` steps too
 //!   - Steps ordered by topological sort on `needs:` dependencies
 
 use super::approval::{ApprovalRegistry, ApprovalRequest};
-use super::condition::evaluate_condition;
+use super::condition::{evaluate_condition, RunStatus};
 use super::expressions::{self, WorkflowOutputs};
 use super::genie_step::{self, LoadedGenie, ProviderConfig};
 use super::sandbox::validate_path;
@@ -266,7 +268,7 @@ pub async fn run_workflow_sequential<R: Runtime>(
         .map(|rs| (rs.id.clone(), rs.step.uses.clone(), rs.step.with.clone()))
         .collect();
     let mut failed = false;
-    let mut failed_step = String::new();
+    let mut failed_step: Option<String> = None;
     let mut completed_steps: HashSet<String> = HashSet::new();
 
     log::info!(
@@ -279,7 +281,7 @@ pub async fn run_workflow_sequential<R: Runtime>(
         let step_id = rs.id;
         let step = rs.step;
 
-        // Check cancellation
+        // A cancel stops every remaining step, `always()` steps included.
         if cancel_token.load(Ordering::SeqCst) {
             emit_event(
                 app,
@@ -293,67 +295,56 @@ pub async fn run_workflow_sequential<R: Runtime>(
                     duration: None,
                 },
             );
-            if !failed {
-                failed = true;
-                failed_step = format!("{} (cancelled)", step_id);
+            failed = true;
+            failed_step.get_or_insert_with(|| format!("{} (cancelled)", step_id));
+            continue;
+        }
+
+        // Whether the step runs is its `if:`'s decision under the run so far
+        // (`success()` when it has none). Fail-loud: an unparseable condition
+        // fails the step, never silently passes.
+        let status = RunStatus {
+            failed,
+            blocked: rs.needs.iter().any(|dep| !completed_steps.contains(dep)),
+        };
+        let runs = match &step.condition {
+            Some(condition) => evaluate_condition(condition, &outputs, &merged_env, status),
+            None => Ok(status.succeeded()),
+        };
+        match runs {
+            Ok(true) => {} // proceed
+            Ok(false) => {
+                let unmet = step.condition.as_ref();
+                emit_event(
+                    app,
+                    "workflow:step-update",
+                    StepStatusEvent {
+                        execution_id: execution_id.to_string(),
+                        step_id: step_id.clone(),
+                        status: "skipped".to_string(),
+                        output: None,
+                        error: unmet.map(|condition| format!("Condition not met: {}", condition)),
+                        duration: None,
+                    },
+                );
+                continue;
             }
-            continue;
-        }
-
-        // Skip if a dependency failed
-        if failed || rs.needs.iter().any(|dep| !completed_steps.contains(dep)) {
-            emit_event(
-                app,
-                "workflow:step-update",
-                StepStatusEvent {
-                    execution_id: execution_id.to_string(),
-                    step_id: step_id.clone(),
-                    status: "skipped".to_string(),
-                    output: None,
-                    error: None,
-                    duration: None,
-                },
-            );
-            continue;
-        }
-
-        // Evaluate condition (if: field). Fail-loud (RW-6 / L10): an
-        // unparseable condition fails the step, never silently passes.
-        if let Some(condition) = &step.condition {
-            match evaluate_condition(condition, &outputs, &merged_env, failed) {
-                Ok(true) => {} // proceed
-                Ok(false) => {
-                    emit_event(
-                        app,
-                        "workflow:step-update",
-                        StepStatusEvent {
-                            execution_id: execution_id.to_string(),
-                            step_id: step_id.clone(),
-                            status: "skipped".to_string(),
-                            output: None,
-                            error: Some(format!("Condition not met: {}", condition)),
-                            duration: None,
-                        },
-                    );
-                    continue;
-                }
-                Err(e) => {
-                    failed = true;
-                    failed_step = step_id.clone();
-                    emit_event(
-                        app,
-                        "workflow:step-update",
-                        StepStatusEvent {
-                            execution_id: execution_id.to_string(),
-                            step_id,
-                            status: "error".to_string(),
-                            output: None,
-                            error: Some(format!("Condition evaluation failed: {}", e)),
-                            duration: None,
-                        },
-                    );
-                    continue;
-                }
+            Err(e) => {
+                failed = true;
+                failed_step.get_or_insert_with(|| step_id.clone());
+                emit_event(
+                    app,
+                    "workflow:step-update",
+                    StepStatusEvent {
+                        execution_id: execution_id.to_string(),
+                        step_id,
+                        status: "error".to_string(),
+                        output: None,
+                        error: Some(format!("Condition evaluation failed: {}", e)),
+                        duration: None,
+                    },
+                );
+                continue;
             }
         }
 
@@ -379,7 +370,7 @@ pub async fn run_workflow_sequential<R: Runtime>(
                 Ok(p) => p,
                 Err(e) => {
                     failed = true;
-                    failed_step = step_id.clone();
+                    failed_step.get_or_insert_with(|| step_id.clone());
                     emit_event(
                         app,
                         "workflow:step-update",
@@ -435,7 +426,7 @@ pub async fn run_workflow_sequential<R: Runtime>(
                 ApprovalOutcome::Cancelled => {
                     approvals.drop_pending(&approval_key);
                     failed = true;
-                    failed_step = step_id.clone();
+                    failed_step.get_or_insert_with(|| step_id.clone());
                     emit_event(
                         app,
                         "workflow:step-update",
@@ -453,7 +444,7 @@ pub async fn run_workflow_sequential<R: Runtime>(
                 ApprovalOutcome::TimedOut => {
                     approvals.drop_pending(&approval_key);
                     failed = true;
-                    failed_step = step_id.clone();
+                    failed_step.get_or_insert_with(|| step_id.clone());
                     emit_event(
                         app,
                         "workflow:step-update",
@@ -470,7 +461,7 @@ pub async fn run_workflow_sequential<R: Runtime>(
                 }
                 ApprovalOutcome::Denied | ApprovalOutcome::ChannelClosed => {
                     failed = true;
-                    failed_step = step_id.clone();
+                    failed_step.get_or_insert_with(|| step_id.clone());
                     let err_msg = if matches!(approval_outcome, ApprovalOutcome::ChannelClosed) {
                         "Approval channel closed"
                     } else {
@@ -494,13 +485,16 @@ pub async fn run_workflow_sequential<R: Runtime>(
         }
 
         // Execute step based on type, with a per-step timeout. On elapsed:
-        // fire the cancel token so any in-flight AI provider work (CLI child,
-        // REST request) is aborted, then surface a "Timed out" step error.
+        // fire the STEP's token so its in-flight AI provider work (CLI child,
+        // REST request) is aborted, then surface a "Timed out" step error. It
+        // is a child of the run's token: the user's cancel still reaches it,
+        // but a timeout must not cancel the `always()` step that runs next.
+        let step_cancel = cancel.child_token();
         let exec_fut = execute_step(
             &step,
             &resolved_params,
             workspace_root,
-            cancel.clone(),
+            step_cancel.clone(),
             provider.as_ref(),
             genies_dir.as_deref(),
             &defaults,
@@ -508,11 +502,12 @@ pub async fn run_workflow_sequential<R: Runtime>(
         let result = match tokio::time::timeout(step_timeout, exec_fut).await {
             Ok(r) => r,
             Err(_elapsed) => {
-                cancel.cancel();
+                step_cancel.cancel();
                 Err(format!("Timed out after {}s", step_config.timeout_secs))
             }
         };
         let duration_ms = start.elapsed().as_millis() as u64;
+        let step_ok = result.is_ok();
 
         match result {
             Ok(step_outputs) => {
@@ -556,7 +551,7 @@ pub async fn run_workflow_sequential<R: Runtime>(
             }
             Err(error) => {
                 failed = true;
-                failed_step = step_id.clone();
+                failed_step.get_or_insert_with(|| step_id.clone());
                 emit_event(
                     app,
                     "workflow:step-update",
@@ -577,7 +572,7 @@ pub async fn run_workflow_sequential<R: Runtime>(
             workflow.name,
             i + 1,
             step_count,
-            if failed { "FAILED" } else { "ok" },
+            if step_ok { "ok" } else { "FAILED" },
             duration_ms
         );
     }
@@ -601,13 +596,14 @@ pub async fn run_workflow_sequential<R: Runtime>(
 
     log::info!("Workflow '{}' {}", workflow.name, final_status);
 
-    if failed {
-        Err(format!(
+    // The FIRST failure is the one reported: steps guarded by `failure()` or
+    // `always()` run after it, and one of those failing too is not the cause.
+    match failed_step {
+        Some(step) => Err(format!(
             "Workflow '{}' failed at step '{}'",
-            workflow.name, failed_step
-        ))
-    } else {
-        Ok(execution_id.to_string())
+            workflow.name, step
+        )),
+        None => Ok(execution_id.to_string()),
     }
 }
 
@@ -769,3 +765,7 @@ use super::actions::matches_accept;
 #[cfg(test)]
 #[path = "runner.test.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "runner_flow.test.rs"]
+mod flow_tests;

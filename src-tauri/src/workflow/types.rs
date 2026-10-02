@@ -90,14 +90,18 @@ pub struct RawStep {
     /// the template `{{key}}` substitutions per ADR-2.
     #[serde(default)]
     pub with: HashMap<String, String>,
-    /// Dependency edges. The step doesn't run until every named step has
-    /// completed successfully. Accepts either a bare string or a YAML list
-    /// (the `untagged` `NeedsDef` enum normalizes them).
+    /// Dependency edges: the step is ordered after every named step. By
+    /// default it also runs only if they all completed — a named step that
+    /// failed or was skipped makes `success()` false for this one — but a
+    /// step whose `if:` says `failure()` or `always()` runs regardless.
+    /// Accepts either a bare string or a YAML list (the `untagged` `NeedsDef`
+    /// enum normalizes them).
     #[serde(default)]
     pub needs: NeedsDef,
-    /// Conditional execution gate. The runner currently recognizes only
-    /// literal `"false"` / `"0"` (skip the step). Anything else falls through
-    /// to execution; full expression evaluation is a follow-up.
+    /// Conditional execution gate, evaluated by `condition.rs`: the step runs
+    /// when it is true and is skipped (not failed) when it is false. Absent,
+    /// or naming none of `success()` / `failure()` / `always()`, it carries an
+    /// implied `success()`. A condition that does not parse fails the step.
     #[serde(rename = "if")]
     pub condition: Option<String>,
     /// Per-step model override. See `RawDefaults.model` for precedence.
