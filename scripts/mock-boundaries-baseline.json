@@ -2106,11 +2106,6 @@
       "target": "src/plugins/toolbarActions/wysiwygAdapterUtils"
     },
     {
-      "file": "src/services/assembly/sourceEditorExtensions.test.ts",
-      "api": "vi.mock",
-      "target": "src/services/assembly/workflowExtensionGates"
-    },
-    {
       "file": "src/services/persistence/hotExit/restoreTabs.isolation.test.ts",
       "api": "vi.mock",
       "target": "src/services/persistence/hotExit/restoreDocumentState"
