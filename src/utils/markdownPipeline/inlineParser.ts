@@ -13,6 +13,7 @@
  *     since this is only used for short summary text)
  *
  * @coordinates-with plugins/detailsBlock.ts — parses <summary> text with inline formatting
+ * @coordinates-with parser/escapeMarkers.ts — escaped custom markers, as in the document parse
  * @coordinates-with mdastToProseMirror.ts — consumers convert resulting MDAST to PM nodes
  * The processor comes from the shared `inline-summary` dialect (WI-3.1), so
  * this parser cannot drift from the others on what `~x~` or `==x==` mean.
@@ -20,8 +21,13 @@
  * @module utils/markdownPipeline/inlineParser
  */
 
-import type { Content, Paragraph } from "mdast";
+import type { Content, Paragraph, Root } from "mdast";
 import { buildProcessorForMode } from "./dialect";
+import {
+  preprocessEscapedMarkers,
+  restoreEscapedMarkers,
+  restoreRawEscapedMarkers,
+} from "./parser/escapeMarkers";
 import { mdPipelineWarn } from "@/utils/debug";
 
 /**
@@ -50,8 +56,13 @@ export function parseInlineMarkdown(text: string): Content[] {
     // what `~x~` or `==x==` mean (WI-3.1).
     const processor = buildProcessorForMode("inline-summary");
 
-    const tree = processor.parse(text);
-    const transformed = processor.runSync(tree);
+    // Escaped custom markers (`\==`) are hidden from the inline-mark plugin
+    // exactly as the document parse hides them (parser/escapeMarkers.ts).
+    const source = preprocessEscapedMarkers(text);
+    const tree = processor.parse(source) as Root;
+    if (source !== text) restoreRawEscapedMarkers(tree, source);
+    const transformed = processor.runSync(tree) as Root;
+    if (source !== text) restoreEscapedMarkers(transformed);
 
     // The parser creates a root with children
     // For inline text, this should result in a single paragraph
