@@ -302,7 +302,7 @@
   "src/services/workspaces/workspaceSession.test.ts": 2,
   "src/services/workspaces/workspaceTabCollection.test.ts": 6,
   "src/stores/__tests__/aiBrowserProvenance.test.ts": 2,
-  "src/stores/__tests__/geniesStore.test.ts": 5,
+  "src/stores/__tests__/geniesStore.test.ts": 1,
   "src/stores/__tests__/mcpCheckpointPersistence.test.ts": 22,
   "src/stores/__tests__/tabStore.test.ts": 5,
   "src/stores/breakdownStore.test.ts": 1,

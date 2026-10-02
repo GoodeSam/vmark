@@ -6,105 +6,12 @@ vi.mock("./table", () => ({
   restoreTableColumnFromAnchor: vi.fn(() => null),
 }));
 
-// ---------------------------------------------------------------------------
-// Isolated test: getCodeBlockAnchor returns undefined when fenceStart is null
-// This exercises line 38: `if (fenceStart === null) return undefined;`
-// The branch is unreachable via the normal call path (isInsideCodeBlock and
-// findCodeFenceStartLine are consistent), so we test via a mocked markdown module.
-// ---------------------------------------------------------------------------
-describe("getCodeBlockAnchor — fenceStart null branch (line 38)", () => {
-  it("blockAnchor is undefined when isInsideCodeBlock returns true but findCodeFenceStartLine returns null", async () => {
-    // Mock the markdown module so isInsideCodeBlock=true but findCodeFenceStartLine=null
-    vi.doMock("./markdown", () => ({
-      detectNodeType: () => "paragraph",
-      stripMarkdownSyntax: (line: string, col: number) => ({
-        text: line,
-        adjustedColumn: col,
-      }),
-      isInsideCodeBlock: () => true,        // triggers getCodeBlockAnchor call
-      findCodeFenceStartLine: () => null,   // causes `if (fenceStart === null) return undefined`
-    }));
-
-    const { getCursorInfoFromCodeMirror } = await import("./codemirror");
-
-    const lines = ["some text"];
-    const content = lines.join("\n");
-    const doc = {
-      toString: () => content,
-      lines: lines.length,
-      lineAt: (_pos: number) => ({ number: 1, from: 0, to: content.length, text: lines[0] }),
-      line: (_n: number) => ({ from: 0, to: content.length, text: lines[0] }),
-    };
-    const view = {
-      state: {
-        selection: { main: { head: 0 } },
-        doc,
-      },
-      dispatch: vi.fn(),
-    };
-
-    const info = getCursorInfoFromCodeMirror(view as never);
-
-    // nodeType is overridden to code_block by isInsideCodeBlock=true,
-    // but getCodeBlockAnchor returns undefined because fenceStart is null
-    expect(info.blockAnchor).toBeUndefined();
-
-    vi.doUnmock("./markdown");
-    vi.resetModules();
-  });
-});
-
+import { EditorState } from "@codemirror/state";
 import { getCursorInfoFromCodeMirror, restoreCursorInCodeMirror } from "./codemirror";
 import type { CursorInfo } from "@/types/cursorSync";
 import { getTableAnchorForLine, restoreTableColumnFromAnchor } from "./table";
 
-// --- Mock EditorView builder ---
-
-interface MockDoc {
-  toString(): string;
-  lineAt(pos: number): { number: number; from: number; to: number; text: string };
-  line(n: number): { from: number; to: number; text: string };
-  lines: number;
-}
-
-function buildMockDoc(content: string): MockDoc {
-  const lines = content.split("\n");
-  // Build line offsets
-  const lineStarts: number[] = [];
-  let offset = 0;
-  for (const line of lines) {
-    lineStarts.push(offset);
-    offset += line.length + 1; // +1 for \n
-  }
-
-  return {
-    toString: () => content,
-    lines: lines.length,
-    lineAt(pos: number) {
-      for (let i = 0; i < lines.length; i++) {
-        const from = lineStarts[i];
-        const to = from + lines[i].length;
-        if (pos >= from && pos <= to) {
-          return { number: i + 1, from, to, text: lines[i] };
-        }
-      }
-      // Fallback: last line
-      const last = lines.length - 1;
-      return {
-        number: last + 1,
-        from: lineStarts[last],
-        to: lineStarts[last] + lines[last].length,
-        text: lines[last],
-      };
-    },
-    line(n: number) {
-      const idx = n - 1;
-      const from = lineStarts[idx];
-      const to = from + lines[idx].length;
-      return { from, to, text: lines[idx] };
-    },
-  };
-}
+// --- EditorView stand-in: a real editor state, a recorded dispatch ---
 
 interface MockViewOptions {
   content: string;
@@ -112,14 +19,10 @@ interface MockViewOptions {
 }
 
 function buildMockView(opts: MockViewOptions) {
-  const doc = buildMockDoc(opts.content);
   const dispatched: Array<{ selection: { anchor: number }; scrollIntoView: boolean }> = [];
 
   return {
-    state: {
-      selection: { main: { head: opts.cursorPos } },
-      doc,
-    },
+    state: EditorState.create({ doc: opts.content, selection: { anchor: opts.cursorPos } }),
     dispatch: vi.fn((args: { selection: { anchor: number }; scrollIntoView?: boolean }) => {
       dispatched.push({ selection: args.selection, scrollIntoView: !!args.scrollIntoView });
     }),

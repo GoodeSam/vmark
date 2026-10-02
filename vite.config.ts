@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import { sourceAliases } from "./vitest.shared.ts";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -7,13 +7,82 @@ import { manualChunks } from "./scripts/manualChunks.ts";
 
 const host = process.env.TAURI_DEV_HOST;
 
+/** The module `src/main.tsx` awaits with `import("./App")` before first paint. */
+const BOOT_MODULE = "/src/App.tsx";
+
+/** The slice of a Rollup output item the boot preload reads. */
+interface BundleItem {
+  type: "chunk" | "asset";
+  fileName: string;
+  isEntry?: boolean;
+  facadeModuleId?: string | null;
+  imports?: readonly string[];
+}
+
+/**
+ * Files to modulepreload for the boot chunk: the chunk itself and its static
+ * import closure, minus what the entry's own closure already preloads.
+ *
+ * Vite annotates index.html with the ENTRY's static imports only. The App
+ * chunk is reached through a dynamic import, so its fetch and parse used to
+ * start only after `initSecureStorage` — two IPC round trips — had resolved.
+ * A modulepreload fetches and compiles a module WITHOUT evaluating it, so the
+ * download overlaps those IPCs while App's stores still hydrate after the
+ * secure-storage cache is filled. Throws when there is no boot chunk: a
+ * renamed App must fail the build, not silently drop the preload.
+ */
+export function bootChunkPreloads(
+  bundle: Record<string, BundleItem>,
+  bootModule: string = BOOT_MODULE,
+): string[] {
+  const chunks = Object.values(bundle).filter((item) => item.type === "chunk");
+  const byFile = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
+  const closure = (roots: readonly string[]): string[] => {
+    const seen: string[] = [];
+    const visit = (file: string) => {
+      if (seen.includes(file) || !byFile.has(file)) return;
+      seen.push(file);
+      for (const next of byFile.get(file)?.imports ?? []) visit(next);
+    };
+    roots.forEach(visit);
+    return seen;
+  };
+  const boot = chunks.find((chunk) => chunk.facadeModuleId?.endsWith(bootModule));
+  if (!boot) throw new Error(`boot preload: no chunk is built from ${bootModule}`);
+  const preloadedByEntry = new Set(closure(chunks.filter((c) => c.isEntry).map((c) => c.fileName)));
+  return closure([boot.fileName]).filter((file) => !preloadedByEntry.has(file));
+}
+
+/** Emit `<link rel="modulepreload">` tags for `bootChunkPreloads` (build only). */
+function bootChunkPreload(): Plugin {
+  let base = "/";
+  return {
+    name: "vmark:boot-chunk-preload",
+    apply: "build",
+    configResolved(config) {
+      base = config.base;
+    },
+    transformIndexHtml: {
+      order: "post",
+      handler(_html, ctx) {
+        if (!ctx.bundle) return [];
+        return bootChunkPreloads(ctx.bundle as Record<string, BundleItem>).map((file) => ({
+          tag: "link",
+          attrs: { rel: "modulepreload", crossorigin: true, href: `${base}${file}` },
+          injectTo: "head" as const,
+        }));
+      },
+    },
+  };
+}
+
 const pkg = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf-8"),
 ) as { version: string };
 
 // https://vite.dev/config/
 export default defineConfig(() => ({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), bootChunkPreload()],
 
   define: {
     __VMARK_VERSION__: JSON.stringify(pkg.version),

@@ -3000,10 +3000,10 @@ Genies are prompt files in `<appDataDir>/genies/`, listed by `src-tauri/src/geni
 - gate: always on
 - surfaces: menu Edit → Genies submenu (`genies-submenu`) with per-genie items `genie-item-{n}`, `reload-genies`, `open-genies-folder`, disabled `no-genies`; command `genies.openFolder`; picker list
 - code: `src-tauri/src/genies/mod.rs`, `src-tauri/src/genies/commands.rs`, `src-tauri/src/genies/install.rs`, `src-tauri/src/genies/scanning.rs`, `src-tauri/src/genies/parsing.rs`, `src-tauri/src/genies/types.rs`, `src-tauri/resources/genies/**`, `src/stores/aiStore/genies.ts`, `src/hooks/useGenieShortcuts.ts`, `src-tauri/src/menu/dynamic.rs`, `src/services/commands/miscCommands.ts`
-- rust: `get_genies_dir`, `list_genies`, `read_genie`, `refresh_genies_menu`, `hide_genies_menu`; installer called from `src-tauri/src/app_setup.rs`
+- rust: `get_genies_dir`, `load_genies`, `read_genie`, `refresh_genies_menu`, `hide_genies_menu`; installer called from `src-tauri/src/app_setup.rs`
 - docs: `website/guide/ai-genies.md` §"Writing Custom Genies" (§"Where Genies Live", §"Directory Structure", §"File Format", §"Frontmatter Fields"), §"Troubleshooting"
 - tests: `src-tauri/src/genies/tests.rs`, `src-tauri/src/genies/commands.test.rs`, `src-tauri/src/genies/install.test.rs`, `src-tauri/src/genies/scanning.test.rs`, `src/stores/__tests__/geniesStore.test.ts`, `src/hooks/useGenieShortcuts.test.ts`, `src/hooks/useGenieShortcuts.lifecycle.test.tsx`
-- notes: `GenieEntry.source` is always `"global"` — per-workspace genies are reserved, not implemented (`src-tauri/src/genies/types.rs`). `refresh_genies_menu` is a synchronous command that scans the genie tree inline, unlike `list_genies`/`read_genie`. The genie menu and its events are registered by the main window only (`src/hooks/lifecycle/MainWindowRunners.tsx`).
+- notes: `GenieEntry.source` is always `"global"` — per-workspace genies are reserved, not implemented (`src-tauri/src/genies/types.rs`). `refresh_genies_menu` is a synchronous command that scans the genie tree inline, unlike `load_genies`/`read_genie`. The genie menu and its events are registered by the main window only (`src/hooks/lifecycle/MainWindowRunners.tsx`).
 
 ### Genie invocation pipeline (extract → fill → stream → apply)
 - id: genie-invocation

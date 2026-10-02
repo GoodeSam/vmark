@@ -15,16 +15,18 @@
  *
  * | Field | Revision | For |
  * |---|---|---|
- * | `content` | deferred | rendering — may lag a frame under fast typing |
+ * | `content` | deferred | rendering — may lag a frame under fast typing, and waits for a pause on a large document |
  * | `liveContent` | current | ACTIONS — executing what the user can no longer see is a bug |
  *
  * The source pane's own gutter diagnostics are NOT this hook's business: they
  * track the caret and come live from `SourcePane`.
  *
+ * @coordinates-with ../previewDebounce.ts — how long a large document waits
  * @module components/Editor/SplitPaneEditor/usePreviewModel
  */
 
 import { useDeferredValue, useMemo } from "react";
+import { useSettledPreviewContent } from "../previewDebounce";
 import type {
   FormatConfig,
   PreviewRenderer,
@@ -62,8 +64,10 @@ export function usePreviewModel({
   // scales with document size. Deferring lets React drop intermediate
   // keystrokes rather than render every one. `useDeferredValue` rather than a
   // debounce, matching OutlineView and StatusBarCounts: no timer to pick a
-  // constant for, and no fixed lag on a small document.
-  const previewContent = useDeferredValue(content);
+  // constant for, and no fixed lag on a small document. A large document
+  // first waits for typing to settle (the WYSIWYG flush's size tiers), since
+  // each render validates and draws all of it.
+  const previewContent = useDeferredValue(useSettledPreviewContent(content));
 
   const Preview = useMemo(() => {
     const renderers = formatConfig.schemaRenderers;

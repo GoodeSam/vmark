@@ -25,6 +25,7 @@ vi.mock("@codemirror/state", () => ({
     })),
     readOnly: { of: vi.fn(() => "readOnly") },
   },
+  StateField: { define: vi.fn(() => "fenceIndex") },
   Compartment: vi.fn(() => ({
     of: vi.fn((ext: unknown) => ext),
     reconfigure: vi.fn((ext: unknown) => ext),
@@ -403,6 +404,8 @@ describe("SourceEditor", () => {
         expect.objectContaining({
           initialWordWrap: true,
           initialShowLineNumbers: false,
+          // The cursor snapshot's fence index rides with the update listener.
+          updateListener: [capturedUpdateListener, "fenceIndex"],
         })
       );
     });
@@ -518,47 +521,42 @@ describe("SourceEditor", () => {
       expect(mockSetContent).toHaveBeenCalledWith("new content");
     });
 
-    it("resets isInternalChange via requestAnimationFrame on doc change", () => {
+    const report = (flags: { docChanged: boolean; selectionSet: boolean }) =>
+      capturedUpdateListener!({ ...flags, state: makeUpdateState("# Hello"), view: mockEditorViewInstance });
+    const moveCursor = () => report({ docChanged: false, selectionSet: true });
+
+    it.each([
+      { docChanged: false, selectionSet: true },
+      { docChanged: true, selectionSet: false },
+    ])("tracks cursor on the frame after an update with %o", (flags) => {
       render(<SourceEditor />);
-
-      capturedUpdateListener!({
-        docChanged: true,
-        selectionSet: false,
-        state: makeUpdateState("new"),
-        view: mockEditorViewInstance,
-      });
-
-      // isInternalChange is set to true synchronously, then false in rAF
-      // We can't directly check the ref, but verify setContent was called
-      expect(mockSetContent).toHaveBeenCalledWith("new");
-    });
-
-    it("tracks cursor on selection change", () => {
-      render(<SourceEditor />);
-
-      capturedUpdateListener!({
-        docChanged: false,
-        selectionSet: true,
-        state: makeUpdateState("# Hello"),
-        view: mockEditorViewInstance,
-      });
-
+      report(flags);
+      vi.advanceTimersByTime(16);
       expect(mockGetCursorInfo).toHaveBeenCalledWith(mockEditorViewInstance);
       expect(mockSetCursorInfo).toHaveBeenCalled();
     });
 
-    it("tracks cursor on doc change", () => {
+    it("snapshots the cursor once per frame however many updates arrive", () => {
       render(<SourceEditor />);
+      for (let i = 0; i < 3; i += 1) moveCursor();
+      expect(mockGetCursorInfo).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(16);
+      expect(mockSetCursorInfo).toHaveBeenCalledTimes(1);
+    });
 
-      capturedUpdateListener!({
-        docChanged: true,
-        selectionSet: false,
-        state: makeUpdateState("modified"),
-        view: mockEditorViewInstance,
-      });
+    it("publishes a pending cursor snapshot when the editor hides", () => {
+      const { rerender } = render(<SourceEditor />);
+      moveCursor();
+      rerender(<SourceEditor hidden />);
+      expect(mockSetCursorInfo).toHaveBeenCalledTimes(1);
+    });
 
-      expect(mockGetCursorInfo).toHaveBeenCalled();
-      expect(mockSetCursorInfo).toHaveBeenCalled();
+    it("publishes a pending cursor snapshot before the view is destroyed", () => {
+      const { unmount } = render(<SourceEditor />);
+      moveCursor();
+      unmount();
+      expect(mockSetCursorInfo).toHaveBeenCalledTimes(1);
+      expect(mockSetCursorInfo.mock.invocationCallOrder[0]).toBeLessThan(mockDestroy.mock.invocationCallOrder[0]);
     });
 
     it("pushes selected text to store on selection change", () => {

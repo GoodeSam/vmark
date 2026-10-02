@@ -123,7 +123,7 @@ macro_rules! all_commands {
             shell_env::get_login_shell_path,
             shell_env::list_available_shells,
             genies::commands::get_genies_dir,
-            genies::commands::list_genies,
+            genies::load::load_genies,
             genies::commands::read_genie,
             workflow::commands::run_workflow,
             workflow::commands::workflow_engine_policy,
