@@ -1336,11 +1336,6 @@
       "target": "src/components/KnowledgeBasePanel/KbGraphView"
     },
     {
-      "file": "src/components/Tabs/Tab.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Tabs/TabRenameInput"
-    },
-    {
       "file": "src/components/Terminal/createTerminalInstance.rollback.test.ts",
       "api": "vi.mock",
       "target": "src/components/Terminal/resolveHelperTextarea"
