@@ -1,16 +1,18 @@
 //! Exact terminal-to-transcript bindings, delivered by CLI SessionStart hooks.
-//! Reads are bounded, canonical-root confined, and never touch PTY output.
+//! Reads are bounded, canonical-root confined, and never touch PTY output; a
+//! poll that carries the cursor of the previous one gets only what was
+//! appended since (`follow.rs`).
 use crate::command_error::CommandError;
-use serde::Serialize;
 use serde_json::{json, Value};
-use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Manager, Runtime, State};
 mod config;
+mod follow;
 mod open;
 use config::add_hook;
+pub use follow::{TranscriptCursor, TranscriptDelta};
 #[cfg(test)]
 mod tests;
 /// Serializes CLI config writes; a newer request supersedes queued older ones.
@@ -21,6 +23,8 @@ struct ConfigGate {
     lock: Mutex<()>,
     revision: AtomicU64,
 }
+/// The most transcript a fresh tail carries, and the most a poll may fall behind
+/// before it is answered with a fresh tail instead of a delta.
 const LIMIT: u64 = 2 * 1024 * 1024;
 /// A token is the lowercase hyphenated UUID `terminal_transcript_prepare`
 /// issues, and nothing else. It names the binding file, so the other spellings
@@ -127,19 +131,16 @@ fn config_root(key: &str, fallback: PathBuf) -> PathBuf {
         .map(PathBuf::from)
         .unwrap_or(fallback)
 }
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TranscriptSnapshot {
-    revision: String,
-    data: Option<String>,
-}
 /// A missing binding is a normal waiting state. Caller supplies no filesystem path.
+/// `cursor` is the one the previous answer carried; with it the answer holds only
+/// the records appended since, without it (or when it no longer fits the file) a
+/// fresh tail.
 #[tauri::command]
 pub async fn terminal_transcript_read<R: Runtime>(
     app: AppHandle<R>,
     token: String,
-    revision: Option<String>,
-) -> Result<Option<TranscriptSnapshot>, CommandError> {
+    cursor: Option<TranscriptCursor>,
+) -> Result<Option<TranscriptDelta>, CommandError> {
     if !valid_token(&token) {
         return Err(CommandError::invalid_input("Invalid transcript token"));
     }
@@ -147,7 +148,7 @@ pub async fn terminal_transcript_read<R: Runtime>(
     let (claude, codex) = cli_roots()?;
     let roots = [claude.join("projects"), codex.join("sessions")];
     tauri::async_runtime::spawn_blocking(move || {
-        read_snapshot(&root, &roots, &token, revision.as_deref())
+        read_snapshot(&root, &roots, &token, cursor.as_ref())
     })
     .await
     .map_err(|e| CommandError::internal(e.to_string()))?
@@ -198,8 +199,8 @@ fn read_snapshot(
     root: &Path,
     roots: &[PathBuf],
     token: &str,
-    previous: Option<&str>,
-) -> Result<Option<TranscriptSnapshot>, CommandError> {
+    previous: Option<&TranscriptCursor>,
+) -> Result<Option<TranscriptDelta>, CommandError> {
     if !root.join("enabled").exists() {
         return Ok(None);
     }
@@ -225,51 +226,5 @@ fn read_snapshot(
             "Transcript outside CLI session directories",
         ));
     }
-    let meta = std::fs::metadata(&path).map_err(|e| CommandError::io(e.to_string()))?;
-    let revision = format!(
-        "{}:{:?}:{}:{:?}",
-        path.display(),
-        value["sessionId"],
-        meta.len(),
-        meta.modified()
-    );
-    if Some(revision.as_str()) == previous {
-        return Ok(Some(TranscriptSnapshot {
-            revision,
-            data: None,
-        }));
-    }
-    Ok(Some(TranscriptSnapshot {
-        revision,
-        data: Some(read_tail(&path, LIMIT)?),
-    }))
-}
-fn read_tail(path: &Path, limit: u64) -> Result<String, CommandError> {
-    // Regular files only, judged before the open — see `open.rs`.
-    let (mut file, meta) =
-        open::open_regular(path)?.ok_or_else(|| CommandError::not_found("Transcript is gone"))?;
-    let start = meta.len().saturating_sub(limit);
-    let mut at_boundary = start == 0;
-    if start > 0 {
-        file.seek(SeekFrom::Start(start - 1))
-            .map_err(|e| CommandError::io(e.to_string()))?;
-        let mut preceding = [0u8; 1];
-        file.read_exact(&mut preceding)
-            .map_err(|e| CommandError::io(e.to_string()))?;
-        at_boundary = preceding[0] == b'\n';
-    }
-    file.seek(SeekFrom::Start(start))
-        .map_err(|e| CommandError::io(e.to_string()))?;
-    let mut bytes = Vec::new();
-    file.take(limit)
-        .read_to_end(&mut bytes)
-        .map_err(|e| CommandError::io(e.to_string()))?;
-    if !at_boundary {
-        if let Some(i) = bytes.iter().position(|b| *b == b'\n') {
-            bytes.drain(..=i);
-        } else {
-            bytes.clear();
-        }
-    }
-    Ok(String::from_utf8_lossy(&bytes).into_owned())
+    follow::follow(&path, &value["sessionId"], previous, LIMIT)
 }

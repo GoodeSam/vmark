@@ -1,5 +1,6 @@
 //! WI-TP1.1: preserve existing hooks; refuse arbitrary file reads.
 //! WI-RA6.4: one token encoding; a binding to a FIFO is refused, not opened.
+//! WI-RA6.5: a read that carries a cursor gets only what was appended.
 use super::*;
 #[test]
 fn merges_hooks_without_destroying_settings() {
@@ -66,19 +67,6 @@ fn canonical_paths_are_confined_to_session_roots() {
     ));
     std::fs::remove_dir_all(root).unwrap();
 }
-#[test]
-fn tail_reader_bounds_bytes_and_drops_split_records() {
-    let root = std::env::temp_dir().join(uuid::Uuid::new_v4().to_string());
-    std::fs::create_dir_all(&root).unwrap();
-    let path = root.join("tail.jsonl");
-    std::fs::write(&path, b"first\nsecond\npartial").unwrap();
-    assert_eq!(read_tail(&path, 12).unwrap(), "partial");
-    assert_eq!(read_tail(&path, 14).unwrap(), "second\npartial");
-    assert_eq!(read_tail(&path, 100).unwrap(), "first\nsecond\npartial");
-    std::fs::write(&path, b"truncated\n").unwrap();
-    assert_eq!(read_tail(&path, 100).unwrap(), "truncated\n");
-    std::fs::remove_dir_all(root).unwrap();
-}
 fn snapshot_fixture() -> (PathBuf, PathBuf, String) {
     let base = std::env::temp_dir().join(uuid::Uuid::new_v4().to_string());
     std::fs::create_dir_all(&base).unwrap();
@@ -110,15 +98,62 @@ fn snapshot_waits_until_enabled_bound_and_written() {
         .is_none());
     std::fs::write(&transcript, b"{\"a\":1}\n").unwrap();
     let first = read_snapshot(&root, &roots, &token, None).unwrap().unwrap();
-    assert_eq!(first.data.as_deref(), Some("{\"a\":1}\n"));
-    let same = read_snapshot(&root, &roots, &token, Some(&first.revision))
+    assert!(first.reset, "the first answer is a fresh tail");
+    assert_eq!(first.data, "{\"a\":1}\n");
+    let same = read_snapshot(&root, &roots, &token, Some(&first.cursor))
         .unwrap()
         .unwrap();
-    assert!(same.data.is_none(), "unchanged revision skips the read");
+    assert!(
+        !same.reset && same.data.is_empty(),
+        "nothing new, nothing sent"
+    );
+    assert_eq!(same.cursor, first.cursor);
     std::fs::remove_file(root.join("enabled")).unwrap();
     assert!(read_snapshot(&root, &roots, &token, None)
         .unwrap()
         .is_none());
+    std::fs::remove_dir_all(root.parent().unwrap()).unwrap();
+}
+#[test]
+fn a_read_that_carries_a_cursor_gets_only_what_was_appended() {
+    let (root, sessions, token) = snapshot_fixture();
+    let roots = [sessions.clone()];
+    let transcript = sessions.join("t.jsonl");
+    bind(&root, &token, &transcript);
+    std::fs::write(&transcript, "{\"n\":1}\n{\"n\":2}\n").unwrap();
+    let first = read_snapshot(&root, &roots, &token, None).unwrap().unwrap();
+    assert_eq!(first.data, "{\"n\":1}\n{\"n\":2}\n");
+
+    std::fs::write(&transcript, "{\"n\":1}\n{\"n\":2}\n{\"n\":\"三\"}\n").unwrap();
+    let second = read_snapshot(&root, &roots, &token, Some(&first.cursor))
+        .unwrap()
+        .unwrap();
+
+    assert!(!second.reset);
+    assert_eq!(second.data, "{\"n\":\"三\"}\n");
+    std::fs::remove_dir_all(root.parent().unwrap()).unwrap();
+}
+#[test]
+fn a_binding_that_moves_to_another_transcript_starts_over() {
+    let (root, sessions, token) = snapshot_fixture();
+    let roots = [sessions.clone()];
+    let (old, new) = (sessions.join("old.jsonl"), sessions.join("new.jsonl"));
+    std::fs::write(&old, "old-1\nold-2\n").unwrap();
+    std::fs::write(&new, "new-1\nnew-2\nnew-3\n").unwrap();
+    bind(&root, &token, &old);
+    let first = read_snapshot(&root, &roots, &token, None).unwrap().unwrap();
+
+    // The CLI in this shell was restarted: same token, another transcript.
+    bind(&root, &token, &new);
+    let second = read_snapshot(&root, &roots, &token, Some(&first.cursor))
+        .unwrap()
+        .unwrap();
+
+    assert!(
+        second.reset,
+        "a cursor for another file must not be resumed"
+    );
+    assert_eq!(second.data, "new-1\nnew-2\nnew-3\n");
     std::fs::remove_dir_all(root.parent().unwrap()).unwrap();
 }
 #[test]
