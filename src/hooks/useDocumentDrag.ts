@@ -34,7 +34,7 @@ import { useEffect, useMemo, useRef } from "react";
 export type DocumentDragKind = "mouse" | "pointer";
 
 /** The native event type a drag of kind `K` delivers. */
-export type DocumentDragEvent<K extends DocumentDragKind> = K extends "pointer"
+type DocumentDragEvent<K extends DocumentDragKind> = K extends "pointer"
   ? PointerEvent
   : MouseEvent;
 
@@ -48,7 +48,7 @@ export type DocumentDragEvent<K extends DocumentDragKind> = K extends "pointer"
  */
 export type DocumentDragEndReason = "release" | "cancel" | "blur" | "superseded" | "unmount";
 
-export interface DocumentDragSession<K extends DocumentDragKind> {
+interface DocumentDragSession<K extends DocumentDragKind> {
   /** Called for every move while the drag is attached. */
   onMove: (event: DocumentDragEvent<K>) => void;
   /** Called exactly once, after the listeners are removed. `event` is the release or cancel event, when there is one. */

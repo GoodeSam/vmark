@@ -11,7 +11,7 @@
  *   - The synthetic workspace tab is not a drop target and is skipped.
  *
  * @coordinates-with hooks/useTabDragOut.ts — the gesture state machine that calls these
- * @module hooks/tabDragGeometry
+ * @module utils/tabDragGeometry
  */
 
 /** Vertical distance (px) outside the tab bar to trigger drag-out. */

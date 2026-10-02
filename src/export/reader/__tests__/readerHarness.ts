@@ -18,8 +18,8 @@ import { createExportExtensions } from "../../createExportExtensions";
 import { sanitizeExportHtml } from "../../htmlSanitizer";
 import { generateStandaloneHtml } from "../../htmlTemplates";
 
-/** Absolute path of the reader script, for suites that analyse it as a file. */
-export const READER_PATH = resolve(process.cwd(), "src/export/reader/vmark-reader.js");
+/** Absolute path of the reader script. */
+const READER_PATH = resolve(process.cwd(), "src/export/reader/vmark-reader.js");
 
 const readerSource = readFileSync(READER_PATH, "utf8");
 

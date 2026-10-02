@@ -557,7 +557,7 @@
         "src/stores/tabActivationBus.ts",
         "src/stores/tabRemovalBus.ts",
         "src/hooks/useTabDragOut.ts",
-        "src/hooks/tabDragGeometry.ts",
+        "src/utils/tabDragGeometry.ts",
         "src/hooks/useTabStripOverflow.ts",
         "src/hooks/useVisibleWindowTabs.ts",
         "src/hooks/useWindowClose.ts",

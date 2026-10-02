@@ -16,7 +16,7 @@
  *
  * @coordinates-with tabStore.ts — reorder and detach mutations
  * @coordinates-with hooks/useDocumentDrag.ts — document listener lifetime
- * @coordinates-with hooks/tabDragGeometry.ts — drop index, detach band, auto-scroll
+ * @coordinates-with utils/tabDragGeometry.ts — drop index, detach band, auto-scroll
  * @module hooks/useTabDragOut
  */
 
@@ -28,9 +28,9 @@ import {
   isOutsideVerticalBand,
   toPoint,
   type DragOutPoint,
-} from "./tabDragGeometry";
+} from "@/utils/tabDragGeometry";
 
-export type { DragOutPoint } from "./tabDragGeometry";
+export type { DragOutPoint } from "@/utils/tabDragGeometry";
 
 /** Horizontal distance (px) to lock into reorder mode. */
 const REORDER_LOCK_THRESHOLD = 6;
