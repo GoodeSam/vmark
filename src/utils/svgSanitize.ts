@@ -94,7 +94,12 @@ export function sanitizeSvg(svg: string): string {
     ADD_TAGS: ["foreignObject", "use"],
     // Explicitly add style and common SVG attributes that might be needed
     ADD_ATTR: ["style", "fill", "stroke", "class", "transform", "d", "cx", "cy", "r", "rx", "ry", "x", "y", "width", "height", "viewBox", "xmlns", "marker-end", "marker-start", "href"],
-    FORBID_TAGS: ["script"],
+    // `form` comes in with the html profile, which foreignObject labels need,
+    // and a form is the one element here that posts: submitting it would
+    // navigate the app's own page to an address the document chose. No
+    // diagram renderer emits one. Its content is kept — only the element
+    // that submits goes.
+    FORBID_TAGS: ["script", "form"],
     FORBID_ATTR: [
       "onerror",
       "onload",
