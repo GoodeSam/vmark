@@ -1336,11 +1336,6 @@
       "target": "src/components/KnowledgeBasePanel/KbGraphView"
     },
     {
-      "file": "src/components/TitleBar/TitleBar.filename.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/TitleBar/useTitleBarRename"
-    },
-    {
       "file": "src/contexts/WindowContext.restoredGrant.test.tsx",
       "api": "vi.mock",
       "target": "src/contexts/startupFileOpen"
