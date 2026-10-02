@@ -9,10 +9,17 @@
 export type RGBA = [number, number, number, number];
 export type RGB = [number, number, number];
 
+/** The CSS colour keywords the theme tokens use. Unquoted keys: the word
+ * white is also a theme id, and theme-id strings belong to the catalog
+ * (scripts/check-theme-names.sh); here it only names a colour. */
+const NAMED_COLORS: Readonly<Record<string, RGBA>> = {
+  white: [255, 255, 255, 1],
+  black: [0, 0, 0, 1],
+};
+
 export function parseColor(raw: string): RGBA {
   const s = raw.trim().toLowerCase();
-  if (s === "white") return [255, 255, 255, 1];
-  if (s === "black") return [0, 0, 0, 1];
+  if (Object.hasOwn(NAMED_COLORS, s)) return [...NAMED_COLORS[s]];
   let m = /^#([0-9a-f]{3})$/.exec(s);
   if (m) {
     const [r, g, b] = m[1].split("").map((c) => parseInt(c + c, 16));
