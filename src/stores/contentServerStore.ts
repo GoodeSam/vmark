@@ -11,7 +11,7 @@
 
 import { create } from "zustand";
 
-/** Mirrors the Rust `ProvisionState` discriminant (see content_server/provision.rs). */
+/** Phases of installing a content-server runtime. Nothing produces them today: no Rust code provisions one. */
 type ProvisionPhase =
   | "missing"
   | "downloading"

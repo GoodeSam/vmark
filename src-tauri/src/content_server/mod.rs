@@ -1,6 +1,6 @@
 //! Content-server integration (Phase 1).
 //!
-//! Owns runtime provisioning and the workspace-keyed lifecycle of spawned
+//! Owns runtime resolution and the workspace-keyed lifecycle of spawned
 //! content-server processes (`ContentServerManager`, in `manager`).
 //!
 //! Live wiring: `commands` + `slidev_commands` (registered in `lib.rs`) drive
@@ -17,20 +17,6 @@
 //! `bundle_manifest` holds the single constant that joins `spawn::resolve_cli`
 //! to `tauri.conf.json`'s `bundle.resources` (WI-FL0.8) — `None` today, because
 //! no release build ships the content server.
-//!
-//! The `provision` / `swap` / `signature` modules implement the ADR-2 runtime
-//! upgrade path (signed download → checksum → atomic swap). They are fully
-//! unit-tested but have no production caller yet — a packaged build's runtime
-//! ships via the bundled resource / signed tarball (external release infra).
-//!
-//! Their dormancy is declared PER ITEM, not per module (audit 20260907 #304).
-//! A module-wide `#[allow(dead_code)]` here suppressed the intentionally
-//! dormant items AND any accidental one added later, which is a warning
-//! generator disguised as a warning suppressor. The eleven public entry points
-//! carry their own allow with the reason; every private helper they reach stays
-//! warning-checked, because an allowed item is still a live root for the
-//! reachability pass. Measured on the change: 16 warnings → 0, and a new
-//! uncalled helper inside those modules now warns again.
 
 pub mod bundle_manifest;
 pub mod cleanup;
@@ -40,14 +26,11 @@ mod drain;
 pub mod http;
 pub mod manager;
 mod port_wait;
-pub mod provision;
 pub mod runtime;
-pub mod signature;
 pub mod slidev_commands;
 pub mod spawn;
 mod start;
 mod supervisor;
-pub mod swap;
 
 pub use manager::{ChildState, ContentServerManager};
 

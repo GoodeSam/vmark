@@ -69,6 +69,8 @@ fn detach(webview: &objc2_web_kit::WKWebView, tab_id: &str) {
         }
     });
     // Then the delegate itself, so no late callback fires against a half-destroyed view.
+    // SAFETY: a live webview on the main thread (it is a main-thread-only type);
+    // clearing a delegate to nil is always permitted.
     unsafe {
         webview.setNavigationDelegate(None);
         webview.setUIDelegate(None);

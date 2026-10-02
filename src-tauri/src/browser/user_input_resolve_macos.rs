@@ -62,6 +62,9 @@ pub(super) fn tab_id_for_responder(responder: &objc2_app_kit::NSResponder) -> Op
                     return Some(tab_id.clone());
                 }
             }
+            // SAFETY: `v` is a retained, live view and `NSView` is a
+            // main-thread-only type, so this is the main thread; `superview`
+            // only reads the hierarchy and returns nil at the top.
             current = unsafe { v.superview() };
         }
         None

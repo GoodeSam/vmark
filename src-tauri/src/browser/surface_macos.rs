@@ -10,7 +10,7 @@ use crate::browser::surface::BrowserSurface;
 use objc2::rc::Retained;
 use objc2::MainThreadMarker;
 use objc2_foundation::{NSRunLoop, NSURLRequest};
-use objc2_web_kit::{WKContentWorld, WKWebView};
+use objc2_web_kit::WKWebView;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -23,6 +23,8 @@ use nav_delegate::NavDelegate;
 #[path = "driver_loop_macos.rs"]
 mod driver_loop;
 use driver_loop::{drive_load, pump_until};
+#[path = "webkit_calls_macos.rs"]
+mod webkit_calls;
 
 #[path = "dialogs_macos.rs"]
 mod dialogs;
@@ -146,7 +148,7 @@ pub fn navigate(app: &AppHandle, tab_id: String, url: String) -> Result<(), Nati
         let req = NSURLRequest::requestWithURL(&url_obj);
         // Drive the navigation + first paint (see create()), owned by the delegate.
         api_navigation(&tab_id, &webview, || {
-            unsafe { webview.loadRequest(&req) }.is_some()
+            webkit_calls::load_request(&webview, &req)
         });
         Ok(())
     })
@@ -161,13 +163,7 @@ pub fn go_history(
 ) -> Result<(), NativeSurfaceError> {
     on_main(app, move |_mtm| {
         let wv = webview_for(&tab_id)?;
-        api_navigation(&tab_id, &wv, || {
-            if forward {
-                unsafe { wv.goForward() }.is_some()
-            } else {
-                unsafe { wv.goBack() }.is_some()
-            }
-        });
+        api_navigation(&tab_id, &wv, || webkit_calls::go_history(&wv, forward));
         Ok(())
     })
 }
@@ -277,7 +273,7 @@ pub fn assert_no_bridge(app: &AppHandle, tab_id: String) -> Result<String, EvalE
     let native = on_main(app, move |mtm| {
         let webview = webview_for(&tab_id)?;
         let run_loop = NSRunLoop::mainRunLoop();
-        let page_world = unsafe { WKContentWorld::pageWorld(mtm) };
+        let page_world = webkit_calls::page_world(mtm);
         Ok(eval_js(
             &webview,
             crate::browser::no_bridge::NO_BRIDGE_ASSERTION,
@@ -293,7 +289,7 @@ pub fn assert_no_bridge(app: &AppHandle, tab_id: String) -> Result<String, EvalE
 pub fn stop(app: &AppHandle, tab_id: String) -> Result<(), NativeSurfaceError> {
     on_main(app, move |_mtm| {
         let webview = webview_for(&tab_id)?;
-        unsafe { webview.stopLoading() };
+        webkit_calls::stop_loading(&webview);
         Ok(())
     })
 }

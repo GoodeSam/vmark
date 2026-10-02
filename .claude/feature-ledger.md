@@ -93,7 +93,7 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 11) `src/services/coherence/mergeAuditService.ts` (+ `coherence_merge_audit`) and `src/services/operators/operatorService.ts` (+ three operator commands) are tested and reached by nothing; frozen in `scripts/test-only-modules-baseline.json` pending D3.
 - (area 11) The registered Tauri command `coherence_status` has no caller — the MCP `status` action calls `perform_status` directly (`src-tauri/src/coherence/commands_ipc.rs`, `src-tauri/src/mcp_bridge/coherence_answers.rs`).
 - (area 11) No packaged build ships the content-server runtime (`BUNDLED_CLI_RESOURCE = None` in `src-tauri/src/content_server/bundle_manifest.rs`; `.github/workflows/release-smoke.yml` asserts `cli=missing`), so Knowledge Base and Slidev are developer-mode only (D1 option c).
-- (area 11) `src-tauri/src/content_server/provision.rs`, `signature.rs`, `swap.rs` (signed runtime upgrade) have no production caller; the `provision` phases in `src/stores/contentServerStore.ts` are never produced.
+- (area 11) The `provision` phases in `src/stores/contentServerStore.ts` and the progress view in `src/components/KnowledgeBasePanel/KnowledgeBasePanelViews.tsx` are never produced: nothing in Rust downloads, verifies or installs a content-server runtime (the unreached signed-upgrade modules were deleted).
 - (area 13) 13 shortcut ids have no `shortcuts.label.*` key in any `src/locales/*/settings.json` (`graphvizDiagram, contentSearch, toggleSidebar, markdownSplit, readOnly, showInvisibles, validateMarkdown, lintNext, lintPrev, newBrowserTab, nextTab, prevTab, commandPalette`) and 4 have no `shortcuts.description.*` key (`closePane, focusOtherPane, syncPaneScroll, lastUsedTab`), so those rows are English in all 10 locales (fallback in `src/stores/settingsShortcutLabels.ts`).
 - (area 13) The Shortcuts pane cannot clear a binding: `src/pages/settings/KeyCapture.tsx` only assigns a captured chord, so the store's `""` unbinding (`src/stores/settingsStore/shortcuts.ts`) is reachable only through an imported JSON file.
 - (area 14) `useLintStore.runLint` and `runYamlLint` (`src/stores/documentStore/lint.ts`) have no production caller; only `src/stores/__tests__/lintStore.test.ts` reaches them.
@@ -3857,19 +3857,19 @@ Two unrelated features share this area. The coherence layer is a Rust kernel (`s
 - tests: `src/hooks/useSlidevControls.test.ts`, `server/content/src/server/createServer.test.ts`, `src/services/contentServer/slidevDeck.test.ts`, `src-tauri/src/content_server/slidev_commands.test.rs`, `server/content/src/slidev/detect.test.ts`, `server/content/src/slidev/manager.test.ts`, `server/content/src/slidev/server.test.ts`, `server/content/src/slidev/export.test.ts`
 - notes: `@slidev/cli` ^53.0.0. Nothing in VMark downloads Chromium: the Node server shells out to `slidev export` and returns its stderr (e.g. a missing Chromium); `client.ts` still says export "provisions playwright-chromium on first use (Rust side)". The output path is not contained: `content_server_slidev_export` forwards any `outputPath` the webview sends, and the server checks only that the extension matches the format (`server/content/src/server/createServer.ts`), so a `.pdf`/`.png`/`.pptx` can be written anywhere the user can write.
 
-### Content server runtime provisioning and signed upgrade (unwired)
+### Content server runtime provisioning progress (unwired)
 - id: content-server-provisioning
 - feature: Knowledge base & Slidev
-- summary: Not user-facing: a signed download → checksum → signature verify → atomic swap path for installing or upgrading the content-server runtime out of band — tested, with no production caller.
-- capabilities: provision phases `missing` | `downloading` | `verifying` | `extracting` | `ready` | `failed` (mirrored in `contentServerStore.provision`); signature verification; atomic swap
+- summary: Not user-facing: the store and the Knowledge Base panel can show a runtime being downloaded, verified and installed, and nothing produces those phases — VMark has no code that installs or upgrades the content-server runtime.
+- capabilities: provision phases `missing` | `downloading` | `verifying` | `extracting` | `ready` | `failed` in `contentServerStore.provision`; a progress view with the download percentage
 - status: unwired
 - gate: none — no caller
 - surfaces: none (the store and panel can render provisioning phases nothing produces)
-- code: `src-tauri/src/content_server/provision.rs`, `src-tauri/src/content_server/signature.rs`, `src-tauri/src/content_server/swap.rs`, `src/stores/contentServerStore.ts`
-- rust: none registered
+- code: `src/stores/contentServerStore.ts`, `src/components/KnowledgeBasePanel/KnowledgeBasePanelViews.tsx`
+- rust: none — the signed download → checksum → signature → atomic swap modules had no production caller and were deleted; `spawn::resolve_cli` still accepts a runtime placed by hand under app data
 - docs: none — `website/guide/knowledge-base.md` mentions only "a provisioned `base-kb` runtime"
-- tests: inline `#[cfg(test)]` modules in `src-tauri/src/content_server/provision.rs`, `src-tauri/src/content_server/signature.rs` and `src-tauri/src/content_server/swap.rs`
-- notes: Dormancy is declared per item: each public entry point carries its own `#[allow(dead_code)]` with the reason (no module-wide allow). Option (b) of D1 would make this, or a bundled resource, the runtime story.
+- tests: `src/stores/contentServerStore.test.ts`, `src/components/KnowledgeBasePanel/KnowledgeBasePanel.test.tsx`
+- notes: Option (b) of D1 would need a runtime story (a bundled resource, or a new install path) to produce these phases; until then they are dead UI states.
 
 ## Area 12 — Workflows — GitHub Actions viewer and YAML engine
 

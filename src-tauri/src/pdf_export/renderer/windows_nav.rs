@@ -154,15 +154,21 @@ fn attach<T: Send + 'static>(
     // id is learned at its start and matched at its end.
     let starting = starting_handler(gate.clone());
     let mut token = Default::default();
+    // SAFETY: `core` is the controller's live `ICoreWebView2`, called on its own
+    // UI thread; `starting` is a live handler and `token` a valid out-pointer.
     if let Err(e) = unsafe { core.add_NavigationStarting(&starting, &mut token) } {
         return render.fail(&sink, com_error("navigation-starting handler", &e));
     }
     let handler = completion_handler(render.clone(), sink.clone(), gate, on_loaded);
     let mut token = Default::default();
+    // SAFETY: as above — a live `ICoreWebView2` on its UI thread, a live handler
+    // and a valid out-pointer for the registration token.
     if let Err(e) = unsafe { core.add_NavigationCompleted(&handler, &mut token) } {
         return render.fail(&sink, com_error("navigation handler", &e));
     }
     let url = HSTRING::from(file_url.as_str());
+    // SAFETY: `url` is an `HSTRING` that outlives the call, so the pointer is a
+    // valid NUL-terminated wide string for as long as WebView2 reads it.
     if let Err(e) = unsafe { core.Navigate(PCWSTR(url.as_ptr())) } {
         render.fail(&sink, com_error("navigate", &e));
     }

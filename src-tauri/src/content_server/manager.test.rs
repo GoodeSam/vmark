@@ -233,6 +233,8 @@ fn poisoned_lock_recovers_instead_of_panicking() {
 /// probes for existence without sending a signal.
 #[cfg(unix)]
 fn pid_alive(pid: u32) -> bool {
+    // SAFETY: `kill` with signal 0 sends nothing and touches no memory; it only
+    // reports whether the pid exists.
     unsafe { libc::kill(pid as libc::pid_t, 0) == 0 }
 }
 

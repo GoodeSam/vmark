@@ -448,6 +448,8 @@ async fn read_file_refuses_a_fifo_instead_of_blocking_on_it() {
     let (_parent, ws) = workspace();
     let fifo = ws.join("pipe.md");
     let c_path = std::ffi::CString::new(fifo.to_str().unwrap()).expect("cstring");
+    // SAFETY: `c_path` is a NUL-terminated string that outlives the call, and
+    // `mkfifo` only reads it.
     assert_eq!(unsafe { libc::mkfifo(c_path.as_ptr(), 0o600) }, 0, "mkfifo");
     let err = tokio::time::timeout(
         std::time::Duration::from_secs(5),

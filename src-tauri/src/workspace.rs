@@ -101,6 +101,10 @@ pub(crate) fn hash_root_path(root_path: &str) -> String {
 
 /// Legacy 8-byte hash used in releases <= 0.7.22 (2^32 birthday bound). Read-only:
 /// `migrate_legacy_hash_filename` renames such a file to the 16-byte name on load.
+///
+/// Sunset: remove this, `get_legacy_workspace_config_path`, `try_rename_legacy_hash`,
+/// `fallback_after_rename` and `migrate_legacy_hash_filename` once no supported
+/// upgrade path starts below 0.7.23.
 pub(crate) fn legacy_hash_root_path(root_path: &str) -> String {
     hash_root_path_bytes(root_path, 8)
 }
@@ -190,117 +194,11 @@ fn fallback_after_rename(legacy: PathBuf, new_path: &Path) -> Option<PathBuf> {
     }
 }
 
-// ============================================================================
-// Legacy migration types (kept private)
-// ============================================================================
-
-/// VS Code-compatible workspace file — legacy `.vmark/vmark.code-workspace`.
-#[derive(Debug, Deserialize)]
-struct LegacyWorkspaceFile {
-    #[serde(default)]
-    settings: LegacyWorkspaceSettings,
-}
-
-#[derive(Debug, Deserialize, Default)]
-struct LegacyWorkspaceSettings {
-    #[serde(rename = "vmark.excludeFolders", default)]
-    exclude_folders: Vec<String>,
-    #[serde(rename = "vmark.showHiddenFiles", default)]
-    show_hidden_files: bool,
-    #[serde(rename = "vmark.lastOpenTabs", default)]
-    last_open_tabs: Vec<String>,
-    #[serde(rename = "vmark.ai", default)]
-    ai: Option<serde_json::Value>,
-    #[serde(rename = "vmark.identity", default)]
-    identity: Option<WorkspaceIdentity>,
-}
-
-/// Ancient legacy workspace configuration (plain `.vmark` file).
-#[derive(Debug, Deserialize)]
-struct AncientLegacyConfig {
-    #[serde(default)]
-    version: u32,
-    #[serde(rename = "excludeFolders", default)]
-    exclude_folders: Vec<String>,
-    #[serde(rename = "lastOpenTabs", default)]
-    last_open_tabs: Vec<String>,
-    #[serde(default)]
-    ai: Option<serde_json::Value>,
-}
-
-// ============================================================================
-// Legacy migration
-// ============================================================================
-
-/// Strip `.vmark` from a legacy exclude list — the directory no longer exists.
-fn clean_excludes(folders: Vec<String>) -> Vec<String> {
-    folders.into_iter().filter(|f| f != ".vmark").collect()
-}
-
-/// Try to read config from legacy `.vmark/` directory or ancient `.vmark` file.
-/// Returns `Ok(Some(config))` if found, `Ok(None)` if no legacy exists. Both branches
-/// spread `WorkspaceConfig::default()` and name only the fields the legacy format
-/// carried, so a field added later cannot be migrated inconsistently between them.
-fn migrate_from_legacy(root_path: &str) -> Result<Option<WorkspaceConfig>, String> {
-    let root = Path::new(root_path);
-    let dot_vmark = root.join(".vmark");
-
-    // 1. Try .vmark/vmark.code-workspace (directory format)
-    if dot_vmark.is_dir() {
-        let ws_file_path = dot_vmark.join("vmark.code-workspace");
-        if ws_file_path.exists() {
-            let content = fs::read_to_string(&ws_file_path)
-                .map_err(|e| format!("Failed to read legacy workspace file: {e}"))?;
-            let ws: LegacyWorkspaceFile = serde_json::from_str(&content)
-                .map_err(|e| format!("Failed to parse legacy workspace file: {e}"))?;
-
-            return Ok(Some(WorkspaceConfig {
-                exclude_folders: clean_excludes(ws.settings.exclude_folders),
-                show_hidden_files: ws.settings.show_hidden_files,
-                last_open_tabs: ws.settings.last_open_tabs,
-                ai: ws.settings.ai,
-                identity: ws.settings.identity,
-                ..WorkspaceConfig::default()
-            }));
-        }
-    }
-
-    // 2. Try .vmark as a plain file (ancient format)
-    if dot_vmark.is_file() {
-        let content = fs::read_to_string(&dot_vmark)
-            .map_err(|e| format!("Failed to read ancient .vmark: {e}"))?;
-        let ancient: AncientLegacyConfig = serde_json::from_str(&content)
-            .map_err(|e| format!("Failed to parse ancient .vmark: {e}"))?;
-
-        return Ok(Some(WorkspaceConfig {
-            // A file predating the `version` key deserializes to 0 — a schema version
-            // we never emitted. Clamp to the v1 it is, rather than persisting 0.
-            version: ancient.version.max(1),
-            exclude_folders: clean_excludes(ancient.exclude_folders),
-            last_open_tabs: ancient.last_open_tabs,
-            ai: ancient.ai,
-            ..WorkspaceConfig::default()
-        }));
-    }
-
-    Ok(None)
-}
-
-/// Best-effort cleanup of legacy `.vmark/` in a workspace root.
-/// Removes workspace file, then tries to remove the directory (only if empty).
-fn cleanup_old_vmark(root_path: &str) {
-    let root = Path::new(root_path);
-    let dot_vmark = root.join(".vmark");
-
-    if dot_vmark.is_dir() {
-        // Remove known file
-        let _ = fs::remove_file(dot_vmark.join("vmark.code-workspace"));
-        // Try rmdir (fails if not empty — that's fine)
-        let _ = fs::remove_dir(&dot_vmark);
-    } else if dot_vmark.is_file() {
-        let _ = fs::remove_file(&dot_vmark);
-    }
-}
+#[path = "workspace_legacy.rs"]
+mod legacy;
+#[cfg(test)]
+use legacy::clean_excludes;
+use legacy::{cleanup_old_vmark, migrate_from_legacy};
 
 // ============================================================================
 // Tauri commands

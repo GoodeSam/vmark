@@ -98,13 +98,13 @@ pub(super) fn validate_document(
 
     // The dependency graph is validated HERE, not left to the runner (#522).
     // A duplicate id, an unknown `needs:` target or a cycle makes
-    // `topological_sort` fail on the runner's FIRST line — before it emits
-    // `workflow:complete` — while this command has already returned `Ok` with
-    // an execution id the frontend is subscribed to. The run then neither
-    // started nor finished, and the panel waited forever. Sorting the same
-    // steps here means the runner's own sort can no longer be the first thing
-    // that fails, and the caller learns about a malformed workflow the way it
-    // learns about empty YAML: synchronously, with `invalid-input`.
+    // `topological_sort` fail. Left to the runner, that failure arrives after
+    // this command has already returned `Ok` with an execution id: the runner
+    // does report it, as a failed `workflow:complete`, but the caller was told
+    // the run was admitted and a malformed workflow shows up as a run that
+    // failed. Sorting the same steps here means the caller learns about it
+    // the way it learns about empty YAML: synchronously, with `invalid-input`,
+    // and no run is spawned.
     super::runner::topological_sort(workflow.steps.clone()).map_err(CommandError::invalid_input)?;
 
     // And a save target the pre-run snapshot cannot identify (#521/#551).

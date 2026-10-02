@@ -76,6 +76,9 @@ fn start_print(
         Box::new(|core, app, label, sink| {
             let outcome = core
                 .cast::<ICoreWebView2_16>()
+                // SAFETY: `v` is a live `ICoreWebView2_16` (`cast` is a checked
+                // `QueryInterface`), called on its own UI thread with a valid
+                // dialog-kind constant.
                 .and_then(|v| unsafe { v.ShowPrintUI(COREWEBVIEW2_PRINT_DIALOG_KIND_BROWSER) })
                 .map_err(|e| com_error("ShowPrintUI", &e))
                 .map(|()| PrintOutcome::from_show_print_ui());

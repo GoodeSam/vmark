@@ -257,7 +257,7 @@ impl NavDelegate {
     pub(super) fn try_reload(&self, web_view: &WKWebView) -> bool {
         // A reload restarts loading, so the entry moves back through `Creating`.
         self.set_state(Lifecycle::Creating);
-        if unsafe { web_view.reload() }.is_some() {
+        if super::super::webkit_calls::reload(web_view) {
             return true;
         }
         log::warn!(

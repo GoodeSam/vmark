@@ -23,6 +23,8 @@ fn write_script(dir: &std::path::Path, name: &str, body: &str) -> String {
 /// True while the OS still knows the pid (running OR zombie — a zombie is
 /// exactly what an unreaped kill leaves behind).
 fn pid_alive(pid: u32) -> bool {
+    // SAFETY: `kill` with signal 0 sends nothing and touches no memory; it only
+    // reports whether the pid exists.
     unsafe { libc::kill(pid as libc::pid_t, 0) == 0 }
 }
 
