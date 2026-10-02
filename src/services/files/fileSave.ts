@@ -2,10 +2,12 @@
  * File Save Utilities
  *
  * Purpose: Core save operations — move tab to a new workspace window, and the
- *   Save / Save As / Move To / Save-All-and-Quit handlers.
+ *   Save / Save As / Move To handlers. Save All and Quit lives in
+ *   saveAllQuit.ts and is re-exported here for the command binding.
  *
- * @coordinates-with services/windowClose/closeSave.ts — shared save prompt for dirty documents
- * @coordinates-with useFileOperations.ts — orchestrates save handlers via menu events
+ * @coordinates-with services/windowClose/saveDialog.ts — save path prompt and same-file comparison
+ * @coordinates-with services/commands/fileCommands.ts — binds these handlers to menu commands
+ * @coordinates-with saveAllQuit.ts — the Save All and Quit handler
  * @module services/files/fileSave
  */
 
@@ -17,7 +19,7 @@ import { remove } from "@tauri-apps/plugin-fs";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
-import { flushActiveWysiwygNow, flushAllWysiwygNow } from "@/utils/wysiwygFlush";
+import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import { withReentryGuard } from "@/utils/reentryGuard";
 import { saveToPath } from "@/services/persistence/saveToPath";
 import {
@@ -31,8 +33,9 @@ import {
   isSameFilePath,
   promptForSavePath,
 } from "@/services/windowClose/saveDialog";
-import { type CloseSaveContext } from "@/services/windowClose/closeSave"; import { saveAllDocuments } from "@/services/windowClose/closeSaveBatch";
 import { fileOpsLog, fileOpsWarn, fileOpsError } from "@/utils/debug";
+
+export { handleSaveAllQuit } from "./saveAllQuit";
 
 /**
  * Move a tab to a new workspace window if the file is outside current workspace.
@@ -245,68 +248,5 @@ export async function handleMoveTo(windowLabel: string): Promise<void> {
 
     // If moved outside workspace, open in new window
     await moveTabToNewWorkspaceWindow(windowLabel, tabId, newPath);
-  });
-}
-
-/**
- * Handle Save All and Quit — save all dirty documents then force quit.
- */
-export async function handleSaveAllQuit(windowLabel: string): Promise<void> {
-  await withReentryGuard(windowLabel, "save-all-quit", async () => {
-    try {
-      // Flush ALL mounted editors before reading dirty state (Save All spans every tab, not just the focused one).
-      flushAllWysiwygNow();
-
-      // Get all dirty tab IDs
-      const dirtyTabIds = useDocumentStore.getState().getAllDirtyDocuments();
-      if (dirtyTabIds.length === 0) {
-        // No dirty docs, quit immediately
-        await invoke("force_quit");
-        return;
-      }
-
-      // Build save contexts by looking up document and tab info
-      const tabStore = useTabStore.getState();
-      const docStore = useDocumentStore.getState();
-      const contexts: CloseSaveContext[] = [];
-
-      // Build tabId -> {windowLabel, title} map for O(1) lookup
-      const tabOwnership = new Map<string, { windowLabel: string; title: string }>();
-      for (const [wLabel, tabs] of Object.entries(tabStore.tabs)) {
-        for (const tab of tabs) {
-          tabOwnership.set(tab.id, { windowLabel: wLabel, title: tab.title });
-        }
-      }
-
-      // Find window label and title for each dirty tab
-      for (const tabId of dirtyTabIds) {
-        const doc = docStore.getDocument(tabId);
-        if (!doc?.isDirty) continue;
-
-        const ownership = tabOwnership.get(tabId);
-        contexts.push({
-          windowLabel: ownership?.windowLabel ?? windowLabel,
-          tabId,
-          title: ownership?.title ?? doc.filePath ?? i18n.t("common:untitled"),
-          filePath: doc.filePath,
-          content: doc.content,
-        });
-      }
-
-      if (contexts.length === 0) {
-        await invoke("force_quit");
-        return;
-      }
-
-      // Save all documents (will prompt for folder if multiple untitled)
-      const result = await saveAllDocuments(contexts);
-      if (result.action === "saved-all") {
-        await invoke("force_quit");
-      }
-      // If cancelled, do nothing (stay in app)
-    } catch (error) {
-      fileOpsError("SaveAllQuit failed:", error);
-      toast.error(i18n.t("dialog:toast.failedToSaveDocuments"));
-    }
   });
 }
