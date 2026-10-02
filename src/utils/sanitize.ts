@@ -11,6 +11,8 @@
  *     (Mermaid uses HTML inside SVG for text layout)
  *   - Style attribute sanitization uses a property allowlist to block
  *     expression() and javascript: attacks in inline styles
+ *   - DOMPurify's output is re-parsed (style filter, iframe filter) only in an
+ *     inert document: the page's own document would load what it parses
  *   - Video, audio, and source tags are allowed in sanitizeMediaHtml (separate function)
  *   - Iframe is allowed in sanitizeMediaHtml but restricted to whitelisted video domains via post-pass
  *   - escapeHtml is a simple entity escape for non-HTML text display
@@ -26,11 +28,7 @@
 
 import DOMPurify from "dompurify";
 export { sanitizeSvg } from "./svgSanitize";
-import {
-  KATEX_STYLE_PROPS,
-  filterStyleAttributes,
-  isSafeStyleValue,
-} from "./styleSafety";
+import { KATEX_STYLE_PROPS, filterStyleAttributes } from "./styleSafety";
 import {
   type HtmlAllowlistLevel,
   PREVIEW_TAGS_INLINE_STRICT,
@@ -84,53 +82,8 @@ export function sanitizeHtmlPreview(html: string, options?: HtmlPreviewOptions):
     return sanitized;
   }
 
-  return filterAllowedStyles(sanitized);
+  return filterStyleAttributes(sanitized, HTML_PREVIEW_STYLE_PROPS);
 }
-
-function filterAllowedStyles(html: string): string {
-  if (typeof document === "undefined") {
-    // No DOM available — strip style attrs entirely for safety
-    return html.replace(/\s+style="[^"]*"/gi, "");
-  }
-
-  const container = document.createElement("div");
-  container.innerHTML = html;
-
-  const elements = container.querySelectorAll<HTMLElement>("[style]");
-  elements.forEach((element) => {
-    /* v8 ignore next -- @preserve querySelectorAll("[style]") only matches elements that have the attribute */
-    const style = element.getAttribute("style") ?? "";
-    const sanitizedStyle = sanitizeStyleAttribute(style);
-    if (!sanitizedStyle) {
-      element.removeAttribute("style");
-      return;
-    }
-    element.setAttribute("style", sanitizedStyle);
-  });
-
-  return container.innerHTML;
-}
-
-function sanitizeStyleAttribute(style: string): string {
-  const declarations = style.split(";").map((decl) => decl.trim()).filter(Boolean);
-  const safeDeclarations: string[] = [];
-
-  for (const declaration of declarations) {
-    const [rawProperty, ...rest] = declaration.split(":");
-    if (!rawProperty || rest.length === 0) continue;
-
-    const property = rawProperty.trim().toLowerCase();
-    if (!HTML_PREVIEW_STYLE_PROPS.has(property)) continue;
-
-    const value = rest.join(":").trim();
-    if (!isSafeStyleValue(value, property)) continue;
-
-    safeDeclarations.push(`${property}: ${value}`);
-  }
-
-  return safeDeclarations.join("; ");
-}
-
 
 /**
  * Sanitize media HTML content (video, audio, video embed iframes).
@@ -176,14 +129,16 @@ export function sanitizeMediaHtml(html: string): string {
 const VIDEO_EMBED_DOMAIN_RE = /^https?:\/\/(www\.)?(youtube\.com|youtube-nocookie\.com|player\.vimeo\.com|player\.bilibili\.com)\//;
 
 function stripNonWhitelistedIframes(html: string): string {
-  if (typeof document === "undefined") {
+  if (typeof DOMParser === "undefined") {
     // No DOM — strip all iframes for safety (can't verify src)
     // Handles both paired (<iframe>...</iframe>) and self-closing (<iframe ... />) forms
     return html
       .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, "")
       .replace(/<iframe\b[^>]*\/\s*>/gi, "");
   }
-  const container = document.createElement("div");
+  // Re-parsed in an inert document: a <video> or <img> the parser creates in
+  // the page's own document starts loading there, attached or not.
+  const container = new DOMParser().parseFromString("", "text/html").createElement("div");
   container.innerHTML = html;
   const iframes = container.querySelectorAll("iframe");
   for (const iframe of iframes) {
