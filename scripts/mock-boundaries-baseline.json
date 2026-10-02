@@ -1406,11 +1406,6 @@
       "target": "src/plugins/codemirror/sourceShortcutsHelpers"
     },
     {
-      "file": "src/plugins/codePreview/renderers/renderSvgPreview.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/codePreview/previewHelpers"
-    },
-    {
       "file": "src/plugins/compositionGuard/__tests__/tiptap.imecleanup.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/compositionGuard/splitBlockFix"
