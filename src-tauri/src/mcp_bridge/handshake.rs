@@ -145,12 +145,24 @@ pub(super) struct ConnectionSlot;
 impl ConnectionSlot {
     /// Reserve a slot, or `None` when the bridge is already at capacity.
     pub(super) fn try_acquire() -> Option<Self> {
-        LIVE_CONNECTIONS
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |live| {
-                (live < MAX_CONCURRENT_CONNECTIONS).then_some(live + 1)
-            })
-            .ok()
-            .map(|_| ConnectionSlot)
+        // An explicit compare-exchange loop rather than `fetch_update`, which
+        // newer toolchains deprecate under a name the declared minimum Rust
+        // version does not have.
+        let mut live = LIVE_CONNECTIONS.load(Ordering::Acquire);
+        loop {
+            if live >= MAX_CONCURRENT_CONNECTIONS {
+                return None;
+            }
+            match LIVE_CONNECTIONS.compare_exchange_weak(
+                live,
+                live + 1,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => return Some(ConnectionSlot),
+                Err(current) => live = current,
+            }
+        }
     }
 
     /// Currently reserved slots. Diagnostics and tests only.
