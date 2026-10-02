@@ -79,27 +79,27 @@ fn configure(root: &Path, enabled: bool, claude: &Path, codex: &Path) -> Result<
     } else {
         format!("node '{}'", script.to_string_lossy().replace('\'', "'\\''"))
     };
-    // Parse and validate BOTH before writing either, so malformed config is preserved.
+    // Resolve, parse and validate BOTH before writing either, so a malformed
+    // config — or one whose symlink leads nowhere — leaves both untouched.
     let paths = [claude.join("settings.json"), codex.join("hooks.json")];
     let mut configs = Vec::new();
     for path in &paths {
-        let mut value: Value = if path.exists() {
+        let target = config::resolve_target(path)?;
+        let mut value: Value = if target.exists() {
             serde_json::from_slice(
-                &std::fs::read(path).map_err(|e| CommandError::io(e.to_string()))?,
+                &std::fs::read(&target).map_err(|e| CommandError::io(e.to_string()))?,
             )
             .map_err(|e| CommandError::invalid_input(e.to_string()))?
         } else {
             json!({})
         };
         if add_hook(&mut value, &command)? {
-            configs.push((path, value));
+            configs.push((target, value));
         }
     }
-    for (path, value) in configs {
-        std::fs::create_dir_all(path.parent().unwrap())
-            .map_err(|e| CommandError::io(e.to_string()))?;
+    for (target, value) in configs {
         config::write_atomic(
-            path,
+            &target,
             &serde_json::to_vec_pretty(&value)
                 .map_err(|e| CommandError::internal(e.to_string()))?,
         )?;
