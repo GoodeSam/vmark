@@ -138,6 +138,13 @@ function isReadableSessionTabs(value: unknown): value is { version: number; tabs
  * Precedence: a readable current-version `sessionTabs` wins; otherwise fall back
  * to the legacy paths (unknown future versions and structurally invalid payloads
  * both fall back). Individual unknown/malformed records are skipped with a warn.
+ *
+ * Sunset: 0.8.32 was the last release to write a config with `lastOpenTabs` and
+ * no `sessionTabs`. The fallback has two other users that outlive that release —
+ * a `sessionTabs` of an unknown future version, and a malformed one — so once no
+ * supported upgrade path starts below 0.8.33 only the "field absent" case can
+ * go; dropping the fallback itself also needs a decision on those two, and on
+ * whether `lastOpenTabs` is still written for downgrades.
  */
 export function migratePersistedTabs(
   sessionTabs: unknown,
