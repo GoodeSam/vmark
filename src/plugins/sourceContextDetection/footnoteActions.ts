@@ -18,23 +18,7 @@ import {
   relabelReferences,
   removeDefinitionsWithShift,
 } from "./footnoteRenumber";
-
-// ===========================================
-// Types
-// ===========================================
-
-export interface FootnoteRef {
-  label: string;
-  start: number;
-  end: number;
-}
-
-export interface FootnoteDef {
-  label: string;
-  start: number;
-  end: number;
-  content: string;
-}
+import type { FootnoteDef, FootnoteRef } from "./footnoteTypes";
 
 // ===========================================
 // Code Block Detection

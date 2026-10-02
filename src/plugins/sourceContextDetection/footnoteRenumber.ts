@@ -15,10 +15,11 @@
  *     newline is kept when text follows the range.
  *
  * @coordinates-with footnoteActions.ts — parsing, and the `renumberFootnotes` entry point
+ * @coordinates-with footnoteTypes.ts — the reference and definition shapes
  * @module plugins/sourceContextDetection/footnoteRenumber
  */
 
-import type { FootnoteDef, FootnoteRef } from "./footnoteActions";
+import type { FootnoteDef, FootnoteRef } from "./footnoteTypes";
 
 /** Old label → new sequential number, in order of first reference. */
 export function buildLabelMap(refs: FootnoteRef[]): Map<string, string> {
