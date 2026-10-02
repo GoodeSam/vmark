@@ -624,6 +624,16 @@ describe("MathInlineNodeView", () => {
   });
 
   describe("KaTeX rendering", () => {
+    // The render is scheduled on idle (stubbed to a zero-delay timer) or on a
+    // plain timer, then waits for KaTeX's load promise: drive that clock.
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it("renders with KaTeX when loaded", async () => {
       const mockRender = vi.fn();
       mockLoadKatex.mockResolvedValue({ default: { render: mockRender } });
@@ -631,8 +641,7 @@ describe("MathInlineNodeView", () => {
 
       createNodeView({ content: "x^2" });
 
-      // Wait for requestIdleCallback/setTimeout
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.advanceTimersByTimeAsync(50);
 
       expect(mockLoadKatex).toHaveBeenCalled();
     });
@@ -644,7 +653,7 @@ describe("MathInlineNodeView", () => {
 
       createNodeView({ content: "\\invalid" });
 
-      await new Promise((r) => setTimeout(r, 100));
+      await vi.advanceTimersByTimeAsync(100);
 
       expect(nodeView.dom.classList.contains("math-error")).toBe(true);
     });
@@ -655,9 +664,11 @@ describe("MathInlineNodeView", () => {
 
       createNodeView({ content: "x^2" });
 
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.advanceTimersByTimeAsync(50);
 
-      // Should still render without crashing, math-error may be added
+      // A failed load falls back to the source text, marked as an error.
+      expect(nodeView.dom.classList.contains("math-error")).toBe(true);
+      expect(nodeView.dom.textContent).toContain("x^2");
     });
 
     it("uses setTimeout when requestIdleCallback not available", async () => {
@@ -667,7 +678,7 @@ describe("MathInlineNodeView", () => {
 
       createNodeView({ content: "x^2" });
 
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.advanceTimersByTimeAsync(50);
 
       expect(mockLoadKatex).toHaveBeenCalled();
     });
@@ -1115,13 +1126,21 @@ describe("MathInlineNodeView", () => {
   });
 
   describe("renderPreview - KaTeX load rejection with non-Error", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it("handles non-Error rejection from loadKatex", async () => {
       mockLoadKatex.mockRejectedValue("string error");
       mockIsKatexLoaded.mockReturnValue(false);
 
       createNodeView({ content: "x^2" });
 
-      await new Promise((r) => setTimeout(r, 100));
+      await vi.advanceTimersByTimeAsync(100);
 
       // Should add math-error class and show text content
       expect(nodeView.dom.classList.contains("math-error")).toBe(true);
@@ -1174,25 +1193,23 @@ describe("MathInlineNodeView", () => {
       // Directly add class (simulates what PM decoration does)
       nodeView.dom.classList.add("editing");
 
-      // Wait for MutationObserver to fire
-      await new Promise((r) => setTimeout(r, 10));
-
-      const input = nodeView.dom.querySelector(".math-inline-input");
-      expect(input).not.toBeNull();
+      // The MutationObserver delivers its records asynchronously.
+      await vi.waitFor(() => {
+        expect(nodeView.dom.querySelector(".math-inline-input")).not.toBeNull();
+      });
     });
 
     it("exits edit mode via MutationObserver when editing class is removed", async () => {
       createNodeView({ content: "x^2" });
       nodeView.dom.classList.add("editing");
-      await new Promise((r) => setTimeout(r, 10));
-
-      // Verify in edit mode
-      expect(nodeView.dom.querySelector(".math-inline-input")).not.toBeNull();
+      await vi.waitFor(() => {
+        expect(nodeView.dom.querySelector(".math-inline-input")).not.toBeNull();
+      });
 
       nodeView.dom.classList.remove("editing");
-      await new Promise((r) => setTimeout(r, 10));
-
-      expect(nodeView.dom.querySelector(".math-inline-input")).toBeNull();
+      await vi.waitFor(() => {
+        expect(nodeView.dom.querySelector(".math-inline-input")).toBeNull();
+      });
     });
   });
 });

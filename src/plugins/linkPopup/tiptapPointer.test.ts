@@ -19,7 +19,16 @@ vi.mock("./LinkPopupView", () => ({
     destroy = vi.fn();
   },
 }));
+// The real opener, observed: the guard fires it without awaiting, so a test
+// awaits the promise it returned instead of polling on a wall-clock budget.
+vi.mock("@/services/navigation/linkOpen", async () => {
+  const actual = await vi.importActual<typeof import("@/services/navigation/linkOpen")>(
+    "@/services/navigation/linkOpen",
+  );
+  return { ...actual, openLinkTarget: vi.fn(actual.openLinkTarget) };
+});
 
+import { openLinkTarget } from "@/services/navigation/linkOpen";
 import { linkPopupExtension } from "./tiptap";
 
 // The opener reads the user's custom protocols from the settings store, which
@@ -159,13 +168,17 @@ describe("native click on a link anchor", () => {
     ]);
     const { view, cleanup } = mount(doc);
     openUrlMock.mockClear();
+    vi.mocked(openLinkTarget).mockClear();
     const img = view.dom.querySelector("img")!;
     expect(clickSeenByWindow(img, { ctrlKey: true })).toBe(true);
-    await vi.waitFor(() => expect(openUrlMock).toHaveBeenCalledWith("https://example.com/x"));
+    expect(openLinkTarget).toHaveBeenCalledTimes(1);
+    await vi.mocked(openLinkTarget).mock.results[0].value;
+    expect(openUrlMock).toHaveBeenCalledWith("https://example.com/x");
 
     openUrlMock.mockClear();
+    vi.mocked(openLinkTarget).mockClear();
     expect(clickSeenByWindow(img, {})).toBe(true); // plain click: handled, not opened
-    await new Promise((r) => setTimeout(r, 0));
+    expect(openLinkTarget).not.toHaveBeenCalled();
     expect(openUrlMock).not.toHaveBeenCalled();
     cleanup();
   });
@@ -173,9 +186,11 @@ describe("native click on a link anchor", () => {
   it("does not open a Ctrl+clicked TEXT link a second time", async () => {
     const { view, cleanup } = mount();
     openUrlMock.mockClear();
+    vi.mocked(openLinkTarget).mockClear();
     clickSeenByWindow(view.dom.querySelector("a")!, { ctrlKey: true });
-    await new Promise((r) => setTimeout(r, 0));
-    expect(openUrlMock).not.toHaveBeenCalled(); // handleClick owns text links
+    // The guard opens nothing itself — handleClick owns text links.
+    expect(openLinkTarget).not.toHaveBeenCalled();
+    expect(openUrlMock).not.toHaveBeenCalled();
     cleanup();
   });
 

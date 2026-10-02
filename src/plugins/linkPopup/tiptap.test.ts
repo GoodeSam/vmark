@@ -58,10 +58,14 @@ vi.mock("@/services/navigation/linkOpen", async () => {
   return {
     ...actual,
     openFilepathLink: mockOpenFilepathLink,
+    // The real opener, observed: handleClick fires it without awaiting, so a
+    // test awaits the promise it returned instead of polling on a budget.
+    openExternalLink: vi.fn(actual.openExternalLink),
   };
 });
 
 import { openUrl as mockOpenUrl } from "@tauri-apps/plugin-opener";
+import { openExternalLink } from "@/services/navigation/linkOpen";
 import { findLinkMarkRange, linkPopupExtension } from "./tiptap";
 
 // Schema with link mark
@@ -130,6 +134,7 @@ describe("linkPopupExtension", () => {
     mockLinkCreatePopupState.closePopup.mockClear();
     mockOpenFilepathLink.mockClear();
     mockOpenFilepathLink.mockResolvedValue(true);
+    vi.mocked(openExternalLink).mockClear();
   });
 
   describe("extension creation", () => {
@@ -417,10 +422,12 @@ describe("linkPopupExtension", () => {
       expect(result).toBe(true);
       expect(preventDefault).toHaveBeenCalled();
 
-      // Wait deterministically for the dynamic openUrl import to resolve.
-      await vi.waitFor(() => {
-        expect(mockOpenUrl).toHaveBeenCalledWith("http://example.com");
-      }, { timeout: 5000 }); // budget: src/test/waitBudget.ts
+      // Await the open handleClick started: it resolves true once the URL
+      // passed the scheme allowlist and reached the opener.
+      const opens = vi.mocked(openExternalLink).mock.results;
+      expect(opens).toHaveLength(1);
+      await expect(opens[0].value).resolves.toBe(true);
+      expect(mockOpenUrl).toHaveBeenCalledWith("http://example.com");
     });
 
     it("Ctrl+click on external link opens in browser", async () => {
