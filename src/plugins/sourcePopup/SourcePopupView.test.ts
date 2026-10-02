@@ -588,6 +588,119 @@ describe("SourcePopupView", () => {
     popup2.destroy();
   });
 
+  // WI-RA9A.10 — the re-show and sync hooks the WYSIWYG base already has.
+  describe("shouldReshow / syncFromStore", () => {
+    interface TaggedState extends TestState {
+      tag: string;
+    }
+
+    class TaggedPopupView extends SourcePopupView<TaggedState> {
+      public shown: string[] = [];
+      public hidden = 0;
+      protected buildContainer(): HTMLElement {
+        return document.createElement("div");
+      }
+      protected onShow(state: TaggedState): void {
+        this.shown.push(state.tag);
+      }
+      protected onHide(): void {
+        this.hidden += 1;
+      }
+      protected override shouldReshow(prev: TaggedState, state: TaggedState): boolean {
+        return prev.tag !== state.tag;
+      }
+      public sync(): void {
+        this.syncFromStore();
+      }
+    }
+
+    function createTaggedStore(initial: TaggedState): StoreApi<TaggedState> & {
+      set: (next: Partial<TaggedState>) => void;
+    } {
+      let current = initial;
+      const listeners = new Set<(state: TaggedState) => void>();
+      return {
+        getState: () => current,
+        subscribe: (cb) => {
+          listeners.add(cb);
+          return () => listeners.delete(cb);
+        },
+        set: (next) => {
+          current = { ...current, ...next };
+          listeners.forEach((cb) => cb(current));
+        },
+      };
+    }
+
+    const closed: TaggedState = { isOpen: false, anchorRect: null, closePopup: () => {}, tag: "" };
+
+    it("runs onShow again when an open popup is retargeted", () => {
+      const tagged = createTaggedStore(closed);
+      const taggedPopup = new TaggedPopupView(view, tagged);
+
+      tagged.set({ isOpen: true, anchorRect: ANCHOR, tag: "a" });
+      tagged.set({ tag: "b" });
+
+      expect(taggedPopup.shown).toEqual(["a", "b"]);
+      expect(taggedPopup.hidden).toBe(0);
+      taggedPopup.destroy();
+    });
+
+    it("does not re-show an open popup when the tracked state is unchanged", () => {
+      const tagged = createTaggedStore(closed);
+      const taggedPopup = new TaggedPopupView(view, tagged);
+
+      tagged.set({ isOpen: true, anchorRect: ANCHOR, tag: "a" });
+      tagged.set({ anchorRect: { ...ANCHOR } });
+      tagged.set({ tag: "a" });
+
+      expect(taggedPopup.shown).toEqual(["a"]);
+      taggedPopup.destroy();
+    });
+
+    it("compares against the state seen while closed, not a stale open one", () => {
+      const tagged = createTaggedStore(closed);
+      const taggedPopup = new TaggedPopupView(view, tagged);
+
+      tagged.set({ isOpen: true, anchorRect: ANCHOR, tag: "a" });
+      tagged.set({ isOpen: false, anchorRect: null });
+      tagged.set({ isOpen: true, anchorRect: ANCHOR, tag: "b" });
+
+      expect(taggedPopup.shown).toEqual(["a", "b"]);
+      expect(taggedPopup.hidden).toBe(1);
+      taggedPopup.destroy();
+    });
+
+    it("never re-shows by default", () => {
+      store.trigger({ isOpen: true, anchorRect: ANCHOR, closePopup: store.mockClosePopup });
+      popup.showCalled = false;
+      store.trigger({ isOpen: true, anchorRect: { ...ANCHOR, top: 5 }, closePopup: store.mockClosePopup });
+      expect(popup.showCalled).toBe(false);
+    });
+
+    it("syncFromStore shows a popup whose store was already open at construction", () => {
+      const tagged = createTaggedStore({ ...closed, isOpen: true, anchorRect: ANCHOR, tag: "open" });
+      const taggedPopup = new TaggedPopupView(view, tagged);
+      expect(taggedPopup.shown).toEqual([]);
+
+      taggedPopup.sync();
+
+      expect(taggedPopup.shown).toEqual(["open"]);
+      taggedPopup.destroy();
+    });
+
+    it("syncFromStore is a no-op while the store is closed", () => {
+      const tagged = createTaggedStore(closed);
+      const taggedPopup = new TaggedPopupView(view, tagged);
+
+      taggedPopup.sync();
+
+      expect(taggedPopup.shown).toEqual([]);
+      expect(taggedPopup.hidden).toBe(0);
+      taggedPopup.destroy();
+    });
+  });
+
   it("handleClickOutside does nothing when store.isOpen is false", () => {
     vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb) => { cb(0); return 0; });
 
