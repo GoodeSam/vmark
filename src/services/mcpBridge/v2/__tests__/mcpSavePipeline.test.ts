@@ -142,8 +142,9 @@ describe.each(WRITE_PATHS)("$tool goes through the save pipeline", ({ tool, run 
 
     const snapshots = await getSnapshots(target);
     expect(snapshots).toHaveLength(1);
-    // Never merged away or size-skipped like an autosave snapshot.
-    expect(snapshots[0].type).toBe("manual");
+    // Filed as the AI client's save, not the user's — and, like a manual
+    // save, never merged away or size-skipped as an autosave would be.
+    expect(snapshots[0].type).toBe("mcp");
     expect(await loadSnapshot(target, snapshots[0].id)).toBe(EDITED_ON_DISK);
   });
 
