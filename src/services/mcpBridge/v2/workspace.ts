@@ -14,10 +14,14 @@
  *     for every tab; addressing through that is unambiguous. `close` and
  *     `switch_tab` change what the user sees, so they REQUIRE the id and
  *     never fall back to the focused tab (`resolveOwnedTab`).
- *   - `close` requires `force: true` to discard a dirty tab. Default
- *     behavior returns `{closed: false, reason: "DIRTY"}`. The AI must
- *     opt into destruction. The mounted editors are flushed first: typing
- *     that has not reached the store yet is unsaved work like any other.
+ *   - `close` requires `force: true` to discard local content, the same two
+ *     kinds every human close asks about: a dirty document answers
+ *     `{closed: false, reason: "DIRTY"}`, and a clean but DIVERGENT one —
+ *     content the user kept over an external change — answers
+ *     `{closed: false, reason: "DIVERGENT"}`. The AI must opt into
+ *     destruction (or save, which clears both). The mounted editors are
+ *     flushed first: typing that has not reached the store yet is unsaved
+ *     work like any other.
  *   - `close` reports the tab store's verdict, not the request: a pinned tab
  *     the store refuses to close answers `{closed: false, reason: "PINNED"}`.
  *   - `close` refuses a browser tab. Those are closed through the browser
@@ -104,9 +108,11 @@ export { handleWorkspaceSave } from "./workspaceSave";
 /**
  * Handle `vmark.workspace.close`.
  *
- * Args: `{tabId, force?: boolean}`. When the tab is dirty and `force`
- * is not true, we refuse the close with `{closed: false, reason: "DIRTY"}`
- * so the AI can decide whether to save first or force. A pinned tab is never
+ * Args: `{tabId, force?: boolean}`. When the tab holds local content and
+ * `force` is not true, we refuse the close with `{closed: false, reason}` —
+ * `"DIRTY"` for unsaved changes, `"DIVERGENT"` for a clean document the user
+ * kept over an external change — so the AI can decide whether to save first
+ * or force. A pinned tab is never
  * closed, `force` or not: the reply is `{closed: false, reason: "PINNED"}`.
  * A browser tab is refused with `INVALID_TAB`. A tab that does close takes
  * its document with it (the tab store's removal announcement frees per-tab
@@ -135,11 +141,12 @@ export async function handleWorkspaceClose(
     // without them the tab reads as clean and the close would drop them.
     flushLiveEditors();
     const doc = useDocumentStore.getState().documents[tab.id];
-    if (doc?.isDirty && wire.force !== true) {
+    const localContent = doc?.isDirty ? "DIRTY" : doc?.isDivergent ? "DIVERGENT" : null;
+    if (localContent && wire.force !== true) {
       await respond({
         id,
         success: true,
-        data: { closed: false, reason: "DIRTY" },
+        data: { closed: false, reason: localContent },
       });
       return;
     }

@@ -111,3 +111,56 @@ describe("vmark.workspace.close — the reply is the store's verdict", () => {
     expect(replyTo("req-2")).toMatchObject({ success: true, data: { closed: true } });
   });
 });
+
+// WI-RA1C.5 — a DIVERGENT document is clean, but holds content the user chose
+// to keep over an external change ("Keep my changes"). Every human close asks
+// about it; an AI close without `force` must not drop it in silence either.
+describe("vmark.workspace.close — a divergent document is local content", () => {
+  function openDivergent(content: string): string {
+    const tabId = openTab("/repo/kept.md", content);
+    useDocumentStore.getState().markDivergent(tabId);
+    return tabId;
+  }
+
+  it("refuses without force, and the tab and the kept content survive", async () => {
+    const tabId = openDivergent("我保留的内容\n");
+
+    await handleWorkspaceClose("req-div", { tabId });
+
+    expect(replyTo("req-div")).toMatchObject({
+      success: true,
+      data: { closed: false, reason: "DIVERGENT" },
+    });
+    expect(useTabStore.getState().findTabById(tabId)).not.toBeNull();
+    const doc = useDocumentStore.getState().getDocument(tabId);
+    expect(doc).toMatchObject({ content: "我保留的内容\n", isDirty: false, isDivergent: true });
+  });
+
+  it("closes with force, taking the document with it", async () => {
+    const tabId = openDivergent("kept\n");
+
+    await handleWorkspaceClose("req-div-force", { tabId, force: true });
+
+    expect(replyTo("req-div-force")).toMatchObject({ success: true, data: { closed: true } });
+    expect(useTabStore.getState().findTabById(tabId)).toBeNull();
+    expect(useDocumentStore.getState().getDocument(tabId)).toBeUndefined();
+  });
+
+  it("a document that is dirty AND divergent is reported as DIRTY", async () => {
+    const tabId = openDivergent("kept\n");
+    useDocumentStore.getState().setEditorContent(tabId, "kept, then edited\n");
+
+    await handleWorkspaceClose("req-both", { tabId });
+
+    expect(replyTo("req-both")).toMatchObject({ data: { closed: false, reason: "DIRTY" } });
+  });
+
+  it("a pinned divergent tab is refused as DIVERGENT first", async () => {
+    const tabId = openDivergent("kept\n");
+    useTabStore.getState().togglePin(MAIN, tabId);
+
+    await handleWorkspaceClose("req-pin-div", { tabId });
+
+    expect(replyTo("req-pin-div")).toMatchObject({ data: { closed: false, reason: "DIVERGENT" } });
+  });
+});
