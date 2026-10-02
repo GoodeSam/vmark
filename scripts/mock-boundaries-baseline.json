@@ -1314,26 +1314,6 @@
       "file": "src/components/Editor/TiptapEditor.lifecycle.test.tsx",
       "api": "vi.mock",
       "target": "src/components/Editor/wysiwygPendingNav"
-    },
-    {
-      "file": "src/plugins/latex/__tests__/MathInlineNodeView.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/latex/katexLoader"
-    },
-    {
-      "file": "src/plugins/latex/MathInlineNodeView.deferred.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/latex/katexLoader"
-    },
-    {
-      "file": "src/plugins/sourcePopup/createSourcePopupPlugin.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/sourcePopup/sourcePopupUtils"
-    },
-    {
-      "file": "src/plugins/sourcePopup/SourcePopupView.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/sourcePopup/sourcePopupUtils"
     }
   ]
 }
