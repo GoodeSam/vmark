@@ -1,6 +1,6 @@
 /**
  * Purpose: bind the app's stores to the plugins' host seams — settings,
- * document identity, and editor chrome.
+ * document identity, editor chrome, and notices.
  *
  * Called once at startup. Plugins depend on `plugins/shared/hostSettings`,
  * which has working defaults and no store import, so they still run when
@@ -30,6 +30,8 @@ import { useEditorStore } from "@/stores/editorStore";
 import { bindHostEditors } from "@/plugins/shared/hostEditors";
 import { bindHostViewModes } from "@/plugins/shared/hostViewModes";
 import { useImagePasteToastStore } from "@/stores/imagePasteToastStore";
+import { bindHostNotify } from "@/plugins/shared/hostNotify";
+import { imeToast } from "@/services/ime/imeToast";
 import { useSourcePeekStore } from "@/stores/sourcePeekStore";
 import { bindSourcePeekStore } from "@/plugins/sourcePeekInline/peekStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -150,6 +152,13 @@ export function bindPluginHostSettings(): void {
   bindHostShortcuts({
     getShortcut: (id) => useShortcutsStore.getState().getShortcut(id),
     onChange: (listener) => useShortcutsStore.subscribe(listener),
+  });
+
+  bindHostNotify({
+    info: (message) => imeToast.info(message),
+    error: (message) => {
+      imeToast.error(message);
+    },
   });
 
   bindHostPopups({
