@@ -7,7 +7,21 @@
 //! all mutate them without any command passing through us. Re-reading at each event
 //! is what keeps the chrome honest.
 
+use objc2::runtime::AnyObject;
 use objc2_web_kit::WKWebView;
+
+/// The object a key-value observation names, as a webview — or `None` when it is
+/// not one.
+///
+/// `observeValueForKeyPath:ofObject:change:context:` hands every observer an
+/// untyped `id`. The delegate registers itself on exactly one webview, so that is
+/// what arrives today; but nothing in the method's signature says so, and a
+/// subclass, a second registration or a stray message would deliver something
+/// else. The runtime is asked (`isKindOfClass:`) rather than trusted, so an
+/// impostor is ignored instead of being messaged as a `WKWebView`.
+pub(super) fn observed_web_view(object: &AnyObject) -> Option<&WKWebView> {
+    object.downcast_ref::<WKWebView>()
+}
 
 pub(super) fn current_url(web_view: &WKWebView) -> String {
     unsafe { web_view.URL() }
@@ -29,3 +43,7 @@ pub(super) fn current_title(web_view: &WKWebView) -> String {
 pub(super) fn history_state(web_view: &WKWebView) -> (bool, bool) {
     unsafe { (web_view.canGoBack(), web_view.canGoForward()) }
 }
+
+#[cfg(test)]
+#[path = "nav_webview_macos.test.rs"]
+mod tests;

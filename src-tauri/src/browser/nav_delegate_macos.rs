@@ -21,7 +21,7 @@ use payloads::{CrashPayload, DialogPayload, LoadedPayload, NavPayload, PopupPayl
 
 #[path = "nav_webview_macos.rs"]
 mod webview;
-use webview::{current_title, current_url, history_state};
+use webview::{current_title, current_url, history_state, observed_web_view};
 
 #[path = "nav_emit_macos.rs"]
 mod emit;
@@ -55,7 +55,13 @@ define_class!(
                 return;
             }
             let Some(object) = object else { return };
-            let web_view: &WKWebView = unsafe { &*(object as *const AnyObject).cast() };
+            let Some(web_view) = observed_web_view(object) else {
+                log::error!(
+                    "[browser] {}: URL observation for an object that is not a webview; ignored",
+                    self.ivars().tab_id
+                );
+                return;
+            };
             self.same_document_navigated(web_view);
         }
     }

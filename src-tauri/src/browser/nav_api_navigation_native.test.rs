@@ -31,6 +31,7 @@ use std::sync::OnceLock;
 use std::time::Duration;
 
 use super::super::super::super::driver_loop::pump_until;
+use super::super::super::webview::observed_web_view;
 
 /// Set in the child: where to write the report. Its presence IS the request.
 const REPORT_ENV: &str = "VMARK_API_NAVIGATION_PROBE_REPORT";
@@ -57,6 +58,9 @@ struct ProbeReport {
     page_b: String,
     pushed_url: String,
     push_state_seen: bool,
+    /// WI-RA12A.4: the `URL` observer's class check accepts a real webview, and
+    /// hands back that same object.
+    web_view_recognized: bool,
     phases: Vec<Phase>,
 }
 
@@ -230,11 +234,16 @@ fn run_probe(mtm: MainThreadMarker) -> ProbeReport {
         unsafe { web_view.goForward() }.is_some()
     }));
 
+    let as_object: &AnyObject = web_view.as_ref();
+    let web_view_recognized =
+        observed_web_view(as_object).is_some_and(|found| std::ptr::eq(found, &*web_view));
+
     ProbeReport {
         page_a,
         page_b,
         pushed_url,
         push_state_seen,
+        web_view_recognized,
         phases,
     }
 }
@@ -281,6 +290,17 @@ fn loaded_report() -> &'static ProbeReport {
         "pushState published its URL: {report:?}"
     );
     report
+}
+
+/// The other half of `nav_webview_macos.test.rs`: the class check that refuses an
+/// impostor must not refuse the real thing, or same-document navigations would
+/// stop expiring authority.
+#[test]
+fn the_url_observer_recognizes_a_real_web_view() {
+    assert!(
+        loaded_report().web_view_recognized,
+        "a live WKWebView passes the observer's class check as itself"
+    );
 }
 
 #[test]
