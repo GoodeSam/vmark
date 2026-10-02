@@ -451,7 +451,7 @@ Faites un clic droit sur un onglet pour ouvrir son menu. Les touches fléchées,
 | Fermer les autres | Ferme tous les autres onglets non épinglés. | Un autre onglet non épinglé existe |
 | Fermer les onglets à droite | Ferme les onglets non épinglés situés à sa droite. | Il en existe un |
 | Fermer les onglets non épinglés | Ferme tous les onglets non épinglés, celui-ci compris. | Un onglet non épinglé existe |
-| Tout fermer | Ferme tous les onglets. Un onglet épinglé refuse de se fermer : tant qu'un onglet est épinglé, utilisez plutôt **Fermer les onglets non épinglés**. | Toujours |
+| Tout fermer | Ferme tous les onglets sauf les onglets épinglés, qui restent ouverts tant que vous ne les désépinglez pas. | Un onglet non épinglé existe |
 
 Les fermetures groupées agissent sur les onglets de l'espace de travail actuel et les ferment un par un. Chaque onglet ayant des modifications non enregistrées demande d'abord, et annuler l'une de ces demandes arrête les suivantes.
 
@@ -470,7 +470,7 @@ Il n'existe pas de raccourci clavier pour épingler.
 
 Choisissez **Renommer** dans le menu contextuel d'un onglet. Le nom devient modifiable dans l'onglet, avec la partie située avant l'extension sélectionnée. Entrée ou un clic ailleurs valide ; Échap annule. Le fichier est renommé sur le disque et chaque onglet ouvert qui pointe vers lui suit. VMark n'écrase jamais rien : si le nom est déjà pris, une boîte de dialogue indique *Un fichier nommé « X » existe déjà.* Un nom vide, inchangé, `.` ou `..`, ou contenant `/` ou `\`, est refusé ou ignoré. Ce que vous tapez est le nom complet — supprimez l'extension et le fichier la perd.
 
-Sur **macOS**, avec **Paramètres → Apparence → Afficher le nom du fichier dans la barre de titre** activé, vous pouvez aussi double-cliquer sur le nom du fichier dans la barre de titre pour le renommer. Les mêmes règles s'appliquent, sauf qu'une collision ou une erreur n'affiche aucun message — le nom reste simplement modifiable — et que, si **Afficher les extensions de fichier** est désactivé, l'extension d'origine est conservée lorsque vous tapez un nom sans extension. Double-cliquer sur le titre d'un document non enregistré ouvre plutôt **Enregistrer**.
+Sur **macOS**, avec **Paramètres → Apparence → Afficher le nom du fichier dans la barre de titre** activé, vous pouvez aussi double-cliquer sur le nom du fichier dans la barre de titre pour le renommer. Les mêmes règles et les mêmes messages s'appliquent ; après une collision ou une erreur, le nom reste modifiable pour que vous puissiez en essayer un autre. Si **Afficher les extensions de fichier** est désactivé, l'extension d'origine est conservée lorsque vous tapez un nom sans extension. Double-cliquer sur le titre d'un document non enregistré ouvre plutôt **Enregistrer**.
 
 ## Fermer des onglets et des fenêtres
 

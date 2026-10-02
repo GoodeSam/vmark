@@ -59,6 +59,7 @@ import { useMcpClients } from "@/hooks/useMcpClients";
 import { openSettingsWindow } from "@/services/navigation/settingsWindow";
 import { StatusBarRight } from "./StatusBarRight";
 import { useStatusToasts } from "@/hooks/useStatusToasts";
+import { cancelActiveInvocation } from "@/services/genieInvocation/cancelRequest";
 import { useStatusBarTabDrag } from "./useStatusBarTabDrag";
 import { useQuitFeedback } from "./useQuitFeedback";
 import { ARIA_LIVE_STYLE, preventSelectAllOnButtons } from "./statusBarHelpers";
@@ -92,10 +93,8 @@ export function StatusBar() {
   const activeBrowserTabId = browserWorkspace.activeBrowserPageId;
 
   const openMcpSettings = useCallback(() => openSettingsWindow("integrations"), []);
-  const handleRetryAi = useCallback(() => {
-    // Dismiss error in status bar — user can retry from the picker or resubmit
-    useAiInvocationStore.getState().dismissError();
-  }, []);
+  const aiCanRetry = useAiInvocationStore((state) => state.retry !== null);
+  const handleRetryAi = useCallback(() => useAiInvocationStore.getState().retryFailed(), []);
   const showAutoSavePaused = (isMissing || isDivergent) && autoSaveEnabled;
   useStatusToasts(showAutoSavePaused, isDivergent, useShortcutsStore((s) => s.getShortcut("save"))); // WI-UB3 — toasts, not chrome
 
@@ -254,8 +253,8 @@ export function StatusBar() {
               elapsedSeconds={aiElapsed}
               aiError={aiError}
               showSuccess={aiShowSuccess}
-              onCancelAi={() => useAiInvocationStore.getState().cancel()}
-              onRetryAi={handleRetryAi}
+              onCancelAi={cancelActiveInvocation}
+              onRetryAi={aiCanRetry ? handleRetryAi : undefined}
               onDismissError={() => useAiInvocationStore.getState().dismissError()}
               mcpRunning={mcpRunning}
               mcpLoading={mcpLoading}

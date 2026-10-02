@@ -451,7 +451,7 @@ Right-click a tab to open its menu. Arrow keys, Home and End move through it; En
 | Close Others | Closes every other unpinned tab. | Another unpinned tab exists |
 | Close Tabs to the Right | Closes the unpinned tabs to its right. | One exists |
 | Close All Unpinned Tabs | Closes every unpinned tab, this one included. | An unpinned tab exists |
-| Close All | Closes every tab. A pinned tab refuses to close, so while any tab is pinned, use **Close All Unpinned Tabs** instead. | Always |
+| Close All | Closes every tab except pinned ones, which stay open until you unpin them. | An unpinned tab exists |
 
 Bulk closes act on the tabs of the current workspace and close them one at a time. Each tab with unsaved changes asks first, and cancelling any of those prompts stops the rest.
 
@@ -468,9 +468,9 @@ There is no keyboard shortcut for pinning.
 
 ## Renaming a file
 
-Choose **Rename** in a tab's context menu. The name becomes editable in the tab, with the part before the extension selected. Enter or clicking away commits; Escape cancels. The file is renamed on disk and every open tab that points to it follows. VMark never overwrites: if the name is taken, a dialog says *A file named "X" already exists.* A name that is empty, unchanged, `.` or `..`, or contains `/` or `\` is refused or ignored. What you type is the whole name — delete the extension and the file loses it.
+Choose **Rename** in a tab's context menu. The name becomes editable in the tab, with the part before the extension selected. Enter or clicking away commits; Escape cancels. The file is renamed on disk and every open tab that points to it follows. VMark never overwrites: if the name is taken, a dialog says *A file named “X” already exists.* A name that is empty, unchanged, `.` or `..`, or contains `/` or `\` is refused or ignored. What you type is the whole name — delete the extension and the file loses it.
 
-On **macOS**, with **Settings → Appearance → Show filename in titlebar** on, you can also double-click the file name in the title bar to rename it. The same rules apply, except that a collision or error shows no message — the name simply stays editable — and if **Show file extensions** is off, the original extension is kept when you type a name without one. Double-clicking the title of an unsaved document opens **Save** instead.
+On **macOS**, with **Settings → Appearance → Show filename in titlebar** on, you can also double-click the file name in the title bar to rename it. The same rules and messages apply; after a collision or error the name stays editable so you can try another. If **Show file extensions** is off, the original extension is kept when you type a name without one. Double-clicking the title of an unsaved document opens **Save** instead.
 
 ## Closing tabs and windows
 

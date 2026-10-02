@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { clickFileLink } from "./__tests__/clickFileLink";
 
 // --- Hoisted mocks (available before vi.mock factories execute) ---
 
@@ -134,11 +135,6 @@ vi.mock("@/stores/documentStore", () => ({
 
 vi.mock("@/services/persistence/workspaceStorage", () => ({
   getCurrentWindowLabel: () => "main",
-}));
-
-const mockCreateFileLinkProvider = vi.fn(() => ({ provideLinks: vi.fn() }));
-vi.mock("./fileLinkProvider", () => ({
-  createFileLinkProvider: (...args: unknown[]) => mockCreateFileLinkProvider(...args),
 }));
 
 vi.mock("./terminalKeyHandler", () => ({
@@ -925,8 +921,9 @@ describe("createTerminalInstance — file link callback", () => {
 
     termInst = makeInstance();
 
-    // Capture the file link callback passed to createFileLinkProvider
-    fileLinkCallback = mockCreateFileLinkProvider.mock.calls[0][1];
+    // "Click" a path the way a user does: put it on a terminal line and
+    // activate the link the real file-link provider detects there.
+    fileLinkCallback = (filePath: string) => clickFileLink(termInst.term, filePath);
   });
 
   it("reads file and creates tab on file link click", async () => {

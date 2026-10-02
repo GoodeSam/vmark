@@ -10,11 +10,9 @@
 // time: a rail switch mid-delivery must not redirect the payload.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGetTerminal } = vi.hoisted(() => ({ mockGetTerminal: vi.fn() }));
-
-vi.mock("./activeTerminal", () => ({
-  getTerminalForSession: mockGetTerminal,
-}));
+// The real activeTerminal module runs. The test plays the terminal panel: it
+// registers the window's resolver, exactly as useTerminalSessions does.
+const terminalResolver = vi.fn<(sessionId: string) => unknown>();
 
 import {
   useUIStore,
@@ -29,6 +27,12 @@ import {
   isSafeToPaste,
   runInTerminal,
 } from "./runInTerminal";
+import { registerTerminalResolver, type RunTargetTerminal } from "./activeTerminal";
+
+beforeEach(() => {
+  terminalResolver.mockReset();
+  registerTerminalResolver((sessionId) => (terminalResolver(sessionId) as RunTargetTerminal | null | undefined) ?? null);
+});
 
 describe("isShellLanguage (WI-4.3)", () => {
   it.each(["bash", "sh", "zsh", "shell", "console", "shell-session", "shellsession", "terminal"])(
@@ -180,13 +184,13 @@ describe("runInTerminal (WI-4.3)", () => {
   function installTerminal(bracketedPasteMode = true) {
     paste = vi.fn();
     focus = vi.fn();
-    mockGetTerminal.mockReturnValue({ paste, focus, modes: { bracketedPasteMode } });
+    terminalResolver.mockReturnValue({ paste, focus, modes: { bracketedPasteMode } });
   }
 
   beforeEach(() => {
     resetTerminalSessionStore();
     if (useUIStore.getState().terminalVisible) useUIStore.getState().toggleTerminal();
-    mockGetTerminal.mockReset();
+    terminalResolver.mockReset();
     installTerminal();
   });
 
@@ -227,7 +231,7 @@ describe("runInTerminal (WI-4.3)", () => {
     let calls = 0;
     paste = vi.fn();
     focus = vi.fn();
-    mockGetTerminal.mockImplementation(() => ({
+    terminalResolver.mockImplementation(() => ({
       paste,
       focus,
       modes: { bracketedPasteMode: ++calls >= 3 },
@@ -287,7 +291,7 @@ describe("runInTerminal (WI-4.3)", () => {
     // terminal" would land in whatever tab the user switched to meanwhile.
     const first = useUIStore.getState().terminalCreateSession()!;
     await runInTerminal("echo hi", "bash");
-    expect(mockGetTerminal).toHaveBeenCalledWith(first.id);
+    expect(terminalResolver).toHaveBeenCalledWith(first.id);
   });
 
   it("reveals the panel", async () => {
@@ -339,7 +343,7 @@ describe("runInTerminal (WI-4.3)", () => {
   it("reports a timeout when the session's terminal never mounts", async () => {
     // Previously this returned ok:true and silently dropped the payload.
     useUIStore.getState().terminalCreateSession();
-    mockGetTerminal.mockReturnValue(null);
+    terminalResolver.mockReturnValue(null);
     // Drive rAF synchronously so the bounded retry drains immediately.
     const raf = vi
       .spyOn(globalThis, "requestAnimationFrame")
@@ -359,7 +363,7 @@ describe("runInTerminal (WI-4.3)", () => {
     // first resolve attempt legitimately finds nothing.
     useUIStore.getState().terminalCreateSession();
     let calls = 0;
-    mockGetTerminal.mockImplementation(() =>
+    terminalResolver.mockImplementation(() =>
       ++calls < 3 ? null : { paste, focus, modes: { bracketedPasteMode: true } },
     );
     const raf = vi
@@ -381,7 +385,7 @@ describe("id-pinned delivery across a rail switch (WI-TS4.2, D-T10)", () => {
   beforeEach(() => {
     resetTerminalSessionStore();
     if (useUIStore.getState().terminalVisible) useUIStore.getState().toggleTerminal();
-    mockGetTerminal.mockReset();
+    terminalResolver.mockReset();
   });
 
   it("delivers to the ORIGINALLY targeted session after the visible scope swaps mid-delivery", async () => {
@@ -393,7 +397,7 @@ describe("id-pinned delivery across a rail switch (WI-TS4.2, D-T10)", () => {
     let frames = 0;
     // The terminal only becomes reachable a few frames in — the window in
     // which a real user can click another workspace on the rail.
-    mockGetTerminal.mockImplementation(() =>
+    terminalResolver.mockImplementation(() =>
       ++frames >= 3 ? { paste, focus, modes: { bracketedPasteMode: true } } : null,
     );
 
@@ -405,7 +409,7 @@ describe("id-pinned delivery across a rail switch (WI-TS4.2, D-T10)", () => {
     const result = await pending;
 
     expect(result).toEqual({ ok: true });
-    expect(mockGetTerminal).toHaveBeenLastCalledWith(first.id);
+    expect(terminalResolver).toHaveBeenLastCalledWith(first.id);
     expect(paste).toHaveBeenCalledWith("make build");
   });
 });

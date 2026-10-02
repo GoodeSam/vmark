@@ -451,7 +451,7 @@ Fai clic destro su una scheda per aprirne il menu. I tasti freccia, Home e Fine 
 | Chiudi altre | Chiude tutte le altre schede non fissate. | Esiste un'altra scheda non fissata |
 | Chiudi schede a destra | Chiude le schede non fissate alla sua destra. | Ne esiste almeno una |
 | Chiudi schede non fissate | Chiude tutte le schede non fissate, compresa questa. | Esiste una scheda non fissata |
-| Chiudi tutto | Chiude tutte le schede. Una scheda fissata si rifiuta di chiudersi, quindi finché una scheda è fissata usa invece **Chiudi schede non fissate**. | Sempre |
+| Chiudi tutto | Chiude tutte le schede tranne quelle fissate, che restano aperte finché non le sblocchi. | Esiste una scheda non fissata |
 
 Le chiusure multiple agiscono sulle schede dello spazio di lavoro corrente e le chiudono una alla volta. Ogni scheda con modifiche non salvate chiede prima conferma, e annullare una qualsiasi di queste richieste interrompe le restanti.
 
@@ -470,7 +470,7 @@ Non esiste una scorciatoia da tastiera per fissare una scheda.
 
 Scegli **Rinomina** nel menu contestuale di una scheda. Il nome diventa modificabile nella scheda, con la parte che precede l'estensione selezionata. Invio o un clic altrove confermano; Esc annulla. Il file viene rinominato sul disco e ogni scheda aperta che vi punta si aggiorna di conseguenza. VMark non sovrascrive mai: se il nome è già in uso, una finestra di dialogo indica *Esiste già un file chiamato "X".* Un nome vuoto, invariato, `.` o `..`, oppure che contiene `/` o `\`, viene rifiutato o ignorato. Ciò che digiti è il nome completo — se elimini l'estensione, il file la perde.
 
-Su **macOS**, con **Impostazioni → Aspetto → Mostra il nome del file nella barra del titolo** attivo, puoi anche fare doppio clic sul nome del file nella barra del titolo per rinominarlo. Valgono le stesse regole, tranne che un conflitto o un errore non mostra alcun messaggio — il nome resta semplicemente modificabile — e se **Mostra le estensioni dei file** è disattivato, l'estensione originale viene mantenuta quando digiti un nome senza estensione. Un doppio clic sul titolo di un documento non salvato apre invece **Salva**.
+Su **macOS**, con **Impostazioni → Aspetto → Mostra il nome del file nella barra del titolo** attivo, puoi anche fare doppio clic sul nome del file nella barra del titolo per rinominarlo. Valgono le stesse regole e gli stessi messaggi; dopo un conflitto o un errore il nome resta modificabile, così puoi provarne un altro. Se **Mostra le estensioni dei file** è disattivato, l'estensione originale viene mantenuta quando digiti un nome senza estensione. Un doppio clic sul titolo di un documento non salvato apre invece **Salva**.
 
 ## Chiudere schede e finestre
 

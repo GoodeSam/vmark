@@ -32,6 +32,12 @@
  * the previous `index-BUAvxpLj*` glob silently stopped matching and the
  * entry chunk went unbudgeted).
  *
+ * ONE positive glob per budget (negations are fine). size-limit fails when a
+ * budget's globs match no file at all, which is what makes a renamed chunk
+ * loud — but with two positive globs, one can go dead while the other keeps
+ * the budget passing. scripts/check-size-budgets.test.mjs enforces the rule
+ * and pins size-limit's no-match failure against the installed CLI.
+ *
  * @module .size-limit.cjs
  */
 

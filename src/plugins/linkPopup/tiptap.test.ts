@@ -12,15 +12,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Schema } from "@tiptap/pm/model";
 import { EditorState } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
+import { createStore as createZustandStore } from "zustand/vanilla";
 
 vi.mock("./link-popup.css", () => ({}));
-
-vi.mock("./LinkPopupView", () => ({
-  LinkPopupView: class MockLinkPopupView {
-    update = vi.fn();
-    destroy = vi.fn();
-  },
-}));
 
 // Both popup states are PORTs — handed to the extension, so no module mocks.
 const mockLinkPopupState = {
@@ -28,13 +22,13 @@ const mockLinkPopupState = {
   openPopup: vi.fn(),
   closePopup: vi.fn(),
 };
-const mockLinkPopupStore = { getState: () => mockLinkPopupState };
+const mockLinkPopupStore = createZustandStore(() => mockLinkPopupState);
 
 const mockLinkCreatePopupState = {
   isOpen: false,
   closePopup: vi.fn(),
 };
-const mockLinkCreateStore = { getState: () => mockLinkCreatePopupState };
+const mockLinkCreateStore = createZustandStore(() => mockLinkCreatePopupState);
 
 vi.mock("@/utils/headingSlug", () => ({
   findHeadingById: vi.fn(() => null),

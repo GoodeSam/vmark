@@ -32,7 +32,7 @@ Después de seleccionar un genio o enviar un prompt de forma libre, el selector 
 - **Vista previa** — La respuesta de IA aparece a medida que llega: los proveedores CLI la transmiten mientras se genera, mientras que los proveedores REST entregan la respuesta completa de una vez cuando termina la solicitud. Usa `Aceptar` para aplicar o `Rechazar` para descartar.
 - **Error** — Si algo sale mal, aparece el mensaje de error con un botón `Reintentar`.
 
-La barra de estado también muestra el progreso de IA — un icono giratorio con tiempo transcurrido mientras se ejecuta, un breve destello de "Listo" al terminar, o un indicador de error con botones **Reintentar** y **Descartar**. En la barra de estado, ambos solo borran el error — para reintentar, vuelve a ejecutar el genio desde el selector. La barra de estado se muestra automáticamente cuando la IA tiene estado activo, incluso si la ocultaste previamente con `F7`.
+La barra de estado también muestra el progreso de IA — un icono giratorio con tiempo transcurrido mientras se ejecuta, un breve destello de "Listo" al terminar, o un indicador de error con botones **Reintentar** y **Descartar**. **Reintentar** vuelve a ejecutar la solicitud fallida — el mismo genio o la misma instrucción, sobre la selección actual — incluso después de cerrar el selector; no aparece si no hay nada que repetir, por ejemplo sin proveedor. La barra de estado se muestra automáticamente cuando la IA tiene estado activo, incluso si la ocultaste previamente con `F7`.
 
 ## Genios Integrados
 

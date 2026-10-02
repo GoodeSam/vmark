@@ -451,7 +451,7 @@ Haz clic derecho en una pestaña para abrir su menú. Las teclas de flecha, Inic
 | Cerrar otras | Cierra todas las demás pestañas no fijadas. | Existe otra pestaña no fijada |
 | Cerrar pestañas a la derecha | Cierra las pestañas no fijadas situadas a su derecha. | Existe alguna |
 | Cerrar pestañas no fijadas | Cierra todas las pestañas no fijadas, incluida esta. | Existe una pestaña no fijada |
-| Cerrar todo | Cierra todas las pestañas. Una pestaña fijada se niega a cerrarse, así que mientras haya alguna pestaña fijada, usa **Cerrar pestañas no fijadas** en su lugar. | Siempre |
+| Cerrar todo | Cierra todas las pestañas salvo las fijadas, que siguen abiertas hasta que las desfijes. | Existe una pestaña no fijada |
 
 Los cierres en bloque actúan sobre las pestañas del espacio de trabajo actual y las cierran de una en una. Cada pestaña con cambios sin guardar pregunta primero, y cancelar cualquiera de esas preguntas detiene el resto.
 
@@ -470,7 +470,7 @@ No hay atajo de teclado para fijar.
 
 Elige **Renombrar** en el menú contextual de una pestaña. El nombre pasa a ser editable en la pestaña, con la parte anterior a la extensión seleccionada. Intro o hacer clic fuera confirma; Escape cancela. El archivo se renombra en el disco y todas las pestañas abiertas que apuntan a él lo siguen. VMark nunca sobrescribe: si el nombre ya está en uso, un diálogo dice *Ya existe un archivo llamado «X».* Un nombre vacío, sin cambios, `.` o `..`, o que contenga `/` o `\`, se rechaza o se ignora. Lo que escribes es el nombre completo — si borras la extensión, el archivo la pierde.
 
-En **macOS**, con **Configuración → Apariencia → Mostrar nombre de archivo en la barra de título** activado, también puedes hacer doble clic en el nombre del archivo en la barra de título para renombrarlo. Se aplican las mismas reglas, salvo que una colisión o un error no muestra ningún mensaje — el nombre simplemente sigue siendo editable — y, si **Mostrar extensiones de archivo** está desactivado, se conserva la extensión original cuando escribes un nombre sin ella. Hacer doble clic en el título de un documento sin guardar abre **Guardar** en su lugar.
+En **macOS**, con **Configuración → Apariencia → Mostrar nombre de archivo en la barra de título** activado, también puedes hacer doble clic en el nombre del archivo en la barra de título para renombrarlo. Se aplican las mismas reglas y los mismos mensajes; tras una colisión o un error el nombre sigue siendo editable para que puedas probar otro. Si **Mostrar extensiones de archivo** está desactivado, se conserva la extensión original cuando escribes un nombre sin ella. Hacer doble clic en el título de un documento sin guardar abre **Guardar** en su lugar.
 
 ## Cerrar pestañas y ventanas
 

@@ -468,7 +468,7 @@ Vedi [Terminale Integrato](/it/guide/terminal) per ulteriori informazioni su ses
 
 ## Informazioni
 
-Visualizza la versione dell'app, i collegamenti al sito web e al repository GitHub e la gestione degli aggiornamenti.
+Visualizza la versione dell'app, i collegamenti al sito web e al repository GitHub e la gestione degli aggiornamenti. Il collegamento **Note di terze parti** apre i testi di licenza del software open source incluso in VMark nell'app predefinita del sistema per i file di testo.
 
 ### Aggiornamenti
 

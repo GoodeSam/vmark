@@ -29,7 +29,7 @@ import "@/components/Sidebar/FileExplorer/ContextMenu.css";
 import { useDismissOnOutsideOrEscape } from "@/hooks/useDismissOnOutsideOrEscape";
 import { useMenuRovingFocus } from "@/hooks/useMenuRovingFocus";
 import { useMenuPosition } from "@/hooks/useMenuPosition";
-import { getRevealInFileManagerLabel } from "@/utils/pathUtils";
+import { revealInFileManagerKey } from "@/utils/pathUtils";
 
 interface MenuItem {
   id: string;
@@ -74,8 +74,7 @@ export function ImageContextMenu({ onAction }: ImageContextMenuProps) {
   const isOpen = useImageContextMenuStore((s) => s.isOpen);
   const position = useImageContextMenuStore((s) => s.position);
   const closeMenu = useImageContextMenuStore((s) => s.closeMenu);
-  // Get platform-appropriate label once (stable across renders)
-  const revealLabel = useMemo(() => getRevealInFileManagerLabel(), []);
+  const revealLabel = t(revealInFileManagerKey());
   const menuItems = useMemo(
     () =>
       buildMenuItems(

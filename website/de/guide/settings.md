@@ -467,7 +467,7 @@ Unter [Integriertes Terminal](/de/guide/terminal) finden Sie mehr über Sitzunge
 
 ## Über
 
-Zeigt App-Version, Links zur Website und zum GitHub-Repository sowie Update-Verwaltung.
+Zeigt App-Version, Links zur Website und zum GitHub-Repository sowie Update-Verwaltung. Der Link **Hinweise zu Drittanbietern** öffnet die Lizenztexte der mit VMark gebündelten Open-Source-Software in der Standard-App Ihres Systems für Textdateien.
 
 ### Updates
 

@@ -14,11 +14,6 @@ import { EditorView } from "@tiptap/pm/view";
 vi.mock("./link-popup.css", () => ({}));
 const { openUrlMock } = vi.hoisted(() => ({ openUrlMock: vi.fn(async () => undefined) }));
 vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl: openUrlMock }));
-vi.mock("./LinkPopupView", () => ({
-  LinkPopupView: class MockLinkPopupView {
-    destroy = vi.fn();
-  },
-}));
 // The real opener, observed: the guard fires it without awaiting, so a test
 // awaits the promise it returned instead of polling on a wall-clock budget.
 vi.mock("@/services/navigation/linkOpen", async () => {
@@ -29,6 +24,7 @@ vi.mock("@/services/navigation/linkOpen", async () => {
 });
 
 import { openLinkTarget } from "@/services/navigation/linkOpen";
+import { createStore as createZustandStore } from "zustand/vanilla";
 import { linkPopupExtension } from "./tiptap";
 
 // The opener reads the user's custom protocols from the settings store, which
@@ -77,8 +73,9 @@ const popupState = {
   openPopup: vi.fn(),
   closePopup: vi.fn(),
 };
-const popupStore = { getState: () => popupState };
-const createStore = { getState: () => ({ isOpen: false, closePopup: vi.fn() }) };
+// Real store objects around the test state: the popup view subscribes to its port.
+const popupStore = createZustandStore(() => popupState);
+const createStore = createZustandStore(() => ({ isOpen: false, closePopup: vi.fn() }));
 
 /** Like VMark's image node view: keeps mousedown/click away from ProseMirror. */
 const clickSwallowingImage = (node: import("@tiptap/pm/model").Node) => {
