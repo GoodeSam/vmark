@@ -18,7 +18,7 @@
 //! | `always()` | `true` |
 //! | `'str'` / `"str"` | string literal operand |
 //! | number | numeric operand |
-//! | `${{ ... }}`, `steps.X.outputs.Y`, `env.NAME` | reference operands (via `expressions::resolve`) |
+//! | `${{ ... }}`, `steps.X.outputs.Y`, `env.NAME` | reference operands (one reference each, via `expressions::resolve_reference`) |
 //! | `==`, `!=` | equality (numeric if both parse as f64, else string) |
 //! | `>`, `<`, `>=`, `<=` | numeric comparison |
 //! | `&&`, `\|\|`, `!`, `( )` | boolean composition (`&&`/`\|\|` short-circuit: a dead RHS is parsed but never resolved) |
@@ -287,17 +287,17 @@ impl Parser<'_> {
             return Ok(Value::Str(t.to_string()));
         }
 
-        // Reference: `${{ ... }}`, `steps.X...`, or `env.NAME`. Reuse the
-        // expression resolver; wrap bare refs in `${{ }}` so it accepts them.
-        let to_resolve = if t.starts_with("${{") {
-            t.to_string()
-        } else if t.starts_with("steps.") || t.starts_with("env.") {
-            format!("${{{{ {} }}}}", t)
-        } else {
-            return Err(format!("Unsupported operand in condition: '{}'", t));
+        // Reference: `${{ ... }}`, `steps.X...`, or `env.NAME` — ONE reference,
+        // resolved as one. An operand is not a template: what it resolves to
+        // is a value, and is never scanned for further references.
+        let body = match t.strip_prefix("${{").map(|rest| rest.strip_suffix("}}")) {
+            Some(Some(inner)) => inner,
+            Some(None) => return Err(format!("Unterminated `${{{{` reference: '{}'", t)),
+            None if t.starts_with("steps.") || t.starts_with("env.") => t,
+            None => return Err(format!("Unsupported operand in condition: '{}'", t)),
         };
 
-        expressions::resolve(&to_resolve, self.outputs, self.env)
+        expressions::resolve_reference(body, self.outputs, self.env)
             .map(Value::Str)
             .map_err(|e| format!("Condition reference failed: {}", e))
     }

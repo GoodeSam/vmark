@@ -1,3 +1,5 @@
+// WI-RA5.1 — a resolved operand is a value, never scanned for references.
+//
 //! Unit tests for the workflow `if:` condition evaluator (see
 //! `condition.rs`). Split into a sibling file (included via `#[path]`)
 //! to keep the production file under the size gate.
@@ -366,4 +368,92 @@ fn normal_nesting_still_evaluates() {
     assert!(eval("((true && false) || (true && true))", false).unwrap());
     // true && (false||false) => false; ||false => false; !false => true
     assert!(eval("!(true && (false || false) || false)", false).unwrap());
+}
+
+// === a resolved operand is a value, never scanned for references ===
+
+/// `steps.a.output == <text as a quoted literal>`, in whichever quote the
+/// text does not contain (the lexer's string literals have no escapes).
+fn equals_literal(operand: &str, text: &str) -> String {
+    let quote = if text.contains('\'') { '"' } else { '\'' };
+    assert!(
+        !text.contains(quote),
+        "fixture needs both quote kinds: {text:?}"
+    );
+    format!("{operand} == {quote}{text}{quote}")
+}
+
+#[test]
+fn a_step_output_operand_is_compared_byte_identical() {
+    let e = env(&[("HOME", "LEAKED-ENV-VALUE"), ("name", "leaked-name")]);
+    for text in [
+        "${HOME}",
+        "${NOPE}",
+        "${{ steps.a.output }}",
+        "${{ env.HOME }}",
+        "const s = `Hello ${name}, total ${amount * 2}`;",
+        "$$",
+        "ghost.output",
+        "",
+        "路径 ${HOME} 中文",
+        "first\r\n${HOME}\r\n",
+    ] {
+        let o = outputs(&[("a", &[("text", text)])]);
+        for operand in [
+            "steps.a.output",
+            "steps.a.outputs.text",
+            "${{ steps.a.output }}",
+            "${{ steps.a.outputs.text }}",
+        ] {
+            let cond = equals_literal(operand, text);
+            assert_eq!(
+                evaluate_condition(&cond, &o, &e, false),
+                Ok(true),
+                "condition {cond:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn an_env_operand_is_compared_byte_identical() {
+    let e = env(&[("LEGACY", "${HOME}"), ("HOME", "LEAKED-ENV-VALUE")]);
+    for operand in ["env.LEGACY", "${{ env.LEGACY }}"] {
+        let cond = equals_literal(operand, "${HOME}");
+        assert_eq!(
+            evaluate_condition(&cond, &HashMap::new(), &e, false),
+            Ok(true),
+            "condition {cond:?}"
+        );
+    }
+}
+
+#[test]
+fn an_unknown_reference_in_the_condition_itself_still_errors() {
+    let o = outputs(&[("a", &[("text", "${HOME}")])]);
+    let e = env(&[("HOME", "LEAKED-ENV-VALUE")]);
+    for cond in [
+        "env.NOPE == 'x'",
+        "${{ env.NOPE }} == 'x'",
+        "steps.a.output == steps.ghost.output",
+        "steps.a.outputs.missing == 'x'",
+    ] {
+        let r = evaluate_condition(cond, &o, &e, false);
+        assert!(r.is_err(), "condition {cond:?} gave {r:?}");
+    }
+}
+
+#[test]
+fn an_unreadable_reference_operand_fails_instead_of_comparing_as_text() {
+    // `${{ a}b }}` and `${{}}` name nothing. They must not survive as the
+    // literal strings they are spelled with.
+    for cond in [
+        "${{ a}b }} == 'x'",
+        "${{ a}b }} != 'x'",
+        "'x' != ${{}}",
+        "${{ steps.a }} == 'x'",
+    ] {
+        let r = eval(cond, false);
+        assert!(r.is_err(), "condition {cond:?} gave {r:?}");
+    }
 }
