@@ -18,6 +18,7 @@ vi.mock("@tauri-apps/api/core", async () =>
 
 import { statefulFs } from "@/test/statefulFsFake";
 import { ROOT, WINDOW, doc, editDoc, newUntitledTab, openDocInTab } from "@/test/tier0/harness";
+import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { imeToast } from "@/services/ime/imeToast";
@@ -28,6 +29,7 @@ import {
   setAutoApproveEdits,
   structuredErrorOf,
 } from "./bridgeDiskHarness";
+import { duringExistsProbe } from "./bridgeWriteGate";
 
 const ORIGINAL = `${ROOT}/original.md`;
 const VICTIM = `${ROOT}/victim.md`;
@@ -112,6 +114,23 @@ describe("save_as tab resolution", () => {
       message: "No document for tab",
     });
     expect(documentWrites()).toEqual([]);
+  });
+
+  it("refuses when the tab is closed while the overwrite probe is in flight", async () => {
+    // The handler awaits between resolving the tab and saving it. A document
+    // that has gone by then must not be written out from a stale copy.
+    const tabId = await openDocInTab(ORIGINAL, "body\n");
+    duringExistsProbe(FRESH, () => {
+      useDocumentStore.getState().removeDocument(tabId);
+    });
+
+    await handleWorkspaceSaveAs("req-closed", { tabId, filePath: FRESH });
+
+    expect(structuredErrorOf(responseTo("req-closed"))).toEqual({
+      error: "INVALID_TAB",
+      message: "No document for tab",
+    });
+    expect(statefulFs.has(FRESH)).toBe(false);
   });
 
   it("falls back to the focused tab when no tabId is supplied", async () => {

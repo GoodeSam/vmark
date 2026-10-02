@@ -106,10 +106,16 @@ export async function handleWorkspaceSaveAs(
     }
 
     // Read the buffer NOW, after flushing pending keystrokes into it: the
-    // approval checks above awaited, and the user may have kept typing.
+    // approval checks above awaited, and the user may have kept typing — or
+    // closed the tab, in which case there is nothing left to save and the
+    // copy resolved earlier must not be written out in its place.
     flushLiveEditors();
-    const buffer = useDocumentStore.getState().documents[tabId]?.content ?? tab.content;
-    const outcome = await saveTabForBridge(tabId, filePath, buffer, "workspace.save_as");
+    const live = useDocumentStore.getState().documents[tabId];
+    if (!live) {
+      await structuredError(id, { error: "INVALID_TAB", message: "No document for tab" });
+      return;
+    }
+    const outcome = await saveTabForBridge(tabId, filePath, live.content, "workspace.save_as");
     if (!outcome.saved) {
       await respondSaveFailed(id, outcome);
       return;

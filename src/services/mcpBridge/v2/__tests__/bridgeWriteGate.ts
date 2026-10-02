@@ -13,6 +13,9 @@
  */
 import { statefulFs } from "@/test/statefulFsFake";
 
+/** Effects to run while an existence probe of a path is in flight. */
+const existsProbeEffects = new Map<string, () => void>();
+
 /**
  * Holds application writes to chosen paths until the test releases them, so a
  * test can observe what is (and is not) in flight at the same time.
@@ -46,6 +49,7 @@ class WriteGate {
 
   reset(): void {
     for (const path of [...this.held.keys()]) this.open(path);
+    existsProbeEffects.clear();
   }
 
   pass(path: string): Promise<void> {
@@ -57,7 +61,16 @@ class WriteGate {
 
 export const writeGate = new WriteGate();
 
+/**
+ * Run `effect` the next time the app asks whether `path` exists, while that
+ * probe is in flight — for what can happen to the app during an await.
+ */
+export function duringExistsProbe(path: string, effect: () => void): void {
+  existsProbeEffects.set(path, effect);
+}
+
 type FsWrite = (path: string, contents: string, options?: unknown) => Promise<void>;
+type FsExists = (path: string) => Promise<boolean>;
 
 /** `@tauri-apps/plugin-fs` over the stateful disk, with writes passing the gate. */
 export function gatedFsModule(): Record<string, unknown> {
@@ -66,9 +79,16 @@ export function gatedFsModule(): Record<string, unknown> {
     await writeGate.pass(path);
     return (real.writeTextFile as FsWrite)(path, contents, options);
   };
+  const probedExists: FsExists = (path) => {
+    const effect = existsProbeEffects.get(path);
+    existsProbeEffects.delete(path);
+    effect?.();
+    return (real.exists as FsExists)(path);
+  };
   return new Proxy(real, {
     get(target, prop, receiver) {
       if (prop === "writeTextFile") return gatedWrite;
+      if (prop === "exists") return probedExists;
       return Reflect.get(target, prop, receiver);
     },
   });
