@@ -1371,11 +1371,6 @@
       "target": "src/services/assembly/bindHostSettings"
     },
     {
-      "file": "src/plugins/compositionGuard/__tests__/tiptap.tablefix.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/compositionGuard/splitBlockFix"
-    },
-    {
       "file": "src/plugins/compositionGuard/__tests__/tiptap.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/compositionGuard/splitBlockFix"
