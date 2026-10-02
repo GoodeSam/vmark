@@ -39,7 +39,6 @@ vi.mock("@tauri-apps/plugin-opener", () => ({
   openUrl: vi.fn(() => Promise.resolve()),
 }));
 
-// Mock cross-file open helper (hoisted so vi.mock factory can reference it)
 const { mockOpenFilepathLink } = vi.hoisted(() => ({
   mockOpenFilepathLink: vi.fn(() => Promise.resolve(true)),
 }));
