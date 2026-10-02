@@ -300,7 +300,6 @@
   "src/stores/breakdownStore.test.ts": 1,
   "src/stores/documentStore/__tests__/transferRoundTrip.test.ts": 1,
   "src/stores/imagePasteToastStore.test.ts": 9,
-  "src/stores/settingsShortcuts.test.ts": 1,
   "src/stores/tabStore.closeReturn.test.ts": 1,
   "src/stores/tabStore.test.ts": 32,
   "src/stores/tabStore.titleIdentity.test.ts": 1,

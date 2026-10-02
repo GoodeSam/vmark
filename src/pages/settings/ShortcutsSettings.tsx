@@ -20,6 +20,7 @@ import {
   getShortcutDescription,
 } from "@/stores/settingsShortcutLabels";
 import { KeyCapture } from "./KeyCapture";
+import { describeShortcutImportError } from "./shortcutImportErrors";
 import { Button, SearchInput } from "./components";
 import { confirmAction } from "@/services/dialogs/confirmAction";
 import i18n from "@/i18n";
@@ -102,9 +103,9 @@ export function ShortcutsSettings() {
       // entry applies NOTHING, so this message can say so — it used to report
       // errors after the valid entries had already replaced the user's map.
       const result = importConfig(reader.result as string);
-      if (!result.success && result.errors) {
+      if (!result.success) {
         toast.error(t("shortcuts.importFailed"), {
-          description: result.errors.join("\n"),
+          description: result.errors.map(describeShortcutImportError).join("\n"),
           pin: true,
         });
       }
