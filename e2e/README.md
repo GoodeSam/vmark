@@ -179,9 +179,12 @@ still lists the (deleted) fixture path until reload.
 ## Prerequisites
 
 Identical to the smoke harness (see below): a live debug build
-(`pnpm tauri:dev`) with the document window open, on a headed display. Same
-CI caveats apply — this suite is for local / manually triggered headed runs,
-not the blocking `pnpm check:all` gate. Journeys tolerate the dev app's
+(`pnpm tauri:dev`) with the document window open, on a headed display. It is
+not part of the blocking `pnpm check:all` gate or of per-PR CI. CI runs the
+whole suite **weekly** (Monday 07:00 UTC) and on manual dispatch, on Linux
+(under Xvfb) and macOS, in `.github/workflows/tier0-e2e.yml`; the macOS leg is
+the only one that runs the embedded-browser journeys, and failures are reported
+into one rolling GitHub issue. Journeys tolerate the dev app's
 Vite-reload churn only between journeys; a reload mid-journey fails that
 journey (rerun once the app is stable).
 
@@ -304,14 +307,14 @@ script is the **non-interactive, CI-shaped** equivalent of that flow.
 
 ## CI
 
-This smoke is **not** wired into the per-PR CI gate. Doing so honestly requires
-a headed runner (display + a running debug build), which the current CI
-infrastructure does not provide. Running it under a headless GitHub-hosted
-runner would fail at the native-screenshot step and produce false negatives.
+This smoke is **not** wired into the per-PR CI gate: it needs a headed runner
+with a running debug build, and under a headless GitHub-hosted runner it would
+fail at the native-screenshot step and produce false negatives. Run it
+**locally / manually** before releases. Keep it out of the blocking
+`pnpm check:all` gate.
 
-Run it **locally / manually** before releases, or on a self-hosted headed
-runner via a dedicated `workflow_dispatch` job if/when one exists. Keep it out
-of the blocking `pnpm check:all` gate until that infrastructure is in place.
+The journeys suite does run in CI — weekly and on manual dispatch, on Linux and
+macOS — in `.github/workflows/tier0-e2e.yml` (see [Prerequisites](#prerequisites)).
 
 ## Troubleshooting
 

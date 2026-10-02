@@ -340,7 +340,7 @@ scelta, e puoi cambiare qualsiasi scheda con l'interruttore a schermo oppure con
 
 ### Editor esterno
 
-Per il pulsante **Apri nell'editor esterno** nelle schede di codice in sola lettura, scegli l'editor che deve essere avviato. Un bundle app (es. `/Applications/Visual Studio Code.app`) o un eseguibile.
+Per il pulsante **Apri in un editor esterno** nelle schede di codice in sola lettura, scegli l'editor che deve essere avviato: il nome di un editor noto (`code`, `zed`, `subl`, `vim`, …) oppure il percorso completo di un bundle app (es. `/Applications/Visual Studio Code.app`) o di un eseguibile. Shell, interpreti ed emulatori di terminale vengono rifiutati, così come un percorso che non esiste.
 
 L'impostazione GUI sostituisce qualsiasi variabile d'ambiente — l'esplicito supera l'implicito. Lasciala vuota per usare la catena di fallback `$VMARK_EXTERNAL_EDITOR → $VISUAL → $EDITOR → predefinito di piattaforma`. Vedi [Apri nell'editor esterno](/it/guide/formats#apri-nell-editor-esterno) per l'ordine di risoluzione completo e il controllo di sicurezza.
 
@@ -440,7 +440,7 @@ Configura il pannello terminale integrato. Apri il terminale con `` Ctrl + ` ``.
 
 | Impostazione | Descrizione | Predefinito | Opzioni |
 |-------------|-------------|-------------|---------|
-| Shell | Quale shell usare. Richiede il riavvio del terminale per avere effetto | Predefinito di Sistema | Shell rilevate automaticamente nel sistema (es. zsh, bash, fish) |
+| Shell | Quale shell usare. Richiede il riavvio del terminale per avere effetto. Una shell salvata che non è più disponibile viene mostrata come *(non disponibile)* e viene usata quella predefinita | Predefinito di Sistema | Shell rilevate automaticamente nel sistema (es. zsh, bash, fish) |
 | Posizione Pannello | Dove posizionare il pannello del terminale | Auto | Auto (basato sul rapporto d'aspetto della finestra), In alto, In basso, A sinistra, A destra |
 | Dimensione Pannello | Proporzione dello spazio disponibile occupata dal terminale. Il trascinamento del pannello aggiorna anche questo valore | 40% | dal 10% all'80% |
 | Dimensione Font | Dimensione del testo nel terminale | 13px | da 10px a 24px |
@@ -540,7 +540,22 @@ I quattro predefiniti sono sempre inclusi: rimuoverne uno vale solo fino al riav
 |-------------|-------------|-------------|
 | Mantieni entrambi gli editor attivi | Monta sia l'editor WYSIWYG che quello Sorgente contemporaneamente per un cambio di modalità più veloce. Aumenta l'utilizzo della memoria | Off |
 
-### Motore dei workflow
+### Coerenza
+
+| Impostazione | Descrizione | Predefinito | Opzioni |
+|-------------|-------------|-------------|---------|
+| Confidenza del controllo semantico | Quanto deve essere sicuro un controllo prima che la sua risposta venga registrata come verdetto. Al di sotto di questa soglia, la risposta viene conservata ma contrassegnata come sconosciuta | 0.9 | 0.7, 0.8, 0.9, 0.95 |
+
+Vedi [Coerenza](/it/guide/coherence) per sapere che cos'è un controllo e come vengono registrati i verdetti.
+
+### File di workflow
+
+| Impostazione | Descrizione | Predefinito | Opzioni |
+|-------------|-------------|-------------|---------|
+| Recupera i metadati delle action | Consente a VMark di recuperare `action.yml` dalle GitHub Actions referenziate per popolare il modulo `with:` dell'editor strutturato. Disattivalo per mantenere l'editor dei workflow completamente offline | Attivo | Attivo / Off |
+| Usa actionlint quando disponibile | Se il binario `actionlint` è nel tuo PATH, lo esegue sui file di workflow per una diagnostica più completa. Nessun effetto se il binario non è installato | Attivo | Attivo / Off |
+
+### Workflow
 
 Il visualizzatore di GitHub Actions non ha un interruttore: aprendo un file sotto
 `.github/workflows/` compaiono il grafo e l'editor a form, e gli aiuti del riquadro

@@ -22,6 +22,8 @@ The terminal supports up to 5 concurrent sessions, each with its own shell proce
 
 When you close the last session the panel hides but the session stays alive — reopen with `` Ctrl + ` `` and you are back where you left off. When the shell exits cleanly (`exit` or `Ctrl + D`), its tab closes automatically — and the panel hides if it was the last one. If the shell exits with an error, the tab stays open showing the exit code; press any key to restart it.
 
+Closing a session — with the trash icon, by closing its window, or by quitting VMark — ends everything started in it, not just the shell. VMark sends a hangup signal (`SIGHUP`) to the shell's whole process group, waits up to a second for it to exit, then force-kills (`SIGKILL`) whatever is left. A job you deliberately detached into its own process group (for example with `nohup` or `setsid`) is not affected. On Windows there is no hangup step: the shell is ended at once.
+
 **Notifications:** when a terminal rings the bell (e.g. Claude Code finishing a turn) while that VMark window isn't focused, VMark posts an OS notification naming the window's document — so you can run Claude Code across several windows and get pinged for whichever needs you, without watching each one. Toggle it with **Settings → Terminal → Notify when unfocused** (on by default; asks for notification permission on first use). The same unfocused-bell signal also flags the window in the [Window Status panel](/guide/workspace-management#window-status-panel), so you can see which window needs you and jump straight to it.
 
 Each tab reflects the running program's title (set by tools that emit a terminal title, such as `vim` or `ssh`) unless you have manually renamed the session — a manual rename always wins. To rename, **double-click the tab**: `Enter` commits, `Escape` discards, and clicking away keeps what you typed. An empty name is ignored.
@@ -180,7 +182,7 @@ is not built yet.)
 
 The integrated terminal inherits your login shell's `PATH`, so CLI tools like `node`, `claude`, and other user-installed binaries are discoverable — just as they would be in a regular terminal window.
 
-Unless you pick a shell in the terminal settings, VMark starts your login shell. On macOS and Linux it reads the login shell from your user account entry first, then `$SHELL`, and falls back to `/bin/sh`. On Windows it uses `%COMSPEC%`, falling back to the full path of `cmd.exe`. The working directory starts at the workspace root, or the active file's parent directory, or `$HOME`.
+Unless you pick a shell in the terminal settings, VMark starts your login shell. A shell you pick must be one VMark offers — on macOS and Linux, a shell listed in `/etc/shells` (or your login shell) that exists and is executable; on Windows, PowerShell, `pwsh`, `cmd.exe` or `%COMSPEC%` — given as an absolute path. A saved choice that is no longer available shows as *(unavailable)* in the settings, and VMark starts your default shell instead. On macOS and Linux it reads the login shell from your user account entry first, then `$SHELL`, and falls back to `/bin/sh`. On Windows it uses `%COMSPEC%`, falling back to the full path of `cmd.exe`. The working directory starts at the workspace root, or the active file's parent directory, or `$HOME`.
 
 Standard shell shortcuts like `Ctrl+R` (reverse history search in zsh/bash) work when the terminal is focused — they are not intercepted by the editor.
 

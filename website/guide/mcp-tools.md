@@ -179,14 +179,22 @@ you what was blocked. Saving back to the tab's own path is always allowed.
 
 ### `close`
 
-Close a tab. Refuses to discard unsaved work without `force`.
+Close a document tab. Refuses to discard unsaved work without `force`, and never closes a pinned tab.
 
 | Parameter | Type | Required |
 |-----------|------|----------|
 | `tabId` | string | Yes |
 | `force` | boolean | No |
 
-Returns `{closed: true}` on success, `{closed: false, reason: "DIRTY"}` if the tab is dirty and `force` was not supplied.
+Returns `{closed: true}` on success. Otherwise `{closed: false, reason}`:
+
+| `reason` | Meaning |
+|----------|---------|
+| `DIRTY` | The tab has unsaved changes and `force` was not supplied |
+| `DIVERGENT` | The file changed on disk and the user kept the tab's version; without `force` the close would lose it |
+| `PINNED` | The tab is pinned — refused even with `force`; the user must unpin it |
+
+Keystrokes the editor has not yet passed on are counted as unsaved before the check. A browser tab is refused with an `INVALID_TAB` error — close it with the `browser` tool's `close` action.
 
 ### `switch_tab`
 
@@ -232,12 +240,15 @@ Replace full document content.
 | `tabId` | string | No | Target tab (defaults to focused) |
 | `content` | string | Yes | New full content |
 | `expected_revision` | string | No | Revision token from the most recent read |
+| `save` | boolean | No | Also save to disk (default `true`); `false` changes the tab only |
+
+By default the write is saved: the response carries `saved: true`, or `saved: false` with `save_skipped` (`"untitled"` — the tab has no file yet, use `save_as`; `"opt_out"` — you passed `save: false`) or `save_error` (the disk write failed). When the target is the active WYSIWYG tab of a Markdown document, the text is loaded into the live editor (as one undoable step), and what is saved is the editor's serialization of it — the same Markdown, possibly normalized, not necessarily the exact characters sent. Other tabs save the text as sent, line endings normalized.
 
 If `expected_revision` is supplied and the document has changed since that read, the response is a `STALE` structured-error envelope with the current revision; re-read and retry.
 
 ```json
 // success
-{ "revision": "rev-newAfterWrite" }
+{ "revision": "rev-newAfterWrite", "saved": true }
 
 // stale
 { "error": "STALE", "message": "Document has changed since the last read", "current_revision": "rev-currentNow" }
