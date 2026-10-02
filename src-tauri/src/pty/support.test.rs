@@ -4,7 +4,7 @@
 
 use super::reader::run_reader;
 use super::session::{create_session, Session};
-use std::collections::BTreeMap;
+use super::spawn_policy::VettedCommand;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -36,18 +36,11 @@ pub(super) fn group_gone(pgid: u32) -> bool {
     probe(-(pgid as libc::pid_t))
 }
 
-/// Spawn `/bin/sh -c <script>` on a fresh pty, owned by window `owner`.
+/// Spawn `/bin/sh -c <script>` on a fresh pty, owned by window `owner`. A
+/// script is something the spawn policy refuses, so the fixtures bypass it.
 pub(super) fn spawn_sh(owner: &str, script: &str) -> Session {
-    create_session(
-        owner.into(),
-        "/bin/sh".into(),
-        vec!["-c".into(), script.into()],
-        80,
-        24,
-        None,
-        BTreeMap::new(),
-    )
-    .expect("spawn shell")
+    let command = VettedCommand::unvetted("/bin/sh", &["-c", script]);
+    create_session(owner.into(), command, 80, 24, None).expect("spawn shell")
 }
 
 pub(super) fn shell_pid(session: &Session) -> u32 {

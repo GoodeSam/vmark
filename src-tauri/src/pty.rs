@@ -49,7 +49,8 @@
 //! and pushed this file past the file-size gate (WI-DP2.5). `session.rs` owns
 //! the session map, `terminate` and `PtyExitEvent`; `child.rs` the shell and
 //! its escalating stop; `output.rs` the interruptible read side; `pause.rs`
-//! the pause condvar; `window_sessions.rs` reaps a destroyed window's sessions.
+//! the pause condvar; `spawn_policy.rs` what `pty_spawn` will run at all;
+//! `window_sessions.rs` reaps a destroyed window's sessions.
 //!
 //! @coordinates-with lib.rs — commands registered in generate_handler![]
 //! @coordinates-with pty/reader.rs — `pty_start`; registered as
@@ -63,6 +64,7 @@ mod output;
 mod pause;
 pub mod reader;
 mod session;
+mod spawn_policy;
 mod window_sessions;
 
 pub use session::{kill_all, PtyState};
@@ -107,9 +109,13 @@ fn pty_internal(what: &str, error: impl std::fmt::Display) -> CommandError {
 /// Create a PTY session and spawn the child process.
 /// Returns the session PID. Call `pty_start` after registering event listeners.
 ///
-/// The blocking pieces (`openpty`, `spawn_command`) run on the blocking pool
-/// — see the module header's async-safety rules; only the session-map insert
-/// touches the async runtime.
+/// The request is the webview's, so it goes through the spawn policy first: a
+/// shell VMark offers, the arguments its integration uses, environment keys
+/// from a closed list — anything else is refused (`spawn_policy.rs`).
+///
+/// The blocking pieces (shell discovery, `openpty`, `spawn_command`) run on
+/// the blocking pool — see the module header's async-safety rules; only the
+/// session-map insert touches the async runtime.
 #[tauri::command]
 pub async fn pty_spawn(
     file: String,
@@ -125,17 +131,42 @@ pub async fn pty_spawn(
     window: tauri::Window,
 ) -> Result<u32, CommandError> {
     let owner = window.label().to_string();
+    let app = window.app_handle().clone();
     let session = tokio::task::spawn_blocking(move || {
-        session::create_session(owner, file, args, cols, rows, cwd, env)
+        let command = spawn_policy::vet(
+            spawn_policy::ShellSource::system(),
+            file,
+            args,
+            env,
+            |shell| integration_args(shell, &app),
+        )?;
+        session::create_session(owner, command, cols, rows, cwd.as_deref()).map_err(pty_io)
     })
     .await
-    .map_err(|e| pty_internal("PTY spawn task failed", e))?
-    .map_err(pty_io)?;
+    .map_err(|e| pty_internal("PTY spawn task failed", e))??;
 
     let state = window.state::<PtyState>();
     let pid = state.next_id.fetch_add(1, Ordering::Relaxed);
     state.sessions.write().await.insert(pid, Arc::new(session));
     Ok(pid)
+}
+
+/// The arguments shell integration gives `shell` — the only ones a spawn of it
+/// may carry. Asked of the integration itself, so the two cannot drift; called
+/// by the policy only for a shell it has already accepted, because preparing
+/// integration may run that shell.
+///
+/// Blocking: call from the blocking pool, never on a tokio worker.
+fn integration_args<R: tauri::Runtime>(
+    shell: &str,
+    app: &tauri::AppHandle<R>,
+) -> Result<Vec<String>, CommandError> {
+    let prepared =
+        crate::shell_integration::prepare_shell_integration(shell.to_string(), app.clone());
+    let integration = tauri::async_runtime::block_on(prepared).map_err(pty_io)?;
+    Ok(integration
+        .map(|integration| integration.args)
+        .unwrap_or_default())
 }
 
 /// Write data to the PTY.

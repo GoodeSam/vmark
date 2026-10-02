@@ -6,12 +6,14 @@
 //! shares, the managed `PtyState` map (with its `Drop` fallback), and the
 //! quit-path `kill_all`. The shell itself lives in `child.rs`, the
 //! interruptible reader source in `output.rs`, the pause condvar in
-//! `pause.rs`, and window-destroy cleanup in `window_sessions.rs`.
+//! `pause.rs`, what may be spawned at all in `spawn_policy.rs`, and
+//! window-destroy cleanup in `window_sessions.rs`.
 
 use super::child::{terminate_children, ChildSlot, HANGUP_GRACE};
 use super::output::{self, Interrupter, OutputSource};
 use super::pause::PauseControl;
-use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
+use super::spawn_policy::VettedCommand;
+use portable_pty::{native_pty_system, MasterPty, PtySize};
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::io::Write;
@@ -145,18 +147,18 @@ pub(super) fn terminate(sessions: &[Arc<Session>]) {
     }
 }
 
-/// Create the PTY pair, validate + spawn the shell, and assemble a `Session`.
+/// Create the PTY pair, spawn the shell, and assemble a `Session`. The command
+/// has already been through the spawn policy — a `VettedCommand` cannot be
+/// built any other way.
 ///
 /// Blocking (`openpty` / `spawn_command` are synchronous syscalls) — call
 /// from `spawn_blocking` or a plain thread, never directly on a tokio worker.
 pub(super) fn create_session(
     owner: String,
-    file: String,
-    args: Vec<String>,
+    command: VettedCommand,
     cols: u16,
     rows: u16,
-    cwd: Option<String>,
-    env: BTreeMap<String, String>,
+    cwd: Option<&str>,
 ) -> Result<Session, String> {
     let pty_system = native_pty_system();
     let pair = pty_system
@@ -173,27 +175,10 @@ pub(super) fn create_session(
     // Before the spawn: a failure here must not leave a shell nobody owns.
     let (output, interrupter) = output::channel(pair.master.as_ref()).map_err(|e| e.to_string())?;
 
-    // Defense-in-depth: validate that the shell is an absolute path to an
-    // existing executable.  The frontend is trusted, but if the webview were
-    // compromised this prevents spawning arbitrary binaries.
-    let shell_path = std::path::Path::new(&file);
-    if !shell_path.is_absolute() {
-        return Err("Shell must be an absolute path".into());
-    }
-    if !shell_path.exists() {
-        return Err(format!("Shell not found: {}", file));
-    }
-
-    let mut cmd = CommandBuilder::new(&file);
-    cmd.args(args);
-    if let Some(ref d) = cwd {
-        cmd.cwd(d);
-    }
-    for (k, v) in &env {
-        cmd.env(k, v);
-    }
-
-    let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
+    let child = pair
+        .slave
+        .spawn_command(command.into_builder(cwd))
+        .map_err(|e| e.to_string())?;
     // Close the slave fd — the child has its own copy.
     // This ensures the reader gets EOF when the child exits.
     drop(pair.slave);
@@ -284,6 +269,7 @@ pub(super) async fn get_session(state: &PtyState, pid: u32) -> Result<Arc<Sessio
         .ok_or_else(|| format!("Unknown PTY session {pid}"))
 }
 
-#[cfg(test)]
+// Unix-only: the tests spawn `/bin/sh` and probe pids with `kill(pid, 0)`.
+#[cfg(all(test, unix))]
 #[path = "session.test.rs"]
 mod tests;
