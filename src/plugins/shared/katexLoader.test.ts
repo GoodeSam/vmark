@@ -37,6 +37,27 @@ describe("katexLoader", () => {
       expect(m1).toBe(m2);
     });
 
+    it("retries after a failed chunk load instead of caching the rejection", async () => {
+      let attempts = 0;
+      vi.doMock("katex", async (importOriginal) => {
+        attempts += 1;
+        if (attempts === 1) throw new Error("chunk load failed");
+        return importOriginal();
+      });
+      try {
+        const { loadKatex, isKatexLoaded } = await import("./katexLoader");
+        await expect(loadKatex()).rejects.toThrow();
+        expect(isKatexLoaded()).toBe(false);
+
+        const katex = await loadKatex();
+        expect(attempts).toBe(2);
+        expect(typeof katex.default.render).toBe("function");
+        expect(isKatexLoaded()).toBe(true);
+      } finally {
+        vi.doUnmock("katex");
+      }
+    });
+
     it("returns a valid katex module", async () => {
       const { loadKatex } = await import("./katexLoader");
       const katex = await loadKatex();
