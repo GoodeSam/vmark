@@ -17,7 +17,7 @@
  * @module scripts/lib/baselineRatchet/tsLiteralScanner
  */
 
-export const CLOSERS = { "[": "]", "{": "}", "(": ")" };
+const CLOSERS = { "[": "]", "{": "}", "(": ")" };
 export const QUOTES = new Set(['"', "'", "`"]);
 
 /** Index just past the string literal starting at `i`. */
