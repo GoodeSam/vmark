@@ -20,7 +20,6 @@
     "src-tauri/src/workflow/step_config.rs": 425,
     "src/components/Editor/SourceEditor.tsx": 339,
     "src/components/Editor/TiptapEditor.tsx": 396,
-    "src/components/Editor/UniversalToolbar/UniversalToolbar.tsx": 506,
     "src/components/Editor/WorkflowEditor/DiagnosticsBanner.tsx": 315,
     "src/components/Editor/WorkflowEditor/JobForm.tsx": 302,
     "src/components/Editor/WorkflowEditor/StepForm.tsx": 542,
