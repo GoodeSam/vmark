@@ -3,6 +3,8 @@
 // the handler asked for: a pinned tab the store refuses to close is not
 // `closed: true`, and a tab that did close takes its document with it. Own file
 // because workspace.test.ts sits at its frozen size baseline.
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
 import { useTabStore } from "@/stores/tabStore";
@@ -162,5 +164,36 @@ describe("vmark.workspace.close — a divergent document is local content", () =
     await handleWorkspaceClose("req-pin-div", { tabId });
 
     expect(replyTo("req-pin-div")).toMatchObject({ data: { closed: false, reason: "DIVERGENT" } });
+  });
+});
+
+// WI-RA1C.6 — the sidecar's tool description is the only place an AI client
+// learns what a refused close means. Every reason the handler really answers
+// with must be named there, or a client meets a reason it was never told of.
+describe("vmark.workspace.close — the sidecar documents every refusal", () => {
+  async function reasonFor(setup: (tabId: string) => void): Promise<string> {
+    const tabId = openTab("/repo/r.md", "body\n");
+    setup(tabId);
+    await handleWorkspaceClose("req-reason", { tabId });
+    const { data } = replyTo("req-reason") as { data: { closed: boolean; reason?: string } };
+    expect(data.closed).toBe(false);
+    return data.reason ?? "";
+  }
+
+  it("names DIRTY, DIVERGENT and PINNED in the close action's description", async () => {
+    const reasons = [
+      await reasonFor((tabId) => useDocumentStore.getState().setEditorContent(tabId, "edited\n")),
+      await reasonFor((tabId) => useDocumentStore.getState().markDivergent(tabId)),
+      await reasonFor((tabId) => useTabStore.getState().togglePin(MAIN, tabId)),
+    ];
+    expect(reasons).toEqual(["DIRTY", "DIVERGENT", "PINNED"]);
+
+    const tool = readFileSync(
+      resolve(import.meta.dirname, "../../../../../server/mcp/src/tools/workspace.ts"),
+      "utf8",
+    );
+    const closeLine = tool.split("\n").find((line) => line.includes("'- close:"));
+    expect(closeLine).toBeDefined();
+    for (const reason of reasons) expect(closeLine).toContain(`"${reason}"`);
   });
 });
