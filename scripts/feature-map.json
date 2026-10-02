@@ -152,6 +152,8 @@
         "src/components/spotlight",
         "src-tauri/src/content_search.rs",
         "src-tauri/src/content_search_match.rs",
+        "src-tauri/src/content_search_walk.rs",
+        "src-tauri/src/content_search_file.rs",
         "src-tauri/src/content_search.test.rs"
       ],
       "flag": null,
