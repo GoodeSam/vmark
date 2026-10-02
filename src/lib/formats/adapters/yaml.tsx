@@ -2,7 +2,8 @@
 //
 // Real CodeMirror language (@codemirror/lang-yaml — installed since
 // Phase 1A) + `yaml`-library validator. Tree preview shares the
-// react-json-view-lite component used by the JSON/TOML adapters.
+// react-json-view-lite component used by the JSON/TOML adapters
+// (LazyJsonTree, loaded on first use).
 //
 // WI-2.4 wires GHA-workflow schemaDetector into this adapter.
 //
@@ -17,12 +18,9 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Extension } from "@codemirror/state";
 import { parse as parseYaml } from "yaml";
-import { JsonView } from "react-json-view-lite";
-import "react-json-view-lite/dist/index.css";
-import { useIsDarkTheme } from "@/hooks/useIsDarkTheme";
 import { RetryableLazy } from "@/components/RetryableLazy";
 import { loadWorkflowSourceExtensions } from "./yamlWorkflowExtensions";
-import { jsonViewStyles } from "./jsonViewStyles";
+import { LazyJsonTree } from "./LazyJsonTree";
 import "./json-tree.css";
 import {
   isWorkflowYaml,
@@ -209,7 +207,6 @@ function EngineRunPanel(props: PreviewRendererProps) {
 
 function YamlTreePreview({ content, diagnostics }: PreviewRendererProps) {
   const { t } = useTranslation("editor");
-  const isDark = useIsDarkTheme();
   const parsed = useMemo(() => {
     try {
       return parseYaml(content);
@@ -237,8 +234,7 @@ function YamlTreePreview({ content, diagnostics }: PreviewRendererProps) {
 
   return (
     <div className="json-tree-preview" data-format="yaml">
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <JsonView data={parsed as any} style={jsonViewStyles(isDark)} />
+      <LazyJsonTree data={parsed} />
     </div>
   );
 }

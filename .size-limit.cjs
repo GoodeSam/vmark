@@ -60,9 +60,16 @@ module.exports = [
     // bumps), and `pnpm lint:eager` now enforces that closure's total
     // (MAX_EAGER_BYTES), which is the number launch cost actually follows.
     // Actual 189.6 kB.
+    //
+    // Ratcheted 200 → 145 kB; actual 137.6 kB. The startup work that followed
+    // took it to 146.2 kB without the limit following it down, and the JSON
+    // tree view (react-json-view-lite, 7.9 kB) then left for its own lazy
+    // chunk: the format adapters are registered in every window, but the tree
+    // is needed only once a preview pane shows one. smol-toml (11.1 kB) stays:
+    // the TOML validator and the schema detectors run it synchronously.
     name: "EAGER: entry",
     path: "dist/assets/entry-*.js",
-    limit: "200 kB",
+    limit: "145 kB",
     brotli: false,
   },
 
@@ -208,7 +215,15 @@ module.exports = [
     // IN it — the same move that grew `entry`. The cold-start closure moved
     // 3.05 → 3.09 MiB, and `pnpm lint:eager` enforces that total now.
     // Actual 762.1 kB; smallest raise that fits, as above.
-    limit: "765 kB",
+    // Ratcheted 765 → 731 kB; actual 695.6 kB. Classic zod (88 kB) rode this
+    // chunk for the hot-exit session schemas and one non-empty-string check:
+    // its chainable API cannot be tree-shaken, so two small consumers brought
+    // the whole library to cold start. The schemas moved to `zod/mini` (24 kB
+    // with the English messages) and the string check became a type guard.
+    // The limit is the new size plus this file's usual 5%, which is what a
+    // budget needs in order to catch a regression of that kind — classic zod
+    // coming back is +64 kB — without tripping on the next ordinary feature.
+    limit: "731 kB",
     brotli: false,
   },
 
@@ -323,9 +338,45 @@ module.exports = [
     // over the old 103 kB ceiling. The bytes buy error reports that previously
     // vanished, so this is a real feature paying a real cost, not drift; +2 kB
     // restores headroom on the same schedule as the two bumps above.
+    //
+    // Ratcheted 105 → 15 kB; actual 13.5 kB. This chunk is now the Settings
+    // SHELL — window chrome, navigation, search and the panel loader. Each
+    // section's panel is a chunk of its own, loaded when the section is first
+    // shown (pages/settings/panels.ts), and budgeted together below. Seven of
+    // the bumps above were a toggle or a string landing on a chunk with no
+    // room left; that pressure is gone from here, and a panel that is imported
+    // statically again brings its bytes back to this chunk and fails this
+    // limit.
     name: "LAZY: Settings page",
     path: "dist/assets/SettingsPage-*.js",
-    limit: "105 kB",
+    limit: "15 kB",
+    brotli: false,
+  },
+  {
+    // The eleven Settings panels, one chunk per section, summed. A session
+    // loads the shell plus the sections it visits (3–31 kB each; Integrations
+    // is the large one), and all of the searchable ones on the first search.
+    // 102.2 kB at the split. The primitives they share (settings/buttons,
+    // inputs, layout — 7.4 kB) land in a chunk Rolldown names `components-*`,
+    // too generic a name to glob safely, so it is not counted here.
+    //
+    // The leading `?` is load-bearing: the settings LOCALE chunks are named
+    // `settings-<hash>.js`, and on a case-insensitive filesystem a bare
+    // `*Settings-*` matches all ten of them (532 kB) — so the same budget
+    // would pass on Linux and fail on macOS. A panel always has a name before
+    // "Settings"; a locale chunk never does.
+    name: "LAZY: Settings panels",
+    path: "dist/assets/?*Settings-*.js",
+    limit: "108 kB",
+    brotli: false,
+  },
+  {
+    // react-json-view-lite plus VMark's styles for it: the tree the JSON, TOML
+    // and YAML previews draw, loaded on first use (formats/adapters/
+    // LazyJsonTree.tsx). 8.5 kB at the split.
+    name: "LAZY: jsonTreeView",
+    path: "dist/assets/jsonTreeView-*.js",
+    limit: "9 kB",
     brotli: false,
   },
   {
