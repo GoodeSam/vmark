@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { ILink, ILinkProvider } from "@xterm/xterm";
 
 // --- Hoisted mocks (available before vi.mock factories execute) ---
 
@@ -134,11 +135,6 @@ vi.mock("@/stores/documentStore", () => ({
 
 vi.mock("@/services/persistence/workspaceStorage", () => ({
   getCurrentWindowLabel: () => "main",
-}));
-
-const mockCreateFileLinkProvider = vi.fn(() => ({ provideLinks: vi.fn() }));
-vi.mock("./fileLinkProvider", () => ({
-  createFileLinkProvider: (...args: unknown[]) => mockCreateFileLinkProvider(...args),
 }));
 
 vi.mock("./terminalKeyHandler", () => ({
@@ -925,8 +921,22 @@ describe("createTerminalInstance — file link callback", () => {
 
     termInst = makeInstance();
 
-    // Capture the file link callback passed to createFileLinkProvider
-    fileLinkCallback = mockCreateFileLinkProvider.mock.calls[0][1];
+    // "Click" a path the way a user does: put it on a terminal line and
+    // activate the link the real file-link provider detects there.
+    fileLinkCallback = (filePath: string) => {
+      const term = termInst.term as unknown as {
+        buffer: { active: { getLine: ReturnType<typeof vi.fn> } };
+        registerLinkProvider: ReturnType<typeof vi.fn>;
+      };
+      term.buffer.active.getLine.mockReturnValue({ translateToString: () => `open ${filePath}` });
+      const provider = term.registerLinkProvider.mock.calls[0][0] as ILinkProvider;
+      let links: ILink[] | undefined;
+      provider.provideLinks(1, (l) => {
+        links = l;
+      });
+      expect(links?.map((l) => l.text)).toEqual([filePath]);
+      links![0].activate({} as MouseEvent, filePath);
+    };
   });
 
   it("reads file and creates tab on file link click", async () => {

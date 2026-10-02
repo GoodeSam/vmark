@@ -1336,11 +1336,6 @@
       "target": "src/components/KnowledgeBasePanel/KbGraphView"
     },
     {
-      "file": "src/components/Terminal/createTerminalInstance.test.ts",
-      "api": "vi.mock",
-      "target": "src/components/Terminal/fileLinkProvider"
-    },
-    {
       "file": "src/components/Terminal/setupFileLinks.test.ts",
       "api": "vi.mock",
       "target": "src/components/Terminal/fileLinkProvider"
