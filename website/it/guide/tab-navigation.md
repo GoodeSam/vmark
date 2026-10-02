@@ -460,7 +460,7 @@ Le chiusure multiple agiscono sulle schede dello spazio di lavoro corrente e le 
 Fissa una scheda dal suo menu contestuale per tenerla a portata di mano:
 
 - Si sposta nel gruppo delle schede fissate a sinistra della barra, mostra un'icona a forma di puntina e perde il pulsante di chiusura. Le schede non possono essere trascinate oltre il confine tra schede fissate e non fissate (*"Le schede fissate rimangono a sinistra. Rilascio bloccato."*), e una scheda fissata non può essere trascinata fuori dalla sua finestra.
-- Non può essere chiusa in alcun modo — `Mod + W`, clic centrale, **Chiudi** o una chiusura multipla — finché non la sblocchi; il tentativo mostra *"Sblocca prima di chiudere"*. L'unica eccezione è **Chiudi tutto**, che dopo la tua conferma chiude anche le schede fissate.
+- Non può essere chiusa in alcun modo — `Mod + W`, clic centrale, **Chiudi** o una chiusura multipla — finché non la sblocchi; il tentativo mostra *"Sblocca prima di chiudere"*. Fanno eccezione due chiusure intenzionali: **Chiudi tutto** chiude anche le schede fissate dopo la tua conferma, e chiudere un'area di lavoro dalla barra chiude le sue schede fissate insieme alle altre.
 - Chiudere una finestra che contiene schede fissate chiede conferma — *"Questa finestra ha N schede fissate. Chiudere comunque?"* — a meno che non sia già stata mostrata una finestra di salvataggio.
 - Una scheda resta fissata se la sposti in un'altra finestra o in un altro spazio di lavoro e dopo un riavvio per aggiornamento, ma non quando esci da VMark: le schede riaperte all'avvio successivo non sono fissate.
 

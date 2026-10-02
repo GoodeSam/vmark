@@ -461,7 +461,7 @@ Sammelschließungen wirken auf die Tabs des aktuellen Arbeitsbereichs und schlie
 Heften Sie einen Tab über sein Kontextmenü an, um ihn griffbereit zu halten:
 
 - Er wandert in die angeheftete Gruppe am linken Rand der Leiste, zeigt ein Stecknadelsymbol und verliert seine Schließen-Schaltfläche. Tabs lassen sich nicht über die Grenze zwischen angehefteten und nicht angehefteten Tabs ziehen (*„Angeheftete Tabs bleiben links. Drop blockiert.“*), und ein angehefteter Tab lässt sich nicht aus seinem Fenster herausziehen.
-- Er lässt sich auf keinem Weg schließen — `Mod + W`, Mittelklick, **Schließen** oder eine Sammelschließung —, bis Sie ihn lösen; ein Versuch zeigt *„Vor dem Schließen lösen“*. Die einzige Ausnahme ist **Alle schließen**: Nach Ihrer Bestätigung schließt es auch angeheftete Tabs.
+- Er lässt sich auf keinem Weg schließen — `Mod + W`, Mittelklick, **Schließen** oder eine Sammelschließung —, bis Sie ihn lösen; ein Versuch zeigt *„Vor dem Schließen lösen“*. Zwei bewusste Schließvorgänge sind die Ausnahme: **Alle schließen** schließt nach Ihrer Bestätigung auch angeheftete Tabs, und das Schließen eines Arbeitsbereichs in der Leiste schließt seine angehefteten Tabs mit den übrigen.
 - Das Schließen eines Fensters mit angehefteten Tabs verlangt eine Bestätigung — *„Dieses Fenster hat N angepinnte Tabs. Trotzdem schließen?“* —, sofern nicht bereits ein Speicherdialog angezeigt wurde.
 - Das Anheften übersteht das Verschieben des Tabs in ein anderes Fenster oder einen anderen Arbeitsbereich sowie einen Update-Neustart, aber nicht das Beenden von VMark: Beim nächsten Start wieder geöffnete Tabs sind nicht angeheftet.
 

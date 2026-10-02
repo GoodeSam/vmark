@@ -462,7 +462,7 @@ Os fechamentos em massa atuam sobre as abas do workspace atual e as fecham uma d
 Fixe uma aba pelo menu de contexto para mantê-la à mão:
 
 - Ela vai para o grupo de abas fixadas à esquerda da faixa, mostra um ícone de alfinete e perde o botão de fechar. Abas não podem ser arrastadas pela fronteira entre abas fixadas e não fixadas (*"As abas fixadas permanecem à esquerda. Soltura bloqueada."*), e uma aba fixada não pode ser arrastada para fora da sua janela.
-- Ela não pode ser fechada por nenhum meio — `Mod + W`, clique do meio, **Fechar** ou um fechamento em massa — até que você a desafixe; tentar mostra *"Desafixe antes de fechar"*. A única exceção é **Fechar todas**, que também fecha as abas fixadas depois que você confirma.
+- Ela não pode ser fechada por nenhum meio — `Mod + W`, clique do meio, **Fechar** ou um fechamento em massa — até que você a desafixe; tentar mostra *"Desafixe antes de fechar"*. Dois fechamentos deliberados são a exceção: **Fechar todas** também fecha as abas fixadas depois que você confirma, e fechar um espaço de trabalho pela barra fecha as abas fixadas dele junto com as demais.
 - Fechar uma janela que contém abas fixadas pede confirmação — *"Esta janela tem N abas fixadas. Fechar mesmo assim?"* — a menos que uma caixa de diálogo de salvamento já tenha sido exibida.
 - A fixação sobrevive a mover a aba para outra janela ou workspace e a uma reinicialização de atualização, mas não a sair do VMark: as abas reabertas na próxima inicialização ficam desafixadas.
 

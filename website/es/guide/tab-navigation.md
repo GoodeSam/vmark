@@ -460,7 +460,7 @@ Los cierres en bloque actúan sobre las pestañas del espacio de trabajo actual 
 Fija una pestaña desde su menú contextual para tenerla a mano:
 
 - Se mueve al grupo de pestañas fijadas a la izquierda de la tira, muestra un icono de chincheta y pierde su botón de cierre. Las pestañas no se pueden arrastrar a través del límite entre pestañas fijadas y no fijadas (*«Las pestañas fijadas permanecen a la izquierda. Soltar bloqueado.»*), y una pestaña fijada no se puede arrastrar fuera de su ventana.
-- No se puede cerrar por ningún medio — `Mod + W`, clic central, **Cerrar** o un cierre en bloque — hasta que la desfijes; al intentarlo se muestra *«Desanclar antes de cerrar»*. La única excepción es **Cerrar todo**, que también cierra las pestañas fijadas una vez que confirmas.
+- No se puede cerrar por ningún medio — `Mod + W`, clic central, **Cerrar** o un cierre en bloque — hasta que la desfijes; al intentarlo se muestra *«Desanclar antes de cerrar»*. Dos cierres deliberados son la excepción: **Cerrar todo** también cierra las pestañas fijadas una vez que confirmas, y cerrar un espacio de trabajo desde la barra cierra sus pestañas fijadas junto con las demás.
 - Cerrar una ventana que contiene pestañas fijadas pide confirmación — *«Esta ventana tiene N pestañas fijadas. ¿Cerrar de todos modos?»* — salvo que ya se haya mostrado un diálogo de guardado.
 - Una pestaña fijada sigue fijada al moverla a otra ventana o espacio de trabajo y tras un reinicio por actualización, pero no al salir de VMark: las pestañas que se vuelven a abrir en el siguiente inicio no están fijadas.
 
