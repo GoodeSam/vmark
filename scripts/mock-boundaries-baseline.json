@@ -1326,11 +1326,6 @@
       "target": "src/components/Editor/useWysiwygScrollMemory"
     },
     {
-      "file": "src/components/Editor/EditorContextMenu/runMenuAction.test.ts",
-      "api": "vi.mock",
-      "target": "src/components/Editor/EditorContextMenu/clipboardBridge"
-    },
-    {
       "file": "src/components/Editor/sourceFocusRestore.test.ts",
       "api": "vi.mock",
       "target": "src/components/Editor/sourcePendingNav"
