@@ -18,6 +18,7 @@ pub mod adopt;
 pub mod adopt_duplicate;
 pub mod anchor_parse;
 pub mod anchors;
+pub(crate) mod blocking;
 pub mod canonical;
 pub mod capture;
 pub mod capture_input;
