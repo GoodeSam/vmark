@@ -2111,11 +2111,6 @@
       "target": "src/services/assembly/workflowExtensionGates"
     },
     {
-      "file": "src/services/commands/registrationFlag.test.ts",
-      "api": "vi.mock",
-      "target": "src/services/commands/CommandBus"
-    },
-    {
       "file": "src/services/persistence/hotExit/restoreTabs.isolation.test.ts",
       "api": "vi.mock",
       "target": "src/services/persistence/hotExit/restoreDocumentState"
