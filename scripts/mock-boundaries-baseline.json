@@ -1351,11 +1351,6 @@
       "target": "src/plugins/latex/katexLoader"
     },
     {
-      "file": "src/plugins/multiCursor/__tests__/commands.bounds.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/multiCursor/textSearch"
-    },
-    {
       "file": "src/plugins/sourcePopup/createSourcePopupPlugin.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/sourcePopup/sourcePopupUtils"
