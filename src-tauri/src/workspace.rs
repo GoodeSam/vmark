@@ -12,15 +12,25 @@
 //!   - Legacy migration is one-shot: after writing to the new location, the old `.vmark/`
 //!     directory is cleaned up (best-effort).
 //!   - Writes use atomic_write_file to prevent partial reads by concurrent processes.
+//!   - Both commands are `async` and do their disk work on the blocking pool,
+//!     one at a time under `ConfigIoLock` (see there for the migration race the
+//!     IPC thread used to prevent). Legacy layouts live in `workspace/legacy.rs`.
 //!
 //! Known limitations:
 //!   - Hash collisions are possible in theory but vanishingly unlikely (2^64 space).
 
 use crate::app_paths;
+use crate::command_error::CommandError;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
+use tauri::Manager;
+
+mod legacy;
+#[cfg(test)]
+use legacy::{clean_excludes, try_rename_legacy_hash, HashMigrationOutcome};
+use legacy::{cleanup_old_vmark, fallback_after_rename, migrate_from_legacy};
 
 /// Workspace identity and trust information for permission management.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -130,178 +140,6 @@ fn get_legacy_workspace_config_path(
     Ok(ws_dir.join(format!("{hash}.json")))
 }
 
-/// Outcome of a hash-filename migration. `RenameFailed` is load-bearing: the caller
-/// must fall back to the legacy file rather than treat it as absent.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum HashMigrationOutcome {
-    /// New-layout file already exists; nothing to do.
-    AlreadyMigrated,
-    /// No legacy file present; nothing to do.
-    NoLegacyFile,
-    /// Renamed legacy → new successfully.
-    Renamed,
-    /// Tried to rename but the syscall failed; legacy file left in place.
-    RenameFailed,
-}
-
-/// Pure-paths migration helper: if `legacy_path` exists and `new_path` does
-/// not, rename one to the other. Split out from `migrate_legacy_hash_filename`
-/// so unit tests can exercise every branch without a Tauri AppHandle.
-fn try_rename_legacy_hash(
-    legacy_path: &std::path::Path,
-    new_path: &std::path::Path,
-) -> HashMigrationOutcome {
-    if new_path.exists() {
-        return HashMigrationOutcome::AlreadyMigrated;
-    }
-    if !legacy_path.exists() {
-        return HashMigrationOutcome::NoLegacyFile;
-    }
-    match fs::rename(legacy_path, new_path) {
-        Ok(()) => {
-            log::info!(
-                "[workspace] migrated config to 16-byte hash: {} -> {}",
-                legacy_path.display(),
-                new_path.display()
-            );
-            HashMigrationOutcome::Renamed
-        }
-        Err(e) => {
-            log::warn!(
-                "[workspace] failed to migrate legacy config {}: {}",
-                legacy_path.display(),
-                e
-            );
-            HashMigrationOutcome::RenameFailed
-        }
-    }
-}
-
-/// Migrate the legacy-hash file to `new_path`, and hand back the legacy path ONLY when
-/// the rename failed and the file is therefore still sitting there. The caller MUST read
-/// from it: treating a failed rename as "no config" returns `None`, and the next write
-/// then buries the user's excludes, tabs and identity/trust grant under a fresh default.
-///
-/// AppHandle-free so the fallback decision itself is unit-testable.
-fn fallback_after_rename(legacy: PathBuf, new_path: &Path) -> Option<PathBuf> {
-    match try_rename_legacy_hash(&legacy, new_path) {
-        HashMigrationOutcome::RenameFailed => Some(legacy),
-        _ => None,
-    }
-}
-
-// ============================================================================
-// Legacy migration types (kept private)
-// ============================================================================
-
-/// VS Code-compatible workspace file — legacy `.vmark/vmark.code-workspace`.
-#[derive(Debug, Deserialize)]
-struct LegacyWorkspaceFile {
-    #[serde(default)]
-    settings: LegacyWorkspaceSettings,
-}
-
-#[derive(Debug, Deserialize, Default)]
-struct LegacyWorkspaceSettings {
-    #[serde(rename = "vmark.excludeFolders", default)]
-    exclude_folders: Vec<String>,
-    #[serde(rename = "vmark.showHiddenFiles", default)]
-    show_hidden_files: bool,
-    #[serde(rename = "vmark.lastOpenTabs", default)]
-    last_open_tabs: Vec<String>,
-    #[serde(rename = "vmark.ai", default)]
-    ai: Option<serde_json::Value>,
-    #[serde(rename = "vmark.identity", default)]
-    identity: Option<WorkspaceIdentity>,
-}
-
-/// Ancient legacy workspace configuration (plain `.vmark` file).
-#[derive(Debug, Deserialize)]
-struct AncientLegacyConfig {
-    #[serde(default)]
-    version: u32,
-    #[serde(rename = "excludeFolders", default)]
-    exclude_folders: Vec<String>,
-    #[serde(rename = "lastOpenTabs", default)]
-    last_open_tabs: Vec<String>,
-    #[serde(default)]
-    ai: Option<serde_json::Value>,
-}
-
-// ============================================================================
-// Legacy migration
-// ============================================================================
-
-/// Strip `.vmark` from a legacy exclude list — the directory no longer exists.
-fn clean_excludes(folders: Vec<String>) -> Vec<String> {
-    folders.into_iter().filter(|f| f != ".vmark").collect()
-}
-
-/// Try to read config from legacy `.vmark/` directory or ancient `.vmark` file.
-/// Returns `Ok(Some(config))` if found, `Ok(None)` if no legacy exists. Both branches
-/// spread `WorkspaceConfig::default()` and name only the fields the legacy format
-/// carried, so a field added later cannot be migrated inconsistently between them.
-fn migrate_from_legacy(root_path: &str) -> Result<Option<WorkspaceConfig>, String> {
-    let root = Path::new(root_path);
-    let dot_vmark = root.join(".vmark");
-
-    // 1. Try .vmark/vmark.code-workspace (directory format)
-    if dot_vmark.is_dir() {
-        let ws_file_path = dot_vmark.join("vmark.code-workspace");
-        if ws_file_path.exists() {
-            let content = fs::read_to_string(&ws_file_path)
-                .map_err(|e| format!("Failed to read legacy workspace file: {e}"))?;
-            let ws: LegacyWorkspaceFile = serde_json::from_str(&content)
-                .map_err(|e| format!("Failed to parse legacy workspace file: {e}"))?;
-
-            return Ok(Some(WorkspaceConfig {
-                exclude_folders: clean_excludes(ws.settings.exclude_folders),
-                show_hidden_files: ws.settings.show_hidden_files,
-                last_open_tabs: ws.settings.last_open_tabs,
-                ai: ws.settings.ai,
-                identity: ws.settings.identity,
-                ..WorkspaceConfig::default()
-            }));
-        }
-    }
-
-    // 2. Try .vmark as a plain file (ancient format)
-    if dot_vmark.is_file() {
-        let content = fs::read_to_string(&dot_vmark)
-            .map_err(|e| format!("Failed to read ancient .vmark: {e}"))?;
-        let ancient: AncientLegacyConfig = serde_json::from_str(&content)
-            .map_err(|e| format!("Failed to parse ancient .vmark: {e}"))?;
-
-        return Ok(Some(WorkspaceConfig {
-            // A file predating the `version` key deserializes to 0 — a schema version
-            // we never emitted. Clamp to the v1 it is, rather than persisting 0.
-            version: ancient.version.max(1),
-            exclude_folders: clean_excludes(ancient.exclude_folders),
-            last_open_tabs: ancient.last_open_tabs,
-            ai: ancient.ai,
-            ..WorkspaceConfig::default()
-        }));
-    }
-
-    Ok(None)
-}
-
-/// Best-effort cleanup of legacy `.vmark/` in a workspace root.
-/// Removes workspace file, then tries to remove the directory (only if empty).
-fn cleanup_old_vmark(root_path: &str) {
-    let root = Path::new(root_path);
-    let dot_vmark = root.join(".vmark");
-
-    if dot_vmark.is_dir() {
-        // Remove known file
-        let _ = fs::remove_file(dot_vmark.join("vmark.code-workspace"));
-        // Try rmdir (fails if not empty — that's fine)
-        let _ = fs::remove_dir(&dot_vmark);
-    } else if dot_vmark.is_file() {
-        let _ = fs::remove_file(&dot_vmark);
-    }
-}
-
 // ============================================================================
 // Tauri commands
 // ============================================================================
@@ -312,67 +150,127 @@ fn read_config_at(path: &Path) -> Result<WorkspaceConfig, String> {
     serde_json::from_str(&raw).map_err(|e| format!("Failed to parse workspace config: {e}"))
 }
 
-/// Read workspace config from app data, with one-time migration from legacy `.vmark/`.
-#[tauri::command]
-pub fn read_workspace_config(
-    app: tauri::AppHandle,
-    root_path: &str,
-) -> Result<Option<WorkspaceConfig>, String> {
-    let ws_path = get_workspace_config_path(&app, root_path)?;
+/// Serializes workspace-config I/O across commands and windows. The commands
+/// are `async` so their disk work leaves the IPC thread, and that ends the
+/// serialization the IPC thread used to give them: two windows opening one
+/// workspace could both run the one-shot legacy migration, and the loser —
+/// finding `.vmark/` already cleaned up — read "no config", after which its
+/// next write put defaults over the migrated settings.
+#[derive(Default)]
+struct ConfigIoLock(std::sync::Mutex<()>);
 
+/// Where one config operation reads and writes. Resolved before leaving the
+/// IPC thread: path arithmetic only, no I/O.
+struct ConfigPaths {
+    ws_dir: PathBuf,
+    ws_path: PathBuf,
+    legacy_path: Option<PathBuf>,
+}
+
+fn config_paths(app: &tauri::AppHandle, root_path: &str) -> Result<ConfigPaths, CommandError> {
+    Ok(ConfigPaths {
+        ws_dir: get_workspaces_dir(app).map_err(CommandError::io)?,
+        ws_path: get_workspace_config_path(app, root_path).map_err(CommandError::io)?,
+        legacy_path: get_legacy_workspace_config_path(app, root_path).ok(),
+    })
+}
+
+/// Run `work` on the blocking pool while holding the app's config lock.
+async fn config_io<R, T, F>(app: tauri::AppHandle<R>, work: F) -> Result<T, CommandError>
+where
+    R: tauri::Runtime,
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, String> + Send + 'static,
+{
+    tokio::task::spawn_blocking(move || {
+        // Managed on first use: the lock is this module's own business.
+        if app.try_state::<ConfigIoLock>().is_none() {
+            app.manage(ConfigIoLock::default());
+        }
+        let lock = app.state::<ConfigIoLock>();
+        let _serialized = lock
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        work()
+    })
+    .await
+    .map_err(|e| CommandError::internal(format!("workspace config task failed: {e}")))?
+    .map_err(CommandError::io)
+}
+
+/// Read workspace config from app data, with one-time migration from legacy `.vmark/`.
+///
+/// # Errors
+/// `io` when the config cannot be read, parsed or migrated; `internal` when
+/// the blocking task itself failed.
+#[tauri::command]
+pub async fn read_workspace_config(
+    app: tauri::AppHandle,
+    root_path: String,
+) -> Result<Option<WorkspaceConfig>, CommandError> {
+    let paths = config_paths(&app, &root_path)?;
+    config_io(app, move || read_config_in(&paths, &root_path)).await
+}
+
+/// The body of `read_workspace_config` (runs under the config lock).
+fn read_config_in(paths: &ConfigPaths, root_path: &str) -> Result<Option<WorkspaceConfig>, String> {
     // Migrate from the previous 8-byte hash filename if present. A failed rename
     // hands back the legacy path so we still read the user's real state.
-    let legacy_fallback = get_legacy_workspace_config_path(&app, root_path)
-        .ok()
-        .and_then(|legacy| fallback_after_rename(legacy, &ws_path));
+    let legacy_fallback = paths
+        .legacy_path
+        .clone()
+        .and_then(|legacy| fallback_after_rename(legacy, &paths.ws_path));
 
-    if ws_path.exists() {
-        return Ok(Some(read_config_at(&ws_path)?));
+    if paths.ws_path.exists() {
+        return Ok(Some(read_config_at(&paths.ws_path)?));
     }
     if let Some(legacy) = legacy_fallback {
         return Ok(Some(read_config_at(&legacy)?));
     }
 
     // Try migrate from legacy locations
-    if let Some(config) = migrate_from_legacy(root_path)? {
-        let ws_dir = get_workspaces_dir(&app)?;
-        fs::create_dir_all(&ws_dir).map_err(|e| format!("Failed to create workspaces dir: {e}"))?;
-        let content = serde_json::to_string_pretty(&config)
-            .map_err(|e| format!("Failed to serialize config: {e}"))?;
-
-        // Only drop the old `.vmark/` once the new file is durably written; if it is
-        // not, say so — silence here means the migration re-runs every launch unseen.
-        match app_paths::atomic_write_file(&ws_path, content.as_bytes()) {
-            Ok(()) => cleanup_old_vmark(root_path),
-            Err(e) => log::warn!(
-                "[workspace] migrated config not persisted ({e}); keeping legacy .vmark for retry"
-            ),
-        }
-
-        return Ok(Some(config));
-    }
-
-    Ok(None)
-}
-
-/// Write workspace config to `<app_data>/workspaces/<hash>.json`.
-#[tauri::command]
-pub fn write_workspace_config(
-    app: tauri::AppHandle,
-    root_path: &str,
-    config: WorkspaceConfig,
-) -> Result<(), String> {
-    let ws_path = get_workspace_config_path(&app, root_path)?;
-
-    // Ensure parent directory exists
-    if let Some(parent) = ws_path.parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("Failed to create workspaces dir: {e}"))?;
-    }
-
+    let Some(config) = migrate_from_legacy(root_path)? else {
+        return Ok(None);
+    };
+    fs::create_dir_all(&paths.ws_dir)
+        .map_err(|e| format!("Failed to create workspaces dir: {e}"))?;
     let content = serde_json::to_string_pretty(&config)
         .map_err(|e| format!("Failed to serialize config: {e}"))?;
 
-    app_paths::atomic_write_file(&ws_path, content.as_bytes())
+    // Only drop the old `.vmark/` once the new file is durably written; if it is
+    // not, say so — silence here means the migration re-runs every launch unseen.
+    match app_paths::atomic_write_file(&paths.ws_path, content.as_bytes()) {
+        Ok(()) => cleanup_old_vmark(root_path),
+        Err(e) => log::warn!(
+            "[workspace] migrated config not persisted ({e}); keeping legacy .vmark for retry"
+        ),
+    }
+    Ok(Some(config))
+}
+
+/// Write workspace config to `<app_data>/workspaces/<hash>.json`.
+///
+/// # Errors
+/// `io` when the config cannot be written; `internal` when the blocking task
+/// itself failed.
+#[tauri::command]
+pub async fn write_workspace_config(
+    app: tauri::AppHandle,
+    root_path: String,
+    config: WorkspaceConfig,
+) -> Result<(), CommandError> {
+    let paths = config_paths(&app, &root_path)?;
+    config_io(app, move || write_config_in(&paths, &config)).await
+}
+
+/// The body of `write_workspace_config` (runs under the config lock).
+fn write_config_in(paths: &ConfigPaths, config: &WorkspaceConfig) -> Result<(), String> {
+    fs::create_dir_all(&paths.ws_dir)
+        .map_err(|e| format!("Failed to create workspaces dir: {e}"))?;
+    let content = serde_json::to_string_pretty(config)
+        .map_err(|e| format!("Failed to serialize config: {e}"))?;
+    app_paths::atomic_write_file(&paths.ws_path, content.as_bytes())
 }
 
 // ============================================================================
@@ -382,3 +280,7 @@ pub fn write_workspace_config(
 #[cfg(test)]
 #[path = "workspace.test.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "workspace_io.test.rs"]
+mod io_tests;

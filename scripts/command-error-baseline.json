@@ -25,7 +25,6 @@
     "src-tauri/src/window_manager/native_theme.rs": 1,
     "src-tauri/src/window_manager/settings_window.rs": 1,
     "src-tauri/src/window_status/mod.rs": 1,
-    "src-tauri/src/workspace.rs": 2,
     "src-tauri/src/workspace_transfer.rs": 2,
     "src-tauri/src/ai_provider/mod.rs": 1,
     "src-tauri/src/ai_provider/rest_api.rs": 3,

@@ -608,6 +608,7 @@
         "src/components/Workspace",
         "src/services/workspaces",
         "src-tauri/src/workspace.rs",
+        "src-tauri/src/workspace",
         "src-tauri/src/workspace_transfer.rs",
         "src-tauri/src/workspace_validation.rs",
         "src/stores/workspaceStore.ts",
