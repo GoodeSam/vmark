@@ -3965,7 +3965,7 @@ Two unrelated features share the word "workflow", and the yaml adapter (`src/lib
 - id: gha-actionlint
 - feature: GHA workflow viewer
 - summary: When the optional `actionlint` binary is on the login-shell PATH, its findings are appended to the workbench's Diagnostics banner as `GHA-ACTIONLINT-<rule>` rows; the MCP `workflow.validate` operation runs the same check on demand.
-- capabilities: typed outcome (`ok` / `binary_missing` / `failed`); login-shell PATH so Homebrew installs are found from a GUI launch; runs on the blocking pool with a 5 s kill timeout; frontend debounce (500 ms) and serialized runs with a stale-result discard and a queue timeout; one info toast per session when the binary is missing, one warning toast when it fails; rows vanish when the setting goes off or the tab changes
+- capabilities: typed outcome (`ok` / `binary_missing` / `failed`); login-shell PATH, resolved in Rust, so Homebrew installs are found from a GUI launch (the webview sends only the YAML, never a PATH); runs on the blocking pool with a 5 s kill timeout; frontend debounce (500 ms) and serialized runs with a stale-result discard and a queue timeout; one info toast per session when the binary is missing, one warning toast when it fails; rows vanish when the setting goes off or the tab changes
 - status: shipped-on
 - gate: `advanced.workflowActionlint = true` (not developer-gated); checked in the hook and in the MCP handler
 - surfaces: Diagnostics banner (automatic); settings pane (Settings → Advanced → Workflow files); MCP operation `vmark.workflow.validate`
