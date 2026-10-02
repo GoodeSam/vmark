@@ -87,3 +87,7 @@ VMark ist vollständig Open Source. Sie können alles hier Beschriebene überpr�
 ## Update-Prüfungen deaktivieren
 
 Wenn Sie automatische Update-Prüfungen vollständig deaktivieren möchten, können Sie `log.vmark.app` auf Netzwerkebene blockieren (Firewall, `/etc/hosts` oder DNS). VMark funktioniert weiterhin normal ohne diese — Sie erhalten nur keine Update-Benachrichtigungen mehr.
+
+## Ein Sicherheitsproblem melden
+
+Wenn Sie eine Sicherheitslücke in VMark finden, etwa in der MCP-Bridge, im eingebetteten Browser, im Updater oder in der Dateiverarbeitung, melden Sie sie bitte vertraulich über [GitHubs private Meldung von Sicherheitslücken](https://github.com/xiaolai/vmark/security/advisories/new) und nicht als öffentliches Issue. Die [Sicherheitsrichtlinie](https://github.com/xiaolai/vmark/blob/main/SECURITY.md) beschreibt, was abgedeckt ist und was Sie erwarten können.

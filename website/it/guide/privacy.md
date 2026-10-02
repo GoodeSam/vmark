@@ -87,3 +87,7 @@ VMark è completamente open source. Puoi verificare tutto ciò che è descritto 
 ## Disabilitare i Controlli degli Aggiornamenti
 
 Se preferisci disabilitare completamente i controlli automatici degli aggiornamenti, puoi bloccare `log.vmark.app` a livello di rete (firewall, `/etc/hosts`, o DNS). VMark continuerà a funzionare normalmente senza di esso — semplicemente non riceverai notifiche di aggiornamento.
+
+## Segnalare un problema di sicurezza
+
+Se trovi una vulnerabilità in VMark, ad esempio nel bridge MCP, nel browser integrato, nel programma di aggiornamento o nella gestione dei file, segnalala in privato tramite [la segnalazione privata delle vulnerabilità di GitHub](https://github.com/xiaolai/vmark/security/advisories/new) invece di aprire una issue pubblica. La [politica di sicurezza](https://github.com/xiaolai/vmark/blob/main/SECURITY.md) indica che cosa rientra nell'ambito e che cosa aspettarsi.

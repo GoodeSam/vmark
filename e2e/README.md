@@ -96,9 +96,9 @@ watcher-registration delay.
 **Tier-0 (data integrity)** journeys guard the unrecoverable failure class —
 silently losing or corrupting a user's document. They are the ones where unit
 coverage is structurally a lie (they need real tabs, real files, the real
-save/autosave pipeline). See `dev-docs/e2e-tier0-matrix.md` for the full
-invariant × journey matrix, including the data-integrity invariants that stay
-manual-only and why.
+save/autosave pipeline). The full invariant × journey matrix, including the
+data-integrity invariants that stay manual-only and why, is the maintainer-local
+`dev-docs/e2e-tier0-matrix.md` (not in a clone).
 
 ## Driving mechanisms (discovered + verified live)
 
@@ -107,7 +107,7 @@ manual-only and why.
   (`useUnifiedMenuCommands`, `services/commands/menuListener`), which filter on
   payload === window label.
 - **App automation surface**: `emit("mcp-bridge:request", {id, type, args_json})`
-  drives the app's own v2 MCP handlers (`src/hooks/mcpBridge/v2/`):
+  drives the app's own v2 MCP handlers (`src/services/mcpBridge/v2/`):
   `vmark.workspace.new` / `close {tabId, force}` / `switch_tab`. Responses go
   to Rust (`__TAURI_INTERNALS__.invoke` is non-writable, so they can't be
   intercepted from injected JS); every effect is asserted via the DOM instead.
@@ -190,7 +190,7 @@ journey (rerun once the app is stable).
 # VMark E2E Smoke Harness
 
 > **RW-13 (L12) · hardening v2-005** — closes the audit gap "No executable E2E
-> smoke harness." See `dev-docs/audit/20260607-wi-audit-report.md` (L12 / v2-005).
+> smoke harness." (the maintainer-local `dev-docs/audit/20260607-wi-audit-report.md`, L12 / v2-005).
 
 A minimal, runnable happy-path smoke test that drives a **live VMark debug
 build** through its Tauri MCP automation bridge.
@@ -323,3 +323,97 @@ of the blocking `pnpm check:all` gate until that infrastructure is in place.
 | `No .ProseMirror editor surface found` | App still booting, or a non-document window is focused. Wait for the editor, retry. |
 | `window.__TAURI__.event.emit is unavailable` | Not the document webview, or not a Tauri build. |
 | `Screenshot did not return a base64 data URL` | Headless environment with no display. Run headed. |
+
+---
+
+# Working with a live dev app
+
+What the two harnesses above take for granted, and what an agent driving the app by hand needs to know.
+
+## Which bridge for which surface
+
+| Surface | Bridge | Port | Use for |
+|---|---|---|---|
+| AI-driven features: the `document` / `selection` / `workspace` / `browser` tools, approval flows | **VMark MCP** (`mcp__vmark__*`) | OS-assigned on every launch; the sidecar reads it from the `mcp-port` file | The surface that ships. Never fake an AI flow through the Tauri harness |
+| Everything else: menus, shortcuts, window and tab lifecycle, Tauri IPC, screenshots, logs | **Tauri MCP** (`mcp__tauri__*`) | `127.0.0.1:9323`, debug builds only | Driving and observing the real webview |
+
+## The dev app has its own identity
+
+`tauri dev` runs as **`app.vmark.dev`**, not `app.vmark`: its own settings, hot-exit session, logs
+(`~/Library/Logs/app.vmark.dev/` on macOS) and `mcp-port` file, so a debug build never touches the
+installed app's session. The keychain services are deliberately not split, so the dev app keeps the API
+keys that make it useful. A first launch under the dev identity is an empty profile — which is what CI
+sees, so "works only after I arranged my windows" is a fixture smell.
+
+To point an AI client at the dev app:
+
+1. `pnpm --dir server/mcp build:sidecar` — rebuild the sidecar.
+2. Set `VMARK_APP_IDENTIFIER=app.vmark.dev`. The sidecar (`server/mcp/src/utils/portFile.ts`) and
+   `e2e/lib/vmarkMcp.mjs` both honour it; without it the sidecar reads the installed app's port file.
+3. Reconfigure the client to the dev binary (Settings → Integrations), then restart the client. MCP
+   servers bind at client startup.
+
+`e2e/portFileAgreement.test.mjs` pins that the harness hands the same identifier to the sidecar it
+spawns. Before that agreement held, the journeys drove whichever VMark the release profile named while
+the dev app under test sat idle.
+
+## Arranging state: import the app's own stores
+
+The dev webview is served by Vite, so the page can import the app's own store module and gets the live
+singleton, not a copy:
+
+```js
+// inside webview_execute_js against the dev app
+const { useSettingsStore } = await import("/src/stores/settingsStore.ts");
+useSettingsStore.getState().updateSetting("theme", themeId); // an id from src/theme/themes/
+```
+
+The same import reaches any store (`tabStore`, `documentStore`) for arranging fixture state.
+
+**It breaks after a `location.reload()` in a session where Vite has hot-swapped modules.** The app's
+graph then holds `?t=<timestamp>` instances, while a bare `import("/src/stores/…")` fetches an
+unversioned one: a second store singleton. Writes land in it, `getState()` echoes them back, the app
+renders none of it, and nothing errors. Check that the write rendered (for a theme,
+`getComputedStyle(document.documentElement).getPropertyValue("--bg-color")`) before trusting what you
+see. After a reload, go through the persisted store instead: edit
+`localStorage["vmark-settings"].state.appearance.theme`, reload, and wait.
+
+## Things that cost a debugging session
+
+- **Do not edit `src/`, `src-tauri/` or `e2e/` while a run is in flight.** Adding or deleting any file
+  under `src/` re-evaluates `import.meta.glob` and Vite reloads the page; a Rust edit, even `cargo fmt`,
+  rebuilds and restarts the app. Either throws the tab store away under the running journey, which then
+  fails on a downstream symptom. The runner stamps the document with a run nonce and reports a reload
+  as a reload, but the fix is to finish editing first.
+- **A rebuilt binary under a running app breaks its keychain reads.** `pnpm tauri:dev` rebuilds on
+  Rust changes, and a `cargo build` from another shell rewrites `target/debug/vmark` too; neither is
+  guaranteed to restart the process. macOS checks the app's code identity against the file, so the old
+  process is denied the keychain item it just wrote. `e2e/run-journeys.mjs` refuses to run when the
+  binary the app process is running is not the one at its path (`e2e/lib/staleBinary.mjs`). Restart
+  `pnpm tauri:dev` after any rebuild you did not watch land.
+- **An occluded or unfocused window freezes CSS animation clocks in WebKit.** Transitions never
+  settle, and anything that animates in from `opacity: 0` (every overlay panel, popup and menu) mounts
+  and stays invisible: the DOM says it is open and the screenshot shows nothing. Keep the window
+  visible and focused (`getCurrentWebviewWindow().setFocus()`), or finish the animations before
+  capturing:
+
+  ```js
+  for (const el of [panel, ...panel.querySelectorAll("*")])
+    for (const a of el.getAnimations?.() ?? []) a.finish();
+  ```
+
+- **Teardown goes through the app.** `withBrowserEnabled` (`e2e/lib/browser.mjs`) closes the tabs a
+  journey created through the app's own close path, and falls back to destroying the native view only
+  for one the frontend never recorded. Tearing the native view out directly left ghost tabs and
+  approval prompts that leaked into the next journeys.
+- **"Not connected to VMark" and "open failed: …" are different layers.** The first is the sidecar's
+  transport: wrong profile or a dead port. The second is a typed refusal from the app, carrying
+  `TOKEN: message` and `data.detail`.
+
+## Environment variables
+
+| Variable | Read by | Effect |
+|---|---|---|
+| `VMARK_APP_IDENTIFIER` | the MCP sidecar, `e2e/lib/vmarkMcp.mjs` | Which app's `mcp-port` file to read. Set to `app.vmark.dev` to reach a `tauri dev` build |
+| `VMARK_REAL_IME=1` | `e2e/run-ime.mjs` (`pnpm e2e:ime`) | Opt-in for the real-IME run, which injects keystrokes system-wide. Without it the run refuses. Use only on a dedicated, unattended macOS machine |
+| `VMARK_IME_PROFILE` | `e2e/run-ime.mjs` | Path to the machine profile the IME run requires. Default: `.vmark/ime-machine-profile.json` in the repository |

@@ -803,7 +803,7 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - surfaces: none
 - code: `src/plugins/shared/{hostSettings,hostDocument,hostPopups,hostShortcuts,hostSearch,hostViewModes,hostEditors,popupPorts,pasteSettings}.ts`; `src/services/assembly/bindHostSettings.ts`; `src/services/assembly/hostAdapters.ts`
 - rust: none
-- docs: none (ADR-015; `.claude/rules/00-engineering-principles.md`)
+- docs: none (`.claude/adr/ADR-015-extension-model.md`; `.claude/rules/00-engineering-principles.md`)
 - tests: `src/plugins/shared/{hostSettings,hostDocument,hostPopups,hostShortcuts,hostSearch,hostViewModes,hostEditors,pasteSettings}.test.ts`; `src/services/assembly/bindHostSettings.test.ts`
 - notes: `hostEditors.ts` names `toolbarActions/dispatch.ts` as "the only consumer", but `src/plugins/codemirror/sourceLint.ts` and `src/plugins/codemirror/sourceCursorContext.ts` also consume it. `plugins/shared/` also holds non-seam helpers owned here by the spine (`historyBatch.ts`, `blockSpan.ts`, `fenceScanner.ts`, `mediaSecurity.ts`, …) whose features are elsewhere.
 
@@ -1083,7 +1083,7 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - surfaces: none
 - code: `src/services/assembly/tiptapExtensions.ts`; `src/services/assembly/createTiptapExtensions.ts`; `src/services/assembly/compositionOrder.ts`; `src/services/assembly/extensionOrdering.ts`; `src/services/assembly/bindHostSettings.ts`; `src/services/assembly/hostAdapters.ts`; `src/services/assembly/modeSwitchCleanup.ts`; `src/services/assembly/pasteOptions.ts`; `src/services/assembly/autoPairConfig.ts`; `src/services/assembly/uiToggleOptions.ts`; `src/services/assembly/linkExtension.ts`
 - rust: none
-- docs: none (ADR-015)
+- docs: none (`.claude/adr/ADR-015-extension-model.md`)
 - tests: `src/services/assembly/{tiptapExtensions,extensionOrdering,bindHostSettings,modeSwitchCleanup,pasteOptions,autoPairConfig}.test.ts`
 - notes: Composition failures throw rather than silently drop an extension. Lint gates on the live `markdown.lintEnabled` inside the plugin. Source-mode, media and workflow assembly files in the same directory belong to Areas 3, 1 and 12. Spine-owned by Area 3's feature.
 
@@ -4677,7 +4677,7 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - surfaces: command palette / native menu / keybindings / MCP
 - code: `src/services/commands/CommandBus.ts`, `src/services/commands/commandText.ts`, `src/services/commands/commandFailure.ts`, `src/services/commands/registerAllCommands.ts`, `src/services/commands/editorCommandBridge.ts`, `src/services/commands/actionAvailability.ts`, `src/services/commands/commandContext.ts`, `src/plugins/actions/actionRegistry.ts`
 - rust: none
-- docs: none (ADR-012 is internal)
+- docs: none (`.claude/adr/ADR-012-command-bus-as-single-intent-path.md`)
 - tests: `src/services/commands/CommandBus.test.ts`, `src/services/commands/commandText.test.ts`, `src/services/commands/commandFailure.test.ts`, `src/services/commands/registerAllCommands.test.ts`, `src/services/commands/registrationFlag.test.ts`, `src/services/commands/editorCommandBridge.test.ts`, `src/services/commands/actionAvailability.test.ts`, `src/services/commands/commandContext.test.ts`, plus one test file per command group under `src/services/commands/`
 - notes: none
 
@@ -4705,7 +4705,7 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - surfaces: automatic
 - code: `src/shell/AppShell.tsx`, `src/shell/EditorArea.tsx`, `src/shell/appShellClassName.ts`, `src/shell/app-shell.css`, `src/App.tsx`, `scripts/shell-slots-baseline.json`, `scripts/check-shell-slots.mjs`
 - rust: none
-- docs: none (ADR-007 is internal)
+- docs: none (`.claude/adr/ADR-007-shell-as-composition-root.md`)
 - tests: `src/shell/AppShell.test.tsx`, `src/shell/AppShell.a11y.test.tsx`, `src/shell/EditorArea.test.tsx`, `src/shell/appShellClassName.test.ts`, `src/App.chrome.test.tsx` (the platform→chrome ternary in App.tsx), `scripts/check-shell-slots.test.ts`; the gate runs as `pnpm lint:shell-slots` inside `check:static`
 - notes: the baseline is a two-way ratchet — a mounted surface missing from the list fails, and a listed surface no longer mounted fails until its entry is deleted; entries are only removed. Excluded by definition: Suspense/FeatureErrorBoundary/Fragment wrappers and the three named bindings `EditorArea`, `DocumentWindowMount`, `MainWindowRunners`. There is no slot-registration mechanism; a new surface is an edit to `src/App.tsx`.
 
@@ -5257,7 +5257,7 @@ Lint runs only on demand through the `lint.check` command (`src/services/lint/ru
 - surfaces: automatic
 - code: `src/lib/extensions/resolve.ts`, `src/lib/extensions/claim.ts`, `src/lib/extensions/pmConverterRegistry.ts`, `src/lib/extensions/types.ts`, `src/services/assembly/extensionOrdering.ts`, `src/services/assembly/createTiptapExtensions.ts`, `src/utils/markdownPipeline/mdastParagraphClaims.ts`, `src/plugins/codePreview/fenceRegistry.ts`
 - rust: none
-- docs: none (ADR-015 lives in maintainer docs)
+- docs: none (`.claude/adr/ADR-015-extension-model.md`)
 - tests: `src/lib/extensions/resolve.test.ts`, `src/lib/extensions/claim.test.ts`, `src/lib/extensions/adoption.test.ts`, `src/lib/extensions/pmConverterRegistry.test.ts`
 - notes: decides user-visible node ownership — whether a paragraph holding one media element becomes `block_image`, `block_video`, `block_audio` or stays a paragraph, and which renderer owns a fence language.
 

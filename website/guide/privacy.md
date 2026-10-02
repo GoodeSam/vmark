@@ -115,3 +115,7 @@ VMark is fully open source. You can verify everything described here:
 - Keychain storage: [`src-tauri/src/secure_store.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/secure_store.rs)
 - Server-side stats aggregation: [`scripts/vmark-stats-json`](https://github.com/xiaolai/vmark/blob/main/scripts/vmark-stats-json) — the exact script that runs on our server to produce the [public stats](https://log.vmark.app/api/stats)
 - The network call sites are the ones listed above — search the repository for `reqwest` (Rust) and `fetch(` (TypeScript) to check for yourself
+
+## Reporting a security issue
+
+If you find a vulnerability in VMark, such as in the MCP bridge, the embedded browser, the updater or file handling, please report it privately through [GitHub's private vulnerability reporting](https://github.com/xiaolai/vmark/security/advisories/new) instead of opening a public issue. The [security policy](https://github.com/xiaolai/vmark/blob/main/SECURITY.md) lists what is in scope and what to expect.

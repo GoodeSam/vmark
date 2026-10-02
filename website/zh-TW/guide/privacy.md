@@ -87,3 +87,7 @@ VMark 完全開放原始碼。你可以驗證此處描述的一切：
 ## 停用更新檢查
 
 若你偏好完全停用自動更新檢查，可以在網路層面封鎖 `log.vmark.app`（防火牆、`/etc/hosts` 或 DNS）。VMark 在沒有它的情況下仍然可以正常運作 — 你只是不會收到更新通知。
+
+## 回報安全性問題
+
+如果你在 VMark 中發現了安全性漏洞，例如 MCP 橋接、內嵌瀏覽器、更新程式或檔案處理方面的問題，請透過 [GitHub 的私密漏洞回報](https://github.com/xiaolai/vmark/security/advisories/new)私下提交，不要建立公開的 issue。[安全性政策](https://github.com/xiaolai/vmark/blob/main/SECURITY.md)說明了受理範圍以及提交後的處理方式。

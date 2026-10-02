@@ -33,6 +33,8 @@ that enforces it; the pre-cleanup long form is `git show 12c98051e:AGENTS.md`.
 | Rust, adding a `tauri::test` mock-runtime test | the row above, plus `bash scripts/check-cross-target.sh` |
 | Before pushing | `pnpm check:predelta` (every static gate in parallel, all failures at once), then one `pnpm check:all` |
 
+`check:all` needs `zsh`, `python3` and `tokei` on PATH (gates-tier tests execute them and fail rather than skip); pushing a `v*` tag needs an authenticated `gh`. Environment variables (`VMARK_CHANGED_BASE`, `VMARK_GH_TIMEOUT`, …) are tabled in `CONTRIBUTING.md`.
+
 `check:fast` cannot see: tests that read their subject at runtime (baselines, `ci.yml`), coverage, `check:servers`/`check:build`/size-limit, WebKit, Rust, soak. `test:changed` diffs against `origin/main` — `git fetch` first.
 
 ## Testing infrastructure
@@ -42,8 +44,8 @@ that enforces it; the pre-cleanup long form is `git show 12c98051e:AGENTS.md`.
 - **Node environment**: most app tests start with `// @vitest-environment node`. Decide by running the file under node, never by reading it. Never quote that token in a header comment — the docblock parser treats it as the setting.
 - Test files are type-checked by `pnpm lint:test-types` (per-file baseline, ratchets down); `pnpm typecheck` excludes them.
 - **Growth tests** (cost at n vs k·n) measure with `measureGrowth`/`growthExponent` from `src/test/cpuClock.ts`, which times the test thread's own CPU clock. Never `process.cpuUsage()` (it bills V8's background threads) or `performance.now()` directly.
-- **Windows**: `tauri::test` does not exist there. Gate every `tauri::test::` item with `#[cfg(not(target_os = "windows"))]`; see `fs_scope.test.rs`. Do not bind commands as function pointers in lib tests (`mod.test.rs` explains).
-- **E2E** (guide: `dev-docs/e2e-testing.md`): needs a running `pnpm tauri:dev`. AI features are tested through VMark MCP (`mcp__vmark__*`) only; non-AI UI/plumbing through Tauri MCP (`mcp__tauri__*`, `127.0.0.1:9323`, debug builds only). Never Chrome DevTools MCP. The VMark bridge port is dynamic (read from `mcp-port`). After sidecar changes: `pnpm --dir server/mcp build:sidecar`, reconfigure the client, restart it.
+- **Windows**: `tauri::test` does not exist there. Gate every `tauri::test::` item with `#[cfg(not(target_os = "windows"))]`; see `fs_scope.test.rs`. Do not bind commands as function pointers in lib tests (`src-tauri/src/window_manager/mod.test.rs` explains).
+- **E2E** (guide: `e2e/README.md`): needs a running `pnpm tauri:dev`. AI features are tested through VMark MCP (`mcp__vmark__*`) only; non-AI UI/plumbing through Tauri MCP (`mcp__tauri__*`, `127.0.0.1:9323`, debug builds only). Never Chrome DevTools MCP. The VMark bridge port is dynamic (read from `mcp-port`). After sidecar changes: `pnpm --dir server/mcp build:sidecar`, reconfigure the client, restart it.
 - `tauri dev` runs as identifier `app.vmark.dev` — separate settings, session, logs and `mcp-port` from the release app. Point an AI client at dev with `VMARK_APP_IDENTIFIER=app.vmark.dev`.
 
 ## Git, CI, and pushing
@@ -79,7 +81,7 @@ Each script's header explains its rules and exemption markers.
 
 - Tauri v2, React 19, Zustand v5, shadcn/ui v4, Tailwind v4, Vite v7, Vitest v4, pnpm.
 - Rust → webview: `emit()` → `listen()`. Webview → Rust: `invoke()`.
-- Three-tier source layout (ADR-013): `src/utils/` is leaf-pure (no stores, no `@tauri-apps/*`); `src/services/` (domain folders) may use utils, stores, Tauri; `src/hooks/` are React adapters over services.
+- Three-tier source layout (ADR-013; decision records live in `.claude/adr/`, and `pnpm lint:adr-refs` resolves every cited id): `src/utils/` is leaf-pure (no stores, no `@tauri-apps/*`); `src/services/` (domain folders) may use utils, stores, Tauri; `src/hooks/` are React adapters over services.
 - `src/shell/AppShell.tsx` is pure layout. Surfaces are mounted by editing App.tsx's `<AppShell>`; `pnpm lint:shell-slots` holds the identity list.
 - Menus: `menu_events.rs` emits `menu:{id}` generically; `menu/localized.rs` `create_localized_menu` is the single builder (labels in `src-tauri/locales/en.yml`). Every menu item needs a real SF Symbol in `macos_menu.rs` `MENU_ICONS`.
 - Shortcuts: see `.claude/rules/41-keyboard-shortcuts.md`.
@@ -108,7 +110,6 @@ Each script's header explains its rules and exemption markers.
 ## GitHub
 
 - Reply to issues in the reporter's language. Use `Closes #N` in PRs; close issues once fixed.
-- Cost reports use one rolling issue; the workflow manages it.
 
 ## Plans and governance (full rules: `.claude/rules/60-ai-governance.md`)
 

@@ -87,3 +87,7 @@ VMark は完全なオープンソースです。ここに記載されている�
 ## 更新チェックの無効化
 
 自動更新チェックを完全に無効にしたい場合は、ネットワークレベル（ファイアウォール、`/etc/hosts`、または DNS）で`log.vmark.app`をブロックできます。VMark はそれなしでも正常に動作し続けます — 更新通知を受け取らないだけです。
+
+## セキュリティ上の問題を報告する
+
+VMark に脆弱性（MCP ブリッジ、組み込みブラウザ、アップデーター、ファイル処理など）を見つけた場合は、公開 issue を作成せず、[GitHub の非公開の脆弱性報告](https://github.com/xiaolai/vmark/security/advisories/new)から報告してください。対象範囲と報告後の流れは[セキュリティポリシー](https://github.com/xiaolai/vmark/blob/main/SECURITY.md)に記載しています。

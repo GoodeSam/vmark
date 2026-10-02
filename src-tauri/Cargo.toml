@@ -5,6 +5,14 @@ description = "The plain-text workspace where humans and AI collaborate"
 authors = ["Xiaolai"]
 license = "ISC"
 edition = "2021"
+# The oldest toolchain this crate claims to build on. It is the floor the
+# dependency tree sets: the highest `rust-version` any locked dependency
+# declares (`cargo metadata`; notify-rust and serde-saphyr at the time of
+# writing). CI and releases build on current stable, not on this version, so
+# what holds the claim is cargo refusing an older toolchain and clippy's
+# `incompatible_msrv` lint refusing a std API newer than this. Raise it when a
+# dependency bump raises that floor.
+rust-version = "1.89"
 # Required since `pdf_smoke` was added: a second [[bin]] makes bare `cargo run`
 # ambiguous, and `tauri dev` runs exactly that — so without this, `pnpm
 # tauri:dev` dies with "could not determine which binary to run" before the app
