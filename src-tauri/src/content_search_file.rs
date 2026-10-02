@@ -32,8 +32,8 @@ use std::path::Path;
 pub(super) enum FileScan {
     /// Not a file the search covers (binary). By design — not missing evidence.
     Excluded,
-    /// Eligible, but its content was not read: oversized, unreadable, or not
-    /// UTF-8. Voids completeness.
+    /// Eligible, but its content was not read: it could not be opened or
+    /// read, is oversized, or is not UTF-8. Voids completeness.
     Unscanned,
     /// The budget ran out before the read. Voids completeness and ends the walk.
     OutOfTime,
@@ -52,8 +52,15 @@ pub(super) fn scan_file(
     budget: &DeadlineBudget,
     total_matches: &mut usize,
 ) -> FileScan {
-    let Ok(mut file) = File::open(path) else {
-        return FileScan::Excluded;
+    // A file that cannot be opened is not "binary": its content is evidence
+    // nobody looked at, so it must void completeness rather than pass as a
+    // by-design exclusion.
+    let mut file = match File::open(path) {
+        Ok(file) => file,
+        Err(e) => {
+            log::debug!("[ContentSearch] Cannot open file {}: {e}", path.display());
+            return FileScan::Unscanned;
+        }
     };
     scan_open_file(&mut file, path, re, budget, total_matches)
 }
@@ -68,8 +75,12 @@ pub(super) fn scan_open_file(
     total_matches: &mut usize,
 ) -> FileScan {
     let mut bytes = vec![0u8; BINARY_CHECK_LEN];
-    let Ok(head_len) = file.read(&mut bytes) else {
-        return FileScan::Excluded;
+    let head_len = match file.read(&mut bytes) {
+        Ok(head_len) => head_len,
+        Err(e) => {
+            log::debug!("[ContentSearch] Cannot read file {}: {e}", path.display());
+            return FileScan::Unscanned;
+        }
     };
     bytes.truncate(head_len);
     if looks_binary(&bytes) {

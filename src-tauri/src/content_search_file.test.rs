@@ -157,6 +157,39 @@ fn a_binary_file_is_still_excluded_under_a_spent_budget() {
     ));
 }
 
+/// A file the process may not open is not "binary". It is an eligible file
+/// whose content nobody looked at, and a caller asking "does anything still
+/// reference this image?" must not be told the scan saw everything.
+#[cfg(unix)]
+#[test]
+fn a_file_that_cannot_be_opened_is_unscanned_not_excluded() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("locked.md");
+    fs::write(&path, "![](image.png) probe\n").unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o000)).unwrap();
+    // A privileged user can open any file; there is nothing to pin then.
+    if File::open(&path).is_ok() {
+        return;
+    }
+
+    assert!(matches!(
+        scan_file(&path, &probe(), &generous(), &mut 0),
+        FileScan::Unscanned
+    ));
+}
+
+#[test]
+fn a_file_that_is_gone_by_the_time_it_is_opened_is_unscanned() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("vanished.md");
+    assert!(matches!(
+        scan_file(&path, &probe(), &generous(), &mut 0),
+        FileScan::Unscanned
+    ));
+}
+
 #[test]
 fn the_match_cap_stops_the_line_scan_and_reports_it_unfinished() {
     let dir = tempdir().unwrap();

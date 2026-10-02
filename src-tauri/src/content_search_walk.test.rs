@@ -244,3 +244,29 @@ fn an_unreadable_subdirectory_voids_completeness_and_the_walk_goes_on() {
         assert!(!tally.complete);
     }
 }
+
+/// The same for one file: zero hits from a scan that could not open an
+/// eligible document must not read as "nothing references it".
+#[cfg(unix)]
+#[test]
+fn an_unreadable_file_voids_completeness_and_the_walk_goes_on() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = tempdir().unwrap();
+    let root = dir.path();
+    fs::write(root.join("open.md"), "nothing relevant\n").unwrap();
+    let locked = root.join("locked.md");
+    fs::write(&locked, "probe\n").unwrap();
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).unwrap();
+    let enforced = fs::File::open(&locked).is_err();
+
+    let tally = with_plan(root, future(), false, &[], walk);
+
+    if enforced {
+        assert!(tally.results.is_empty());
+        assert!(
+            !tally.complete,
+            "an eligible file nobody could open went unscanned"
+        );
+    }
+}
