@@ -3595,14 +3595,14 @@ Two unrelated features share this area. The coherence layer is a Rust kernel (`s
 - id: coherence-scan
 - feature: Coherence & breakdown
 - summary: A debounced background scan reconciles files edited outside VMark into the ledger as "observed external" history, and classifies git operations so checkouts and branch switches never mint phantom revisions.
-- capabilities: 3 s trailing debounce, one scan in flight, re-run if events land mid-scan; git-first classification (navigation vs mutation); `git revert` and merges captured as git-attributed transformations; duplicate-identity detection surfaced as a diagnostic plus capture hold, never auto-fixed; objects marked absent only after a complete walk; a `merge-completed` diagnostic per merge SHA
+- capabilities: 3 s trailing debounce, one scan in flight, re-run if events land mid-scan; scans triggered only by the window's own watcher, including its rescan reports; git-first classification (navigation vs mutation); `git revert` and merges captured as git-attributed transformations; duplicate-identity detection surfaced as a diagnostic plus capture hold, never auto-fixed; objects marked absent only after a complete walk; a `merge-completed` diagnostic per merge SHA; a markdown file whose size, mtime (and on Unix inode and ctime) are unchanged since a scan read it is not read or hashed again, a file modified within 2 s of being stamped is never trusted; all kernel work on the blocking pool
 - status: shipped-on
 - gate: always on once a workspace root is open (`startCoherenceScanOnChange` via `src/services/runtimeWiring.ts`); each scan carries the capture-on-save policy, and with `general.coherenceCaptureOnSave = false` a workspace without a ledger is not scanned, and a `.vmark/` that vanishes before the lock is not recreated (`scan_on_change` in `src-tauri/src/coherence/capture_policy.rs`, existing-only lock in `src-tauri/src/coherence/state_lock.rs`)
 - surfaces: automatic (workspace file-watcher events)
 - code: `src/services/coherence/scanOnChange.ts`, `src/services/coherence/capturePolicy.ts`, `src/services/runtimeWiring.ts`
-- rust: `coherence_scan`; `coherence::{capture_policy, state_lock, scan, scan_git, scan_walk, scan_report, scan_diagnostics, gitops, gitops_cmd}`
+- rust: `coherence_scan`; `coherence::{capture_policy, state_lock, scan, scan_git, scan_walk, scan_cache, scan_report, scan_diagnostics, gitops, gitops_cmd}`
 - docs: `website/guide/coherence.md` §"How it works (30 seconds)", §"Git interoperability"
-- tests: `src/services/coherence/scanOnChange.test.ts`, `src-tauri/src/coherence/capture_policy.test.rs`, `src-tauri/src/coherence/scan.test.rs`, `src-tauri/src/coherence/scan_git.test.rs`, `src-tauri/src/coherence/gitops.test.rs`
+- tests: `src/services/coherence/scanOnChange.test.ts`, `src/services/coherence/scanOnChange.window.test.ts`, `src-tauri/src/coherence/capture_policy.test.rs`, `src-tauri/src/coherence/scan.test.rs`, `src-tauri/src/coherence/scan_git.test.rs`, `src-tauri/src/coherence/scan_cache.test.rs`, `src-tauri/src/coherence/gitops.test.rs`
 - notes: A policy-declined scan returns an empty (incomplete) report, which can never drive a deletion. `GitObserver` is an injected seam so the observation-unreliable branch is testable (#1207). `gitops_cmd.rs` has no registered command; it is the `git_output` helper `gitops.rs` uses.
 
 ### Breakdown view (stale/diverged dependency edges)

@@ -7,6 +7,7 @@
 
 use super::*;
 use crate::coherence::capture::{capture, CaptureRequest};
+use crate::coherence::scan_diagnostics::path_under_ignored_dir;
 use crate::coherence::state::WorkspaceKernel;
 use crate::coherence::types::{Agent, AgentType, Confidence, Intent, WriterId};
 use std::path::Path;

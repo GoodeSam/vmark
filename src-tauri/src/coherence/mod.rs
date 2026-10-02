@@ -77,6 +77,7 @@ pub mod provenance_commands;
 pub mod read_model;
 pub mod read_view;
 pub mod scan;
+pub(crate) mod scan_cache;
 pub(crate) mod scan_diagnostics;
 pub mod scan_git;
 pub mod scan_report;
