@@ -47,6 +47,8 @@ pub(super) fn try_rename_legacy_hash(
     if !legacy_path.exists() {
         return HashMigrationOutcome::NoLegacyFile;
     }
+    // Not synced: a crash that undoes this rename leaves the legacy file where
+    // it was, and the next read migrates it again.
     match fs::rename(legacy_path, new_path) {
         Ok(()) => {
             log::info!(

@@ -15,6 +15,11 @@
 //! filesystem with no no-clobber primitive reports an error rather than
 //! renaming over whatever is there.
 //!
+//! The bytes are synced before the claim; the directory is not synced after
+//! it. Install runs at every launch and creates whatever is missing, so a
+//! claim a crash undid is simply made again — and a file that is there is
+//! always complete.
+//!
 //! What counts as "already installed" is what the picker can list (#154):
 //! `scanning.rs` never follows symlinks, so a link squatting on a genie's
 //! name — like a directory or a socket — is reported, not counted. One

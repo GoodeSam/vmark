@@ -271,6 +271,11 @@ fn build_zsh_env(integration_dir: &Path, user_zdotdir: Option<String>) -> BTreeM
 /// keeps two concurrent calls from clobbering each other's temp file before the
 /// rename — the final rc is always one writer's complete contents, never
 /// a torn mix (WI-4.6).
+///
+/// Atomic, and deliberately NOT durable: nothing is synced. The rc is rewritten
+/// from the embedded script before every shell spawn, so whatever a crash left
+/// behind is replaced before it is next read, and a sync would add a full disk
+/// flush to every terminal that opens.
 fn write_rc_atomic(dir: &Path, file_name: &str, contents: &str) -> io::Result<()> {
     let rc = dir.join(file_name);
     let tmp = dir.join(format!(
