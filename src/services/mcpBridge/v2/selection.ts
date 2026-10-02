@@ -25,17 +25,17 @@
  *     not arbitrated by the server.
  *
  * @coordinates-with stores/editorStore.ts — focused editor instances
- * @coordinates-with stores/editorStore.ts — sourceMode flag picks the dispatcher
+ * @coordinates-with stores/uiStore.ts — sourceMode flag picks the dispatcher
  * @coordinates-with stores/documentStore/revision.ts — optimistic concurrency
  * @coordinates-with stores/mcpStore.ts — selection.set checkpoints
+ * @coordinates-with liveEditor.ts — flushes the mounted editor so the returned revision stays current
  * @module services/mcpBridge/v2/selection
  */
 
 import type { Editor as TiptapEditor } from "@tiptap/core";
 import type { EditorView as CMView } from "@codemirror/view";
 import { useTabStore } from "@/stores/tabStore";
-import { useDocumentStore } from "@/stores/documentStore";
-import { useRevisionStore } from "@/stores/documentStore";
+import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useEditorStore } from "@/stores/editorStore";
 import { useMcpStore } from "@/stores/mcpStore";
@@ -49,11 +49,10 @@ import {
   parseMarkdown,
   serializeMarkdown,
 } from "@/utils/markdownPipeline";
-import {
-  getSerializeOptions,
-} from "@/plugins/toolbarActions/wysiwygAdapterUtils";
+import { getSerializeOptions } from "@/plugins/toolbarActions/wysiwygAdapterUtils";
 import { respond } from "@/services/mcpBridge/utils";
 import { wrapHandler } from "./wrapHandler";
+import { flushLiveEditors } from "./liveEditor";
 import { readOperationArgs } from "./readOperationArgs";
 import { v2ErrorString } from "./types";
 import type { DocumentKind, V2Error, V2ErrorCode } from "./types";
@@ -351,19 +350,11 @@ export async function handleSelectionSet(
     }
     const { mode, tiptap, cm } = pickActiveEditor(focused.tabId);
     if (mode === "wysiwyg" && (!tiptap || tiptap.isDestroyed)) {
-      await structuredError(
-        id,
-        "NO_EDITOR",
-        "No active WYSIWYG editor for the focused tab",
-      );
+      await structuredError(id, "NO_EDITOR", "No active WYSIWYG editor for the focused tab");
       return;
     }
     if (mode === "source" && !cm) {
-      await structuredError(
-        id,
-        "NO_EDITOR",
-        "No active source editor for the focused tab",
-      );
+      await structuredError(id, "NO_EDITOR", "No active source editor for the focused tab");
       return;
     }
 
@@ -394,10 +385,12 @@ export async function handleSelectionSet(
         opts,
       );
       replaceTiptapSelection(tiptap, content);
-      // Mirror the new doc into the store synchronously. In production
-      // the React onUpdate handler also runs (idempotent — same value)
-      // and revisionTracker bumps via the transaction listener. Doing
-      // the work inline keeps the handler self-contained and testable.
+      // Flush the mounted editor NOW: the store then holds its serialization
+      // and the editor knows it, so its content sync does not reload the same
+      // document — a reload the revision tracker counts as a change (the
+      // returned revision was stale on arrival). The mirror below is then
+      // idempotent; it covers an editor with no flusher.
+      flushLiveEditors();
       const contentAfter = serializeMarkdown(
         tiptap.state.schema,
         tiptap.state.doc,

@@ -18,6 +18,7 @@
  * provenance under the capture-on-save setting like every other MCP write.
  *
  * @coordinates-with bridgeSave.ts — the path guard and the save pipeline
+ * @coordinates-with liveEditor.ts — flushes pending keystrokes into the buffer first
  * @coordinates-with services/persistence/applyPostSaveState.ts — re-points the document and tab
  */
 
@@ -33,6 +34,7 @@ import i18n from "@/i18n";
 import { respond } from "@/services/mcpBridge/utils";
 import { wrapHandler } from "./wrapHandler";
 import { respondSaveFailed, saveTabForBridge } from "./bridgeSave";
+import { flushLiveEditors } from "./liveEditor";
 import { v2ErrorString } from "./types";
 import type { V2Error } from "./types";
 
@@ -129,7 +131,11 @@ export async function handleWorkspaceSaveAs(
       return;
     }
 
-    const outcome = await saveTabForBridge(tabId, filePath, doc.content, "workspace.save_as");
+    // Read the buffer NOW, after flushing pending keystrokes into it: the
+    // approval checks above awaited, and the user may have kept typing.
+    flushLiveEditors();
+    const buffer = useDocumentStore.getState().documents[tabId]?.content ?? doc.content;
+    const outcome = await saveTabForBridge(tabId, filePath, buffer, "workspace.save_as");
     if (!outcome.saved) {
       await respondSaveFailed(id, outcome);
       return;

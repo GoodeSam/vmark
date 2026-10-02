@@ -6,6 +6,7 @@
  *
  * @coordinates-with workspace.ts — sibling workspace handlers
  * @coordinates-with bridgeSave.ts — the path guard and the save pipeline
+ * @coordinates-with liveEditor.ts — flushes pending keystrokes into the buffer first
  * @module services/mcpBridge/v2/workspaceSave
  */
 
@@ -16,6 +17,7 @@ import { respond } from "@/services/mcpBridge/utils";
 import { v2ErrorString } from "./types";
 import { wrapHandler } from "./wrapHandler";
 import { respondSaveFailed, saveTabForBridge } from "./bridgeSave";
+import { flushLiveEditors } from "./liveEditor";
 import type { V2Error } from "./types";
 
 function structuredError(id: string, err: V2Error): Promise<void> {
@@ -75,6 +77,10 @@ export async function handleWorkspaceSave(
   return wrapHandler(id, async () => {
     const tabIdArg =
       typeof args.tabId === "string" ? args.tabId : undefined;
+    // What is saved is the buffer; bring pending keystrokes into it first,
+    // as the human Save does, or the reply says "saved" one frame before the
+    // document turns dirty again.
+    flushLiveEditors();
     const resolved = resolveTabForSave(tabIdArg);
     if ("error" in resolved) {
       await structuredError(id, resolved);

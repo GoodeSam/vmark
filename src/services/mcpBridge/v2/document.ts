@@ -32,11 +32,18 @@
  *     its line endings and byte-order mark, the write is atomic and ordered
  *     with every other save, and history and provenance are recorded there.
  *     What is saved is the BUFFER as this write left it — the store's
- *     canonical text, not the raw string the client sent.
+ *     canonical text, not the raw string the client sent. For the tab the
+ *     live WYSIWYG editor is showing, that buffer is the editor's
+ *     serialization of the client's text, so disk, store and editor agree
+ *     and the reply's `saved` and `revision` stay true after the editor
+ *     settles (`liveEditor.ts`).
+ *   - Every handler here first flushes the mounted editors into the store,
+ *     so it reads, checks and replaces what the user actually has — pending
+ *     keystrokes included.
  *
  * @coordinates-with stores/documentStore/revision.ts — current revision + isCurrentRevision
  * @coordinates-with documentTransform.ts — CJK transform helpers (extracted)
- * @coordinates-with utils/markdownPipeline/index.ts — parseMarkdown / serializeMarkdown
+ * @coordinates-with liveEditor.ts — the mounted WYSIWYG editor ↔ store seam
  * @coordinates-with stores/documentStore.ts — content + dirty state
  * @coordinates-with stores/tabStore.ts — tab → window resolution
  * @coordinates-with bridgeSave.ts — the path guard and the save pipeline
@@ -47,17 +54,15 @@
 import { recordMcpRead } from "@/services/coherence/mcpCapture";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
-import { useEditorStore } from "@/stores/editorStore";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import {
   isWorkflowYaml,
   looksLikeWorkflowPath,
 } from "@/lib/ghaWorkflow/detection";
-import { parseMarkdown } from "@/utils/markdownPipeline";
-import { getSerializeOptions } from "@/plugins/toolbarActions/wysiwygAdapterUtils";
 import { respond } from "@/services/mcpBridge/utils";
 import { wrapHandler } from "./wrapHandler";
 import { saveTabForBridge } from "./bridgeSave";
+import { flushLiveEditors, loadIntoLiveWysiwyg } from "./liveEditor";
 import { readOperationArgs } from "./readOperationArgs";
 import { v2ErrorString } from "./types";
 import type { DocumentKind, V2Error } from "./types";
@@ -154,54 +159,23 @@ function recordCheckpoint(args: {
 }
 
 /**
- * Replace document content. Returns the new revision on success or a
- * structured V2Error on failure. Does NOT call `respond` — callers
- * decide how to package the result.
+ * Replace a tab's content and return the revision the document is then at.
+ * Does NOT call `respond` — callers decide how to package the result.
+ *
+ * The store takes the content as an EDIT that keeps the document's disk
+ * convention. A Markdown tab the live WYSIWYG editor is showing is then loaded
+ * into that editor, which leaves the store holding the editor's serialization
+ * (see `liveEditor.ts`); a background or Source-mode tab is store-only — the
+ * live editor shows a different document, and dispatching into it would
+ * replace that one.
+ *
+ * The revision is bumped HERE, last, so the token returned is by construction
+ * the document's newest: nothing after this point changes the document.
  */
-function writeContent(
-  tabId: string,
-  content: string,
-  kind: DocumentKind,
-): { revision: string } | V2Error {
-  const docState = useDocumentStore.getState();
-  const revisionStore = useRevisionStore.getState();
-  // mcp-write: an EDIT that keeps the document's disk convention (WI-1.3).
-  docState.ingestExternalContent(tabId, content, "mcp-write");
-
-  // For a Markdown tab that is the ACTIVE WYSIWYG editor, also re-render the
-  // Tiptap doc so the editor stays in sync; its transaction bumps THIS tab's
-  // revision via revisionTracker (the tracker is keyed to the active tab).
-  //
-  // Guard on `activeWysiwygTabId === tabId` (C5 follow-up): the live editor
-  // shows only the active tab, so a `document.write` to a *background* markdown
-  // tab must NOT dispatch into it — that would clobber the active document and
-  // bump the wrong tab's revision. For background tabs (and non-Markdown tabs
-  // with no bound editor) we update the doc store and bump the TARGET tab's
-  // revision directly.
-  const editorState = useEditorStore.getState();
-  const editor = editorState.tiptap.editor;
-  const isActiveWysiwygTab = editorState.active.activeWysiwygTabId === tabId;
-  if (editor && kind === "markdown" && isActiveWysiwygTab) {
-    try {
-      const serializeOpts = getSerializeOptions();
-      const newDoc = parseMarkdown(editor.schema, content, {
-        preserveLineBreaks: serializeOpts.preserveLineBreaks,
-      });
-      const view = editor.view;
-      const tr = view.state.tr
-        .replaceWith(0, view.state.doc.content.size, newDoc.content)
-        .setMeta("addToHistory", true);
-      view.dispatch(tr);
-    } catch {
-      // Parser rejected — doc store already updated; force-bump
-      // revision so callers see a fresh token.
-      revisionStore.updateRevision(tabId);
-    }
-  } else {
-    revisionStore.updateRevision(tabId);
-  }
-
-  return { revision: revisionStore.getRevision(tabId) };
+function writeContent(tabId: string, content: string, kind: DocumentKind): { revision: string } {
+  useDocumentStore.getState().ingestExternalContent(tabId, content, "mcp-write");
+  if (kind === "markdown") loadIntoLiveWysiwyg(tabId, content);
+  return { revision: useRevisionStore.getState().updateRevision(tabId) };
 }
 
 /**
@@ -213,6 +187,7 @@ export async function handleDocumentRead(
 ): Promise<void> {
   return wrapHandler(id, async () => {
     const tabIdArg = typeof args.tabId === "string" ? args.tabId : undefined;
+    flushLiveEditors();
     const resolved = resolveTab(tabIdArg);
     if (!resolved) {
       await structuredError(id, {
@@ -269,6 +244,7 @@ export async function handleDocumentWrite(
     // "I wrote the file → file is updated."
     const shouldSave = wire.save !== false;
 
+    flushLiveEditors();
     const resolved = resolveTab(tabIdArg);
     if (!resolved) {
       await structuredError(id, {
@@ -300,19 +276,16 @@ export async function handleDocumentWrite(
     // authoritative source of truth at write time.
     const writeKind = resolveKind(resolved.filePath, content);
     const result = writeContent(resolved.tabId, content, writeKind);
-    if ("error" in result) {
-      await structuredError(id, result);
-      return;
-    }
     // The buffer this write produced, read back from the store BEFORE any
-    // await: canonical text (a client may send CRLF), and this request's own
-    // — a later request can replace the buffer while the save is in flight.
+    // await: canonical text (a client may send CRLF; a live WYSIWYG editor
+    // re-serializes), and this request's own — a later request can replace
+    // the buffer while the save is in flight.
     const buffer = useDocumentStore.getState().documents[resolved.tabId]?.content ?? content;
-    if (contentBefore !== content) {
+    if (contentBefore !== buffer) {
       recordCheckpoint({
         resolved: { ...resolved, kind: writeKind },
         tool: "document.write",
-        description: describeWrite(content, contentBefore),
+        description: describeWrite(buffer, contentBefore),
         contentBefore,
         revisionBefore,
         revisionAfter: result.revision,
@@ -394,6 +367,7 @@ export async function handleDocumentTransform(
         ? args.expected_revision
         : undefined;
 
+    flushLiveEditors();
     const resolved = resolveTab(tabIdArg);
     if (!resolved) {
       await structuredError(id, {
@@ -429,10 +403,6 @@ export async function handleDocumentTransform(
     const contentBefore = resolved.content;
     const revisionBefore = revisionStore.getRevision(resolved.tabId);
     const result = writeContent(resolved.tabId, transformed, resolved.kind);
-    if ("error" in result) {
-      await structuredError(id, result);
-      return;
-    }
     recordCheckpoint({
       resolved,
       tool: "document.transform",
