@@ -24,14 +24,19 @@
  *     encodes a space beside a line ending, and `&#x20;` is not blank.
  *
  * @coordinates-with serializer.ts — installs this handler
+ * @coordinates-with plugins/detailsSerializer.ts — the summary construct, where `<` is referenced
  * @coordinates-with listInterruptJoin.ts — the other half of "a list item's
  *   first line must not be blank"
  * @module utils/markdownPipeline/serializerText
  */
 
+import { DETAILS_SUMMARY_CONSTRUCT } from "./plugins/detailsSerializer";
+
 /** The slice of mdast-util-to-markdown's `State` this handler uses. */
 interface TextState {
   safe: (value: string, info: TextInfo) => string;
+  /** The constructs currently open, outermost first. */
+  stack: readonly string[];
 }
 
 /** The characters around the node being serialized. */
@@ -74,12 +79,38 @@ function encodeBlankLineEndings(value: string, before: string, after: string): s
   return out + value.slice(cursor);
 }
 
-/** `text` handler: upstream's escaping, then blank-line line endings encoded. */
+/**
+ * `escaped` with every `<` written as `&lt;`. Where upstream had escaped the
+ * `<` with a backslash, the reference replaces the pair; a backslash that is
+ * itself escaped (`\\<`) is left alone.
+ */
+function referenceTagStarts(escaped: string): string {
+  let out = "";
+  let backslashes = 0;
+  for (const char of escaped) {
+    if (char === "<") {
+      out = (backslashes % 2 === 1 ? out.slice(0, -1) : out) + "&lt;";
+    } else {
+      out += char;
+    }
+    backslashes = char === "\\" ? backslashes + 1 : 0;
+  }
+  return out;
+}
+
+/**
+ * `text` handler: upstream's escaping, then blank-line line endings encoded.
+ *
+ * Inside a `<details>` summary the text sits in raw HTML, where a `<` would
+ * start a tag — or, spelling `</summary>`, end the summary. There it is
+ * written as a character reference, which the summary's reader decodes.
+ */
 export function handleText(
   node: { value: string },
   _parent: unknown,
   state: TextState,
   info: TextInfo,
 ): string {
-  return encodeBlankLineEndings(state.safe(node.value, info), info.before, info.after);
+  const escaped = encodeBlankLineEndings(state.safe(node.value, info), info.before, info.after);
+  return state.stack.includes(DETAILS_SUMMARY_CONSTRUCT) ? referenceTagStarts(escaped) : escaped;
 }

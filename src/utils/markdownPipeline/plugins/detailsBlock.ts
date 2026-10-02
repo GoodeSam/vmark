@@ -29,7 +29,7 @@
  * @coordinates-with utils/markdownPipeline/plugins/detailsSummary.ts — the summary half
  * @coordinates-with utils/markdownPipeline/plugins/detailsTags.ts — the tag grammar
  * @coordinates-with mdastBlockConverters.ts — convertDetails creates PM nodes from Details MDAST
- * @coordinates-with pmBlockConverters.ts — convertDetailsBlock creates Details MDAST from PM
+ * @coordinates-with pmDetailsConverter.ts — convertDetailsBlock creates Details MDAST from PM
  * @coordinates-with inlineParser.ts — parses inline markdown within summary text
  * @module utils/markdownPipeline/plugins/detailsBlock
  */

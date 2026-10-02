@@ -20,7 +20,6 @@ const { mockConverters, mockInlineConverters } = vi.hoisted(() => ({
     convertCodeBlock: vi.fn(),
     convertBlockquote: vi.fn(),
     convertAlertBlock: vi.fn(),
-    convertDetailsBlock: vi.fn(),
     convertList: vi.fn(),
     convertListItem: vi.fn(),
     convertHorizontalRule: vi.fn(),

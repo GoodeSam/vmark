@@ -13,6 +13,8 @@
  *   - MATH_BLOCK_LANGUAGE sentinel stores math blocks as codeBlock with a special
  *     language value, since PM schema doesn't have a dedicated math block node
  *   - TOC nodes are converted from `toc` MDAST type to atom PM nodes
+ *   - A code fence's `meta` and a list's `spread` are passed as attributes;
+ *     a schema that does not declare them drops them (modelLimitAttrs.test.ts)
  *
  * @coordinates-with mdastConverterHelpers.ts — shared context type and helpers
  * @coordinates-with mdastMediaConverters.ts — paragraph/HTML media promotion
@@ -73,7 +75,12 @@ export function convertCode(context: MdastToPmContext, node: Code): PMNode | nul
   if (!type) return null;
 
   const text = node.value ? context.schema.text(node.value) : null;
-  return type.create({ language: node.lang || null, sourceLine: getSourceLine(node) }, text ? [text] : []);
+  // `meta` (the fence info after the language) is kept where the node type
+  // declares it; ProseMirror ignores an attribute a type does not declare.
+  return type.create(
+    { language: node.lang || null, meta: node.meta || null, sourceLine: getSourceLine(node) },
+    text ? [text] : [],
+  );
 }
 
 export function convertList(context: MdastToPmContext, node: List, marks: Mark[]): PMNode | null {
@@ -84,7 +91,9 @@ export function convertList(context: MdastToPmContext, node: List, marks: Mark[]
 
   const children = context.convertChildren(node.children, marks, "block");
   const sourceLine = getSourceLine(node);
-  const attrs = isOrdered ? { start: node.start ?? 1, sourceLine } : { sourceLine };
+  // `spread` (a loose list) is kept where the node type declares it.
+  const spread = node.spread === true;
+  const attrs = isOrdered ? { start: node.start ?? 1, sourceLine, spread } : { sourceLine, spread };
   return type.create(attrs, children);
 }
 

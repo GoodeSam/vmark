@@ -782,8 +782,8 @@ describe("getSelectionText with copyFormat=markdown (lines 123-125)", () => {
   });
 });
 
-describe("createDocFromSlice catch path (line 46)", () => {
-  it("falls back to createAndFill when docType.create throws", async () => {
+describe("a throw while building the copied document", () => {
+  it("copies no markdown, so ProseMirror copies the plain text", async () => {
     testCopyFormat = "markdown";
     testCopyOnSelect = false;
 
@@ -797,86 +797,26 @@ describe("createDocFromSlice catch path (line 46)", () => {
       },
     });
 
-    // Monkey-patch topNodeType.create to throw, forcing the catch path
     const origCreate = testSchema.topNodeType.create.bind(testSchema.topNodeType);
-    let callCount = 0;
-    testSchema.topNodeType.create = function (...args: Parameters<typeof origCreate>) {
-      callCount++;
-      // The first call is from createDocFromSlice — make it throw.
-      // Subsequent calls (from the catch fallback) should succeed.
-      if (callCount === 1) throw new RangeError("Invalid content for node doc");
-      return origCreate(...args);
-    } as typeof origCreate;
-
-    const { markdownCopyExtension } = await import("./tiptap");
-    const plugins = markdownCopyExtension.config.addProseMirrorPlugins!.call({
-      editor: {}, name: "markdownCopy", options: copyOptions(), storage: {}, type: undefined, parent: undefined,
-    } as never);
-    const plugin = plugins[0] as { props: { clipboardTextSerializer: (slice: unknown, view: unknown) => string } };
-
-    const para = testSchema.node("paragraph", null, [testSchema.text("hello")]);
-    const slice = new Slice(Fragment.from(para), 0, 0);
-
-    const { EditorState } = await import("@tiptap/pm/state");
-    const doc = testSchema.node("doc", null, [
-      testSchema.node("paragraph", null, [testSchema.text("body")]),
-    ]);
-    const state = EditorState.create({ doc, schema: testSchema });
-
-    const result = plugin.props.clipboardTextSerializer(slice, { state });
-    // Should return a string from the createAndFill fallback
-    expect(typeof result).toBe("string");
-    // Verify the create was called (and threw on first call)
-    expect(callCount).toBeGreaterThanOrEqual(1);
-  });
-});
-
-describe("createDocFromSlice — createAndFill returns null path (line 46 ?? branch)", () => {
-  it("falls back to docType.create() when createAndFill returns null", async () => {
-    testCopyFormat = "markdown";
-    testCopyOnSelect = false;
-
-    const { Schema, Slice, Fragment } = await import("@tiptap/pm/model");
-
-    const testSchema = new Schema({
-      nodes: {
-        doc: { content: "paragraph+" },
-        paragraph: { content: "text*", group: "block" },
-        text: { inline: true },
-      },
-    });
-
-    // Monkey-patch: first call to create throws, createAndFill returns null, second create succeeds
-    const origCreate = testSchema.topNodeType.create.bind(testSchema.topNodeType);
-    const origCreateAndFill = testSchema.topNodeType.createAndFill?.bind(testSchema.topNodeType);
-    let createCallCount = 0;
-    testSchema.topNodeType.create = function (...args: Parameters<typeof origCreate>) {
-      createCallCount++;
-      if (createCallCount === 1) throw new RangeError("Invalid content");
-      return origCreate(...args);
-    } as typeof origCreate;
-    // createAndFill returns null to exercise the ?? branch
-    testSchema.topNodeType.createAndFill = () => null;
-
-    const { markdownCopyExtension } = await import("./tiptap");
-    const plugins = markdownCopyExtension.config.addProseMirrorPlugins!.call({
-      editor: {}, name: "markdownCopy", options: copyOptions(), storage: {}, type: undefined, parent: undefined,
-    } as never);
-    const plugin = plugins[0] as { props: { clipboardTextSerializer: (slice: unknown, view: unknown) => string } };
-
-    const para = testSchema.node("paragraph", null, [testSchema.text("hello")]);
-    const slice = new Slice(Fragment.from(para), 0, 0);
-    const { EditorState } = await import("@tiptap/pm/state");
     const doc = origCreate(null, [testSchema.node("paragraph", null, [testSchema.text("body")])]);
+    testSchema.topNodeType.create = () => {
+      throw new RangeError("Invalid content for node doc");
+    };
+
+    const { markdownCopyExtension } = await import("./tiptap");
+    const plugins = markdownCopyExtension.config.addProseMirrorPlugins!.call({
+      editor: {}, name: "markdownCopy", options: copyOptions(), storage: {}, type: undefined, parent: undefined,
+    } as never);
+    const plugin = plugins[0] as { props: { clipboardTextSerializer: (slice: unknown, view: unknown) => string } };
+
+    const para = testSchema.node("paragraph", null, [testSchema.text("hello")]);
+    const slice = new Slice(Fragment.from(para), 0, 0);
+    const { EditorState } = await import("@tiptap/pm/state");
     const state = EditorState.create({ doc, schema: testSchema });
 
-    // Should not throw — falls back to docType.create() without args
-    const result = plugin.props.clipboardTextSerializer(slice, { state });
-    expect(typeof result).toBe("string");
-
-    // Restore
+    // An empty result is what tells ProseMirror to fall back to the text.
+    expect(plugin.props.clipboardTextSerializer(slice, { state })).toBe("");
     testSchema.topNodeType.create = origCreate;
-    if (origCreateAndFill) testSchema.topNodeType.createAndFill = origCreateAndFill;
   });
 });
 

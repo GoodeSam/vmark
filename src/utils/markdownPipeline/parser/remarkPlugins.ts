@@ -192,6 +192,30 @@ function hasAmbiguousListUnderline(markdown: string): boolean {
   return false;
 }
 
+/** A frontmatter fence line: three dashes, then nothing but spaces or tabs. */
+const FRONTMATTER_FENCE = /^---[ \t]*$/;
+
+/**
+ * Whether the document opens with frontmatter: a fence on its first line and
+ * another one closing it further down.
+ *
+ * This has to be exact, not a hint. `---` on the first line is also an
+ * ordinary thematic break, and once the frontmatter extension has looked for a
+ * closing fence and not found one, it reads every list and blockquote in the
+ * rest of the document as a paragraph. So the extension is loaded only when
+ * it will succeed. `frontmatterDetection.test.ts` holds this to the
+ * extension's own reading.
+ */
+function opensWithFrontmatter(markdown: string): boolean {
+  if (!markdown.startsWith("---")) return false;
+  const lines = markdown.split(/\r\n|\r|\n/);
+  if (!FRONTMATTER_FENCE.test(lines[0])) return false;
+  for (let index = 1; index < lines.length; index += 1) {
+    if (FRONTMATTER_FENCE.test(lines[index])) return true;
+  }
+  return false;
+}
+
 /**
  * Analyze markdown content to determine which plugins are needed.
  * This enables lazy loading of plugins for better performance.
@@ -200,8 +224,7 @@ export function analyzeContent(markdown: string): ContentAnalysis {
   return {
     // Math: look for $ or $$ (quick heuristic)
     hasMath: markdown.includes("$"),
-    // Frontmatter: must start with ---
-    hasFrontmatter: markdown.startsWith("---"),
+    hasFrontmatter: opensWithFrontmatter(markdown),
     // Wiki links: look for [[
     hasWikiLinks: markdown.includes("[["),
     // Details block: look for <details pattern

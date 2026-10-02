@@ -31,26 +31,6 @@
       "reason": "Code-fence meta: the ProseMirror code block keeps language only, so the fence meta string after the language is dropped on serialize."
     },
     {
-      "exampleId": "cm-148",
-      "path": "root.children[1].children[1]",
-      "kind": "attribute",
-      "detail": "value",
-      "inputValue": ".\n",
-      "outputValue": ". ",
-      "verdict": "normalization",
-      "reason": "Soft line break adjacent to inline/raw HTML serializes as a space; whitespace-equivalent in the rendered document, byte-different in the markdown."
-    },
-    {
-      "exampleId": "cm-187",
-      "path": "root.children[0].children[0]",
-      "kind": "attribute",
-      "detail": "value",
-      "inputValue": "Foo\n",
-      "outputValue": "Foo ",
-      "verdict": "normalization",
-      "reason": "Soft line break adjacent to inline/raw HTML serializes as a space; whitespace-equivalent in the rendered document, byte-different in the markdown."
-    },
-    {
       "exampleId": "cm-194",
       "path": "root.children[1].children[0]",
       "kind": "attribute",
@@ -1101,16 +1081,6 @@
       "reason": "Delimiter-run pathology (regression corpora): adversarial nested/unbalanced emphasis, strikethrough and tilde runs cannot be represented as distinct ProseMirror marks; the serializer emits its closest escaped spelling, whose re-parse differs at the boundaries. The text content survives; the adversarial delimiter structure does not."
     },
     {
-      "exampleId": "cmreg-8",
-      "path": "root.children[0].children[0]",
-      "kind": "attribute",
-      "detail": "value",
-      "inputValue": "City:\n",
-      "outputValue": "City: ",
-      "verdict": "normalization",
-      "reason": "Soft line break adjacent to inline/raw HTML serializes as a space; whitespace-equivalent in the rendered document, byte-different in the markdown."
-    },
-    {
       "exampleId": "gfm-202",
       "path": "root.children[0].children[2]",
       "kind": "child-count",
@@ -1598,16 +1568,6 @@
       "reason": "Delimiter-run pathology (regression corpora): adversarial nested/unbalanced emphasis, strikethrough and tilde runs cannot be represented as distinct ProseMirror marks; the serializer emits its closest escaped spelling, whose re-parse differs at the boundaries. The text content survives; the adversarial delimiter structure does not."
     },
     {
-      "exampleId": "gfmreg-14",
-      "path": "root.children[0].children[0]",
-      "kind": "attribute",
-      "detail": "value",
-      "inputValue": "City:\n",
-      "outputValue": "City: ",
-      "verdict": "model-limit",
-      "reason": "Delimiter-run pathology (regression corpora): adversarial nested/unbalanced emphasis, strikethrough and tilde runs cannot be represented as distinct ProseMirror marks; the serializer emits its closest escaped spelling, whose re-parse differs at the boundaries. The text content survives; the adversarial delimiter structure does not."
-    },
-    {
       "exampleId": "gfmreg-8",
       "path": "root.children[0].children[0]",
       "kind": "type",
@@ -1804,16 +1764,6 @@
       "detail": "emphasis vs strong",
       "inputValue": "emphasis",
       "outputValue": "strong",
-      "verdict": "model-limit",
-      "reason": "Delimiter-run pathology (regression corpora): adversarial nested/unbalanced emphasis, strikethrough and tilde runs cannot be represented as distinct ProseMirror marks; the serializer emits its closest escaped spelling, whose re-parse differs at the boundaries. The text content survives; the adversarial delimiter structure does not."
-    },
-    {
-      "exampleId": "gfmreg-9",
-      "path": "root.children[0].children[0]",
-      "kind": "attribute",
-      "detail": "value",
-      "inputValue": "City:\n",
-      "outputValue": "City: ",
       "verdict": "model-limit",
       "reason": "Delimiter-run pathology (regression corpora): adversarial nested/unbalanced emphasis, strikethrough and tilde runs cannot be represented as distinct ProseMirror marks; the serializer emits its closest escaped spelling, whose re-parse differs at the boundaries. The text content survives; the adversarial delimiter structure does not."
     },
@@ -2715,16 +2665,6 @@
       "reason": "Empty-text link: ProseMirror represents links as marks on text, so a link with no text has nothing to carry the mark and the whole construct — URL included — is dropped on serialize. Honest, pinned data loss."
     },
     {
-      "exampleId": "mdx-31",
-      "path": "root.children[0].children[0]",
-      "kind": "attribute",
-      "detail": "value",
-      "inputValue": "City:\n",
-      "outputValue": "City: ",
-      "verdict": "normalization",
-      "reason": "Soft line break adjacent to inline/raw HTML serializes as a space; whitespace-equivalent in the rendered document, byte-different in the markdown."
-    },
-    {
       "exampleId": "vmark-alert-note",
       "path": "root.children[0]",
       "kind": "child-count",
@@ -2889,26 +2829,6 @@
       "outputValue": null,
       "verdict": "model-limit",
       "reason": "Code-fence meta: the ProseMirror code block keeps language only, so the fence meta string after the language is dropped on serialize."
-    },
-    {
-      "exampleId": "cm-148",
-      "path": "root.children[1].children[1]",
-      "kind": "attribute",
-      "detail": "value",
-      "inputValue": ".\n",
-      "outputValue": ". ",
-      "verdict": "normalization",
-      "reason": "Soft line break adjacent to inline/raw HTML serializes as a space; whitespace-equivalent in the rendered document, byte-different in the markdown."
-    },
-    {
-      "exampleId": "cm-187",
-      "path": "root.children[0].children[0]",
-      "kind": "attribute",
-      "detail": "value",
-      "inputValue": "Foo\n",
-      "outputValue": "Foo ",
-      "verdict": "normalization",
-      "reason": "Soft line break adjacent to inline/raw HTML serializes as a space; whitespace-equivalent in the rendered document, byte-different in the markdown."
     },
     {
       "exampleId": "cm-300",
@@ -3811,16 +3731,6 @@
       "reason": "Emphasis spanning a hard line break: ProseMirror marks split at the break node, so *foo(break)bar* serializes as *foo*\\ then *bar* — the re-parse reads three inline nodes where the input had one emphasis span. The emphasized text survives; the single-span structure does not."
     },
     {
-      "exampleId": "cmreg-8",
-      "path": "root.children[0].children[0]",
-      "kind": "attribute",
-      "detail": "value",
-      "inputValue": "City:\n",
-      "outputValue": "City: ",
-      "verdict": "normalization",
-      "reason": "Soft line break adjacent to inline/raw HTML serializes as a space; whitespace-equivalent in the rendered document, byte-different in the markdown."
-    },
-    {
       "exampleId": "cmreg-14",
       "path": "root.children[0].children[0].children[0]",
       "kind": "attribute",
@@ -4444,26 +4354,6 @@
       "detail": "emphasis vs strong",
       "inputValue": "emphasis",
       "outputValue": "strong",
-      "verdict": "model-limit",
-      "reason": "Delimiter-run pathology (regression corpora): adversarial nested/unbalanced emphasis, strikethrough and tilde runs cannot be represented as distinct ProseMirror marks; the serializer emits its closest escaped spelling, whose re-parse differs at the boundaries. The text content survives; the adversarial delimiter structure does not."
-    },
-    {
-      "exampleId": "gfmreg-9",
-      "path": "root.children[0].children[0]",
-      "kind": "attribute",
-      "detail": "value",
-      "inputValue": "City:\n",
-      "outputValue": "City: ",
-      "verdict": "model-limit",
-      "reason": "Delimiter-run pathology (regression corpora): adversarial nested/unbalanced emphasis, strikethrough and tilde runs cannot be represented as distinct ProseMirror marks; the serializer emits its closest escaped spelling, whose re-parse differs at the boundaries. The text content survives; the adversarial delimiter structure does not."
-    },
-    {
-      "exampleId": "gfmreg-14",
-      "path": "root.children[0].children[0]",
-      "kind": "attribute",
-      "detail": "value",
-      "inputValue": "City:\n",
-      "outputValue": "City: ",
       "verdict": "model-limit",
       "reason": "Delimiter-run pathology (regression corpora): adversarial nested/unbalanced emphasis, strikethrough and tilde runs cannot be represented as distinct ProseMirror marks; the serializer emits its closest escaped spelling, whose re-parse differs at the boundaries. The text content survives; the adversarial delimiter structure does not."
     },
@@ -5613,16 +5503,6 @@
       "outputValue": "__undefined__",
       "verdict": "model-limit",
       "reason": "Empty-text link: ProseMirror represents links as marks on text, so a link with no text has nothing to carry the mark and the whole construct — URL included — is dropped on serialize. Honest, pinned data loss."
-    },
-    {
-      "exampleId": "mdx-31",
-      "path": "root.children[0].children[0]",
-      "kind": "attribute",
-      "detail": "value",
-      "inputValue": "City:\n",
-      "outputValue": "City: ",
-      "verdict": "normalization",
-      "reason": "Soft line break adjacent to inline/raw HTML serializes as a space; whitespace-equivalent in the rendered document, byte-different in the markdown."
     },
     {
       "exampleId": "vmark-alert-note",

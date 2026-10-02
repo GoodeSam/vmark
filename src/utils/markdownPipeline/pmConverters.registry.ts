@@ -35,7 +35,6 @@ import {
   convertBlockquote,
   convertCodeBlock,
   convertDefinition,
-  convertDetailsBlock,
   convertFrontmatter,
   convertHeading,
   convertHorizontalRule,
@@ -50,6 +49,7 @@ import {
   type PmToMdastNode,
 } from "./pmBlockConverters";
 import { convertFootnoteDefinition } from "./pmFootnoteConverters";
+import { convertDetailsBlock } from "./pmDetailsConverter";
 
 export type PmToMdastResult = PmToMdastNode | PmToMdastNode[] | null;
 

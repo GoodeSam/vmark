@@ -1,16 +1,25 @@
 /**
- * Serialized-markdown code ranges — where the post-stringify passes must not
- * rewrite text.
+ * Serialized-markdown code ranges — where the cosmetic pass does not look for
+ * escapes to strip.
  *
- * Purpose: the cosmetic pass and the hard-break pass both edit the string
- * remark-stringify produced, and both must leave fenced code blocks and inline
- * code spans alone. This module answers "is this offset inside code?" for
- * them, from one sorted range list.
+ * Purpose: the cosmetic pass edits the string remark-stringify produced, and
+ * skips fenced code blocks and inline code spans when collecting candidates.
+ * This module answers "is this offset inside code?" for it, from one sorted
+ * range list.
+ *
+ * Key decisions:
+ *   - These ranges are a regex approximation of code, and are safe ONLY as a
+ *     candidate filter: the cosmetic pass accepts its edits solely when the
+ *     result re-parses to the same tree, so a range this misses costs a
+ *     rejected edit, never a changed document. Nothing may apply an edit on
+ *     the strength of these ranges alone: they do not cover math, HTML,
+ *     tables or indented code. That is why the hard-break spelling is chosen
+ *     on the `break` node (serializerBreak.ts) and not by a pass that
+ *     consults them.
  *
  * Split out of `serializerCosmetics.ts` to keep it within its size budget.
  *
  * @coordinates-with serializerCosmetics.ts — skips escapes inside code
- * @coordinates-with serializer.ts — the hard-break pass
  * @module utils/markdownPipeline/serializerCodeRanges
  */
 
@@ -71,18 +80,4 @@ export function isInsideCodeRange(
     }
   }
   return false;
-}
-
-/** Apply a regex replacement only outside code blocks and inline code. */
-export function replaceOutsideCode(
-  markdown: string,
-  re: RegExp,
-  replacement: string,
-  ranges: Array<[number, number]>
-): string {
-  return markdown.replace(re, (match, ...args) => {
-    const offset = args[args.length - 2] as number;
-    if (isInsideCodeRange(ranges, offset)) return match;
-    return match.replace(re, replacement);
-  });
 }

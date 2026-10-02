@@ -42,7 +42,7 @@ import type {
   ThematicBreak,
 } from "mdast";
 import type { Math } from "mdast-util-math";
-import type { Details, Toc, Yaml } from "./types";
+import type { Toc, Yaml } from "./types";
 export type PmToMdastNode = Content | ListItem;
 
 export interface PmToMdastContext {
@@ -77,9 +77,12 @@ export function convertCodeBlock(node: PMNode): Code | Math {
     };
   }
 
+  const meta = (node.attrs.meta as string | null | undefined) ?? null;
   return {
     type: "code",
     lang: lang || undefined,
+    // A fence cannot carry meta without a language to precede it.
+    ...(lang && meta ? { meta } : {}),
     value: node.textContent,
   };
 }
@@ -119,34 +122,6 @@ export function convertAlertBlock(context: PmToMdastContext, node: PMNode): Bloc
   return { type: "blockquote", children };
 }
 
-export function convertDetailsBlock(context: PmToMdastContext, node: PMNode): Details {
-  const firstChild = node.firstChild;
-  const hasSummaryNode = firstChild?.type.name === "detailsSummary";
-  const summary = hasSummaryNode ? firstChild.textContent : "Details";
-  // Start from index 1 only if first child is summary; otherwise start from 0
-  const startIndex = hasSummaryNode ? 1 : 0;
-
-  const children: BlockContent[] = [];
-  for (let i = startIndex; i < node.childCount; i += 1) {
-    const child = node.child(i);
-    const converted = context.convertNode(child);
-    if (converted) {
-      if (Array.isArray(converted)) {
-        children.push(...(converted as BlockContent[]));
-      } else {
-        children.push(converted as BlockContent);
-      }
-    }
-  }
-
-  return {
-    type: "details",
-    open: Boolean(node.attrs.open),
-    summary,
-    children,
-  };
-}
-
 export function convertList(context: PmToMdastContext, node: PMNode, ordered: boolean): List {
   const children: ListItem[] = [];
   node.forEach((child) => {
@@ -156,8 +131,9 @@ export function convertList(context: PmToMdastContext, node: PMNode, ordered: bo
     }
   });
 
-  // Derive list spread from children: loose only if any child item is spread
-  const spread = children.some((item) => item.spread === true);
+  // Loose when the list was loose (where the schema records it) or any item
+  // holds more than one block.
+  const spread = node.attrs.spread === true || children.some((item) => item.spread === true);
   const list: List = {
     type: "list",
     ordered,
