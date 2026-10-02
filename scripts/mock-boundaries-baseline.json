@@ -1336,11 +1336,6 @@
       "target": "src/components/KnowledgeBasePanel/KbGraphView"
     },
     {
-      "file": "src/components/Terminal/useTerminalSessions.createFail.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Terminal/createTerminalInstance"
-    },
-    {
       "file": "src/components/TitleBar/TitleBar.a11y.test.tsx",
       "api": "vi.mock",
       "target": "src/components/TitleBar/useTitleBarRename"
