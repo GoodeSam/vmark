@@ -4,10 +4,10 @@
  * Purpose: let a test drive the REAL save / open / autosave / external-change
  * composition — real stores, real services — with `@tauri-apps/*` as the only
  * mocked boundary. Bytes written through the app's own write path come back
- * out of `readTextFile`, so an assertion can be about the file, not about
- * which function was called with what.
+ * out of `readFile` (and, decoded, `readTextFile`), so an assertion can be
+ * about the file, not about which function was called with what.
  *
- * Two contracts this fake exists to keep:
+ * Three contracts this fake exists to keep:
  *
  *   1. STATEFUL. `write(P, bytes)` → `read(P)` returns those bytes; mtime is
  *      settable and observable through `stat`. A choreography mock cannot
@@ -18,6 +18,20 @@
  *      flow that silently stopped writing still passed — the false-confidence
  *      class this tier exists to close. Reading an unknown path rejects like
  *      the real plugin does; an unstubbed command rejects by name.
+ *   3. THE PLUGIN'S DECODING. Files are bytes. `readFile` returns them as
+ *      they are; `readTextFile` decodes them as the plugin does, which DROPS a
+ *      leading BOM. This fake used to hand `readTextFile` callers the BOM, and
+ *      every jsdom BOM test passed on that difference while the real app lost
+ *      the mark (statefulFsFake.plugin.test.ts pins the contract).
+ *      Verified against the source of tauri-plugin-fs 2.x, the version
+ *      `package.json` and `src-tauri/Cargo.toml` pin: the Rust commands
+ *      `read_file` and `read_text_file` both call `read_file_inner`
+ *      (`src/commands.rs`), which returns the file's raw bytes with no
+ *      validation or BOM handling; in the guest JS (`guest-js/index.ts`),
+ *      `readFile` returns those bytes as a `Uint8Array` and `readTextFile`
+ *      returns `new TextDecoder(options?.encoding ?? 'utf-8').decode(bytes)`.
+ *      Confirmed in the running app: `readFile` of a BOM'd file begins
+ *      239, 187, 191 and `readTextFile` of it begins after them.
  *
  * Usage (the mock factory is lazy, so the dynamic import is safe):
  *

@@ -144,9 +144,15 @@ export class FakeDisk {
 
   // ── Async surface (what the mocked plugin delegates to) ──
 
-  /** plugin-fs `readTextFile`: the file's text. */
+  /**
+   * plugin-fs `readTextFile`, decoded exactly as the plugin decodes it: its
+   * Rust command returns the raw bytes and its guest JS runs them through
+   * `new TextDecoder("utf-8")`, whose default (`ignoreBOM: false`) DROPS a
+   * leading U+FEFF and replaces invalid sequences with U+FFFD. The same
+   * constructor reproduces both (see the header of statefulFsFake.ts).
+   */
   readTextFile(path: string): Promise<string> {
-    return this.readFile(path).then((bytes) => exactText.decode(bytes));
+    return this.readFile(path).then((bytes) => new TextDecoder("utf-8").decode(bytes));
   }
 
   /** plugin-fs `readFile`: the raw bytes, BOM and all. */

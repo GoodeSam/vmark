@@ -144,7 +144,12 @@ describe.each(WRITE_PATHS)("$tool goes through the save pipeline", ({ tool, run 
     expect(snapshots).toHaveLength(1);
     // Never merged away or size-skipped like an autosave snapshot.
     expect(snapshots[0].type).toBe("manual");
-    expect(await loadSnapshot(target, snapshots[0].id)).toBe(EDITED_ON_DISK);
+    // The snapshot FILE holds the bytes written, BOM included. Read the file:
+    // loadSnapshot decodes through the plugin's text read, which drops the BOM
+    // (harmless there — a restore re-applies the file's own convention).
+    const snapshotFile = statefulFs.paths().find((p) => p.endsWith(`/${snapshots[0].id}.md`));
+    expect(statefulFs.read(snapshotFile ?? "<no snapshot file>")).toBe(EDITED_ON_DISK);
+    expect(await loadSnapshot(target, snapshots[0].id)).toBe(EDITED_ON_DISK.slice(BOM.length));
   });
 
   it("captures the write exactly once, as an MCP write naming its tool", async () => {
