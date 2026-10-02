@@ -1194,21 +1194,6 @@
       "target": "src/stores/uiStore"
     },
     {
-      "file": "src/services/persistence/hotExit/restoreTabs.isolation.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/documentStore"
-    },
-    {
-      "file": "src/services/persistence/hotExit/restoreTabs.isolation.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/tabStore"
-    },
-    {
-      "file": "src/services/persistence/hotExit/restoreTabs.isolation.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/uiStore"
-    },
-    {
       "file": "src/services/persistence/saveToPath.ordering.test.ts",
       "api": "vi.mock",
       "target": "src/stores/documentStore"
@@ -2099,16 +2084,6 @@
       "file": "src/plugins/toolbarActions/wysiwygAdapterLinkEditor.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/toolbarActions/wysiwygAdapterUtils"
-    },
-    {
-      "file": "src/services/persistence/hotExit/restoreTabs.isolation.test.ts",
-      "api": "vi.mock",
-      "target": "src/services/persistence/hotExit/restoreDocumentState"
-    },
-    {
-      "file": "src/services/persistence/hotExit/restoreTabs.isolation.test.ts",
-      "api": "vi.mock",
-      "target": "src/services/persistence/hotExit/restoreTabsHelpers"
     },
     {
       "file": "src/services/persistence/resilience/_hotExitRestore.grant.test.ts",
