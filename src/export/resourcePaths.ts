@@ -136,7 +136,10 @@ export async function resolveRelativePath(
  */
 export async function getDocumentBaseDir(filePath: string | null): Promise<string> {
   if (!filePath) {
-    // Return current working directory or home as fallback
+    // An unsaved buffer has no folder. "/" as a CONTAINMENT root admits no
+    // file: Tauri normalizes it to "//", and `isInsideBase` needs the root
+    // plus a separator, which no normalized path has — so every local image
+    // of an unsaved document is refused (resourcePaths.unsaved.test.ts).
     return "/";
   }
   return await dirname(filePath);
