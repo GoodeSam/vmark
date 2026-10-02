@@ -1406,11 +1406,6 @@
       "target": "src/utils/cursorSync/tiptapAnchors"
     },
     {
-      "file": "src/utils/markdownPipeline/inlineParser.test.ts",
-      "api": "vi.doMock",
-      "target": "src/utils/markdownPipeline/dialect"
-    },
-    {
       "file": "src/utils/markdownPipeline/proseMirrorToMdast.test.ts",
       "api": "vi.mock",
       "target": "src/utils/markdownPipeline/pmBlockConverters"
