@@ -1376,11 +1376,6 @@
       "target": "src/services/assembly/bindHostSettings"
     },
     {
-      "file": "src/plugins/blockImage/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/blockImage/BlockImageNodeView"
-    },
-    {
       "file": "src/plugins/codemirror/smartPaste.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/codemirror/smartPasteImage"
