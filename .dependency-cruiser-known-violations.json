@@ -308,57 +308,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/plugins/mathPopup/__tests__/MathPopupView.test.ts",
-    "to": "src/plugins/latex/katexLoader.ts",
-    "unresolvedTo": "@/plugins/latex/katexLoader",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "dynamic-import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/mathPopup/MathPopupView.ts",
-    "to": "src/plugins/latex/katexLoader.ts",
-    "unresolvedTo": "@/plugins/latex/katexLoader",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/mathPreview/MathPreviewView.ts",
-    "to": "src/plugins/latex/katexLoader.ts",
-    "unresolvedTo": "@/plugins/latex/katexLoader",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/plugins/mathPreview/MathPreviewView.ts",
     "to": "src/plugins/latex/latexErrorParser.ts",
     "unresolvedTo": "@/plugins/latex/latexErrorParser",
@@ -926,23 +875,6 @@
     "from": "src/plugins/sourceLinkPopup/SourceLinkPopupView.ts",
     "to": "src/plugins/sourcePopup/index.ts",
     "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceMathPopup/SourceMathPopupView.ts",
-    "to": "src/plugins/latex/katexLoader.ts",
-    "unresolvedTo": "@/plugins/latex/katexLoader",
     "dependencyTypes": [
       "aliased",
       "aliased-tsconfig",

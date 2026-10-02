@@ -18,7 +18,7 @@ import type { EditorView } from "@tiptap/pm/view";
 
 // --- Mocks ---
 
-vi.mock("./katexLoader", () => ({
+vi.mock("@/plugins/shared/katexLoader", () => ({
   loadKatex: vi.fn(() => Promise.resolve({ default: { render: vi.fn() } })),
   isKatexLoaded: vi.fn(() => false),
   getKatexModule: vi.fn(() => null),

@@ -34,7 +34,7 @@ vi.mock("@/plugins/sourcePopup/sourcePopupUtils", () => ({
   })),
 }));
 
-vi.mock("@/plugins/latex/katexLoader", () => ({
+vi.mock("@/plugins/shared/katexLoader", () => ({
   loadKatex: vi.fn(() => Promise.resolve({ default: { render: vi.fn() } })),
 }));
 

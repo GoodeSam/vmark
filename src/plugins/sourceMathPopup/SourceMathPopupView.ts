@@ -26,7 +26,7 @@
 import type { PopupStoreBase, StoreApi } from "@/plugins/shared/types";
 import type { EditorView } from "@codemirror/view";
 import { SourcePopupView, type PopupPositionConfig } from "@/plugins/sourcePopup/SourcePopupView";
-import { loadKatex } from "@/plugins/latex/katexLoader";
+import { loadKatex } from "@/plugins/shared/katexLoader";
 import { isImeKeyEvent } from "@/utils/imeGuard";
 import { renderWarn } from "@/utils/debug";
 import i18n from "@/i18n";

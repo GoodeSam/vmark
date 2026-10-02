@@ -35,7 +35,7 @@ const testRegistry = {
   isEditingAt: () => false,
   clear: mockClear,
 };
-vi.mock("../katexLoader", () => ({
+vi.mock("@/plugins/shared/katexLoader", () => ({
   loadKatex: (...args: unknown[]) => mockLoadKatex(...args),
   isKatexLoaded: () => mockIsKatexLoaded(),
   getKatexModule: () => null,

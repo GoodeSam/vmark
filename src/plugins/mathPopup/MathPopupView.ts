@@ -7,7 +7,7 @@
 
 import i18n from "@/i18n";
 import { isImeKeyEvent } from "@/utils/imeGuard";
-import { loadKatex } from "@/plugins/latex/katexLoader";
+import { loadKatex } from "@/plugins/shared/katexLoader";
 import { renderWarn } from "@/utils/debug";
 import { errorMessage } from "@/utils/errorMessage";
 import type { StoreApi } from "zustand";

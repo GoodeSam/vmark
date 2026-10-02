@@ -6,7 +6,7 @@
  * Styled like link popup (compact, inline).
  */
 
-import { loadKatex } from "@/plugins/latex/katexLoader";
+import { loadKatex } from "@/plugins/shared/katexLoader";
 import { parseLatexError } from "@/plugins/latex/latexErrorParser";
 import {
   calculatePopupPosition,
