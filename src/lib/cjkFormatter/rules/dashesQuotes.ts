@@ -2,10 +2,12 @@
  * Group 4 — Dash and quote conversion / spacing rules.
  *
  * @coordinates-with quotePairing — stack-based contextual quote conversion
+ * @coordinates-with quoteClassification — the quote characters
  * @module lib/cjkFormatter/rules/dashesQuotes
  */
 
 import type { QuoteStyle } from "@/stores/settingsStore";
+import { CURLY_SINGLE_CLOSE, CURLY_SINGLE_OPEN } from "../quoteClassification";
 import {
   CJK_LETTER_CLASS,
   CJK_CHARS_PATTERN,
@@ -18,6 +20,7 @@ import {
   codePointBefore,
   isCJKLetter,
   isHangulLetter,
+  replaceDelimited,
 } from "./shared";
 
 /**
@@ -243,11 +246,11 @@ export function convertToCJKCornerQuotes(text: string): string {
  */
 export function convertNestedCornerQuotes(text: string): string {
   // Only convert single quotes inside corner quotes
-  return text.replace(/「([^」]*)」/g, (_, content) => {
-    const converted = content.replace(
-      /\u2018([^\u2019]*)\u2019/g,
-      "『$1』"
-    );
-    return `「${converted}」`;
-  });
+  return replaceDelimited(
+    text,
+    "「",
+    "」",
+    (content) =>
+      `「${replaceDelimited(content, CURLY_SINGLE_OPEN, CURLY_SINGLE_CLOSE, (inner) => `『${inner}』`)}」`
+  );
 }

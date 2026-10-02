@@ -6,6 +6,11 @@
  * been formatted. Split out of markdownParser.ts, which owns protected-region
  * detection.
  *
+ * A segment also records what its edges ARE, because the rules cannot see
+ * past them: whether each edge is a real line edge, and whether its first
+ * character is the `)` closing a link whose URL is the protected region to
+ * its left.
+ *
  * Invariant: `protectedRegions` must be sorted by start and non-overlapping,
  * exactly as returned by `findProtectedRegions` (which coalesces overlapping
  * or contained regions). Overlapping regions would make reconstruction emit

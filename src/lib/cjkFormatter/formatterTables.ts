@@ -11,11 +11,13 @@
  *
  * @coordinates-with formatter.ts — formatMarkdown drives these
  * @coordinates-with @/utils/tableParser — splitTableCells knows about inline code
+ * @coordinates-with protectedRegionSearch.ts — which lines sit inside a protected region
  * @module lib/cjkFormatter/formatterTables
  */
 
 import type { CJKFormattingSettings, FormatOptions } from "./types";
 import { splitTableCells } from "@/utils/tableParser";
+import { createRegionLookup } from "./protectedRegionSearch";
 
 export interface TableBlock {
   start: number;
@@ -26,10 +28,6 @@ interface LineInfo {
   start: number;
   text: string;
   lineBreak: string;
-}
-
-function isInsideRegion(pos: number, regions: Array<{ start: number; end: number }>): boolean {
-  return regions.some((r) => pos >= r.start && pos < r.end);
 }
 
 function splitLines(text: string): LineInfo[] {
@@ -73,6 +71,7 @@ function hasPipeOutsideCode(content: string): boolean {
 export function detectTableBlocks(text: string, protectedRegions: Array<{ start: number; end: number }>): TableBlock[] {
   const lines = splitLines(text);
   const blocks: TableBlock[] = [];
+  const insideProtected = createRegionLookup(protectedRegions);
 
   let i = 0;
   // The last line already claimed by an emitted block. A row that is already a
@@ -86,7 +85,7 @@ export function detectTableBlocks(text: string, protectedRegions: Array<{ start:
     const line = lines[i];
     const { prefix, content } = splitBlockquotePrefix(line.text);
 
-    if (isInsideRegion(line.start, protectedRegions)) {
+    if (insideProtected(line.start)) {
       i += 1;
       continue;
     }
@@ -110,7 +109,7 @@ export function detectTableBlocks(text: string, protectedRegions: Array<{ start:
       continue;
     }
 
-    if (isInsideRegion(header.start, protectedRegions)) {
+    if (insideProtected(header.start)) {
       i += 1;
       continue;
     }
@@ -129,7 +128,7 @@ export function detectTableBlocks(text: string, protectedRegions: Array<{ start:
       const bodySplit = splitBlockquotePrefix(bodyLine.text);
       if (bodySplit.prefix !== prefix) break;
       if (bodySplit.content.trim().length === 0) break;
-      if (isInsideRegion(bodyLine.start, protectedRegions)) break;
+      if (insideProtected(bodyLine.start)) break;
       if (!hasPipeOutsideCode(bodySplit.content)) break;
       if (isTableDelimiterRow(bodySplit.content)) break;
       endLine = j;

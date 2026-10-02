@@ -20,7 +20,7 @@
  *   - Frontmatter covers BOTH delimiters, `---` (YAML) and `+++` (TOML)
  *   - An UNCLOSED fence claims the rest of the document, as CommonMark says;
  *     a document being edited is unterminated most of the time
- *   - Each regex checks isInsideRegion before adding, so nested constructs
+ *   - Each detector checks a region lookup before adding, so nested constructs
  *     (e.g., inline code inside a fenced block) are not double-protected
  *   - Link URLs protect only the URL part [text](URL), not the display text,
  *     so CJK in link text is still formatted
@@ -43,7 +43,7 @@
 import type { ProtectedRegion, ProtectedRegionOptions } from "./types";
 import { detectLineOrientedRegions } from "./markdownParserBlocks";
 import { detectInlineSpanRegions } from "./markdownParserInline";
-import { isInsideRegion } from "./protectedRegionSearch";
+import { createRegionLookup } from "./protectedRegionSearch";
 
 /**
  * Find all protected regions in markdown text.
@@ -74,10 +74,11 @@ export function findProtectedRegions(
   // 1b. Thematic breaks (horizontal rules): ---, ***, ___ on their own line
   // Must be 3+ of same char, optionally with spaces between, on its own line
   const thematicBreakRegex = /^[ \t]*([-*_])(?:[ \t]*\1){2,}[ \t]*$/gm;
+  const insideFrontmatter = createRegionLookup(regions);
   let thematicMatch;
   while ((thematicMatch = thematicBreakRegex.exec(text)) !== null) {
     // Skip if this is part of frontmatter (already protected)
-    if (!isInsideRegion(thematicMatch.index, regions)) {
+    if (!insideFrontmatter(thematicMatch.index)) {
       regions.push({
         start: thematicMatch.index,
         end: thematicMatch.index + thematicMatch[0].length,
@@ -116,9 +117,10 @@ export function findProtectedRegions(
   //     string literal. Detected on the ORIGINAL text and skipped when already
   //     inside a paired fence, so a closed block's interior cannot re-open one.
   const fenceOpenerRegex = /^[ ]{0,3}(`{3,}|~{3,})[^\n]*$/gm;
+  const insidePairedFence = createRegionLookup(regions);
   let opener;
   while ((opener = fenceOpenerRegex.exec(text)) !== null) {
-    if (isInsideRegion(opener.index, regions)) continue;
+    if (insidePairedFence(opener.index)) continue;
     regions.push({
       start: opener.index,
       end: text.length,

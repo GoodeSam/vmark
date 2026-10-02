@@ -210,3 +210,29 @@ export function codePointAt(text: string, index: number): string {
 export function containsCJK(text: string): boolean {
   return isCJKLetter(text) || isHangulLetter(text);
 }
+
+/**
+ * Replace every `open … close` pair, where the content holds no `close`, with
+ * `render(content)` — what `text.replace(/open([^close]*)close/g, …)` does,
+ * in one pass. The expression rescans to the end of the text from every
+ * `open` once the last `close` is behind it; this stops at the first `open`
+ * that has none.
+ */
+export function replaceDelimited(
+  text: string,
+  open: string,
+  close: string,
+  render: (content: string) => string
+): string {
+  let out = "";
+  let cursor = 0;
+  for (;;) {
+    const start = text.indexOf(open, cursor);
+    if (start === -1) break;
+    const end = text.indexOf(close, start + open.length);
+    if (end === -1) break;
+    out += text.slice(cursor, start) + render(text.slice(start + open.length, end));
+    cursor = end + close.length;
+  }
+  return cursor === 0 ? text : out + text.slice(cursor);
+}

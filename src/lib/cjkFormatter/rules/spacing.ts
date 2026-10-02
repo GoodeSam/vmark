@@ -53,9 +53,16 @@ export function addCJKEnglishSpacing(text: string): string {
     new RegExp(`([${CJK_LETTER_CLASS}])(${alphanumPattern})`, "gu"),
     "$1 $2"
   );
-  // Alphanumeric followed by CJK (non-Korean)
+  // Alphanumeric followed by CJK (non-Korean).
+  //
+  // Only the END of the token is matched: its last letter or digit, then at
+  // most one unit sign, then the CJK character. Where the space goes depends
+  // on nothing else — a currency code ends in a letter, `°C` ends in one too —
+  // and matching the whole token from its start made the engine read a long
+  // run of letters to its end, find no CJK character there, and start again
+  // one character later: a pasted base64 line cost its length squared.
   text = text.replace(
-    new RegExp(`(${alphanumPattern})([${CJK_LETTER_CLASS}])`, "gu"),
+    new RegExp(`(${LATIN_ALNUM}[%‰℃℉°]?)([${CJK_LETTER_CLASS}])`, "gu"),
     "$1 $2"
   );
 
@@ -138,15 +145,46 @@ export function fixCurrencySpacing(
  * Both-sides (`读 / 写`) and right-side-only (`读/ 写`) are separators and still
  * tighten.
  *
- * `[ \t]` only — matching `\n` would merge adjacent lines (e.g. a heading with
- * a following line that starts with an absolute path).
+ * Spaces and tabs only — taking a line break would merge adjacent lines (e.g.
+ * a heading with a following line that starts with an absolute path).
+ *
+ * A scan over the slashes, reading what
+ * `/(?<![/:])([ \t]*)\/([ \t]*)(?!\/)/g` reads: the blanks on each side
+ * of a slash, not preceded by `/` or `:` and not followed by `/` (so `://` and
+ * `//` are never touched). The expression tried every blank of a run as a
+ * starting point, so a long run of spaces with no slash after it was read
+ * once per space.
  */
 export function fixSlashSpacing(text: string): string {
-  return text.replace(
-    /(?<![/:])([ \t]*)\/([ \t]*)(?!\/)/g,
-    (whole, left: string, right: string) =>
-      left.length > 0 && right.length === 0 ? whole : "/"
-  );
+  const isBlank = (index: number): boolean => text[index] === " " || text[index] === "\t";
+  const isGuard = (index: number): boolean => text[index] === "/" || text[index] === ":";
+
+  let out = "";
+  let cursor = 0; // end of the previous match; nothing before it is read again
+  let slash = text.indexOf("/");
+  for (; slash !== -1; slash = text.indexOf("/", Math.max(slash + 1, cursor))) {
+    // Right side: every blank, less one if that would put a slash next.
+    let end = slash + 1;
+    while (isBlank(end)) end += 1;
+    if (text[end] === "/") {
+      if (end === slash + 1) continue; // `//`
+      end -= 1;
+    }
+
+    // Left side: every blank back to the previous match, less one if the
+    // character before them is a guard.
+    let start = slash;
+    while (start > cursor && isBlank(start - 1)) start -= 1;
+    if (isGuard(start - 1)) {
+      if (start === slash) continue; // `:/`, or the second slash of `//`
+      start += 1;
+    }
+
+    const leftOnly = start < slash && end === slash + 1;
+    out += text.slice(cursor, start) + (leftOnly ? text.slice(start, end) : "/");
+    cursor = end;
+  }
+  return cursor === 0 ? text : out + text.slice(cursor);
 }
 
 /**
@@ -160,8 +198,10 @@ export function fixSlashSpacing(text: string): string {
  *    looking at a single space, which it then deleted. So
  *    `preserveTwoSpaceHardBreaks` was inert under default settings and every
  *    hard line break in a CJK document was silently dropped, changing the
- *    rendered output. The lookahead keeps end-of-line runs intact; `[ ]*` in
- *    it is load-bearing, because `{2,}` is greedy and backtracks.
+ *    rendered output. The lookaheads keep end-of-line runs intact: `(?! )`
+ *    makes the run the WHOLE run, and the second then asks whether the line
+ *    ends there. (Asking it of every shorter prefix, each time skipping the
+ *    rest of the run, gave the same answer at the square of the cost.)
  *
  * 2. **Mistake a segment-leading run for indentation** (WI-CJKF2.1). The
  *    `(\S)` prefix is how indentation is spared, but a segment that starts
@@ -172,7 +212,7 @@ export function collapseSpaces(text: string, options: FormatOptions = {}): strin
   const { preserveTwoSpaceHardBreaks = false, startsAtLineStart = true } = options;
 
   let out = preserveTwoSpaceHardBreaks
-    ? text.replace(/(\S) {2,}(?![ ]*(?:\r?\n|$))/g, "$1 ")
+    ? text.replace(/(\S) {2,}(?! )(?!\r?\n|$)/g, "$1 ")
     : text.replace(/(\S) {2,}/g, "$1 ");
 
   // Same exemption for the segment-leading run: `中文 \`code\`  \n` puts the
@@ -180,7 +220,7 @@ export function collapseSpaces(text: string, options: FormatOptions = {}): strin
   // there is no `\S` in front of it at all.
   if (!startsAtLineStart) {
     out = preserveTwoSpaceHardBreaks
-      ? out.replace(/^ {2,}(?![ ]*(?:\r?\n|$))/, " ")
+      ? out.replace(/^ {2,}(?! )(?!\r?\n|$)/, " ")
       : out.replace(/^ {2,}/, " ");
   }
 
