@@ -1366,11 +1366,6 @@
       "target": "src/lib/formats/adapters/yamlWorkflowRenderer"
     },
     {
-      "file": "src/lib/ghaWorkflow/export/__tests__/saveExport.test.ts",
-      "api": "vi.mock",
-      "target": "src/lib/ghaWorkflow/export/toImage"
-    },
-    {
       "file": "src/main.boot.test.tsx",
       "api": "vi.mock",
       "target": "src/App"
