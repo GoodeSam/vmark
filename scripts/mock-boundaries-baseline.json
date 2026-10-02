@@ -1306,11 +1306,6 @@
   ],
   "siblingEntries": [
     {
-      "file": "e2e/lib/rail.test.mjs",
-      "api": "vi.mock",
-      "target": "e2e/lib/bridge"
-    },
-    {
       "file": "server/mcp/__tests__/unit/utils/healthCheck.test.ts",
       "api": "vi.mock",
       "target": "server/mcp/src/index"
