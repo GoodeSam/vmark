@@ -1371,11 +1371,6 @@
       "target": "src/services/assembly/bindHostSettings"
     },
     {
-      "file": "src/plugins/codemirror/smartPasteClipboardImage.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/codemirror/smartPasteUtils"
-    },
-    {
       "file": "src/plugins/codemirror/smartPasteImage.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/codemirror/smartPasteUtils"
