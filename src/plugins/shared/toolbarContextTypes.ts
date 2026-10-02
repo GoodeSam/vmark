@@ -1,6 +1,9 @@
 /**
  * Shared Toolbar Context Types
  *
+ * Pure types (no runtime code), in plugins/shared because formatToolbar,
+ * toolbarActions and the editor store all read them.
+ *
  * The cursor context each editing surface (Tiptap WYSIWYG, CodeMirror Source)
  * derives for the toolbar, plus the per-context info shapes. Consumed by the
  * toolbar adapters' enable rules and the WYSIWYG context extractor. The

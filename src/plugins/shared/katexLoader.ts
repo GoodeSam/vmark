@@ -10,10 +10,19 @@ export async function loadKatex(): Promise<KatexModule> {
   if (katexModule) return katexModule;
   if (katexLoadPromise) return katexLoadPromise;
 
-  katexLoadPromise = import("katex").then((mod) => {
-    katexModule = mod;
-    return mod;
-  });
+  // A rejected chunk load must not be cached: clearing the promise lets the
+  // next render retry, so one transient failure does not disable math until
+  // reload.
+  katexLoadPromise = import("katex").then(
+    (mod) => {
+      katexModule = mod;
+      return mod;
+    },
+    (error: unknown) => {
+      katexLoadPromise = null;
+      throw error;
+    },
+  );
 
   return katexLoadPromise;
 }

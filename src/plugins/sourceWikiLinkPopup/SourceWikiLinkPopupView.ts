@@ -8,7 +8,7 @@
 import type { EditorView } from "@codemirror/view";
 import { open } from "@tauri-apps/plugin-dialog";
 import i18n from "@/i18n";
-import { SourcePopupView, type StoreApi } from "@/plugins/sourcePopup";
+import { SourcePopupView, type StoreApi } from "@/plugins/shared/SourcePopupView";
 import type { WikiLinkPopupState } from "@/plugins/shared/popupPorts";
 import { hostDocument } from "@/plugins/shared/hostDocument";
 import { sourceActionError } from "@/utils/debug";

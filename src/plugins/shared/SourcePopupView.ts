@@ -3,16 +3,21 @@
  *
  * Abstract base class for popup views in Source mode (CodeMirror 6).
  * Provides common functionality: DOM lifecycle, store subscription,
- * keyboard navigation, click-outside handling, and positioning.
+ * keyboard navigation and click-outside handling; placement geometry and
+ * listener wiring live in sourcePopupPlacement.ts.
  */
 
 import type { EditorView } from "@codemirror/view";
-import { calculatePopupPosition, type AnchorRect } from "@/utils/popupPosition";
+import type { AnchorRect } from "@/utils/popupPosition";
 import { handlePopupTabNavigation } from "@/utils/popupComponents";
-import { getEditorBounds } from "./sourcePopupUtils";
-import { getPopupHostForDom, toHostCoordsForDom } from "@/plugins/shared/popupHostDom";
+import { getPopupHostForDom } from "./popupHostDom";
+import {
+  placeSourcePopup,
+  setSourcePopupListeners,
+  type SourcePopupListeners,
+} from "./sourcePopupPlacement";
 import { isImeKeyEvent } from "@/utils/imeGuard";
-import type { StoreApi, PopupPositionConfig } from "@/plugins/shared/types";
+import type { StoreApi, PopupPositionConfig } from "./types";
 
 // Re-export the shared popup types for convenience
 export type { StoreApi, PopupPositionConfig };
@@ -51,9 +56,7 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
   private lastState: TState | null = null;
 
   // Event handlers (bound for cleanup)
-  private boundHandleClickOutside: (e: MouseEvent) => void;
-  private boundHandleKeydown: (e: KeyboardEvent) => void;
-  private boundHandleScroll: () => void;
+  private listeners: SourcePopupListeners;
 
   constructor(view: EditorView, store: StoreApi<TState>) {
     this.editorView = view;
@@ -64,9 +67,12 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
     this.container.style.display = "none";
 
     // Bind event handlers
-    this.boundHandleClickOutside = this.handleClickOutside.bind(this);
-    this.boundHandleKeydown = this.handleKeydown.bind(this);
-    this.boundHandleScroll = this.handleScroll.bind(this);
+    this.listeners = {
+      clickOutside: this.handleClickOutside.bind(this),
+      keydown: this.handleKeydown.bind(this),
+      scroll: this.handleScroll.bind(this),
+      tabNavigation: this.handleTabNavigation,
+    };
 
     // Subscribe to store
     this.unsubscribe = store.subscribe((state) => {
@@ -150,9 +156,7 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
     return true;
   }
 
-  /**
-   * Show the popup at the anchor position.
-   */
+  /** Show the popup at the anchor position. */
   private show(anchorRect: AnchorRect, state: TState): void {
     // Mount to editor container if available, otherwise document.body
     this.host = getPopupHostForDom(this.editorView.dom) ?? document.body;
@@ -171,17 +175,8 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
 
     this.updatePosition(anchorRect);
 
-    // Attach event listeners
-    document.addEventListener("mousedown", this.boundHandleClickOutside);
-    document.addEventListener("keydown", this.boundHandleKeydown);
-    this.editorView.dom.closest(".editor-container")?.addEventListener(
-      "scroll",
-      this.boundHandleScroll,
-      true
-    );
-
-    // Attach Tab cycling handler to container
-    this.container.addEventListener("keydown", this.handleTabNavigation);
+    // Attach document/editor listeners and the Tab cycling handler
+    setSourcePopupListeners(this.editorView, this.container, this.listeners, true);
 
     // Call subclass hook first to set up state
     this.onShow(state);
@@ -199,9 +194,7 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
     }, 10);
   }
 
-  /**
-   * Hide the popup.
-   */
+  /** Hide the popup. */
   private hide(): void {
     this.container.style.display = "none";
     this.host = null;
@@ -214,27 +207,16 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
   }
 
   private detachListeners(): void {
-    document.removeEventListener("mousedown", this.boundHandleClickOutside);
-    document.removeEventListener("keydown", this.boundHandleKeydown);
-    this.editorView.dom.closest(".editor-container")?.removeEventListener(
-      "scroll",
-      this.boundHandleScroll,
-      true
-    );
-    this.container.removeEventListener("keydown", this.handleTabNavigation);
+    setSourcePopupListeners(this.editorView, this.container, this.listeners, false);
   }
 
-  /**
-   * Handle Tab key for focus cycling within popup.
-   */
+  /** Handle Tab key for focus cycling within popup. */
   private handleTabNavigation = (e: KeyboardEvent): void => {
     if (isImeKeyEvent(e)) return;
     handlePopupTabNavigation(e, this.container);
   };
 
-  /**
-   * Handle click outside to close popup.
-   */
+  /** Handle click outside to close popup. */
   private handleClickOutside(e: MouseEvent): void {
     if (this.justOpened) return;
 
@@ -257,18 +239,14 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
     this.closePopup();
   }
 
-  /**
-   * Handle scroll to close popup.
-   */
+  /** Handle scroll to close popup. */
   private handleScroll(): void {
     if (this.store.getState().isOpen) {
       this.closePopup();
     }
   }
 
-  /**
-   * Handle Escape key to close popup.
-   */
+  /** Handle Escape key to close popup. */
   private handleKeydown(e: KeyboardEvent): void {
     if (isImeKeyEvent(e)) return;
 
@@ -279,9 +257,7 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
     }
   }
 
-  /**
-   * Close the popup via store action.
-   */
+  /** Close the popup via store action. */
   protected closePopup(): void {
     const state = this.store.getState();
     if (typeof state.closePopup === "function") {
@@ -289,9 +265,7 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
     }
   }
 
-  /**
-   * Focus the editor.
-   */
+  /** Focus the editor. */
   protected focusEditor(): void {
     this.editorView.focus();
   }
@@ -302,38 +276,15 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
    */
   protected updatePosition(anchorRect: AnchorRect): void {
     if (this.container.style.display === "none") return;
-
-    const bounds = getEditorBounds(this.editorView);
-    const dimensions = this.getPopupDimensions();
-    const { top, left } = calculatePopupPosition({
-      anchor: anchorRect,
-      popup: { width: dimensions.width, height: dimensions.height },
-      bounds,
-      gap: dimensions.gap ?? 6,
-      preferAbove: dimensions.preferAbove ?? true,
-    });
-
-    // Convert to host-relative coordinates if mounted inside editor container
-    if (this.host !== document.body && this.host) {
-      const hostPos = toHostCoordsForDom(this.host, { top, left });
-      this.container.style.top = `${hostPos.top}px`;
-      this.container.style.left = `${hostPos.left}px`;
-    } else {
-      this.container.style.top = `${top}px`;
-      this.container.style.left = `${left}px`;
-    }
+    placeSourcePopup(this.editorView, this.container, this.host, anchorRect, this.getPopupDimensions());
   }
 
-  /**
-   * Check if popup is currently visible.
-   */
+  /** Check if popup is currently visible. */
   protected isVisible(): boolean {
     return this.container.style.display !== "none";
   }
 
-  /**
-   * Destroy the popup view and clean up.
-   */
+  /** Destroy the popup view and clean up. */
   destroy(): void {
     this.unsubscribe();
     this.detachListeners();

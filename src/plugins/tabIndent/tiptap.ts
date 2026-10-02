@@ -32,7 +32,7 @@ import { liftListItem, sinkListItem } from "@tiptap/pm/schema-list";
 import { isInTable, getTableInfo } from "@/plugins/tableUI/tableActions.tiptap";
 import { canTabEscape, type TabEscapeResult } from "./tabEscape";
 import { canShiftTabEscape, type ShiftTabEscapeResult } from "./shiftTabEscape";
-import { MultiSelection } from "@/plugins/multiCursor/MultiSelection";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
 
 const tabIndentPluginKey = new PluginKey("tabIndent");
 

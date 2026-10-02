@@ -16,7 +16,7 @@ import type { Node } from "@tiptap/pm/model";
 import { Fragment, Slice } from "@tiptap/pm/model";
 import { SelectionRange } from "@tiptap/pm/state";
 import { Mapping, ReplaceStep } from "@tiptap/pm/transform";
-import { MultiSelection } from "../MultiSelection";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
 
 /** Minimal schema — only what a multi-cursor position needs. */
 const schema = new Schema({

@@ -130,7 +130,11 @@
     {
       "name": "Multi-cursor editing",
       "paths": [
-        "src/plugins/multiCursor"
+        "src/plugins/multiCursor",
+        "src/plugins/shared/MultiSelection.ts",
+        "src/plugins/shared/MultiSelection.test.ts",
+        "src/plugins/shared/rangeUtils.ts",
+        "src/plugins/shared/rangeUtils.test.ts"
       ],
       "flag": null,
       "flagDefault": null,
@@ -339,6 +343,8 @@
         "src/plugins/shared/renderMarks.ts",
         "src/plugins/shared/renderQueue.ts",
         "src/plugins/shared/renderQueue.test.ts",
+        "src/plugins/shared/katexLoader.ts",
+        "src/plugins/shared/katexLoader.test.ts",
         "src/stores/blockMathEditingStore.ts",
         "src/stores/__tests__/blockMathEditingStore.test.ts"
       ],
@@ -405,7 +411,6 @@
         "src/plugins/linkCreatePopup",
         "src/plugins/footnotePopup",
         "src/plugins/wikiLinkPopup",
-        "src/plugins/sourcePopup",
         "src/plugins/sourceLinkPopup",
         "src/plugins/sourceLinkCreatePopup",
         "src/plugins/sourceMathPopup",
@@ -444,6 +449,8 @@
         "src/plugins/smartPaste",
         "src/plugins/htmlPaste",
         "src/plugins/markdownPaste",
+        "src/plugins/shared/markdownPasteSlice.ts",
+        "src/plugins/shared/markdownPasteSlice.test.ts",
         "src/plugins/codePaste",
         "src/plugins/markdownCopy",
         "src/plugins/textDragDrop",
@@ -488,7 +495,7 @@
         "src/components/Editor/UniversalToolbar",
         "src/plugins/formatToolbar",
         "src/plugins/toolbarActions",
-        "src/plugins/toolbarContext",
+        "src/plugins/shared/toolbarContextTypes.ts",
         "src/hooks/useUniversalToolbar.ts"
       ],
       "flag": null,

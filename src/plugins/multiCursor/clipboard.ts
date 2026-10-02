@@ -11,13 +11,13 @@
  *   - Cut/delete operations run in reverse doc order to preserve positions
  *
  * @coordinates-with multiCursorPlugin.ts — integrates clipboard handlers into the plugin
- * @coordinates-with rangeUtils.ts — sorting ranges for safe reverse-order editing
+ * @coordinates-with shared/rangeUtils.ts — sorting ranges for safe reverse-order editing
  * @module plugins/multiCursor/clipboard
  */
 import { SelectionRange } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
-import { MultiSelection } from "./MultiSelection";
-import { normalizeRangesWithPrimary, sortRangesDescending } from "./rangeUtils";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
+import { normalizeRangesWithPrimary, sortRangesDescending } from "@/plugins/shared/rangeUtils";
 
 /**
  * Serialize multi-selection content for clipboard.

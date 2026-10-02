@@ -41,7 +41,7 @@ vi.mock("@/plugins/shared/popupHostDom", () => ({
   ),
 }));
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import {
   SourcePopupView,
   type PopupStoreBase,
@@ -120,10 +120,10 @@ function createMockView(): EditorView {
 
 function createMockStore(): StoreApi<TestState> & {
   trigger: (state: TestState) => void;
-  mockClosePopup: ReturnType<typeof vi.fn>;
+  mockClosePopup: Mock<() => void>;
 } {
   let listener: ((state: TestState) => void) | null = null;
-  const mockClosePopup = vi.fn();
+  const mockClosePopup = vi.fn<() => void>();
   const currentState: TestState = {
     isOpen: false,
     anchorRect: null,
@@ -279,7 +279,7 @@ describe("SourcePopupView", () => {
     // Show popup first
     store.trigger({ isOpen: true, anchorRect: ANCHOR, closePopup: store.mockClosePopup });
 
-    // Now call updatePosition while visible — hits lines 305-322 (else branch: host is document.body)
+    // Now call updatePosition while visible — the document.body host branch keeps viewport coordinates
     popup.callUpdatePosition({ top: 200, left: 300, bottom: 220, right: 350 });
 
     // Container should have updated position styles
@@ -571,7 +571,7 @@ describe("SourcePopupView", () => {
   it("uses default gap/preferAbove when getPopupDimensions omits them", () => {
     // Create a subclass that returns dimensions WITHOUT gap and preferAbove
     class NoDimPopupView extends TestPopupView {
-      protected getPopupDimensions() {
+      protected override getPopupDimensions() {
         return { width: 200, height: 30 };
       }
     }

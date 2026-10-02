@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { SelectionRange } from "@tiptap/pm/state";
-import { MultiSelection } from "../MultiSelection";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
 import { handleMultiCursorKeyDown } from "../inputHandling";
 import { createState, createMultiCursorState } from "./testHelpers";
 

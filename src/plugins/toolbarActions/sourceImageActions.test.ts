@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
-vi.mock("@/plugins/sourcePopup/sourcePopupUtils", () => ({
+vi.mock("@/plugins/shared/sourcePopupUtils", () => ({
   getAnchorRectFromRange: vi.fn(() => ({ top: 0, bottom: 20, left: 0, right: 100 })),
 }));
 
@@ -83,7 +83,7 @@ import { insertText } from "./sourceAdapterHelpers";
 import { findMarkdownLinkAtPosition, findWikiLinkAtPosition } from "@/utils/markdownLinkPatterns";
 import { readClipboardImagePath } from "@/services/media/clipboardImagePath";
 import { copyImageToAssets } from "@/services/media/imageOperations";
-import { getAnchorRectFromRange } from "@/plugins/sourcePopup/sourcePopupUtils";
+import { getAnchorRectFromRange } from "@/plugins/shared/sourcePopupUtils";
 import { findWordAtCursorSource } from "./sourceAdapterLinks";
 import { hasVideoExtension, hasAudioExtension } from "@/utils/mediaPathDetection";
 

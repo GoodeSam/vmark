@@ -237,7 +237,7 @@ describe("SourcePopupView", () => {
       this.hideCalled = true;
     }
 
-    protected extractState(state: { isOpen: boolean; anchorRect: AnchorRect | null }) {
+    protected override extractState(state: { isOpen: boolean; anchorRect: AnchorRect | null }) {
       return {
         isOpen: state.isOpen,
         anchorRect: state.anchorRect,

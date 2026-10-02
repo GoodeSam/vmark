@@ -10,18 +10,12 @@ import type { AnchorRect } from "@/utils/popupPosition";
 import type { SourcePopupView, StoreApi, PopupStoreBase } from "./SourcePopupView";
 import { getAnchorRectFromRange } from "./sourcePopupUtils";
 
-/**
- * Configuration for popup trigger detection.
- */
+/** Configuration for popup trigger detection. */
 export interface PopupTriggerConfig<TState extends PopupStoreBase, TData extends object = object> {
-  /**
-   * Store API for the popup.
-   */
+  /** Store API for the popup. */
   store: StoreApi<TState>;
 
-  /**
-   * Create the popup view instance.
-   */
+  /** Create the popup view instance. */
   createView: (view: EditorView, store: StoreApi<TState>) => SourcePopupView<TState>;
 
   /**
@@ -45,9 +39,7 @@ export interface PopupTriggerConfig<TState extends PopupStoreBase, TData extends
    */
   extractData: (view: EditorView, range: { from: number; to: number }) => TData;
 
-  /**
-   * Custom open handler for stores that don't use object payloads.
-   */
+  /** Custom open handler for stores that don't use object payloads. */
   openPopup?: (context: {
     view: EditorView;
     range: { from: number; to: number };
@@ -55,9 +47,7 @@ export interface PopupTriggerConfig<TState extends PopupStoreBase, TData extends
     data: TData;
   }) => void;
 
-  /**
-   * Optional hook called before opening the popup.
-   */
+  /** Optional hook called before opening the popup. */
   onOpen?: (context: {
     popupView: SourcePopupView<TState>;
     view: EditorView;
@@ -66,9 +56,7 @@ export interface PopupTriggerConfig<TState extends PopupStoreBase, TData extends
     data: TData;
   }) => void;
 
-  /**
-   * Whether to trigger on click (default: true).
-   */
+  /** Whether to trigger on click (default: true). */
   triggerOnClick?: boolean;
 
   /**
@@ -77,14 +65,10 @@ export interface PopupTriggerConfig<TState extends PopupStoreBase, TData extends
    */
   triggerOnHover?: boolean;
 
-  /**
-   * Delay in ms before showing popup on hover (default: 300).
-   */
+  /** Delay in ms before showing popup on hover (default: 300). */
   hoverDelay?: number;
 
-  /**
-   * Delay in ms before hiding popup when mouse leaves (default: 100).
-   */
+  /** Delay in ms before hiding popup when mouse leaves (default: 100). */
   hoverHideDelay?: number;
 }
 
@@ -119,9 +103,11 @@ export function createSourcePopupPlugin<TState extends PopupStoreBase, TData ext
       private hideTimeout: ReturnType<typeof setTimeout> | null = null;
       private isMouseDown = false;
       private lastHoverRange: { from: number; to: number } | null = null;
+      private readonly dom: HTMLElement;
 
       constructor(view: EditorView) {
         this.popupView = createView(view, store);
+        this.dom = view.dom;
 
         // Set up click handler
         if (triggerOnClick) {
@@ -138,15 +124,6 @@ export function createSourcePopupPlugin<TState extends PopupStoreBase, TData ext
       }
 
       update(update: ViewUpdate) {
-        // Close popup on scroll if anchor is out of view
-        if (update.transactions.some((tr) => tr.scrollIntoView)) {
-          const state = store.getState();
-          if (state.isOpen && state.anchorRect) {
-            // Check if anchor is still visible
-            // This is handled by the popup view's position update
-          }
-        }
-
         // Close popup on selection change (cursor moved away)
         if (update.selectionSet && !update.docChanged) {
           const state = store.getState();
@@ -170,9 +147,16 @@ export function createSourcePopupPlugin<TState extends PopupStoreBase, TData ext
       destroy() {
         this.popupView.destroy();
 
+        // CodeMirror destroys a plugin on reconfiguration while view.dom lives
+        // on, so the listeners must go with the instance that owns them.
         if (triggerOnClick) {
-          // Note: view.dom may be detached at this point
-          // Event listeners are automatically cleaned up when DOM is removed
+          this.dom.removeEventListener("click", this.handleClick);
+        }
+        if (triggerOnHover) {
+          this.dom.removeEventListener("mousemove", this.handleMouseMove);
+          this.dom.removeEventListener("mouseleave", this.handleMouseLeave);
+          this.dom.removeEventListener("mousedown", this.handleMouseDown);
+          this.dom.removeEventListener("mouseup", this.handleMouseUp);
         }
 
         if (this.hoverTimeout) clearTimeout(this.hoverTimeout);
@@ -191,7 +175,11 @@ export function createSourcePopupPlugin<TState extends PopupStoreBase, TData ext
         // Check if click is within the detected range
         if (pos < range.from || pos > range.to) return;
 
-        // Extract data and open popup
+        this.openAt(view, range);
+      };
+
+      /** Extract the trigger's data and open the popup anchored to its range. */
+      private openAt(view: EditorView, range: { from: number; to: number }) {
         const anchorRect = getAnchorRectFromRange(view, range.from, range.to);
         if (!anchorRect) return;
 
@@ -207,7 +195,7 @@ export function createSourcePopupPlugin<TState extends PopupStoreBase, TData ext
         if (typeof openFn === "function") {
           openFn({ ...data, anchorRect });
         }
-      };
+      }
 
       private handleMouseMove = (e: MouseEvent) => {
         // Don't show hover popup while selecting
@@ -248,22 +236,7 @@ export function createSourcePopupPlugin<TState extends PopupStoreBase, TData ext
         this.hoverTimeout = setTimeout(() => {
           // Double-check position is still valid
           if (this.isMouseDown) return;
-
-          const anchorRect = getAnchorRectFromRange(view, range.from, range.to);
-          if (!anchorRect) return;
-
-          const data = extractData(view, range);
-          onOpen?.({ popupView: this.popupView, view, range, anchorRect, data });
-          if (openPopup) {
-            openPopup({ view, range, anchorRect, data });
-            return;
-          }
-
-          const openFn = (store.getState() as TState & { openPopup?: (data: unknown) => void })
-            .openPopup;
-          if (typeof openFn === "function") {
-            openFn({ ...data, anchorRect });
-          }
+          this.openAt(view, range);
         }, hoverDelay);
       };
 
@@ -325,20 +298,3 @@ export function createSourcePopupPlugin<TState extends PopupStoreBase, TData ext
   );
 }
 
-/**
- * Helper to create a position-based trigger detector.
- * Wraps a selection-based detector to work with arbitrary positions.
- *
- * @param selectionBasedDetect - A detector that uses the current selection
- * @returns A detector that can work with any position
- */
-export function createPositionBasedDetector(
-  selectionBasedDetect: (view: EditorView) => { from: number; to: number } | null
-) {
-  return (view: EditorView, _pos: number): { from: number; to: number } | null => {
-    // This is a simplified approach - actual implementation
-    // would need to check if pos is within any detected range
-    // For now, delegate to selection-based detection
-    return selectionBasedDetect(view);
-  };
-}

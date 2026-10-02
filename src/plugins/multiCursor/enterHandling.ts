@@ -8,8 +8,8 @@
 import { SelectionRange } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import { canSplit } from "@tiptap/pm/transform";
-import { MultiSelection } from "./MultiSelection";
-import { sortRangesDescending, normalizeRangesWithPrimary } from "./rangeUtils";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
+import { sortRangesDescending, normalizeRangesWithPrimary } from "@/plugins/shared/rangeUtils";
 
 /**
  * Handle Enter at all cursor positions.

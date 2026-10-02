@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { Schema } from "@tiptap/pm/model";
 import { EditorState, Selection, SelectionRange } from "@tiptap/pm/state";
-import { MultiSelection } from "../MultiSelection";
+import { MultiSelection } from "./MultiSelection";
 
 // Simple schema for testing
 const schema = new Schema({
