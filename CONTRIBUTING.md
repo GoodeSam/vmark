@@ -1,10 +1,31 @@
 # Contributing to VMark
 
-Thank you for your interest in contributing to VMark. This guide covers the
-essentials for getting started, making changes, and submitting pull requests.
+## How to contribute: open an issue
 
-For coding conventions, style rules, and architectural patterns, see
-[AGENTS.md](AGENTS.md) — this document focuses on workflow and setup.
+**VMark takes issues, not pull requests.** The code is written by AI under the
+maintainer's supervision, with the whole rule set, test suite and gate stack in
+context. A change that arrives without that context cannot be merged safely,
+so external pull requests are not merged.
+
+What helps most:
+
+- **A bug report** — [open one](https://github.com/xiaolai/vmark/issues/new?template=bug_report.yml)
+  with steps to reproduce, what you expected, what happened, your VMark version
+  and your operating system. A precise report is the contribution.
+- **A feature request** — [open one](https://github.com/xiaolai/vmark/issues/new?template=feature_request.yml)
+  describing the problem you are trying to solve.
+- **A security problem** — report it privately; see [SECURITY.md](SECURITY.md).
+
+The reasoning is on the website:
+[Why Issues, Not PRs](https://vmark.app/guide/users-as-developers/why-issues-not-prs).
+
+You are welcome to build VMark from source, read the code and run the tests;
+the rest of this document is for that. It describes how the maintainer and the
+AI agents work in this repository — the workflow a change goes through here,
+not a path for submitting one.
+
+For coding conventions, style rules and architectural patterns, see
+[AGENTS.md](AGENTS.md) — this document covers setup and workflow.
 
 ## Prerequisites
 
@@ -21,11 +42,17 @@ For coding conventions, style rules, and architectural patterns, see
 git clone https://github.com/xiaolai/vmark.git
 cd vmark
 pnpm install
+
+# Build the MCP sidecar once. Tauri bundles it as an external binary and it is
+# a gitignored build artifact, so a fresh clone does not have it.
+pnpm --dir server/mcp build:sidecar
+
 pnpm tauri dev
 ```
 
 The first build compiles the Rust backend — this takes a few minutes. Subsequent
-builds are incremental and much faster.
+builds are incremental and much faster. `pnpm tauri dev` checks for the sidecar
+before it starts and tells you to build it if it is missing.
 
 ## Project Structure
 
@@ -46,7 +73,10 @@ vmark/
 │   ├── mcp/              # MCP sidecar server
 │   └── content/          # Content server (Slidev knowledge base)
 ├── website/              # Documentation site (VitePress)
-└── dev-docs/             # Internal architecture docs (local only)
+├── e2e/                  # End-to-end harnesses that drive a live debug build
+├── scripts/              # Gates (lint:*), their self-tests, build helpers
+├── .claude/              # AI tool configuration, rules, decision records
+└── dev-docs/             # Maintainer-local notes (gitignored; not in a clone)
 ```
 
 `utils/` → `services/` → `hooks/` is the three-tier layout from
@@ -57,7 +87,7 @@ tiers are listed above — `src/` has other directories (`lib/`, `pages/`, `them
 `locales/`, …) whose names say what they hold. See
 [.claude/rules/00-engineering-principles.md](.claude/rules/00-engineering-principles.md).
 
-## Development Workflow
+## Development workflow (maintainer and AI agents)
 
 ### Test-Driven Development (Mandatory)
 
@@ -84,12 +114,22 @@ pnpm test:coverage     # With coverage report
 # Rust tests
 cargo test --manifest-path src-tauri/Cargo.toml
 
-# Full gate — run before pushing
+# Inner loop: typecheck, lint, and the tests related to your diff
+pnpm check:fast
+
+# Before pushing: every static gate in parallel, all failures at once
+pnpm check:predelta
+
+# The final gate (about 15 minutes)
 pnpm check:all
 ```
 
-`pnpm check:all` runs linting, coverage checks, and a production build. Your PR
-will not pass review if this command fails.
+`pnpm check:all` runs the static gates, the full test suite with coverage, the
+two server packages' tests, and a production build with its size limits. CI
+runs the same groups as separate jobs, and `main` only accepts a commit whose
+`frontend` and `rust` checks are green. Use `check:fast` while working and
+`check:all` to confirm; the table in [AGENTS.md](AGENTS.md) says which narrower
+command covers which kind of change.
 
 ### Internationalization (i18n)
 
@@ -119,11 +159,13 @@ Follow the conventions in [AGENTS.md](AGENTS.md). Key points:
   `src/styles/index.css`.
 - macOS is the primary platform. Never break macOS to fix Windows/Linux.
 
-## Pull Request Checklist
+## Before a change lands
 
-Before submitting a PR, verify:
+`main` is protected: every change, the maintainer's included, goes through a
+pull request whose required checks pass. Before opening one, the maintainer or
+the agent verifies:
 
-- [ ] `pnpm check:all` passes (lint + tests + build)
+- [ ] `pnpm check:all` passes (static gates + tests + build)
 - [ ] `cargo test --manifest-path src-tauri/Cargo.toml` passes (if Rust changed)
 - [ ] New behavior has tests (RED first)
 - [ ] No hardcoded English strings in UI — i18n keys used
@@ -136,8 +178,8 @@ Before submitting a PR, verify:
 
 For a deeper understanding of the codebase:
 
-- **Architecture overview:** `dev-docs/architecture.md` — C4 diagrams, entry
-  points, data flows, and module map
+- **Feature inventory:** [.claude/feature-ledger.md](.claude/feature-ledger.md)
+  — every shipped feature, the files that implement it and the gate that holds it
 - **Design decisions:** [.claude/adr/](.claude/adr/README.md) — the decision
   records that rules and comments cite by id (Markdown as source of truth, MCP
   sidecar architecture, the three-tier layout, etc.), each with what enforces it
@@ -146,8 +188,9 @@ For a deeper understanding of the codebase:
 
 ## AI-Assisted Development
 
-VMark's AI tool configuration is checked into the repo so every contributor
-shares the same context. You do **not** need any AI tool to contribute.
+VMark's AI tool configuration is checked into the repo so every session, on
+any machine, starts from the same context. You do **not** need any AI tool to
+build VMark or to read the code.
 
 ### `AGENTS.md` is the single source of truth
 
@@ -166,26 +209,26 @@ Update `AGENTS.md` and every tool picks up the change.
 | File | In git? | Purpose |
 |------|---------|---------|
 | `AGENTS.md`, `CLAUDE.md` | Yes | Shared instructions and entry point |
-| `.claude/rules/`, `.claude/agents/`, `.claude/skills/` | Yes | Shared config |
-| `.claude/settings.json` | Yes | Team-shared settings |
+| `.claude/rules/`, `.claude/adr/`, `.claude/agents/`, `.claude/skills/` | Yes | Rules, decision records, agents, skills — see [.claude/README.md](.claude/README.md) |
+| `.claude/settings.json` | Yes | Shared settings: hooks and enabled plugins |
 | `CLAUDE.local.md` | **No** | Personal overrides (gitignored) |
 | `.claude/settings.local.json` | **No** | Personal settings (gitignored) |
 | `dev-docs/`, `.vmark/` | **No** | Maintainer-local, not in the public repo |
 
-Personal instructions that shouldn't affect the team go in `CLAUDE.local.md`.
+Personal instructions that should not be shared go in `CLAUDE.local.md`.
 
 ### If you don't use AI tools
 
 `.claude/rules/` doubles as living documentation of project conventions — it is
-the most precise description of how this codebase works. Worth reading before a
-first PR:
+the most precise description of how this codebase works. Worth reading before
+you dig into the code:
 
 1. [AGENTS.md](AGENTS.md) — project overview and conventions
 2. [.claude/rules/10-tdd.md](.claude/rules/10-tdd.md) — testing requirements
 3. [.claude/rules/50-codebase-conventions.md](.claude/rules/50-codebase-conventions.md) — store, hook, plugin, and import patterns
 
-## Getting Help
+## Getting help
 
-Open an issue if you have questions or want to discuss a feature before
-implementing it. For bug reports, include steps to reproduce, expected behavior,
-and your OS version.
+Open an issue if you have a question or want to discuss a feature. For bug
+reports, include steps to reproduce, expected behavior, your VMark version and
+your OS version.
