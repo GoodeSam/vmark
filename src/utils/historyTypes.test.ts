@@ -174,6 +174,27 @@ describe("generatePreview", () => {
     // Slice happens first (200 chars), then \n -> space
     expect(preview.length).toBe(PREVIEW_LENGTH);
   });
+
+  // WI-RA10A.12 — the preview is cut on a character boundary.
+  it("drops an emoji that straddles PREVIEW_LENGTH instead of halving it", () => {
+    const preview = generatePreview(`${"a".repeat(PREVIEW_LENGTH - 1)}\u{1F600}tail`);
+    expect(preview).toBe("a".repeat(PREVIEW_LENGTH - 1));
+  });
+
+  it("is well-formed when the limit falls inside a surrogate pair", () => {
+    // One leading unit puts every two-unit character on an odd offset, so the
+    // even limit lands between the halves of one of them.
+    const preview = generatePreview(`a${"\u{20BB7}".repeat(PREVIEW_LENGTH)}`);
+    expect(preview).toBe(`a${"\u{20BB7}".repeat(PREVIEW_LENGTH / 2 - 1)}`);
+    expect(preview).not.toMatch(
+      /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/,
+    );
+  });
+
+  it("does not separate a combining accent from its letter at the limit", () => {
+    const preview = generatePreview(`${"a".repeat(PREVIEW_LENGTH - 1)}é`);
+    expect(preview).toBe("a".repeat(PREVIEW_LENGTH - 1));
+  });
 });
 
 // ---- getDocumentName ----

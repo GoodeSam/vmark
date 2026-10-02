@@ -4,8 +4,10 @@
  * Utilities for determining default folder names when exporting documents.
  * Extracts titles from markdown and sanitizes for filesystem use.
  *
+ * @coordinates-with utils/truncateText.ts — the character-safe length cut
  * @module utils/exportNaming
  */
+import { truncateToLength } from "./truncateText";
 
 /**
  * Characters invalid in file/folder names across platforms.
@@ -91,7 +93,7 @@ export function extractFirstH1(markdown: string): string | null {
  * 4. Remove leading/trailing dots (Windows issue)
  * 5. Remove leading/trailing whitespace
  * 6. Collapse multiple spaces/dashes
- * 7. Truncate to max length (at word boundary if possible)
+ * 7. Truncate to max length (at a word boundary if possible, never mid-character)
  * 8. Handle Windows reserved names
  *
  * @param name - The raw name to sanitize
@@ -155,21 +157,16 @@ export function sanitizeFileName(
 }
 
 /**
- * Truncate a string at a word boundary.
+ * Truncate a string that is longer than `maxLength`, at a word boundary where
+ * one is close, and never inside a character.
  *
- * @param text - The text to truncate
- * @param maxLength - Maximum length
+ * @param text - The text to truncate; the caller has checked it is too long
+ * @param maxLength - Maximum length, in UTF-16 code units
  * @returns Truncated text
  */
 function truncateAtWordBoundary(text: string, maxLength: number): string {
-  /* v8 ignore start -- caller (sanitizeFileName) only calls this when text.length > maxLength */
-  if (text.length <= maxLength) {
-    return text;
-  }
-  /* v8 ignore stop */
-
   // Try to find a space within the lookback window of the limit
-  const truncated = text.slice(0, maxLength);
+  const truncated = truncateToLength(text, maxLength);
   const lastSpace = truncated.lastIndexOf(" ");
 
   if (lastSpace > maxLength - WORD_BOUNDARY_LOOKBACK && lastSpace > 0) {

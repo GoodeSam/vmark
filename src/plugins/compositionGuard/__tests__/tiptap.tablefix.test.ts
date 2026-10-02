@@ -11,9 +11,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock imeGuard before importing the extension
 const mockFlushProseMirrorCompositionQueue = vi.fn();
-const mockGetImeCleanupPrefixLength = vi.fn(() => 0);
-const mockIsImeKeyEvent = vi.fn(() => false);
-const mockIsProseMirrorInCompositionGrace = vi.fn(() => false);
+const mockGetImeCleanupPrefixLength = vi.fn((..._args: unknown[]): number | null => 0);
+const mockIsImeKeyEvent = vi.fn((..._args: unknown[]) => false);
+const mockIsProseMirrorInCompositionGrace = vi.fn((..._args: unknown[]) => false);
 const mockMarkProseMirrorCompositionEnd = vi.fn();
 
 vi.mock("@/utils/imeGuard", () => ({
@@ -27,7 +27,7 @@ vi.mock("@/utils/imeGuard", () => ({
 }));
 
 // Mock splitBlockFix
-const mockFixCompositionSplitBlock = vi.fn(() => null);
+const mockFixCompositionSplitBlock = vi.fn((..._args: unknown[]): unknown => null);
 vi.mock("../splitBlockFix", () => ({
   fixCompositionSplitBlock: (...args: unknown[]) => mockFixCompositionSplitBlock(...args),
 }));
@@ -63,7 +63,7 @@ describe("compositionGuard tableHeader cursor fix", () => {
       type: undefined,
       parent: undefined,
     } as never);
-    const plugin = plugins[0] as {
+    const plugin = plugins[0] as unknown as {
       props: {
         handleDOMEvents: Record<string, (view: unknown, event?: unknown) => boolean>;
       };
@@ -363,8 +363,12 @@ describe("compositionGuard tableHeader cursor fix", () => {
     events.compositionupdate(mockView, { data: "ni" });
     events.compositionend(mockView, { data: "你" });
 
-    // Run captured rAF — should hit line 102 guard and return
-    if (capturedRafCb) capturedRafCb(0);
+    // Run captured rAF — the cleanup's start-past-the-block guard returns early.
+    // Asserted, not optional: a frame that was never scheduled would make the
+    // assertion below pass without running the cleanup at all.
+    const frame = capturedRafCb as FrameRequestCallback | null;
+    expect(frame).not.toBeNull();
+    frame?.(0);
 
     // dispatch should NOT have been called (early return hit)
     expect(mockView.dispatch).not.toHaveBeenCalled();
@@ -512,7 +516,7 @@ describe("compositionGuard scheduleImeCleanup — table cell and dispatch", () =
       type: undefined,
       parent: undefined,
     } as never);
-    const plugin = plugins[0] as {
+    const plugin = plugins[0] as unknown as {
       props: {
         handleDOMEvents: Record<string, (view: unknown, event?: unknown) => boolean>;
       };
@@ -663,8 +667,10 @@ describe("compositionGuard scheduleImeCleanup — table cell and dispatch", () =
     // compositionend with empty data — compositionData stays empty
     events.compositionend(mockView, { data: "" });
 
-    if (capturedRafCb) capturedRafCb(0);
-    // scheduleImeCleanup returns early because compositionData is empty
+    const frame = capturedRafCb as FrameRequestCallback | null;
+    expect(frame).not.toBeNull();
+    frame?.(0);
+    // The cleanup returns early because compositionData is empty
     expect(mockView.dispatch).not.toHaveBeenCalled();
 
     // Restore synchronous rAF

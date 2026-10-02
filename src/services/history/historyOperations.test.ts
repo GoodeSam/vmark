@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockMkdir = vi.fn();
-const mockExists = vi.fn(() => Promise.resolve(false));
+const mockExists = vi.fn((..._args: unknown[]) => Promise.resolve(false));
 const mockReadTextFile = vi.fn();
 const mockWriteTextFile = vi.fn();
 const mockRemove = vi.fn();
