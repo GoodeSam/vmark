@@ -144,7 +144,7 @@
     "src/plugins/toolbarActions/wysiwygAdapterInsert.test.ts": 1490,
     "src/plugins/wikiLinkPopup/__tests__/WikiLinkPopupView.test.ts": 1369,
     "src/services/commands/menuListener.editorActions.test.tsx": 1335,
-    "src/services/files/fileSave.test.ts": 1186,
+    "src/services/files/fileSave.test.ts": 1174,
     "src/services/history/__tests__/historyOperations.test.ts": 820,
     "src/services/mcpBridge/v2/__tests__/workspace.test.ts": 841,
     "src/services/persistence/hotExit/restoreHelpers.test.ts": 1297,

@@ -8,6 +8,8 @@
  * @coordinates-with services/windowClose/saveDialog.ts — save path prompt and same-file comparison
  * @coordinates-with services/commands/fileCommands.ts — binds these handlers to menu commands
  * @coordinates-with saveAllQuit.ts — the Save All and Quit handler
+ * @coordinates-with services/persistence/serializeByPath.ts — Move To queues the old file's removal on its path's save chain
+ * @coordinates-with hooks/useAutoSave.ts — stands down while the "save" guard is held (Save, Save As, Move To)
  * @module services/files/fileSave
  */
 
@@ -22,12 +24,13 @@ import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { flushActiveWysiwygNow } from "@/utils/wysiwygFlush";
 import { withReentryGuard } from "@/utils/reentryGuard";
 import { saveToPath } from "@/services/persistence/saveToPath";
+import { serializeByPath } from "@/services/persistence/serializeByPath";
 import {
   resolvePostSaveWorkspaceAction,
   resolveMissingFileSaveAction,
 } from "@/utils/openPolicy";
 import { openWorkspaceWithConfig } from "@/services/workspaces/openWorkspaceWithConfig";
-import { isWithinRoot, getParentDir } from "@/utils/paths";
+import { isWithinRoot, getParentDir, normalizePath } from "@/utils/paths";
 import {
   buildDefaultSavePath,
   isSameFilePath,
@@ -207,12 +210,41 @@ export async function handleSaveAs(windowLabel: string): Promise<void> {
 }
 
 /**
+ * Remove the file a document was moved away from, as a task on that path's
+ * save chain, decided when its turn comes.
+ *
+ * On the chain: a save to the old path submitted before the move (an autosave
+ * still writing) would otherwise land AFTER the removal and recreate the file.
+ * Queued behind it, the removal runs once that write has settled.
+ *
+ * Decided at its turn: by then every earlier save to the old path has applied
+ * its result. If one of them was submitted after the move's own save, it is the
+ * newer save for this document and the document still lives at the old path.
+ * Removing the file then would delete the document's own file, which its next
+ * autosave would recreate.
+ *
+ * @returns false when the document still lives at `oldPath` and it was kept.
+ */
+function removeMovedFromPath(tabId: string, oldPath: string): Promise<boolean> {
+  return serializeByPath(normalizePath(oldPath), async () => {
+    const livePath = useDocumentStore.getState().getDocument(tabId)?.filePath;
+    if (livePath && isSameFilePath(livePath, oldPath)) return false;
+    await remove(oldPath);
+    return true;
+  });
+}
+
+/**
  * Handle Move To — save to new location and delete old file.
+ *
+ * Holds the same guard as Save and Save As: a move re-points the active
+ * document, so it must not run alongside either, and auto-save stands down
+ * while it is in progress instead of saving to a path that is being left.
  */
 export async function handleMoveTo(windowLabel: string): Promise<void> {
   flushActiveWysiwygNow();
 
-  await withReentryGuard(windowLabel, "move", async () => {
+  await withReentryGuard(windowLabel, "save", async () => {
     const tabId = useTabStore.getState().activeTabId[windowLabel];
     if (!tabId) return;
 
@@ -238,7 +270,12 @@ export async function handleMoveTo(windowLabel: string): Promise<void> {
     // Delete old file (only if there was one)
     if (oldPath) {
       try {
-        await remove(oldPath);
+        if (!(await removeMovedFromPath(tabId, oldPath))) {
+          // A newer save kept the document at the old path: the new file is a
+          // copy and nothing moved, so the tab stays where it is.
+          toast.warning(i18n.t("dialog:toast.fileMovedCantDeleteOriginal"));
+          return;
+        }
       } catch (error) {
         fileOpsError("Failed to delete old file during move:", error);
         // File was saved to new location, but old file couldn't be deleted
