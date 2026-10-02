@@ -62,7 +62,7 @@ export type ShortcutImportError =
   | { code: "parse"; detail: string };
 
 /** All-or-nothing: on failure nothing was applied and `errors` lists every problem. */
-export type ShortcutImportResult =
+type ShortcutImportResult =
   | { success: true; errors?: undefined }
   | { success: false; errors: ShortcutImportError[] };
 
