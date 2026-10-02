@@ -1,5 +1,5 @@
 /**
- * Custom mdast-util-to-markdown handlers for images and links.
+ * Custom mdast-util-to-markdown handlers for images, links and raw HTML.
  *
  * Purpose: VMark overrides remark-stringify's default image/link handlers to
  * emit angle-bracket destinations for URLs containing whitespace instead of
@@ -18,7 +18,9 @@
  *     `<`, `>` escaped and CR/LF percent-encoded); `"` in titles and
  *     `[`/`]` in alt text are backslash-escaped so they cannot terminate
  *     the construct early.
- *   - Both handlers carry a `peek` function (upstream Handle contract) so
+ *   - Raw HTML is written as it is, except that a `|` inside a table cell is
+ *     escaped: a pipe ends the cell wherever it stands.
+ *   - The handlers carry a `peek` function (upstream Handle contract) so
  *     phrasing lookahead reads the first character without running the
  *     full serializer.
  *
@@ -224,6 +226,33 @@ export const handleImage = Object.assign(imageHandler, {
 export const handleLink = Object.assign(linkHandler, {
   peek: (node: Link) => (autolinkValue(node) !== null ? "<" : "["),
 });
+
+/** `value` with every `|` that no backslash escapes given one. */
+function escapeBarePipes(value: string): string {
+  let out = "";
+  let backslashes = 0;
+  for (const char of value) {
+    if (char === "|" && backslashes % 2 === 0) out += "\\";
+    backslashes = char === "\\" ? backslashes + 1 : 0;
+    out += char;
+  }
+  return out;
+}
+
+/**
+ * `html` handler: the node's source as written — except inside a table cell,
+ * where an unescaped `|` ends the cell wherever it stands. HTML read from a
+ * cell keeps the backslash of its `\|`, so that is left alone; a pipe that
+ * arrives bare (text merged into an element, inlineHtmlMerge.ts) is escaped.
+ * Upstream writes HTML raw everywhere, which split the row.
+ */
+export const handleHtml = Object.assign(
+  (node: { value?: string }, _parent: unknown, state: { stack: readonly string[] }): string => {
+    const value = node.value ?? "";
+    return state.stack.includes("tableCell") ? escapeBarePipes(value) : value;
+  },
+  { peek: (): string => "<" },
+);
 
 /**
  * Custom mdast-util-to-markdown join: when the right sibling carries a captured

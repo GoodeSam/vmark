@@ -51,7 +51,7 @@ import remarkMath from "remark-math";
 import remarkFrontmatter from "remark-frontmatter";
 import type { Root } from "mdast";
 import { remarkCustomInline, remarkDetailsBlock, remarkWikiLinks, tocToMarkdown } from "./plugins";
-import { handleImage, handleLink, blankLinesJoin } from "./serializerHandlers";
+import { handleHtml, handleImage, handleLink, blankLinesJoin } from "./serializerHandlers";
 import { listInterruptJoin } from "./listInterruptJoin";
 import type { MarkdownPipelineOptions } from "./types";
 import { parseMarkdownToMdast } from "./parser";
@@ -95,6 +95,8 @@ function buildSerializer(hardBreak: HardBreakSpelling) {
       handlers: {
         image: handleImage,
         link: handleLink,
+        // A pipe inside inline HTML would end a table cell (serializerHandlers.ts).
+        html: handleHtml,
         // Attention delimiters share one flanking model, including the
         // alternate `_` that keeps emphasis from merging into a neighbouring
         // `**` (serializerAttention.ts).
