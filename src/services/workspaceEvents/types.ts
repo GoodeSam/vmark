@@ -16,7 +16,7 @@
  * ("create" | "modify" | "remove" | "rename"); `paths` are absolute, and a
  * rename the OS reported as a pair carries [old, new].
  */
-export interface RawFsChange {
+interface RawFsChange {
   /** Watcher kind string. */
   kind: string;
   /** Changed absolute paths (rename → [old, new] when the OS paired them). */

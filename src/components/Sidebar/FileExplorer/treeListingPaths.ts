@@ -24,7 +24,7 @@
 import type { TreeEntry, TreeListing } from "./types";
 
 /** One node as the walker sends it: its name, never its path. */
-export interface WireTreeEntry {
+interface WireTreeEntry {
   name: string;
   isDirectory: boolean;
   isHidden: boolean;
