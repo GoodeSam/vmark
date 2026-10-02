@@ -11,9 +11,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock imeGuard before importing the extension
 const mockFlushProseMirrorCompositionQueue = vi.fn();
-const mockGetImeCleanupPrefixLength = vi.fn(() => 0);
-const mockIsImeKeyEvent = vi.fn(() => false);
-const mockIsProseMirrorInCompositionGrace = vi.fn(() => false);
+const mockGetImeCleanupPrefixLength = vi.fn((..._args: unknown[]): number | null => 0);
+const mockIsImeKeyEvent = vi.fn((..._args: unknown[]) => false);
+const mockIsProseMirrorInCompositionGrace = vi.fn((..._args: unknown[]) => false);
 const mockMarkProseMirrorCompositionEnd = vi.fn();
 
 vi.mock("@/utils/imeGuard", () => ({
@@ -27,7 +27,7 @@ vi.mock("@/utils/imeGuard", () => ({
 }));
 
 // Mock splitBlockFix
-const mockFixCompositionSplitBlock = vi.fn(() => null);
+const mockFixCompositionSplitBlock = vi.fn((..._args: unknown[]): unknown => null);
 vi.mock("../splitBlockFix", () => ({
   fixCompositionSplitBlock: (...args: unknown[]) => mockFixCompositionSplitBlock(...args),
 }));
@@ -63,7 +63,7 @@ describe("compositionGuard scheduleImeCleanup", () => {
       type: undefined,
       parent: undefined,
     } as never);
-    const plugin = plugins[0] as {
+    const plugin = plugins[0] as unknown as {
       props: {
         handleDOMEvents: Record<string, (view: unknown, event?: unknown) => boolean>;
       };
