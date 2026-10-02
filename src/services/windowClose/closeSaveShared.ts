@@ -39,6 +39,15 @@ export type MultiSaveResult =
 export interface MultiSaveOptions {
   /** Called before saving each document, 1-indexed */
   onProgress?: (current: number, total: number, title: string) => void;
+  /**
+   * Called immediately before each write, after any dialog has closed. Returns
+   * the context to write — the document as it is NOW — or `null` when it no
+   * longer needs saving (its tab closed, or another path saved it while a
+   * dialog was open). A context is a capture, and a dialog stays open for as
+   * long as the user takes. Absent: the captured context is written as-is, for
+   * callers that revalidate after the batch instead.
+   */
+  revalidate?: (context: CloseSaveContext) => CloseSaveContext | null;
 }
 
 export const CLOSE_SAVE_BUTTONS = {
