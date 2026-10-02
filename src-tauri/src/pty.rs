@@ -16,33 +16,40 @@
 //!     point-to-point (no `app.emit` broadcast to every window).
 //!   - Pause/resume uses `Condvar` so a paused reader truly sleeps (zero CPU)
 //!     instead of busy-waiting.
+//!   - The reader is interruptible (`output.rs`): it waits on the master and a
+//!     wake socket, so a session can always be stopped — a blocking read would
+//!     hold the thread for as long as ANY process keeps the terminal open.
 //!   - Two-phase startup: `pty_spawn` creates the session (on the blocking
 //!     pool — `openpty`/`spawn_command` are synchronous syscalls), `pty_start`
 //!     begins the reader thread. The frontend wires the output Channel's
 //!     `onmessage` and the `pty:exit:{pid}` listener before calling
 //!     `pty_start`, so no output or exit signal is lost (no data-loss race).
-//!   - Child exit is detected in the reader thread (after the read loop ends)
-//!     via `child.wait()`, then emitted as a `pty:exit:{pid}` event.
+//!   - Child exit is detected in the reader thread once the output ends; the
+//!     shell is reaped there and its code emitted as a `pty:exit:{pid}` event.
 //!   - Sessions are removed from the map via `pty_close` (called by the
 //!     frontend after receiving the exit event) to prevent FD/memory leaks.
 //!     Each session records the window that spawned it, and that window's
 //!     `Destroyed` event terminates whatever is left (`close_window_sessions`):
 //!     a dying webview never gets to call `pty_close`.
-//!     A close BETWEEN spawn and start kills + reaps the still-owned child
-//!     (no reader thread exists yet to `wait()` on it).
+//!   - Every teardown path — `pty_kill`, `pty_close`, window destroy, quit —
+//!     runs the same escalation: hang the shell's process group up, wait a
+//!     bounded grace, kill it, reap it. It is the same whether or not
+//!     `pty_start` ever ran, because the session owns the shell for its whole
+//!     life (`child.rs`).
 //!   - Writer and master use `std::sync::Mutex` (not tokio) because the
 //!     underlying operations are plain syscalls, not async I/O. Writes still
 //!     run inside `spawn_blocking`: `write_all` blocks when the PTY buffer is
 //!     full (e.g. a large paste into a non-reading foreground process), and a
 //!     blocked tokio worker would starve the runtime.
 //!
-//! Module layout: this file holds the eight short commands (`pty_spawn`,
+//! Module layout: this file holds the seven short commands (`pty_spawn`,
 //! `pty_write`, `pty_resize`, `pty_kill`, `pty_close`, `pty_pause`,
 //! `pty_resume`) and their shared error helpers. `pty_start` and its reader
-//! thread live in `reader.rs` — it was longer than the other eight together
+//! thread live in `reader.rs` — it was longer than the other seven together
 //! and pushed this file past the file-size gate (WI-DP2.5). `session.rs` owns
-//! the session map and `PtyExitEvent`; `window_sessions.rs` reaps a destroyed
-//! window's sessions.
+//! the session map, `terminate` and `PtyExitEvent`; `child.rs` the shell and
+//! its escalating stop; `output.rs` the interruptible read side; `pause.rs`
+//! the pause condvar; `window_sessions.rs` reaps a destroyed window's sessions.
 //!
 //! @coordinates-with lib.rs — commands registered in generate_handler![]
 //! @coordinates-with pty/reader.rs — `pty_start`; registered as
@@ -51,6 +58,9 @@
 //! @coordinates-with src/lib/pty.ts — frontend wrapper (output Channel + exit event)
 //! @module pty
 
+mod child;
+mod output;
+mod pause;
 pub mod reader;
 mod session;
 mod window_sessions;
@@ -179,32 +189,30 @@ pub async fn pty_resize(
         .map_err(pty_io)
 }
 
-/// Kill the PTY child process.
+/// End the PTY's shell and stop its reader. The session stays in the map until
+/// `pty_close`. Returns once the shell is gone, which takes the grace period
+/// when it ignores the hangup.
 #[tauri::command]
 pub async fn pty_kill(pid: u32, state: tauri::State<'_, PtyState>) -> Result<(), CommandError> {
     let session = get_session(&state, pid)
         .await
         .map_err(|_| session_gone(pid))?;
-    session.shutdown.store(true, Ordering::Release);
-    session.pause_ctl.resume(); // Wake reader if paused
-    let mut killer = session
-        .child_killer
-        .lock()
-        .map_err(|e| pty_internal("PTY child-killer lock poisoned", e))?;
-    killer.kill().map_err(pty_io)
+    tokio::task::spawn_blocking(move || session::terminate(&[session]))
+        .await
+        .map_err(|e| pty_internal("PTY kill task failed", e))
 }
 
-/// Remove session from the map, freeing FDs and memory.
-/// Called by the frontend after receiving the `pty:exit:{pid}` event — and
-/// also legal between `pty_spawn` and `pty_start`, where the session still
-/// owns the child: no reader thread exists to reap it, so close kills and
-/// reaps it here (a bare map-remove would drop the child unreaped).
+/// Remove the session from the map and end it, freeing FDs and memory.
+/// Called by the frontend after receiving the `pty:exit:{pid}` event, where
+/// there is nothing left to end — but legal at any point: a session that is
+/// still running, started or not, has its shell terminated and reaped here,
+/// so a close can never leave a shell behind.
 #[tauri::command]
 pub async fn pty_close(pid: u32, state: tauri::State<'_, PtyState>) -> Result<(), CommandError> {
     let Some(session) = state.sessions.write().await.remove(&pid) else {
         return Ok(());
     };
-    tokio::task::spawn_blocking(move || session::kill_and_reap_unstarted(&session))
+    tokio::task::spawn_blocking(move || session::terminate(&[session]))
         .await
         .map_err(|e| pty_internal("PTY close task failed", e))
 }
@@ -228,3 +236,11 @@ pub async fn pty_resume(pid: u32, state: tauri::State<'_, PtyState>) -> Result<(
     session.pause_ctl.resume();
     Ok(())
 }
+
+// Unix-only: the tests spawn `/bin/sh` and probe pids and descriptors.
+#[cfg(all(test, unix))]
+#[path = "pty/lifecycle.test.rs"]
+mod lifecycle_tests;
+#[cfg(all(test, unix))]
+#[path = "pty/support.test.rs"]
+mod test_support;
