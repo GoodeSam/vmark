@@ -1406,26 +1406,6 @@
       "target": "src/utils/cursorSync/tiptapAnchors"
     },
     {
-      "file": "src/utils/markdownPipeline/__tests__/adapterErrorWrapping.test.ts",
-      "api": "vi.mock",
-      "target": "src/utils/markdownPipeline/mdastToProseMirror"
-    },
-    {
-      "file": "src/utils/markdownPipeline/__tests__/adapterErrorWrapping.test.ts",
-      "api": "vi.mock",
-      "target": "src/utils/markdownPipeline/parser"
-    },
-    {
-      "file": "src/utils/markdownPipeline/__tests__/adapterErrorWrapping.test.ts",
-      "api": "vi.mock",
-      "target": "src/utils/markdownPipeline/proseMirrorToMdast"
-    },
-    {
-      "file": "src/utils/markdownPipeline/__tests__/adapterErrorWrapping.test.ts",
-      "api": "vi.mock",
-      "target": "src/utils/markdownPipeline/serializer"
-    },
-    {
       "file": "src/utils/markdownPipeline/hardBreakRespell.cost.test.ts",
       "api": "vi.mock",
       "target": "src/utils/markdownPipeline/hardBreakRanges"
