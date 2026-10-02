@@ -49,7 +49,8 @@ vmark/
 └── dev-docs/             # Internal architecture docs (local only)
 ```
 
-`utils/` → `services/` → `hooks/` is the three-tier layout from ADR-013, and the
+`utils/` → `services/` → `hooks/` is the three-tier layout from
+[ADR-013](.claude/adr/ADR-013-service-tier-as-cross-cutting-seam.md), and the
 direction of the arrow is the rule: `utils/` must stay leaf-pure, so a file there
 that needs `useXStore` or `@tauri-apps/*` belongs in `services/` instead. Only the
 tiers are listed above — `src/` has other directories (`lib/`, `pages/`, `theme/`,
@@ -137,9 +138,9 @@ For a deeper understanding of the codebase:
 
 - **Architecture overview:** `dev-docs/architecture.md` — C4 diagrams, entry
   points, data flows, and module map
-- **Design decisions:** `dev-docs/decisions/` — ADRs explaining key choices
-  (Markdown as source of truth, MCP sidecar architecture, Tiptap over
-  Milkdown, etc.)
+- **Design decisions:** [.claude/adr/](.claude/adr/README.md) — the decision
+  records that rules and comments cite by id (Markdown as source of truth, MCP
+  sidecar architecture, the three-tier layout, etc.), each with what enforces it
 - **Design system:** `.claude/rules/31-design-tokens.md` — complete token
   reference
 

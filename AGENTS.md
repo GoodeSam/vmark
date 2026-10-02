@@ -79,7 +79,7 @@ Each script's header explains its rules and exemption markers.
 
 - Tauri v2, React 19, Zustand v5, shadcn/ui v4, Tailwind v4, Vite v7, Vitest v4, pnpm.
 - Rust → webview: `emit()` → `listen()`. Webview → Rust: `invoke()`.
-- Three-tier source layout (ADR-013): `src/utils/` is leaf-pure (no stores, no `@tauri-apps/*`); `src/services/` (domain folders) may use utils, stores, Tauri; `src/hooks/` are React adapters over services.
+- Three-tier source layout (ADR-013; decision records live in `.claude/adr/`, and `pnpm lint:adr-refs` resolves every cited id): `src/utils/` is leaf-pure (no stores, no `@tauri-apps/*`); `src/services/` (domain folders) may use utils, stores, Tauri; `src/hooks/` are React adapters over services.
 - `src/shell/AppShell.tsx` is pure layout. Surfaces are mounted by editing App.tsx's `<AppShell>`; `pnpm lint:shell-slots` holds the identity list.
 - Menus: `menu_events.rs` emits `menu:{id}` generically; `menu/localized.rs` `create_localized_menu` is the single builder (labels in `src-tauri/locales/en.yml`). Every menu item needs a real SF Symbol in `macos_menu.rs` `MENU_ICONS`.
 - Shortcuts: see `.claude/rules/41-keyboard-shortcuts.md`.
