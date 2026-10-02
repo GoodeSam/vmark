@@ -6,7 +6,7 @@ mode: "full-plan"
 
 # Full-repo audit fixes
 
-**Status:** IN PROGRESS (started 2026-10-02).
+**Status:** IN PROGRESS (started 2026-10-02). Waves 1–2 merged and green.
 **Tree:** `fa785a700` (v0.9.91). **Branch:** `fix/full-repo-audit-20261002`.
 **Evidence:** `dev-docs/deep-researches/20261002-full-repo-audit.md` (maintainer-local) — 129 findings (0 Critical, 24 High, 55 Medium, 50 Low). Each work item cites the audit section it closes; the audit carries the paths and the reasoning, this plan carries the decision and the check.
 **Namespace:** `WI-RA<phase><lane>.<n>` (rule 60 §1) — a phase split across lanes carries the lane letter (`WI-RA1A.2`, `WI-RA13B.7`) so each lane is gated on its own. Decisions are `D<n>`.
@@ -281,7 +281,7 @@ Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), R
 
 ## Status trail
 
-(appended per wave)
+- **Waves 1–2 (19 lanes) merged, 2026-10-03.** On the merged tree: `pnpm check:predelta` 47/47, `pnpm check:all` exit 0 (app 43,301 tests with coverage floors, gates 3,170, sidecar 746, content server 261, build and size budgets), `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo test` (3,733), `check-cross-target.sh` all exit 0. Merge conflicts were baseline JSON (resolved to the lower value / both removals) and one real one: two lanes extracted the workspace legacy migration to different files; kept `workspace/legacy.rs` (superset) with both lanes' version-based sunset notes. Integration finding fixed at merge: the Rust CI filter missed `src/utils/sanitize.ts`, which a new Rust test reads.
 
 ## Codex review
 
