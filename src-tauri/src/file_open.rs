@@ -17,8 +17,11 @@
 //!     mount's timeout, freezing every window, so the handler hands the whole
 //!     batch to the blocking pool (`off_event_loop`) and returns. Two batches
 //!     can then overlap; each routes its files atomically, as before.
-//!   - File opens from Finder are queued in `FILE_OPEN_STATE` until the frontend
-//!     signals readiness, solving a cold-start race condition. Only files with a
+//!   - File opens from Finder are queued in the app's `FileOpenStore` while a
+//!     `main` window is booting, and drained by it when its frontend mounts,
+//!     solving a cold-start race condition. When that window is destroyed the
+//!     queue has no owner, and the next open brings a new one up instead of
+//!     waiting for a window that is gone. Only files with a
 //!     registered extension are accepted; others are skipped. Hot opens (app
 //!     already running) target the last focused document window, attach that
 //!     label to an `app.emit()` global broadcast, and bring the native window
@@ -28,9 +31,7 @@
 //!     `window_manager::pick_reopen_workspace_root` so closing the last tab and
 //!     re-clicking the dock doesn't drop them into an orphan untitled doc.
 
-use std::sync::Mutex;
-
-use crate::window_manager;
+use crate::window_manager::{self, file_open_state};
 
 #[cfg(target_os = "macos")]
 use crate::supported_files::is_openable_supported;
@@ -50,40 +51,45 @@ pub struct PendingFileOpen {
     pub workspace_root: Option<String>,
 }
 
-/// Combined Finder file-open state — the readiness flag and the pending queue
-/// live behind ONE mutex so the readiness check and the queue insertion happen
-/// in a single critical section (WI-0.8, C3). See `window_manager::FileOpenState`.
-pub(crate) static FILE_OPEN_STATE: Mutex<window_manager::FileOpenState> =
-    Mutex::new(window_manager::FileOpenState::new());
-
 /// Get and clear pending file opens - called by frontend when ready.
-/// Marks the frontend ready and drains the queue atomically (one lock) so a
-/// Finder open landing mid-call is never dropped or double-delivered.
+/// Settles the queue's owner and drains the queue atomically (one lock) so a
+/// Finder open landing mid-call is never dropped or double-delivered. The
+/// calling window is recorded as listening for hot opens from here on.
 #[tauri::command]
-pub fn get_pending_file_opens() -> Vec<PendingFileOpen> {
-    let mut state = FILE_OPEN_STATE.lock().unwrap_or_else(|p| p.into_inner());
-    window_manager::mark_ready_and_drain(&mut state)
+pub fn get_pending_file_opens<R: tauri::Runtime>(window: tauri::Window<R>) -> Vec<PendingFileOpen> {
+    let store = file_open_state(window.app_handle());
+    let mut state = store.lock();
+    window_manager::mark_ready_and_drain(&mut state, window.label())
 }
 
 /// Update Finder's preferred hot-open destination from a native focus event.
-pub(crate) fn record_document_window_focus(label: &str, focused: bool, listener_ready: bool) {
-    let mut state = FILE_OPEN_STATE.lock().unwrap_or_else(|p| p.into_inner());
-    state.record_window_focus(label, focused, listener_ready);
+pub(crate) fn record_document_window_focus<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    label: &str,
+    focused: bool,
+    listener_ready: bool,
+) {
+    file_open_state(app)
+        .lock()
+        .record_window_focus(label, focused, listener_ready);
 }
 
 /// Seed focus history when a frontend reports that its listeners are ready.
-pub(crate) fn record_ready_document_window(app: &tauri::AppHandle, label: &str) {
+pub(crate) fn record_ready_document_window<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    label: &str,
+) {
     let focused = app
         .get_webview_window(label)
         .and_then(|window| window.is_focused().ok())
         .unwrap_or(false);
-    record_document_window_focus(label, focused, true);
+    record_document_window_focus(app, label, focused, true);
 }
 
-/// Remove a destroyed window from Finder's focus history.
-pub(crate) fn remove_document_window(label: &str) {
-    let mut state = FILE_OPEN_STATE.lock().unwrap_or_else(|p| p.into_inner());
-    state.remove_window(label);
+/// Forget a destroyed window: it is no longer a hot-open target, and if it
+/// was `main`, the cold-start queue no longer has a window booting for it.
+pub(crate) fn remove_document_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>, label: &str) {
+    file_open_state(app).lock().remove_window(label);
 }
 
 /// macOS dock-icon reactivation with no visible windows: recreate a window,
@@ -159,7 +165,7 @@ pub(crate) fn partition_opened_urls(
 /// Convert Finder `RunEvent::Opened` URLs into queued/emitted file opens, off
 /// the event loop (see module docs). Directories open immediately; supported
 /// files are grouped by workspace root and routed through the atomic
-/// `FILE_OPEN_STATE` decision.
+/// `FileOpenState` decision.
 #[cfg(target_os = "macos")]
 pub(crate) fn handle_finder_opened(app: &tauri::AppHandle, urls: Vec<tauri::Url>) {
     let app = app.clone();
@@ -232,7 +238,10 @@ pub(crate) fn open_finder_directory<R: tauri::Runtime>(app: &tauri::AppHandle<R>
 /// same point by different roads — Finder hands macOS a URL list, Explorer
 /// hands a second `vmark` process an argv. Both then need the identical
 /// grouping, atomic decide, and emit-or-queue behaviour, so it lives once.
-pub(crate) fn route_file_opens(app: &tauri::AppHandle, file_paths: Vec<String>) {
+pub(crate) fn route_file_opens<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    file_paths: Vec<String>,
+) {
     if file_paths.is_empty() {
         return;
     }
@@ -257,7 +266,8 @@ pub(crate) fn route_file_opens(app: &tauri::AppHandle, file_paths: Vec<String>) 
         // double-deliver.
         let live_labels: Vec<String> = app.webview_windows().keys().cloned().collect();
         let outcome = {
-            let mut state = FILE_OPEN_STATE.lock().unwrap_or_else(|p| p.into_inner());
+            let store = file_open_state(app);
+            let mut state = store.lock();
             let has_ready_target = state.finder_window_target(&live_labels).is_some();
             window_manager::decide_file_open_locked(&mut state, has_ready_target, paths, ws)
         };
@@ -270,7 +280,7 @@ pub(crate) fn route_file_opens(app: &tauri::AppHandle, file_paths: Vec<String>) 
                 if create_window {
                     window_manager::bring_up_queue_owner(app);
                 } else {
-                    log::info!("[FileOpen] Queueing files (frontend not ready)");
+                    log::info!("[FileOpen] Queueing files (main window is booting)");
                 }
             }
         }

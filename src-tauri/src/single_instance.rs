@@ -179,12 +179,9 @@ pub(crate) fn surface_a_window<R: Runtime>(app: &tauri::AppHandle<R>) {
 /// building a second one beside it.
 fn choose_target<R: Runtime>(app: &tauri::AppHandle<R>) -> Option<String> {
     let live_labels: Vec<String> = app.webview_windows().keys().cloned().collect();
-    let ready = {
-        let state = file_open::FILE_OPEN_STATE
-            .lock()
-            .unwrap_or_else(|p| p.into_inner());
-        state.finder_window_target(&live_labels)
-    };
+    let ready = window_manager::file_open_state(app)
+        .lock()
+        .finder_window_target(&live_labels);
     ready.or_else(|| {
         live_labels
             .iter()

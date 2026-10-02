@@ -116,10 +116,7 @@ pub(crate) fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::
         for path_str in &file_args {
             crate::allow_fs_read(app.handle(), path_str);
         }
-        crate::window_manager::queue_launch_file_args(
-            &crate::file_open::FILE_OPEN_STATE,
-            file_args,
-        );
+        crate::window_manager::file_open_state(app.handle()).queue_launch_file_args(file_args);
     }
 
     // Record, once per launch, whether the Knowledge Base could start here:
@@ -196,7 +193,7 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
             event: tauri::WindowEvent::Destroyed,
             ..
         } => {
-            crate::file_open::remove_document_window(&label);
+            crate::file_open::remove_document_window(app, &label);
             quit::handle_window_destroyed(app, &label);
             menu_events::clear_window_ready(&label);
             tab_transfer::clear_unclaimed_transfer(&label);
@@ -225,6 +222,7 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
             event: tauri::WindowEvent::Focused(focused),
             ..
         } => crate::file_open::record_document_window_focus(
+            app,
             &label,
             focused,
             menu_events::is_window_ready(&label),

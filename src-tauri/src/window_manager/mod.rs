@@ -11,6 +11,7 @@
 //! | Module | Owns |
 //! |---|---|
 //! | `file_open_state` | Finder/CLI open decisions, pending queue, workspace grouping |
+//! | `file_open_store` | That state as per-app managed state, behind one lock |
 //! | `finder_open_delivery` | Hot-open focus, targeted emit, and retry fallback |
 //! | `document_windows` | Document/main window construction, URLs, labels, dock-reopen pick |
 //! | `path_validation` | Security gates for frontend-supplied paths / workspace roots |
@@ -56,6 +57,7 @@
 mod commands;
 mod document_windows;
 mod file_open_state;
+mod file_open_store;
 mod finder_open_delivery;
 mod native_theme;
 mod path_validation;
@@ -70,6 +72,7 @@ mod window_url;
 pub use commands::*;
 pub use document_windows::*;
 pub use file_open_state::*;
+pub(crate) use file_open_store::*;
 // Not macOS-gated: `file_open::route_file_opens` is the shared destination for
 // BOTH macOS `RunEvent::Opened` and the Windows/Linux single-instance callback
 // (#1330), and this is where it delivers.

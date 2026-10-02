@@ -167,7 +167,7 @@ fn setup_restores_workspace_grants_before_anything_else_starts() {
         "create_localized_menu(",
         "cleanup_legacy_home_dir(",
         "install_default_genies(",
-        "FILE_OPEN_STATE",
+        "file_open_state(",
         "log_runtime_state(",
         ".listen(",
     ] {

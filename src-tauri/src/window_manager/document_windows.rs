@@ -25,7 +25,7 @@ use super::window_url::build_window_url;
 // Re-exported so `commands.rs` keeps importing the window surface from one
 // place; the builder itself lives in `window_url.rs` with its grammar.
 pub(super) use super::window_url::build_window_url_with_files;
-use super::{ensure_window, Ensured};
+use super::{ensure_window, Ensured, QueueOwner};
 use std::sync::atomic::{AtomicU32, Ordering};
 use tauri::{AppHandle, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
@@ -238,15 +238,18 @@ pub(crate) fn ensure_main_window<R: Runtime>(
     let url = build_window_url(None, workspace_root);
     ensure_window(app, MAIN_LABEL, move |app, label| {
         // A new main has not mounted yet: opens that arrive from here on are
-        // queued until its frontend drains them. Reset before the build, so
-        // the new window cannot drain first and have its readiness undone.
-        crate::file_open::FILE_OPEN_STATE
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .frontend_ready = false;
+        // queued until its frontend drains them. Marked before the build, so
+        // the new window cannot drain first and then be marked booting again.
+        let store = super::file_open_state(app);
+        store.lock().owner = QueueOwner::Booting;
         // No explicit position: the "main" window relies on saved window state
         // / OS placement rather than the cascade offset used by doc windows.
-        build_document_window(app, label, url, None)
+        let built = build_document_window(app, label, url, None);
+        if built.is_err() {
+            // Nothing is booting after all; do not leave opens waiting for it.
+            store.lock().owner = QueueOwner::Settled;
+        }
+        built
     })
 }
 

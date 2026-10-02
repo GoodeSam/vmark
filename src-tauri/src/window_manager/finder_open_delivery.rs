@@ -11,9 +11,9 @@
 use serde::Serialize;
 use tauri::{Emitter, Manager};
 
-use crate::{file_open::FILE_OPEN_STATE, PendingFileOpen};
+use crate::PendingFileOpen;
 
-use super::{ensure_main_window, Ensured};
+use super::{ensure_main_window, file_open_state, Ensured, QueueOwner};
 
 #[derive(Clone, Serialize)]
 struct TargetedFileOpen {
@@ -32,8 +32,9 @@ fn live_target_excluding<R: tauri::Runtime>(
         .filter(|label| excluded != Some(label.as_str()))
         .cloned()
         .collect();
-    let state = FILE_OPEN_STATE.lock().unwrap_or_else(|p| p.into_inner());
-    state.finder_window_target(&live_labels)
+    file_open_state(app)
+        .lock()
+        .finder_window_target(&live_labels)
 }
 
 fn live_target<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<String> {
@@ -45,15 +46,17 @@ fn queue_for_new_main<R: tauri::Runtime>(
     payloads: Vec<PendingFileOpen>,
 ) {
     {
-        let mut state = FILE_OPEN_STATE.lock().unwrap_or_else(|p| p.into_inner());
-        state.frontend_ready = false;
+        let store = file_open_state(app);
+        let mut state = store.lock();
+        state.owner = QueueOwner::Booting;
         state.pending.extend(payloads);
     }
     bring_up_queue_owner(app);
 }
 
 /// Make sure a `main` window exists to drain the cold-start queue: the one
-/// that is already up or being built, or a new one.
+/// that is already up or being built, or a new one. The caller has queued its
+/// opens and marked the owner booting.
 ///
 /// Check-and-build is one step (`ensure_main_window`), so two opens arriving
 /// together cannot each build a `main`.
@@ -67,6 +70,9 @@ pub(crate) fn bring_up_queue_owner<R: tauri::Runtime>(app: &tauri::AppHandle<R>)
         }
         Err(error) => {
             log::error!("[FileOpen] Failed to create main window for queued opens: {error}");
+            // No window is booting after all. The queue is kept; settling the
+            // owner lets the next open try again instead of waiting forever.
+            file_open_state(app).lock().owner = QueueOwner::Settled;
         }
     }
 }
