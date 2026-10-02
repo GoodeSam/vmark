@@ -128,3 +128,49 @@ fn test_matches_accept_comma_separated_list() {
     // Empty accept behaves like "*" (matches everything).
     assert!(matches_accept("anything.bin", ""));
 }
+
+// === the cancel bridge ===
+
+/// The job the bridge exists for. The clock is paused: the bridge finds the
+/// flag on its next poll, which virtual time reaches without waiting.
+#[tokio::test(start_paused = true)]
+async fn the_cancel_bridge_carries_the_flag_to_the_token() {
+    let flag = Arc::new(AtomicBool::new(false));
+    let token = CancellationToken::new();
+    let bridge = spawn_cancel_bridge(Arc::clone(&flag), token.clone());
+    tokio::task::yield_now().await;
+    assert!(!token.is_cancelled(), "nothing was requested yet");
+
+    flag.store(true, Ordering::SeqCst);
+    token.cancelled().await;
+    bridge
+        .await
+        .expect("the bridge ends once the token is cancelled");
+}
+
+/// A run that ends cancels its own token, and the bridge must end THEN, not
+/// on its next tick. No clock here: a few turns of the scheduler are over
+/// long before a poll interval is.
+#[tokio::test]
+async fn the_cancel_bridge_stops_as_soon_as_its_token_is_cancelled() {
+    let flag = Arc::new(AtomicBool::new(false));
+    let token = CancellationToken::new();
+    let bridge = spawn_cancel_bridge(Arc::clone(&flag), token.clone());
+    tokio::task::yield_now().await;
+
+    token.cancel();
+    for _ in 0..16 {
+        if bridge.is_finished() {
+            break;
+        }
+        tokio::task::yield_now().await;
+    }
+    assert!(
+        bridge.is_finished(),
+        "the bridge is still waiting out its poll interval"
+    );
+    assert!(
+        !flag.load(Ordering::SeqCst),
+        "ending the bridge is not a cancel request"
+    );
+}

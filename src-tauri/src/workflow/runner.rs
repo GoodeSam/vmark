@@ -19,6 +19,8 @@
 //!     `failure()` / `always()` steps run after a failure; the run still fails
 //!   - Cancellation checked before each step via shared AtomicBool, and before
 //!     its condition: a cancel stops `always()` steps too
+//!   - The cancel bridge lives exactly as long as the run: the run cancels its
+//!     own token when it ends, and the bridge ends on that
 //!   - Steps ordered by topological sort on `needs:` dependencies
 //!
 //! @coordinates-with launch.rs — spawns the run and guards its terminal event
@@ -58,27 +60,34 @@ pub(super) use step_order::{topological_sort, ResolvedStep};
 use step_preflight::step_preflight;
 use step_record::record_step_result;
 
-/// Convert the legacy `Arc<AtomicBool>` cancel flag into a polling task that
-/// flips a `CancellationToken`. Bridges the existing API to the new tokio
-/// cancellation primitive used by `run_ai_prompt_collect`.
+/// How often the bridge looks at the cancel flag.
+const CANCEL_POLL: Duration = Duration::from_millis(100);
+
+/// Convert the `Arc<AtomicBool>` cancel flag into a polling task that flips a
+/// `CancellationToken`, the primitive the AI provider stack and the approval
+/// wait react to.
+///
+/// The task ends when it has cancelled the token, or as soon as anyone else
+/// has: the run cancels its token on the way out, so no bridge outlives its
+/// run.
 ///
 /// Wrapped in `spawn_logged` so a panic inside the polling loop surfaces in
 /// the log instead of silently leaking a cancel token (which would let the
 /// downstream AI request run past its caller's cancel signal).
 fn spawn_cancel_bridge(
-    legacy: Arc<AtomicBool>,
+    flag: Arc<AtomicBool>,
     token: CancellationToken,
 ) -> tokio::task::JoinHandle<()> {
     crate::task::spawn_logged("workflow-cancel-bridge", async move {
         loop {
-            if legacy.load(Ordering::SeqCst) {
+            if flag.load(Ordering::SeqCst) {
                 token.cancel();
                 return;
             }
-            if token.is_cancelled() {
-                return;
+            tokio::select! {
+                _ = token.cancelled() => return,
+                _ = tokio::time::sleep(CANCEL_POLL) => {}
             }
-            tokio::time::sleep(Duration::from_millis(100)).await;
         }
     })
 }
@@ -105,10 +114,13 @@ pub async fn run_workflow_sequential<R: Runtime>(
     approvals: Arc<ApprovalRegistry>,
     capture_policy: crate::coherence::capture_policy::CapturePolicy,
 ) -> Result<String, String> {
-    // Bridge the legacy AtomicBool cancel flag into a CancellationToken that
-    // the AI provider stack can react to without polling.
+    // Bridge the cancel flag into a CancellationToken that the AI provider
+    // stack and the approval wait can react to without polling. The guard
+    // cancels the token when this run is over — on a return, a panic, or the
+    // runtime dropping the task — which is what ends the bridge with it.
     let cancel = CancellationToken::new();
     let _bridge = spawn_cancel_bridge(Arc::clone(cancel_token), cancel.clone());
+    let _run_over = cancel.clone().drop_guard();
 
     // Merge workflow env with provided env (provided takes precedence)
     let mut merged_env = workflow.env;

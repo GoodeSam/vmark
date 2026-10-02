@@ -657,3 +657,51 @@ async fn a_workflow_that_cannot_be_sorted_still_reports_completion() {
     assert!(twins.result.is_err());
     assert_eq!(twins.completions, ["failed"]);
 }
+
+// === the cancel bridge ===
+
+/// The bridge task holds a clone of the cancel flag for as long as it lives,
+/// so the flag's reference count says whether a finished run left one behind.
+async fn bridges_left_behind(yaml: &str) -> usize {
+    let app = mock_app();
+    let workspace = tempfile::tempdir().expect("workspace");
+    let flag = Arc::new(AtomicBool::new(false));
+    let workflow: RawWorkflow = serde_yaml_ng::from_str(yaml).expect("the fixture parses");
+    let _ = run_workflow_sequential(
+        app.handle(),
+        workflow,
+        HashMap::new(),
+        workspace.path(),
+        "exec-bridge",
+        &flag,
+        None,
+        None,
+        Arc::new(ApprovalRegistry::new()),
+        CapturePolicy::TrackedOnly,
+    )
+    .await;
+    // Let the scheduler retire the task: turns of the runtime, not time.
+    for _ in 0..16 {
+        if Arc::strong_count(&flag) == 1 {
+            break;
+        }
+        tokio::task::yield_now().await;
+    }
+    Arc::strong_count(&flag) - 1
+}
+
+#[tokio::test]
+async fn the_cancel_bridge_does_not_outlive_its_run() {
+    for yaml in [
+        "name: flow\nsteps:\n  - id: only\n    uses: action/copy\n    with:\n      input: ok\n",
+        BOOM,
+        "name: flow\nsteps: []\n",
+        "name: cyclic\nsteps:\n  - id: a\n    uses: action/copy\n    needs: a\n",
+    ] {
+        assert_eq!(
+            bridges_left_behind(yaml).await,
+            0,
+            "a finished run left its cancel bridge polling: {yaml:?}"
+        );
+    }
+}
