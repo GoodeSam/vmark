@@ -10,7 +10,10 @@
  *   - Shell priority: user-configured shell in settings > Rust backend default
  *     (get_default_shell: getpwuid → $SHELL → /bin/sh). Only absolute paths
  *     are accepted; relative paths are rejected to prevent PATH/CWD hijack.
- *   - If the configured shell fails to spawn, retries with system default.
+ *   - spawnPty resolves once the shell is RUNNING (`pty.ready`), so a spawn
+ *     the backend refuses or fails — it accepts only shells VMark lists —
+ *     rejects here instead of leaving a dead session. If it was the configured
+ *     shell, the system default is tried instead.
  *   - The environment handed to the shell is built by
  *     terminalSpawnEnv.buildBaseTerminalEnv — every variable and the reason
  *     for it lives there, next to the code that sets it.
@@ -27,7 +30,7 @@
  *   - PTY output arrives as a Uint8Array (the binary Channel delivers an
  *     ArrayBuffer, coerced once in lib/pty.ts), passed straight to xterm.js.
  *
- * @coordinates-with useTerminalSessions.ts — calls spawnPty when starting a shell
+ * @coordinates-with useTerminalShellLifecycle.ts — calls spawnPty when starting a shell
  * @coordinates-with createTerminalInstance.ts — provides the xterm Terminal instance
  * @coordinates-with services/terminal/transcriptBinding.ts — per-shell transcript token
  * @module components/Terminal/spawnPty
@@ -47,6 +50,7 @@ import {
   resolveLoginShellPath,
   buildShellSpawnConfig,
   buildBaseTerminalEnv,
+  type ShellSpawnConfig,
 } from "./terminalSpawnEnv";
 
 /**
@@ -239,47 +243,45 @@ export async function spawnPty(options: SpawnOptions): Promise<IPty> {
     rows: term.rows || 24,
     ...(cwd !== undefined && { cwd }),
   };
-  let pty: IPty;
+  // Spawn `file`, wire PTY → xterm (watermark flow control) and the exit, then
+  // wait until the shell is running. The wiring comes BEFORE the wait: the
+  // reader may emit the moment it starts. A refused or failed spawn rejects; a
+  // wrapper that never started emits nothing, so its listeners stay inert.
+  const start = async (file: string, config: ShellSpawnConfig): Promise<IPty> => {
+    const pty = spawn(file, config.args, { ...baseSpawnOpts, env: config.env });
+    wirePtyFlowControl(pty, term, disposed);
+    pty.onExit(({ exitCode }) => {
+      onExit(exitCode);
+    });
+    await pty.ready;
+    return pty;
+  };
+
   try {
-    pty = spawn(shell, spawnConfig.args, { ...baseSpawnOpts, env: spawnConfig.env });
+    return await start(shell, spawnConfig);
   } catch (err) {
-    // If configured shell fails, fall back to system default
-    if (safeShell) {
-      const fallback = await invoke<string>("get_default_shell");
-      if (disposed())
-        throw new Error("disposed before fallback spawn", { cause: err });
-      // Validate fallback shell is an absolute path (same check as primary shell)
-      /* v8 ignore next 3 -- @preserve reason: platform-specific PTY fallback path; requires real shell spawning failure not reproducible in unit tests */
-      const fallbackIsAbsolute = fallback.startsWith("/") || /^[a-zA-Z]:[/\\]/.test(fallback);
-      const safeFallback = fallbackIsAbsolute ? fallback : "/bin/sh";
-      // Recompute shell integration for the fallback shell — its env AND its
-      // args differ from the failed configured shell's, and reusing them would
-      // poison the default shell's startup (handing zsh's ZDOTDIR to bash, or
-      // bash's `--rcfile` to a shell that has no such flag and would treat the
-      // path as a script to run).
-      const fallbackConfig = await buildShellSpawnConfig(
-        env,
-        safeFallback,
-        shellIntegrationEnabled,
-      );
-      if (disposed())
-        throw new Error("disposed before fallback spawn", { cause: err });
-      pty = spawn(safeFallback, fallbackConfig.args, {
-        ...baseSpawnOpts,
-        env: fallbackConfig.env,
-      });
-    } else {
-      throw err;
-    }
+    // Only a configured shell has something to fall back to.
+    if (!safeShell) throw err;
+    terminalLog("Configured shell could not be started; trying the default:", err);
+    const fallback = await invoke<string>("get_default_shell");
+    if (disposed())
+      throw new Error("disposed before fallback spawn", { cause: err });
+    // Validate fallback shell is an absolute path (same check as primary shell)
+    /* v8 ignore next 3 -- @preserve reason: platform-specific PTY fallback path; requires real shell spawning failure not reproducible in unit tests */
+    const fallbackIsAbsolute = fallback.startsWith("/") || /^[a-zA-Z]:[/\\]/.test(fallback);
+    const safeFallback = fallbackIsAbsolute ? fallback : "/bin/sh";
+    // Recompute shell integration for the fallback shell — its env AND its
+    // args differ from the failed configured shell's, and reusing them would
+    // poison the default shell's startup (handing zsh's ZDOTDIR to bash, or
+    // bash's `--rcfile` to a shell that has no such flag and would treat the
+    // path as a script to run).
+    const fallbackConfig = await buildShellSpawnConfig(
+      env,
+      safeFallback,
+      shellIntegrationEnabled,
+    );
+    if (disposed())
+      throw new Error("disposed before fallback spawn", { cause: err });
+    return start(safeFallback, fallbackConfig);
   }
-
-  // PTY → xterm with watermark-based flow control
-  wirePtyFlowControl(pty, term, disposed);
-
-  // PTY exit
-  pty.onExit(({ exitCode }) => {
-    onExit(exitCode);
-  });
-
-  return pty;
 }
