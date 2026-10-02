@@ -16,12 +16,13 @@
  * service (the manual command) need it, and services must not import hooks.
  *
  * @coordinates-with orphanAssetCleanup.ts — consumed as OrphanScanOptions.knownContents
+ * @coordinates-with services/tabs/openDocuments.ts — which documents count as open
  * @coordinates-with services/tabs/tabOperations.ts — close-time cleanup
  * @coordinates-with services/commands/miscCommands.ts — manual cleanup command
  * @module services/media/liveDocumentContents
  */
 
-import { useDocumentStore } from "@/stores/documentStore";
+import { openDocuments } from "@/services/tabs/openDocuments";
 import { flushAllWysiwygNow } from "@/utils/wysiwygFlush";
 import { canonicalPathKey } from "@/utils/paths/pathComparison";
 
@@ -45,8 +46,10 @@ export function liveContentsExcluding(
   // editor first, or cleanup deletes the image out of the settling window.
   flushAllWysiwygNow();
   const live = new Map<string, string>();
-  const { documents } = useDocumentStore.getState();
-  for (const [tabId, doc] of Object.entries(documents)) {
+  // Open documents only. A buffer here replaces the file as the scan's evidence
+  // for its path, and a document left with no tab holds text nobody can see or
+  // save: trusting it deletes an image the file on disk still references.
+  for (const { tabId, doc } of openDocuments()) {
     if (excludedTabIds.has(tabId)) continue;
     if (!doc.filePath) {
       live.set(`untitled:${tabId}`, doc.content);

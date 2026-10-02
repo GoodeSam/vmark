@@ -73,7 +73,7 @@
   "src/hooks/useSourceOutlineSync.test.ts": 1,
   "src/hooks/useTabModeSync.test.ts": 2,
   "src/hooks/useUpdateChecker.comprehensive.test.ts": 2,
-  "src/hooks/useUpdateChecker.test.ts": 7,
+  "src/hooks/useUpdateChecker.test.ts": 5,
   "src/hooks/useUpdateOperations.test.ts": 2,
   "src/hooks/useViewMenuStateSync.test.ts": 8,
   "src/hooks/useWindowClose.comprehensive.test.tsx": 11,
