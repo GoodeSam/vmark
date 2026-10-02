@@ -307,22 +307,30 @@ export function renumberFootnotes(doc: string): string | null {
 
   // Build the new document
 
-  // 1. Calculate position adjustments from definition removals
-  // We need to track how much each position shifts after removing definitions
+  // 1. Compute the removed ranges once, in original-document coordinates.
+  // Each range is a definition plus its trailing newlines; definitions
+  // separated only by newlines form one range, so the text removal and the
+  // reference position shift below agree on exactly what was removed.
   const sortedDefs = [...defs].sort((a, b) => a.start - b.start);
   const removals: Array<{ start: number; length: number }> = [];
+  const skipNewlines = (from: number): number => {
+    let pos = from;
+    while (pos < doc.length && doc[pos] === "\n") pos++;
+    return pos;
+  };
 
-  for (const def of sortedDefs) {
-    // Calculate end position including trailing newlines
-    let endPos = def.end;
-    while (endPos < doc.length && doc[endPos] === "\n") {
-      endPos++;
+  for (let i = 0; i < sortedDefs.length; i++) {
+    const start = sortedDefs[i].start;
+    let endPos = skipNewlines(sortedDefs[i].end);
+    while (i + 1 < sortedDefs.length && sortedDefs[i + 1].start === endPos) {
+      i++;
+      endPos = skipNewlines(sortedDefs[i].end);
     }
-    // But keep at least one newline if there's content after
-    if (endPos > def.end && endPos < doc.length) {
+    // Keep one newline if there's content after
+    if (endPos > sortedDefs[i].end && endPos < doc.length) {
       endPos--;
     }
-    removals.push({ start: def.start, length: endPos - def.start });
+    removals.push({ start, length: endPos - start });
   }
 
   // Adjust a position to account for all removed text ranges.
@@ -346,19 +354,14 @@ export function renumberFootnotes(doc: string): string | null {
     return pos - adjustment;
   }
 
-  // 2. Remove definitions from document (in reverse order to preserve positions)
-  let contentWithoutDefs = doc;
-  const reverseSortedDefs = [...defs].sort((a, b) => b.start - a.start);
-  for (const def of reverseSortedDefs) {
-    let endPos = def.end;
-    while (endPos < contentWithoutDefs.length && contentWithoutDefs[endPos] === "\n") {
-      endPos++;
-    }
-    if (endPos > def.end && endPos < contentWithoutDefs.length) {
-      endPos--;
-    }
-    contentWithoutDefs = contentWithoutDefs.slice(0, def.start) + contentWithoutDefs.slice(endPos);
+  // 2. Remove exactly those ranges from the document
+  let contentWithoutDefs = "";
+  let cursor = 0;
+  for (const removal of removals) {
+    contentWithoutDefs += doc.slice(cursor, removal.start);
+    cursor = removal.start + removal.length;
   }
+  contentWithoutDefs += doc.slice(cursor);
 
   // 3. Replace references with new labels (in reverse order of adjusted positions)
   // First, compute adjusted positions and sort by them

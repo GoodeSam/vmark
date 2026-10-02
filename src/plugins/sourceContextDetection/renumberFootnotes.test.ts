@@ -74,6 +74,24 @@ describe("renumberFootnotes exact output", () => {
     expect(renumberFootnotes(doc)).toBe(out);
   });
 
+  // Two definitions separated only by blank lines are removed as one block.
+  // The position shift applied to later references must match that block, or
+  // a relabelled reference lands one character off and corrupts the text.
+  it.each([
+    {
+      name: "relabels a reference after two blank-line-separated definitions",
+      doc: "Intro [^z] mid [^y] end [^z]\n\n[^y]: Why\n\n\n[^z]: Zed\n    more zed\n\nOutro [^y]\n\n",
+      out: "Intro [^1] mid [^2] end [^1]\n\n\nOutro [^2]\n\n[^1]: Zed\n    more zed\n[^2]: Why",
+    },
+    {
+      name: "relabels a long label after three adjacent definitions",
+      doc: "A [^c]\n\n[^a]: 1\n\n[^b]: 2\n\n[^c]: 3\n\nB [^long-label] C [^a]",
+      out: "A [^1]\n\n\nB [^2] C [^3]\n\n[^1]: 3\n[^2]: \n[^3]: 1",
+    },
+  ])("$name", ({ doc, out }) => {
+    expect(renumberFootnotes(doc)).toBe(out);
+  });
+
   it("returns null when definitions already trail the text, even with trailing whitespace", () => {
     expect(renumberFootnotes("Text [^1]   \n\n[^1]: Def   \n\n")).toBeNull();
   });
