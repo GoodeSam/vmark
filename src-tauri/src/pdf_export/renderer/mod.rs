@@ -152,7 +152,7 @@ pub async fn render_pdf(
     // native value nothing downstream checks.
     page.validate()?;
     log::debug!(
-        "[PDF] render_pdf: {} bytes of HTML, output: {}",
+        "[PDF] render_pdf: {} bytes of HTML, output: {:?}",
         html.len(),
         output_path
     );

@@ -44,7 +44,7 @@ pub(crate) fn preflight(
     let allow_loopback = state.ai_policy.lock().map_err(lock_failure)?.allow_loopback;
     preflight_destination(resolver, url, allow_loopback).map_err(|refused| {
         log::warn!(
-            "[browser] AI destination pre-flight refused {} ({})",
+            "[browser] AI destination pre-flight refused {:?} ({})",
             refused.host,
             refused.reason.as_str()
         );

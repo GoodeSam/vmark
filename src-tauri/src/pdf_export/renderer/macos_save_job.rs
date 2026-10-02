@@ -81,8 +81,8 @@ define_class!(
                 // leftover `*.vmark-staging-*.pdf` beside the user's output
                 // is litter with their document in it (#425).
                 log::warn!(
-                    "[PDF] print operation reported success={success} after the wait gave up; removing {}",
-                    self.ivars().output.display()
+                    "[PDF] print operation reported success={success} after the wait gave up; removing {:?}",
+                    self.ivars().output
                 );
                 remove_temp(&self.ivars().output);
             }
@@ -225,8 +225,8 @@ pub(super) fn verify_pdf(output_path: &Path) -> Result<(), CommandError> {
         // fail anyway.
         Err(e) => {
             log::warn!(
-                "[PDF] could not examine the output at {}: {e}",
-                output_path.display()
+                "[PDF] could not examine the output at {:?}: {e}",
+                output_path
             );
             return Err(localized_error!(
                 ErrorCode::Io,
@@ -238,15 +238,12 @@ pub(super) fn verify_pdf(output_path: &Path) -> Result<(), CommandError> {
     match shape {
         PdfShape::Complete => Ok(()),
         PdfShape::Empty => {
-            log::debug!("[PDF] output missing or empty at {}", output_path.display());
+            log::debug!("[PDF] output missing or empty at {:?}", output_path);
             let _ = std::fs::remove_file(output_path);
             Err(localized_error!(ErrorCode::Io, "errors.pdf.emptyOutput"))
         }
         PdfShape::NotPdf => {
-            log::warn!(
-                "[PDF] output at {} is not a complete PDF",
-                output_path.display()
-            );
+            log::warn!("[PDF] output at {:?} is not a complete PDF", output_path);
             let _ = std::fs::remove_file(output_path);
             Err(localized_error!(ErrorCode::Io, "errors.pdf.outputNotPdf"))
         }

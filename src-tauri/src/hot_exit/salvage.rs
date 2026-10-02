@@ -225,8 +225,8 @@ pub(super) async fn read_session_file_with_salvage(
             Some(salvaged) => {
                 let summary = salvaged.summary();
                 log::warn!(
-                    "[HotExit] Strict parse of {} failed ({strict_error}); salvaged: {summary}",
-                    path.display()
+                    "[HotExit] Strict parse of {:?} failed ({strict_error}); salvaged: {summary}",
+                    path
                 );
                 // Only a repair that LOST something needs the original
                 // preserved. Normalizing a fractional panel width is not a

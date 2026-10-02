@@ -41,10 +41,10 @@ pub(super) fn emit_event<R: Runtime>(
     data: impl serde::Serialize + Clone,
 ) {
     if let Err(e) = app.emit(event, data.clone()) {
-        log::error!("Failed to emit '{}': {}", event, e);
+        log::error!("Failed to emit {:?}: {}", event, e);
         if event == "workflow:complete" {
             if let Err(e2) = app.emit(event, data) {
-                log::error!("Retry failed for '{}': {}", event, e2);
+                log::error!("Retry failed for {:?}: {}", event, e2);
             }
         }
     }

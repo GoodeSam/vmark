@@ -191,7 +191,7 @@ fn restore_blocking(snapshot_dir: &Path, info: &SnapshotInfo, root: &HeldRoot) -
         match restore_one(snapshot_dir, recorded, root) {
             Ok(()) => report.restored += 1,
             Err(reason) => {
-                log::warn!("[workflow] not restoring '{recorded}': {reason}");
+                log::warn!("[workflow] not restoring {recorded:?}: {reason}");
                 report.skipped += 1;
             }
         }
@@ -201,7 +201,7 @@ fn restore_blocking(snapshot_dir: &Path, info: &SnapshotInfo, root: &HeldRoot) -
             Ok(true) => report.deleted += 1,
             Ok(false) => {}
             Err(reason) => {
-                log::warn!("[workflow] not deleting '{recorded}': {reason}");
+                log::warn!("[workflow] not deleting {recorded:?}: {reason}");
                 report.skipped += 1;
             }
         }

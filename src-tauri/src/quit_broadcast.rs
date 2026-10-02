@@ -100,7 +100,7 @@ pub(super) fn request_quit_of<R: Runtime>(
         match menu_events::deliver_when_ready(window, QUIT_REQUESTED_EVENT) {
             Ok(Delivery::Emitted) => {}
             Ok(Delivery::Deferred) => log::info!(
-                "[quit] '{label}' is still starting; it will be asked to quit when it is ready"
+                "[quit] {label:?} is still starting; it will be asked to quit when it is ready"
             ),
             Err(error) => return Err((label.clone(), error)),
         }
@@ -114,7 +114,7 @@ pub(super) fn request_quit_of<R: Runtime>(
 /// retry at once (safest for unsaved data: no window is force-closed).
 pub(super) fn abort_quit_on_emit_failure(label: &str, err: impl std::fmt::Display) {
     log::error!(
-        "[quit] Failed to emit app:quit-requested to '{label}': {err} — cancelling coordinated quit"
+        "[quit] Failed to emit app:quit-requested to {label:?}: {err} — cancelling coordinated quit"
     );
     super::cancel_quit();
 }

@@ -95,7 +95,7 @@ pub(super) async fn run<R: tauri::Runtime>(
         log::debug!(
             "[MCP Bridge] Client {} acquiring write lock for {}",
             client_id,
-            request.request_type
+            crate::peer_text::peer_text(&request.request_type)
         );
         Some(bridge.write_lock().await)
     };
@@ -172,7 +172,8 @@ pub(super) async fn run<R: tauri::Runtime>(
 
     if !is_read {
         log::debug!(
-            "[MCP Bridge] Client {client_id} completed {request_type_for_log} - releasing write lock"
+            "[MCP Bridge] Client {client_id} completed {} - releasing write lock",
+            crate::peer_text::peer_text(&request_type_for_log)
         );
     }
 

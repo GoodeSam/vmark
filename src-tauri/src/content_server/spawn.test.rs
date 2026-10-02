@@ -330,3 +330,22 @@ fn resolve_node_captures_with_a_timeout_rather_than_waiting_forever() {
          #312 returning:\n{code}"
     );
 }
+
+/// WI-RA7C.2 — a line the child printed is the child's text, and the workspace
+/// root is the user's. Neither may start a log line of its own.
+#[test]
+fn a_child_line_and_a_root_reach_the_log_as_one_line_each() {
+    let root = "/ws\n[content-server /other] trusted";
+    let line = "ready\x1b[2K\n[Tauri] close_window called for \"main\"";
+    let lines = crate::peer_text::log_capture::captured_logs(|| {
+        log_child_line(root, Stream::Stdout, line);
+        log_child_line(root, Stream::Stderr, line);
+    });
+    assert_eq!(lines.len(), 2, "{lines:?}");
+    for logged in &lines {
+        assert!(logged.starts_with("[content-server "), "{logged}");
+        for raw in ['\n', '\x1b'] {
+            assert!(!logged.contains(raw), "{raw:?} reached the log: {logged}");
+        }
+    }
+}

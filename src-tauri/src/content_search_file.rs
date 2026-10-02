@@ -58,7 +58,7 @@ pub(super) fn scan_file(
     let mut file = match File::open(path) {
         Ok(file) => file,
         Err(e) => {
-            log::debug!("[ContentSearch] Cannot open file {}: {e}", path.display());
+            log::debug!("[ContentSearch] Cannot open file {:?}: {e}", path);
             return FileScan::Unscanned;
         }
     };
@@ -78,7 +78,7 @@ pub(super) fn scan_open_file(
     let head_len = match file.read(&mut bytes) {
         Ok(head_len) => head_len,
         Err(e) => {
-            log::debug!("[ContentSearch] Cannot read file {}: {e}", path.display());
+            log::debug!("[ContentSearch] Cannot read file {:?}: {e}", path);
             return FileScan::Unscanned;
         }
     };
@@ -91,9 +91,9 @@ pub(super) fn scan_open_file(
     if let Ok(meta) = file.metadata() {
         if meta.len() > MAX_FILE_SIZE {
             log::debug!(
-                "[ContentSearch] Skipping large file ({} bytes): {}",
+                "[ContentSearch] Skipping large file ({} bytes): {:?}",
                 meta.len(),
-                path.display()
+                path
             );
             return FileScan::Unscanned;
         }
@@ -108,11 +108,11 @@ pub(super) fn scan_open_file(
     let remaining = (MAX_FILE_SIZE + 1).saturating_sub(head_len as u64);
     let read = file.by_ref().take(remaining).read_to_end(&mut bytes);
     if read.is_err() || bytes.len() as u64 > MAX_FILE_SIZE {
-        log::debug!("[ContentSearch] Cannot read file: {}", path.display());
+        log::debug!("[ContentSearch] Cannot read file: {:?}", path);
         return FileScan::Unscanned;
     }
     let Ok(content) = String::from_utf8(bytes) else {
-        log::debug!("[ContentSearch] Cannot read file: {}", path.display());
+        log::debug!("[ContentSearch] Cannot read file: {:?}", path);
         return FileScan::Unscanned;
     };
 

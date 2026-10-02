@@ -127,9 +127,9 @@ pub(crate) fn read_tokens_at(entries: &[(&str, PathBuf)]) -> Vec<ProviderToken> 
             }),
             Ok(None) => {}
             Err(detail) => log::warn!(
-                "[MCP] Cannot read the client credential for {provider} from {}: {detail} \
+                "[MCP] Cannot read the client credential for {provider} from {:?}: {detail} \
                  — that client will connect but will not be identified",
-                path.display()
+                path
             ),
         }
     }

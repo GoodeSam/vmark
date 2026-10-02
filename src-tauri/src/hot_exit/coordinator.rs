@@ -93,8 +93,8 @@ struct CaptureState {
 fn normalize_window_label(state: &mut WindowState, expected_label: &str) {
     if state.window_label != expected_label {
         log::debug!(
-            "[HotExit] Normalizing mismatched window_label: {} -> {}",
-            state.window_label,
+            "[HotExit] Normalizing mismatched window_label: {} -> {:?}",
+            crate::peer_text::peer_text(&state.window_label),
             expected_label
         );
         state.window_label = expected_label.to_string();
@@ -133,8 +133,8 @@ fn register_response_listener(app: &AppHandle, state: Arc<Mutex<CaptureState>>) 
                 // Ignore responses from different capture requests (stale responses)
                 if response.capture_id != state.capture_id {
                     log::warn!(
-                        "[HotExit] Ignoring stale response (capture_id mismatch: {} vs {})",
-                        response.capture_id,
+                        "[HotExit] Ignoring stale response (capture_id mismatch: {} vs {:?})",
+                        crate::peer_text::peer_text(&response.capture_id),
                         state.capture_id
                     );
                     return;
@@ -144,7 +144,7 @@ fn register_response_listener(app: &AppHandle, state: Arc<Mutex<CaptureState>>) 
                 if !state.expected_windows.contains(&response.window_label) {
                     log::warn!(
                         "[HotExit] Ignoring response from unexpected window: {}",
-                        response.window_label
+                        crate::peer_text::peer_text(&response.window_label)
                     );
                     return;
                 }
@@ -153,7 +153,7 @@ fn register_response_listener(app: &AppHandle, state: Arc<Mutex<CaptureState>>) 
                 if state.responses.contains_key(&response.window_label) {
                     log::warn!(
                         "[HotExit] Ignoring duplicate response from window: {}",
-                        response.window_label
+                        crate::peer_text::peer_text(&response.window_label)
                     );
                     return;
                 }
@@ -492,7 +492,7 @@ pub fn restore_session_multi_window(
             }
             Err(e) => {
                 log::error!(
-                    "[HotExit] Failed to create window {} — aborting restore to preserve session: {}",
+                    "[HotExit] Failed to create window {:?} — aborting restore to preserve session: {}",
                     label, e
                 );
                 // Abort the whole restore rather than silently dropping this

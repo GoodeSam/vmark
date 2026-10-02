@@ -140,7 +140,7 @@ impl NavDelegate {
             return;
         }
         log::debug!(
-            "[browser] same-document navigation on {}: {}",
+            "[browser] same-document navigation on {:?}: {}",
             ivars.tab_id,
             crate::browser::redact::redact(&url)
         );
@@ -157,7 +157,7 @@ impl NavDelegate {
                 // A command thread began a navigation after the observation: its own
                 // commit records the next page, and its revocation stands.
                 log::debug!(
-                    "[browser] same-document navigation on {} superseded by a top-level navigation",
+                    "[browser] same-document navigation on {:?} superseded by a top-level navigation",
                     ivars.tab_id
                 );
                 return;
@@ -167,14 +167,14 @@ impl NavDelegate {
                 // within and no authority to expire — the registry's answer, not an
                 // anomaly (a first load's URL change, reported before its commit).
                 log::debug!(
-                    "[browser] same-document navigation on {} with no committed page; nothing to expire",
+                    "[browser] same-document navigation on {:?} with no committed page; nothing to expire",
                     ivars.tab_id
                 );
                 return;
             }
             Some(Err(refusal)) => {
                 log::warn!(
-                    "[browser] same-document commit refused for {}: {refusal:?}",
+                    "[browser] same-document commit refused for {:?}: {refusal:?}",
                     ivars.tab_id
                 );
                 if refusal == SameDocumentRefusal::GenerationExhausted {

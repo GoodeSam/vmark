@@ -83,7 +83,7 @@ pub(crate) fn restore_from<R: Runtime>(
     use tauri_plugin_fs::FsExt;
     if let Some(scope) = app.try_fs_scope() {
         if let Err(e) = scope.forbid_file(&file) {
-            log::warn!("[workspace-grants] Could not fence {}: {e}", file.display());
+            log::warn!("[workspace-grants] Could not fence {:?}: {e}", file);
         }
     }
     let grants = app.state::<WorkspaceGrants>();

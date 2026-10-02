@@ -213,8 +213,8 @@ fn write_resolved(
     if let Ok(dir_file) = std::fs::File::open(dir) {
         if let Err(e) = dir_file.sync_all() {
             log::warn!(
-                "Failed to sync parent directory {} after atomic write: {}",
-                dir.display(),
+                "Failed to sync parent directory {:?} after atomic write: {}",
+                dir,
                 e
             );
         }

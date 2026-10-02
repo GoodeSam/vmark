@@ -215,7 +215,7 @@ impl HotExitState {
         } else {
             log::warn!(
                 "[HotExit] Ignoring completion from unexpected window: {}",
-                window_label
+                crate::peer_text::peer_text(window_label)
             );
         }
 

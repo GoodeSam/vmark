@@ -69,12 +69,12 @@ fn check_document_path(path: &str) -> Result<(), CommandError> {
 /// This makes the file appear in the Dock right-click menu.
 pub fn register_recent_document(path: &str) {
     match try_register_recent_document(path) {
-        Ok(()) => log::debug!("[dock_recent] Registered: {}", path),
+        Ok(()) => log::debug!("[dock_recent] Registered: {:?}", path),
         Err(SkipReason::PathMissing) => {
-            log::warn!("[dock_recent] Path does not exist: {}", path);
+            log::warn!("[dock_recent] Path does not exist: {:?}", path);
         }
         Err(SkipReason::NotAFile) => {
-            log::warn!("[dock_recent] Not a document file: {}", path);
+            log::warn!("[dock_recent] Not a document file: {:?}", path);
         }
         Err(SkipReason::NotMainThread) => {
             log::warn!("[dock_recent] Not on main thread, cannot register document");

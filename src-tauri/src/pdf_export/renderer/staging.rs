@@ -78,7 +78,7 @@ pub(super) fn remove_temp(path: &Path) {
     match std::fs::remove_file(path) {
         Ok(()) => {}
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-        Err(e) => log::warn!("[PDF] could not remove temp file {}: {e}", path.display()),
+        Err(e) => log::warn!("[PDF] could not remove temp file {:?}: {e}", path),
     }
 }
 

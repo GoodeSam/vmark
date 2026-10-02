@@ -98,7 +98,7 @@ fn signal_for(result: Result<Event, notify::Error>, scope: &WatchScope) -> Optio
         Ok(event) => event,
         Err(error) => {
             log::warn!(
-                "[watcher] '{}' reported an error, asking for a rescan: {error}",
+                "[watcher] {:?} reported an error, asking for a rescan: {error}",
                 scope.watch_id
             );
             return Some(Signal::Rescan);
@@ -115,7 +115,7 @@ fn signal_for(result: Result<Event, notify::Error>, scope: &WatchScope) -> Optio
         KindClass::Change(kind) => kind,
         KindClass::Rescan => {
             log::info!(
-                "[watcher] '{}' lost track of changes, asking for a rescan",
+                "[watcher] {:?} lost track of changes, asking for a rescan",
                 scope.watch_id
             );
             return Some(Signal::Rescan);
@@ -144,7 +144,7 @@ fn signal_for(result: Result<Event, notify::Error>, scope: &WatchScope) -> Optio
 fn emit_batch<R: Runtime>(app: &AppHandle<R>, batch: &FsChangeBatch) {
     if let Err(error) = app.emit_to(batch.watch_id.as_str(), FS_CHANGED_EVENT, batch) {
         log::warn!(
-            "[watcher] failed to deliver {FS_CHANGED_EVENT} to '{}': {error}",
+            "[watcher] failed to deliver {FS_CHANGED_EVENT} to {:?}: {error}",
             batch.watch_id
         );
     }

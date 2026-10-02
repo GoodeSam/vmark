@@ -41,14 +41,14 @@ impl NavDelegate {
         ) {
             if let Err(e) = reg.transition(&ivars.tab_id, Lifecycle::Live) {
                 log::warn!(
-                    "[browser] failed-load settle refused for {}: {e:?}",
+                    "[browser] failed-load settle refused for {:?}: {e:?}",
                     ivars.tab_id
                 );
             }
         }
         if let Err(e) = reg.clear_navigation(&ivars.tab_id) {
             log::warn!(
-                "[browser] failed-load ticket clear refused for {}: {e:?}",
+                "[browser] failed-load ticket clear refused for {:?}: {e:?}",
                 ivars.tab_id
             );
         }
@@ -65,7 +65,11 @@ impl NavDelegate {
         }
         ivars.loading.set(false);
         let message = error.localizedDescription().to_string();
-        log::debug!("[browser] load failed for {}: {message}", ivars.tab_id);
+        log::debug!(
+            "[browser] load failed for {:?}: {message}",
+            ivars.tab_id,
+            message = crate::peer_text::peer_message(&message)
+        );
         self.settle_after_failure();
         let _ = self.emit_owned(
             "browser://load-failed",

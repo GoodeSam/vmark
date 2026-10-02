@@ -114,7 +114,7 @@ impl NavDelegate {
                 // fail-closed shape as a disallowed destination. Substituting 0 used
                 // to commit anyway while every stale stamp remained valid (#28).
                 log::warn!(
-                    "[browser] generation bump refused for {}: {e:?}; commit refused",
+                    "[browser] generation bump refused for {:?}: {e:?}; commit refused",
                     ivars.tab_id
                 );
                 let _ = reg.clear_committed_url(&ivars.tab_id);
@@ -124,13 +124,13 @@ impl NavDelegate {
         };
         if let Err(e) = reg.transition(&ivars.tab_id, Lifecycle::Navigating) {
             log::warn!(
-                "[browser] commit transition refused for {}: {e:?}",
+                "[browser] commit transition refused for {:?}: {e:?}",
                 ivars.tab_id
             );
         }
         if let Err(e) = reg.set_committed_url(&ivars.tab_id, url) {
             log::warn!(
-                "[browser] committed-url write refused for {}: {e:?}",
+                "[browser] committed-url write refused for {:?}: {e:?}",
                 ivars.tab_id
             );
         }
@@ -215,7 +215,7 @@ impl NavDelegate {
             return;
         };
         if let Err(e) = reg.transition(&ivars.tab_id, to) {
-            log::warn!("[browser] {} → {to:?} refused: {e:?}", ivars.tab_id);
+            log::warn!("[browser] {:?} → {to:?} refused: {e:?}", ivars.tab_id);
         }
     }
 
@@ -245,7 +245,7 @@ impl NavDelegate {
             return true;
         }
         log::warn!(
-            "[browser] reload produced no navigation for {}",
+            "[browser] reload produced no navigation for {:?}",
             self.ivars().tab_id
         );
         self.set_state(Lifecycle::Crashed);

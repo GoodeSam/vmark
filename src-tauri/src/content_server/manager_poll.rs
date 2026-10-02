@@ -75,7 +75,7 @@ pub(super) fn handle_poll_failure(
     };
     m.poll_failures += 1;
     log::warn!(
-        "[content-server] try_wait failed for '{}' ({}/{}): {}",
+        "[content-server] try_wait failed for {:?} ({}/{}): {}",
         workspace_root,
         m.poll_failures,
         MAX_POLL_FAILURES,
@@ -85,7 +85,7 @@ pub(super) fn handle_poll_failure(
         return (ChildState::Running, None);
     }
     log::warn!(
-        "[content-server] child for '{}' is un-pollable after {} attempts — treating as dead",
+        "[content-server] child for {:?} is un-pollable after {} attempts — treating as dead",
         workspace_root,
         MAX_POLL_FAILURES
     );

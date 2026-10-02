@@ -87,7 +87,7 @@ pub fn mark_window_ready<R: tauri::Runtime>(app: &AppHandle<R>, label: &str) {
     if let Some(window) = app.get_webview_window(label) {
         for event in &pending {
             log::debug!(
-                "[menu_events] Flushing pending event '{}' to window '{}'",
+                "[menu_events] Flushing pending event {:?} to window {:?}",
                 event.event_name,
                 label
             );
@@ -157,7 +157,7 @@ fn emit_event<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>, event: &Pendi
     };
     if let Err(e) = result {
         log::warn!(
-            "[menu_events] Failed to emit '{}' to window '{}': {}",
+            "[menu_events] Failed to emit {:?} to window {:?}: {}",
             event.event_name,
             label,
             e
@@ -173,14 +173,14 @@ fn emit_or_queue_atomic(window: &tauri::WebviewWindow, event: PendingMenuEvent) 
 
     if check_ready_or_queue(label, event.clone()) {
         log::debug!(
-            "[menu_events] Window '{}' is ready, emitting '{}' directly",
+            "[menu_events] Window {:?} is ready, emitting {:?} directly",
             label,
             event_name
         );
         emit_event(window, &event);
     } else {
         log::debug!(
-            "[menu_events] Window '{}' not ready, queued '{}'",
+            "[menu_events] Window {:?} not ready, queued {:?}",
             label,
             event_name
         );
@@ -262,7 +262,7 @@ fn make_recent_workspace_event(path: &str) -> PendingMenuEvent {
 fn create_window_and_queue(app: &AppHandle, event: PendingMenuEvent) {
     if let Ok(label) = crate::window_manager::create_document_window(app, None, None) {
         log::debug!(
-            "[menu_events] Created window '{}', queueing event '{}'",
+            "[menu_events] Created window {:?}, queueing event {:?}",
             label,
             event.event_name
         );

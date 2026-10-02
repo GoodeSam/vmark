@@ -111,8 +111,8 @@ pub(in crate::workflow) fn commit_in(
         // rename failure that caused it, and the log line is the only record.
         if let Err(cleanup) = dir.unlink(&temp_name) {
             log::error!(
-                "[workflow] a save to {} failed AND its temp file could not be removed: {cleanup}",
-                target.display()
+                "[workflow] a save to {:?} failed AND its temp file could not be removed: {cleanup}",
+                target
             );
             return Err(format!("{e}; the temp file was left behind: {cleanup}"));
         }

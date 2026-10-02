@@ -188,7 +188,7 @@ fn reuse_or_displace(
         },
         StartDecision::RestartForTrust => {
             log::info!(
-                "[content-server {root}] trust changed to {trusted}; restarting so the CSP follows"
+                "[content-server {root:?}] trust changed to {trusted}; restarting so the CSP follows"
             );
             if let Some(detached) = mgr.take_if_generation(root, existing.generation) {
                 mgr.retain_orphan(root, detached.cleanup(root));

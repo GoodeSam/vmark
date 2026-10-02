@@ -62,7 +62,7 @@ pub(crate) fn handle_document_window_close_event(
         // never finished" is a line here — and release builds filter `debug!`,
         // which is why the first report of a stuck window arrived with a log
         // that said nothing at all.
-        log::info!("[Tauri] WindowEvent::CloseRequested for window '{}'", label);
+        log::info!("[Tauri] WindowEvent::CloseRequested for window {:?}", label);
         // Only intercept close for document windows
         if intercepts_close(label) {
             api.prevent_close();
@@ -71,11 +71,11 @@ pub(crate) fn handle_document_window_close_event(
                 // Nothing is torn down, so there is no save flow to run. Never
                 // true off Windows, and never true during a quit.
                 let _ = window.hide();
-                log::info!("[Tauri] close-to-tray: hid '{}' instead of closing", label);
+                log::info!("[Tauri] close-to-tray: hid {:?} instead of closing", label);
             } else {
                 // Include target label in payload so frontend can filter
                 let _ = window.emit("window:close-requested", label);
-                log::info!("[Tauri] Emitted window:close-requested to '{}'", label);
+                log::info!("[Tauri] Emitted window:close-requested to {:?}", label);
             }
         }
         // Settings and other non-document windows close normally
@@ -102,7 +102,7 @@ pub(crate) fn handle_document_window_close_event(
             let revoked = trusted.revoke_window(window.label());
             if revoked > 0 {
                 log::info!(
-                    "[Tauri] revoked {} trusted-HTML grant(s) for window '{}'",
+                    "[Tauri] revoked {} trusted-HTML grant(s) for window {:?}",
                     revoked,
                     window.label()
                 );

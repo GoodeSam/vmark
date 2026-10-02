@@ -26,6 +26,12 @@
 //! All three bound the length, with a marker, so a truncated value cannot be
 //! mistaken for a short one.
 //!
+//! A path is the same kind of text — a file name may hold a newline — and is
+//! logged with `{:?}`, which quotes and escapes it; its length is the
+//! filesystem's to bound. `log_escaping.test.rs` is the gate: no log call in
+//! the production tree passes `path.display()` or wraps a `{}` in quotes of
+//! its own.
+//!
 //! @coordinates-with mcp_bridge/server.rs — the envelope log
 //! @coordinates-with mcp_bridge/identify.rs — the client-supplied identity
 //! @coordinates-with app_setup.rs — the frontend's log commands
@@ -90,3 +96,7 @@ pub(crate) mod log_capture;
 #[cfg(test)]
 #[path = "peer_text.test.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "log_escaping.test.rs"]
+mod log_escaping_gate;

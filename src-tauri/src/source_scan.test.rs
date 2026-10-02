@@ -3,9 +3,10 @@
 // and char literals, and test-only items blanked out, so a gate's pattern can
 // only ever match code that ships.
 //
-// Blanking (spaces, newlines kept) rather than deleting keeps byte offsets, so
-// a finding maps back to its line. Quote characters survive the blanking, so a
-// literal's bounds stay visible.
+// Blanking (spaces, newlines kept) rather than deleting keeps byte offsets: a
+// finding maps back to its line, and a gate that needs a literal's text (a log
+// format string) reads it from `raw` at the offsets `code` gave it. Quote
+// characters survive the blanking, so a literal's bounds stay visible.
 //
 // Which files are test-only is read from the `#[cfg(test)] mod` declarations
 // themselves, not guessed from names, so a test module with an ordinary name
@@ -19,7 +20,9 @@ use std::path::{Path, PathBuf};
 pub(crate) struct Production {
     /// Path relative to `src/`, with `/` separators.
     pub(crate) path: String,
-    /// The file with comments, literal contents and test-only items blanked.
+    /// The file exactly as written.
+    pub(crate) raw: String,
+    /// `raw` with comments, literal contents and test-only items blanked.
     pub(crate) code: String,
 }
 
@@ -62,6 +65,7 @@ pub(crate) fn production_files() -> Vec<Production> {
             Production {
                 path: rel,
                 code: blank_test_items(&blank_comments_and_literals(&raw)),
+                raw,
             }
         })
         .collect();

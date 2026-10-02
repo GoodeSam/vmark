@@ -201,8 +201,8 @@ fn verify_installed(
     }
 
     log::error!(
-        "[cli_install] {} is not the script that was installed; removing it",
-        target.display()
+        "[cli_install] {:?} is not the script that was installed; removing it",
+        target
     );
     let removed = std::fs::remove_file(target).is_ok()
         || target

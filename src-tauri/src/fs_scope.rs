@@ -44,18 +44,10 @@ pub(crate) fn allow_fs_read<R: tauri::Runtime, P: AsRef<std::path::Path>>(
     use tauri_plugin_fs::FsExt;
     let path = path.as_ref();
     if let Err(e) = app.fs_scope().allow_file(path) {
-        log::warn!(
-            "[fs-scope] Failed to allow file '{}': {}",
-            path.display(),
-            e
-        );
+        log::warn!("[fs-scope] Failed to allow file {:?}: {}", path, e);
     }
     if let Err(e) = app.asset_protocol_scope().allow_file(path) {
-        log::warn!(
-            "[asset-scope] Failed to allow file '{}': {}",
-            path.display(),
-            e
-        );
+        log::warn!("[asset-scope] Failed to allow file {:?}: {}", path, e);
     }
 }
 

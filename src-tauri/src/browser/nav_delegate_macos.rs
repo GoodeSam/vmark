@@ -58,7 +58,7 @@ define_class!(
             let Some(object) = object else { return };
             let Some(web_view) = observed_web_view(object) else {
                 log::error!(
-                    "[browser] {}: URL observation for an object that is not a webview; ignored",
+                    "[browser] {:?}: URL observation for an object that is not a webview; ignored",
                     self.ivars().tab_id
                 );
                 return;
@@ -91,7 +91,7 @@ define_class!(
                     self.emit_policy_failed("navigation destination blocked by policy");
                 } else {
                     log::debug!(
-                        "[browser] navigation policy cancelled for {}: {}",
+                        "[browser] navigation policy cancelled for {:?}: {}",
                         self.ivars().tab_id,
                         redact::redact(&url)
                     );
@@ -163,7 +163,11 @@ define_class!(
             let title = current_title(web_view);
             self.set_state(Lifecycle::Live);
             self.record_load_success();
-            log::debug!("[browser] loaded {} ({title})", ivars.tab_id);
+            log::debug!(
+                "[browser] loaded {:?} ({})",
+                ivars.tab_id,
+                crate::peer_text::peer_text(&title)
+            );
             let (can_go_back, can_go_forward) = history_state(web_view);
             let generation = self.committed_generation();
             let _ = self.emit_owned(
@@ -198,7 +202,7 @@ define_class!(
             super::dialogs::drain_for(&ivars.tab_id);
             let action = self.record_crash();
             log::warn!(
-                "[browser] content process terminated for {} → {action:?}",
+                "[browser] content process terminated for {:?} → {action:?}",
                 ivars.tab_id
             );
             let reloading = action == RecoveryAction::AutoReload && self.try_reload(web_view);
@@ -223,7 +227,7 @@ define_class!(
             let ivars = self.ivars();
             let url = action_url(action);
             log::debug!(
-                "[browser] popup blocked for {} → {}",
+                "[browser] popup blocked for {:?} → {}",
                 ivars.tab_id,
                 redact::redact(&url)
             );
@@ -246,7 +250,11 @@ define_class!(
         ) {
             let ivars = self.ivars();
             let msg = message.to_string();
-            log::debug!("[browser] alert on {}: {msg}", ivars.tab_id);
+            log::debug!(
+                "[browser] alert on {:?}: {}",
+                ivars.tab_id,
+                crate::peer_text::peer_message(&msg)
+            );
             let _ = self.emit_owned(
                 "browser://dialog",
                 DialogPayload {
@@ -269,7 +277,11 @@ define_class!(
             let ivars = self.ivars();
             let msg = message.to_string();
             let id = super::dialogs::park_confirm(ivars.tab_id.clone(), completion_handler.copy());
-            log::debug!("[browser] confirm on {} (#{id}): {msg}", ivars.tab_id);
+            log::debug!(
+                "[browser] confirm on {:?} (#{id}): {}",
+                ivars.tab_id,
+                crate::peer_text::peer_message(&msg)
+            );
             let emitted = self.emit_owned(
                 "browser://dialog",
                 DialogPayload {

@@ -157,7 +157,7 @@ impl Walk<'_> {
                     match self.list(&path, depth + 1) {
                         Ok(children) => node.children = Some(children),
                         Err(e) => {
-                            log::warn!("[file-tree] unreadable directory {}: {e}", path.display());
+                            log::warn!("[file-tree] unreadable directory {:?}: {e}", path);
                             node.unreadable = true;
                             node.children = Some(Vec::new());
                         }
@@ -184,7 +184,7 @@ pub(crate) fn list_directory_tree_blocking(
     };
     let entries = walk.list(Path::new(path), 0)?;
     if walk.truncated {
-        log::warn!("[file-tree] listing truncated for {path}: {MAX_TREE_NODES} nodes / {MAX_TREE_DEPTH} levels");
+        log::warn!("[file-tree] listing truncated for {path:?}: {MAX_TREE_NODES} nodes / {MAX_TREE_DEPTH} levels");
     }
     Ok(TreeListing {
         root_prefix: root_prefix(path),

@@ -175,7 +175,7 @@ pub(super) async fn handle_message<R: tauri::Runtime>(
         let bytes = serde_json::to_string(&request.args).map_or(0, |s| s.len());
         log::debug!(
             "[MCP Bridge DEBUG] {} args: {bytes} bytes",
-            request.request_type
+            crate::peer_text::peer_text(&request.request_type)
         );
     }
 

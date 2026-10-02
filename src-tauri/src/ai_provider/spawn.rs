@@ -77,7 +77,7 @@ pub(crate) fn build_command(exe: &str, args: &[&str]) -> Command {
 /// named in the message, so it is never mistaken for a missing install.
 pub(crate) fn spawn_failure(program: &str, error: &std::io::Error) -> String {
     if error.kind() == std::io::ErrorKind::InvalidInput {
-        log::error!("[spawn] {program}: an argument was refused at spawn: {error}");
+        log::error!("[spawn] {program:?}: an argument was refused at spawn: {error}");
         format!("Failed to spawn {program}: an argument cannot be passed to it safely ({error})")
     } else {
         format!("Failed to spawn {program}: {error}")

@@ -29,11 +29,14 @@ pub async fn mcp_bridge_respond(
     let delivered = super::state::resolve_pending(&mut guard, &payload.id, response)
         .map_err(CommandError::conflict)?;
     if delivered {
-        log::debug!("[MCP Bridge] Response received for {}", payload.id);
+        log::debug!(
+            "[MCP Bridge] Response received for {}",
+            crate::peer_text::peer_text(&payload.id)
+        );
     } else {
         log::debug!(
             "[MCP Bridge] Response for unknown/expired request {}",
-            payload.id
+            crate::peer_text::peer_text(&payload.id)
         );
     }
 

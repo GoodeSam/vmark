@@ -88,7 +88,7 @@ impl<R: Runtime> Drop for TerminalEvent<R> {
             return;
         };
         log::error!(
-            "Workflow {execution_id} ended without a completion event — reporting it as failed"
+            "Workflow {execution_id:?} ended without a completion event — reporting it as failed"
         );
         let _ = self.app.emit(
             "workflow:complete",

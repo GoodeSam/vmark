@@ -79,7 +79,10 @@ impl AiPromptCancelRegistry {
         // dropped: the dispatch starts already cancelled and ends at its first
         // check rather than running to completion unstoppably (#242).
         if self.take_pre_cancel(request_id) {
-            log::info!("AI prompt {request_id} was cancelled before it registered");
+            log::info!(
+                "AI prompt {request_id} was cancelled before it registered",
+                request_id = crate::peer_text::peer_text(request_id)
+            );
             token.cancel();
         }
         table.insert(request_id.to_owned(), token.clone());
@@ -187,9 +190,15 @@ pub async fn cancel_ai_prompt(
     request_id: String,
 ) -> Result<(), CommandError> {
     if state.cancel(&request_id) {
-        log::info!("AI prompt cancellation requested for {request_id}");
+        log::info!(
+            "AI prompt cancellation requested for {request_id}",
+            request_id = crate::peer_text::peer_text(&request_id)
+        );
     } else {
-        log::debug!("cancel_ai_prompt: no request in flight for {request_id}");
+        log::debug!(
+            "cancel_ai_prompt: no request in flight for {request_id}",
+            request_id = crate::peer_text::peer_text(&request_id)
+        );
     }
     Ok(())
 }

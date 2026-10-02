@@ -97,7 +97,7 @@ pub fn destroy_window(app: &AppHandle, window_label: &str) {
     }
 
     log::info!(
-        "[browser] window '{window_label}' closed — tearing down {} browser tab(s)",
+        "[browser] window {window_label:?} closed — tearing down {} browser tab(s)",
         tabs.len()
     );
     for tab_id in tabs {
@@ -106,7 +106,7 @@ pub fn destroy_window(app: &AppHandle, window_label: &str) {
         // are logged, not propagated: the window is going away regardless, and there
         // is no one left to report an error to.
         if let Err(e) = surface::destroy(app, tab_id.clone()) {
-            log::warn!("[browser] destroying '{tab_id}' during window teardown failed: {e}");
+            log::warn!("[browser] destroying {tab_id:?} during window teardown failed: {e}");
         }
     }
 }

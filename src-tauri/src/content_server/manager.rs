@@ -201,7 +201,7 @@ impl ContentServerManager {
                     )
                 } else {
                     log::info!(
-                        "[content-server {workspace_root}] replacing the running server: its trust ({}) is not the requested {trusted}",
+                        "[content-server {workspace_root:?}] replacing the running server: its trust ({}) is not the requested {trusted}",
                         m.server.trusted
                     );
                     let mut displaced = state.servers.remove(workspace_root).map(Managed::detach);

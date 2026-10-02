@@ -179,7 +179,7 @@ fn api_navigation(tab_id: &str, webview: &WKWebView, start: impl FnOnce() -> boo
     match delegate_for(tab_id) {
         Some(delegate) => delegate.api_navigation(webview, start, pump),
         None => {
-            log::error!("[browser] {tab_id}: webview with no delegate — navigating unowned");
+            log::error!("[browser] {tab_id:?}: webview with no delegate — navigating unowned");
             let created = start();
             if created {
                 pump(webview);

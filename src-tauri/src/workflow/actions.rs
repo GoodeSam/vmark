@@ -96,7 +96,10 @@ pub(super) async fn execute_action(
         }
         "notify" => {
             let message = params.get("message").cloned().unwrap_or_default();
-            log::info!("Workflow notification: {}", message);
+            log::info!(
+                "Workflow notification: {}",
+                crate::peer_text::peer_message(&message)
+            );
             Ok(message)
         }
         "copy" => Ok(params.get("input").cloned().unwrap_or_default()),

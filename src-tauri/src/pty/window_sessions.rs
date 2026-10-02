@@ -41,7 +41,7 @@ pub fn close_window_sessions<R: Runtime>(app: &AppHandle<R>, label: &str) {
         return;
     }
     log::info!(
-        "[pty] Window '{label}' destroyed with {} live PTY session(s); terminating",
+        "[pty] Window {label:?} destroyed with {} live PTY session(s); terminating",
         orphans.len()
     );
     tauri::async_runtime::spawn_blocking(move || {

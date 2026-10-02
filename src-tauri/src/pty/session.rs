@@ -105,7 +105,7 @@ impl Session {
         while !handle.is_finished() {
             if Instant::now() >= deadline {
                 log::error!(
-                    "[pty] reader of shell {:?} (window '{}') did not stop in time",
+                    "[pty] reader of shell {:?} (window {:?}) did not stop in time",
                     self.child.pid(),
                     self.owner
                 );
@@ -115,7 +115,7 @@ impl Session {
         }
         if handle.join().is_err() {
             log::error!(
-                "[pty] reader of shell {:?} (window '{}') panicked",
+                "[pty] reader of shell {:?} (window {:?}) panicked",
                 self.child.pid(),
                 self.owner
             );
