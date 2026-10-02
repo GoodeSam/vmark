@@ -9,11 +9,11 @@ use std::process::ExitStatus;
 /// Windows spelling differs).
 fn spawn_sleeping() -> Child {
     let mut cmd = if cfg!(windows) {
-        let mut c = std::process::Command::new("powershell");
+        let mut c = crate::ai_provider::build_command("powershell", &[]);
         c.args(["-NoProfile", "-Command", "Start-Sleep -Seconds 30"]);
         c
     } else {
-        let mut c = std::process::Command::new("sleep");
+        let mut c = crate::ai_provider::build_command("sleep", &[]);
         c.arg("30");
         c
     };
@@ -24,11 +24,11 @@ fn spawn_sleeping() -> Child {
 /// handed in — the state a poll loop leaves behind.
 fn spawn_exited() -> Child {
     let mut cmd = if cfg!(windows) {
-        let mut c = std::process::Command::new("cmd");
+        let mut c = crate::ai_provider::build_command("cmd", &[]);
         c.args(["/C", "exit", "0"]);
         c
     } else {
-        std::process::Command::new("true")
+        crate::ai_provider::build_command("true", &[])
     };
     let mut child = cmd.spawn().expect("spawn exiting child");
     let _ = child.wait();

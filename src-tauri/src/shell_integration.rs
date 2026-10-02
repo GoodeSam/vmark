@@ -148,8 +148,8 @@ fn prepare_shell_integration_blocking<R: Runtime>(
 /// (`get_default_shell`, which can name a shell `/etc/shells` omits). These are
 /// the only values the terminal ever passes as `shell`.
 fn discovered_shells() -> Vec<String> {
-    let mut shells = crate::shell_env::list_available_shells();
-    let default = crate::shell_env::get_default_shell();
+    let mut shells = crate::shell_env::available_shells();
+    let default = crate::shell_env::default_shell();
     if !shells.contains(&default) {
         shells.push(default);
     }

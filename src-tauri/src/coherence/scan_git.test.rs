@@ -55,7 +55,7 @@ fn write_file(root: &Path, rel: &str, content: &str) {
 // ── git integration (real repos) ────────────────────────────────────────
 
 fn run_git(dir: &Path, args: &[&str]) {
-    let out = std::process::Command::new("git")
+    let out = crate::ai_provider::build_command("git", &[])
         .args(args)
         .current_dir(dir)
         .env("GIT_AUTHOR_NAME", "t")

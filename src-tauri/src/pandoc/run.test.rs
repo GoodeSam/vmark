@@ -113,8 +113,7 @@ fn timeout_kills_and_reaps_the_child() {
     // whole flake: the kill was real and on time, the child had simply not
     // reached its first line yet, and the poll below then reported "child
     // never launched" — a launch failure that had not happened.
-    std::process::Command::new(&script)
-        .arg("--vmark-warmup")
+    crate::ai_provider::build_command(&script, &["--vmark-warmup"])
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())

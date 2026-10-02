@@ -59,10 +59,10 @@ fn the_refusal_names_the_shell_it_refused() {
 #[test]
 fn discovered_shells_are_the_listed_shells_plus_the_default() {
     let shells = discovered_shells();
-    for listed in crate::shell_env::list_available_shells() {
+    for listed in crate::shell_env::available_shells() {
         assert!(shells.contains(&listed), "{listed} is offered in Settings");
     }
-    let default = crate::shell_env::get_default_shell();
+    let default = crate::shell_env::default_shell();
     assert!(shells.contains(&default), "{default} is the default shell");
 }
 

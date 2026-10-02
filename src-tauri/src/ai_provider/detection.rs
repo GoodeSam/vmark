@@ -6,12 +6,11 @@
 //! API-key environment variables for REST providers.
 
 use std::collections::HashMap;
-use std::process::Command;
 use std::sync::Mutex;
 use tauri::command;
 
 use super::spawn::{
-    capture_stdout_with_timeout, parse_sentinel, which_command, windows_profile_path,
+    build_command, capture_stdout_with_timeout, parse_sentinel, which_command, windows_profile_path,
 };
 use super::types::CliProviderEntry;
 
@@ -129,10 +128,8 @@ pub(crate) fn login_shell_path() -> String {
 /// success, or `None` on spawn failure, non-zero exit, or timeout. Shared by
 /// `login_shell_path` and `query_login_shell_zdotdir`.
 fn run_login_shell_capture(shell: &str, cmd: &str) -> Option<String> {
-    let mut command = Command::new(shell);
-    command.args(["-lic", cmd]);
     capture_stdout_with_timeout(
-        command,
+        build_command(shell, &["-lic", cmd]),
         std::time::Duration::from_secs(5),
         "login shell capture",
     )

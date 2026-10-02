@@ -10,7 +10,6 @@
     "src-tauri/src/genies/parsing.rs": 396,
     "src-tauri/src/genies/tests.rs": 392,
     "src-tauri/src/gha_workflow/action_fetch.rs": 418,
-    "src-tauri/src/gha_workflow/actionlint.rs": 419,
     "src-tauri/src/hot_exit/coordinator.rs": 579,
     "src-tauri/src/hot_exit/migration_v5_tests.rs": 306,
     "src-tauri/src/menu/dynamic.rs": 370,

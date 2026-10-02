@@ -78,6 +78,27 @@ pub(crate) fn production_files() -> Vec<Production> {
     found
 }
 
+/// Every `.rs` file under `src/`, test files included, as `(path, code)` with
+/// comments and literal contents blanked. For a rule that holds in tests too.
+pub(crate) fn all_files() -> Vec<(String, String)> {
+    let root = src_root();
+    let mut all = Vec::new();
+    collect_rs(&root, &mut all);
+    all.sort();
+    all.iter()
+        .map(|path| {
+            let raw = std::fs::read_to_string(path)
+                .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+            let rel = path
+                .strip_prefix(&root)
+                .expect("under src")
+                .to_string_lossy()
+                .replace('\\', "/");
+            (rel, blank_comments_and_literals(&raw))
+        })
+        .collect()
+}
+
 fn collect_rs(dir: &Path, out: &mut Vec<PathBuf>) {
     let entries = std::fs::read_dir(dir).unwrap_or_else(|e| panic!("list {}: {e}", dir.display()));
     for entry in entries {

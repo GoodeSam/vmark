@@ -25,7 +25,7 @@ fn fresh_target() -> (tempfile::TempDir, PathBuf) {
 /// What the administrator shell does with a command, minus the privileges:
 /// run it with `/bin/sh`, and report a failure the way `osascript` words one.
 fn sh_as_admin(command: &str) -> Result<(), CliInstallError> {
-    let status = std::process::Command::new("/bin/sh")
+    let status = crate::ai_provider::build_command("/bin/sh", &[])
         .arg("-c")
         .arg(command)
         .status()

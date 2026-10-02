@@ -3,11 +3,15 @@
 // inline on the thread that delivered the message, so a slow disk, a network
 // home directory or a stuck `where.exe` stalls every IPC call behind it.
 //
-// Source scan: each named command must either be an `async fn` that hands its
-// work to the blocking pool (directly or through a helper that does), or a sync
-// fn registered as `#[tauri::command(async)]`, which Tauri runs on its async
-// runtime instead of the IPC thread (used where other Rust code calls the
-// function synchronously from its own blocking task).
+// Source scan: each named command must be an `async fn` that hands its work to
+// the blocking pool, directly or through a helper that does.
+//
+// WI-RA7C.4 — a sync fn registered as `#[tauri::command(async)]` is no longer
+// accepted here. That attribute moves the call off the IPC thread and onto a
+// worker of the async runtime, where blocking work stalls every task that
+// worker would have run. Where other Rust code needs the same work
+// synchronously, the blocking function has its own name and the command wraps
+// it (`shell_env::default_shell` / `get_default_shell`).
 
 use std::path::Path;
 
@@ -50,26 +54,6 @@ fn function(source: &str, name: &str) -> Option<String> {
     None
 }
 
-/// The `#[tauri::command…]` attribute line directly above `fn name`.
-fn attribute_of<'a>(source: &'a str, name: &str) -> Option<&'a str> {
-    let start = source.find(&format!("fn {name}"))?;
-    let decl_start = source[..start].rfind('\n').map_or(0, |i| i + 1);
-    source[..decl_start]
-        .lines()
-        .rev()
-        .find(|line| !line.trim().is_empty())
-        .map(str::trim)
-        .filter(|line| line.starts_with("#[tauri::command"))
-}
-
-#[test]
-fn the_attribute_reader_sees_the_line_above_the_fn() {
-    let text =
-        "/// doc\n#[tauri::command(async)]\npub fn a() {}\n#[tauri::command]\npub fn b() {}\n";
-    assert_eq!(attribute_of(text, "a"), Some("#[tauri::command(async)]"));
-    assert_eq!(attribute_of(text, "b"), Some("#[tauri::command]"));
-}
-
 #[test]
 fn blocking_commands_are_async_and_leave_the_ipc_thread() {
     let mut offenders = Vec::new();
@@ -81,15 +65,13 @@ fn blocking_commands_are_async_and_leave_the_ipc_thread() {
             .next()
             .is_some_and(|line| line.contains("async fn"));
         let off_thread = OFF_THREAD.iter().any(|call| body.contains(call));
-        if !(is_async && off_thread)
-            && attribute_of(&text, name) != Some("#[tauri::command(async)]")
-        {
+        if !(is_async && off_thread) {
             offenders.push(format!("{file}::{name}"));
         }
     }
     assert!(
         offenders.is_empty(),
-        "commands doing blocking work on the IPC thread: {offenders:?}"
+        "commands doing blocking work on the IPC thread or an async worker: {offenders:?}"
     );
 }
 

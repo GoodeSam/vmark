@@ -195,11 +195,11 @@ use std::time::Duration;
 /// A program that prints one line on each stream and exits 0.
 fn one_line_on_each_stream() -> Command {
     if cfg!(windows) {
-        let mut c = Command::new("cmd");
+        let mut c = crate::ai_provider::build_command("cmd", &[]);
         c.args(["/C", "echo out-line& echo err-line 1>&2"]);
         c
     } else {
-        let mut c = Command::new("sh");
+        let mut c = crate::ai_provider::build_command("sh", &[]);
         c.args(["-c", "echo out-line; echo err-line 1>&2"]);
         c
     }
@@ -254,7 +254,8 @@ fn spawn_supervised_takes_both_pipes_and_delivers_each_line_tagged_with_its_stre
 #[test]
 fn spawn_supervised_reports_a_missing_executable_and_spawns_nothing() {
     let dir = tempdir().unwrap();
-    let err = spawn_supervised(Command::new(dir.path().join("no-such-node")), |_, _| {})
+    let missing = dir.path().join("no-such-node");
+    let err = spawn_supervised(build_command(&missing.to_string_lossy(), &[]), |_, _| {})
         .expect_err("nothing to run");
     assert_eq!(err.kind(), io::ErrorKind::NotFound);
 }

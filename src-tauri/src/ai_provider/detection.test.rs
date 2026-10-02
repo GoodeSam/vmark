@@ -136,8 +136,7 @@ fn warm_exec(shell: &std::path::Path) {
     // real defect — still fails instead of hanging the suite.
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
     loop {
-        let result = std::process::Command::new(shell)
-            .arg("--vmark-warmup")
+        let result = build_command(&shell.to_string_lossy(), &["--vmark-warmup"])
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
