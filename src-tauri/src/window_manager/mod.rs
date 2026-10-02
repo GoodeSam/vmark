@@ -19,6 +19,7 @@
 //! | `settings_window` | Settings window singleton (create / focus / navigate) |
 //! | `window_creation` | Check-and-build as one step for the fixed labels (`settings`, `main`, `pdf-export`) |
 //! | `native_theme` | Keeps OS-drawn chrome (title bar, Windows menu bar) on the in-app theme |
+//! | `navigation_guard` | Which URLs an app webview may navigate to (a plugin hook, so `main` is covered) |
 //!
 //! Everything is re-exported here so call sites keep using
 //! `crate::window_manager::...` (and `lib.rs`'s `generate_handler!` paths
@@ -60,6 +61,7 @@ mod file_open_state;
 mod file_open_store;
 mod finder_open_delivery;
 mod native_theme;
+pub(crate) mod navigation_guard;
 mod path_validation;
 mod pdf_export_window;
 mod settings_window;

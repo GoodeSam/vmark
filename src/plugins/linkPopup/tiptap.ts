@@ -10,6 +10,11 @@
  * link text stays editable (#1448); the popup closes as soon as that editing
  * makes its snapshot stale. Cmd+K opens it focused for an explicit URL edit
  * (handled in editorPlugins.tiptap.ts).
+ *
+ * It also owns every OTHER anchor inside the editor: a rendered preview (raw
+ * HTML, SVG, a diagram) holds `<a>` and `<form>` elements the document wrote.
+ * Their clicks and submits are prevented here, so they can never navigate the
+ * webview, and a click opens through the same opener a link mark uses.
  */
 
 import { Extension } from "@tiptap/core";
@@ -27,6 +32,11 @@ import { LinkPopupView } from "./LinkPopupView";
 import { findLinkMarkRange } from "./findLinkMarkRange";
 import "./link-popup.css";
 import { openExternalLink, openFilepathLink, openLinkTarget } from "@/services/navigation/linkOpen";
+import {
+  LINK_ELEMENTS,
+  handlePreviewAnchorClick,
+  preventPreviewSubmit,
+} from "@/utils/previewNavigation";
 
 export { findLinkMarkRange };
 
@@ -127,8 +137,26 @@ function makeHandleClick(
 }
 
 /**
- * Native `click` on a link anchor: mark it handled, and activate what
- * `handleClick` cannot reach.
+ * Whether `anchor` renders one of the document's link marks — the node it
+ * opens on, text or an inline image, carries the mark. Every other anchor
+ * inside the editor is markup a rendered preview put there.
+ */
+function isLinkMarkAnchor(view: EditorView, anchor: Element): boolean {
+  const link = view.state.schema.marks.link;
+  if (!link) return false;
+  try {
+    const first = view.state.doc.resolve(view.posAtDOM(anchor, 0)).nodeAfter;
+    return !!first && !!link.isInSet(first.marks);
+  } catch (error) {
+    // posAtDOM throws for DOM outside the document content (node-view chrome).
+    linkPopupError("Native link click:", error);
+    return false;
+  }
+}
+
+/**
+ * Native `click` on an anchor inside the editor: mark it handled, and activate
+ * what `handleClick` cannot reach.
  *
  * VMark activates links itself — `handleClick`, which ProseMirror runs on
  * MOUSEUP, so its `preventDefault` never reaches the native click that follows.
@@ -140,6 +168,11 @@ function makeHandleClick(
  * `C:\…` (rendered as `href=""`) became the app's own URL (#1448). macOS's
  * `tauri://` origin never matched, which is why it was Windows-only.
  *
+ * An anchor that is NOT a link mark is markup the document wrote into a
+ * rendered preview (raw HTML, SVG, a diagram). Nothing else claims its click,
+ * so a plain one navigated the whole webview to the document's URL. It is
+ * prevented here and opened through the same opener a link mark uses.
+ *
  * Registered on the editor DOM, not as a ProseMirror handler: the image node
  * view's `stopEvent` keeps clicks from ProseMirror entirely, so a handler there
  * would never see a click on a linked image — and neither does `handleClick`,
@@ -147,17 +180,19 @@ function makeHandleClick(
  */
 function handleNativeLinkClick(view: EditorView, event: MouseEvent): void {
   const target = event.target instanceof Element ? event.target : null;
-  const anchor = target?.closest("a");
-  const link = view.state.schema.marks.link;
-  if (!target || !anchor || !link || !view.dom.contains(anchor)) return;
+  const anchor = target?.closest(LINK_ELEMENTS);
+  if (!target || !anchor || !view.dom.contains(anchor)) return;
+  if (!isLinkMarkAnchor(view, anchor)) {
+    handlePreviewAnchorClick(anchor, event, {
+      open: (href) => void openLinkTarget(href, activeFilePathForCurrentWindow(), null),
+      jumpTo: (id) => navigateToHeadingById(view, id),
+    });
+    return;
+  }
+  event.preventDefault();
+  if (!event.metaKey && !event.ctrlKey) return;
   try {
-    // The node the anchor opens on — text or an inline image — must carry a
-    // link mark, i.e. the anchor is one of ours.
-    const first = view.state.doc.resolve(view.posAtDOM(anchor, 0)).nodeAfter;
-    if (!first || !link.isInSet(first.marks)) return;
-    event.preventDefault();
-    if (!event.metaKey && !event.ctrlKey) return;
-
+    const link = view.state.schema.marks.link;
     const at = view.posAtDOM(target, 0);
     const clicked = view.state.doc.nodeAt(at);
     const clickedDom = view.nodeDOM(at);
@@ -188,6 +223,8 @@ class LinkPopupPluginView {
     this.store = store;
     this.popupView = new LinkPopupView(view, store);
     view.dom.addEventListener("click", this.onNativeClick);
+    // A form in a rendered preview would post to wherever the document says.
+    view.dom.addEventListener("submit", preventPreviewSubmit);
   }
 
   private onNativeClick = (event: MouseEvent) => handleNativeLinkClick(this.view, event);
@@ -211,6 +248,7 @@ class LinkPopupPluginView {
 
   destroy() {
     this.view.dom.removeEventListener("click", this.onNativeClick);
+    this.view.dom.removeEventListener("submit", preventPreviewSubmit);
     this.popupView.destroy();
   }
 }
