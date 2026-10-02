@@ -1326,11 +1326,6 @@
       "target": "src/components/Editor/useWysiwygScrollMemory"
     },
     {
-      "file": "src/components/Editor/DocumentSplit/DocumentSplitContainer.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Editor/Editor"
-    },
-    {
       "file": "src/components/Editor/Editor.test.tsx",
       "api": "vi.mock",
       "target": "src/components/Editor/MediaViewer/MediaViewer"
