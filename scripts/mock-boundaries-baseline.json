@@ -1336,11 +1336,6 @@
       "target": "src/components/KnowledgeBasePanel/KbGraphView"
     },
     {
-      "file": "src/components/Sidebar/FileExplorer/useExplorerActionWiring.test.ts",
-      "api": "vi.mock",
-      "target": "src/components/Sidebar/FileExplorer/useExplorerCreateFlow"
-    },
-    {
       "file": "src/components/Sidebar/Sidebar.test.tsx",
       "api": "vi.mock",
       "target": "src/components/Sidebar/FileExplorer/index"
