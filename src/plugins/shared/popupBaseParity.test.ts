@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = join(import.meta.dirname, "..");
 const WYSIWYG = { file: join(ROOT, "shared/WysiwygPopupView.ts"), className: "WysiwygPopupView" };
-const SOURCE = { file: join(ROOT, "sourcePopup/SourcePopupView.ts"), className: "SourcePopupView" };
+const SOURCE = { file: join(ROOT, "shared/SourcePopupView.ts"), className: "SourcePopupView" };
 
 /**
  * Members one base has and the other does not, each with the reason it is

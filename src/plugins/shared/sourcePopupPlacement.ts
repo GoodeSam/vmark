@@ -13,12 +13,12 @@
  *
  * @coordinates-with SourcePopupView.ts — the base class that calls these
  * @coordinates-with sourcePopupUtils.ts — editor bounds for clamping
- * @module plugins/sourcePopup/sourcePopupPlacement
+ * @module plugins/shared/sourcePopupPlacement
  */
 import type { EditorView } from "@codemirror/view";
 import { calculatePopupPosition, type AnchorRect } from "@/utils/popupPosition";
-import { toHostCoordsForDom } from "@/plugins/shared/popupHostDom";
-import type { PopupPositionConfig } from "@/plugins/shared/types";
+import { toHostCoordsForDom } from "./popupHostDom";
+import type { PopupPositionConfig } from "./types";
 import { getEditorBounds } from "./sourcePopupUtils";
 
 /** Place `container` next to `anchorRect`, clamped to the editor bounds. */

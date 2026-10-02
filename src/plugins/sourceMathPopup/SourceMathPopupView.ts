@@ -19,13 +19,13 @@
  *
  * @coordinates-with stores/sourceMathPopupStore.ts — popup state
  * @coordinates-with plugins/codemirror/sourceMathPreview.ts — triggers this popup
- * @coordinates-with plugins/sourcePopup/SourcePopupView.ts — base class
+ * @coordinates-with plugins/shared/SourcePopupView.ts — base class
  * @module plugins/sourceMathPopup/SourceMathPopupView
  */
 
 import type { PopupStoreBase, StoreApi } from "@/plugins/shared/types";
 import type { EditorView } from "@codemirror/view";
-import { SourcePopupView, type PopupPositionConfig } from "@/plugins/sourcePopup/SourcePopupView";
+import { SourcePopupView, type PopupPositionConfig } from "@/plugins/shared/SourcePopupView";
 import { loadKatex } from "@/plugins/shared/katexLoader";
 import { isImeKeyEvent } from "@/utils/imeGuard";
 import { renderWarn } from "@/utils/debug";

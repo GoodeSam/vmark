@@ -27,7 +27,7 @@ vi.mock("@/plugins/shared/popupHostDom", () => ({
   ),
 }));
 
-vi.mock("@/plugins/sourcePopup/sourcePopupUtils", () => ({
+vi.mock("@/plugins/shared/sourcePopupUtils", () => ({
   getEditorBounds: vi.fn(() => ({
     horizontal: { left: 0, right: 800 },
     vertical: { top: 0, bottom: 600 },

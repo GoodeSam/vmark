@@ -461,93 +461,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/plugins/sourceFootnotePopup/sourceFootnoteActions.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "type-only",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceFootnotePopup/sourceFootnotePopupPlugin.test.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceFootnotePopup/sourceFootnotePopupPlugin.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceFootnotePopup/SourceFootnotePopupView.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceImagePopup/sourceImageActions.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "type-only",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/plugins/sourceImagePopup/sourceImagePopupPlugin.test.ts",
     "to": "src/plugins/imagePreview/ImagePreviewView.ts",
     "unresolvedTo": "@/plugins/imagePreview/ImagePreviewView",
@@ -565,60 +478,9 @@
   },
   {
     "type": "dependency",
-    "from": "src/plugins/sourceImagePopup/sourceImagePopupPlugin.test.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/plugins/sourceImagePopup/sourceImagePopupPlugin.ts",
     "to": "src/plugins/imagePreview/ImagePreviewView.ts",
     "unresolvedTo": "@/plugins/imagePreview/ImagePreviewView",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceImagePopup/sourceImagePopupPlugin.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceImagePopup/SourceImagePopupView.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
     "dependencyTypes": [
       "aliased",
       "aliased-tsconfig",
@@ -636,58 +498,6 @@
     "from": "src/plugins/sourceLinkCreatePopup/SourceLinkCreatePopupView.ts",
     "to": "src/plugins/linkCreatePopup/linkCreateController.ts",
     "unresolvedTo": "@/plugins/linkCreatePopup/linkCreateController",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceLinkCreatePopup/SourceLinkCreatePopupView.ts",
-    "to": "src/plugins/sourcePopup/SourcePopupView.ts",
-    "unresolvedTo": "@/plugins/sourcePopup/SourcePopupView",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceLinkPopup/sourceLinkActions.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "type-only",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceLinkPopup/sourceLinkPopupPlugin.test.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
     "dependencyTypes": [
       "aliased",
       "aliased-tsconfig",
@@ -720,59 +530,8 @@
   {
     "type": "dependency",
     "from": "src/plugins/sourceLinkPopup/sourceLinkPopupPlugin.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceLinkPopup/sourceLinkPopupPlugin.ts",
     "to": "src/plugins/toolbarActions/sourceAdapterLinks.ts",
     "unresolvedTo": "@/plugins/toolbarActions/sourceAdapterLinks",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceLinkPopup/SourceLinkPopupView.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceMathPopup/SourceMathPopupView.ts",
-    "to": "src/plugins/sourcePopup/SourcePopupView.ts",
-    "unresolvedTo": "@/plugins/sourcePopup/SourcePopupView",
     "dependencyTypes": [
       "aliased",
       "aliased-tsconfig",
@@ -805,77 +564,8 @@
   {
     "type": "dependency",
     "from": "src/plugins/sourceWikiLinkPopup/sourceWikiLinkActions.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "type-only",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceWikiLinkPopup/sourceWikiLinkActions.ts",
     "to": "src/plugins/wikiLinkPopup/wikiLinkPaths.ts",
     "unresolvedTo": "@/plugins/wikiLinkPopup/wikiLinkPaths",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceWikiLinkPopup/sourceWikiLinkPopupPlugin.test.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceWikiLinkPopup/sourceWikiLinkPopupPlugin.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/plugins/sourceWikiLinkPopup/SourceWikiLinkPopupView.ts",
-    "to": "src/plugins/sourcePopup/index.ts",
-    "unresolvedTo": "@/plugins/sourcePopup",
     "dependencyTypes": [
       "aliased",
       "aliased-tsconfig",

@@ -818,7 +818,7 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - rust: none
 - docs: none
 - tests: `src/plugins/shared/WysiwygPopupView.test.ts`; `src/plugins/shared/popupHostDom.test.ts`; `src/utils/popupComponents.test.ts`; `src/utils/popupPosition.test.ts`
-- notes: Source-mode popups use the parallel `src/plugins/sourcePopup/SourcePopupView.ts` (Area 3 *source-popups*).
+- notes: Source-mode popups use the parallel `src/plugins/shared/SourcePopupView.ts` (Area 3 *source-popups*).
 
 ### Paste pipeline (smart / markdown / HTML / code / plain)
 - id: paste-pipeline
@@ -1184,10 +1184,10 @@ Every document tab resolves to a format through `src/lib/formats/registry.ts`; `
 - status: shipped-on
 - gate: always on in markdown Source mode
 - surfaces: automatic (caret/click triggers); Mod+K
-- code: `src/plugins/sourcePopup/{createSourcePopupPlugin,SourcePopupView}.ts`; `src/plugins/sourceLinkPopup/**`; `src/plugins/sourceLinkCreatePopup/**`; `src/plugins/sourceWikiLinkPopup/**`; `src/plugins/sourceImagePopup/**`; `src/plugins/sourceFootnotePopup/**`; `src/plugins/sourceMathPopup/SourceMathPopupView.ts`; `src/stores/sourceMathPopupStore.ts`; `src/services/assembly/hostAdapters.ts`
+- code: `src/plugins/shared/{createSourcePopupPlugin,SourcePopupView,sourcePopupPlacement,sourcePopupUtils}.ts`; `src/plugins/sourceLinkPopup/**`; `src/plugins/sourceLinkCreatePopup/**`; `src/plugins/sourceWikiLinkPopup/**`; `src/plugins/sourceImagePopup/**`; `src/plugins/sourceFootnotePopup/**`; `src/plugins/sourceMathPopup/SourceMathPopupView.ts`; `src/stores/sourceMathPopupStore.ts`; `src/services/assembly/hostAdapters.ts`
 - rust: none
 - docs: `website/guide/popups.md` §"Source Mode" (links, images/media), math-popup "Source Mode" callout
-- tests: `src/plugins/sourceLinkPopup/sourceLinkPopupPlugin.test.ts`, `src/plugins/sourceLinkPopup/__tests__/**`, `src/plugins/sourceLinkCreatePopup/SourceLinkCreatePopupView.test.ts`, `src/plugins/sourceWikiLinkPopup/{sourceWikiLinkPopupPlugin,sourceWikiLinkActions}.test.ts`, `src/plugins/sourceImagePopup/{sourceImagePopupPlugin,sourceImageActions}.test.ts`, `src/plugins/sourceFootnotePopup/{sourceFootnotePopupPlugin,sourceFootnoteActions}.test.ts`, `src/plugins/sourceMathPopup/SourceMathPopupView.test.ts`, `src/stores/sourceMathPopupStore.test.ts`, `src/plugins/sourcePopup/{createSourcePopupPlugin,SourcePopupView,sourcePopupUtils}.test.ts`, `src/plugins/sourceLinkCreatePopup/__tests__/sourceLinkCreatePopup.test.ts` (the plugin)
+- tests: `src/plugins/sourceLinkPopup/sourceLinkPopupPlugin.test.ts`, `src/plugins/sourceLinkPopup/__tests__/**`, `src/plugins/sourceLinkCreatePopup/SourceLinkCreatePopupView.test.ts`, `src/plugins/sourceWikiLinkPopup/{sourceWikiLinkPopupPlugin,sourceWikiLinkActions}.test.ts`, `src/plugins/sourceImagePopup/{sourceImagePopupPlugin,sourceImageActions}.test.ts`, `src/plugins/sourceFootnotePopup/{sourceFootnotePopupPlugin,sourceFootnoteActions}.test.ts`, `src/plugins/sourceMathPopup/SourceMathPopupView.test.ts`, `src/stores/sourceMathPopupStore.test.ts`, `src/plugins/shared/{createSourcePopupPlugin,createSourcePopupPlugin.hover,createSourcePopupPlugin.branches,SourcePopupView,sourcePopupPlacement,sourcePopupUtils}.test.ts`, `src/plugins/shared/__tests__/sourcePopupBase.test.ts`, `src/plugins/sourceLinkCreatePopup/__tests__/sourceLinkCreatePopup.test.ts` (the plugin)
 - notes: Plugins declare a store port and never import an app store; the binding is `pluginStores` in `hostAdapters.ts`. Network hrefs (UNC, `//host`) and drive-relative `C:foo` are refused by the shared opener (#1448).
 
 ### Source-mode cursor context, toolbar/menu actions and shortcuts

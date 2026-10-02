@@ -65,7 +65,7 @@ vi.mock("sonner", () => ({
 }));
 
 let mockPopupHost: HTMLElement | null = null;
-vi.mock("@/plugins/sourcePopup", () => ({
+vi.mock("@/plugins/shared/sourcePopupUtils", () => ({
   getPopupHost: () => mockPopupHost,
   toHostCoords: (_h: HTMLElement, pos: { top: number; left: number }) => pos,
 }));

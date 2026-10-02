@@ -409,7 +409,6 @@
         "src/plugins/linkCreatePopup",
         "src/plugins/footnotePopup",
         "src/plugins/wikiLinkPopup",
-        "src/plugins/sourcePopup",
         "src/plugins/sourceLinkPopup",
         "src/plugins/sourceLinkCreatePopup",
         "src/plugins/sourceMathPopup",

@@ -10,7 +10,7 @@ import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
 // Mock dependencies
-vi.mock("@/plugins/sourcePopup", () => ({
+vi.mock("@/plugins/shared/createSourcePopupPlugin", () => ({
   createSourcePopupPlugin: vi.fn((config) => {
     // Capture config for inspection
     (createSourcePopupPlugin as ReturnType<typeof vi.fn>).__lastConfig = config;
@@ -48,7 +48,7 @@ vi.mock("./sourceFootnoteActions", () => ({
   findFootnoteReference: vi.fn(),
 }));
 
-import { createSourcePopupPlugin } from "@/plugins/sourcePopup";
+import { createSourcePopupPlugin } from "@/plugins/shared/createSourcePopupPlugin";
 import { useFootnotePopupStore } from "@/stores/footnotePopupStore";
 import { createSourceFootnotePopupPlugin } from "./sourceFootnotePopupPlugin";
 import {

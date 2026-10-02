@@ -7,8 +7,8 @@
  */
 
 import type { EditorView } from "@codemirror/view";
-import { createSourcePopupPlugin } from "@/plugins/sourcePopup";
-import type { StoreApi } from "@/plugins/sourcePopup";
+import { createSourcePopupPlugin } from "@/plugins/shared/createSourcePopupPlugin";
+import type { StoreApi } from "@/plugins/shared/types";
 import type { FootnotePopupState } from "@/plugins/shared/popupPorts";
 import { SourceFootnotePopupView } from "./SourceFootnotePopupView";
 import {

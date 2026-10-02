@@ -10,14 +10,14 @@
 import type { EditorView } from "@codemirror/view";
 import type { AnchorRect } from "@/utils/popupPosition";
 import { handlePopupTabNavigation } from "@/utils/popupComponents";
-import { getPopupHostForDom } from "@/plugins/shared/popupHostDom";
+import { getPopupHostForDom } from "./popupHostDom";
 import {
   placeSourcePopup,
   setSourcePopupListeners,
   type SourcePopupListeners,
 } from "./sourcePopupPlacement";
 import { isImeKeyEvent } from "@/utils/imeGuard";
-import type { StoreApi, PopupPositionConfig } from "@/plugins/shared/types";
+import type { StoreApi, PopupPositionConfig } from "./types";
 
 // Re-export the shared popup types for convenience
 export type { StoreApi, PopupPositionConfig };
