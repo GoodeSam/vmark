@@ -94,20 +94,18 @@ pub(crate) fn handle_reopen(app: &tauri::AppHandle, has_visible_windows: bool) {
         return;
     }
     // Prefer creating a "main" window so useFinderFileOpen works. Fall back to
-    // doc-N if "main" already exists.
+    // doc-N if "main" already exists. Building main resets file-open readiness
+    // (`ensure_main_window`), so Opened events from here on are queued until
+    // the new window's React mounts and drains them.
     let ws = window_manager::pick_reopen_workspace_root();
-    if app.get_webview_window("main").is_none() {
-        // Reset readiness so any subsequent Opened events are queued until the
-        // new main window's React mounts and drains them.
-        FILE_OPEN_STATE
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .frontend_ready = false;
-        if let Err(e) = window_manager::create_main_window(app, ws.as_deref()) {
-            log::error!("[Reopen] Failed to create main window: {}", e);
+    match window_manager::ensure_main_window(app, ws.as_deref()) {
+        Ok(window_manager::Ensured::Created(_)) => {}
+        Ok(_) => {
+            if let Err(e) = window_manager::create_document_window(app, None, ws.as_deref()) {
+                log::error!("[Reopen] Failed to create document window: {}", e);
+            }
         }
-    } else if let Err(e) = window_manager::create_document_window(app, None, ws.as_deref()) {
-        log::error!("[Reopen] Failed to create document window: {}", e);
+        Err(e) => log::error!("[Reopen] Failed to create main window: {}", e),
     }
 }
 
@@ -270,17 +268,7 @@ pub(crate) fn route_file_opens(app: &tauri::AppHandle, file_paths: Vec<String>) 
             }
             window_manager::FileOpenOutcome::Queued { create_window } => {
                 if create_window {
-                    if app.get_webview_window("main").is_none() {
-                        log::info!("[FileOpen] Queueing files, creating main window");
-                        if let Err(e) = window_manager::create_main_window(app, None) {
-                            log::error!(
-                                "[FileOpen] Failed to create main window for queued opens: {}",
-                                e
-                            );
-                        }
-                    } else {
-                        log::info!("[FileOpen] Queueing files until main window is ready");
-                    }
+                    window_manager::bring_up_queue_owner(app);
                 } else {
                     log::info!("[FileOpen] Queueing files (frontend not ready)");
                 }

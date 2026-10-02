@@ -25,8 +25,9 @@ use super::window_url::build_window_url;
 // Re-exported so `commands.rs` keeps importing the window surface from one
 // place; the builder itself lives in `window_url.rs` with its grammar.
 pub(super) use super::window_url::build_window_url_with_files;
+use super::{ensure_window, Ensured};
 use std::sync::atomic::{AtomicU32, Ordering};
-use tauri::{AppHandle, Runtime, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 static WINDOW_COUNTER: AtomicU32 = AtomicU32::new(0);
 
@@ -84,7 +85,7 @@ fn build_document_window<R: Runtime>(
     label: &str,
     url: String,
     position: Option<(f64, f64)>,
-) -> Result<(), tauri::Error> {
+) -> Result<WebviewWindow<R>, tauri::Error> {
     let title = initial_window_title(&app.package_info().name);
 
     let mut builder = WebviewWindowBuilder::new(app, label, WebviewUrl::App(url.into()))
@@ -114,9 +115,7 @@ fn build_document_window<R: Runtime>(
             .accept_first_mouse(true);
     }
 
-    builder.build()?;
-
-    Ok(())
+    builder.build()
 }
 
 /// Claim the next document-window label, and the counter value it came from.
@@ -185,7 +184,7 @@ pub(crate) fn create_document_window_with_label_and_url<R: Runtime>(
         }
     };
 
-    build_document_window(app, label, url, Some(get_cascaded_position(count)))
+    build_document_window(app, label, url, Some(get_cascaded_position(count))).map(|_| ())
 }
 
 /// Create a document window with a pre-allocated label (no file/workspace).
@@ -218,26 +217,37 @@ pub fn create_document_window<R: Runtime>(
     create_document_window_with_url(app, build_window_url(file_path, workspace_root))
 }
 
-/// Create a new "main" window (used when the original main window was destroyed
-/// and a file is opened from Finder). The main label owns the process-wide
-/// cold-start queue; every document window can receive targeted hot opens.
+/// The first document window's label. It owns the process-wide cold-start
+/// queue; every document window can receive targeted hot opens.
+pub(crate) const MAIN_LABEL: &str = "main";
+
+/// Make sure a "main" window exists, building one when the original was
+/// destroyed (a file opened from Finder, the Dock icon, a second launch).
+///
+/// Check-and-build is one step (`ensure_window`): `main` is a fixed label that
+/// several paths ask for at once, and building it twice would put two windows
+/// on screen under one name. The caller is told which case it got.
 ///
 /// `workspace_root` lets the dock-icon-reopen path restore the user's last
 /// workspace — without it the new window's WindowContext would explicitly
-/// clear any persisted workspace state.
-pub fn create_main_window<R: Runtime>(
+/// clear any persisted workspace state. It applies only when this call builds.
+pub(crate) fn ensure_main_window<R: Runtime>(
     app: &AppHandle<R>,
     workspace_root: Option<&str>,
-) -> Result<String, tauri::Error> {
-    let label = "main";
-
+) -> Result<Ensured<R>, tauri::Error> {
     let url = build_window_url(None, workspace_root);
-
-    // No explicit position: the "main" window relies on saved window state /
-    // OS placement rather than the cascade offset used by doc windows.
-    build_document_window(app, label, url, None)?;
-
-    Ok(label.to_string())
+    ensure_window(app, MAIN_LABEL, move |app, label| {
+        // A new main has not mounted yet: opens that arrive from here on are
+        // queued until its frontend drains them. Reset before the build, so
+        // the new window cannot drain first and have its readiness undone.
+        crate::file_open::FILE_OPEN_STATE
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .frontend_ready = false;
+        // No explicit position: the "main" window relies on saved window state
+        // / OS placement rather than the cascade offset used by doc windows.
+        build_document_window(app, label, url, None)
+    })
 }
 
 /// Pure decision function for `pick_reopen_workspace_root` — testable without

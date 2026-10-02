@@ -16,6 +16,7 @@
 //! | `path_validation` | Security gates for frontend-supplied paths / workspace roots |
 //! | `commands` | `open_*_in_new_window`, `close_window`, quit commands |
 //! | `settings_window` | Settings window singleton (create / focus / navigate) |
+//! | `window_creation` | Check-and-build as one step for the fixed labels (`settings`, `main`, `pdf-export`) |
 //! | `native_theme` | Keeps OS-drawn chrome (title bar, Windows menu bar) on the in-app theme |
 //!
 //! Everything is re-exported here so call sites keep using
@@ -41,6 +42,10 @@
 //! (`scripts/check-window-creation-thread.mjs`) holds the property so the next
 //! window command cannot be added synchronously.
 //!
+//! **A window with a fixed label is created through `ensure_window`, never by
+//! checking `get_webview_window` and then building.** Off the main thread that
+//! pair is a race Tauri does not close — see `window_creation.rs`.
+//!
 //! Known limitations:
 //!   - Window counter is process-global (AtomicU32); labels are not recycled.
 
@@ -58,6 +63,7 @@ mod pdf_export_window;
 mod settings_window;
 #[cfg(target_os = "macos")]
 mod traffic_lights;
+mod window_creation;
 mod window_events;
 mod window_url;
 
@@ -73,6 +79,7 @@ pub use pdf_export_window::*;
 pub use settings_window::*;
 #[cfg(target_os = "macos")]
 pub(crate) use traffic_lights::*;
+pub(crate) use window_creation::*;
 pub(crate) use window_events::*;
 
 #[cfg(test)]

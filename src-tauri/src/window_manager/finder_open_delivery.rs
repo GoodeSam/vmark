@@ -13,7 +13,7 @@ use tauri::{Emitter, Manager};
 
 use crate::{file_open::FILE_OPEN_STATE, PendingFileOpen};
 
-use super::create_main_window;
+use super::{ensure_main_window, Ensured};
 
 #[derive(Clone, Serialize)]
 struct TargetedFileOpen {
@@ -40,18 +40,33 @@ fn live_target<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<String> {
     live_target_excluding(app, None)
 }
 
-fn queue_for_new_main(app: &tauri::AppHandle, payloads: Vec<PendingFileOpen>) {
+fn queue_for_new_main<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    payloads: Vec<PendingFileOpen>,
+) {
     {
         let mut state = FILE_OPEN_STATE.lock().unwrap_or_else(|p| p.into_inner());
         state.frontend_ready = false;
         state.pending.extend(payloads);
     }
-    if app.get_webview_window("main").is_none() {
-        if let Err(error) = create_main_window(app, None) {
-            log::error!(
-                "[Finder] Failed to create main window for re-queued opens: {}",
-                error
-            );
+    bring_up_queue_owner(app);
+}
+
+/// Make sure a `main` window exists to drain the cold-start queue: the one
+/// that is already up or being built, or a new one.
+///
+/// Check-and-build is one step (`ensure_main_window`), so two opens arriving
+/// together cannot each build a `main`.
+pub(crate) fn bring_up_queue_owner<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    match ensure_main_window(app, None) {
+        Ok(Ensured::Created(_)) => {
+            log::info!("[FileOpen] Created the main window for queued opens");
+        }
+        Ok(Ensured::Existing(_) | Ensured::Pending) => {
+            log::info!("[FileOpen] Queued opens wait for the main window");
+        }
+        Err(error) => {
+            log::error!("[FileOpen] Failed to create main window for queued opens: {error}");
         }
     }
 }
@@ -145,7 +160,10 @@ where
 /// Reveal the selected native window and broadcast target-tagged open events.
 /// Re-check the ready-window set at delivery time. If no listener-ready
 /// document window remains, return the payloads to the cold-start queue.
-pub(crate) fn emit_finder_opens_to_window(app: &tauri::AppHandle, payloads: Vec<PendingFileOpen>) {
+pub(crate) fn emit_finder_opens_to_window<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    payloads: Vec<PendingFileOpen>,
+) {
     let Some(target_label) = live_target(app) else {
         log::info!("[Finder] no ready target window before emit — re-queueing");
         queue_for_new_main(app, payloads);
