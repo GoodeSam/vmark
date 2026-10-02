@@ -92,7 +92,14 @@ export interface Toc {
 export interface Details {
   type: "details";
   open?: boolean;
+  /** The summary's source text. Read as inline markdown when parsed. */
   summary?: string;
+  /**
+   * The summary as inline nodes, set when the block comes from the editor.
+   * The serializer writes these in preference to `summary`, so marks in a
+   * summary are written back and its text is escaped exactly once.
+   */
+  summaryChildren?: import("mdast").PhrasingContent[];
   children: BlockContentBase[];
   position?: UnistPosition;
 }
