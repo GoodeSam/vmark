@@ -1386,11 +1386,6 @@
       "target": "src/plugins/multiCursor/textSearch"
     },
     {
-      "file": "src/plugins/sourceFootnotePopup/__tests__/SourceFootnotePopupView.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/sourceFootnotePopup/sourceFootnoteActions"
-    },
-    {
       "file": "src/plugins/sourceFootnotePopup/sourceFootnotePopupPlugin.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/sourceFootnotePopup/sourceFootnoteActions"
