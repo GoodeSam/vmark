@@ -463,7 +463,7 @@ Veja [Terminal Integrado](/pt-BR/guide/terminal) para mais sobre sessões, atalh
 
 ## Sobre
 
-Exibe a versão do aplicativo, links para o site e repositório GitHub e gerenciamento de atualizações.
+Exibe a versão do aplicativo, links para o site e repositório GitHub e gerenciamento de atualizações. O link **Avisos de terceiros** abre os textos de licença do software de código aberto incluído no VMark no app padrão do sistema para arquivos de texto.
 
 ### Atualizações
 
