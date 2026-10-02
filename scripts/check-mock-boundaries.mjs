@@ -31,20 +31,22 @@
  *   - all test-adjacent files: `*.test.*`, `*.spec.*`, `__tests__/`,
  *     `__mocks__/`, and `src/test/` helpers (setup files live there)
  *
- * Second rule, same mechanism — same-feature SIBLING mocks. A relative
+ * Second rule, same detection — same-feature SIBLING mocks. A relative
  * `vi.mock("./x")` / `vi.mock("../x")` of a module that is the app's own logic
  * tests a hand-written fake instead of the code (rule 10's anti-pattern). A
  * relative mock of a boundary wrapper — a module that itself imports
  * `@tauri-apps/*` or a Node builtin — is sanctioned and not counted; so are
- * non-code targets (CSS, raw assets). Those triples live in the baseline's
- * `siblingEntries` list, ratcheted exactly like `entries`. The classification
- * is `scripts/lib/mockBoundaries/siblingMocks.mjs`.
+ * non-code targets (CSS, raw assets). Zero are allowed and none can be
+ * baselined: the frozen list that once held them reached zero and was
+ * deleted, and a baseline that brings back a `siblingEntries` key fails
+ * closed. The classification is `scripts/lib/mockBoundaries/siblingMocks.mjs`.
  * Detection is a real TS parse (AST call expressions), so the literal in a
  * comment or a string is prose, not a mock.
  *
  * Usage:
  *   node scripts/check-mock-boundaries.mjs [--root <dir>] [--baseline <file>]
- *   node scripts/check-mock-boundaries.mjs --write-baseline   (freeze reality)
+ *   node scripts/check-mock-boundaries.mjs --write-baseline   (freeze the store
+ *     mocks; refuses while any sibling mock exists)
  */
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -56,8 +58,8 @@ import {
   compareIdentities,
   reportDiff,
   sortTriples,
+  reportSiblingMocks,
   validateBaseline,
-  validateSiblingEntries,
 } from "./lib/mockBoundaries/baseline.mjs";
 
 export { extractMockCalls, UNRESOLVED_TARGET, compareIdentities, validateBaseline };
@@ -148,11 +150,11 @@ export function scanTree(root) {
 // ─── CLI shell ───
 
 const BASELINE_HEADER = [
-  "Identity baseline of test-side mocks of src/stores/* (entries) and of same-feature sibling modules that are the app's own logic (siblingEntries) — (file, mocking API, resolved target) triples, never counts (counts permit like-for-like swaps).",
+  "Identity baseline of test-side mocks of src/stores/* — (file, mocking API, resolved target) triples, never counts (counts permit like-for-like swaps).",
   "Checked by scripts/check-mock-boundaries.mjs (pnpm lint:mock-boundaries, in check:all); regenerate ONLY to remove entries via --write-baseline.",
   "Two-way ratchet: an unbaselined store mock fails the gate, and a baselined mock that no longer exists also fails until its entry is deleted — record the win.",
   "Entries only get REMOVED, never added. Instead of mocking a store, use the real store (setState/reset in beforeEach) or an explicit store-factory seam with a recorded reason.",
-  "Instead of mocking a sibling module, import the real one; mock a module only when it wraps a real boundary (it imports @tauri-apps/* or a Node builtin itself), or mock that boundary directly.",
+  "Same-feature sibling mocks of the app's own logic are not listed here because none are allowed: import the real module; mock a module only when it wraps a real boundary (it imports @tauri-apps/* or a Node builtin itself), or mock that boundary directly.",
   "Registered in the WI-16 ratchet manifest (scripts/check-baseline-ratchet.mjs), which re-compares this file against the merge base in CI — so the commit that adds an entry cannot also be the commit that authorizes it.",
 ];
 
@@ -178,19 +180,19 @@ function main() {
   const { stores, siblings } = scanTree(root);
 
   if (args.write) {
-    const doc = { "//": BASELINE_HEADER, entries: stores, siblingEntries: siblings };
+    // Freezing a sibling mock would turn a forbidden mock into a listed one.
+    if (reportSiblingMocks(siblings)) process.exit(1);
+    const doc = { "//": BASELINE_HEADER, entries: stores };
     writeFileSync(baselinePath, JSON.stringify(doc, null, 2) + "\n");
-    const n = stores.length + siblings.length;
+    const n = stores.length;
     console.log(`✍️  Wrote ${n} identity entr${n === 1 ? "y" : "ies"} to ${baselinePath}`);
     return;
   }
 
   let entries;
-  let siblingEntries;
   try {
     const raw = JSON.parse(readFileSync(baselinePath, "utf8"));
     entries = validateBaseline(raw, baselinePath);
-    siblingEntries = validateSiblingEntries(raw, baselinePath);
   } catch (error) {
     console.error(`❌ Cannot read mock-boundary baseline (${baselinePath}): ${error.message}`);
     console.error("   The gate fails closed — fix the baseline, never delete it to pass.");
@@ -198,12 +200,12 @@ function main() {
   }
 
   const storeFailed = reportDiff(compareIdentities(stores, entries), "store mock", "entries");
-  const siblingFailed = reportDiff(compareIdentities(siblings, siblingEntries), "sibling logic mock", "siblingEntries");
+  const siblingFailed = reportSiblingMocks(siblings);
   if (storeFailed || siblingFailed) process.exit(1);
 
   console.log(
     `✅ Mock-boundary gate held (${stores.length} frozen store mock(s), ` +
-      `${siblings.length} frozen sibling logic mock(s), none added).`,
+      "none added; no sibling logic mocks).",
   );
 }
 
