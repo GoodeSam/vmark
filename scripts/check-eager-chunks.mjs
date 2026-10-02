@@ -141,8 +141,14 @@ export function findLazyOnlyViolations(names, reachable, patterns = LAZY_ONLY_CH
  * chunks into their importers, so `entry` went 14.6 → 185 kB while the
  * closure went 3.05 → 3.09 MiB. This bounds what launch actually loads,
  * whatever shape the bundler gives it. ~5% above the measured 3.09 MiB.
+ *
+ * Lowered 3,407,872 → 3,384,010 bytes when the markdown paste extension and
+ * turndown stopped being reachable from App-side code (they moved out of the
+ * cold-start popupComponents chunk into the lazy markdownSurface chunk). The
+ * measured closure went 3,246,541 → 3,223,808 bytes; the headroom ratio over
+ * the measurement is unchanged (1.0497).
  */
-export const MAX_EAGER_BYTES = Math.round(3.25 * 1024 * 1024);
+export const MAX_EAGER_BYTES = 3_384_010;
 
 /** A failure message when `closureBytes` exceeds `max`, else null. */
 export function eagerBudgetViolation(closureBytes, max = MAX_EAGER_BYTES) {
