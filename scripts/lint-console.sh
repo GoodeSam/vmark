@@ -1,5 +1,6 @@
 #!/bin/bash
-# Lint for bare console.error/warn/log calls in production code.
+# Lint for bare console.* calls (every method: log, info, debug, trace, table,
+# ...) in production code.
 #
 # Scans src/ relative to the directory it is run from.
 #
@@ -40,7 +41,7 @@ fi
 
 # grep exits 1 for "no match" (the good case) and 2+ for a real error.
 set +e
-HITS=$(grep -rnE 'console\.(error|warn|log)' src/ \
+HITS=$(grep -rnE '(^|[^A-Za-z0-9_$])console\.[A-Za-z]+' src/ \
   --include='*.ts' --include='*.tsx' --exclude-dir=node_modules)
 GREP_STATUS=$?
 set -e
