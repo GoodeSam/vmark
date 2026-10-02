@@ -1386,11 +1386,6 @@
       "target": "src/plugins/multiCursor/textSearch"
     },
     {
-      "file": "src/plugins/sourceImagePopup/sourceImagePopupPlugin.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/sourceImagePopup/SourceImagePopupView"
-    },
-    {
       "file": "src/plugins/sourceLinkPopup/sourceLinkPopupPlugin.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/sourceLinkPopup/SourceLinkPopupView"
