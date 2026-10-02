@@ -225,8 +225,23 @@ describe("check-merge-drops.mjs — a committed merge", () => {
     },
   );
 
+  // WI-RA13B.7 — workflows, shell gates, docs and Cargo manifests are where a
+  // lane merge drops a change as easily as in code.
+  it.each([".github/workflows/ci.yml", "a.yaml", "scripts/gate.sh", "docs/a.md", "src-tauri/Cargo.toml"])(
+    "%s is checked: keeping one side whole is a drop",
+    (rel) => {
+      const root = diverged({ base: { [rel]: BASE }, ours: { [rel]: OURS }, theirs: { [rel]: THEIRS } });
+      beginMerge(root);
+      take(root, "ours", rel);
+      commitMerge(root);
+      const r = run(root);
+      expect(r.status).toBe(1);
+      expect(r.out).toContain(`✗ ${rel}`);
+    },
+  );
+
   it("file types outside the checked set are not examined", () => {
-    const rel = "docs/a.md";
+    const rel = "docs/a.txt";
     const root = diverged({ base: { [rel]: BASE }, ours: { [rel]: OURS }, theirs: { [rel]: THEIRS } });
     beginMerge(root);
     take(root, "ours", rel);

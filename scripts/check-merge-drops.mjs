@@ -46,6 +46,13 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const ALLOWLIST = "scripts/merge-drop-allowlist.json";
+/**
+ * The file types a silent drop is looked for in: code, and the text that
+ * behaves like code — workflows, shell gates, docs that tests join against,
+ * Cargo manifests. A lane merge discards a change in a `.yml` as easily as in
+ * a `.ts`.
+ */
+const CHECKED_FILE = /\.(ts|tsx|rs|json|mjs|css|yml|yaml|sh|md|toml)$/;
 
 /**
  * `git` with arguments; stdout, or an empty string on non-zero exit.
@@ -182,7 +189,7 @@ const changed = (rev) =>
     gitOrFail("-c", "core.quotePath=false", "diff", "--name-only", `${base}..${rev}`)
       .split("\n")
       .filter(Boolean)
-      .filter((p) => /\.(ts|tsx|rs|json|mjs|css)$/.test(p))
+      .filter((p) => CHECKED_FILE.test(p))
   );
 
 const oursChanged = changed(ours);
