@@ -121,9 +121,8 @@ export async function handleSelectionSet(
 
     surface.replaceSelection(content);
     // Flush the mounted editor NOW: the store then holds its serialization
-    // and the editor knows it, so its content sync does not reload the same
-    // document — a reload the revision tracker counts as a change, which
-    // would make the revision returned below stale on arrival.
+    // and the editor knows it, so its content sync does not parse and load
+    // the same document again.
     flushLiveEditors();
     // Mirror the editor into the store. After a flush this is the same text;
     // it is what covers an editor that has no flusher registered.

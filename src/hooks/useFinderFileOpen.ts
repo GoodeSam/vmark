@@ -113,8 +113,9 @@ export function useFinderFileOpen(): void {
      * 1. Register the event listener FIRST
      * 2. Wait for hot exit restore to complete (prevents race condition)
      * 3. Process any queued events (arrived during restore)
-     * 4. In main only, call get_pending_file_opens (which flips Rust's
-     *    FRONTEND_READY flag)
+     * 4. In main only, call get_pending_file_opens, which drains Rust's
+     *    cold-start queue and records this window as ready for hot opens
+     *    (mark_ready_and_drain, under one lock)
      *
      * Events that arrive before restore completes are queued and processed
      * after restore finishes, preventing content from being overwritten.

@@ -54,6 +54,7 @@ import { requireHumanAttachment } from "./browserReadClass";
 import { approveAndAct, finishAct, refuseUngrantedRef } from "./browserActFlow";
 import { parseActAction, type ActAction } from "./browserActParse";
 import { truncateToLength } from "@/utils/truncateText";
+import { readOperationArgsChecked } from "./readOperationArgs";
 
 /** Clip a payload for the prompt's one-line summary, on a character boundary. */
 const SUMMARY_MAX = 120;
@@ -131,7 +132,7 @@ function dispatchAct(id: string, tab: BrowserTarget, action: ActAction): Promise
 /** `vmark.browser.act` — click / type / scroll / key by `{ref}` or `{role, name}`. */
 export async function handleBrowserAct(id: string, args: Record<string, unknown>): Promise<void> {
   return wrapHandler(id, async () => {
-    const tab = await resolveBrowserTarget(id, args);
+    const tab = await resolveBrowserTarget(id, readOperationArgsChecked("vmark.browser.act", args));
     if (!tab) return;
     const parsed = parseActAction(args);
     if (!parsed.ok) {

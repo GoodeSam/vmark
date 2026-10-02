@@ -12,8 +12,11 @@
 // this surface appears without being held to the rule.
 //
 // The browser handlers (`browser*.ts`) are a different surface with their own
-// tab resolver and access gate (`browserHelpers.ts`, `browserAccess.ts`), and
-// are not covered here.
+// tab resolver and access gate (`browserHelpers.ts`, `browserAccess.ts`), so
+// only the payload rule applies to them. WI-RA18.7/8 — every browser module,
+// handler or helper, reads its payload through the generated contract
+// (`readOperationArgs`, or `readOperationArgsChecked` where a malformed field
+// must be refused rather than read as absent); none reads `args` by hand.
 //
 // @coordinates-with services/mcpBridge/v2/tabGuard.ts — the shared guard
 // @coordinates-with services/mcpBridge/v2/readOperationArgs.ts — the one payload parse
@@ -92,6 +95,37 @@ describe.each(ALL_HANDLERS)("%s stays on the shared contract", (file) => {
     expect(source).not.toContain("isCurrentRevision");
     expect(source).not.toContain("checkpointPush");
     expect(source).not.toContain("appendCheckpoint");
+  });
+});
+
+/** Every production module of the browser surface. */
+const BROWSER_MODULES = readdirSync(V2_ROOT)
+  .filter((name) => name.startsWith("browser") && name.endsWith(".ts") && !name.endsWith(".test.ts"))
+  .sort();
+
+describe("the browser modules", () => {
+  it("are found (a rename must not empty the list below)", () => {
+    expect(BROWSER_MODULES.length).toBeGreaterThan(20);
+    expect(BROWSER_MODULES).toContain("browserHelpers.ts");
+    expect(BROWSER_MODULES).toContain("browserWorkflow.ts");
+  });
+});
+
+describe.each(BROWSER_MODULES)("%s reads no payload field by hand", (file) => {
+  const source = code(file);
+
+  it("never reads a field straight off args", () => {
+    // `args` may only be handed on whole — to readOperationArgs(Checked) or to
+    // a helper that does the same.
+    expect(source).not.toMatch(/\bargs\s*(\?\.|\.|\[)/);
+    expect(source).not.toMatch(/typeof\s+args\b/);
+  });
+
+  it("reads a handler's payload through the contract", () => {
+    if (!DEFINES_HANDLER.test(source)) return;
+    // A handler either parses its own payload or hands `args` whole to the
+    // shared guard, which parses the tab id for the operation it names.
+    expect(source).toMatch(/readOperationArgs(Checked)?\(|resolveBrowserTarget\(|runReadClass(<[^>]+>)?\(/);
   });
 });
 

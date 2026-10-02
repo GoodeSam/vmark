@@ -8,12 +8,17 @@ vi.mock("@/services/persistence/workspaceStorage", () => ({ getCurrentWindowLabe
 
 import { useTabStore } from "@/stores/tabStore";
 import { MAX_WAIT_MS, type BrowserTarget } from "@/services/mcpBridge/v2/browserHelpers";
+import { readOperationArgsChecked } from "@/services/mcpBridge/v2/readOperationArgs";
 import {
   pollScript,
   pollUrl,
   readWaitRequest,
   type PollContext,
 } from "@/services/mcpBridge/v2/browserWaitForPoll";
+
+/** Parse as the handler does: from the request's checked payload read. */
+const readWait = (args: Record<string, unknown>) =>
+  readWaitRequest(readOperationArgsChecked("vmark.browser.wait_for", args));
 
 const SITE = "https://x.example.com/start?token=1#frag";
 function seed(): string {
@@ -35,49 +40,49 @@ beforeEach(() => {
 
 describe("readWaitRequest", () => {
   it("defaults the timeout to the single wait budget and refuses one outside it", () => {
-    expect(readWaitRequest({ text: "Done" })).toEqual({
+    expect(readWait({ text: "Done" })).toEqual({
       ok: true,
       request: { timeoutMs: MAX_WAIT_MS, mode: { kind: "script", condition: { text: "Done" } } },
     });
     for (const timeoutMs of [0, -1, 1.5, MAX_WAIT_MS + 1, "5000", NaN]) {
-      expect(readWaitRequest({ text: "Done", timeoutMs })).toEqual({ ok: false, error: "INVALID_TIMEOUT" });
+      expect(readWait({ text: "Done", timeoutMs })).toEqual({ ok: false, error: "INVALID_TIMEOUT" });
     }
   });
 
   it("accepts exactly one condition and maps each to its mode", () => {
-    expect(readWaitRequest({ ref: "e2" }).ok && readWaitRequest({ ref: "e2" })).toMatchObject({
+    expect(readWait({ ref: "e2" }).ok && readWait({ ref: "e2" })).toMatchObject({
       request: { mode: { kind: "script", condition: { ref: "e2" } } },
     });
-    expect(readWaitRequest({ role: "heading", name: "Done" })).toMatchObject({
+    expect(readWait({ role: "heading", name: "Done" })).toMatchObject({
       request: { mode: { kind: "script", condition: { role: "heading", name: "Done" } } },
     });
-    expect(readWaitRequest({ role: "heading" })).toMatchObject({
+    expect(readWait({ role: "heading" })).toMatchObject({
       request: { mode: { kind: "script", condition: { role: "heading" } } },
     });
-    expect(readWaitRequest({ urlContains: "/orders" })).toMatchObject({
+    expect(readWait({ urlContains: "/orders" })).toMatchObject({
       request: { mode: { kind: "url", needle: "/orders" } },
     });
   });
 
   it("refuses zero conditions, two conditions, and blank ones that count as absent", () => {
     const error = "wait_for needs exactly one of: ref, role (+optional name), text, or urlContains";
-    expect(readWaitRequest({})).toEqual({ ok: false, error });
-    expect(readWaitRequest({ text: "a", role: "button" })).toEqual({ ok: false, error });
-    expect(readWaitRequest({ ref: "  ", text: "" })).toEqual({ ok: false, error });
+    expect(readWait({})).toEqual({ ok: false, error });
+    expect(readWait({ text: "a", role: "button" })).toEqual({ ok: false, error });
+    expect(readWait({ ref: "  ", text: "" })).toEqual({ ok: false, error });
     // A name alone is not a condition — it qualifies a role.
-    expect(readWaitRequest({ name: "Done" })).toEqual({ ok: false, error });
+    expect(readWait({ name: "Done" })).toEqual({ ok: false, error });
   });
 
   it("refuses a urlContains needle that can never match the redacted url (A-06)", () => {
     for (const needle of ["?token=", "#frag", "/a?b"]) {
-      const out = readWaitRequest({ urlContains: needle });
+      const out = readWait({ urlContains: needle });
       expect(out.ok).toBe(false);
       if (!out.ok) expect(out.error).toContain("redacted URL");
     }
   });
 
   it("checks the timeout before the condition", () => {
-    expect(readWaitRequest({ timeoutMs: 0 })).toEqual({ ok: false, error: "INVALID_TIMEOUT" });
+    expect(readWait({ timeoutMs: 0 })).toEqual({ ok: false, error: "INVALID_TIMEOUT" });
   });
 });
 

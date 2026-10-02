@@ -233,11 +233,4 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     }),
 
   getDocument: (tabId) => get().documents[tabId],
-
-  getAllDirtyDocuments: () => {
-    const { documents } = get();
-    return Object.entries(documents)
-      .filter(([_, doc]) => doc.isDirty)
-      .map(([tabId]) => tabId);
-  },
 }));

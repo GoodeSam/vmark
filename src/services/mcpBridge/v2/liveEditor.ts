@@ -22,9 +22,7 @@
  *     write.
  *   - Flush AFTER loading. The store then holds exactly the text the editor
  *     serializes to, and the editor knows the store holds it, so its content
- *     sync does not load the same document a second time. That reload was a
- *     further document transaction, and the revision tracker counts every one,
- *     so the revision a handler had just returned was stale on arrival.
+ *     sync does not parse and load the same document a second time.
  *     The consequence is deliberate: for the live WYSIWYG tab the buffer — and
  *     so what gets saved — is the editor's serialization of the client's text,
  *     not its exact characters. Disk, store and editor then agree, which no
@@ -35,17 +33,15 @@
  *     committed or dropped by WebKit. A handler must answer its client now, so
  *     it asks `liveCompositionRefusal` before it touches the store and answers
  *     BUSY; the client retries once the user has finished typing.
- *
- * Known limitations:
  *   - Only the editor registered as the active WYSIWYG editor is loaded
- *     directly. A tab that is also mounted in an unfocused split pane is
- *     updated by that editor's own content sync, whose reload the revision
- *     tracker still counts as a change.
+ *     directly. A tab also mounted in an unfocused split pane is updated by
+ *     that pane's own content sync — a `preventUpdate` load, which the
+ *     revision tracker does not count as a change.
  *
  * @coordinates-with utils/wysiwygFlush.ts — the flusher registry
  * @coordinates-with components/Editor/useTiptapFlush.ts — what a flush does
  * @coordinates-with components/Editor/tiptapContentLoad.ts — the editor's own content loads
- * @coordinates-with services/mcpBridge/revisionTracker.ts — bumps on every document transaction
+ * @coordinates-with services/mcpBridge/revisionTracker.ts — bumps on edits, not on `preventUpdate` loads
  * @coordinates-with services/ime/compositionWriteGate.ts — whether a composition is in progress
  * @module services/mcpBridge/v2/liveEditor
  */

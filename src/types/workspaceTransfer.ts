@@ -45,7 +45,6 @@ export interface WorkspaceTransferAckPayload {
 
 export interface WorkspaceActionOptions {
   timeoutMs?: number;
-  cleanupTab?: (tabId: string) => void;
 }
 
 type WorkspaceActionFailureReason =

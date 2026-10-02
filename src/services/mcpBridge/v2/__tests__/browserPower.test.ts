@@ -102,6 +102,24 @@ describe("handleBrowserStyle (act-class, op=style)", () => {
     expect(String(lastResponse().error)).toContain("single class tokens");
   });
 
+  // WI-RA18.8 — read from the contract, a field of the wrong shape is refused by
+  // name, never dropped while the rest of the request is applied.
+  it("rejects an array 'set' payload rather than reading its indices as properties", async () => {
+    const id = seed();
+    grant("style");
+    await handleBrowserStyle("s-set-arr", { tabId: id, selector: ".x", set: ["red"] });
+    expect(invoke).not.toHaveBeenCalled();
+    expect(String(lastResponse().error)).toContain("'set' must be an object");
+  });
+
+  it("rejects a non-string 'injectCss' instead of applying the rest of the request", async () => {
+    const id = seed();
+    grant("style");
+    await handleBrowserStyle("s-css", { tabId: id, selector: ".x", set: { color: "red" }, injectCss: 7 });
+    expect(invoke).not.toHaveBeenCalled();
+    expect(String(lastResponse().error)).toContain("'injectCss' must be a string");
+  });
+
   it("rejects a non-object 'set' payload", async () => {
     const id = seed();
     grant("style");
