@@ -1,12 +1,10 @@
 //! Tauri commands for the genies feature.
 
 use super::parsing::parse_genie;
-use super::scanning::scan_genies_dir;
-use super::types::{GenieContent, GenieEntry, GenieIoSpec, GenieMetadata};
+use super::types::{GenieContent, GenieIoSpec, GenieMetadata};
 use crate::bounded_read::{read_regular_bounded, BoundedReadError};
 use crate::command_error::{CommandError, ErrorCode};
 use crate::localized_error;
-use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tauri::{command, AppHandle};
@@ -23,12 +21,12 @@ pub fn global_genies_dir(app: &AppHandle) -> Result<PathBuf, String> {
 
 /// Run a directory walk or a file read on the blocking pool (#144, #148).
 ///
-/// Both commands used to be synchronous, which on Tauri means inline on the
+/// The genie commands used to be synchronous, which on Tauri means inline on the
 /// thread that delivered the IPC message: a large genie tree or a large
 /// genie file stalled every window's commands for the duration. The walk is
 /// bounded (`scanning.rs`) and the read is capped, so the work is finite —
 /// and now it is also off the IPC thread.
-async fn off_thread<T: Send + 'static>(
+pub(super) async fn off_thread<T: Send + 'static>(
     work: impl FnOnce() -> T + Send + 'static,
 ) -> Result<T, CommandError> {
     tokio::task::spawn_blocking(work)
@@ -43,29 +41,6 @@ async fn off_thread<T: Send + 'static>(
 pub fn get_genies_dir(app: AppHandle) -> Result<String, CommandError> {
     let dir = global_genies_dir(&app).map_err(CommandError::internal)?;
     Ok(dir.to_string_lossy().to_string())
-}
-
-/// List all available genies from the global genies directory.
-#[command]
-pub async fn list_genies(app: AppHandle) -> Result<Vec<GenieEntry>, CommandError> {
-    let global_dir = global_genies_dir(&app).map_err(CommandError::internal)?;
-    off_thread(move || list_genies_in(&global_dir)).await
-}
-
-/// The scan behind `list_genies`, against an explicit directory: bounded in
-/// depth and entry count by `scan_genies_dir` (#144), sorted by name.
-fn list_genies_in(global_dir: &Path) -> Vec<GenieEntry> {
-    let mut by_name: HashMap<String, GenieEntry> = HashMap::new();
-    if global_dir.is_dir() {
-        scan_genies_dir(global_dir, global_dir, "global", &mut by_name);
-    }
-    let mut entries: Vec<GenieEntry> = by_name.into_values().collect();
-    // Path breaks a name tie (#341): the display name is the file STEM, so
-    // `writing/summarize.md` and `code/summarize.md` sort equal — and the
-    // remaining order was `HashMap` iteration order, which differs between
-    // runs of the same process, let alone between machines.
-    entries.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.path.cmp(&b.path)));
-    entries
 }
 
 /// Read a single genie file — parse frontmatter and return metadata + template.
@@ -88,7 +63,7 @@ pub async fn read_genie(app: AppHandle, path: String) -> Result<GenieContent, Co
 /// `read_genie` against an explicit genies directory: the traversal guard and
 /// the parse dispatch, with the `AppHandle` resolution kept in the command so
 /// the refusals can be exercised on a temp tree.
-fn read_genie_in(genies_dir: &Path, path: &str) -> Result<GenieContent, CommandError> {
+pub(super) fn read_genie_in(genies_dir: &Path, path: &str) -> Result<GenieContent, CommandError> {
     // Canonicalize requested path. The OS's class travels (#344): every
     // failure here used to be `not-found`, so a genie inside an unreadable
     // directory reported the one diagnosis that was ruled out — while the
