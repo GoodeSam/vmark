@@ -2111,11 +2111,6 @@
       "target": "src/services/assembly/workflowExtensionGates"
     },
     {
-      "file": "src/services/commands/menuListener.test.ts",
-      "api": "vi.mock",
-      "target": "src/services/commands/CommandBus"
-    },
-    {
       "file": "src/services/commands/registerAllCommands.test.ts",
       "api": "vi.mock",
       "target": "src/services/commands/browserCommands"
