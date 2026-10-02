@@ -53,11 +53,12 @@ import { resolveBrowserTarget } from "./browserAccess";
 import { requireHumanAttachment } from "./browserReadClass";
 import { approveAndAct, finishAct, refuseUngrantedRef } from "./browserActFlow";
 import { parseActAction, type ActAction } from "./browserActParse";
+import { truncateToLength } from "@/utils/truncateText";
 
-/** Clip a payload for the prompt's one-line summary. */
+/** Clip a payload for the prompt's one-line summary, on a character boundary. */
 const SUMMARY_MAX = 120;
 function clip(text: string): string {
-  return text.length > SUMMARY_MAX ? `${text.slice(0, SUMMARY_MAX)}…` : text;
+  return text.length > SUMMARY_MAX ? `${truncateToLength(text, SUMMARY_MAX)}…` : text;
 }
 
 function describeKey(key: string, modifiers: KeyModifiers | undefined): string {

@@ -32,6 +32,7 @@ import { requireHumanAttachment, parseEvalResult } from "./browserReadClass";
 export { handleBrowserQuery } from "./browserQuery";
 import { readOperationArgs } from "./readOperationArgs";
 import { unwrapExecuteJsResult, wrapExecuteJsScript } from "./browserExecuteJs";
+import { truncateToLength } from "@/utils/truncateText";
 
 /**
  * The shared tail of both write-class tools: attachment gate → approval →
@@ -153,7 +154,7 @@ export async function handleBrowserExecuteJs(id: string, args: Record<string, un
     // so an approved script cannot be swapped for another on the retry. `eval` is
     // never grantable, so this is always per-call. (Security review P5, High #1.)
     // The result is page-derived and UNTRUSTED — never auto-feed it into a later act.
-    await runWriteOp(id, tab, "eval", wrapped, { script: script.slice(0, 2000) }, (raw) => {
+    await runWriteOp(id, tab, "eval", wrapped, { script: truncateToLength(script, 2000) }, (raw) => {
       const outcome = unwrapExecuteJsResult(raw);
       if (!outcome.ok) throw new Error(`script threw: ${outcome.error}`);
       return { result: outcome.value, untrusted: true };

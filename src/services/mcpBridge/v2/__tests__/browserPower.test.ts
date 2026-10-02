@@ -182,6 +182,21 @@ describe("handleBrowserExecuteJs (eval — per-call approval only)", () => {
     expect(useBrowserApprovalStore.getState().pending[0]).toMatchObject({ operation: "eval" });
   });
 
+  // WI-RA18.7 — the script excerpt in the needs-approval reply crosses IPC as
+  // JSON; a lone surrogate there is an escape Rust's JSON parser refuses.
+  it.each([
+    ["an emoji straddling the cut", `${"a".repeat(1999)}😀tail`, "a".repeat(1999)],
+    ["CJK text over the cut", "中".repeat(2100), "中".repeat(2000)],
+    ["a script within the cut", "return '😀';", "return '😀';"],
+  ])("cuts the script excerpt without splitting a character: %s", async (_label, script, excerpt) => {
+    const id = seed();
+    await handleBrowserExecuteJs("x-cut", { tabId: id, script });
+    const data = lastResponse().data as { needsApproval?: boolean; script?: string };
+    expect(data.needsApproval).toBe(true);
+    expect(data.script).toBe(excerpt);
+    expect(data.script?.isWellFormed()).toBe(true);
+  });
+
   it("runs the caller script after an Allow-once and flags the result untrusted", async () => {
     const id = seed();
     // First call raises approval; user clicks Allow once; retry runs.

@@ -37,6 +37,7 @@ import { browserWarn } from "@/utils/debug";
 import type { BrowserTarget } from "./browserHelpers";
 import { resolveBrowserTarget } from "./browserAccess";
 import { authorizeOperation } from "./browserApprovalFlow";
+import { truncateToLength } from "@/utils/truncateText";
 
 const RECORD_OP = "record";
 const MAX_SITE = 64;
@@ -48,7 +49,8 @@ const recorderService = () => import("@/services/workflow/recorderSession");
 /** A site id is a single-line front-matter scalar; keep it bounded and non-empty. */
 function normalizeSite(raw: unknown): string {
   const s = typeof raw === "string" ? raw.trim().replace(/[\r\n]+/g, " ") : "";
-  return s ? s.slice(0, MAX_SITE) : "recording";
+  // Cut on a character boundary: a lone surrogate is not a string Rust accepts.
+  return s ? truncateToLength(s, MAX_SITE) : "recording";
 }
 
 /** The real host operations for a session: re-arm and drain are read-class evals. */
