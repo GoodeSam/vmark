@@ -15,6 +15,7 @@ import { EditorState as CMState } from "@codemirror/state";
 import { EditorView as CMView } from "@codemirror/view";
 
 import { useTabStore } from "@/stores/tabStore";
+import type { DocumentTab } from "@/stores/tabStoreTypes";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useEditorStore } from "@/stores/editorStore";
@@ -45,18 +46,21 @@ let editor: Editor | null = null;
 let cmView: CMView | null = null;
 let cmParent: HTMLElement | null = null;
 
+function untitledTab(id: string, title: string): DocumentTab {
+  return { kind: "document", id, filePath: null, title, isPinned: false, formatId: "markdown" };
+}
+
 /** Two tabs in the main window; `focused` is the active one. */
 function seedTabs(focused: string): void {
   useTabStore.setState({
     tabs: {
       main: [
-        { id: "t-live", filePath: null, title: "live", isPinned: false },
-        { id: "t-other", filePath: null, title: "other", isPinned: false },
+        untitledTab("t-live", "live"),
+        untitledTab("t-other", "other"),
       ],
     },
     activeTabId: { main: focused },
     untitledCounter: 0,
-    closedTabs: {},
   });
   useDocumentStore.getState().initDocument("t-live", "old document\n", null);
   useDocumentStore.getState().initDocument("t-other", "other document\n", null);
@@ -103,7 +107,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers({ toFake: ["performance", "Date"] });
   vi.advanceTimersByTime(10_000);
-  useTabStore.setState({ tabs: {}, activeTabId: {}, untitledCounter: 0, closedTabs: {} });
+  useTabStore.setState({ tabs: {}, activeTabId: {}, untitledCounter: 0 });
   useDocumentStore.setState({ documents: {} });
   useMcpStore.setState((s) => ({ checkpoint: { ...s.checkpoint, checkpoints: [], hydrated: false } }));
   useUIStore.setState({ sourceMode: false });

@@ -4,7 +4,9 @@
 // manual save it is never merged away or size-skipped.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const createSnapshot = vi.hoisted(() => vi.fn(async () => undefined));
+const createSnapshot = vi.hoisted(() =>
+  vi.fn<(...args: unknown[]) => Promise<void>>(async () => undefined),
+);
 vi.mock("@/services/history/historyOperations", () => ({ createSnapshot }));
 vi.mock("@/services/ime/imeToast", () => ({ imeToast: { warning: vi.fn() } }));
 
