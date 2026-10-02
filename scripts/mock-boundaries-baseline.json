@@ -1361,16 +1361,6 @@
       "target": "src/utils/paths/index"
     },
     {
-      "file": "src/hooks/lifecycle/__tests__/DocumentWindowMount.test.tsx",
-      "api": "vi.mock",
-      "target": "src/hooks/lifecycle/useDocumentLifecycle"
-    },
-    {
-      "file": "src/hooks/lifecycle/__tests__/DocumentWindowMount.test.tsx",
-      "api": "vi.mock",
-      "target": "src/hooks/lifecycle/useWindowLifecycle"
-    },
-    {
       "file": "src/hooks/useWindowTitle.hook.test.tsx",
       "api": "vi.mock",
       "target": "src/hooks/useDocumentState"
