@@ -25,8 +25,10 @@ import { isMainModule } from "./lib/isMainModule.mjs";
 
 // `server/mcp/src` was invisible to this gate until the 2026-07-28 MCP
 // audit named it (§4); `server/content/src` had the same blind spot until
-// the 2026-07-29 audit. Every workspace source tree must be listed.
-export const ROOTS = ["src", "src-tauri/src", "server/mcp/src", "server/content/src"];
+// the 2026-07-29 audit. Every workspace source tree must be listed —
+// including `scripts`: the gates obey the rule they enforce, and with no
+// baseline entries (each over-limit gate was split instead).
+export const ROOTS = ["src", "src-tauri/src", "server/mcp/src", "server/content/src", "scripts"];
 // .js/.mjs are code too — src/export/reader/vmark-reader.js bypassed the
 // gate entirely while every .ts file ratcheted (audit 20260729).
 export const EXTS = [".ts", ".tsx", ".rs", ".js", ".jsx", ".mjs"];
