@@ -1346,21 +1346,6 @@
       "target": "src/utils/paths/index"
     },
     {
-      "file": "src/main.boot.test.tsx",
-      "api": "vi.mock",
-      "target": "src/App"
-    },
-    {
-      "file": "src/main.boot.test.tsx",
-      "api": "vi.mock",
-      "target": "src/lib/formats/index"
-    },
-    {
-      "file": "src/main.boot.test.tsx",
-      "api": "vi.mock",
-      "target": "src/services/assembly/bindHostSettings"
-    },
-    {
       "file": "src/plugins/latex/__tests__/MathInlineNodeView.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/latex/katexLoader"
