@@ -1,8 +1,7 @@
 /**
  * Tests for createSourcePopupPlugin — factory function for CM6 popup plugins.
  *
- * Tests plugin creation, click/hover trigger logic, update behavior,
- * and the createPositionBasedDetector helper.
+ * Tests plugin creation, click/hover trigger logic and update behavior.
  */
 
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
@@ -19,7 +18,6 @@ vi.mock("./sourcePopupUtils", () => ({
 
 import {
   createSourcePopupPlugin,
-  createPositionBasedDetector,
   type PopupTriggerConfig,
 } from "./createSourcePopupPlugin";
 import { getAnchorRectFromRange } from "./sourcePopupUtils";
@@ -294,6 +292,24 @@ describe("createSourcePopupPlugin — instantiated behavior", () => {
     const { instance } = instantiatePlugin();
     (instance as { destroy: () => void }).destroy();
     expect(mockPopupView.destroy).toHaveBeenCalled();
+  });
+
+  it("destroy removes every listener it registered on the editor DOM", () => {
+    // A ViewPlugin is destroyed on reconfiguration while view.dom lives on, so
+    // a listener left behind would keep opening popups for a dead instance.
+    const { instance, view } = instantiatePlugin({ triggerOnClick: true, triggerOnHover: true });
+    const added = (view.dom.addEventListener as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c: unknown[]) => [c[0], c[1]],
+    );
+    expect(added.map(([name]) => name).sort()).toEqual(
+      ["click", "mousedown", "mouseleave", "mousemove", "mouseup"],
+    );
+    (instance as { destroy: () => void }).destroy();
+    const removed = (view.dom.removeEventListener as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c: unknown[]) => [c[0], c[1]],
+    );
+    expect(removed).toEqual(expect.arrayContaining(added));
+    expect(removed).toHaveLength(added.length);
   });
 
   it("destroy clears pending timeouts", () => {
@@ -1406,36 +1422,5 @@ describe("createSourcePopupPlugin — uncovered branch coverage (lines 159, 192,
       vi.advanceTimersByTime(600);
       expect(mockStore.closePopup).not.toHaveBeenCalled();
     }
-  });
-});
-
-describe("createPositionBasedDetector", () => {
-  it("delegates to selection-based detector", () => {
-    const selectionDetector = vi.fn(() => ({ from: 5, to: 15 }));
-    const posDetector = createPositionBasedDetector(selectionDetector);
-
-    const mockView = {} as EditorView;
-    const result = posDetector(mockView, 10);
-
-    expect(selectionDetector).toHaveBeenCalledWith(mockView);
-    expect(result).toEqual({ from: 5, to: 15 });
-  });
-
-  it("returns null when selection-based detector returns null", () => {
-    const selectionDetector = vi.fn(() => null);
-    const posDetector = createPositionBasedDetector(selectionDetector);
-
-    const mockView = {} as EditorView;
-    const result = posDetector(mockView, 10);
-
-    expect(result).toBeNull();
-  });
-
-  it("returns the function that accepts view and pos", () => {
-    const selectionDetector = vi.fn(() => null);
-    const posDetector = createPositionBasedDetector(selectionDetector);
-
-    expect(typeof posDetector).toBe("function");
-    expect(posDetector.length).toBe(2);
   });
 });
