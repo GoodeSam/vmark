@@ -1336,16 +1336,6 @@
       "target": "src/components/KnowledgeBasePanel/KbGraphView"
     },
     {
-      "file": "src/components/StatusBar/StatusBar.a11y.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/StatusBar/LintBadge"
-    },
-    {
-      "file": "src/components/StatusBar/StatusBar.a11y.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/StatusBar/StatusBarCounts"
-    },
-    {
       "file": "src/components/StatusBar/StatusBar.test.tsx",
       "api": "vi.mock",
       "target": "src/components/StatusBar/StatusBarRight"
