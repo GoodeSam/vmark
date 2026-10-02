@@ -51,7 +51,7 @@ let nextToken = 1;
 
 /**
  * Register that we're about to save specific content to a file.
- * Call this BEFORE writeTextFile().
+ * Call this BEFORE the write.
  *
  * @param path - File path being saved to
  * @param content - The exact content being written
