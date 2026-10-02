@@ -37,7 +37,7 @@
     "src/export/resourceResolver.ts": 351,
     "src/hooks/useTabDragOut.ts": 356,
     "src/hooks/useUpdateChecker.ts": 397,
-    "src/lib/cjkFormatter/quotePairing.ts": 378,
+    "src/lib/cjkFormatter/quotePairing.ts": 369,
     "src/lib/ghaWorkflow/completion/expressionCompletion.ts": 422,
     "src/lib/ghaWorkflow/cron/readable.ts": 386,
     "src/lib/ghaWorkflow/parser/jobs.ts": 321,

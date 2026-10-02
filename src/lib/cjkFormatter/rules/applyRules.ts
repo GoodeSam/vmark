@@ -170,7 +170,7 @@ function applyRulesOnce(
     }
     // Note: cjk_parenthesis_spacing must run BEFORE fullwidth_parentheses
     if (config.cjkParenthesisSpacing) {
-      text = addCJKParenthesisSpacing(text);
+      text = addCJKParenthesisSpacing(text, options);
     }
     // Now convert remaining () to （） in CJK context
     if (config.fullwidthParentheses) {

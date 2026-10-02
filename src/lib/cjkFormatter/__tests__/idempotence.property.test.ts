@@ -292,6 +292,9 @@ const TRIGGER_HALVES = [
   "$", "¥", "€", "USD", "RMB", "%", "‰", "℃", "°C", "°",
   ".", "..", "...", "/", "-", "--", "——", "(", ")", '"', "'", "“", "”",
   "100", "5", "中", "中文", "abc", "，", "。",
+  // WI-RA3.2 — letters outside ASCII and outside the BMP, and link syntax
+  // whose closing `)` begins a segment.
+  "café", "é", "\u{20bb7}", "コーヒー", "[链接](u)", "[Hub](u)",
 ];
 const triggerToken = fc.constantFrom(...TRIGGER_HALVES);
 const triggerLine = fc

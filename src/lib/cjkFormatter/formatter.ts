@@ -68,6 +68,9 @@ function formatMarkdownWithoutTables(
       ...options,
       startsAtLineStart: segment.startsAtLineStart,
       endsAtLineEnd: segment.endsAtLineEnd,
+      // Per segment, never inherited: only this segment can begin with the
+      // `)` of the link to its left.
+      linkLabel: segment.linkLabel,
     }),
   }));
   return reconstructText(text, formattedSegments, protectedRegions);

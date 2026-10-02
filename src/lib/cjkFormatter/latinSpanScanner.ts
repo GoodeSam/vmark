@@ -13,19 +13,23 @@
  *   - Surrogate pair awareness: supplementary-plane CJK (Extensions B-G) are
  *     handled by advancing 2 code units at a time
  *   - Whitespace-only spans are discarded to avoid false positives
- *   - Korean (Hangul) excluded from CJK_LETTER_REGEX since spacing rules differ
+ *   - A span character is a Latin LETTER by script, not by ASCII range, so an
+ *     accented word is one span rather than several
+ *   - Korean (Hangul) is not a CJK letter here, since its spacing rules differ
  *
  * Spec Reference: Rule 2, Section 2.1 of cjk-typography-rules-draft.md
  *
  * @coordinates-with rules.ts — normalizeFullwidthPunctuation uses isInTechnicalSubspan
  * @coordinates-with quotePairing.ts — isCJKLetter reused for CJK boundary detection
+ * @coordinates-with rules/shared.ts — the one definition of a CJK and of a Latin letter
  * @module lib/cjkFormatter/latinSpanScanner
  */
 
-// CJK letter detection (Han, Hiragana, Katakana, Bopomofo) — excluding Korean (Hangul).
-// Unicode property escapes correctly handle supplementary-plane Han characters.
-const CJK_LETTER_REGEX =
-  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Bopomofo}]/u;
+import { isCJKLetter, isLatinLetter } from "./rules/shared";
+
+// Re-exported: this module is where callers outside the rules have always
+// found it. The definition itself lives in rules/shared.ts.
+export { isCJKLetter };
 
 type TechnicalSubspanType =
   | "urlLike"
@@ -104,15 +108,8 @@ const TECHNICAL_PATTERNS: Array<{
 ];
 
 /**
- * Check if a character is a CJK letter (Han, Kana, Bopomofo)
- */
-export function isCJKLetter(char: string): boolean {
-  return CJK_LETTER_REGEX.test(char);
-}
-
-/**
  * Check if a character can be part of a Latin span
- * Allowed: A-Z, a-z, 0-9, whitespace, common ASCII punctuation
+ * Allowed: Latin letters, 0-9, whitespace, common ASCII punctuation
  */
 function isLatinSpanChar(char: string): boolean {
   const code = char.charCodeAt(0);
@@ -120,9 +117,8 @@ function isLatinSpanChar(char: string): boolean {
   // Newline breaks spans
   if (char === "\n") return false;
 
-  // Letters A-Z, a-z
-  if ((code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a))
-    return true;
+  // Latin letters, accented ones included
+  if (isLatinLetter(char)) return true;
 
   // Digits 0-9
   if (code >= 0x30 && code <= 0x39) return true;

@@ -5,7 +5,7 @@
  */
 
 import type { FormatOptions } from "../types";
-import { CJK_NO_KOREAN } from "./shared";
+import { CJK_LETTER_CLASS, LATIN_ALNUM } from "./shared";
 
 /**
  * Sign characters recognised in front of a digit run (issue 898 + extensions).
@@ -45,29 +45,49 @@ export function addCJKEnglishSpacing(text: string): string {
     `(?:${SIGN_CHAR_CLASS}(?=\\d|${CURRENCY_CHAR_CLASS}[ ]?\\d))?` +
     `(?:${CURRENCY_CHAR_CLASS}[ ]?)?` +
     `(?:${SIGN_CHAR_CLASS}(?=\\d))?` +
-    "[A-Za-z0-9]+" +
+    `${LATIN_ALNUM}+` +
     "(?:[%‰℃℉]|°[CcFf]?|[ ]?(?:USD|CNY|EUR|GBP|RMB))?";
 
   // CJK (non-Korean) followed by alphanumeric
   text = text.replace(
-    new RegExp(`([${CJK_NO_KOREAN}])(${alphanumPattern})`, "g"),
+    new RegExp(`([${CJK_LETTER_CLASS}])(${alphanumPattern})`, "gu"),
     "$1 $2"
   );
   // Alphanumeric followed by CJK (non-Korean)
   text = text.replace(
-    new RegExp(`(${alphanumPattern})([${CJK_NO_KOREAN}])`, "g"),
+    new RegExp(`(${alphanumPattern})([${CJK_LETTER_CLASS}])`, "gu"),
     "$1 $2"
   );
 
   return text;
 }
 
-/** Add space between CJK characters and half-width parentheses. */
-export function addCJKParenthesisSpacing(text: string): string {
+const ENDS_WITH_LATIN_ALNUM = new RegExp(`${LATIN_ALNUM}$`, "u");
+
+/**
+ * Add space between CJK characters and half-width parentheses.
+ *
+ * `options.linkLabel` set means the text BEGINS with the `)` that closes a
+ * markdown link — the protected URL sits immediately to its left. That `)` is
+ * syntax and renders as nothing, so it is not spaced as a parenthesis:
+ * `[链接](url)中文` renders `链接中文`, and a space after the `)` would
+ * put a gap inside it. What decides the gap is what the reader sees on each
+ * side, which is the link's own text: `[GitHub](url)上` still becomes
+ * `[GitHub](url) 上`, by the Latin/CJK rule rather than by accident.
+ */
+export function addCJKParenthesisSpacing(text: string, options: FormatOptions = {}): string {
+  const { linkLabel } = options;
   // Korean excluded: Korean uses native word spacing around parentheses.
-  text = text.replace(new RegExp(`([${CJK_NO_KOREAN}])\\(`, "g"), "$1 (");
-  text = text.replace(new RegExp(`\\)([${CJK_NO_KOREAN}])`, "g"), ") $1");
-  return text;
+  text = text.replace(new RegExp(`([${CJK_LETTER_CLASS}])\\(`, "gu"), "$1 (");
+  return text.replace(
+    new RegExp(`\\)([${CJK_LETTER_CLASS}])`, "gu"),
+    (whole, cjk: string, offset: number) => {
+      if (offset === 0 && linkLabel !== undefined && !ENDS_WITH_LATIN_ALNUM.test(linkLabel)) {
+        return whole;
+      }
+      return `) ${cjk}`;
+    }
+  );
 }
 
 /**
