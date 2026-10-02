@@ -68,16 +68,18 @@ pub(super) async fn record_step_result<R: Runtime>(
     );
 }
 
-/// Truncate a string to at most `max_bytes` on a valid UTF-8 char boundary.
+/// Truncate a string to at most `max_bytes`, keeping only whole characters:
+/// the cut falls on the last character boundary at or before the limit, and
+/// a note with the full size follows it.
 fn truncate_utf8_safe(s: &str, max_bytes: usize) -> String {
     if s.len() <= max_bytes {
         return s.to_string();
     }
     let safe_end = s
         .char_indices()
-        .take_while(|(i, _)| *i < max_bytes)
-        .last()
         .map(|(i, c)| i + c.len_utf8())
+        .take_while(|end| *end <= max_bytes)
+        .last()
         .unwrap_or(0);
     format!(
         "{}...\n[Output truncated for display: {} bytes total]",
