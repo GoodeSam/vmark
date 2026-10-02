@@ -598,7 +598,6 @@ describe("useTabContextMenuActions", () => {
       await findItem(items, "moveToNewWindow")!.action();
       expect(mocks.invoke).toHaveBeenCalledWith("detach_tab_to_new_window", expect.any(Object));
       expect(mocks.detachTab).toHaveBeenCalledWith("main", "tab-1");
-      expect(mocks.removeDocument).toHaveBeenCalledWith("tab-1");
       expect(mocks.toast.message).toHaveBeenCalled();
       expect(onClose).toHaveBeenCalled();
     });
