@@ -412,7 +412,7 @@ Every WYSIWYG block plugin below is registered in `src/services/assembly/tiptapE
 - surfaces: automatic on a ```svg fence; in-preview export button; double-click to edit; no toolbar, menu or shortcut insert
 - code: `src/plugins/svg/svgRender.ts`, `src/plugins/svg/svgExport.ts`, `src/plugins/codePreview/renderers/renderSvgPreview.ts`, `src/utils/svgSanitize.ts`, `src/utils/svgResourcePolicy.ts`, `src/utils/styleSafety.ts`, `src/utils/cssNormalize.ts`, `src/utils/svgToPng.ts`, `src/lib/formats/adapters/svg.tsx`
 - rust: none
-- docs: `website/guide/svg.md`
+- docs: `website/guide/svg.md` (§"Security": stylesheet confinement, `<form>` removal and link handling as well as script and external-reference stripping)
 - tests: `src/plugins/svg/{svgRender,svgExport}.test.ts`, `src/plugins/codePreview/renderers/renderSvgPreview.test.ts`
 - notes: no `index.ts`/`plugin.ts` in `src/plugins/svg/` — reached only through the fence registry and the format adapter.
 
@@ -2296,7 +2296,7 @@ The panel is lazy-imported in `src/App.tsx` behind a `FeatureErrorBoundary`; `sr
 - surfaces: automatic
 - code: `src-tauri/src/pty.rs`, `src-tauri/src/pty/reader.rs`, `src-tauri/src/pty/session.rs`, `src-tauri/src/pty/window_sessions.rs`, `src-tauri/src/app_setup.rs`, `src-tauri/src/quit.rs`, `src/lib/pty.ts`, `src/components/Terminal/spawnPty.ts`, `src/components/Terminal/fitAndResizePty.ts`
 - rust: `pty_spawn`, `pty::reader::pty_start`, `pty_write`, `pty_resize`, `pty_kill`, `pty_close`, `pty_pause`, `pty_resume` (registered in `src-tauri/src/command_registry.rs`); `pty::close_window_sessions`, `pty::kill_all`
-- docs: `website/guide/terminal.md` §"Not yet implemented" (pause/resume is internal flow control only)
+- docs: `website/guide/terminal.md` §"Not yet implemented" (pause/resume is internal flow control only), §"Sessions" (closing a session: SIGHUP to the process group, then SIGKILL)
 - tests: `src/lib/pty.test.ts`, `src/lib/__tests__/pty.test.ts`, `src/components/Terminal/spawnPty.test.ts`, `src/components/Terminal/fitAndResizePty.test.ts`; Rust `src-tauri/src/pty/session.test.rs` (7 fns, real `/bin/sleep` children under a PTY for kill/reap), `src-tauri/src/pty/window_sessions.test.rs` (8 fns). Gap: nothing exercises the reader thread / Channel streaming path (`pty_start`) against a real PTY.
 - notes: `pty_pause`/`pty_resume` are wired only to internal backpressure — no user-facing control, as terminal.md says. ConPTY vs unix pty is delegated entirely to `portable_pty::native_pty_system()`; there is no `#[cfg(target_os)]` in `src-tauri/src/pty.rs` or `src-tauri/src/pty/`.
 
@@ -2310,7 +2310,7 @@ The panel is lazy-imported in `src/App.tsx` behind a `FeatureErrorBoundary`; `sr
 - surfaces: settings pane (Shell dropdown); automatic otherwise
 - code: `src/components/Terminal/terminalSpawnEnv.ts`, `src/components/Terminal/spawnPty.ts`, `src/components/Terminal/resolveTerminalSpawnContext.ts`, `src-tauri/src/shell_env.rs`, `src-tauri/src/pty/session.rs`
 - rust: `get_default_shell`, `get_login_shell_path`, `list_available_shells` (module `shell_env`)
-- docs: `website/guide/terminal.md` §"Shell Environment"; `website/guide/settings.md` §"Terminal" (Shell row); `website/guide/workspace-management.md` §"Terminal Integration"
+- docs: `website/guide/terminal.md` §"Shell Environment" (incl. which shells may be spawned and the fallback for one that is not); `website/guide/settings.md` §"Terminal" (Shell row); `website/guide/workspace-management.md` §"Terminal Integration"
 - tests: `src/components/Terminal/terminalSpawnEnv.test.ts`, `src/components/Terminal/spawnPty.test.ts`, `src/components/Terminal/resolveTerminalSpawnContext.test.ts`; Rust `src-tauri/src/shell_env.test.rs` (18 fns)
 - notes: `EDITOR` is deliberately unset — a blocking `vmark --wait` does not exist. `TERM_PROGRAM=WezTerm` is deliberate impersonation (ADR-006). `LC_CTYPE` is macOS-only because bare `UTF-8` is not a glibc locale.
 
@@ -3546,9 +3546,9 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - surfaces: GitHub Actions
 - code: `.github/workflows/tier0-e2e.yml`, `.github/actions/setup-tauri-deps`, `scripts/check-gate-liveness.mjs`
 - rust: debug-only automation bridge
-- docs: `e2e/README.md`
+- docs: `e2e/README.md` §"Prerequisites" and §"CI" (weekly, Linux and macOS, manual dispatch)
 - tests: liveness metadata (`liveness-gate: true`, `cadence-days: 8`, `on-failure: rolling-issue`) read by `scripts/check-gate-liveness.mjs`
-- notes: Browser journeys (macOS-only), journeys 38 and 39, and the smoke harness are not in CI.
+- notes: `e2e/run-journeys.mjs` runs every journey on both legs (`ubuntu-latest` under Xvfb, `macos-latest`); a journey declaring `platforms: ["darwin"]`, which every browser journey does, executes only on the macOS leg. The smoke harness is not in CI.
 
 ## Area 11 — Coherence, knowledge base, claims
 

@@ -57,6 +57,9 @@ Update website docs when:
 | Change the per-client MCP credential (`VMARK_MCP_TOKEN`) or what it authorizes | `website/guide/mcp-setup.md` (`Install Configuration`, `Security Notes`) |
 | Change how the Claims panel is opened | `website/guide/coherence.md` |
 | Change an MCP action's arguments, results or refusal reasons | `website/guide/mcp-tools.md` + `server/mcp/README.md` |
+| Change how a terminal session is ended, or which shells may be spawned | `website/guide/terminal.md` (`Sessions`, `Shell Environment`) + `website/guide/settings.md` (Terminal → Shell) |
+| Change the SVG sanitizer (stylesheets, forms, links) | `website/guide/svg.md` (`Security`) |
+| Change when or where the E2E journeys run in CI | `e2e/README.md` (`Prerequisites`, `CI`) |
 | Add new release post / launch note | `website/blog/<YYYY-MM>-<slug>.md` + entry in `website/blog/index.md` |
 | New major feature | Consider adding new guide page |
 
@@ -102,6 +105,9 @@ Update website docs when:
 | `src-tauri/src/mcp_config/client_tokens.rs`, `src-tauri/src/mcp_config/client_token_field.rs`, `src-tauri/src/mcp_bridge/principal.rs` | `website/guide/mcp-setup.md` (Install Configuration, Security Notes) |
 | `src/services/commands/claimCommands.ts` | `website/guide/coherence.md` |
 | `src/services/mcpBridge/v2/`, `server/mcp/src/tools/` | `website/guide/mcp-tools.md` + `server/mcp/README.md` |
+| `src-tauri/src/pty/child.rs`, `src-tauri/src/pty/spawn_policy.rs`, `src-tauri/src/shell_env.rs` | `website/guide/terminal.md` (Sessions, Shell Environment) |
+| `src/utils/svgSanitize.ts`, `src/utils/svgStylesheetScope.ts` | `website/guide/svg.md` (Security) |
+| `.github/workflows/tier0-e2e.yml`, `e2e/run-journeys.mjs` | `e2e/README.md` |
 | `src/pages/settings/components.tsx` (SearchInput / FieldInput primitives) | No website doc — internal API. Keep `components.tsx` header comment as the source of truth for the decision rule. |
 
 ## Timestamp Handling
