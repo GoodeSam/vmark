@@ -21,6 +21,7 @@ vi.mock("@tauri-apps/plugin-fs", () => ({
 vi.mock("@/utils/pendingSaves", () => ({
   registerPendingSave: () => 1,
   clearPendingSave: () => undefined,
+  clearPendingSaveAfterGrace: () => undefined,
 }));
 
 const checkBridgePathMock = vi.fn<(p: string) => Promise<{ allowed: boolean; reason?: string }>>(

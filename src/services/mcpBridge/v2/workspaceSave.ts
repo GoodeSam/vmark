@@ -11,7 +11,7 @@
 import { writeTextFile } from "@tauri-apps/plugin-fs";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
-import { registerPendingSave, clearPendingSave } from "@/utils/pendingSaves";
+import { registerPendingSave, clearPendingSaveAfterGrace } from "@/utils/pendingSaves";
 import { captureMcpWrite } from "@/services/coherence/mcpCapture";
 import { checkBridgePath } from "@/services/mcpBridge/bridgePathGuard";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
@@ -110,9 +110,8 @@ export async function handleWorkspaceSave(
         toolName: "workspace.save",
       }).catch(() => {});
     } finally {
-      // Delayed clear (audit T9): same watcher window as saveToPath.
-      const filePath = resolved.filePath;
-      setTimeout(() => clearPendingSave(filePath, saveToken), 1000);
+      // Delayed clear (audit T9): late FSEvents can still match this save.
+      clearPendingSaveAfterGrace(resolved.filePath, saveToken);
     }
     const revision = useRevisionStore.getState().getRevision(resolved.tabId);
     await respond({

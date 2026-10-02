@@ -38,7 +38,7 @@
  */
 
 import { writeTextFile } from "@tauri-apps/plugin-fs";
-import { registerPendingSave, clearPendingSave } from "@/utils/pendingSaves";
+import { registerPendingSave, clearPendingSaveAfterGrace } from "@/utils/pendingSaves";
 import { captureMcpWrite, recordMcpRead } from "@/services/coherence/mcpCapture";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
@@ -346,10 +346,8 @@ export async function handleDocumentWrite(
             toolName: "document.write",
           }).catch(() => {});
         } finally {
-          // Delayed clear (audit T9): late FSEvents can still match this
-          // save — same 1000ms window as saveToPath.
-          const filePath = resolved.filePath;
-          setTimeout(() => clearPendingSave(filePath, saveToken), 1000);
+          // Delayed clear (audit T9): late FSEvents can still match this save.
+          clearPendingSaveAfterGrace(resolved.filePath, saveToken);
         }
       } catch (err) {
         saveError = errorMessage(err);

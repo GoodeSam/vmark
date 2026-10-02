@@ -17,7 +17,7 @@ import {
   windowLabelForTab,
 } from "@/services/workspaces/reassignTabOwnershipForPath";
 import { useRecentFilesStore } from "@/stores/workspaceStore";
-import { clearPendingSave, type registerPendingSave } from "@/utils/pendingSaves";
+import { clearPendingSaveAfterGrace, type registerPendingSave } from "@/utils/pendingSaves";
 import { normalizePath } from "@/utils/paths";
 import { isCurrentSaveTarget, type SaveTargetClaim } from "./saveTargetClaim";
 import type { SaveType } from "./saveHistorySnapshot";
@@ -79,10 +79,8 @@ export function applyPostSaveState(
 
   // The pending-save token belongs to THIS path's watcher bookkeeping, so it
   // is cleared whether or not this save still owns the document's identity.
-  // Delayed to let late-arriving watcher events still match: the full pipeline
-  // (Rust debounce 200ms → emit → JS event loop → async readTextFile →
-  // comparison) can exceed 500ms under heavy I/O.
-  setTimeout(() => clearPendingSave(path, saveToken), 1000);
+  // After the grace window, so a late-arriving watcher event still matches.
+  clearPendingSaveAfterGrace(path, saveToken);
 
   // Everything below RE-POINTS the document. A completion may only do that
   // while it still describes where the document lives (audit 20260906, F3).
