@@ -10,9 +10,9 @@ For coding conventions, style rules, and architectural patterns, see
 
 | Tool | Version | Notes |
 |------|---------|-------|
-| Rust | stable | Install via [rustup](https://rustup.rs/) |
+| Rust | stable, 1.89 or newer | Install via [rustup](https://rustup.rs/). The floor is `rust-version` in `src-tauri/Cargo.toml`; CI and releases build on current stable |
 | Node.js | 22+ | LTS recommended |
-| pnpm | 10+ | `corepack enable` or `npm install -g pnpm` |
+| pnpm | 10.x (`>=10 <11`) | `corepack enable` picks the pinned version. `engines` is enforced (`engine-strict`), so pnpm 9 or 11 fails at install |
 | Tauri v2 system deps | — | [Platform-specific prerequisites](https://v2.tauri.app/start/prerequisites/) |
 
 ## Setup

@@ -72,7 +72,7 @@ When you file an issue, AI fixes it with full context of the project's conventio
 
 ## Building from Source
 
-**Prerequisites:** [Node.js](https://nodejs.org/) 22+, [pnpm](https://pnpm.io/) 10+, [Rust](https://www.rust-lang.org/tools/install) (stable), [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/)
+**Prerequisites:** [Node.js](https://nodejs.org/) 22+, [pnpm](https://pnpm.io/) 10.x (`>=10 <11` — the install refuses any other major), [Rust](https://www.rust-lang.org/tools/install) stable (1.89 or newer), [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/)
 
 ```bash
 git clone https://github.com/xiaolai/vmark.git
