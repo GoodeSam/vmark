@@ -1381,11 +1381,6 @@
       "target": "src/plugins/latex/katexLoader"
     },
     {
-      "file": "src/plugins/latex/tiptapInlineMath.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/latex/katexFontPreload"
-    },
-    {
       "file": "src/plugins/linkCreatePopup/tiptap.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/linkCreatePopup/LinkCreatePopupView"
