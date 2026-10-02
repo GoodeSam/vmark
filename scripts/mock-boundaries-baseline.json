@@ -1406,11 +1406,6 @@
       "target": "src/plugins/codemirror/sourceShortcutsHelpers"
     },
     {
-      "file": "src/plugins/codePreview/liveErrorHandling.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/codePreview/renderers/renderMermaidPreview"
-    },
-    {
       "file": "src/plugins/codePreview/renderers/renderSvgPreview.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/codePreview/previewHelpers"
