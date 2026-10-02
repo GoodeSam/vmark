@@ -904,6 +904,107 @@ describe('WebSocketBridge', () => {
     });
   });
 
+  describe('connect() while an attempt is already in flight', () => {
+    /** Settle state of a promise, readable without awaiting it. */
+    function watch(promise: Promise<void>): { outcome: () => unknown } {
+      let outcome: unknown = 'pending';
+      promise.then(
+        () => (outcome = 'resolved'),
+        (error: unknown) => (outcome = error)
+      );
+      return { outcome: () => outcome };
+    }
+
+    it('resolves once the in-flight attempt connects, on its next poll', async () => {
+      // The second caller polls the bridge every 100ms; only that timer is faked.
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      const first = bridge.connect();
+      const second = watch(bridge.connect());
+
+      await first;
+      expect(bridge.isConnected()).toBe(true);
+      expect(second.outcome()).toBe('pending');
+
+      await vi.advanceTimersByTimeAsync(99);
+      expect(second.outcome()).toBe('pending');
+      await vi.advanceTimersByTimeAsync(1);
+      expect(second.outcome()).toBe('resolved');
+    });
+
+    it('rejects when the in-flight attempt fails', async () => {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+
+      // Nothing listens on the port: the attempt fails with a socket error.
+      const first = bridge.connect();
+      const second = watch(bridge.connect());
+      await expect(first).rejects.toThrow('WebSocket error');
+      expect(second.outcome()).toBe('pending');
+
+      await vi.advanceTimersByTimeAsync(100);
+      expect(second.outcome()).toBeInstanceOf(Error);
+      expect((second.outcome() as Error).message).toBe('Connection failed');
+
+      // afterEach closes `server`; give it a live one to close.
+      vi.useRealTimers();
+      server = new WebSocketServer({ port: TEST_PORT });
+    });
+
+    it('gives up after the configured timeout while the attempt is still authenticating', async () => {
+      const TIMEOUT = 200;
+      const HOLD_PORT = TEST_PORT + 1;
+      // A server that holds the upgrade until released, then never answers auth.
+      let release!: () => void;
+      const upgradeHeld = new Promise<void>((held) => {
+        release = () => held();
+      });
+      let allowUpgrade!: () => void;
+      const holdServer = new WebSocketServer({
+        port: HOLD_PORT,
+        verifyClient: (_info, done) => {
+          allowUpgrade = () => done(true);
+          release();
+        },
+      });
+      const authReceived = new Promise<void>((resolve) => {
+        holdServer.once('connection', (ws) => ws.once('message', () => resolve()));
+      });
+      const slowBridge = new WebSocketBridge({
+        port: HOLD_PORT,
+        timeout: TIMEOUT,
+        autoReconnect: false,
+        authTokenResolver: () => 'test-token',
+      });
+
+      try {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        const first = watch(slowBridge.connect());
+        const second = watch(slowBridge.connect());
+
+        // Open the socket 50ms in, so the attempt's own auth deadline (armed at
+        // open) lands at 250ms — after the waiting caller's 200ms budget.
+        await upgradeHeld;
+        await vi.advanceTimersByTimeAsync(50);
+        allowUpgrade();
+        await authReceived;
+
+        await vi.advanceTimersByTimeAsync(149);
+        expect(second.outcome()).toBe('pending');
+        await vi.advanceTimersByTimeAsync(1);
+        expect(second.outcome()).toBeInstanceOf(Error);
+        expect((second.outcome() as Error).message).toBe('Timed out waiting for existing connection attempt');
+        expect(first.outcome()).toBe('pending');
+
+        await vi.advanceTimersByTimeAsync(50);
+        expect((first.outcome() as Error).message).toContain('Auth handshake timeout');
+      } finally {
+        vi.useRealTimers();
+        await slowBridge.disconnect();
+        await new Promise<void>((resolve) => holdServer.close(() => resolve()));
+      }
+    });
+  });
+
   describe('connection lost during request', () => {
     it('should reject request when connection is lost', async () => {
       await bridge.connect();
