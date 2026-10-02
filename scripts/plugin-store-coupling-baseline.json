@@ -35,7 +35,7 @@
       "services": 1
     },
     "imageHandler": {
-      "services": 3
+      "services": 2
     },
     "imagePreview": {
       "services": 1

@@ -51,9 +51,12 @@ const mockGetToastAnchorRect = vi.fn(() => ({
 
 vi.mock("./imageHandlerUtils", () => ({
   isViewConnected: (...args: unknown[]) => mockIsViewConnected(...args),
+  getToastAnchorRect: (...args: unknown[]) => mockGetToastAnchorRect(...args),
+}));
+
+vi.mock("@/plugins/shared/localImagePath", () => ({
   validateLocalPath: (...args: unknown[]) => mockValidateLocalPath(...args),
   expandHomePath: (...args: unknown[]) => mockExpandHomePath(...args),
-  getToastAnchorRect: (...args: unknown[]) => mockGetToastAnchorRect(...args),
 }));
 
 // Real implementations for detection/parsing
