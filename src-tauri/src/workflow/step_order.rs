@@ -26,7 +26,7 @@ pub(in crate::workflow) struct ResolvedStep {
 }
 
 /// Topologically sort steps by `needs:`; no-dep steps first. `run_workflow`
-/// runs it at ADMISSION too (#522), so this `?` never fails a spawned run.
+/// runs it at ADMISSION too (#522), so it does not fail for a spawned run.
 pub(in crate::workflow) fn topological_sort(
     steps: Vec<RawStep>,
 ) -> Result<Vec<ResolvedStep>, String> {

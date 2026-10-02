@@ -629,3 +629,31 @@ async fn every_run_that_returns_reports_completion_exactly_once() {
         assert_eq!(run.completions, [expected], "workflow {yaml:?}");
     }
 }
+
+/// `run_workflow` sorts the steps at admission, so a spawned run does not get
+/// here with a graph it cannot sort. If one ever does, the panel is waiting
+/// on `workflow:complete` all the same: the run must end like any failed run,
+/// not return without a word.
+#[tokio::test]
+async fn a_workflow_that_cannot_be_sorted_still_reports_completion() {
+    let cyclic = run(
+        "name: cyclic\nsteps:\n  - id: a\n    uses: action/copy\n    needs: b\n  \
+         - id: b\n    uses: action/copy\n    needs: a\n",
+    )
+    .await;
+    let err = cyclic.result.expect_err("a cycle cannot run");
+    assert!(err.contains("Circular"), "{err}");
+    assert!(
+        cyclic.events.is_empty(),
+        "no step was reached: {:?}",
+        cyclic.events
+    );
+    assert_eq!(cyclic.completions, ["failed"]);
+
+    let twins = run(
+        "name: twins\nsteps:\n  - id: a\n    uses: action/copy\n  - id: a\n    uses: action/copy\n",
+    )
+    .await;
+    assert!(twins.result.is_err());
+    assert_eq!(twins.completions, ["failed"]);
+}

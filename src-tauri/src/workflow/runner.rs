@@ -10,6 +10,9 @@
 //!   `step_record` (outputs, events). `run_context` is what they share.
 //!
 //! Key decisions:
+//!   - Exactly one `workflow:complete` on every path this function returns
+//!     from, emitted in one place; `launch.rs` covers the paths that never
+//!     return (a panic, the runtime dropping the task)
 //!   - Returns Err when any step fails (not Ok with silent failure), naming
 //!     the first step that failed
 //!   - A step's `if:` decides whether it runs (`success()` when absent), so
@@ -124,11 +127,16 @@ pub async fn run_workflow_sequential<R: Runtime>(
         env: merged_env,
     };
 
-    // Topologically sort steps by needs: dependencies
-    let sorted_steps = topological_sort(workflow.steps)?;
-    let outcome = run_steps(&ctx, &workflow.name, sorted_steps).await;
+    // Sort the steps by their `needs:` edges. `run_workflow` sorts the same
+    // steps at admission, so this does not fail for a run it spawned; if it
+    // ever does, the run ends like any other failed run — through the
+    // completion event below — instead of returning without a word.
+    let outcome = match topological_sort(workflow.steps) {
+        Ok(sorted_steps) => run_steps(&ctx, &workflow.name, sorted_steps).await,
+        Err(unsortable) => Err(unsortable),
+    };
 
-    // Emit completion
+    // The one place a run that returns says so: nothing above returns.
     let final_status = if ctx.cancel_requested() {
         "cancelled"
     } else if outcome.is_err() {
