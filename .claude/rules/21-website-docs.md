@@ -52,6 +52,11 @@ Update website docs when:
 | Change the monospace-font verification | `website/guide/features.md` (`Fonts`) |
 | Change the tab context menu, pinning, or tab / title-bar rename | `website/guide/tab-navigation.md` (`The tab context menu`, `Pinned tabs`, `Renaming a file`) |
 | Change save-on-close prompts, quit confirmation, or the pinned-tabs close guard | `website/guide/tab-navigation.md` (`Closing tabs and windows`) |
+| Change the browser start page, search engine, or omnibox rules | `website/guide/browser.md` (`Using it`) |
+| Change prompt history | `website/guide/ai-genies.md` (`The Genie Picker`) |
+| Change the per-client MCP credential (`VMARK_MCP_TOKEN`) or what it authorizes | `website/guide/mcp-setup.md` (`Install Configuration`, `Security Notes`) |
+| Change how the Claims panel is opened | `website/guide/coherence.md` |
+| Change an MCP action's arguments, results or refusal reasons | `website/guide/mcp-tools.md` + `server/mcp/README.md` |
 | Add new release post / launch note | `website/blog/<YYYY-MM>-<slug>.md` + entry in `website/blog/index.md` |
 | New major feature | Consider adding new guide page |
 
@@ -92,6 +97,11 @@ Update website docs when:
 | `src/components/StatusBar/` | `website/guide/features.md` (Status Bar) |
 | `src/plugins/compositionGuard/`, `src/utils/imeGuard.ts`, `src/services/ime/`, `src/utils/motion.ts`, `src/plugins/inactiveSelection/`, `src/plugins/inlineCodeBoundary/` | `website/guide/features.md` (Editing Details) |
 | `src/services/fonts/verifiedMonoStack.ts` | `website/guide/features.md` (Fonts) |
+| `src/lib/browser/omnibox.ts` | `website/guide/browser.md` (Using it) |
+| `src/stores/aiStore/promptHistory.ts`, `src/components/GeniePicker/PromptHistoryDropdown.tsx` | `website/guide/ai-genies.md` (The Genie Picker) |
+| `src-tauri/src/mcp_config/client_tokens.rs`, `src-tauri/src/mcp_config/client_token_field.rs`, `src-tauri/src/mcp_bridge/principal.rs` | `website/guide/mcp-setup.md` (Install Configuration, Security Notes) |
+| `src/services/commands/claimCommands.ts` | `website/guide/coherence.md` |
+| `src/services/mcpBridge/v2/`, `server/mcp/src/tools/` | `website/guide/mcp-tools.md` + `server/mcp/README.md` |
 | `src/pages/settings/components.tsx` (SearchInput / FieldInput primitives) | No website doc — internal API. Keep `components.tsx` header comment as the source of truth for the decision rule. |
 
 ## Timestamp Handling

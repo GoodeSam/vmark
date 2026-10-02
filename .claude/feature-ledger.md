@@ -59,7 +59,7 @@ A claim the inspector could not confirm is marked **unverified** in place rather
 
 ## Open findings
 
-Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 163 open.
+Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 159 open.
 
 ### Security boundaries (14)
 
@@ -100,12 +100,8 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 15) `register_dock_recent` exists only on macOS, but `registerDockRecent` (`src/stores/workspaceStoreHelpers.ts`) calls it on every platform and swallows the rejection.
 
 
-### User-facing behaviour with no guide page (5)
+### User-facing behaviour with no guide page (1)
 
-- (area 8) The start page (`NEW_BROWSER_TAB_URL` in `src/services/commands/browserCommands.ts`) and the omnibox search provider (`SEARCH_URL_BASE` in `src/lib/browser/omnibox.ts`) are hardcoded DuckDuckGo; no guide page says so and no setting changes either.
-- (area 9) The prompt-history dropdown's Clear button (`src/components/GeniePicker/PromptHistoryDropdown.tsx`) is not mentioned in `website/guide/ai-genies.md` §"The Genie Picker".
-- (area 10) Install writes a per-client secret (`env.VMARK_MCP_TOKEN`) into each AI client's config file, and delegated coherence actions authorize against it; no guide page mentions it (`src-tauri/src/mcp_config/client_tokens.rs`, `src-tauri/src/mcp_config/vmark_entry.rs`).
-- (area 11) The Claims panel's only entry point, palette command "Canon Claims" (`view.toggleClaims`, `src/services/commands/claimCommands.ts`), is not named in `website/guide/coherence.md` (only *Extract Claim from Selection* is).
 - (area 13) Shortcut import errors use a raw `window.alert` (`handleImport` in `src/pages/settings/ShortcutsSettings.tsx`), and a rejected `update_menu_accelerators` is only logged (`shortcutsWarn` in `src/stores/settingsStore/shortcuts.ts`) — neither reaches the app's dialog/toast surface.
 
 ### Platform coverage (20)
@@ -2602,7 +2598,7 @@ The browser is macOS-only end to end: `src-tauri/src/browser/surface_stub.rs` re
 - rust: `browser_navigate`, `browser_back`, `browser_forward`, `browser_stop`
 - docs: `website/guide/browser.md` §"Using it"
 - tests: `src/components/Browser/BrowserOmnibox.test.tsx`, `src/components/Browser/BrowserChrome.test.tsx`, `src/components/Browser/AppTitleBar.test.tsx`, `src/components/Browser/BrowserWorkspaceSurface.test.tsx`, `src/lib/browser/omnibox.test.ts`, `src/lib/browser/url.test.ts`, `src/services/browser/browserNavigation.test.ts`, `src/services/browser/navigationOrder.test.ts`, `src/stores/browserUiStore.test.ts`; e2e `e2e/journeys/23-browser-chrome-controls.mjs`
-- notes: Find-in-page and page zoom are not implemented (both `pending` in `src/lib/browser/__tests__/uxPolicyLedger.ts`; `browser.md` §"Current limitations" says so). The start page and search provider are hardcoded DuckDuckGo (`NEW_BROWSER_TAB_URL`, `SEARCH_URL_BASE`), undocumented; no `browser.homepage` setting exists.
+- notes: Find-in-page and page zoom are not implemented (both `pending` in `src/lib/browser/__tests__/uxPolicyLedger.ts`; `browser.md` §"Current limitations" says so). The start page and search provider are hardcoded DuckDuckGo (`NEW_BROWSER_TAB_URL`, `SEARCH_URL_BASE`), as `browser.md` §"Using it" states; no `browser.homepage` setting exists.
 
 ### Browser page tabs and browser workspace
 - id: browser-page-tabs-workspace
@@ -3000,7 +2996,7 @@ Genies are prompt files in `<appDataDir>/genies/`, listed by `src-tauri/src/geni
 - rust: `run_ai_prompt`, `cancel_ai_prompt` (`src-tauri/src/ai_provider/cancel.rs`)
 - docs: `website/guide/ai-genies.md` §"Processing Feedback", §"Scope", §"Status Bar Indicator", §"Limitations"; `website/guide/settings.md` §"Integrations" (Auto-approve row)
 - tests: `src/hooks/__tests__/useGenieInvocation.test.ts`, `src/hooks/__tests__/useGenieInvocation.cancel.test.ts`, `src/hooks/__tests__/useGenieInvocation.dispatchGating.test.ts`, `src/hooks/__tests__/useGenieInvocation.workflowRace.test.ts`, `src/hooks/useGenieShortcuts.invokeGenie.test.ts`, `src/services/genieInvocation/streamRunner.test.ts`, `src/services/genieInvocation/extraction.test.ts`, `src/services/genieInvocation/providerValidation.test.ts`, `src/services/genieInvocation/cancelRequest.test.ts`, `src/stores/aiStore/invocation.test.ts`, `src/stores/__tests__/aiInvocationStore.test.ts`, `src-tauri/src/ai_provider/cancel.test.rs`; `applyGenieResult.ts` is covered only through `streamRunner.test.ts`
-- notes: the direct picker path does not fence document text — `fillTemplate` substitutes `{{content}}` literally; `<<<DOCUMENT-DATA-…>>>` fencing is applied only to workflow genie steps (`src-tauri/src/workflow/untrusted.rs`, `src-tauri/src/workflow/genie_step.rs`), which `ai-genies.md` now states. The `menu:invoke-genie` listener runs in the main window and ignores the window label in the payload, so a menu genie click while another document window is focused is handled by the main window's editor — inferred from code (`src-tauri/src/menu_events_dispatch.rs`, `src/hooks/useGenieShortcuts.ts`), unverified at runtime.
+- notes: the direct picker path does not fence document text — `fillTemplate` substitutes `{{content}}` literally; `<<<DOCUMENT-DATA-…>>>` fencing is applied only to workflow genie steps (`src-tauri/src/workflow/untrusted.rs`, `src-tauri/src/workflow/genie_step.rs`), which `ai-genies.md` now states. The `menu:invoke-genie` listener runs in the main window and ignores the window label in the payload, so a menu genie click while another document window is focused is handled by the main window's editor — inferred from code (`src-tauri/src/menu_events_dispatch.rs`, `src/hooks/useGenieShortcuts.ts`), unverified at runtime. The status bar's **Retry** after an error only dismisses it (`handleRetryAi` in `src/components/StatusBar/StatusBar.tsx`); `ai-genies.md` says so.
 
 ### Inline AI suggestions (accept/reject diff UI)
 - id: ai-suggestions
@@ -3028,7 +3024,7 @@ Genies are prompt files in `<appDataDir>/genies/`, listed by `src-tauri/src/geni
 - rust: none
 - docs: `website/guide/ai-genies.md` §"The Genie Picker" (Prompt history paragraph)
 - tests: `src/hooks/usePromptHistory.test.ts`, `src/hooks/usePromptHistory.comprehensive.test.ts`, `src/hooks/usePromptHistory.clearHistory.test.ts`, `src/hooks/usePromptHistory.filterIndex.test.tsx`, `src/hooks/usePromptHistory.liveEntries.test.ts`, `src/services/promptHistory/promptHistoryCore.test.ts`, `src/components/GeniePicker/PromptHistoryDropdown.test.tsx`, `src/stores/__tests__/promptHistoryStore.test.ts`
-- notes: a clear in one window can be resurrected by another window's later merge (no tombstones; stated in `src/stores/aiStore/promptHistory.ts`). The dropdown's Clear button is not mentioned in `ai-genies.md`.
+- notes: a clear in one window can be resurrected by another window's later merge (no tombstones; stated in `src/stores/aiStore/promptHistory.ts`). The dropdown's **Clear history** button is in `ai-genies.md` §"The Genie Picker".
 
 ### Workflow genies (YAML multi-step)
 - id: workflow-genies
@@ -3158,7 +3154,7 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - surfaces: automatic; connected-client names in Settings → Integrations and the status-bar tooltip
 - code: `src-tauri/src/mcp_bridge/handshake.rs`, `src-tauri/src/mcp_bridge/principal.rs`, `src-tauri/src/mcp_bridge/connection.rs`, `src-tauri/src/mcp_bridge/identify.rs`, `src-tauri/src/peer_text.rs`, `src-tauri/src/mcp_config/client_tokens.rs`, `server/mcp/src/utils/clientIdentity.ts`, `server/mcp/src/bridge/authHandshake.ts`
 - rust: `mcp_bridge::handshake`, `mcp_bridge::principal`, `mcp_bridge::identify`, `mcp_config::client_tokens::{snapshot, refresh, mint_client_token}`
-- docs: none — the per-client credential is not described on any guide page
+- docs: `website/guide/mcp-setup.md` §"Install Configuration" (per-client credential), §"Security Notes"
 - tests: `src-tauri/src/mcp_bridge/handshake.test.rs`, `src-tauri/src/mcp_bridge/principal.test.rs`, `src-tauri/src/mcp_bridge/connection.test.rs`, `src-tauri/src/mcp_bridge/identify.test.rs`, `src-tauri/src/peer_text.test.rs`, `src-tauri/src/mcp_config/client_tokens.test.rs`, `src-tauri/src/mcp_config/client_token_field.test.rs`, `server/mcp/__tests__/unit/utils/clientIdentity.test.ts`, `server/mcp/__tests__/unit/utils/parentProcess.test.ts`
 - notes: The client configs are the token store — no keychain entry, no separate secret file. The registry is refreshed before the accept loop starts; a panic in the refresh publishes an empty registry. Installs predating the mechanism connect as `Anonymous` and lose only delegated actions. No server-side rate limit; the token bucket is sidecar-side.
 
@@ -3270,7 +3266,7 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - surfaces: MCP tool `workspace`
 - code: `server/mcp/src/tools/workspace.ts`, `src/services/mcpBridge/v2/workspace.ts`, `src/services/mcpBridge/v2/workspaceOpen.ts`, `src/services/mcpBridge/v2/workspaceOpenFolder.ts`, `src/services/mcpBridge/v2/workspaceSave.ts`, `src/services/mcpBridge/v2/workspaceSaveAs.ts`
 - rust: all write-class
-- docs: `website/guide/mcp-tools.md` §`workspace`
+- docs: `website/guide/mcp-tools.md` §`workspace` (incl. `close` refusal reasons `DIRTY` / `DIVERGENT` / `PINNED` and the browser-tab refusal); `server/mcp/README.md`
 - tests: `server/mcp/__tests__/unit/tools/workspace.test.ts`, `src/services/mcpBridge/v2/__tests__/workspace.test.ts`, `src/services/mcpBridge/v2/__tests__/workspaceOpenBackground.test.ts`, `src/services/mcpBridge/v2/__tests__/workspaceOpenErrors.test.ts`, `src/services/mcpBridge/v2/__tests__/workspaceSaveAs.test.ts`, `src/services/mcpBridge/v2/__tests__/workspaceSaveAsCapture.test.ts`, `src/services/mcpBridge/v2/__tests__/workspaceSaveCapture.test.ts`, `src/services/mcpBridge/v2/__tests__/workspaceSwitchTabVerify.test.ts`, `src/services/mcpBridge/v2/workspaceOpenFolder.test.ts`
 - notes: `save` and `save_as` feed coherence capture through `src/services/coherence/mcpCapture.ts` under the same capture policy as a human save (see `coherence-capture`, Area 11).
 
@@ -3284,7 +3280,7 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - surfaces: MCP tool `document`
 - code: `server/mcp/src/tools/document.ts`, `server/mcp/src/tools/staleError.ts`, `src/services/mcpBridge/v2/document.ts`, `src/services/mcpBridge/v2/documentTransform.ts`, `src/services/mcpBridge/v2/cjkMaps.ts`, `src/services/coherence/mcpCapture.ts`, `src/services/coherence/capturePolicy.ts`
 - rust: `document.read` read-class; `write`/`transform` write-class
-- docs: `website/guide/mcp-tools.md` §`document`; `website/guide/mcp-setup.md` §"How Edits Work"
+- docs: `website/guide/mcp-tools.md` §`document` (incl. `write`'s `save` and the live-WYSIWYG serialization note); `website/guide/mcp-setup.md` §"How Edits Work"
 - tests: `server/mcp/__tests__/unit/tools/document.test.ts`, `src/services/mcpBridge/v2/__tests__/document.test.ts`, `src/services/mcpBridge/v2/documentTransform.test.ts`, `src/services/mcpBridge/v2/documentTransformRefusal.test.ts`
 - notes: `write` saves to disk by default so agents do not bypass MCP. Every mutation is checkpointed (`mcp-edit-checkpoints`). A saved write calls `captureMcpWrite` (`src/services/coherence/mcpCapture.ts`), which funnels through `captureWrite` with the capture policy from `general.coherenceCaptureOnSave`: off (`tracked-only`) never creates `.vmark/` or stamps a `vmark:` block; on (`adopt`) may do both.
 
@@ -3642,7 +3638,7 @@ Two unrelated features share this area. The coherence layer is a Rust kernel (`s
 - rust: `coherence_claim`, `coherence_claim_scope`, `coherence_claims` (`src-tauri/src/coherence/claim_commands_ipc.rs`); `coherence::{claims, claim_commands, claim_entry}`
 - docs: `website/guide/coherence.md` §"Semantic checking, claims, and contexts"; `website/guide/mcp-tools.md` §`coherence` (`claims` read)
 - tests: `src/components/ClaimPanel/ClaimPanel.test.tsx`, `src/stores/claimStore.test.ts`, `src/services/claims/claimService.test.ts`, `src/services/commands/claimCommands.test.ts`, `src-tauri/src/coherence/claims.test.rs`, `src-tauri/src/coherence/claim_commands.test.rs`
-- notes: `website/guide/coherence.md` names *Extract Claim from Selection* but never the "Canon Claims" palette command, so the panel where claims are promoted, corrected and retired has no documented way in. Claim mutation is never exposed over MCP.
+- notes: The panel's only way in is the palette command **Canon Claims** (no menu item, no shortcut), which `coherence.md` names. Claim mutation is never exposed over MCP.
 
 ### Contexts (named workspace views) & branch contexts
 - id: coherence-contexts

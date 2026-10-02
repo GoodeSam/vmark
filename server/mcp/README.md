@@ -203,10 +203,10 @@ including its ADR-7, which is why `selection` came back.
 |---|---|
 | `new` | Create an untitled tab. Args `{kind?, windowLabel?}` → `{tabId}`. |
 | `open` | Open a **file** from disk. Args `{filePath, windowLabel?}` → `{tabId}`. |
-| `open_workspace` | Open a **folder** as the active workspace. Args `{folderPath, windowLabel?}`. Requires user approval: the first call fails with `{needsApproval: true, folderPath}`; ask the user, then retry the same call. |
+| `open_workspace` | Open a **folder** as the active workspace. Args `{folderPath}`. Requires user approval: the first call fails with an "approval required to open workspace" error; ask the user, then retry the same call. |
 | `save` | Save a tab to its existing path. Args `{tabId?}` → `{filePath, revision}`. |
 | `save_as` | Save a tab to a new path. Args `{tabId?, filePath}` → `{revision}`. |
-| `close` | Close a tab. Args `{tabId, force?}`. Refuses a dirty tab without `force: true`, returning `{closed: false, reason: "DIRTY"}`. |
+| `close` | Close a document tab. Args `{tabId, force?}`. Without `force: true`, refuses unsaved work with `{closed: false, reason: "DIRTY"}` or `"DIVERGENT"` (the user kept the tab's version over a change on disk); a pinned tab is refused even with `force`, `{closed: false, reason: "PINNED"}`. A browser tab is an `INVALID_TAB` error. |
 | `switch_tab` | Activate a tab. Args `{tabId}`. |
 | `focus_window` | Focus a window. Args `{windowLabel}`. |
 
