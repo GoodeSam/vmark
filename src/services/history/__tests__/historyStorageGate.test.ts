@@ -56,3 +56,25 @@ describe("the unqueued history steps", () => {
     ]);
   });
 });
+
+// WI-RA10A.16 — a revert puts the document on disk through the save pipeline.
+// The History sidebar once wrote it with plugin-fs `writeTextFile`: not atomic,
+// not ordered against other saves, and blind to the file's line endings and
+// byte-order mark. Neither half of a revert may hold a filesystem writer.
+describe("the modules that restore a version", () => {
+  const RESTORERS = ["components/Sidebar/HistoryView.tsx", "services/history/restoreSnapshot.ts"];
+
+  it("do not import the filesystem plugin", () => {
+    const fsImporters = importersOf(/^@tauri-apps\/plugin-fs$/);
+    expect(RESTORERS.filter((module) => fsImporters.includes(module))).toEqual([]);
+  });
+
+  it("do not invoke backend commands themselves", () => {
+    const invokers = importersOf(/^@tauri-apps\/api\/core$/);
+    expect(RESTORERS.filter((module) => invokers.includes(module))).toEqual([]);
+  });
+
+  it("the scan sees filesystem importers where they exist", () => {
+    expect(importersOf(/^@tauri-apps\/plugin-fs$/)).toContain("services/history/historyStorage.ts");
+  });
+});
