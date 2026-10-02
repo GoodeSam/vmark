@@ -153,29 +153,43 @@ fn rollback_transfer_registration(label: &str, request_id: &str) {
     }
 }
 
+/// Claim the transfer registered for the CALLING window. The window is the one
+/// Tauri says the call came from, never a label in the arguments — a label is
+/// a string any webview can spell.
 #[tauri::command]
-pub fn claim_workspace_transfer(window_label: String) -> Option<WorkspaceTransferData> {
+pub fn claim_workspace_transfer<R: tauri::Runtime>(
+    window: tauri::Window<R>,
+) -> Option<WorkspaceTransferData> {
+    take_workspace_transfer(window.label())
+}
+
+/// Remove and return the transfer registered for `window_label`.
+fn take_workspace_transfer(window_label: &str) -> Option<WorkspaceTransferData> {
     transfer_registry()
         .as_mut()
-        .and_then(|map| map.remove(&window_label))
+        .and_then(|map| map.remove(window_label))
 }
 
 /// Generic over the runtime so `workspace_transfer.test.rs` drives the real
 /// command on a mock app; the `#[tauri::command]` wrapper resolves to `Wry`.
 #[tauri::command]
 pub fn ack_workspace_transfer<R: tauri::Runtime>(
+    window: tauri::Window<R>,
     app: AppHandle<R>,
     data: WorkspaceTransferAck,
 ) -> Result<(), String> {
     // Validate the ack against the registered route BEFORE mutating anything.
     // A wrong or stale ack (mismatched target window label or workspace
     // instance id) must not remove the route or notify the source — otherwise
-    // a misdirected ack could cancel a still-pending transfer.
+    // a misdirected ack could cancel a still-pending transfer. The target must
+    // also be the window the ack came FROM: the label in the payload is the
+    // sender's own claim about itself, which any window could make.
     let route_matches = {
         let routes = ack_routes();
         match routes.as_ref().and_then(|map| map.get(&data.request_id)) {
             Some(route) => {
-                route.target_window_label == data.target_window_label
+                route.target_window_label == window.label()
+                    && route.target_window_label == data.target_window_label
                     && route.workspace_instance_id == data.workspace_instance_id
             }
             // Unknown request_id — nothing to ack (idempotent no-op).

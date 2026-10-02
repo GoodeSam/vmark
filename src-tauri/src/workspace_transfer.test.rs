@@ -57,7 +57,7 @@ fn clear_unclaimed_transfer_clears_ack_route_after_claim() {
     let data = transfer_data("req-a");
     register_routes("doc-1", &data);
 
-    assert!(claim_workspace_transfer("doc-1".to_string()).is_some());
+    assert!(take_workspace_transfer("doc-1").is_some());
     assert!(ack_routes()
         .as_ref()
         .is_some_and(|routes| routes.contains_key("req-a")));
@@ -84,7 +84,7 @@ fn cancel_workspace_transfer_drops_unclaimed_payload_and_routes() {
 
     cancel_workspace_transfer("doc-cancel".to_string());
 
-    assert!(claim_workspace_transfer("doc-cancel".to_string()).is_none());
+    assert!(take_workspace_transfer("doc-cancel").is_none());
     assert!(!ack_routes()
         .as_ref()
         .is_some_and(|m| m.contains_key("req-cancel")));
@@ -209,9 +209,11 @@ fn a_mismatched_ack_is_refused_in_one_escaped_log_line() {
     let data = transfer_data("req-forge");
     register_routes("doc-1", &data);
     let app = mock_app();
+    let target = mock_window(&app, "doc-1");
 
     let lines = crate::peer_text::log_capture::captured_logs(|| {
         ack_workspace_transfer(
+            target,
             app.handle().clone(),
             WorkspaceTransferAck {
                 request_id: "req-forge".to_string(),
@@ -236,5 +238,92 @@ fn a_mismatched_ack_is_refused_in_one_escaped_log_line() {
     assert!(ack_routes()
         .as_ref()
         .is_some_and(|m| m.contains_key("req-forge")));
+    reset_transfer_state();
+}
+
+// ---------------------------------------------------------------------------
+// A window speaks only for itself (WI-RA7.5)
+//
+// `claim_workspace_transfer` used to take the window label from its arguments,
+// and the ack was matched only against a label inside its payload. A label is
+// a string any webview can spell, so one window could take — or acknowledge —
+// a transfer meant for another. Both now use the window the call came from.
+
+#[cfg(not(target_os = "windows"))]
+fn mock_window(
+    app: &tauri::App<tauri::test::MockRuntime>,
+    label: &str,
+) -> tauri::Window<tauri::test::MockRuntime> {
+    let window =
+        tauri::webview::WebviewWindowBuilder::new(app, label, tauri::WebviewUrl::default())
+            .visible(false)
+            .build()
+            .expect("build mock window");
+    AsRef::<tauri::Webview<_>>::as_ref(&window).window()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn ack_for(data: &WorkspaceTransferData, target: &str) -> WorkspaceTransferAck {
+    WorkspaceTransferAck {
+        request_id: data.request_id.clone(),
+        target_window_label: target.to_string(),
+        workspace_instance_id: data.workspace_instance_id.clone(),
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+#[test]
+fn a_window_claims_only_the_workspace_transfer_registered_for_itself() {
+    let _lock = acquire_test_lock();
+    reset_transfer_state();
+    let data = transfer_data("req-own");
+    register_routes("doc-1", &data);
+    let app = mock_app();
+    let target = mock_window(&app, "doc-1");
+    let bystander = mock_window(&app, "doc-2");
+
+    assert!(
+        claim_workspace_transfer(bystander).is_none(),
+        "a window with no transfer of its own gets nothing"
+    );
+    let claimed = claim_workspace_transfer(target.clone())
+        .expect("the bystander's claim did not consume the target's payload");
+    assert_eq!(claimed.request_id, "req-own");
+    assert!(
+        claim_workspace_transfer(target).is_none(),
+        "a claim is a take"
+    );
+    reset_transfer_state();
+}
+
+#[cfg(not(target_os = "windows"))]
+#[test]
+fn an_ack_from_a_window_that_is_not_the_target_leaves_the_transfer_pending() {
+    let _lock = acquire_test_lock();
+    reset_transfer_state();
+    let data = transfer_data("req-ack");
+    register_routes("doc-1", &data);
+    let app = mock_app();
+    let target = mock_window(&app, "doc-1");
+    let bystander = mock_window(&app, "doc-2");
+
+    // Every field is right; only the sender is wrong.
+    ack_workspace_transfer(bystander, app.handle().clone(), ack_for(&data, "doc-1"))
+        .expect("a refused ack is not an error");
+    assert!(
+        ack_routes()
+            .as_ref()
+            .is_some_and(|m| m.contains_key("req-ack")),
+        "an ack from another window must not complete the transfer"
+    );
+
+    ack_workspace_transfer(target, app.handle().clone(), ack_for(&data, "doc-1"))
+        .expect("the target's own ack");
+    assert!(
+        !ack_routes()
+            .as_ref()
+            .is_some_and(|m| m.contains_key("req-ack")),
+        "the target's ack completes it"
+    );
     reset_transfer_state();
 }

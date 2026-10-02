@@ -248,6 +248,16 @@ fn detach_into(app: &tauri::AppHandle<tauri::test::MockRuntime>, data: TabTransf
     label
 }
 
+/// The `tauri::Window` a command invoked from `label`'s webview is handed.
+#[cfg(not(target_os = "windows"))]
+fn calling_window(
+    app: &tauri::App<tauri::test::MockRuntime>,
+    label: &str,
+) -> tauri::Window<tauri::test::MockRuntime> {
+    let window = app.get_webview_window(label).expect("the window exists");
+    AsRef::<tauri::Webview<_>>::as_ref(&window).window()
+}
+
 #[cfg(not(target_os = "windows"))]
 #[test]
 fn the_payload_is_registered_before_the_window_can_claim_it() {
@@ -259,11 +269,42 @@ fn the_payload_is_registered_before_the_window_can_claim_it() {
 
     // The window exists AND the payload is already claimable — the ordering the
     // async command depends on.
-    assert!(app.get_webview_window(&label).is_some());
-    let claimed = claim_tab_transfer(label.clone()).expect("payload must be claimable at once");
+    let window = calling_window(&app, &label);
+    let claimed = claim_tab_transfer(window.clone()).expect("payload must be claimable at once");
     assert_eq!(claimed.content, "# Detached");
     // A claim is a take: a second one must not resurrect the tab.
-    assert!(claim_tab_transfer(label).is_none());
+    assert!(claim_tab_transfer(window).is_none());
+}
+
+/// WI-RA7.5 — a claim is answered for the window that MADE it. The command
+/// used to take a label from its arguments, and a label is a string any
+/// webview can spell: one window could empty another's pending transfer and
+/// leave it to open blank.
+#[cfg(not(target_os = "windows"))]
+#[test]
+fn a_window_claims_only_the_transfer_registered_for_itself() {
+    let _lock = acquire_test_lock();
+    *registry() = None;
+
+    let app = mock_app();
+    let target = detach_into(app.handle(), live_data("# For the new window"));
+    let bystander = window_manager::allocate_window_label();
+    tauri::webview::WebviewWindowBuilder::new(
+        app.handle(),
+        &bystander,
+        tauri::WebviewUrl::default(),
+    )
+    .visible(false)
+    .build()
+    .expect("build a second window");
+
+    assert!(
+        claim_tab_transfer(calling_window(&app, &bystander)).is_none(),
+        "a window with no transfer of its own gets nothing"
+    );
+    let claimed = claim_tab_transfer(calling_window(&app, &target))
+        .expect("the bystander's claim did not consume the target's payload");
+    assert_eq!(claimed.content, "# For the new window");
 }
 
 #[test]
@@ -280,7 +321,7 @@ fn a_failed_window_build_leaves_no_orphan_transfer_entry() {
     clear_unclaimed_transfer(&label);
 
     assert!(
-        claim_tab_transfer(label).is_none(),
+        take_transfer(&label).is_none(),
         "a rolled-back detach must not leave the payload behind"
     );
 }

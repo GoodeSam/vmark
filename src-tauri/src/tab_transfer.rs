@@ -220,11 +220,20 @@ pub async fn remove_tab_from_window(
     }
 }
 
-/// Claim transfer data for a window. Returns the data and removes it from the registry.
+/// Claim the transfer registered for the CALLING window, removing it from the
+/// registry.
+///
+/// The window is the one Tauri says the call came from, never a label in the
+/// arguments: a label is a string any webview can spell, so taking it from the
+/// caller let one window empty another's pending transfer.
 #[tauri::command]
-pub fn claim_tab_transfer(window_label: String) -> Option<TabTransferData> {
-    let mut guard = registry();
-    guard.as_mut().and_then(|map| map.remove(&window_label))
+pub fn claim_tab_transfer<R: tauri::Runtime>(window: tauri::Window<R>) -> Option<TabTransferData> {
+    take_transfer(window.label())
+}
+
+/// Remove and return the transfer registered for `window_label`.
+fn take_transfer(window_label: &str) -> Option<TabTransferData> {
+    registry().as_mut().and_then(|map| map.remove(window_label))
 }
 
 /// Remove any unclaimed transfer data for a window that was destroyed.
