@@ -123,7 +123,7 @@
     "src/plugins/latex/__tests__/MathInlineNodeView.test.ts": 1198,
     "src/plugins/linkCreatePopup/__tests__/LinkCreatePopupView.test.ts": 1071,
     "src/plugins/linkPopup/tiptap.test.ts": 845,
-    "src/plugins/markdownCopy/tiptap.test.ts": 1134,
+    "src/plugins/markdownCopy/tiptap.test.ts": 1074,
     "src/plugins/mediaHandler/__tests__/mediaHandler.test.ts": 949,
     "src/plugins/mediaPopup/MediaPopupView.test.ts": 1455,
     "src/plugins/mediaPopup/__tests__/MediaPopupView.test.ts": 1499,
