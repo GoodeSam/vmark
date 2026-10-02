@@ -2,8 +2,9 @@ name: Rust drift check
 
 # The Rust gate on a CLOCK, because the PR-tier one runs on a PATH.
 #
-# `ci.yml`'s `rust-test` is path-filtered to `src-tauri/**` and `Cargo.lock`,
-# which is correct — a docs-only PR should not compile three OSes. But it means
+# `ci.yml`'s `rust-test` is path-filtered to `src-tauri/**` plus the few files
+# outside it that the crate reads, which is correct — a docs-only PR should not
+# compile three OSes. But it means
 # Rust CI only runs when someone touches Rust, while the things it checks drift
 # on their own schedule:
 #
