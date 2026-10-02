@@ -23,8 +23,9 @@
  *   - A document tab whose document state is missing is CLOSED, not reported
  *     closed (WI-6) — the old `return true` left the tab on screen forever and
  *     defeated useFileOpen's close-during-open guard.
- *   - closeTab's return value gates cleanupTabState (WI-5): a pinned refusal
- *     must not wipe the document of a tab still visible.
+ *   - Per-tab state is freed by the tab store's removal announcement, not
+ *     here: a pinned refusal announces nothing, so the document of a tab still
+ *     visible is never wiped.
  *   - Pinned tabs are short-circuited with the unpin-before-closing toast, and
  *     pin state is re-checked after the prompts — pinning DURING the dialog is
  *     a "keep this" signal too.
@@ -33,7 +34,7 @@
  * @coordinates-with services/windowClose/closeSave.ts — promptSaveForDirtyDocument dialog
  * @coordinates-with services/media/closeCleanup.ts — close-time orphan cleanup
  * @coordinates-with tabStore.ts — closeTab reports whether removal happened
- * @coordinates-with services/windowClose/tabCleanup.ts — cleanupTabState centralises per-tab store cleanup
+ * @coordinates-with services/windowClose/tabCleanup.ts — frees per-tab state when the store announces the removal
  * @module services/tabs/tabOperations
  */
 
@@ -41,7 +42,6 @@ import { promptSaveForDirtyDocument } from "@/services/windowClose/closeSave";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { cleanupOrphansForClosingTabs } from "@/services/media/closeCleanup";
-import { cleanupTabState } from "@/services/windowClose/tabCleanup";
 import { imeToast as toast } from "@/services/ime/imeToast";
 import i18n from "@/i18n";
 import { isBrowserTab } from "@/stores/tabStoreTypes";
@@ -173,9 +173,7 @@ async function performTabClose(windowLabel: string, tabId: string): Promise<bool
   // while the tab stays on screen made Cmd+W look dead — and defeated the
   // close-during-open guard, which checks whether the tab still exists.
   if (!useDocumentStore.getState().getDocument(tabId)) {
-    const removed = useTabStore.getState().closeTab(windowLabel, tabId);
-    if (removed) cleanupTabState(tabId);
-    return removed;
+    return useTabStore.getState().closeTab(windowLabel, tabId);
   }
 
   // Resolve → cleanup → revalidate, bounded (WI-5): cleanup does file IO, and
@@ -208,9 +206,7 @@ async function performTabClose(windowLabel: string, tabId: string): Promise<bool
     return false;
   }
 
-  const removed = useTabStore.getState().closeTab(windowLabel, tabId);
-  if (removed) cleanupTabState(tabId);
-  return removed;
+  return useTabStore.getState().closeTab(windowLabel, tabId);
 }
 
 /**

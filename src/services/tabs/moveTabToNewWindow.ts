@@ -19,7 +19,6 @@ import i18n from "@/i18n";
 import { imeToast as toast } from "@/services/ime/imeToast";
 import { useTabStore, type Tab } from "@/stores/tabStore";
 import type { DocumentState } from "@/stores/documentStore";
-import { cleanupTabState } from "@/services/windowClose/tabCleanup";
 import { buildTransferDocumentFields } from "@/utils/transferLineMetadata";
 import type { TabTransferPayload } from "@/types/tabTransfer";
 import { commandErrorMessage } from "@/services/commands/commandError";
@@ -80,7 +79,6 @@ export async function moveTabToNewWindow({
     try {
       const createdWindowLabel = await invoke<string>("detach_tab_to_new_window", { data: transferData });
       useTabStore.getState().detachTab(windowLabel, tab.id);
-      cleanupTabState(tab.id);
 
       toast.message(i18n.t("dialog:toast.tabMoved", { title: tab.title }), {
         action: {

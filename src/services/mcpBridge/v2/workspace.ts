@@ -15,6 +15,8 @@
  *   - `close` requires `force: true` to discard a dirty tab. Default
  *     behavior returns `{closed: false, reason: "DIRTY"}`. The AI must
  *     opt into destruction.
+ *   - `close` reports the tab store's verdict, not the request: a pinned tab
+ *     the store refuses to close answers `{closed: false, reason: "PINNED"}`.
  *   - `new` and `open` accept an optional `windowLabel` so a
  *     multi-window workflow can target a specific window; default is
  *     focused.
@@ -86,7 +88,10 @@ export { handleWorkspaceSave } from "./workspaceSave";
  *
  * Args: `{tabId, force?: boolean}`. When the tab is dirty and `force`
  * is not true, we refuse the close with `{closed: false, reason: "DIRTY"}`
- * so the AI can decide whether to save first or force.
+ * so the AI can decide whether to save first or force. A pinned tab is never
+ * closed, `force` or not: the reply is `{closed: false, reason: "PINNED"}`.
+ * A tab that does close takes its document with it (the tab store's removal
+ * announcement frees per-tab state).
  */
 export async function handleWorkspaceClose(
   id: string,
@@ -125,8 +130,15 @@ export async function handleWorkspaceClose(
       });
       return;
     }
-    tabState.closeTab(windowLabel, tabIdArg);
-    await respond({ id, success: true, data: { closed: true } });
+    // Report what the store DID. The tab was resolved above with no await in
+    // between, so the one way `closeTab` removes nothing here is its refusal to
+    // close a pinned tab — and a tab still open is not `closed: true`.
+    const closed = tabState.closeTab(windowLabel, tabIdArg);
+    await respond({
+      id,
+      success: true,
+      data: closed ? { closed: true } : { closed: false, reason: "PINNED" },
+    });
   });
 }
 

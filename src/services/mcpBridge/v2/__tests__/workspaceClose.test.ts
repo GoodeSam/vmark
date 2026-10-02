@@ -1,0 +1,113 @@
+// @vitest-environment node
+// WI-RA1B.1 — `vmark.workspace.close` reports what the tab store DID, not what
+// the handler asked for: a pinned tab the store refuses to close is not
+// `closed: true`, and a tab that did close takes its document with it. Own file
+// because workspace.test.ts sits at its frozen size baseline.
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { invoke } from "@tauri-apps/api/core";
+import { useTabStore } from "@/stores/tabStore";
+import { useDocumentStore } from "@/stores/documentStore";
+import { startTabStateCleanup } from "@/services/windowClose/tabCleanup";
+import { handleWorkspaceClose } from "@/services/mcpBridge/v2/workspace";
+
+const MAIN = "main";
+
+/** The reply the handler sent back across the bridge for request `id`. */
+function replyTo(id: string): { success: boolean; data?: unknown; error?: string } {
+  const call = vi
+    .mocked(invoke)
+    .mock.calls.findLast(
+      ([command, args]) =>
+        command === "mcp_bridge_respond" &&
+        (args as { payload: { id: string } }).payload.id === id,
+    );
+  if (!call) throw new Error(`no bridge reply for ${id}`);
+  return (call[1] as { payload: { success: boolean; data?: unknown; error?: string } }).payload;
+}
+
+function openTab(filePath: string | null, content: string): string {
+  const tabId = useTabStore.getState().createTab(MAIN, filePath);
+  useDocumentStore.getState().initDocument(tabId, content, filePath);
+  return tabId;
+}
+
+let stopCleanup: () => void;
+
+beforeEach(() => {
+  vi.mocked(invoke).mockClear();
+  useTabStore.setState({ tabs: {}, activeTabId: {}, untitledCounter: 0 });
+  useDocumentStore.setState({ documents: {} });
+  stopCleanup = startTabStateCleanup();
+});
+
+afterEach(() => {
+  stopCleanup();
+});
+
+describe("vmark.workspace.close — the reply is the store's verdict", () => {
+  it("reports the refusal for a pinned tab and leaves the tab and its document alone", async () => {
+    const tabId = openTab("/repo/pinned.md", "pinned body");
+    useTabStore.getState().togglePin(MAIN, tabId);
+
+    await handleWorkspaceClose("req-pinned", { tabId });
+
+    expect(replyTo("req-pinned")).toMatchObject({
+      success: true,
+      data: { closed: false, reason: "PINNED" },
+    });
+    expect(useTabStore.getState().findTabById(tabId)).not.toBeNull();
+    expect(useDocumentStore.getState().getDocument(tabId)?.content).toBe("pinned body");
+  });
+
+  it("force does not override a pin, and the dirty buffer survives the refusal", async () => {
+    const tabId = openTab("/repo/pinned.md", "saved");
+    useDocumentStore.getState().setEditorContent(tabId, "unsaved 修改");
+    useTabStore.getState().togglePin(MAIN, tabId);
+
+    await handleWorkspaceClose("req-force", { tabId, force: true });
+
+    expect(replyTo("req-force")).toMatchObject({
+      success: true,
+      data: { closed: false, reason: "PINNED" },
+    });
+    const doc = useDocumentStore.getState().getDocument(tabId);
+    expect(doc?.content).toBe("unsaved 修改");
+    expect(doc?.isDirty).toBe(true);
+  });
+
+  it("a pinned dirty tab without force is still refused as DIRTY first", async () => {
+    const tabId = openTab("/repo/pinned.md", "saved");
+    useDocumentStore.getState().setEditorContent(tabId, "unsaved");
+    useTabStore.getState().togglePin(MAIN, tabId);
+
+    await handleWorkspaceClose("req-dirty", { tabId });
+
+    expect(replyTo("req-dirty")).toMatchObject({
+      success: true,
+      data: { closed: false, reason: "DIRTY" },
+    });
+  });
+
+  it("reports closed: true once the tab is really gone, and its document with it", async () => {
+    const tabId = openTab(null, "");
+    useDocumentStore.getState().setEditorContent(tabId, "discarded draft");
+
+    await handleWorkspaceClose("req-close", { tabId, force: true });
+
+    expect(replyTo("req-close")).toMatchObject({ success: true, data: { closed: true } });
+    expect(useTabStore.getState().findTabById(tabId)).toBeNull();
+    expect(useDocumentStore.getState().getDocument(tabId)).toBeUndefined();
+  });
+
+  it("unpinning makes the same close succeed", async () => {
+    const tabId = openTab("/repo/pinned.md", "body");
+    useTabStore.getState().togglePin(MAIN, tabId);
+    await handleWorkspaceClose("req-1", { tabId });
+    expect(replyTo("req-1")).toMatchObject({ data: { closed: false, reason: "PINNED" } });
+
+    useTabStore.getState().togglePin(MAIN, tabId);
+    await handleWorkspaceClose("req-2", { tabId });
+
+    expect(replyTo("req-2")).toMatchObject({ success: true, data: { closed: true } });
+  });
+});

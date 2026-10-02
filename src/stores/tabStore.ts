@@ -27,7 +27,7 @@
  * @coordinates-with documentStore.ts — each tab ID maps to a document entry
  * @coordinates-with workspaceStore.ts — lastOpenTabs for session restore
  * @coordinates-with lib/formats/registry.ts — dispatchEditor() drives formatId derivation
- * @coordinates-with tabRemovalBus.ts — closeTab/detachTab notify on tab removal (#1081)
+ * @coordinates-with tabRemovalBus.ts — closeTab/detachTab/removeWindow notify on tab removal (#1081)
  * @coordinates-with tabActivationBus.ts — every activation is announced so paneStore converges a split (WI-2, ADR-1)
  * @module stores/tabStore
  */
@@ -445,13 +445,13 @@ export const useTabStore = create<TabState & TabActions>((set, get) => ({
   },
 
   removeWindow: (windowLabel) => {
+    const removedTabs = get().tabs[windowLabel] ?? [];
     set((state) => {
       const { [windowLabel]: _tabs, ...restTabs } = state.tabs;
       const { [windowLabel]: _activeId, ...restActiveId } = state.activeTabId;
-      return {
-        tabs: restTabs,
-        activeTabId: restActiveId,
-      };
+      return { tabs: restTabs, activeTabId: restActiveId };
     });
+    // Every tab the window held has left it: announce each one, as close and detach do.
+    for (const tab of removedTabs) notifyTabRemoved(windowLabel, tab.id, { tab, reason: "window" });
   },
 }));

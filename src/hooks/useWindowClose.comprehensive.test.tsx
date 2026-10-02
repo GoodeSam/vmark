@@ -74,8 +74,13 @@ vi.mock("@/contexts/WindowContext", () => ({
 }));
 
 import { useWindowClose } from "./useWindowClose";
+import { startTabStateCleanup } from "@/services/windowClose/tabCleanup";
 
 const WINDOW = "main";
+
+// The window runs this for its lifetime: the close teardown drops the window's
+// tab list, and each removed tab's document goes with it.
+startTabStateCleanup();
 
 function TestHarness() {
   useWindowClose();
