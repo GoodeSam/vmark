@@ -29,7 +29,7 @@ import { useTabStore } from "@/stores/tabStore";
 import { platformRootClass } from "@/utils/platform";
 
 /** Secure-storage keys App's stores hydrate from at module evaluation. */
-export const SECURE_KEYS = ["vmark-ai-providers"];
+const SECURE_KEYS = ["vmark-ai-providers"];
 
 /** Loads the App module — a dynamic import, so it evaluates when called. */
 export type AppLoader = () => Promise<{ default: ComponentType }>;
