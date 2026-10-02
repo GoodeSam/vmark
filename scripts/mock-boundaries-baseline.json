@@ -1381,11 +1381,6 @@
       "target": "src/plugins/latex/katexLoader"
     },
     {
-      "file": "src/plugins/linkPopup/tiptapPointer.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/linkPopup/LinkPopupView"
-    },
-    {
       "file": "src/plugins/linkPopup/tiptapPreviewLinks.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/linkPopup/LinkPopupView"
