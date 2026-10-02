@@ -39,7 +39,8 @@ pub enum CliSource {
     Env,
     /// A Tauri resource inside the app bundle (`BUNDLED_CLI_RESOURCE`).
     Bundled,
-    /// The app-data bundle written by the ADR-2 runtime updater.
+    /// A runtime placed in the app-data directory. Nothing in the app writes
+    /// one; it is there only when installed by hand.
     Provisioned,
 }
 
@@ -106,7 +107,8 @@ pub(super) fn node_from_lookup(success: bool, stdout: &[u8]) -> Result<String, S
 ///   1. `VMARK_CONTENT_SERVER_CLI` env override (dev / E2E).
 ///   2. Bundled Tauri resource — only when `BUNDLED_CLI_RESOURCE` names one;
 ///      it is `None` today because no build step produces the artefact.
-///   3. Provisioned app-data bundle (ADR-2 runtime upgrades).
+///   3. Provisioned app-data bundle (`content-server/base-kb` under the app
+///      data directory). Nothing in the app installs one.
 pub fn resolve_cli(app: &AppHandle) -> Result<PathBuf, String> {
     resolve_cli_with_source(app).map(|(path, _)| path)
 }
@@ -126,7 +128,7 @@ pub fn resolve_cli_with_source(app: &AppHandle) -> Result<(PathBuf, CliSource), 
                 format!("bundled content-server resource {rel:?} could not be resolved: {e}")
             })
     });
-    // Provisioned bundle: written by the runtime updater (ADR-2). Resolved
+    // Provisioned bundle: a runtime installed by hand under app data. Resolved
     // lazily by `resolve_cli_from` so an unavailable app-data dir only matters
     // once the earlier candidates have failed.
     let provisioned = app_data_dir(app).map(|dir| {

@@ -5,8 +5,8 @@
  * Purpose: no packaged VMark build carries the content server. Nothing in the
  * build produces its `cli.js` (`BUNDLED_CLI_RESOURCE` is `None` in
  * `src-tauri/src/content_server/bundle_manifest.rs`, and the macOS release
- * smoke test asserts `cli=missing` on every release), and the ADR-2
- * provisioning path has no production caller — so on a release install the
+ * smoke test asserts `cli=missing` on every release), and nothing in the app
+ * downloads or installs a runtime — so on a release install the
  * feature can only ever explain why it cannot start. It shipped with a native
  * menu item, `Ctrl+Shift+4`, a palette command and a customizable shortcut row
  * anyway, and users reported the dead end as a platform bug (#1425 read it as a
