@@ -1,6 +1,9 @@
 // WI-RA5.2 — a step's `if:` decides whether it runs: `failure()` and `always()`
 // are reachable, `success()` is implied when no status function is named, and
 // a cancel still stops every step.
+// WI-RA5.3 — the per-step loop is four phases in their own modules; what a run
+// tells the frontend is unchanged, and every run that returns ends with exactly
+// one `workflow:complete`.
 //
 //! The runner, run. Whole workflows go through `run_workflow_sequential` on a
 //! mock Tauri runtime, and the assertions are on what the frontend is told:
@@ -35,6 +38,7 @@ fn mock_app() -> tauri::App<tauri::test::MockRuntime> {
 struct StepEvent {
     id: String,
     status: String,
+    output: Option<String>,
     error: Option<String>,
 }
 
@@ -44,8 +48,10 @@ struct Finished {
     events: Vec<StepEvent>,
     /// The status of every `workflow:complete` — there must be exactly one.
     completions: Vec<String>,
-    /// The step ids an approval was asked for, in order.
+    /// The step ids an approval was asked for, in order…
     approvals_asked: Vec<String>,
+    /// …and the preview each request showed.
+    approval_previews: Vec<String>,
     workspace: tempfile::TempDir,
 }
 
@@ -59,13 +65,18 @@ impl Finished {
             .collect()
     }
 
+    fn last(&self, id: &str) -> Option<&StepEvent> {
+        self.events.iter().rev().find(|e| e.id == id)
+    }
+
     /// The error text on the last event `id` reported.
     fn error(&self, id: &str) -> Option<&str> {
-        self.events
-            .iter()
-            .rev()
-            .find(|e| e.id == id)
-            .and_then(|e| e.error.as_deref())
+        self.last(id).and_then(|e| e.error.as_deref())
+    }
+
+    /// The output on the last event `id` reported.
+    fn output(&self, id: &str) -> Option<&str> {
+        self.last(id).and_then(|e| e.output.as_deref())
     }
 
     fn saved(&self, name: &str) -> Option<String> {
@@ -82,15 +93,26 @@ enum Cancel {
     /// The moment this step reports success — the events are delivered
     /// synchronously, so the very next step is the first to see the flag.
     WhenStepSucceeds(&'static str),
+    /// While an approval dialog is open.
+    WhenApprovalIsAsked,
+}
+
+/// What the approval dialog does the moment it is asked.
+#[derive(Clone, Copy, Default)]
+enum Dialog {
+    /// Nobody answers.
+    #[default]
+    Unanswered,
+    Answers(bool),
+    /// The dialog goes away without an answer (its window closed).
+    Closes,
 }
 
 /// Everything around a run except its YAML.
 #[derive(Default)]
 struct Setup {
     cancel: Cancel,
-    /// How the approval dialog answers, the moment it is asked. `None` leaves
-    /// a request unanswered.
-    approve: Option<bool>,
+    dialog: Dialog,
     /// The provider and genies directory `genie/*` steps need.
     provider: Option<ProviderConfig>,
     genies: Option<std::path::PathBuf>,
@@ -126,6 +148,7 @@ async fn run_with(yaml: &str, setup: Setup) -> Finished {
         let step = StepEvent {
             id: text(&payload["stepId"]),
             status: text(&payload["status"]),
+            output: payload["output"].as_str().map(str::to_string),
             error: payload["error"].as_str().map(str::to_string),
         };
         if let Cancel::WhenStepSucceeds(id) = cancel {
@@ -143,17 +166,25 @@ async fn run_with(yaml: &str, setup: Setup) -> Finished {
             .expect("completions lock")
             .push(text(&payload["status"]));
     });
-    let (sink, dialog, answer) = (Arc::clone(&asked), Arc::clone(&registry), setup.approve);
+    let (sink, trip) = (Arc::clone(&asked), Arc::clone(&flag));
+    let (registry_for_dialog, dialog) = (Arc::clone(&registry), setup.dialog);
     app.listen_any("workflow:approval-request", move |event| {
         let payload = json(event.payload());
         let step_id = text(&payload["stepId"]);
-        sink.lock().expect("asked lock").push(step_id.clone());
-        if let Some(approved) = answer {
-            let key = (text(&payload["executionId"]), step_id);
-            assert!(
-                dialog.respond(&key, approved),
+        sink.lock()
+            .expect("asked lock")
+            .push((step_id.clone(), text(&payload["preview"])));
+        if matches!(cancel, Cancel::WhenApprovalIsAsked) {
+            trip.store(true, Ordering::SeqCst);
+        }
+        let key = (text(&payload["executionId"]), step_id);
+        match dialog {
+            Dialog::Unanswered => {}
+            Dialog::Answers(approved) => assert!(
+                registry_for_dialog.respond(&key, approved),
                 "the request is registered before it is announced"
-            );
+            ),
+            Dialog::Closes => registry_for_dialog.drop_pending(&key),
         }
     });
 
@@ -174,12 +205,14 @@ async fn run_with(yaml: &str, setup: Setup) -> Finished {
 
     let events = events.lock().expect("events lock").clone();
     let completions = completions.lock().expect("completions lock").clone();
-    let approvals_asked = asked.lock().expect("asked lock").clone();
+    let (approvals_asked, approval_previews) =
+        asked.lock().expect("asked lock").iter().cloned().unzip();
     Finished {
         result,
         events,
         completions,
         approvals_asked,
+        approval_previews,
         workspace,
     }
 }
@@ -373,7 +406,7 @@ async fn an_always_step_runs_after_a_step_timed_out() {
         "name: flow\ndefaults:\n  model: fake-model\nsteps:\n  - id: slow\n    uses: genie/echo\n    limits:\n      timeout: \"0\"\n    with:\n      input: hello\n  \
          - id: cleanup\n    uses: action/copy\n    if: always()\n    approval: ask\n    with:\n      input: cleaned\n",
         Setup {
-            approve: Some(true),
+            dialog: Dialog::Answers(true),
             provider: Some(ProviderConfig {
                 provider: "openai-compatible".to_string(),
                 api_key: Some("test-key".to_string()),
@@ -433,4 +466,166 @@ async fn a_cancel_before_the_first_step_runs_nothing() {
     assert_eq!(run.statuses("first"), ["skipped"]);
     assert_eq!(run.statuses("second"), ["skipped"]);
     assert_eq!(run.completions, ["cancelled"]);
+}
+
+// === the approval gate ===
+
+/// One step that asks before it runs, then one that does not ask.
+const ASKS_THEN_SAVES: &str = "name: flow\nenv:\n  WHO: world\nsteps:\n  - id: greet\n    uses: action/copy\n    approval: ask\n    limits:\n      timeout: 5s\n    with:\n      input: hello ${WHO}\n  \
+     - id: keep\n    uses: action/save-file\n    with:\n      path: kept.md\n      input: ${{ steps.greet.output }}\n";
+
+#[tokio::test]
+async fn an_approved_step_runs_and_the_dialog_previews_what_it_resolved_to() {
+    let run = run_with(
+        ASKS_THEN_SAVES,
+        Setup {
+            dialog: Dialog::Answers(true),
+            ..Setup::default()
+        },
+    )
+    .await;
+    assert_eq!(run.approvals_asked, ["greet"]);
+    // The preview is the RESOLVED parameter, not the template.
+    assert_eq!(run.approval_previews, ["hello world"]);
+    assert_eq!(run.statuses("greet"), ["running", "success"]);
+    assert_eq!(run.saved("kept.md").as_deref(), Some("hello world"));
+    assert_eq!(run.completions, ["completed"]);
+}
+
+#[tokio::test]
+async fn a_denied_step_fails_and_what_depends_on_the_run_is_skipped() {
+    let run = run_with(
+        ASKS_THEN_SAVES,
+        Setup {
+            dialog: Dialog::Answers(false),
+            ..Setup::default()
+        },
+    )
+    .await;
+    assert_eq!(run.statuses("greet"), ["running", "error"]);
+    assert_eq!(run.error("greet"), Some("Approval denied by user"));
+    assert_eq!(run.statuses("keep"), ["skipped"]);
+    assert_eq!(run.saved("kept.md"), None);
+    let err = run.result.expect_err("a denied step fails the run");
+    assert!(err.contains("'greet'"), "{err}");
+    assert_eq!(run.completions, ["failed"]);
+}
+
+#[tokio::test]
+async fn a_dialog_that_goes_away_is_a_failed_step() {
+    let run = run_with(
+        ASKS_THEN_SAVES,
+        Setup {
+            dialog: Dialog::Closes,
+            ..Setup::default()
+        },
+    )
+    .await;
+    assert_eq!(run.statuses("greet"), ["running", "error"]);
+    assert_eq!(run.error("greet"), Some("Approval channel closed"));
+    assert_eq!(run.completions, ["failed"]);
+}
+
+// The two waits below run on tokio's paused clock: nothing answers, the
+// runtime goes idle, and virtual time jumps to the next timer. No real time
+// passes.
+
+#[tokio::test(start_paused = true)]
+async fn an_unanswered_approval_times_out_with_the_step() {
+    let run = run_with(ASKS_THEN_SAVES, Setup::default()).await;
+    assert_eq!(run.approvals_asked, ["greet"]);
+    assert_eq!(run.statuses("greet"), ["running", "error"]);
+    assert_eq!(run.error("greet"), Some("Approval timed out"));
+    assert_eq!(run.statuses("keep"), ["skipped"]);
+    assert_eq!(run.completions, ["failed"]);
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_cancel_while_the_dialog_is_open_skips_the_step() {
+    let run = run_with(
+        ASKS_THEN_SAVES,
+        Setup {
+            cancel: Cancel::WhenApprovalIsAsked,
+            ..Setup::default()
+        },
+    )
+    .await;
+    assert_eq!(run.statuses("greet"), ["running", "skipped"]);
+    assert_eq!(run.error("greet"), Some("Workflow cancelled"));
+    assert_eq!(run.statuses("keep"), ["skipped"]);
+    assert_eq!(run.saved("kept.md"), None);
+    assert_eq!(run.completions, ["cancelled"]);
+}
+
+#[tokio::test]
+async fn the_workflow_default_asks_for_every_step() {
+    let run = run_with(
+        "name: flow\ndefaults:\n  approval: ask\nsteps:\n  - id: one\n    uses: action/copy\n    with:\n      input: a\n  \
+         - id: two\n    uses: action/copy\n    approval: auto\n    with:\n      input: b\n  \
+         - id: three\n    uses: action/copy\n    with:\n      input: c\n",
+        Setup {
+            dialog: Dialog::Answers(true),
+            ..Setup::default()
+        },
+    )
+    .await;
+    // The step-level `auto` overrides the default; the other two ask.
+    assert_eq!(run.approvals_asked, ["one", "three"]);
+    assert_eq!(run.completions, ["completed"]);
+}
+
+// === what a step produced reaches the steps after it, and the frontend ===
+
+#[tokio::test]
+async fn a_steps_output_is_reported_and_readable_by_later_steps() {
+    let typo = run(
+        "name: flow\nsteps:\n  - id: first\n    uses: action/copy\n    with:\n      input: 第一步 ${literal}\n  \
+         - id: second\n    uses: action/save-file\n    needs: first\n    with:\n      path: out/second.md\n      input: \"[${{ steps.first.outputs.text }}]\"\n",
+    )
+    .await;
+    // `${literal}` is in the TEMPLATE and names nothing: the step fails loudly.
+    assert_eq!(typo.statuses("first"), ["running", "error"]);
+    assert_eq!(typo.statuses("second"), ["skipped"]);
+
+    let run = run(
+        "name: flow\nsteps:\n  - id: first\n    uses: action/copy\n    with:\n      input: 第一步\n  \
+         - id: second\n    uses: action/save-file\n    needs: first\n    with:\n      path: out/second.md\n      input: \"[${{ steps.first.outputs.text }}]\"\n",
+    )
+    .await;
+    assert_eq!(run.statuses("first"), ["running", "success"]);
+    assert_eq!(run.output("first"), Some("第一步"));
+    assert_eq!(run.saved("out/second.md").as_deref(), Some("[第一步]"));
+    assert_eq!(run.output("second"), Some("Saved to out/second.md"));
+    assert_eq!(run.result, Ok("exec-flow".to_string()));
+}
+
+// === exactly one completion event ===
+
+#[tokio::test]
+async fn every_run_that_returns_reports_completion_exactly_once() {
+    for (yaml, cancel, expected) in [
+        (
+            "name: flow\nsteps:\n  - id: only\n    uses: action/copy\n    with:\n      input: ok\n",
+            Cancel::Never,
+            "completed",
+        ),
+        ("name: flow\nsteps: []\n", Cancel::Never, "completed"),
+        (BOOM, Cancel::Never, "failed"),
+        (BOOM, Cancel::BeforeTheFirstStep, "cancelled"),
+        (
+            "name: flow\nsteps: []\n",
+            Cancel::BeforeTheFirstStep,
+            "cancelled",
+        ),
+    ] {
+        let run = run_with(
+            yaml,
+            Setup {
+                cancel,
+                ..Setup::default()
+            },
+        )
+        .await;
+        assert_eq!(run.completions, [expected], "workflow {yaml:?}");
+    }
 }
