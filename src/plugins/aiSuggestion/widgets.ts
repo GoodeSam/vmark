@@ -15,6 +15,7 @@
  *     widget decorations, replacing this DOM before a click would fire.
  *
  * @coordinates-with plugins/aiSuggestion/tiptap.ts — builds the decorations
+ * @coordinates-with plugins/aiSuggestion/displayText.ts — the ghost text's wording
  * @module plugins/aiSuggestion/widgets
  */
 
@@ -23,7 +24,7 @@ import type { EditorView } from "@tiptap/pm/view";
 import { hostDocument } from "@/plugins/shared/hostDocument";
 import { captureAiEdit } from "@/services/coherence/captureFunnel";
 import { runOrQueueProseMirrorAction } from "@/utils/imeGuard";
-import { cleanMarkdownForClipboard } from "@/plugins/markdownCopy/tiptap";
+import { suggestionDisplayText } from "./displayText";
 import { applySuggestionToTr } from "./applySuggestion";
 import type { AiSuggestion, AiSuggestionStore } from "./types";
 
@@ -58,7 +59,7 @@ export function createGhostText(text: string, isFocused: boolean): HTMLSpanEleme
   span.className = `ai-suggestion-ghost${isFocused ? " ai-suggestion-ghost-focused" : ""}`;
   // Strip markdown backslash escapes (\$, \~, \@ …) and collapse autolinks
   // so ghost text matches what the user will see after accepting.
-  span.textContent = cleanMarkdownForClipboard(text);
+  span.textContent = suggestionDisplayText(text);
   return span;
 }
 /**

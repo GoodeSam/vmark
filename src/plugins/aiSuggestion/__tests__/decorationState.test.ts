@@ -7,10 +7,6 @@ import { EditorState, TextSelection, type Plugin } from "@tiptap/pm/state";
 import type { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 vi.mock("../ai-suggestion.css", () => ({}));
-vi.mock("@/plugins/markdownCopy/tiptap", () => ({
-  cleanMarkdownForClipboard: (text: string) => text,
-}));
-
 import { aiSuggestionExtension } from "../tiptap";
 import type { AiSuggestion, AiSuggestionStore } from "../types";
 
