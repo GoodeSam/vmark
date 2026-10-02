@@ -25,6 +25,15 @@
  *     check and the quit. Bounded: documents that will not come to rest are a
  *     refusal, never a quit over unsaved content.
  *   - A cancelled dialog or a failed write leaves the app open.
+ *   - Only THIS webview's documents are saved: each window's stores are its
+ *     own. Other windows are not abandoned by the quit, despite the command's
+ *     name: `force_quit` is `AppHandle::exit`, which raises an exit request,
+ *     and while any document window is open the app answers that request by
+ *     preventing it and starting the coordinated quit (`app_setup.rs`
+ *     `handle_exit_requested`, `quit.rs` `start_quit`). Every remaining window
+ *     then runs its own close flow, which asks about its unsaved documents.
+ *     So the other windows' documents are asked about, not saved — Save All
+ *     covers the window it was chosen in.
  *
  * @coordinates-with services/windowClose/dirtyContexts.ts — which tabs still need saving, and the loop bound
  * @coordinates-with services/windowClose/closeSaveBatch.ts — the batch writer and its revalidate hook
