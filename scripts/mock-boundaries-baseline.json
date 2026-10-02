@@ -1396,31 +1396,6 @@
       "target": "src/plugins/sourcePopup/sourcePopupUtils"
     },
     {
-      "file": "src/plugins/tableUI/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/tableUI/columnResize"
-    },
-    {
-      "file": "src/plugins/tableUI/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/tableUI/tableActions.tiptap"
-    },
-    {
-      "file": "src/plugins/tableUI/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/tableUI/tableDom"
-    },
-    {
-      "file": "src/plugins/tableUI/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/tableUI/tableEscape"
-    },
-    {
-      "file": "src/plugins/tableUI/tiptap.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/tableUI/TiptapTableContextMenu"
-    },
-    {
       "file": "src/plugins/toolbarActions/sourceImageActions.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/toolbarActions/sourceAdapterHelpers"
