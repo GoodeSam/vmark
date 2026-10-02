@@ -359,6 +359,11 @@ errors:
   cli.noFile: "インストールは成功したように見えますが、ファイルが作成されませんでした。"
   cli.mismatch: "インストールは完了しましたが、ファイル内容が想定したスクリプトと一致しません。"
 
+  # === External editor ===
+  externalEditor.unknownName: "「%{name}」は VMark が名前で認識できるエディタではありません。エディタのフルパスを入力してください"
+  externalEditor.notAnEditor: "「%{name}」は渡されたファイルを開かずに実行するため、外部エディタとして使用できません"
+  externalEditor.notPlainPath: "外部エディタには、エディタ名またはフルパスを指定してください。パスに「..」を含めることや、末尾にスラッシュを付けることはできません"
+
   # === Genies ===
   genie.pathBlocked: "Genie のパスが許可されたディレクトリの外にあります"
 

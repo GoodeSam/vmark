@@ -360,6 +360,11 @@ errors:
   cli.noFile: "Installation appeared to succeed but the file was not created."
   cli.mismatch: "Installation completed but file content does not match expected script."
 
+  # === External editor ===
+  externalEditor.unknownName: "“%{name}” is not an editor VMark knows by name — enter the full path to the editor instead"
+  externalEditor.notAnEditor: "“%{name}” runs the files it is given instead of opening them, so it cannot be the external editor"
+  externalEditor.notPlainPath: "The external editor must be an editor name or a full path, with no “..” and no trailing slash"
+
   # === Genies ===
   genie.pathBlocked: "Genie path is outside allowed directories"
 

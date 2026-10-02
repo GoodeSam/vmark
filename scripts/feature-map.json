@@ -1086,6 +1086,7 @@
         "src/hooks/useFormatsUpgradeNudge.ts",
         "src/services/commands/formatCommands.ts",
         "src-tauri/src/external_editor.rs",
+        "src-tauri/src/external_editor",
         "src/utils/fileSizeThresholds.ts",
         "src/utils/jsonErrorOffset.ts",
         "src-tauri/src/supported_files.test.rs",

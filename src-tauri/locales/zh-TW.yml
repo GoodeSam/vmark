@@ -359,6 +359,11 @@ errors:
   cli.noFile: "安裝似乎成功，但檔案未能建立。"
   cli.mismatch: "安裝完成，但檔案內容與預期指令稿不符。"
 
+  # === External editor ===
+  externalEditor.unknownName: "VMark 無法依名稱辨識編輯器「%{name}」，請改為填寫該編輯器的完整路徑"
+  externalEditor.notAnEditor: "「%{name}」會直接執行傳給它的檔案，而不是開啟檔案，因此不能用作外部編輯器"
+  externalEditor.notPlainPath: "外部編輯器必須是編輯器名稱或完整路徑，路徑中不能包含「..」，也不能以斜線結尾"
+
   # === Genies ===
   genie.pathBlocked: "Genie 路徑位於允許的目錄之外"
 
