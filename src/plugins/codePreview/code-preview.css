@@ -12,6 +12,11 @@
   background-color: var(--subtle-bg);
   cursor: pointer;
   transition: background-color var(--duration-base) ease;
+  /* The rendered markup is the document's. Without a containing block here,
+     WebKit hit-tests an absolutely positioned element inside an SVG
+     foreignObject against the whole window, so a diagram could take every
+     click in the app. Pinned by svgStyleContainment.webkit.test.ts. */
+  contain: paint;
 }
 
 .code-block-preview:hover {
@@ -173,6 +178,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Confines the document's markup — see .code-block-preview. */
+  contain: paint;
 }
 
 .code-block-live-preview.mermaid-live-preview {

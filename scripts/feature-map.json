@@ -307,6 +307,7 @@
       "paths": [
         "src/plugins/svg",
         "src/utils/svgSanitize.ts",
+        "src/utils/svgStylesheetScope.ts",
         "src/utils/svgResourcePolicy.ts",
         "src/utils/svgToPng.ts",
         "src/utils/styleSafety.ts",
