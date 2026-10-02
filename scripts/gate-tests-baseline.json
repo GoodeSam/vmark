@@ -10,7 +10,6 @@
   "check-extension-budget.mjs",
   "check-hooks-react-purity.mjs",
   "check-i18n-keys.ts",
-  "check-knip-baseline.mjs",
   "check-merge-drops.mjs",
   "check-test-timer-isolation.mjs",
   "check-type-aware.mjs",
