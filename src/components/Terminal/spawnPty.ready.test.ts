@@ -12,18 +12,6 @@ vi.mock("@tauri-apps/api/core", () => ({
     return Promise.resolve(null);
   }),
 }));
-vi.mock("@/stores/tabStore", () => ({
-  useTabStore: { getState: vi.fn(() => ({ activeTabId: {} })) },
-}));
-vi.mock("@/stores/documentStore", () => ({
-  useDocumentStore: { getState: vi.fn(() => ({ getDocument: () => null })) },
-}));
-vi.mock("@/stores/settingsStore", () => ({
-  useSettingsStore: { getState: vi.fn(() => ({ terminal: { shell: "" } })) },
-}));
-vi.mock("@/services/persistence/workspaceStorage", () => ({
-  getCurrentWindowLabel: vi.fn(() => "main"),
-}));
 vi.mock("@/lib/pty", () => ({ spawn: vi.fn() }));
 
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -39,10 +27,11 @@ function fakePty(ready: Promise<void>) {
   return { ready, onData: vi.fn(), onExit: vi.fn(), write: vi.fn(), resize: vi.fn(), kill: vi.fn(), pause: vi.fn(), resume: vi.fn() };
 }
 
+/** The real settings store: the shell under test, shell integration off. */
 function configureShell(shell: string) {
-  vi.mocked(useSettingsStore.getState).mockReturnValue({
-    terminal: { shell },
-  } as ReturnType<typeof useSettingsStore.getState>);
+  useSettingsStore.setState((state) => ({
+    terminal: { ...state.terminal, shell, shellIntegration: false },
+  }));
 }
 
 /** Make successive `spawn` calls return these stand-ins. */
@@ -50,8 +39,11 @@ function spawnReturns(...ptys: ReturnType<typeof fakePty>[]) {
   for (const pty of ptys) vi.mocked(spawn).mockReturnValueOnce(pty as unknown as ReturnType<typeof spawn>);
 }
 
+const initialTerminal = useSettingsStore.getState().terminal;
+
 beforeEach(() => {
   vi.clearAllMocks();
+  useSettingsStore.setState({ terminal: initialTerminal });
 });
 
 describe("spawnPty readiness", () => {
