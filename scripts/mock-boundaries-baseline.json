@@ -1396,11 +1396,6 @@
       "target": "src/plugins/sourcePopup/sourcePopupUtils"
     },
     {
-      "file": "src/plugins/tableUI/__tests__/TiptapTableContextMenu.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/tableUI/tableActions.tiptap"
-    },
-    {
       "file": "src/plugins/tableUI/tiptap.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/tableUI/columnResize"
