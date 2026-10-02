@@ -2086,11 +2086,6 @@
       "target": "src/plugins/toolbarActions/wysiwygAdapterUtils"
     },
     {
-      "file": "src/services/workspaces/finalizeInstanceRemoval.test.ts",
-      "api": "vi.mock",
-      "target": "src/services/workspaces/hydrateWorkspaceInstanceContext"
-    },
-    {
       "file": "src/utils/cursorSync/codemirror.test.ts",
       "api": "vi.mock",
       "target": "src/utils/cursorSync/table"
