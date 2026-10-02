@@ -17,7 +17,7 @@
  * @coordinates-with src/stores/contentServerStore.ts — status, provision, url, view mode
  * @module components/KnowledgeBasePanel/KnowledgeBasePanelViews
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { RetryableLazy } from "@/components/RetryableLazy";
 import {
@@ -26,7 +26,10 @@ import {
   type KbViewMode,
 } from "@/stores/contentServerStore";
 
-const loadKbGraphView = () =>
+/** Loads the graph chunk; each call is a fresh attempt. */
+export type KbGraphLoader = () => Promise<{ default: ComponentType }>;
+
+const loadKbGraphView: KbGraphLoader = () =>
   import("./KbGraphView").then((m) => ({ default: m.KbGraphView }));
 
 /**
@@ -84,6 +87,12 @@ export interface KnowledgeBaseRunningProps {
   onOpenInBrowser: () => void;
   onPreviewSlides: () => void;
   onExportSlides: () => void;
+  /**
+   * The graph chunk's loader. Defaults to the real dynamic import; a parameter
+   * because a module registry never re-fails a module that resolved once, and
+   * the failed-then-retried load is behaviour that has to be testable.
+   */
+  loadGraph?: KbGraphLoader;
 }
 
 /** One toolbar control: a label key, what it does, and whether it reads pressed. */
@@ -137,6 +146,7 @@ export function KnowledgeBaseRunning({
   onOpenInBrowser,
   onPreviewSlides,
   onExportSlides,
+  loadGraph = loadKbGraphView,
 }: KnowledgeBaseRunningProps) {
   const { t } = useTranslation();
   const setViewMode = (mode: KbViewMode) =>
@@ -156,7 +166,7 @@ export function KnowledgeBaseRunning({
       {viewMode === "graph" ? (
         <RetryableLazy
           feature="Knowledge base graph"
-          load={loadKbGraphView}
+          load={loadGraph}
           componentProps={{}}
           // Same placeholder the graph itself uses while fetching, so chunk
           // load and data load read as one continuous state.

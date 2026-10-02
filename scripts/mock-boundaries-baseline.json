@@ -1316,11 +1316,6 @@
       "target": "src/components/Editor/wysiwygPendingNav"
     },
     {
-      "file": "src/components/KnowledgeBasePanel/KbGraphChunkFailure.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/KnowledgeBasePanel/KbGraphView"
-    },
-    {
       "file": "src/contexts/WindowContext.restoredGrant.test.tsx",
       "api": "vi.mock",
       "target": "src/contexts/startupFileOpen"
