@@ -37,7 +37,11 @@ async function bootstrap() {
   // D7 cursor split off it (arrow on macOS, pointer elsewhere).
   document.documentElement.classList.add(platformRootClass());
 
-  await initSecureStorage(SECURE_KEYS);
+  // Started now, awaited just before App is imported: the setup below reads no
+  // secure-storage key (only the AI provider store in App does), so it runs
+  // while the store's IPCs are in flight. index.html modulepreloads the App
+  // chunk, so its download overlaps them too. initSecureStorage never rejects.
+  const secureStorageReady = initSecureStorage(SECURE_KEYS);
 
   // C1 defense-in-depth: teach documentStore.initDocument to skip writes for
   // tabs that no longer exist (closed mid-file-read). Wired here at the
@@ -72,6 +76,7 @@ async function bootstrap() {
 
   // Dynamic import: App (and its transitive Zustand stores) only evaluate
   // AFTER the secure storage cache is populated.
+  await secureStorageReady;
   const { default: App } = await import("./App");
 
   const rootElement = document.getElementById("root");
