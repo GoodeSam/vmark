@@ -83,11 +83,31 @@ for mf in "${MANIFESTS[@]}"; do
     const cur = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
     let base = {};
     try { base = JSON.parse(process.env.BASE_JSON || "{}"); } catch {}
-    const entries = (o) => Object.entries({
-      ...(o.dependencies || {}),
-      ...(o.devDependencies || {}),
-      ...(o.optionalDependencies || {}),
+    // The package an override selector names: the last `>` segment of a
+    // parent path, without its version range (`undici@<6`, `a>@s/b@2`,
+    // yarn `**/lodash`).
+    const overridden = (selector) => {
+      const last = selector.split(">").pop().split("/**/").pop().replace(/^\*\*\//, "");
+      const at = last.indexOf("@", last.startsWith("@") ? 1 : 0);
+      return at === -1 ? last : last.slice(0, at);
+    };
+    // Overrides redirect what a dependency installs without touching a
+    // dependency map, so each is read as a [package, spec] entry. npm nests
+    // them (`{ foo: { ".": spec, bar: spec } }`); `.` is the parent itself.
+    const overrideEntries = (map, parent) => Object.entries(map || {}).flatMap(([sel, spec]) => {
+      if (spec !== null && typeof spec === "object") return overrideEntries(spec, overridden(sel));
+      return [[sel === "." ? parent : overridden(sel), spec]];
     });
+    const entries = (o) => [
+      ...Object.entries({
+        ...(o.dependencies || {}),
+        ...(o.devDependencies || {}),
+        ...(o.optionalDependencies || {}),
+      }),
+      ...overrideEntries((o.pnpm || {}).overrides),
+      ...overrideEntries(o.overrides),
+      ...overrideEntries(o.resolutions),
+    ];
     // What a dependency entry actually installs, as one tab-separated line:
     //   R <package>        a registry package (an alias resolves to its target)
     //   U <name> <spec>    a spec the registry cannot vouch for
@@ -95,6 +115,9 @@ for mf in "${MANIFESTS[@]}"; do
     const resolve = (name, rawSpec) => {
       const spec = String(rawSpec).trim();
       if (/^(workspace:|link:|file:)/.test(spec)) return null;
+      // Override-only forms: `$name` reuses the spec of a direct dependency and
+      // `-` removes the package; neither installs anything new.
+      if (spec.startsWith("$") || spec === "-") return null;
       if (spec.startsWith("npm:")) {
         const target = spec.slice(4);
         const at = target.indexOf("@", target.startsWith("@") ? 1 : 0);
