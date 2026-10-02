@@ -1,13 +1,9 @@
 /**
  * Tests for Smart Paste Image Handling
  *
- * Tests the tryImagePaste function and its internal async functions:
- * - insertImageMarkdown: copy-to-assets, path resolution, markdown insertion
- * - showImagePasteToast: toast callbacks (onConfirm/onDismiss)
- * - validateAndShowToast: home path expansion, path validation, fallback
- * - validateAndShowMultiToast: parallel validation, multi-image toast
- * - insertMultipleImageMarkdown: multi-image insertion, error paths
- * - showMultiImagePasteToast: multi-image toast callbacks
+ * Drives tryImagePaste through the shared paste flow: detection and rejection,
+ * path validation and the text fallback, the confirmation toast callbacks,
+ * and single / multi image markdown insertion with copy-to-assets.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -78,10 +74,13 @@ vi.mock("@tauri-apps/plugin-dialog", () => ({
 vi.mock("./smartPasteUtils", () => ({
   isViewConnected: (...args: unknown[]) => mockIsViewConnected(...args),
   getActiveFilePath: () => mockGetActiveFilePath(),
-  expandHomePath: (...args: unknown[]) => mockExpandHomePath(...args),
-  validateLocalPath: (...args: unknown[]) => mockValidateLocalPath(...args),
   getToastAnchorRect: (...args: unknown[]) => mockGetToastAnchorRect(...args),
   pasteAsText: (...args: unknown[]) => mockPasteAsText(...args),
+}));
+
+vi.mock("@/plugins/shared/localImagePath", () => ({
+  expandHomePath: (...args: unknown[]) => mockExpandHomePath(...args),
+  validateLocalPath: (...args: unknown[]) => mockValidateLocalPath(...args),
 }));
 
 import { EditorState } from "@codemirror/state";

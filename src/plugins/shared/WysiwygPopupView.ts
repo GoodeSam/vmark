@@ -208,8 +208,18 @@ export abstract class WysiwygPopupView<TState extends PopupStoreBase> {
     /* v8 ignore next -- @preserve defensive guard; listener is removed on hide so isOpen is always true here */
     if (!state.isOpen) return;
     if (!this.container.contains(e.target as Node)) {
-      this.closePopup();
+      this.onClickOutside();
     }
+  }
+
+  /**
+   * Hook for click-outside behavior. Defaults to closing the popup (discarding
+   * any in-flight edits). Subclasses that hold unsaved input should override
+   * this to commit before closing — otherwise the text the user just typed is
+   * lost when they click away. Same contract as SourcePopupView.onClickOutside.
+   */
+  protected onClickOutside(): void {
+    this.closePopup();
   }
 
   private handleScroll(): void {

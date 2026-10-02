@@ -144,7 +144,6 @@
   "src/plugins/editorPlugins/expandedToggleMark.test.ts": 21,
   "src/plugins/editorPlugins/inlineMathCommand.test.ts": 2,
   "src/plugins/editorPlugins/keymapUtils.test.ts": 4,
-  "src/plugins/editorPlugins/linkCommands.test.ts": 19,
   "src/plugins/focusMode/tiptap.test.ts": 5,
   "src/plugins/footnotePopup/__tests__/FootnotePopupView.test.ts": 10,
   "src/plugins/footnotePopup/hoverState.test.ts": 2,

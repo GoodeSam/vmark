@@ -16,6 +16,8 @@ import * as windowFocus from "@/services/navigation/windowFocus";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { hostPopups } from "@/plugins/shared/hostPopups";
+import { hostNotify, resetHostNotify } from "@/plugins/shared/hostNotify";
+import { imeToast } from "@/services/ime/imeToast";
 import { lintDiagnosticsSource } from "./hostAdapters";
 import { useSettingsStore } from "@/stores/settingsStore";
 
@@ -338,6 +340,26 @@ describe("the image bindings", () => {
     expect(state.isMultiple).toBe(true);
     expect(state.imageCount).toBe(2);
     state.hideToast();
+  });
+});
+
+describe("the notice binding", () => {
+  // WI-RA9A.2 — plugins announce paste fallbacks and failures through this.
+  afterEach(() => {
+    resetHostNotify();
+    vi.restoreAllMocks();
+  });
+
+  it("presents plugin notices through the IME-safe toast, by severity", () => {
+    const info = vi.spyOn(imeToast, "info").mockImplementation(() => {});
+    const error = vi.spyOn(imeToast, "error").mockImplementation(() => "");
+    bindPluginHostSettings();
+
+    hostNotify.info("Image not found — pasted as text");
+    hostNotify.error("Failed to insert image");
+
+    expect(info.mock.calls).toEqual([["Image not found — pasted as text"]]);
+    expect(error.mock.calls).toEqual([["Failed to insert image"]]);
   });
 });
 

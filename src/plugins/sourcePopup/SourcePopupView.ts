@@ -12,6 +12,10 @@ import { handlePopupTabNavigation } from "@/utils/popupComponents";
 import { getEditorBounds } from "./sourcePopupUtils";
 import { getPopupHostForDom, toHostCoordsForDom } from "@/plugins/shared/popupHostDom";
 import { isImeKeyEvent } from "@/utils/imeGuard";
+import type { StoreApi, PopupPositionConfig } from "@/plugins/shared/types";
+
+// Re-export the shared popup types for convenience
+export type { StoreApi, PopupPositionConfig };
 
 /**
  * Minimal store interface for popup views.
@@ -21,24 +25,6 @@ export interface PopupStoreBase {
   isOpen: boolean;
   anchorRect: AnchorRect | null;
   closePopup?: () => void;
-}
-
-/**
- * Store-like interface that provides getState and subscribe.
- */
-export interface StoreApi<T> {
-  getState: () => T;
-  subscribe: (listener: (state: T) => void) => () => void;
-}
-
-/**
- * Configuration options for popup positioning.
- */
-export interface PopupPositionConfig {
-  width: number;
-  height: number;
-  gap?: number;
-  preferAbove?: boolean;
 }
 
 /**
@@ -62,6 +48,7 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
   private wasOpen = false;
   private justOpened = false;
   private host: HTMLElement | null = null;
+  private lastState: TState | null = null;
 
   // Event handlers (bound for cleanup)
   private boundHandleClickOutside: (e: MouseEvent) => void;
@@ -83,20 +70,44 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
 
     // Subscribe to store
     this.unsubscribe = store.subscribe((state) => {
-      const { isOpen, anchorRect } = this.extractState(state);
-
-      if (isOpen && anchorRect) {
-        if (!this.wasOpen) {
-          this.show(anchorRect, state);
-        }
-        this.wasOpen = true;
-      } else {
-        if (this.wasOpen) {
-          this.hide();
-        }
-        this.wasOpen = false;
-      }
+      this.handleStoreState(state);
     });
+  }
+
+  private handleStoreState(state: TState): void {
+    const { isOpen, anchorRect } = this.extractState(state);
+
+    if (isOpen && anchorRect) {
+      const reshow =
+        this.wasOpen && this.lastState !== null && this.shouldReshow(this.lastState, state);
+      if (!this.wasOpen || reshow) {
+        this.show(anchorRect, state);
+      }
+      this.wasOpen = true;
+    } else {
+      if (this.wasOpen) {
+        this.hide();
+      }
+      this.wasOpen = false;
+    }
+    this.lastState = state;
+  }
+
+  /**
+   * Re-evaluate the current store state. Subclasses whose popup may already
+   * be open at construction time call this at the end of their constructor.
+   */
+  protected syncFromStore(): void {
+    this.handleStoreState(this.store.getState());
+  }
+
+  /**
+   * Whether an already-open popup should run show() again for this state
+   * change (e.g. the popup was retargeted to a different range while open).
+   * Default: never re-show while open.
+   */
+  protected shouldReshow(_prev: TState, _state: TState): boolean {
+    return false;
   }
 
   /**
@@ -122,10 +133,7 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
    * Subclasses can override if using different field names.
    */
   protected extractState(state: TState): { isOpen: boolean; anchorRect: AnchorRect | null } {
-    return {
-      isOpen: state.isOpen,
-      anchorRect: state.anchorRect,
-    };
+    return { isOpen: state.isOpen, anchorRect: state.anchorRect };
   }
 
   /**
@@ -133,12 +141,7 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
    * Subclasses can override for custom sizing.
    */
   protected getPopupDimensions(): PopupPositionConfig {
-    return {
-      width: 320,
-      height: 40,
-      gap: 6,
-      preferAbove: true,
-    };
+    return { width: 320, height: 40, gap: 6, preferAbove: true };
   }
 
   /** Whether show() moves focus into the popup. A popup opened by a click in
@@ -204,6 +207,13 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
     this.host = null;
 
     // Remove event listeners
+    this.detachListeners();
+
+    // Call subclass hook
+    this.onHide();
+  }
+
+  private detachListeners(): void {
     document.removeEventListener("mousedown", this.boundHandleClickOutside);
     document.removeEventListener("keydown", this.boundHandleKeydown);
     this.editorView.dom.closest(".editor-container")?.removeEventListener(
@@ -212,9 +222,6 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
       true
     );
     this.container.removeEventListener("keydown", this.handleTabNavigation);
-
-    // Call subclass hook
-    this.onHide();
   }
 
   /**
@@ -329,14 +336,7 @@ export abstract class SourcePopupView<TState extends PopupStoreBase> {
    */
   destroy(): void {
     this.unsubscribe();
-    document.removeEventListener("mousedown", this.boundHandleClickOutside);
-    document.removeEventListener("keydown", this.boundHandleKeydown);
-    this.editorView.dom.closest(".editor-container")?.removeEventListener(
-      "scroll",
-      this.boundHandleScroll,
-      true
-    );
-    this.container.removeEventListener("keydown", this.handleTabNavigation);
+    this.detachListeners();
     this.container.remove();
   }
 }
