@@ -28,7 +28,7 @@ const DAY = 24 * HOUR;
  * behaviour, so it is folded to a plain space; every other character is
  * asserted exactly.
  */
-const plain = (s: string) => s.replace(/ /g, " ");
+const plain = (s: string) => s.replaceAll(String.fromCharCode(0x202f), " ");
 
 beforeEach(() => {
   vi.setSystemTime(NOW);
