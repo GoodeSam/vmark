@@ -485,7 +485,7 @@ La barra di stato corre lungo il fondo della finestra (`F7` la nasconde). Il lat
 | Salvataggio automatico | Un'icona di salvataggio e quanto tempo fa il documento è stato salvato automaticamente; sfuma dopo qualche secondo | — |
 | Conteggi | Parole e caratteri (spazi esclusi); con una selezione, *selezionati / totale* | Apre un popover **Conteggio parole**: parole, caratteri, caratteri senza spazi, caratteri CJK, caratteri senza punteggiatura |
 | Lint | ⊗ errori o ⚠ avvisi trovati dall'ultima esecuzione del [lint](#lint-markdown); nascosto quando non ce ne sono | Salta al problema successivo |
-| IA | Mentre un genie è in esecuzione, *In elaborazione...* con i secondi trascorsi e una × per annullare; poi *Fatto*, oppure l'errore con **Riprova** e **Ignora** — qui entrambi cancellano l'errore; per riprovare, esegui di nuovo il genie dal selettore | — |
+| IA | Mentre un genie è in esecuzione, *In elaborazione...* con i secondi trascorsi e una × per annullare; poi *Fatto*, oppure l'errore con **Riprova**, che esegue di nuovo la richiesta fallita, e **Ignora**; Riprova non compare quando non c'è nulla da ripetere, per esempio senza provider | — |
 | MCP | Un'icona a forma di satellite, colorata quando un client IA è connesso; la parola *off*, *…* o *error* quando non è in esecuzione normalmente. Il tooltip indica i client connessi | Apre **Impostazioni → Integrazioni** |
 | Cronologia MCP | Le scritture dell'IA in questa scheda, dalla più recente, ciascuna con **Ripristina allo stato precedente a questa scrittura**; un pulsante cestino cancella la cronologia della scheda senza chiedere | Apre l'elenco |
 | Terminale | — | Mostra o nasconde il terminale |

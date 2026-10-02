@@ -4,6 +4,11 @@
  * Drives tryImagePaste through the shared paste flow: detection and rejection,
  * path validation and the text fallback, the confirmation toast callbacks,
  * and single / multi image markdown insertion with copy-to-assets.
+ *
+ * The view helpers (connectivity, document path, toast anchor, text fallback)
+ * run for REAL: connectivity is the view's DOM being attached, the document
+ * path comes through the host-document seam, and the text fallback is
+ * observed in the document itself.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -27,12 +32,8 @@ const mockSmartPasteWarn = vi.fn();
 const mockEncodeMarkdownUrl = vi.fn((url: string) => url.replace(/ /g, "%20"));
 const mockMessage = vi.fn(() => Promise.resolve());
 
-const mockIsViewConnected = vi.fn(() => true);
-const mockGetActiveFilePath = vi.fn(() => "/docs/test.md");
-const mockExpandHomePath = vi.fn((p: string) => Promise.resolve(p.replace("~/", "/Users/test/")));
+const mockExpandHomePath = vi.fn((p: string) => Promise.resolve<string | null>(p.replace("~/", "/Users/test/")));
 const mockValidateLocalPath = vi.fn(() => Promise.resolve(true));
-const mockGetToastAnchorRect = vi.fn(() => ({ top: 100, left: 200, bottom: 120, right: 220 }));
-const mockPasteAsText = vi.fn();
 
 vi.mock("@/utils/multiImageParsing", () => ({
   parseMultiplePaths: (...args: unknown[]) => mockParseMultiplePaths(...args),
@@ -71,13 +72,6 @@ vi.mock("@tauri-apps/plugin-dialog", () => ({
   message: (...args: unknown[]) => mockMessage(...args),
 }));
 
-vi.mock("./smartPasteUtils", () => ({
-  isViewConnected: (...args: unknown[]) => mockIsViewConnected(...args),
-  getActiveFilePath: () => mockGetActiveFilePath(),
-  getToastAnchorRect: (...args: unknown[]) => mockGetToastAnchorRect(...args),
-  pasteAsText: (...args: unknown[]) => mockPasteAsText(...args),
-}));
-
 vi.mock("@/plugins/shared/localImagePath", () => ({
   expandHomePath: (...args: unknown[]) => mockExpandHomePath(...args),
   validateLocalPath: (...args: unknown[]) => mockValidateLocalPath(...args),
@@ -86,12 +80,19 @@ vi.mock("@/plugins/shared/localImagePath", () => ({
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { tryImagePaste } from "./smartPasteImage";
+import { bindHostDocument, resetHostDocument } from "@/plugins/shared/hostDocument";
+
+/** The document path the host reports for the current window. */
+let activeFilePath: string | null = "/docs/test.md";
+
+import { disconnect, scriptConnected } from "./__tests__/viewConnection";
 
 const createdViews: EditorView[] = [];
 
 afterEach(() => {
   createdViews.forEach((v) => v.destroy());
   createdViews.length = 0;
+  resetHostDocument();
 });
 
 function createView(content: string, anchor: number, head?: number): EditorView {
@@ -129,8 +130,8 @@ function multiImageResult(results: Array<{ type: string; path: string; needsCopy
 describe("tryImagePaste", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockIsViewConnected.mockReturnValue(true);
-    mockGetActiveFilePath.mockReturnValue("/docs/test.md");
+    activeFilePath = "/docs/test.md";
+    bindHostDocument({ activeFilePath: () => activeFilePath });
     mockExpandHomePath.mockImplementation((p: string) => Promise.resolve(p.replace("~/", "/Users/test/")));
     mockValidateLocalPath.mockReturnValue(Promise.resolve(true));
     mockCopyImageToAssets.mockReturnValue(Promise.resolve("assets/image.png"));
@@ -255,7 +256,7 @@ describe("tryImagePaste", () => {
       const view = createView("hello", 0);
       tryImagePaste(view, "https://img.com/a.png");
 
-      mockIsViewConnected.mockReturnValue(false);
+      disconnect(view);
 
       const toastArgs = mockShowToast.mock.calls[0][0];
       toastArgs.onConfirm();
@@ -275,7 +276,7 @@ describe("tryImagePaste", () => {
 
       const toastArgs = mockShowToast.mock.calls[0][0];
       toastArgs.onDismiss();
-      expect(mockPasteAsText).toHaveBeenCalled();
+      expect(view.state.doc.toString()).toContain("https://img.com/a.png");
     });
 
     it("does nothing when view is disconnected on dismiss", () => {
@@ -285,11 +286,11 @@ describe("tryImagePaste", () => {
       const view = createView("hello", 0);
       tryImagePaste(view, "https://img.com/a.png");
 
-      mockIsViewConnected.mockReturnValue(false);
+      disconnect(view);
 
       const toastArgs = mockShowToast.mock.calls[0][0];
       toastArgs.onDismiss();
-      expect(mockPasteAsText).not.toHaveBeenCalled();
+      expect(view.state.doc.toString()).toBe("hello");
     });
   });
 
@@ -299,9 +300,9 @@ describe("tryImagePaste", () => {
     it("aborts when view is disconnected", async () => {
       mockParseMultiplePaths.mockReturnValue({ paths: ["https://img.com/a.png"], format: "single" });
       mockDetectMultipleImagePaths.mockReturnValue(singleImageResult("url", "https://img.com/a.png"));
-      mockIsViewConnected.mockReturnValue(false);
 
       const view = createView("hello", 0);
+      disconnect(view);
       tryImagePaste(view, "https://img.com/a.png");
 
       const toastArgs = mockShowToast.mock.calls[0][0];
@@ -312,7 +313,7 @@ describe("tryImagePaste", () => {
     it("shows dialog when needsCopy and no active file path", async () => {
       mockParseMultiplePaths.mockReturnValue({ paths: ["https://img.com/a.png"], format: "single" });
       mockDetectMultipleImagePaths.mockReturnValue(singleImageResult("url", "https://img.com/a.png", true));
-      mockGetActiveFilePath.mockReturnValue(null);
+      activeFilePath = null;
 
       const view = createView("hello", 0);
       tryImagePaste(view, "https://img.com/a.png");
@@ -334,7 +335,7 @@ describe("tryImagePaste", () => {
       mockDetectMultipleImagePaths.mockReturnValue(
         singleImageResult("absolutePath", "/img.png", true)
       );
-      mockGetActiveFilePath.mockReturnValue("/docs/test.md");
+      activeFilePath = "/docs/test.md";
       mockCopyImageToAssets.mockResolvedValue("assets/copied.png");
 
       const view = createView("hello", 0);
@@ -452,17 +453,14 @@ describe("tryImagePaste", () => {
     it("aborts when view disconnects after async operations", async () => {
       mockParseMultiplePaths.mockReturnValue({ paths: ["https://img.com/a.png"], format: "single" });
       mockDetectMultipleImagePaths.mockReturnValue(singleImageResult("url", "https://img.com/a.png", true));
-      mockGetActiveFilePath.mockReturnValue("/docs/test.md");
-
-      // isViewConnected: true for first check, false for second (after async)
-      mockIsViewConnected
-        .mockReturnValueOnce(true) // onConfirm guard
-        .mockReturnValueOnce(true) // first check in insertImageMarkdown
-        .mockReturnValueOnce(false); // second check after copy
+      activeFilePath = "/docs/test.md";
 
       const view = createView("hello", 0);
       tryImagePaste(view, "https://img.com/a.png");
 
+      // Connected for the confirm guard and the insert's first check, detached
+      // by the time the async path resolution returns.
+      scriptConnected(view, [true, true, false]);
       const toastArgs = mockShowToast.mock.calls[0][0];
       await toastArgs.onConfirm();
 
@@ -479,13 +477,11 @@ describe("tryImagePaste", () => {
       mockParseMultiplePaths.mockReturnValue({ paths: ["https://img.com/a.png"], format: "single" });
       mockDetectMultipleImagePaths.mockReturnValue(singleImageResult("url", "https://img.com/a.png"));
 
-      mockIsViewConnected
-        .mockReturnValueOnce(true) // onConfirm guard passes
-        .mockReturnValueOnce(false); // insertImageMarkdown first check fails
-
       const view = createView("hello", 0);
       tryImagePaste(view, "https://img.com/a.png");
 
+      // onConfirm guard passes; the insert's own first check fails
+      scriptConnected(view, [true, false]);
       const toastArgs = mockShowToast.mock.calls[0][0];
       await toastArgs.onConfirm();
 
@@ -501,7 +497,7 @@ describe("tryImagePaste", () => {
       // after needsCopy=true and no active file path
       mockParseMultiplePaths.mockReturnValue({ paths: ["https://img.com/a.png"], format: "single" });
       mockDetectMultipleImagePaths.mockReturnValue(singleImageResult("url", "https://img.com/a.png", true));
-      mockGetActiveFilePath.mockReturnValue(null);
+      activeFilePath = null;
       // message() rejects to cause insertImageMarkdown to throw — the .catch() swallows it
       mockMessage.mockRejectedValueOnce(new Error("dialog failed"));
 
@@ -550,7 +546,7 @@ describe("tryImagePaste", () => {
       tryImagePaste(view, "/img.png");
 
       await vi.waitFor(() => {
-        expect(mockPasteAsText).toHaveBeenCalled();
+        expect(view.state.doc.toString()).toContain("/img.png");
       });
     });
 
@@ -583,7 +579,7 @@ describe("tryImagePaste", () => {
       tryImagePaste(view, "~/img.png");
 
       await vi.waitFor(() => {
-        expect(mockPasteAsText).toHaveBeenCalled();
+        expect(view.state.doc.toString()).toContain("~/img.png");
       });
     });
 
@@ -593,13 +589,13 @@ describe("tryImagePaste", () => {
         singleImageResult("homePath", "~/img.png", true)
       );
       mockExpandHomePath.mockResolvedValue(null);
-      mockIsViewConnected.mockReturnValue(false);
 
       const view = createView("hello", 0);
+      disconnect(view);
       tryImagePaste(view, "~/img.png");
 
       await vi.waitFor(() => {
-        expect(mockPasteAsText).not.toHaveBeenCalled();
+        expect(view.state.doc.toString()).toBe("hello");
       });
     });
 
@@ -611,9 +607,9 @@ describe("tryImagePaste", () => {
       mockValidateLocalPath.mockResolvedValue(true);
 
       // Disconnected when checked after validation completes
-      mockIsViewConnected.mockReturnValue(false);
 
       const view = createView("hello", 0);
+      disconnect(view);
       tryImagePaste(view, "/img.png");
 
       await vi.waitFor(() => {
@@ -636,7 +632,7 @@ describe("tryImagePaste", () => {
 
       // The catch handler in tryImagePaste calls pasteAsText
       await vi.waitFor(() => {
-        expect(mockPasteAsText).toHaveBeenCalled();
+        expect(view.state.doc.toString()).toContain("/img.png");
       });
     });
 
@@ -696,7 +692,7 @@ describe("tryImagePaste", () => {
       tryImagePaste(view, "/a.png\n/b.jpg");
 
       await vi.waitFor(() => {
-        expect(mockPasteAsText).toHaveBeenCalled();
+        expect(view.state.doc.toString()).toContain("/a.png\n/b.jpg");
       });
     });
 
@@ -757,7 +753,7 @@ describe("tryImagePaste", () => {
       tryImagePaste(view, "~/a.png\n~/b.png");
 
       await vi.waitFor(() => {
-        expect(mockPasteAsText).toHaveBeenCalled();
+        expect(view.state.doc.toString()).toContain("~/a.png\n~/b.png");
       });
     });
 
@@ -771,15 +767,15 @@ describe("tryImagePaste", () => {
         ])
       );
       mockValidateLocalPath.mockResolvedValue(false);
-      mockIsViewConnected.mockReturnValue(false);
 
       const view = createView("hello", 0);
+      disconnect(view);
       tryImagePaste(view, "/a.png\n/b.jpg");
 
       await vi.waitFor(() => {
         expect(mockValidateLocalPath).toHaveBeenCalled();
       });
-      expect(mockPasteAsText).not.toHaveBeenCalled();
+      expect(view.state.doc.toString()).toBe("hello");
     });
 
     it("does not show toast when view disconnects after validation passes", async () => {
@@ -791,12 +787,12 @@ describe("tryImagePaste", () => {
           { type: "absolutePath", path: "/b.png", needsCopy: true },
         ])
       );
-      mockValidateLocalPath.mockResolvedValue(true);
-      mockIsViewConnected
-        .mockReturnValueOnce(true) // initial
-        .mockReturnValue(false); // after validation
-
       const view = createView("hello", 0);
+      // The paths are valid, but the view is detached while they are checked.
+      mockValidateLocalPath.mockImplementation(() => {
+        disconnect(view);
+        return Promise.resolve(true);
+      });
       tryImagePaste(view, "/a.png\n/b.png");
 
       await vi.waitFor(() => {
@@ -817,9 +813,9 @@ describe("tryImagePaste", () => {
       );
       mockValidateLocalPath.mockResolvedValue(true);
       // All isViewConnected calls return false — first call at line 244 returns false
-      mockIsViewConnected.mockReturnValue(false);
 
       const view = createView("hello", 0);
+      disconnect(view);
       tryImagePaste(view, "/a.png");
 
       await vi.waitFor(() => {
@@ -886,13 +882,13 @@ describe("tryImagePaste", () => {
     });
 
     it("onConfirm warns when view disconnected", async () => {
-      setupMultiToast();
+      const view = setupMultiToast();
 
       await vi.waitFor(() => {
         expect(mockShowMultiToast).toHaveBeenCalled();
       });
 
-      mockIsViewConnected.mockReturnValue(false);
+      disconnect(view);
       const toastArgs = mockShowMultiToast.mock.calls[0][0];
       toastArgs.onConfirm();
 
@@ -902,7 +898,7 @@ describe("tryImagePaste", () => {
     });
 
     it("onDismiss pastes as text when connected", async () => {
-      setupMultiToast();
+      const view = setupMultiToast();
 
       await vi.waitFor(() => {
         expect(mockShowMultiToast).toHaveBeenCalled();
@@ -910,20 +906,20 @@ describe("tryImagePaste", () => {
 
       const toastArgs = mockShowMultiToast.mock.calls[0][0];
       toastArgs.onDismiss();
-      expect(mockPasteAsText).toHaveBeenCalled();
+      expect(view.state.doc.toString()).toContain("https://a.png\nhttps://b.png");
     });
 
     it("onDismiss does nothing when view disconnected", async () => {
-      setupMultiToast();
+      const view = setupMultiToast();
 
       await vi.waitFor(() => {
         expect(mockShowMultiToast).toHaveBeenCalled();
       });
 
-      mockIsViewConnected.mockReturnValue(false);
+      disconnect(view);
       const toastArgs = mockShowMultiToast.mock.calls[0][0];
       toastArgs.onDismiss();
-      expect(mockPasteAsText).not.toHaveBeenCalled();
+      expect(view.state.doc.toString()).toBe("hello");
     });
   });
 
@@ -947,10 +943,8 @@ describe("tryImagePaste", () => {
         expect(mockShowMultiToast).toHaveBeenCalled();
       });
 
-      // Disconnect before onConfirm's async function runs
-      mockIsViewConnected
-        .mockReturnValueOnce(true) // onConfirm guard
-        .mockReturnValueOnce(false); // first check in insertMultipleImageMarkdown
+      // onConfirm guard passes; the insert's own first check fails
+      scriptConnected(view, [true, false]);
 
       const toastArgs = mockShowMultiToast.mock.calls[0][0];
       await toastArgs.onConfirm();
@@ -972,7 +966,7 @@ describe("tryImagePaste", () => {
         ])
       );
       mockValidateLocalPath.mockResolvedValue(true);
-      mockGetActiveFilePath.mockReturnValue(null);
+      activeFilePath = null;
 
       const view = createView("hello", 0);
       tryImagePaste(view, "/a.png\n/b.png");
@@ -1128,7 +1122,7 @@ describe("tryImagePaste", () => {
         ])
       );
       mockValidateLocalPath.mockResolvedValue(true);
-      mockGetActiveFilePath.mockReturnValue(null);
+      activeFilePath = null;
       // message() rejects to cause insertMultipleImageMarkdown to throw
       mockMessage.mockRejectedValueOnce(new Error("dialog error"));
 
@@ -1167,10 +1161,9 @@ describe("tryImagePaste", () => {
         expect(mockShowMultiToast).toHaveBeenCalled();
       });
 
-      mockIsViewConnected
-        .mockReturnValueOnce(true)  // onConfirm guard
-        .mockReturnValueOnce(true)  // first check in insertMultipleImageMarkdown
-        .mockReturnValueOnce(false); // after processing
+      // Connected for the confirm guard and the insert's first check, detached
+      // by the time path resolution returns.
+      scriptConnected(view, [true, true, false]);
 
       const toastArgs = mockShowMultiToast.mock.calls[0][0];
       await toastArgs.onConfirm();
@@ -1197,7 +1190,7 @@ describe("tryImagePaste", () => {
       tryImagePaste(view, "/a.png\n/b.png");
 
       await vi.waitFor(() => {
-        expect(mockPasteAsText).toHaveBeenCalled();
+        expect(view.state.doc.toString()).toContain("/a.png\n/b.png");
       });
     });
   });

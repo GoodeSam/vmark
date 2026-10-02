@@ -15,7 +15,8 @@
  *   - getPopupDimensions defaults
  */
 
-vi.mock("@/utils/popupPosition", () => ({
+vi.mock("@/utils/popupPosition", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/popupPosition")>()),
   calculatePopupPosition: vi.fn(() => ({ top: 50, left: 100 })),
 }));
 
@@ -25,13 +26,6 @@ vi.mock("@/utils/popupComponents", () => ({
 
 vi.mock("@/utils/imeGuard", () => ({
   isImeKeyEvent: vi.fn((e: KeyboardEvent) => e.key === "Process"),
-}));
-
-vi.mock("./sourcePopupUtils", () => ({
-  getEditorBounds: vi.fn(() => ({
-    horizontal: { left: 0, right: 800 },
-    vertical: { top: 0, bottom: 600 },
-  })),
 }));
 
 vi.mock("@/plugins/shared/popupHostDom", () => ({

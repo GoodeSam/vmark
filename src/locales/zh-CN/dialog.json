@@ -271,5 +271,20 @@
   "exportError.rollbackRestored": "其他内容均未更改，文件夹已恢复为之前的内容。",
   "exportError.backupKeptAt": "{{path}}（之前的内容保存在 {{backup}}：{{reason}}）",
   "exportError.backupGone": "{{path}}（位于 {{backup}} 的备份也已丢失：{{reason}}）",
-  "exportError.listItem": "“{{item}}”"
+  "exportError.listItem": "“{{item}}”",
+  "unsavedChanges.buttonSave": "保存",
+  "unsavedChanges.buttonDontSave": "不保存",
+  "unsavedChanges.buttonSaveAll": "全部保存",
+  "unsavedChanges.buttonCancel": "取消",
+  "fileError.fileExists": "名为“{{name}}”的文件已存在。",
+  "fileError.folderExists": "名为“{{name}}”的文件夹已存在。",
+  "fileError.createFailed": "无法创建“{{name}}”。",
+  "fileError.renameFailed": "无法重命名“{{name}}”。",
+  "fileError.deleteFailed": "无法删除“{{name}}”。",
+  "fileError.moveFailed": "无法移动“{{name}}”。",
+  "fileError.duplicateFailed": "无法复制“{{name}}”。",
+  "fileError.copyFailed": "无法复制到剪贴板。",
+  "fileError.exportFailed": "无法导出为 {{format}}。",
+  "fileError.tooManyCopies": "“{{name}}”的副本过多，请先删除一些。",
+  "unsavedChanges.newDocEntry": "{{title}}（新建）"
 }

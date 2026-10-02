@@ -3905,7 +3905,7 @@ Two unrelated features share the word "workflow", and the yaml adapter (`src/lib
 - status: shipped-on, partial
 - gate: always on (mounted by the workbench when the pane has a tab)
 - surfaces: panel below the canvas
-- code: `src/components/Editor/WorkflowEditor/{WorkflowEditorPanel.tsx,AddJobControl.tsx,JobForm.tsx,StepForm.tsx,TriggerForm.tsx,PermissionsForm.tsx,ConcurrencyForm.tsx,ExpressionEditor.tsx,withRowPlans.ts,stepSelection.ts,useStepFocusRestore.ts}`, `src/lib/ghaWorkflow/save/previewIR.ts`
+- code: `src/components/Editor/WorkflowEditor/{WorkflowEditorPanel.tsx,AddJobControl.tsx,JobForm.tsx,StepForm.tsx,StepWithSection.tsx,TriggerForm.tsx,PermissionsForm.tsx,ConcurrencyForm.tsx,ExpressionEditor.tsx,withRowPlans.ts,stepSelection.ts,useStepFocusRestore.ts}`, `src/lib/ghaWorkflow/save/previewIR.ts`
 - rust: none
 - docs: `website/guide/workflow-viewer.md` §"Job editing", §"Step editing", §"Triggers", §"Permissions and concurrency"
 - tests: `src/components/Editor/WorkflowEditor/__tests__/` (every form, `stepSelection.test.ts`, `useStepFocusRestore.test.tsx`, `withRowPlans.test.ts`), `src/lib/ghaWorkflow/save/previewIR.test.ts`

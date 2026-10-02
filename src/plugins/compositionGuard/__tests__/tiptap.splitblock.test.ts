@@ -26,18 +26,14 @@ vi.mock("@/utils/imeGuard", () => ({
   markProseMirrorCompositionEnd: (...args: unknown[]) => mockMarkProseMirrorCompositionEnd(...args),
 }));
 
-// Mock splitBlockFix
-const mockFixCompositionSplitBlock = vi.fn((..._args: unknown[]): unknown => null);
-vi.mock("../splitBlockFix", () => ({
-  fixCompositionSplitBlock: (...args: unknown[]) => mockFixCompositionSplitBlock(...args),
-}));
-
 // Mock splitBlock from ProseMirror commands (used for Korean deferred Enter)
 const mockSplitBlock = vi.fn();
 vi.mock("@tiptap/pm/commands", () => ({
   splitBlock: (...args: unknown[]) => mockSplitBlock(...args),
 }));
 
+import { Schema } from "@tiptap/pm/model";
+import { EditorState, TextSelection, type Transaction } from "@tiptap/pm/state";
 import { compositionGuardExtension } from "../tiptap";
 
 // Mock requestAnimationFrame to execute callbacks synchronously
@@ -450,8 +446,20 @@ describe("compositionGuard compositionend rAF — snapshotSplit branch", () => {
   }
 
   it("runs split-block fix via rAF when splitDetected is true and fix is available", () => {
-    const mockTrFix = { fake: "splitFix" };
-    mockFixCompositionSplitBlock.mockReturnValue(mockTrFix);
+    // Real documents throughout: the heading the composition began in is
+    // split by the browser, the composed text lands in the new paragraph, and
+    // the rAF fallback must move it back — the real fixCompositionSplitBlock.
+    const schema = new Schema({
+      nodes: {
+        doc: { content: "block+" },
+        heading: { content: "text*", group: "block", attrs: { level: { default: 1 } } },
+        paragraph: { content: "text*", group: "block" },
+        text: {},
+      },
+    });
+    // "Title" then the pinyin "nihao"; the composition began after "Title".
+    const startDoc = schema.node("doc", null, [schema.node("heading", null, [schema.text("Titlenihao")])]);
+    const before = EditorState.create({ schema, doc: startDoc, selection: TextSelection.create(startDoc, 6) });
 
     // Capture rAF callback to control execution order
     let capturedRafCb: FrameRequestCallback | null = null;
@@ -461,67 +469,45 @@ describe("compositionGuard compositionend rAF — snapshotSplit branch", () => {
     };
 
     const { events, applied, appendTransaction } = getPluginSet();
-
-    const mockView = {
-      state: {
-        selection: { from: 5 },
-        doc: {
-          resolve: () => ({
-            depth: 1,
-            node: (d: number) => ({ type: { name: d === 1 ? "paragraph" : "doc" } }),
-            end: () => 20,
-          }),
-          textBetween: () => "",
-          content: { size: 30 },
-        },
-        tr: {
-          delete: vi.fn().mockReturnThis(),
-          setMeta: vi.fn().mockReturnThis(),
-        },
-      },
+    const view = {
+      state: before,
       dispatch: vi.fn(),
       domObserver: { flush: vi.fn() },
     };
 
-    events.compositionstart(mockView);
-    events.compositionupdate(mockView, { data: "nihao" });
+    events.compositionstart(view);
+    events.compositionupdate(view, { data: "nihao" });
 
-    // Trigger split detection via appendTransaction
-    const oldState = { doc: { childCount: 1 } };
-    const newState = {
-      selection: { from: 5 },
-      doc: {
-        resolve: () => ({
-          depth: 1,
-          parent: { type: { name: "heading" } },
-        }),
-        childCount: 2,
-        content: { size: 30 },
-      },
-    };
-    const splitTr = stepTo(mockView.state.doc, newState.doc);
+    // The browser splits the heading after the pinyin and puts the composed
+    // text into a new paragraph, with the cursor there.
+    const splitTr = before.tr.split(11, 1, [{ type: schema.nodes.paragraph }]);
+    splitTr.insertText("你好", 13);
+    splitTr.setSelection(TextSelection.create(splitTr.doc, 15));
     applied(splitTr);
-    appendTransaction([splitTr], oldState, newState);
+    const after = before.apply(splitTr);
+    appendTransaction([splitTr], before, after);
+    view.state = after;
 
     // Now compositionend fires — rAF callback is captured
-    events.compositionend(mockView, { data: "你好" });
-
+    events.compositionend(view, { data: "你好" });
     expect(capturedRafCb).not.toBeNull();
 
-    // Run the rAF callback — snapshotSplit is true, should call fixCompositionSplitBlock
+    // Run the rAF callback — snapshotSplit is true, so the fix runs
     capturedRafCb!(0);
 
     // The DOM observer is flushed only on the split-detected branch.
-    expect(mockView.domObserver.flush).toHaveBeenCalled();
-    expect(mockView.dispatch).toHaveBeenCalledWith(mockTrFix);
-    expect(mockFlushProseMirrorCompositionQueue).toHaveBeenCalledWith(mockView);
+    expect(view.domObserver.flush).toHaveBeenCalled();
+    expect(view.dispatch).toHaveBeenCalledTimes(1);
+    const fixed = (view.dispatch.mock.calls[0][0] as Transaction).doc;
+    expect(fixed.childCount).toBe(1);
+    expect(fixed.firstChild!.type.name).toBe("heading");
+    expect(fixed.firstChild!.textContent).toBe("Title你好");
+    expect(mockFlushProseMirrorCompositionQueue).toHaveBeenCalledWith(view);
 
     // Restore synchronous rAF
     globalThis.requestAnimationFrame = (cb: FrameRequestCallback) => { cb(0); return 0; };
   });
-
   it("falls through to scheduleImeCleanup when splitDetected is true but fix returns null", () => {
-    mockFixCompositionSplitBlock.mockReturnValue(null);
     mockGetImeCleanupPrefixLength.mockReturnValue(0);
 
     // Capture rAF callback
@@ -590,7 +576,6 @@ describe("compositionGuard compositionend rAF — snapshotSplit branch", () => {
   });
 
   it("skips rAF callback when compositionStartPos changed (stale callback)", () => {
-    mockFixCompositionSplitBlock.mockReturnValue(null);
 
     // Capture rAF callbacks
     const rafCallbacks: FrameRequestCallback[] = [];

@@ -3,6 +3,8 @@
  *
  * Tracks isRunning, elapsed seconds, error state, and a brief success
  * flash. Module-level interval/timeout singletons keep timers exclusive.
+ * A failure may carry the means to re-run the request that failed, which is
+ * what the status bar's Retry calls.
  *
  * @module stores/aiStore/invocation
  */
@@ -14,6 +16,12 @@ interface AiInvocationState {
   requestId: string | null;
   elapsedSeconds: number;
   error: string | null;
+  /**
+   * Re-runs the request `error` belongs to, or null when that failure has
+   * nothing to re-run (provider validation, a refused cancel). Set only
+   * together with `error`, so Retry can never re-run some other request.
+   */
+  retry: (() => void) | null;
   showSuccess: boolean;
   /**
    * Whether the status row has anything to say — DERIVED, never set by hand
@@ -70,9 +78,14 @@ interface AiInvocationActions {
    * request of their own — provider validation, a cancel that could not reach
    * Rust — pass nothing and report against whatever is current.
    */
-  setError: (message: string, requestId?: string) => void;
+  setError: (message: string, requestId?: string, retry?: () => void) => void;
   /** Dismiss the current error. */
   dismissError: () => void;
+  /**
+   * Clear the current error and re-run the request that failed, once. Without
+   * a retry it only clears the error.
+   */
+  retryFailed: () => void;
 }
 
 const initialState: AiInvocationState = {
@@ -80,6 +93,7 @@ const initialState: AiInvocationState = {
   requestId: null,
   elapsedSeconds: 0,
   error: null,
+  retry: null,
   showSuccess: false,
   hasActiveStatus: false,
   cancelEpoch: 0,
@@ -148,6 +162,7 @@ export const useAiInvocationStore = create<AiInvocationState & AiInvocationActio
         requestId,
         elapsedSeconds: 0,
         error: null,
+        retry: null,
         showSuccess: false,
         startEpoch: get().startEpoch + 1,
       }));
@@ -170,6 +185,7 @@ export const useAiInvocationStore = create<AiInvocationState & AiInvocationActio
         requestId: null,
         elapsedSeconds: 0,
         error: null,
+        retry: null,
         showSuccess: true,
       }));
     },
@@ -188,7 +204,7 @@ export const useAiInvocationStore = create<AiInvocationState & AiInvocationActio
       }));
     },
 
-    setError: (message, requestId) => {
+    setError: (message, requestId, retry) => {
       if (requestId !== undefined && get().requestId !== requestId) return;
       clearTimers();
       set(withStatus({
@@ -196,6 +212,7 @@ export const useAiInvocationStore = create<AiInvocationState & AiInvocationActio
         requestId: null,
         elapsedSeconds: 0,
         error: message,
+        retry: retry ?? null,
         showSuccess: false,
       }));
     },
@@ -206,7 +223,16 @@ export const useAiInvocationStore = create<AiInvocationState & AiInvocationActio
       // so a truthiness test left that error set AND the status row pinned open
       // with nothing to dismiss it.
       if (get().error === null) return;
-      set(withStatus({ error: null }));
+      set(withStatus({ error: null, retry: null }));
+    },
+
+    retryFailed: () => {
+      const { retry } = get();
+      // Cleared BEFORE the re-run: the run's own `tryStart` publishes a fresh
+      // status, and a synchronous failure inside it must land on a clean slate
+      // rather than be wiped by a dismissal that runs after it.
+      get().dismissError();
+      retry?.();
     },
   })
 );

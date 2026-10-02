@@ -271,5 +271,20 @@
   "exportError.rollbackRestored": "No se cambió nada más: la carpeta se restauró a su contenido anterior.",
   "exportError.backupKeptAt": "{{path}} (su contenido anterior se conserva en {{backup}}: {{reason}})",
   "exportError.backupGone": "{{path}} (su copia de seguridad en {{backup}} también ha desaparecido: {{reason}})",
-  "exportError.listItem": "«{{item}}»"
+  "exportError.listItem": "«{{item}}»",
+  "unsavedChanges.buttonSave": "Guardar",
+  "unsavedChanges.buttonDontSave": "No guardar",
+  "unsavedChanges.buttonSaveAll": "Guardar todo",
+  "unsavedChanges.buttonCancel": "Cancelar",
+  "fileError.fileExists": "Ya existe un archivo llamado «{{name}}».",
+  "fileError.folderExists": "Ya existe una carpeta llamada «{{name}}».",
+  "fileError.createFailed": "No se pudo crear «{{name}}».",
+  "fileError.renameFailed": "No se pudo cambiar el nombre de «{{name}}».",
+  "fileError.deleteFailed": "No se pudo eliminar «{{name}}».",
+  "fileError.moveFailed": "No se pudo mover «{{name}}».",
+  "fileError.duplicateFailed": "No se pudo duplicar «{{name}}».",
+  "fileError.copyFailed": "No se pudo copiar al portapapeles.",
+  "fileError.exportFailed": "No se pudo exportar a {{format}}.",
+  "fileError.tooManyCopies": "Hay demasiadas copias de «{{name}}». Elimina algunas primero.",
+  "unsavedChanges.newDocEntry": "{{title}} (nuevo)"
 }

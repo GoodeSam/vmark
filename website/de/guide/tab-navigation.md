@@ -452,7 +452,7 @@ Klicken Sie mit der rechten Maustaste auf einen Tab, um sein Menü zu öffnen. P
 | Andere schließen | Schließt jeden anderen nicht angehefteten Tab. | Ein weiterer nicht angehefteter Tab existiert |
 | Tabs rechts schließen | Schließt die nicht angehefteten Tabs rechts davon. | Einer existiert |
 | Alle nicht angehefteten Tabs schließen | Schließt jeden nicht angehefteten Tab, diesen eingeschlossen. | Ein nicht angehefteter Tab existiert |
-| Alle schließen | Schließt jeden Tab. Ein angehefteter Tab lässt sich nicht schließen; solange also ein Tab angeheftet ist, verwenden Sie stattdessen **Alle nicht angehefteten Tabs schließen**. | Immer |
+| Alle schließen | Schließt jeden Tab außer den angehefteten; diese bleiben offen, bis Sie sie lösen. | Ein nicht angehefteter Tab existiert |
 
 Sammelschließungen wirken auf die Tabs des aktuellen Arbeitsbereichs und schließen sie nacheinander. Jeder Tab mit nicht gespeicherten Änderungen fragt vorher nach, und das Abbrechen einer dieser Abfragen stoppt den Rest.
 
@@ -471,7 +471,7 @@ Für das Anheften gibt es kein Tastenkürzel.
 
 Wählen Sie **Umbenennen** im Kontextmenü eines Tabs. Der Name wird im Tab bearbeitbar, wobei der Teil vor der Erweiterung ausgewählt ist. Eingabe oder ein Klick daneben übernimmt; Escape bricht ab. Die Datei wird auf dem Datenträger umbenannt, und jeder geöffnete Tab, der auf sie verweist, folgt. VMark überschreibt nie: Ist der Name vergeben, meldet ein Dialog *Eine Datei mit dem Namen „X“ existiert bereits.* Ein Name, der leer oder unverändert ist, `.` oder `..` lautet oder `/` oder `\` enthält, wird abgelehnt oder ignoriert. Was Sie eingeben, ist der vollständige Name — löschen Sie die Erweiterung, verliert die Datei sie.
 
-Unter **macOS** können Sie bei eingeschaltetem **Einstellungen → Erscheinungsbild → Dateiname in Titelleiste anzeigen** auch auf den Dateinamen in der Titelleiste doppelklicken, um die Datei umzubenennen. Es gelten dieselben Regeln, außer dass eine Namenskollision oder ein Fehler keine Meldung zeigt — der Name bleibt einfach bearbeitbar — und dass bei ausgeschaltetem **Dateiendungen anzeigen** die ursprüngliche Erweiterung erhalten bleibt, wenn Sie einen Namen ohne Erweiterung eingeben. Ein Doppelklick auf den Titel eines ungespeicherten Dokuments öffnet stattdessen **Speichern**.
+Unter **macOS** können Sie bei eingeschaltetem **Einstellungen → Erscheinungsbild → Dateiname in Titelleiste anzeigen** auch auf den Dateinamen in der Titelleiste doppelklicken, um die Datei umzubenennen. Es gelten dieselben Regeln und Meldungen; nach einer Namenskollision oder einem Fehler bleibt der Name bearbeitbar, sodass Sie einen anderen versuchen können. Bei ausgeschaltetem **Dateiendungen anzeigen** bleibt die ursprüngliche Erweiterung erhalten, wenn Sie einen Namen ohne Erweiterung eingeben. Ein Doppelklick auf den Titel eines ungespeicherten Dokuments öffnet stattdessen **Speichern**.
 
 ## Tabs und Fenster schließen
 

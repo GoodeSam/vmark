@@ -24,6 +24,7 @@ import { Button, SearchInput } from "./components";
 import { confirmAction } from "@/services/dialogs/confirmAction";
 import i18n from "@/i18n";
 import { appError } from "@/utils/debug";
+import { imeToast as toast } from "@/services/ime/imeToast";
 
 export function ShortcutsSettings() {
   const { t } = useTranslation("settings");
@@ -102,7 +103,10 @@ export function ShortcutsSettings() {
       // errors after the valid entries had already replaced the user's map.
       const result = importConfig(reader.result as string);
       if (!result.success && result.errors) {
-        alert(`${t("shortcuts.importFailed")}\n${result.errors.join("\n")}`);
+        toast.error(t("shortcuts.importFailed"), {
+          description: result.errors.join("\n"),
+          pin: true,
+        });
       }
     };
     reader.readAsText(file);

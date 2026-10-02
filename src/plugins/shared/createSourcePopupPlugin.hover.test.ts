@@ -6,19 +6,10 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import type { EditorView, ViewUpdate } from "@codemirror/view";
 import type { SourcePopupView } from "./SourcePopupView";
 
-// Mock sourcePopupUtils
-vi.mock("./sourcePopupUtils", () => ({
-  getAnchorRectFromRange: vi.fn(
-    (_view: unknown, from: number, to: number) =>
-      ({ top: 100 + from, left: 50, bottom: 120 + to, right: 200 })
-  ),
-}));
-
 import {
   createSourcePopupPlugin,
   type PopupTriggerConfig,
 } from "./createSourcePopupPlugin";
-import { getAnchorRectFromRange } from "./sourcePopupUtils";
 import {
   type TestState,
   createMockStore,
@@ -421,11 +412,9 @@ describe("createSourcePopupPlugin — hover with detectTriggerAtPos", () => {
     (instance as { update: (u: ViewUpdate) => void }).update(mockUpdate);
   });
 
-  it("hover getAnchorRectFromRange returning null cancels open", () => {
+  it("hover over a range with no screen coordinates cancels open", () => {
     const customOpen = vi.fn();
     const detectTriggerAtPos = vi.fn(() => ({ from: 0, to: 10 }));
-
-    (getAnchorRectFromRange as ReturnType<typeof vi.fn>).mockReturnValueOnce(null);
 
     const { view } = instantiatePlugin({
       detectTriggerAtPos,
@@ -433,6 +422,9 @@ describe("createSourcePopupPlugin — hover with detectTriggerAtPos", () => {
       triggerOnHover: true,
       hoverDelay: 100,
     });
+
+    // The view cannot place the range (e.g. scrolled out of layout)
+    vi.mocked(view.coordsAtPos).mockReturnValue(null);
 
     const calls = (view.dom.addEventListener as ReturnType<typeof vi.fn>).mock.calls;
     const mousemoveHandler = calls.find((c: unknown[]) => c[0] === "mousemove")?.[1] as (e: MouseEvent) => void;

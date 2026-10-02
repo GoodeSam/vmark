@@ -485,7 +485,7 @@ A barra de status fica ao longo da parte inferior da janela (`F7` a oculta). O l
 | Salvamento automático | Um ícone de salvar e há quanto tempo o documento foi salvo automaticamente; some depois de alguns segundos | — |
 | Contagens | Palavras e caracteres (espaços não contados); com uma seleção, *selecionado / total* | Abre um popover de **Contagem de palavras**: palavras, caracteres, caracteres sem espaços, caracteres CJK, caracteres sem pontuação |
 | Lint | ⊗ erros ou ⚠ avisos encontrados pela última execução do [lint](#lint-de-markdown); oculto quando não há nenhum | Vai para o próximo problema |
-| IA | Enquanto um gênio é executado, *Pensando...* com os segundos decorridos e um × para cancelar; depois *Concluído*, ou o erro com **Tentar novamente** e **Dispensar** — aqui os dois apenas limpam o erro; execute o gênio novamente pelo seletor para tentar de novo | — |
+| IA | Enquanto um gênio é executado, *Pensando...* com os segundos decorridos e um × para cancelar; depois *Concluído*, ou o erro com **Tentar novamente**, que executa de novo a solicitação que falhou, e **Dispensar**; Tentar novamente não aparece quando não há nada a repetir, como sem provedor | — |
 | MCP | Um ícone de satélite, colorido quando um cliente de IA está conectado; a palavra *off*, *…* ou *error* quando não está funcionando normalmente. A dica de ferramenta mostra os clientes conectados | Abre **Configurações → Integrações** |
 | Histórico do MCP | As escritas da IA nesta aba, das mais recentes para as mais antigas, cada uma com **Restaurar ao estado anterior a esta escrita**; um botão de lixeira limpa o histórico da aba sem perguntar | Abre a lista |
 | Terminal | — | Mostra ou oculta o terminal |

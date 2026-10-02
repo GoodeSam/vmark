@@ -32,6 +32,12 @@
  * the previous `index-BUAvxpLj*` glob silently stopped matching and the
  * entry chunk went unbudgeted).
  *
+ * ONE positive glob per budget (negations are fine). size-limit fails when a
+ * budget's globs match no file at all, which is what makes a renamed chunk
+ * loud — but with two positive globs, one can go dead while the other keeps
+ * the budget passing. scripts/check-size-budgets.test.mjs enforces the rule
+ * and pins size-limit's no-match failure against the installed CLI.
+ *
  * @module .size-limit.cjs
  */
 
@@ -379,24 +385,32 @@ module.exports = [
     limit: "15 kB",
     brotli: false,
   },
-  {
-    // The eleven Settings panels, one chunk per section, summed. A session
-    // loads the shell plus the sections it visits (3–31 kB each; Integrations
-    // is the large one), and all of the searchable ones on the first search.
-    // 102.2 kB at the split. The primitives they share (settings/buttons,
-    // inputs, layout — 7.4 kB) land in a chunk Rolldown names `components-*`,
-    // too generic a name to glob safely, so it is not counted here.
-    //
-    // The leading `?` is load-bearing: the settings LOCALE chunks are named
-    // `settings-<hash>.js`, and on a case-insensitive filesystem a bare
-    // `*Settings-*` matches all ten of them (532 kB) — so the same budget
-    // would pass on Linux and fail on macOS. A panel always has a name before
-    // "Settings"; a locale chunk never does.
-    name: "LAZY: Settings panels",
-    path: "dist/assets/?*Settings-*.js",
-    limit: "108 kB",
+  // The eleven Settings panels, one chunk per section, 102.6 kB together at
+  // the split. A session loads the shell plus the sections it visits, and all
+  // of the searchable ones on the first search. One budget per chunk, not one
+  // glob over all of them: a panel chunk the bundler renamed would drop out of
+  // a sum without failing it. Each limit is its size plus ~5%, rounded up to
+  // half a kB. The primitives the panels share (settings/buttons, inputs,
+  // layout — 7.4 kB) land in a chunk Rolldown names `components-*`, too
+  // generic a name to budget safely.
+  ...[
+    ["AboutSettings", "11.5 kB"],
+    ["AdvancedSettings", "7.5 kB"],
+    ["AppearanceSettings", "4 kB"],
+    ["EditorSettings", "10 kB"],
+    ["FilesImagesSettings", "9 kB"],
+    ["FormatsSettings", "5.5 kB"],
+    ["IntegrationsSettings", "33.5 kB"],
+    ["LanguageSettings", "9 kB"],
+    ["MarkdownSettings", "5.5 kB"],
+    ["ShortcutsSettings", "9 kB"],
+    ["TerminalSettings", "7.5 kB"],
+  ].map(([chunk, limit]) => ({
+    name: `LAZY: Settings panel ${chunk}`,
+    path: `dist/assets/${chunk}-*.js`,
+    limit,
     brotli: false,
-  },
+  })),
   {
     // react-json-view-lite plus VMark's styles for it: the tree the JSON, TOML
     // and YAML previews draw, loaded on first use (formats/adapters/
