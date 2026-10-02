@@ -1361,21 +1361,6 @@
       "target": "src/utils/paths/index"
     },
     {
-      "file": "src/export/__tests__/exportToPdfImages.test.ts",
-      "api": "vi.mock",
-      "target": "src/export/htmlExportStyles"
-    },
-    {
-      "file": "src/export/__tests__/exportToPdfImages.test.ts",
-      "api": "vi.mock",
-      "target": "src/export/pdfHtmlTemplate"
-    },
-    {
-      "file": "src/export/__tests__/exportToPdfImages.test.ts",
-      "api": "vi.mock",
-      "target": "src/export/renderMarkdownToHtml"
-    },
-    {
       "file": "src/export/__tests__/exportWarningCount.test.ts",
       "api": "vi.mock",
       "target": "src/export/renderMarkdownToHtml"
