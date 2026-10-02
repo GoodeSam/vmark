@@ -7,6 +7,7 @@ import { message, save } from "@tauri-apps/plugin-dialog";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { invoke } from "@tauri-apps/api/core";
 import { saveToPath } from "@/services/persistence/saveToPath";
+import { startTabStateCleanup } from "@/services/windowClose/tabCleanup";
 import type { OrphanCleanupResult, OrphanedImage } from "@/services/media/orphanAssetCleanup";
 
 vi.mock("@/services/persistence/saveToPath", () => ({
@@ -42,14 +43,12 @@ const orphan = (filename: string): OrphanedImage => ({
 
 const WINDOW_LABEL = "main";
 
-function resetStores() {
-  const tabState = useTabStore.getState();
-  tabState.removeWindow(WINDOW_LABEL);
+// The window runs this for its lifetime: a removed tab's state goes with it.
+startTabStateCleanup();
 
-  const docState = useDocumentStore.getState();
-  Object.keys(docState.documents).forEach((id) => {
-    docState.removeDocument(id);
-  });
+function resetStores() {
+  useTabStore.getState().removeWindow(WINDOW_LABEL);
+  useDocumentStore.setState({ documents: {} });
 }
 
 /** WI-1.4 dual snapshot: one string let the store assume disk held LF text. */

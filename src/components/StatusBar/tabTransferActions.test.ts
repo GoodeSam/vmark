@@ -38,7 +38,6 @@ const mockCreateTransferredTab = vi.fn(() => "restored-tab-id");
 const mockInitDocument = vi.fn();
 const mockGetTabsByWindow = vi.fn();
 const mockDetachTab = vi.fn();
-const mockRemoveDocument = vi.fn();
 const mockGetDocument = vi.fn();
 
 vi.mock("@/stores/tabStore", () => ({
@@ -56,7 +55,6 @@ vi.mock("@/stores/documentStore", () => ({
     getState: () => ({
       initDocument: mockInitDocument,
       getDocument: mockGetDocument,
-      removeDocument: mockRemoveDocument,
     }),
   },
   useUnifiedHistoryStore: { getState: () => ({ documents: {}, clearDocument: vi.fn() }), subscribe: () => () => {} },
@@ -389,7 +387,6 @@ describe("transferTabFromDragOut", () => {
       `dialog:toast.tabMovedAnnounce|${JSON.stringify({ title: "Doc 1" })}`
     );
     expect(mockDetachTab).toHaveBeenCalledWith("main", "tab-1");
-    expect(mockRemoveDocument).toHaveBeenCalledWith("tab-1");
   });
 
   it("detaches to new window when no drop target", async () => {
@@ -406,7 +403,6 @@ describe("transferTabFromDragOut", () => {
       `dialog:toast.tabDetachedAnnounce|${JSON.stringify({ title: "Doc 1" })}`
     );
     expect(mockDetachTab).toHaveBeenCalledWith("main", "tab-1");
-    expect(mockRemoveDocument).toHaveBeenCalledWith("tab-1");
   });
 
   it("triggers snapback on invoke error", async () => {

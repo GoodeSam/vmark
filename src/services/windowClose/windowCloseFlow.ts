@@ -139,8 +139,10 @@ async function finalizeWindowClose(
   await invoke("close_window", { label: windowLabel });
   log(windowLabel, "close_window returned");
   // On success the webview is being destroyed and may never reach this line —
-  // which is fine: the teardown only matters if the window SURVIVES.
-  freshTabs.forEach((tab) => useDocumentStore.getState().removeDocument(tab.id));
+  // which is fine: the teardown only matters if the window SURVIVES. Dropping
+  // the window's tab list announces every tab's removal, which frees each
+  // document and the rest of its per-tab state — including a tab opened while
+  // the native close was in flight.
   useTabStore.getState().removeWindow(windowLabel);
   usePaneStore.getState().removeWindow(windowLabel); // #1081 M3
   // R3-5: the closed-tab reopen history is per-window state too — without

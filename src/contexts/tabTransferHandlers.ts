@@ -33,7 +33,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { openWorkspaceWithConfig } from "@/services/workspaces/openWorkspaceWithConfig";
-import { cleanupTabState } from "@/services/windowClose/tabCleanup";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useRecentFilesStore, useWorkspaceStore } from "@/stores/workspaceStore";
@@ -175,8 +174,8 @@ export async function handleTabRemovalRequest(
   }
 
   // commit — the source now holds the restored tab; drop this window's copy.
+  // The removal frees the tab's document and the rest of its per-tab state.
   useTabStore.getState().detachTab(label, tabId);
-  cleanupTabState(tabId);
   await sendAck({ requestId, tabId, phase, accepted: true });
   await closeWindowIfEmpty(label);
 }

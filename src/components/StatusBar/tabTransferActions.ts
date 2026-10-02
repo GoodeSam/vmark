@@ -24,7 +24,7 @@
  * @coordinates-with useStatusBarTabDrag.ts — calls transferTabFromDragOut on drag-out
  * @coordinates-with useTabContextMenuActions.ts — "Move to New Window" uses similar logic
  * @coordinates-with WindowContext.tsx — receiving window applies transferred tab data
- * @coordinates-with services/windowClose/tabCleanup.ts — cleanupTabState used on detach to free all per-tab state
+ * @coordinates-with services/windowClose/tabCleanup.ts — frees all per-tab state when detachTab announces the removal
  * @module components/StatusBar/tabTransferActions
  */
 import { invoke } from "@tauri-apps/api/core";
@@ -40,7 +40,6 @@ import {
   pickTransferLineMetadata,
 } from "@/utils/transferLineMetadata";
 import { windowCloseWarn, tabContextError } from "@/utils/debug";
-import { cleanupTabState } from "@/services/windowClose/tabCleanup";
 import i18n from "@/i18n";
 import { commandErrorMessage } from "@/services/commands/commandError";
 
@@ -217,7 +216,6 @@ export async function transferTabFromDragOut({
     }
 
     tabState.detachTab(windowLabel, tabId);
-    cleanupTabState(tabId);
 
     const remaining = useTabStore.getState().getTabsByWindow(windowLabel);
     if (remaining.length === 0 && windowLabel !== "main") {
