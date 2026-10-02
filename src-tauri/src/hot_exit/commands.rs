@@ -140,25 +140,27 @@ pub fn hot_exit_restore_multi_window(
     restore_session_multi_window(&app, session).map_err(CommandError::io)
 }
 
-/// Get pending window state for restoration
+/// The pending restore state of the window that asks, or None.
 ///
-/// Called by windows on startup to get their pending restore state.
-/// Returns None if no state is pending for the given window.
+/// Called by windows on startup. The window is the caller, never a label in
+/// the arguments: one window could otherwise read another's documents.
 #[tauri::command]
-pub fn hot_exit_get_window_state(
+pub fn hot_exit_get_window_state<R: tauri::Runtime>(
+    window: tauri::Window<R>,
     hot_exit: State<'_, HotExitState>,
-    window_label: String,
 ) -> Option<WindowState> {
-    hot_exit.window_state(&window_label)
+    hot_exit.window_state(window.label())
 }
 
-/// Mark a window as having completed restoration
+/// Mark the window that asks as restored. Returns true once every expected
+/// window has.
 ///
-/// Returns true if all expected windows have completed.
+/// The caller, never a label: a window that could report another as done
+/// would end the restore early, and the session file is cleared when it ends.
 #[tauri::command]
-pub fn hot_exit_window_restore_complete(
+pub fn hot_exit_window_restore_complete<R: tauri::Runtime>(
+    window: tauri::Window<R>,
     hot_exit: State<'_, HotExitState>,
-    window_label: String,
 ) -> bool {
-    hot_exit.mark_complete(&window_label)
+    hot_exit.mark_complete(window.label())
 }

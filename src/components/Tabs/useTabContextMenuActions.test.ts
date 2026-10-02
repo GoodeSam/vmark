@@ -679,7 +679,7 @@ describe("useTabContextMenuActions", () => {
       await findItem(items, "moveToNewWindow")!.action();
 
       await vi.waitFor(() => {
-        expect(mocks.invoke).toHaveBeenCalledWith("close_window", { label: "doc-1" });
+        expect(mocks.invoke).toHaveBeenCalledWith("close_window");
       });
     });
 

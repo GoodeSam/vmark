@@ -117,7 +117,8 @@ async function pullAndRestore(windowLabel: string): Promise<boolean> {
   await hydrateWorkspaceInstanceContext(windowLabel);
 
   // Signal completion for this window and check if all windows done
-  const allDone = await invoke<boolean>('hot_exit_window_restore_complete', { windowLabel });
+  // Marks the window that asks — this one — as restored.
+  const allDone = await invoke<boolean>('hot_exit_window_restore_complete');
   hotExitLog(`Window '${windowLabel}' restored successfully (allDone: ${allDone})`);
 
   if (allDone) {

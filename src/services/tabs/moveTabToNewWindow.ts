@@ -14,7 +14,6 @@
  * @module services/tabs/moveTabToNewWindow
  */
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import i18n from "@/i18n";
 import { imeToast as toast } from "@/services/ime/imeToast";
 import { useTabStore, type Tab } from "@/stores/tabStore";
@@ -94,8 +93,8 @@ export async function moveTabToNewWindow({
 
       const remaining = useTabStore.getState().getTabsByWindow(windowLabel);
       if (remaining.length === 0 && windowLabel !== "main") {
-        const win = getCurrentWebviewWindow();
-        void invoke("close_window", { label: win.label }).catch((error: unknown) => {
+        // Closes the window that asks: this one.
+        void invoke("close_window").catch((error: unknown) => {
           windowCloseWarn("Failed to close window:", commandErrorMessage(error));
         });
       }

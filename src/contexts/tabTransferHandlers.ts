@@ -137,8 +137,8 @@ async function closeWindowIfEmpty(label: string): Promise<void> {
   const remaining = useTabStore.getState().getTabsByWindow(label);
   if (remaining.length > 0 || label === "main") return;
 
-  const win = getCurrentWebviewWindow();
-  await invoke("close_window", { label: win.label }).catch((error: unknown) => {
+  // Closes the window that asks: this one.
+  await invoke("close_window").catch((error: unknown) => {
     /* v8 ignore next -- @preserve String(error) fallback: invoke errors are always Error instances */
     windowCloseWarn("Failed to close window:", commandErrorMessage(error));
   });

@@ -201,7 +201,7 @@ describe("moveTabToNewWindow — the transfer", () => {
     mockInvoke.mockResolvedValueOnce("doc-3");
 
     await moveTabToNewWindow(args("doc-2", id));
-    expect(closeCalls()).toEqual([["close_window", { label: "doc-2" }]]);
+    expect(closeCalls()).toEqual([["close_window"]]);
 
     mockInvoke.mockClear();
     bridge.label = "main";

@@ -153,7 +153,7 @@ describe("finalizeInstanceRemoval — mode dispatch table (R2-10)", () => {
 
     await finalizeInstanceRemoval("doc-1", "wsi-a", { cleanupPerInstanceUi: true });
 
-    expect(invoke).toHaveBeenCalledWith("close_window", { label: "doc-1" });
+    expect(invoke).toHaveBeenCalledWith("close_window");
   });
 
   it("a non-main window with instances left does NOT close", async () => {

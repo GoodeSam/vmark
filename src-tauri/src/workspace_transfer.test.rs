@@ -74,15 +74,17 @@ fn clear_unclaimed_transfer_clears_ack_route_after_claim() {
 }
 
 #[test]
-fn cancel_workspace_transfer_drops_unclaimed_payload_and_routes() {
-    // Models the source-side timeout cancel: the still-registered payload must
-    // be removed so a late claim returns nothing (no duplicate move).
+fn cancelling_drops_unclaimed_payload_and_routes() {
+    // Models the source-side timeout cancel, once `cancel_workspace_transfer`
+    // has checked the caller is the source (pinned in `caller_identity` below):
+    // the still-registered payload must be removed so a late claim returns
+    // nothing (no duplicate move).
     let _lock = acquire_test_lock();
     reset_transfer_state();
     let data = transfer_data("req-cancel");
     register_routes("doc-cancel", &data);
 
-    cancel_workspace_transfer("doc-cancel".to_string());
+    clear_unclaimed_transfer("doc-cancel");
 
     assert!(take_workspace_transfer("doc-cancel").is_none());
     assert!(!ack_routes()
@@ -326,4 +328,107 @@ fn an_ack_from_a_window_that_is_not_the_target_leaves_the_transfer_pending() {
         "the target's ack completes it"
     );
     reset_transfer_state();
+}
+
+// -- WI-RA7C.5: only the source cancels; the source is the caller -------------
+
+#[cfg(not(target_os = "windows"))]
+mod caller_identity {
+    use super::super::{transfer_registry, WorkspaceTransferData};
+    use super::{acquire_test_lock, register_routes, reset_transfer_state, transfer_data};
+    use crate::ipc_caller::{app_with, invoke_from, window};
+    use serde_json::json;
+
+    fn app() -> tauri::App<tauri::test::MockRuntime> {
+        app_with(tauri::generate_handler![
+            super::super::cancel_workspace_transfer
+        ])
+    }
+
+    fn pending(target: &str) -> bool {
+        transfer_registry()
+            .as_ref()
+            .is_some_and(|map| map.contains_key(target))
+    }
+
+    fn moving_from(source: &str) -> WorkspaceTransferData {
+        WorkspaceTransferData {
+            source_window_label: source.to_string(),
+            ..transfer_data("req-cancel")
+        }
+    }
+
+    /// Any window could strand another's move by naming its target.
+    #[test]
+    fn another_window_cannot_cancel_a_transfer() {
+        let _lock = acquire_test_lock();
+        reset_transfer_state();
+        register_routes("doc-9", &moving_from("doc-1"));
+        let app = app();
+        let bystander = window(&app, "doc-2");
+
+        let answer = invoke_from(
+            &bystander,
+            "cancel_workspace_transfer",
+            json!({ "targetWindowLabel": "doc-9" }),
+        );
+
+        assert!(answer.is_ok(), "{answer:?}");
+        assert!(pending("doc-9"), "doc-2 cancelled doc-1's transfer");
+        reset_transfer_state();
+    }
+
+    #[test]
+    fn the_source_cancels_its_own_transfer() {
+        let _lock = acquire_test_lock();
+        reset_transfer_state();
+        register_routes("doc-9", &moving_from("doc-1"));
+        let app = app();
+        let source = window(&app, "doc-1");
+
+        let answer = invoke_from(
+            &source,
+            "cancel_workspace_transfer",
+            json!({ "targetWindowLabel": "doc-9" }),
+        );
+
+        assert!(answer.is_ok(), "{answer:?}");
+        assert!(!pending("doc-9"));
+        reset_transfer_state();
+    }
+
+    /// Cancelling after the target claimed the payload still needs the
+    /// ack route's source to match.
+    #[test]
+    fn a_claimed_transfer_is_still_cancelled_only_by_its_source() {
+        let _lock = acquire_test_lock();
+        reset_transfer_state();
+        register_routes("doc-9", &moving_from("doc-1"));
+        transfer_registry()
+            .as_mut()
+            .expect("registry")
+            .remove("doc-9");
+        let app = app();
+        let bystander = window(&app, "doc-2");
+        let source = window(&app, "doc-1");
+
+        let _ = invoke_from(
+            &bystander,
+            "cancel_workspace_transfer",
+            json!({ "targetWindowLabel": "doc-9" }),
+        );
+        assert!(super::super::ack_routes()
+            .as_ref()
+            .is_some_and(|r| r.contains_key("req-cancel")));
+
+        let _ = invoke_from(
+            &source,
+            "cancel_workspace_transfer",
+            json!({ "targetWindowLabel": "doc-9" }),
+        );
+        assert!(!super::super::ack_routes()
+            .as_ref()
+            .is_some_and(|r| r.contains_key("req-cancel")));
+        reset_transfer_state();
+    }
 }

@@ -296,7 +296,7 @@ describe('restoreHelpers', () => {
 
       expect(result).toBe(state);
       expect(mockInvoke).toHaveBeenCalledTimes(1);
-      expect(mockInvoke).toHaveBeenCalledWith('hot_exit_get_window_state', { windowLabel: 'main' });
+      expect(mockInvoke).toHaveBeenCalledWith('hot_exit_get_window_state');
     });
 
     it('should retry when invoke returns null and succeed later', async () => {

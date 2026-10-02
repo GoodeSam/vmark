@@ -155,7 +155,7 @@ describe("workspace window actions", () => {
     ackTransfer(mockInvoke.mock.calls[0][1].data as WorkspaceTransferPayload);
     await expect(move).resolves.toMatchObject({ ok: true });
 
-    expect(mockInvoke).toHaveBeenLastCalledWith("close_window", { label: "doc-1" });
+    expect(mockInvoke).toHaveBeenLastCalledWith("close_window");
   });
 
   it("does not attribute file tabs to a rootless placeholder instance", async () => {

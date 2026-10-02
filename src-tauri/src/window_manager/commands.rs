@@ -23,7 +23,7 @@
 //! Both now carry the canonical target, so a later swap has no name left to
 //! redirect. `validate_then_grant` is the one place that ordering lives.
 
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 use crate::command_error::CommandError;
 
@@ -115,9 +115,14 @@ pub fn open_workspace_with_files_in_new_window<R: tauri::Runtime>(
     create_document_window_with_url(&app, url).map_err(|e| CommandError::internal(e.to_string()))
 }
 
-/// Close a specific window by label.
+/// Close the window that asked.
 ///
-/// Generic over the runtime so a mock app can exercise the not-found branch
+/// The window is the one Tauri says the call came from, never a label in the
+/// arguments: a label is a string any webview can spell, and a command that
+/// took one let a page close every other window by name. Every caller closes
+/// its own window, so nothing needs a target.
+///
+/// Generic over the runtime so a mock app can drive it through the IPC layer
 /// (`commands.test.rs`); the `#[tauri::command]` macro is unaffected.
 ///
 /// Logs at INFO, not debug (#1253). This is the last step of the window-close
@@ -126,34 +131,17 @@ pub fn open_workspace_with_files_in_new_window<R: tauri::Runtime>(
 /// reached, let alone whether `destroy()` returned. The "called" and "destroy
 /// result" pair is what distinguishes a frontend that never got here from a
 /// `destroy()` that never came back.
-///
-/// The label is logged through `peer_text`, not inside quotes of our own
-/// (#484). It is frontend-supplied, and `'{}'` let it carry a NEWLINE — so a
-/// caller could write log lines of its own, in VMark's own format, between the
-/// "called" and "destroy result" pair a reader uses to diagnose a stalled
-/// close. `peer_text` escapes the newline and quotes the value, so it can only
-/// ever be one token on one line — and bounds it, so it cannot be a megabyte
-/// one either.
 #[tauri::command]
 pub fn close_window<R: tauri::Runtime>(
-    app: tauri::AppHandle<R>,
-    label: String,
+    window: tauri::WebviewWindow<R>,
 ) -> Result<(), CommandError> {
-    let shown = crate::peer_text::peer_text(&label);
-    log::info!("[Tauri] close_window called for {shown}");
-
-    if let Some(window) = app.get_webview_window(&label) {
-        let result = window
-            .destroy()
-            .map_err(|e| CommandError::internal(e.to_string()));
-        log::info!("[Tauri] window {shown} destroy result: {result:?}");
-        result
-    } else {
-        // The label names no live window: absent, not malformed.
-        Err(CommandError::not_found(format!(
-            "Window '{label}' not found"
-        )))
-    }
+    let label = window.label().to_string();
+    log::info!("[Tauri] close_window called for {label:?}");
+    let result = window
+        .destroy()
+        .map_err(|e| CommandError::internal(e.to_string()));
+    log::info!("[Tauri] window {label:?} destroy result: {result:?}");
+    result
 }
 
 /// Force quit the entire application

@@ -104,6 +104,12 @@ pub(crate) use supported_files::is_openable_supported;
 // macOS-gated: sole consumer (quarantine sweep) is macOS-only, so an unconditional re-export is an unused-import error on Linux/Windows CI (guarded by lib.test.rs).
 #[cfg(target_os = "macos")]
 pub(crate) use supported_files::has_supported_extension;
+#[cfg(all(test, not(target_os = "windows")))]
+#[path = "caller_identity.test.rs"]
+mod caller_identity;
+#[cfg(all(test, not(target_os = "windows")))]
+#[path = "ipc_caller.test.rs"]
+pub(crate) mod ipc_caller;
 #[cfg(test)]
 #[path = "lib.test.rs"]
 mod lib_test;
