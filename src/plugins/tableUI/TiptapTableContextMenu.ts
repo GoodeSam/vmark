@@ -159,15 +159,17 @@ export class TiptapTableContextMenu {
       const editorRect = editorContainer?.getBoundingClientRect();
       if (editorRect) bounds.bottom = editorRect.bottom - EDITOR_BOTTOM_GAP;
 
-      const clamped = clampMenuPosition({ x: rect.left, y: rect.top }, rect, bounds);
-      if (clamped.x === rect.left && clamped.y === rect.top) return;
+      // Anchor on the requested point, not the measured box: only the menu's
+      // SIZE needs layout, and the request is what the user pointed at.
+      const clamped = clampMenuPosition({ x, y }, rect, bounds);
+      if (clamped.x === x && clamped.y === y) return;
 
       const hostPos =
         this.host && this.host !== document.body
           ? toHostCoordsForDom(this.host, { top: clamped.y, left: clamped.x })
           : { top: clamped.y, left: clamped.x };
-      if (clamped.x !== rect.left) this.container.style.left = `${hostPos.left}px`;
-      if (clamped.y !== rect.top) this.container.style.top = `${hostPos.top}px`;
+      if (clamped.x !== x) this.container.style.left = `${hostPos.left}px`;
+      if (clamped.y !== y) this.container.style.top = `${hostPos.top}px`;
     });
 
     this.isVisible = true;
