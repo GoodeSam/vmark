@@ -703,6 +703,7 @@
         "src-tauri/src/file_write.rs",
         "src-tauri/src/atomic_replace.rs",
         "src-tauri/src/watcher.rs",
+        "src-tauri/src/watcher",
         "src-tauri/src/file_open.rs",
         "src/services/files",
         "src/services/workspaceEvents",

@@ -21,7 +21,6 @@
     "src-tauri/src/menu/menu_state.rs": 1,
     "src-tauri/src/shell_integration.rs": 1,
     "src-tauri/src/temp_html.rs": 1,
-    "src-tauri/src/watcher.rs": 2,
     "src-tauri/src/webview_edit.rs": 1,
     "src-tauri/src/window_manager/native_theme.rs": 1,
     "src-tauri/src/window_manager/settings_window.rs": 1,
