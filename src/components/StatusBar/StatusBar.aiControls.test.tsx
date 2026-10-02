@@ -3,22 +3,10 @@
 // dismiss the error, duplicating the × beside it), Retry is absent when the
 // failure has nothing to re-run, and Cancel asks Rust to stop the provider
 // (it used to reset the store while the provider ran on, still billing).
-// StatusBarRight is replaced by a probe that records the handlers StatusBar
-// hands it; StatusBarRight.test.tsx covers how it renders them.
+// Rendered with the REAL StatusBarRight and indicator, so the buttons the
+// user clicks are the ones under test.
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, act } from "@testing-library/react";
-
-interface AiProps {
-  onRetryAi?: () => void;
-  onCancelAi: () => void;
-}
-const probe = vi.hoisted(() => ({ props: null as AiProps | null }));
-vi.mock("./StatusBarRight", () => ({
-  StatusBarRight: (props: AiProps) => {
-    probe.props = props;
-    return null;
-  },
-}));
+import { render, screen, fireEvent } from "@testing-library/react";
 
 const mockInvoke = vi.hoisted(() => vi.fn((..._args: unknown[]) => Promise.resolve()));
 vi.mock("@tauri-apps/api/core", () => ({
@@ -28,12 +16,6 @@ vi.mock("@tauri-apps/api/core", () => ({
 vi.mock("@/contexts/WindowContext", () => ({
   useWindowLabel: () => "main",
   useIsDocumentWindow: () => true,
-}));
-
-vi.mock("@/hooks/useDocumentState", () => ({
-  useDocumentLastAutoSave: () => null,
-  useDocumentIsMissing: () => false,
-  useDocumentIsDivergent: () => false,
 }));
 
 vi.mock("@/hooks/useMcpServer", () => ({
@@ -107,15 +89,9 @@ const store = () => useAiInvocationStore.getState();
 
 beforeEach(() => {
   vi.clearAllMocks();
-  probe.props = null;
   useUIStore.setState({ statusBarVisible: true });
   store().cancel();
 });
-
-function aiProps(): AiProps {
-  if (!probe.props) throw new Error("StatusBarRight was not rendered");
-  return probe.props;
-}
 
 describe("status bar AI controls", () => {
   it("Retry re-runs the failed request and clears the error", () => {
@@ -124,23 +100,25 @@ describe("status bar AI controls", () => {
     store().setError("Provider timeout", "r1", retry);
     render(<StatusBar />);
 
-    act(() => aiProps().onRetryAi?.());
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
 
     expect(retry).toHaveBeenCalledOnce();
     expect(store().error).toBeNull();
   });
 
   it("offers no Retry when the failure has nothing to re-run", () => {
-    store().setError("No AI provider configured");
+    store().setError("No provider set up");
     render(<StatusBar />);
-    expect(aiProps().onRetryAi).toBeUndefined();
+    expect(screen.getByText("No provider set up")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Dismiss error" })).toBeInTheDocument();
   });
 
   it("Cancel asks Rust to stop the running request, then resets the status", () => {
     store().tryStart("req-42");
     render(<StatusBar />);
 
-    act(() => aiProps().onCancelAi());
+    fireEvent.click(screen.getByRole("button", { name: "Cancel AI request" }));
 
     expect(mockInvoke).toHaveBeenCalledWith("cancel_ai_prompt", { requestId: "req-42" });
     expect(store().isRunning).toBe(false);

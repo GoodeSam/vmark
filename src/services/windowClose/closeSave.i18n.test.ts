@@ -101,13 +101,13 @@ describe("button labels in every locale", () => {
   it.each(locales)("%s: labels exist and cannot be mistaken for another button", (locale) => {
     const dialog = JSON.parse(readFileSync(join(localesDir, locale, "dialog.json"), "utf8")) as Record<string, string>;
     const label = (k: string) => dialog[`unsavedChanges.${k}`];
-    for (const [yesKey, yesSentinels] of [["buttonSave", ["Yes"]], ["buttonSaveAll", ["Yes"]]] as const) {
+    for (const yesKey of ["buttonSave", "buttonSaveAll"]) {
       const roles = { yes: label(yesKey), no: label("buttonDontSave"), cancel: label("buttonCancel") };
       for (const value of Object.values(roles)) expect(typeof value === "string" && value.trim() !== "").toBe(true);
       expect(new Set(Object.values(roles)).size).toBe(3);
       expect(["No", "Cancel"]).not.toContain(roles.yes);
       expect(["Yes", "Cancel"]).not.toContain(roles.no);
-      expect(yesSentinels.concat("No")).not.toContain(roles.cancel);
+      expect(["Yes", "No"]).not.toContain(roles.cancel);
     }
   });
 });

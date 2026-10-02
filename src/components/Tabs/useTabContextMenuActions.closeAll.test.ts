@@ -14,7 +14,7 @@ import { useTabContextMenuActions, type TabMenuItem } from "./useTabContextMenuA
 const WINDOW = "main";
 
 function seed(pinned: readonly number[], count: number): string[] {
-  useTabStore.setState({ tabs: {}, activeTabId: {}, untitledCounter: 0, closedTabs: {} });
+  useTabStore.setState({ tabs: {}, activeTabId: {}, untitledCounter: 0 });
   const ids: string[] = [];
   for (let i = 0; i < count; i++) ids.push(useTabStore.getState().createTab(WINDOW));
   for (const i of pinned) useTabStore.getState().togglePin(WINDOW, ids[i]);
@@ -23,11 +23,12 @@ function seed(pinned: readonly number[], count: number): string[] {
 
 function closeAllItem(): TabMenuItem {
   const tabs = useTabStore.getState().getTabsByWindow(WINDOW);
+  const tab = tabs[0];
+  if (!tab) throw new Error("no tabs seeded");
   const { result } = renderHook(() =>
     useTabContextMenuActions({
-      tab: tabs[0],
+      tab,
       tabs,
-      doc: undefined,
       filePath: null,
       windowLabel: WINDOW,
       workspaceRoot: null,
@@ -48,7 +49,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
-  useTabStore.setState({ tabs: {}, activeTabId: {}, untitledCounter: 0, closedTabs: {} });
+  useTabStore.setState({ tabs: {}, activeTabId: {}, untitledCounter: 0 });
 });
 
 describe("Close All with pinned tabs", () => {

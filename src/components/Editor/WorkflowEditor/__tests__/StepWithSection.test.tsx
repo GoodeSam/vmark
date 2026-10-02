@@ -15,15 +15,21 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: invokeMock }));
 
 import { StepWithSection } from "../StepWithSection";
 
+const BASE = {
+  id: "checkout",
+  idSynthesized: false,
+  name: "Checkout",
+  position: { startLine: 1, startCol: 1, endLine: 1, endCol: 1 },
+} satisfies Partial<StepIR>;
+
+/** A `uses:` step, optionally with `with:` keys. */
 function makeStep(overrides: Partial<StepIR> = {}): StepIR {
-  return {
-    id: "checkout",
-    idSynthesized: false,
-    name: "Checkout",
-    uses: "actions/checkout@v4",
-    position: { startLine: 1, startCol: 1, endLine: 1, endCol: 1 },
-    ...overrides,
-  };
+  return { ...BASE, uses: "actions/checkout@v4", ...overrides };
+}
+
+/** A `run:` step — no `uses:` key at all. */
+function makeRunStep(overrides: Partial<StepIR> = {}): StepIR {
+  return { ...BASE, run: "echo hi", ...overrides };
 }
 
 function renderSection(step: StepIR) {
@@ -44,7 +50,7 @@ afterEach(() => {
 
 describe("StepWithSection", () => {
   it("renders nothing for a run step with no with: keys", () => {
-    const { container } = renderSection(makeStep({ uses: undefined, run: "echo hi" }));
+    const { container } = renderSection(makeRunStep());
     expect(container).toBeEmptyDOMElement();
   });
 
@@ -55,7 +61,7 @@ describe("StepWithSection", () => {
   });
 
   it("renders for a run step that carries with: keys", () => {
-    renderSection(makeStep({ uses: undefined, run: "echo hi", with: { shell: "bash" } }));
+    renderSection(makeRunStep({ with: { shell: "bash" } }));
     expect(screen.getByDisplayValue("shell")).toBeInTheDocument();
     expect(screen.getByDisplayValue("bash")).toBeInTheDocument();
   });
