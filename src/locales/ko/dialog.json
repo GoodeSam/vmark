@@ -285,5 +285,6 @@
   "fileError.duplicateFailed": "“{{name}}”을(를) 복제하지 못했습니다.",
   "fileError.copyFailed": "클립보드에 복사하지 못했습니다.",
   "fileError.exportFailed": "{{format}}(으)로 내보내지 못했습니다.",
-  "fileError.tooManyCopies": "“{{name}}”의 사본이 너무 많습니다. 먼저 일부를 삭제하세요."
+  "fileError.tooManyCopies": "“{{name}}”의 사본이 너무 많습니다. 먼저 일부를 삭제하세요.",
+  "unsavedChanges.newDocEntry": "{{title}} (새 문서)"
 }

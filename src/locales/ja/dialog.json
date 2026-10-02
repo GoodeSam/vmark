@@ -285,5 +285,6 @@
   "fileError.duplicateFailed": "「{{name}}」を複製できませんでした。",
   "fileError.copyFailed": "クリップボードにコピーできませんでした。",
   "fileError.exportFailed": "{{format}} へのエクスポートに失敗しました。",
-  "fileError.tooManyCopies": "「{{name}}」のコピーが多すぎます。先にいくつか削除してください。"
+  "fileError.tooManyCopies": "「{{name}}」のコピーが多すぎます。先にいくつか削除してください。",
+  "unsavedChanges.newDocEntry": "{{title}}（新規）"
 }

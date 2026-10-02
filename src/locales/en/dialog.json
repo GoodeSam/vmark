@@ -285,5 +285,6 @@
   "fileError.duplicateFailed": "Failed to duplicate “{{name}}”.",
   "fileError.copyFailed": "Failed to copy to clipboard.",
   "fileError.exportFailed": "Failed to export to {{format}}.",
-  "fileError.tooManyCopies": "Too many copies of “{{name}}” exist. Please delete some first."
+  "fileError.tooManyCopies": "Too many copies of “{{name}}” exist. Please delete some first.",
+  "unsavedChanges.newDocEntry": "{{title}} (new)"
 }

@@ -285,5 +285,6 @@
   "fileError.duplicateFailed": "Impossibile duplicare «{{name}}».",
   "fileError.copyFailed": "Impossibile copiare negli appunti.",
   "fileError.exportFailed": "Impossibile esportare in {{format}}.",
-  "fileError.tooManyCopies": "Esistono troppe copie di «{{name}}». Eliminane prima alcune."
+  "fileError.tooManyCopies": "Esistono troppe copie di «{{name}}». Eliminane prima alcune.",
+  "unsavedChanges.newDocEntry": "{{title}} (nuovo)"
 }

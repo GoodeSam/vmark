@@ -285,5 +285,6 @@
   "fileError.duplicateFailed": "无法复制“{{name}}”。",
   "fileError.copyFailed": "无法复制到剪贴板。",
   "fileError.exportFailed": "无法导出为 {{format}}。",
-  "fileError.tooManyCopies": "“{{name}}”的副本过多，请先删除一些。"
+  "fileError.tooManyCopies": "“{{name}}”的副本过多，请先删除一些。",
+  "unsavedChanges.newDocEntry": "{{title}}（新建）"
 }

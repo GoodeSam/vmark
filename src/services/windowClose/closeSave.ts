@@ -22,7 +22,7 @@ import { message, save } from "@tauri-apps/plugin-dialog";
 import i18n from "@/i18n";
 import { getDefaultSaveFolderWithFallback } from "@/services/files/defaultSaveFolder";
 import { saveToPath } from "@/services/persistence/saveToPath";
-import { joinPath, getDirectory } from "@/utils/pathUtils";
+import { joinPath, getDirectory, getFileName } from "@/utils/pathUtils";
 import { persistDocumentBatch } from "./closeSaveBatch";
 
 
@@ -109,20 +109,23 @@ export async function promptSaveForDirtyDocument(
 }
 
 /**
- * Format a document entry for display in the summary dialog.
- * Shows path for saved docs, "(new)" for untitled docs.
+ * Format a document entry for display in the summary dialog: the title with
+ * its parent folder for a saved document, a translated "(new)" marker for an
+ * untitled one.
+ *
+ * The elided form `…/parent/title` is used only when there IS something to
+ * elide — a named parent folder with a named folder above it. A file in the
+ * filesystem or drive root, or one folder below it, is shown whole: eliding
+ * there produced a doubled separator (`…//notes.md`).
  */
 function formatDocEntry(context: CloseSaveContext): string {
-  if (context.filePath) {
-    // Show filename with parent directory for context
-    const dir = getDirectory(context.filePath);
-    const parentDir = getDirectory(dir);
-    const shortPath = parentDir
-      ? `…/${dir.split(/[/\\]/).pop()}/${context.title}`
-      : context.filePath;
-    return shortPath;
-  }
-  return `${context.title} (new)`;
+  const { filePath, title } = context;
+  if (!filePath) return i18n.t("dialog:unsavedChanges.newDocEntry", { title });
+  const dir = getDirectory(filePath);
+  const parentName = getFileName(dir);
+  if (!parentName || !getFileName(getDirectory(dir))) return filePath;
+  const sep = filePath.includes("\\") ? "\\" : "/";
+  return `…${sep}${parentName}${sep}${title}`;
 }
 
 /**

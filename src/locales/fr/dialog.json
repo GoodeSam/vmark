@@ -285,5 +285,6 @@
   "fileError.duplicateFailed": "Impossible de dupliquer « {{name}} ».",
   "fileError.copyFailed": "Impossible de copier dans le presse-papiers.",
   "fileError.exportFailed": "Impossible d'exporter en {{format}}.",
-  "fileError.tooManyCopies": "Il existe trop de copies de « {{name}} ». Supprimez-en d'abord quelques-unes."
+  "fileError.tooManyCopies": "Il existe trop de copies de « {{name}} ». Supprimez-en d'abord quelques-unes.",
+  "unsavedChanges.newDocEntry": "{{title}} (nouveau)"
 }

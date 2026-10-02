@@ -72,6 +72,14 @@ describe("multi-document save dialog", () => {
     expect(buttonsOfLastDialog()).toEqual({ yes: SAVE_ALL, no: DONT_SAVE, cancel: CANCEL });
   });
 
+  it("marks an untitled document through i18n, not with an English suffix", async () => {
+    vi.mocked(message).mockResolvedValueOnce(CANCEL);
+    await promptSaveForMultipleDocuments([ctx("Untitled-1", null), ctx("b", "/b.md")]);
+    const text = vi.mocked(message).mock.calls.at(-1)?.[0] as string;
+    expect(text).toContain('<dialog:unsavedChanges.newDocEntry|{\\"title\\":\\"Untitled-1\\"}>');
+    expect(text).not.toContain("(new)");
+  });
+
   it.each([
     [DONT_SAVE, "discarded-all"],
     [CANCEL, "cancelled"],

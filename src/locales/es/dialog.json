@@ -285,5 +285,6 @@
   "fileError.duplicateFailed": "No se pudo duplicar «{{name}}».",
   "fileError.copyFailed": "No se pudo copiar al portapapeles.",
   "fileError.exportFailed": "No se pudo exportar a {{format}}.",
-  "fileError.tooManyCopies": "Hay demasiadas copias de «{{name}}». Elimina algunas primero."
+  "fileError.tooManyCopies": "Hay demasiadas copias de «{{name}}». Elimina algunas primero.",
+  "unsavedChanges.newDocEntry": "{{title}} (nuevo)"
 }

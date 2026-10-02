@@ -285,5 +285,6 @@
   "fileError.duplicateFailed": "Não foi possível duplicar “{{name}}”.",
   "fileError.copyFailed": "Não foi possível copiar para a área de transferência.",
   "fileError.exportFailed": "Não foi possível exportar para {{format}}.",
-  "fileError.tooManyCopies": "Há cópias demais de “{{name}}”. Exclua algumas primeiro."
+  "fileError.tooManyCopies": "Há cópias demais de “{{name}}”. Exclua algumas primeiro.",
+  "unsavedChanges.newDocEntry": "{{title}} (novo)"
 }

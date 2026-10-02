@@ -285,5 +285,6 @@
   "fileError.duplicateFailed": "„{{name}}“ konnte nicht dupliziert werden.",
   "fileError.copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen.",
   "fileError.exportFailed": "Export nach {{format}} fehlgeschlagen.",
-  "fileError.tooManyCopies": "Es gibt zu viele Kopien von „{{name}}“. Bitte löschen Sie zuerst einige."
+  "fileError.tooManyCopies": "Es gibt zu viele Kopien von „{{name}}“. Bitte löschen Sie zuerst einige.",
+  "unsavedChanges.newDocEntry": "{{title}} (neu)"
 }
