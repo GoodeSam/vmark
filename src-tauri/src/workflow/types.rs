@@ -149,8 +149,8 @@ pub struct RawLimits {
     /// Per-step wall-clock timeout. Accepts a bare integer (seconds) or a
     /// suffixed form: `"30s"`, `"5m"`, `"1h"`. Defaults to 300 s when no
     /// step or workflow-default sets it. On elapse the runner cancels the
-    /// shared cancellation token, killing CLI children and dropping REST
-    /// requests, then surfaces `"Timed out after Xs"` as the step error.
+    /// step's own cancellation token, killing its CLI child or dropping its
+    /// REST request, then surfaces `"Timed out after Xs"` as the step error.
     pub timeout: Option<String>,
     /// Cap on AI provider response length. Mapping is provider-specific:
     /// Anthropic body `max_tokens`, OpenAI body `max_tokens`, Google AI
