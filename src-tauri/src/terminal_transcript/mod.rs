@@ -9,6 +9,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Manager, Runtime, State};
 mod config;
+mod open;
 use config::add_hook;
 #[cfg(test)]
 mod tests;
@@ -244,15 +245,9 @@ fn read_snapshot(
     }))
 }
 fn read_tail(path: &Path, limit: u64) -> Result<String, CommandError> {
-    let mut file = std::fs::File::open(path).map_err(|e| CommandError::io(e.to_string()))?;
-    let meta = file
-        .metadata()
-        .map_err(|e| CommandError::io(e.to_string()))?;
-    if !meta.is_file() {
-        return Err(CommandError::invalid_input(
-            "Transcript must be a regular file",
-        ));
-    }
+    // Regular files only, judged before the open — see `open.rs`.
+    let (mut file, meta) =
+        open::open_regular(path)?.ok_or_else(|| CommandError::not_found("Transcript is gone"))?;
     let start = meta.len().saturating_sub(limit);
     let mut at_boundary = start == 0;
     if start > 0 {

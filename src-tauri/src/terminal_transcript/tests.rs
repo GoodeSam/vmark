@@ -1,5 +1,5 @@
 //! WI-TP1.1: preserve existing hooks; refuse arbitrary file reads.
-//! WI-RA6.4: one token encoding.
+//! WI-RA6.4: one token encoding; a binding to a FIFO is refused, not opened.
 use super::*;
 #[test]
 fn merges_hooks_without_destroying_settings() {
@@ -178,4 +178,37 @@ fn enabling_leaves_already_configured_cli_files_untouched() {
         )
     );
     std::fs::remove_dir_all(base).unwrap();
+}
+#[cfg(unix)]
+#[test]
+fn a_binding_to_a_fifo_is_refused_without_blocking_a_thread() {
+    use std::os::unix::ffi::OsStrExt;
+    use std::os::unix::fs::OpenOptionsExt;
+    let (root, sessions, token) = snapshot_fixture();
+    let fifo = sessions.join("t.jsonl");
+    let name = std::ffi::CString::new(fifo.as_os_str().as_bytes()).unwrap();
+    // SAFETY: `name` is a valid NUL-terminated path for the whole call.
+    assert_eq!(unsafe { libc::mkfifo(name.as_ptr(), 0o600) }, 0, "mkfifo");
+    bind(&root, &token, &fifo);
+
+    // Opening a FIFO for reading waits for a writer, so the read runs on its
+    // own thread and has to answer within the deadline.
+    let (done, answer) = std::sync::mpsc::channel();
+    let (thread_root, thread_roots) = (root.clone(), [sessions.clone()]);
+    std::thread::spawn(move || {
+        let outcome = read_snapshot(&thread_root, &thread_roots, &token, None);
+        let _ = done.send(outcome.map(|_| ()).map_err(|error| error.to_string()));
+    });
+    let answer = answer.recv_timeout(std::time::Duration::from_secs(10));
+    // Release a reader that did block, so a failing run leaves no thread behind.
+    let _unblock = std::fs::OpenOptions::new()
+        .write(true)
+        .custom_flags(libc::O_NONBLOCK)
+        .open(&fifo);
+
+    let error = answer
+        .expect("a FIFO must be refused, not opened")
+        .expect_err("a FIFO is not a transcript");
+    assert!(error.contains("regular file"), "{error}");
+    std::fs::remove_dir_all(root.parent().unwrap()).unwrap();
 }
