@@ -1381,11 +1381,6 @@
       "target": "src/plugins/latex/katexLoader"
     },
     {
-      "file": "src/plugins/markmap/markmapExport.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/markmap/index"
-    },
-    {
       "file": "src/plugins/mathPopup/tiptap.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/mathPopup/MathPopupView"
