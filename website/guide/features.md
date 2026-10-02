@@ -485,7 +485,7 @@ The status bar runs along the bottom of the window (`F7` hides it). The left sid
 | Auto-save | A save icon and how long ago the document was auto-saved; fades after a few seconds | — |
 | Counts | Words and characters (spaces not counted); with a selection, *selected / total* | Opens a **Word Count** popover: words, characters, characters without spaces, CJK characters, characters without punctuation |
 | Lint | ⊗ errors or ⚠ warnings found by the last [lint](#markdown-lint) run; hidden when there are none | Jumps to the next issue |
-| AI | While a genie runs, *Thinking…* with the elapsed seconds and a × to cancel; then *Done*, or the error with **Retry** and **Dismiss** — here both clear the error; run the genie again from the picker to retry | — |
+| AI | While a genie runs, *Thinking…* with the elapsed seconds and a × to cancel; then *Done*, or the error with **Retry**, which runs the failed request again, and **Dismiss**; Retry is absent when the failure has nothing to re-run, such as a missing provider | — |
 | MCP | A satellite icon, tinted when an AI client is connected; the word *off*, *…* or *error* when it is not running normally. The tooltip names the connected clients | Opens **Settings → Integrations** |
 | MCP history | The AI writes to this tab, newest first, each with **Restore to before this write**; a trash button clears the tab's history without asking | Opens the list |
 | Terminal | — | Shows or hides the terminal |

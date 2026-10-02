@@ -277,7 +277,7 @@ describe("StatusBarRight", () => {
     expect(onDismissError).toHaveBeenCalledTimes(1);
   });
 
-  it("clicking Retry dismisses the error via onRetryAi (matches actual StatusBar wiring)", () => {
+  it("clicking Retry calls onRetryAi, never onDismissError", () => {
     const onRetryAi = vi.fn();
     const onDismissError = vi.fn();
     render(
@@ -290,10 +290,16 @@ describe("StatusBarRight", () => {
     );
     fireEvent.click(screen.getByText("Retry"));
 
-    // Retry calls onRetryAi which in StatusBar.tsx calls dismissError()
     expect(onRetryAi).toHaveBeenCalledTimes(1);
-    // Dismiss button should NOT have been called
     expect(onDismissError).not.toHaveBeenCalled();
+  });
+
+  // WI-RA19.3 — a failure with nothing to re-run offers no Retry button; one
+  // that only dismissed would duplicate the × beside it.
+  it("shows no Retry when onRetryAi is absent, but keeps Dismiss", () => {
+    render(<StatusBarRight {...baseProps} aiError="No provider" onRetryAi={undefined} />);
+    expect(screen.queryByText("Retry")).toBeNull();
+    expect(screen.getByLabelText("Dismiss error")).toBeInTheDocument();
   });
 
   it("does not show error indicator when AI is running (running takes priority)", () => {

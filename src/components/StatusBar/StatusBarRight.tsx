@@ -79,7 +79,8 @@ interface StatusBarRightProps {
   aiError: string | null;
   showSuccess: boolean;
   onCancelAi: () => void;
-  onRetryAi: () => void;
+  /** Absent when the failure has nothing to re-run; hides the Retry button. */
+  onRetryAi?: (() => void) | undefined;
   onDismissError: () => void;
   mcpRunning: boolean;
   mcpLoading: boolean;

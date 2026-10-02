@@ -78,7 +78,7 @@ export function editorForTab(tabId: string) {
 function applyDirectly(ctx: RunContext, content: string): ApplyOutcome {
   const editor = editorForTab(ctx.tabId);
   if (!editor) {
-    failInvocation(i18n.t("dialog:toast.genieEditorUnavailable"), ctx.requestId);
+    failInvocation(i18n.t("dialog:toast.genieEditorUnavailable"), ctx.requestId, ctx.retry);
     return "failed";
   }
   const doc = useDocumentStore.getState().getDocument(ctx.tabId);
@@ -158,7 +158,7 @@ function keepAsSuggestion(ctx: RunContext, content: string): void {
 export function handleStreamDone(ctx: RunContext, accumulated: string): void {
   const content = accumulated.trim();
   if (!content) {
-    failInvocation(i18n.t("dialog:toast.genieEmptyResponse"), ctx.requestId);
+    failInvocation(i18n.t("dialog:toast.genieEmptyResponse"), ctx.requestId, ctx.retry);
     return;
   }
 

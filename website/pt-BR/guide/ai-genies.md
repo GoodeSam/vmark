@@ -32,7 +32,7 @@ Após selecionar um gênio ou enviar um prompt livre, o seletor mostra feedback 
 - **Visualização** — A resposta da IA aparece à medida que chega: provedores CLI a transmitem enquanto ela é gerada, já os provedores REST entregam a resposta inteira de uma vez quando a solicitação termina. Use `Aceitar` para aplicar ou `Rejeitar` para descartar.
 - **Erro** — Se algo der errado, a mensagem de erro aparece com um botão `Tentar Novamente`.
 
-A barra de status também mostra o progresso da IA — um ícone giratório com tempo decorrido enquanto executa, um breve flash "Concluído" no sucesso, ou um indicador de erro com botões **Tentar novamente** e **Dispensar**. Na barra de status, ambos apenas limpam o erro — para tentar novamente, execute o gênio outra vez pelo seletor. A barra de status é exibida automaticamente quando a IA tem status ativo, mesmo que você a tenha ocultado anteriormente com `F7`.
+A barra de status também mostra o progresso da IA — um ícone giratório com tempo decorrido enquanto executa, um breve flash "Concluído" no sucesso, ou um indicador de erro com botões **Tentar novamente** e **Dispensar**. **Tentar novamente** executa de novo a solicitação que falhou — o mesmo gênio ou prompt, na seleção atual — mesmo depois que o seletor foi fechado; o botão não aparece quando não há nada a repetir, como sem provedor. A barra de status é exibida automaticamente quando a IA tem status ativo, mesmo que você a tenha ocultado anteriormente com `F7`.
 
 ## Gênios Integrados
 

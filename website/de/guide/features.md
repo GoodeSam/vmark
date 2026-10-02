@@ -484,7 +484,7 @@ Die Statusleiste verläuft am unteren Rand des Fensters (`F7` blendet sie aus). 
 | Automatisches Speichern | Ein Speichersymbol und wie lange das automatische Speichern des Dokuments her ist; verblasst nach einigen Sekunden | — |
 | Zählungen | Wörter und Zeichen (Leerzeichen nicht mitgezählt); bei einer Auswahl *ausgewählt / gesamt* | Öffnet ein Popover **Wortzähler**: Wörter, Zeichen, Zeichen ohne Leerzeichen, CJK-Zeichen, Zeichen ohne Satzzeichen |
 | Lint | ⊗ Fehler oder ⚠ Warnungen aus dem letzten [Lint](#markdown-lint)-Durchlauf; ausgeblendet, wenn es keine gibt | Springt zum nächsten Problem |
-| KI | Während ein Genie läuft, *Denkt nach...* mit den verstrichenen Sekunden und einem × zum Abbrechen; danach *Fertig* oder der Fehler mit **Erneut versuchen** und **Schließen** — hier löschen beide den Fehler; führen Sie das Genie zum erneuten Versuch aus der Auswahl erneut aus | — |
+| KI | Während ein Genie läuft, *Denkt nach...* mit den verstrichenen Sekunden und einem × zum Abbrechen; danach *Fertig* oder der Fehler mit **Erneut versuchen**, das die fehlgeschlagene Anfrage erneut ausführt, und **Schließen**; Erneut versuchen fehlt, wenn es nichts zu wiederholen gibt, etwa ohne Anbieter | — |
 | MCP | Ein Satellitensymbol, eingefärbt, wenn ein KI-Client verbunden ist; das Wort *aus*, *…* oder *Fehler*, wenn er nicht normal läuft. Der Tooltip nennt die verbundenen Clients | Öffnet **Einstellungen → Integrationen** |
 | MCP-Verlauf | Die KI-Schreibvorgänge in diesem Tab, neueste zuerst, jeweils mit **Auf den Stand vor diesem Schreibvorgang zurücksetzen**; eine Papierkorb-Schaltfläche löscht den Verlauf des Tabs ohne Rückfrage | Öffnet die Liste |
 | Terminal | — | Zeigt das Terminal an oder blendet es aus |
