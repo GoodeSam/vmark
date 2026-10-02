@@ -71,14 +71,13 @@
     "src/stores/aiStore/suggestion.ts": 336,
     "src/stores/mcpStore.ts": 324,
     "src/stores/tabStore.ts": 457,
-    "src/utils/cursorSync/codemirror.ts": 306,
     "src/utils/exportNaming.ts": 327,
     "src/utils/textTransformations.ts": 335
   },
   "limit": 300,
   "testFiles": {
     "src-tauri/src/mcp_config/config_io.test.rs": 832,
-    "src/components/Editor/SourceEditor.test.tsx": 937,
+    "src/components/Editor/SourceEditor.test.tsx": 935,
     "src/components/Editor/UniversalToolbar/GroupDropdown.test.tsx": 1041,
     "src/components/Editor/UniversalToolbar/UniversalToolbar.test.tsx": 1636,
     "src/components/Editor/UniversalToolbar/useToolbarKeyboard.test.ts": 1047,

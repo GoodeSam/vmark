@@ -18,7 +18,7 @@
  *
  * @coordinates-with TiptapEditor.tsx — shares document content via documentStore
  * @coordinates-with sourceFocusRestore.ts — the shared focus/cursor/scroll restore step
- * @coordinates-with utils/cursorSync/codemirror.ts — cursor position extraction/restoration
+ * @coordinates-with sourceCursorTracker.ts — per-frame cursor snapshot and selected text
  * @coordinates-with stores/editorStore.ts — registers as the active source view
  * @module components/Editor/SourceEditor
  */
@@ -38,7 +38,6 @@ import {
 } from "@/hooks/useDocumentState";
 import { useSourceEditorSearch } from "@/hooks/useSourceEditorSearch";
 import { useSourceEditorSync } from "@/hooks/useSourceEditorSync";
-import { getCursorInfoFromCodeMirror } from "@/utils/cursorSync/codemirror";
 import { trackEditorScroll } from "@/services/editor/scrollPosition";
 import { useEditorStore } from "@/stores/editorStore";
 import { useDocumentStore } from "@/stores/documentStore";
@@ -55,6 +54,7 @@ import {
   readOnlyCompartment,
 } from "@/services/assembly/sourceEditorExtensions";
 import { focusAndRestoreSource } from "./sourceFocusRestore";
+import { createSourceCursorTracker, sourceCursorExtension, type SourceCursorTracker } from "./sourceCursorTracker";
 
 interface SourceEditorProps {
   hidden?: boolean;
@@ -67,6 +67,7 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
   const viewRef = useRef<EditorView | null>(null);
   const isInternalChange = useRef(false);
   const hiddenRef = useRef(hidden);
+  const cursorTrackerRef = useRef<SourceCursorTracker | null>(null);
 
   useSourceOutlineSync(viewRef, hidden);
 
@@ -116,10 +117,12 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
     }
   }, [hidden]);
 
-  // Clear shared selectedText when hidden — keeps the status bar from showing this
-  // editor's last selection while the WYSIWYG editor is active.
+  // On hide: publish a cursor snapshot still waiting for its frame (WYSIWYG restores from it),
+  // then clear shared selectedText so the status bar stops showing this editor's selection.
   useEffect(() => {
-    if (hidden) setSelectedTextRef.current("");
+    if (!hidden) return;
+    cursorTrackerRef.current?.flush();
+    setSelectedTextRef.current("");
   }, [hidden]);
 
   // Create CodeMirror instance
@@ -144,6 +147,12 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
       }
     );
 
+    const cursorTracker = createSourceCursorTracker({
+      setCursorInfo: (info) => setCursorInfoRef.current(info),
+      setSelectedText: (text) => setSelectedTextRef.current(text),
+    });
+    cursorTrackerRef.current = cursorTracker;
+
     const updateListener = EditorView.updateListener.of((update) => {
       // Skip updates when hidden — prevents polluting document store
       if (hiddenRef.current) return;
@@ -167,18 +176,8 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
           );
         }
       }
-      // Track cursor position for mode sync
-      if (update.selectionSet || update.docChanged) {
-        const info = getCursorInfoFromCodeMirror(update.view);
-        setCursorInfoRef.current(info);
-        // Aggregate every range — CodeMirror supports multi-range selection.
-        const ranges = update.state.selection.ranges;
-        const slices: string[] = [];
-        for (const r of ranges) {
-          if (r.from !== r.to) slices.push(update.state.sliceDoc(r.from, r.to));
-        }
-        setSelectedTextRef.current(slices.join("\n"));
-      }
+      // Track cursor position (once per frame) and selected text for mode sync
+      if (update.selectionSet || update.docChanged) cursorTracker.track(update);
     });
 
     const initialWordWrap = useUIStore.getState().wordWrap;
@@ -206,7 +205,7 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
         initialShowLineNumbers,
         initialShowInvisibles,
         initialReadOnly: readOnly,
-        updateListener,
+        updateListener: [updateListener, sourceCursorExtension],
         tabId: mountTabId,
         lintEnabled: initialLintEnabled,
         filePath: mountFilePath,
@@ -259,6 +258,7 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
       unsubscribeShortcuts();
       stopScrollMemory();
       useEditorStore.getState().clearSourceViewIfMatch(view);
+      cursorTracker.flush(); // a snapshot still waiting for its frame is published, not lost
       view.destroy();
       viewRef.current = null;
     };
