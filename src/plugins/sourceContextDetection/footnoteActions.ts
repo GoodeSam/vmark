@@ -7,8 +7,17 @@
  * - Multi-line definitions with indentation
  * - Code block awareness (ignores content in fenced/indented code)
  * - Orphan cleanup
- * - Sequential renumbering with consolidation at document end
+ * - Sequential renumbering with consolidation at document end (the steps
+ *   live in footnoteRenumber.ts)
  */
+
+import {
+  appendConsolidatedDefinitions,
+  buildLabelMap,
+  needsRenumber,
+  relabelReferences,
+  removeDefinitionsWithShift,
+} from "./footnoteRenumber";
 
 // ===========================================
 // Types
@@ -241,165 +250,12 @@ export function renumberFootnotes(doc: string): string | null {
   if (refs.length === 0) return null;
 
   const defs = parseDefinitions(doc, codeRanges);
+  const labelMap = buildLabelMap(refs);
+  if (!needsRenumber(doc, defs, labelMap)) return null;
 
-  // Build label map: old label → new sequential number
-  const labelMap = new Map<string, string>();
-  const seenLabels: string[] = [];
-
-  for (const ref of refs) {
-    if (!labelMap.has(ref.label)) {
-      const newLabel = String(seenLabels.length + 1);
-      labelMap.set(ref.label, newLabel);
-      seenLabels.push(ref.label);
-    }
-  }
-
-  // Check if renumbering is needed
-  let needsChange = false;
-
-  // Check if labels need renumbering
-  for (const [oldLabel, newLabel] of labelMap) {
-    if (oldLabel !== newLabel) {
-      needsChange = true;
-      break;
-    }
-  }
-
-  // Check if definitions need to be moved/consolidated
-  if (!needsChange) {
-    // Check if there are orphaned definitions
-    const refLabels = new Set(refs.map((r) => r.label));
-    for (const def of defs) {
-      if (!refLabels.has(def.label)) {
-        needsChange = true;
-        break;
-      }
-    }
-  }
-
-  // Check if any reference is missing a definition
-  if (!needsChange) {
-    const defLabels = new Set(defs.map((d) => d.label));
-    for (const ref of refs) {
-      if (!defLabels.has(ref.label)) {
-        needsChange = true;
-        break;
-      }
-    }
-  }
-
-  // Check if definitions are not at the end or not in order
-  if (!needsChange && defs.length > 0) {
-    const lastDefEnd = Math.max(...defs.map((d) => d.end));
-    const contentAfterDefs = doc.slice(lastDefEnd).trim();
-    if (contentAfterDefs.length > 0) {
-      needsChange = true;
-    }
-  }
-
-  if (!needsChange) return null;
-
-  // Build definition content map
-  const defContentMap = new Map<string, string>();
-  for (const def of defs) {
-    defContentMap.set(def.label, def.content);
-  }
-
-  // Build the new document
-
-  // 1. Compute the removed ranges once, in original-document coordinates.
-  // Each range is a definition plus its trailing newlines; definitions
-  // separated only by newlines form one range, so the text removal and the
-  // reference position shift below agree on exactly what was removed.
-  const sortedDefs = [...defs].sort((a, b) => a.start - b.start);
-  const removals: Array<{ start: number; length: number }> = [];
-  const skipNewlines = (from: number): number => {
-    let pos = from;
-    while (pos < doc.length && doc[pos] === "\n") pos++;
-    return pos;
-  };
-
-  for (let i = 0; i < sortedDefs.length; i++) {
-    const start = sortedDefs[i].start;
-    let endPos = skipNewlines(sortedDefs[i].end);
-    while (i + 1 < sortedDefs.length && sortedDefs[i + 1].start === endPos) {
-      i++;
-      endPos = skipNewlines(sortedDefs[i].end);
-    }
-    // Keep one newline if there's content after
-    if (endPos > sortedDefs[i].end && endPos < doc.length) {
-      endPos--;
-    }
-    removals.push({ start, length: endPos - start });
-  }
-
-  // Adjust a position to account for all removed text ranges.
-  // Preconditions:
-  //   - `removals` is sorted by start position (ascending)
-  //   - Removal ranges are non-overlapping
-  // Returns -1 if pos falls inside a removed range (error case).
-  function adjustPosition(pos: number): number {
-    let adjustment = 0;
-    for (const removal of removals) {
-      if (pos > removal.start) {
-        if (pos >= removal.start + removal.length) {
-          // Position is after this removal - subtract the removed length
-          adjustment += removal.length;
-        } else {
-          // Position is inside a removal (shouldn't happen for refs outside defs)
-          return -1;
-        }
-      }
-    }
-    return pos - adjustment;
-  }
-
-  // 2. Remove exactly those ranges from the document
-  let contentWithoutDefs = "";
-  let cursor = 0;
-  for (const removal of removals) {
-    contentWithoutDefs += doc.slice(cursor, removal.start);
-    cursor = removal.start + removal.length;
-  }
-  contentWithoutDefs += doc.slice(cursor);
-
-  // 3. Replace references with new labels (in reverse order of adjusted positions)
-  // First, compute adjusted positions and sort by them
-  const refsWithAdjusted = refs.map((ref) => ({
-    ...ref,
-    adjustedStart: adjustPosition(ref.start),
-  }));
-  const sortedRefs = refsWithAdjusted
-    .filter((r) => r.adjustedStart >= 0)
-    .sort((a, b) => b.adjustedStart - a.adjustedStart);
-
-  for (const ref of sortedRefs) {
-    const newLabel = labelMap.get(ref.label);
-    if (newLabel && newLabel !== ref.label) {
-      const oldLen = `[^${ref.label}]`.length;
-      contentWithoutDefs =
-        contentWithoutDefs.slice(0, ref.adjustedStart) +
-        `[^${newLabel}]` +
-        contentWithoutDefs.slice(ref.adjustedStart + oldLen);
-    }
-  }
-
-  // 4. Trim trailing whitespace from content
-  contentWithoutDefs = contentWithoutDefs.trimEnd();
-
-  // 5. Build definitions section
-  const definitionLines: string[] = [];
-  for (let i = 0; i < seenLabels.length; i++) {
-    const oldLabel = seenLabels[i];
-    const newLabel = String(i + 1);
-    const content = defContentMap.get(oldLabel) ?? "";
-    definitionLines.push(`[^${newLabel}]: ${content}`);
-  }
-
-  // 6. Combine content and definitions
-  const result = contentWithoutDefs + "\n\n" + definitionLines.join("\n");
-
-  return result;
+  const { text, adjustPosition } = removeDefinitionsWithShift(doc, defs);
+  const body = relabelReferences(text, refs, labelMap, adjustPosition);
+  return appendConsolidatedDefinitions(body, labelMap, defs);
 }
 
 /**
