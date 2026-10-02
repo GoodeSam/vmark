@@ -61,8 +61,8 @@ describe("fixCurrencySpacing never crosses a line boundary", () => {
   it("leaves a no-break space between number and unit alone", () => {
     // U+00A0 and U+202F are typed on purpose (French and SI style); they are
     // not the stray ASCII gap this rule exists to remove.
-    expect(fixCurrencySpacing("50 %")).toBe("50 %");
-    expect(fixCurrencySpacing("50 %")).toBe("50 %");
+    expect(fixCurrencySpacing("50\u{a0}%")).toBe("50\u{a0}%");
+    expect(fixCurrencySpacing("50\u{202f}%")).toBe("50\u{202f}%");
   });
 });
 
