@@ -96,9 +96,9 @@ watcher-registration delay.
 **Tier-0 (data integrity)** journeys guard the unrecoverable failure class —
 silently losing or corrupting a user's document. They are the ones where unit
 coverage is structurally a lie (they need real tabs, real files, the real
-save/autosave pipeline). See `dev-docs/e2e-tier0-matrix.md` for the full
-invariant × journey matrix, including the data-integrity invariants that stay
-manual-only and why.
+save/autosave pipeline). The full invariant × journey matrix, including the
+data-integrity invariants that stay manual-only and why, is the maintainer-local
+`dev-docs/e2e-tier0-matrix.md` (not in a clone).
 
 ## Driving mechanisms (discovered + verified live)
 
@@ -190,7 +190,7 @@ journey (rerun once the app is stable).
 # VMark E2E Smoke Harness
 
 > **RW-13 (L12) · hardening v2-005** — closes the audit gap "No executable E2E
-> smoke harness." See `dev-docs/audit/20260607-wi-audit-report.md` (L12 / v2-005).
+> smoke harness." (the maintainer-local `dev-docs/audit/20260607-wi-audit-report.md`, L12 / v2-005).
 
 A minimal, runnable happy-path smoke test that drives a **live VMark debug
 build** through its Tauri MCP automation bridge.
