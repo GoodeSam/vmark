@@ -76,20 +76,26 @@ export function addCJKParenthesisSpacing(text: string): string {
  * - Prefix currency symbols ($, ¥, €, £, ₹) bind tight to following number: `$ 100` → `$100`
  * - Unit symbols (%, ‰, ℃, ℉, °) bind tight to preceding number: `50 %` → `50%`
  * - Postfix currency codes (USD, CNY, EUR, GBP, RMB) are spaced from preceding number: `100USD` → `100 USD`
+ *
+ * Every gap this rule REMOVES is `[ \t]+`, never `\s+`. `\s` matches line
+ * terminators, and the replacement drops the gap, so a number ending one
+ * paragraph and a `%` starting the next were joined into a single paragraph.
+ * It also matches U+00A0 and U+202F, which an author types on purpose between
+ * a number and its unit; those are left alone for the same reason.
  */
 export function fixCurrencySpacing(
   text: string,
   postfixCurrency: "tight" | "spaced" = "spaced"
 ): string {
   // Prefix currency symbols bind tight to following number
-  text = text.replace(/([$¥€£₹])\s+(\d)/g, "$1$2");
+  text = text.replace(/([$¥€£₹])[ \t]+(\d)/g, "$1$2");
 
   // Prefix currency codes bind tight to following number (style choice: keep tight)
-  text = text.replace(/(USD|CNY|EUR|GBP|RMB|JPY)\s+(\d)/g, "$1$2");
+  text = text.replace(/(USD|CNY|EUR|GBP|RMB|JPY)[ \t]+(\d)/g, "$1$2");
 
   // Unit symbols bind tight to preceding number
   // Note: No word boundary assertion since these are Unicode symbols
-  text = text.replace(/(\d)\s+(%|‰|℃|℉|°[CcFf]?)(?=[\s,;.。，；、！？!?)\]」』】〉》)]|$)/g, "$1$2");
+  text = text.replace(/(\d)[ \t]+(%|‰|℃|℉|°[CcFf]?)(?=[\s,;.。，；、！？!?)\]」』】〉》)]|$)/g, "$1$2");
 
   // Postfix currency codes: space or tight based on setting
   if (postfixCurrency === "spaced") {
@@ -97,7 +103,7 @@ export function fixCurrencySpacing(
     text = text.replace(/(\d)(USD|CNY|EUR|GBP|RMB|JPY)\b/g, "$1 $2");
   } else {
     // Remove space between number and postfix currency code
-    text = text.replace(/(\d)\s+(USD|CNY|EUR|GBP|RMB|JPY)\b/g, "$1$2");
+    text = text.replace(/(\d)[ \t]+(USD|CNY|EUR|GBP|RMB|JPY)\b/g, "$1$2");
   }
 
   return text;
