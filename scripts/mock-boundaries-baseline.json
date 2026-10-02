@@ -1311,11 +1311,6 @@
       "target": "server/mcp/src/index"
     },
     {
-      "file": "src/components/Browser/BrowserWorkspaceSurface.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Browser/BrowserChrome"
-    },
-    {
       "file": "src/components/Editor/cvSizingScope.webkit.test.tsx",
       "api": "vi.mock",
       "target": "src/components/Editor/ImageContextMenu"
