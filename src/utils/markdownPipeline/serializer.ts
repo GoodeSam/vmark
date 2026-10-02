@@ -138,6 +138,13 @@ function getSerializer(hardBreak: HardBreakSpelling) {
   return serializer;
 }
 
+/** The document parse of `markdown`, positions removed, as a comparable string. */
+function treeWithoutPositions(markdown: string): string {
+  return JSON.stringify(parseMarkdownToMdast(markdown), (key, value: unknown) =>
+    key === "position" ? undefined : value,
+  );
+}
+
 /**
  * Serialize MDAST to markdown text.
  *
@@ -159,16 +166,18 @@ export function serializeMdastToMarkdown(
   // mdast-util-to-markdown patch), which a string repair afterwards could not
   // do without changing what the delimiter beside them flanks.
 
-  // A document-leading thematic break can serialize as `---` and then be
-  // REPARSED as a frontmatter fence, swallowing structure (CommonMark
-  // examples 43/47/77). But that only happens when something later closes
-  // the fence — a lone `---` rule reparses as a thematic break exactly as
-  // written. So VERIFY rather than assume: swap to `***` only when the
-  // reparse actually turns the break into frontmatter. Assuming cost real
+  // A document-leading thematic break can serialize as `---`, and `---` on
+  // the first line is also where frontmatter opens. When something later
+  // closes the fence, everything between is swallowed (CommonMark examples
+  // 43/47/77); and even when nothing does, the block directly after it is
+  // read as a paragraph where a list or a blockquote was written. `***` is
+  // never either of those. So VERIFY rather than assume: keep `---` only when
+  // it reads back exactly as `***` in its place does. Assuming cost real
   // fidelity — typing `---` in an empty document came back as `***`.
   if (mdast.children[0]?.type === "thematicBreak" && result.startsWith("---")) {
-    if (parseMarkdownToMdast(result).children[0]?.type !== "thematicBreak") {
-      result = `***${result.slice(3)}`;
+    const withAsterisks = `***${result.slice(3)}`;
+    if (treeWithoutPositions(result) !== treeWithoutPositions(withAsterisks)) {
+      result = withAsterisks;
     }
   }
 
