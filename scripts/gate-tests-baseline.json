@@ -11,7 +11,6 @@
   "check-i18n-keys.ts",
   "check-merge-drops.mjs",
   "check-test-timer-isolation.mjs",
-  "check-type-aware.mjs",
   "lint-console.sh"
  ]
 }
