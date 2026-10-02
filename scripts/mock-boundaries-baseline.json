@@ -1331,11 +1331,6 @@
       "target": "src/components/Editor/sourcePendingNav"
     },
     {
-      "file": "src/components/Editor/SplitPaneEditor/SplitPaneEditor.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Editor/SplitPaneEditor/SourcePane"
-    },
-    {
       "file": "src/components/Editor/SplitPaneEditor/SplitPaneEditor.trustSeverity.test.tsx",
       "api": "vi.mock",
       "target": "src/components/Editor/SplitPaneEditor/SourcePane"
