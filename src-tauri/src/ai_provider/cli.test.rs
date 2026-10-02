@@ -15,10 +15,22 @@ use super::*;
 #[cfg(unix)]
 use crate::ai_provider::sink::testing::{RecordingSink, SinkEvent};
 
+/// Resolve the login-shell PATH before a time-bounded test starts its clock.
+/// The first lookup in the process runs the user's login shell — seconds on a
+/// loaded machine — and is cached after; a bound meant for the behaviour under
+/// test must not be spent on it by whichever test happens to run first.
+#[cfg(unix)]
+async fn warm_login_path() {
+    tokio::task::spawn_blocking(super::login_shell_path)
+        .await
+        .expect("PATH lookup");
+}
+
 /// Cancellation kills a long-running shim within a deadline.
 #[cfg(unix)]
 #[tokio::test]
 async fn cancellation_kills_long_running_shim() {
+    warm_login_path().await;
     let typed = Arc::new(RecordingSink::new());
     let sink: Arc<dyn AiSink> = typed.clone();
 
@@ -94,6 +106,7 @@ async fn successful_exit_emits_done() {
 #[cfg(unix)]
 #[tokio::test]
 async fn chatty_stderr_child_does_not_deadlock() {
+    warm_login_path().await;
     let typed = Arc::new(RecordingSink::new());
     let sink: Arc<dyn AiSink> = typed.clone();
     let cancel = CancellationToken::new();
@@ -196,6 +209,7 @@ async fn a_prompt_reaches_a_real_child_on_stdin_byte_for_byte() {
 #[cfg(unix)]
 #[tokio::test]
 async fn a_large_prompt_is_written_while_stdout_is_being_read() {
+    warm_login_path().await;
     let prompt = big_prompt();
     assert!(prompt.len() > 1024 * 1024);
     let typed = Arc::new(RecordingSink::new());
@@ -228,6 +242,7 @@ async fn a_large_prompt_is_written_while_stdout_is_being_read() {
 #[cfg(unix)]
 #[tokio::test]
 async fn cancellation_is_honoured_while_the_prompt_is_still_unread() {
+    warm_login_path().await;
     let typed = Arc::new(RecordingSink::new());
     let sink: Arc<dyn AiSink> = typed.clone();
     let cancel = CancellationToken::new();
@@ -256,6 +271,7 @@ async fn cancellation_is_honoured_while_the_prompt_is_still_unread() {
 #[cfg(unix)]
 #[tokio::test]
 async fn a_child_that_exits_without_reading_the_prompt_is_an_error() {
+    warm_login_path().await;
     let typed = Arc::new(RecordingSink::new());
     let sink: Arc<dyn AiSink> = typed.clone();
 
@@ -290,6 +306,7 @@ async fn a_child_that_exits_without_reading_the_prompt_is_an_error() {
 #[cfg(unix)]
 #[tokio::test]
 async fn a_failing_child_reports_its_exit_status_not_the_broken_stdin_pipe() {
+    warm_login_path().await;
     let typed = Arc::new(RecordingSink::new());
     let sink: Arc<dyn AiSink> = typed.clone();
 
