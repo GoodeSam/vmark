@@ -53,6 +53,10 @@ pub(crate) fn register(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<ta
     }
 
     builder = builder
+        // Every webview the app shows, `main` included: it is built by Tauri
+        // from `tauri.conf.json`, so a plugin hook is the only place a
+        // navigation rule can reach it.
+        .plugin(crate::window_manager::navigation_guard::plugin())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .targets([

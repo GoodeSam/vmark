@@ -28,7 +28,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; img-src 'self' asset: https://asset.localhost blob: data: https: http:; style-src 'self' 'unsafe-inline'; frame-src 'self' vmark-trusted: http://vmark-trusted.localhost",
+      "csp": "default-src 'self'; script-src 'self'; img-src 'self' asset: https://asset.localhost blob: data: https: http:; style-src 'self' 'unsafe-inline'; frame-src 'self' vmark-trusted: http://vmark-trusted.localhost; form-action 'none'",
       "assetProtocol": {
         "enable": true,
         "scope": ["$HOME/**", "/Volumes/**", "/mnt/**", "/media/**"]
