@@ -9,21 +9,21 @@ use std::path::Path;
 use tempfile::TempDir;
 
 /// One search over the fixture: the options a caller can vary.
-pub(super) struct Case {
-    pub name: &'static str,
+struct Case {
+    name: &'static str,
     /// Searched directory, relative to the fixture root ("" = the root).
-    pub subdir: &'static str,
-    pub query: &'static str,
-    pub case_sensitive: bool,
-    pub whole_word: bool,
-    pub use_regex: bool,
-    pub markdown_only: bool,
-    pub extensions: &'static [&'static str],
-    pub exclude_folders: &'static [&'static str],
+    subdir: &'static str,
+    query: &'static str,
+    case_sensitive: bool,
+    whole_word: bool,
+    use_regex: bool,
+    markdown_only: bool,
+    extensions: &'static [&'static str],
+    exclude_folders: &'static [&'static str],
 }
 
 impl Case {
-    pub(super) const fn plain(name: &'static str, query: &'static str) -> Self {
+    const fn plain(name: &'static str, query: &'static str) -> Self {
         Case {
             name,
             subdir: "",
@@ -37,7 +37,7 @@ impl Case {
         }
     }
 
-    pub fn run(&self, root: &Path, deadline: Instant) -> Result<SearchOutcome, String> {
+    fn run(&self, root: &Path, deadline: Instant) -> Result<SearchOutcome, String> {
         search_sync_with_deadline(
             root.join(self.subdir).to_str().unwrap(),
             self.query,
@@ -53,7 +53,7 @@ impl Case {
 }
 
 /// Every option the search takes, exercised at least once.
-pub(super) const CASES: &[Case] = &[
+const CASES: &[Case] = &[
     Case::plain("default", "World"),
     Case {
         case_sensitive: true,
@@ -93,7 +93,7 @@ pub(super) const CASES: &[Case] = &[
 ];
 
 /// A workspace with one of everything the walker has a rule for.
-pub(super) fn fixture() -> TempDir {
+fn fixture() -> TempDir {
     let dir = TempDir::new().unwrap();
     let root = dir.path();
     let write = |relative: &str, contents: &[u8]| {

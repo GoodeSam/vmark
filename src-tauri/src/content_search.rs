@@ -253,7 +253,3 @@ mod tests;
 #[cfg(test)]
 #[path = "content_search_fixture.test.rs"]
 mod fixture_tests;
-
-#[cfg(test)]
-#[path = "content_search_legacy.test.rs"]
-mod legacy_differential;
