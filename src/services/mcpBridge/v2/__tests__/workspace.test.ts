@@ -4,6 +4,7 @@
 // mcpSavePipeline.test.ts and workspaceSaveAs.test.ts.
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { fileBytes } from "@/test/fileBytes";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
 
@@ -26,7 +27,7 @@ vi.mock("@/services/persistence/workspaceStorage", () => ({
 
 const readMock = vi.fn<(path: string) => Promise<string>>(async () => "");
 vi.mock("@tauri-apps/plugin-fs", () => ({
-  readTextFile: (path: string) => readMock(path),
+  readFile: (path: string) => fileBytes(readMock(path)),
 }));
 
 // The path guard itself is unit-tested in

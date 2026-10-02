@@ -20,7 +20,8 @@
  */
 
 import { listen } from "@tauri-apps/api/event";
-import { readTextFile, stat } from "@tauri-apps/plugin-fs";
+import { stat } from "@tauri-apps/plugin-fs";
+import { readDocumentText } from "@/services/files/readDocumentText";
 
 import { isBinaryMediaPath } from "@/services/navigation/openMediaFile";
 import {
@@ -118,7 +119,7 @@ function ensureSource(windowLabel: string): Source {
               if (info.size > MAX_SUPPRESS_BYTES) {
                 throw new Error("file too large to fingerprint");
               }
-              return readTextFile(path);
+              return readDocumentText(path);
             },
             hash: hashContent,
             isMedia: (path) => isBinaryMediaPath(path),

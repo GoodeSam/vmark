@@ -17,7 +17,7 @@
 import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { readTextFile } from "@tauri-apps/plugin-fs";
+import { readDocumentText } from "@/services/files/readDocumentText";
 import { useWorkspaceStore, type WorkspaceConfig } from "@/stores/workspaceStore";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
@@ -85,7 +85,7 @@ export function useWorkspaceBootstrap() {
 
         let content: string;
         try {
-          content = await readTextFile(filePath);
+          content = await readDocumentText(filePath);
         } catch {
           // File may have been moved/deleted - skip it
           workspaceWarn(`Could not restore tab: ${filePath}`);

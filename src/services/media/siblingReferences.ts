@@ -12,7 +12,8 @@
  * @module services/media/siblingReferences
  */
 
-import { readDir, readTextFile } from "@tauri-apps/plugin-fs";
+import { readDir } from "@tauri-apps/plugin-fs";
+import { readDocumentText } from "@/services/files/readDocumentText";
 import { join } from "@tauri-apps/api/path";
 import { isMarkdownFileName } from "@/utils/dropPaths";
 import { extractImageReferenceKeys } from "@/utils/imageReferences";
@@ -113,7 +114,7 @@ export async function collectSiblingReferences(
     // trusting only one side deletes what the other still references. A missing
     // file is fine when a buffer covered it; otherwise the scan is incomplete.
     try {
-      add(await readTextFile(fullPath));
+      add(await readDocumentText(fullPath));
     } catch (error) {
       if (known === undefined) {
         orphanCleanupError(` Failed to read sibling ${fullPath}:`, error);

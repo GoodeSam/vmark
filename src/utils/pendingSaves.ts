@@ -85,7 +85,7 @@ export function clearPendingSave(path: string, token?: number): void {
  * How long a finished write stays registered, in milliseconds.
  *
  * The watcher reports our own write asynchronously: Rust debounce (200 ms) →
- * emit → JS event loop → async `readTextFile` → comparison. Under heavy I/O
+ * emit → JS event loop → async `readDocumentText` → comparison. Under heavy I/O
  * that pipeline has exceeded 500 ms, and macOS FSEvents can deliver late on
  * top of it. The registration has to still be there when the event arrives,
  * or the app asks the user about a change it made itself.

@@ -21,7 +21,7 @@
  * @module services/navigation/restoreWorkspaceTabs
  */
 
-import { readTextFile } from "@tauri-apps/plugin-fs";
+import { readDocumentText } from "@/services/files/readDocumentText";
 import { z } from "zod";
 import { useTabStore, tabFilePath } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
@@ -40,7 +40,7 @@ import { useClosedTabScopesStore } from "@/stores/tabStoreClosedScopes";
  * Is `tabId` STILL the clean untitled tab it was when we probed for it?
  *
  * The probe happens before the file reads and the close happens after, so the
- * verdict in between is stale by construction: `await readTextFile` yields, and
+ * verdict in between is stale by construction: `await readDocumentText` yields, and
  * in that window the user can type into the tab, save it, or close it. Acting
  * on the old verdict would discard their work — the one outcome this cleanup
  * must never produce. So the decision to close is re-derived from live state at
@@ -69,7 +69,7 @@ async function restoreOnePath(windowLabel: string, filePath: string): Promise<bo
   // open pipeline refuses it before any read; this function hand-rolls its own
   // read/create/ingest and so has to consult the same guard. A workspace's
   // persisted tabs are document paths, and a media tab IS a document tab with a
-  // path, so an image or video in `lastOpenTabs` reached `readTextFile`.
+  // path, so an image or video in `lastOpenTabs` reached the text read.
   //
   // INSIDE the failure boundary (audit #976). This ran outside either catch, so
   // a throw from media routing, document init or the ownership claim rejected
@@ -84,7 +84,7 @@ async function restoreOnePath(windowLabel: string, filePath: string): Promise<bo
 
   let content: string;
   try {
-    content = await readTextFile(filePath);
+    content = await readDocumentText(filePath);
   } catch (error) {
     // Read failure only. Nothing was created, so there is nothing to roll back.
     // Kept separate from the catch below so a post-create failure cannot be

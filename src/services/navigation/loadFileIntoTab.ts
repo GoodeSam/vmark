@@ -8,7 +8,7 @@
  * @coordinates-with services/navigation/finderOpenBranches.ts — receives this via ctx
  * @module services/navigation/loadFileIntoTab
  */
-import { readTextFile } from "@tauri-apps/plugin-fs";
+import { readDocumentText } from "@/services/files/readDocumentText";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useRecentFilesStore } from "@/stores/workspaceStore";
@@ -18,7 +18,7 @@ import { useRecentFilesStore } from "@/stores/workspaceStore";
  * Throws on read failure so callers can handle cleanup.
  */
 export async function loadFileIntoTab(tabId: string, path: string): Promise<void> {
-  const content = await readTextFile(path);
+  const content = await readDocumentText(path);
   // Close-during-open guard, mirroring fileOpen.ts (WI-0.2, C1) — writing now
   // would resurrect an orphan document for a tab closed mid-read.
   if (!useTabStore.getState().findTabById(tabId)) return;

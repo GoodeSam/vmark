@@ -84,14 +84,24 @@ class StatefulFsFake {
     this.disk.seed(path, content, opts);
   }
 
+  /** Put raw bytes on the fake disk — e.g. a UTF-16 file, which no UTF-8 string describes. */
+  seedBytes(path: string, bytes: Uint8Array, opts?: { mtimeMs?: number }): void {
+    this.disk.seedBytes(path, bytes, opts);
+  }
+
   /** Simulate an EXTERNAL writer (editor, git, cloud sync): new bytes, new mtime. */
   externalWrite(path: string, content: string, opts?: { mtimeMs?: number }): void {
     this.disk.seed(path, content, opts);
   }
 
-  /** Bytes at `path`. Throws when absent — an assertion must never read a hole. */
+  /** The file at `path` as text, every byte kept (a leading BOM included). Throws when absent. */
   read(path: string): string {
     return this.disk.read(path);
+  }
+
+  /** The raw bytes at `path`. Throws when absent. */
+  readBytes(path: string): Uint8Array {
+    return this.disk.readBytes(path);
   }
 
   has(path: string): boolean {
@@ -136,6 +146,7 @@ class StatefulFsFake {
   fsModule(): Record<string, unknown> {
     const impl: Record<string, unknown> = {
       readTextFile: (path: string) => this.disk.readTextFile(path),
+      readFile: (path: string) => this.disk.readFile(path),
       writeTextFile: (path: string, contents: string) =>
         this.performWrite(path, contents, "writeTextFile"),
       exists: (path: string) => Promise.resolve(this.disk.has(path) || this.disk.hasDir(path)),

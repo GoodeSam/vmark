@@ -7,6 +7,7 @@
  * @module hooks/useExternalFileChanges.test
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { fileBytes } from "@/test/fileBytes";
 import { renderHook } from "@testing-library/react";
 
 // --- Hoisted mocks ---
@@ -30,7 +31,7 @@ vi.mock("@tauri-apps/api/event", () => ({
 }));
 
 vi.mock("@tauri-apps/plugin-fs", () => ({
-  readTextFile: mocks.readTextFile,
+  readFile: (path: string) => fileBytes(mocks.readTextFile(path)),
   exists: mocks.exists,
 }));
 
@@ -310,7 +311,6 @@ describe("useExternalFileChanges — rename events", () => {
     expect(doc?.lastDiskContent).toBe("# new external content");
     expect(mocks.toastInfo).toHaveBeenCalledWith("Reloaded: test.md");
   });
-
 
   it("handles paired rename (real file rename) by updating tab path", async () => {
     seedStores();

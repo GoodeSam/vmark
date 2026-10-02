@@ -32,7 +32,7 @@
  * @module services/media/closeCleanup
  */
 
-import { readTextFile } from "@tauri-apps/plugin-fs";
+import { readDocumentText } from "@/services/files/readDocumentText";
 import { dirname } from "@tauri-apps/api/path";
 import { fileOpsError } from "@/utils/debug";
 import { useDocumentStore } from "@/stores/documentStore";
@@ -65,7 +65,7 @@ async function contentAfterClose(
 ): Promise<string | null> {
   if (bufferMatchesDisk) return content;
   try {
-    return await readTextFile(filePath);
+    return await readDocumentText(filePath);
   } catch (error) {
     fileOpsError("OrphanCleanup could not re-read closing document:", error);
     return null;

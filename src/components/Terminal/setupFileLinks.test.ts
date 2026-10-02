@@ -4,6 +4,7 @@
 // :line nav; plus the oversized-file and stat-failure guards. Link *detection*
 // is covered by fileLinkProvider.test.ts.
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { fileBytes } from "@/test/fileBytes";
 import type { Terminal } from "@xterm/xterm";
 
 const h = vi.hoisted(() => ({
@@ -24,7 +25,7 @@ vi.mock("./fileLinkProvider", () => ({
     return { provideLinks: vi.fn() };
   },
 }));
-vi.mock("@tauri-apps/plugin-fs", () => ({ stat: h.stat, readTextFile: h.readTextFile }));
+vi.mock("@tauri-apps/plugin-fs", () => ({ stat: h.stat, readFile: (path: string) => fileBytes(h.readTextFile(path)) }));
 vi.mock("@/stores/tabStore", () => ({
   useTabStore: { getState: () => ({ createTab: h.createTab }) },
 }));

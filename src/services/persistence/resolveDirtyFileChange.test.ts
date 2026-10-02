@@ -12,6 +12,7 @@
  * @module services/persistence/resolveDirtyFileChange.test
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { fileBytes } from "@/test/fileBytes";
 
 const {
   mockMessage,
@@ -34,7 +35,7 @@ vi.mock("@tauri-apps/plugin-dialog", () => ({
   save: (...a: unknown[]) => mockSave(...a),
 }));
 vi.mock("@tauri-apps/plugin-fs", () => ({
-  readTextFile: (...a: unknown[]) => mockReadTextFile(...a),
+  readFile: (...a: unknown[]) => fileBytes(mockReadTextFile(...a)),
 }));
 vi.mock("@/services/persistence/saveToPath", () => ({
   saveToPath: (...a: unknown[]) => mockSaveToPath(...a),

@@ -1,7 +1,7 @@
 // Path-only open for binary media (image/audio/video) tabs.
 //
 // Split out of useFileOpen.ts: media never goes through the text-read
-// pipeline. No readTextFile, no size gate, no linebreak detection — the bytes
+// pipeline. No text read, no size gate, no linebreak detection — the bytes
 // never enter the JS heap. The document is initialized with EMPTY content so
 // hot-exit never serializes binary; the media surface (MediaView) resolves the
 // tab's filePath to an asset:// URL, granting asset access itself before it
@@ -51,7 +51,7 @@ export function tryOpenMediaFile(
  * Replace an EXISTING clean tab's content with a media file (path-only).
  * Mirrors openMediaFileInNewTab but reuses the caller's tabId instead of
  * creating a new tab — the Cmd+O / Open-Recent replace path routes media here
- * so a binary file selected into a clean tab never hits readTextFile.
+ * so a binary file selected into a clean tab is never read as text.
  * updateTabPath re-derives the tab's formatId (→ media); loadContent writes
  * EMPTY content so no binary bytes enter the document store. Synchronous — no
  * close-during-read race.
