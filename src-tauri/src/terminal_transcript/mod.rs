@@ -21,8 +21,12 @@ struct ConfigGate {
     revision: AtomicU64,
 }
 const LIMIT: u64 = 2 * 1024 * 1024;
+/// A token is the lowercase hyphenated UUID `terminal_transcript_prepare`
+/// issues, and nothing else. It names the binding file, so the other spellings
+/// of the same UUID (uppercase, braced, `urn:uuid:`, no hyphens) would each
+/// name a different file.
 fn valid_token(token: &str) -> bool {
-    uuid::Uuid::parse_str(token).is_ok()
+    uuid::Uuid::parse_str(token).is_ok_and(|uuid| uuid.as_hyphenated().to_string() == token)
 }
 fn directory<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, CommandError> {
     app.path()

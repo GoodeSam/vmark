@@ -1,4 +1,5 @@
 //! WI-TP1.1: preserve existing hooks; refuse arbitrary file reads.
+//! WI-RA6.4: one token encoding.
 use super::*;
 #[test]
 fn merges_hooks_without_destroying_settings() {
@@ -22,8 +23,28 @@ fn invalid_hook_config_is_not_overwritten() {
 #[test]
 fn tokens_are_opaque_uuids() {
     assert!(valid_token("cb28fc00-2c1b-4eaf-9d09-71d9d5392926"));
+    assert!(valid_token(&terminal_transcript_prepare()));
     assert!(!valid_token("../secret"));
     assert!(!valid_token(""));
+}
+#[test]
+fn a_token_is_accepted_only_in_the_encoding_vmark_issues() {
+    // Every one of these names the same UUID as the accepted form above, and
+    // each would name a DIFFERENT binding file.
+    for other in [
+        "CB28FC00-2C1B-4EAF-9D09-71D9D5392926",
+        "cb28fc002c1b4eaf9d0971d9d5392926",
+        "{cb28fc00-2c1b-4eaf-9d09-71d9d5392926}",
+        "urn:uuid:cb28fc00-2c1b-4eaf-9d09-71d9d5392926",
+        " cb28fc00-2c1b-4eaf-9d09-71d9d5392926",
+        "cb28fc00-2c1b-4eaf-9d09-71d9d5392926\n",
+    ] {
+        assert!(!valid_token(other), "{other:?}");
+    }
+    // Thirty-six characters the hook's own pattern lets through.
+    assert!(!valid_token("------------------------------------"));
+    assert!(!valid_token("cb28fc002c1b4eaf9d0971d9d5392926abcd"));
+    assert!(!valid_token("令牌令牌令牌令牌令牌令牌"));
 }
 #[test]
 fn canonical_paths_are_confined_to_session_roots() {
