@@ -23,13 +23,15 @@ use std::collections::HashMap;
 // every time, and the only place it can be reported is here.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[allow(dead_code)]
 pub struct RawWorkflow {
     /// Human-readable name of the workflow. Required. Surfaces in logs and
     /// (for picker-invoked workflow genies) as the description fallback when
     /// `description:` is absent.
     pub name: String,
-    /// Optional one-line description. Shown in the genie picker row.
+    /// Optional one-line description. Shown in the genie picker row, which
+    /// reads it from the file itself: the engine accepts the key and does not
+    /// act on it. It has to stay a field — these structs refuse unknown keys,
+    /// so without it a workflow that describes itself would not run.
     #[serde(default)]
     pub description: Option<String>,
     /// Workflow-scope environment variables available to every step via
@@ -55,7 +57,6 @@ pub struct RawWorkflow {
 /// `step_config::resolve_step_config`.
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[allow(dead_code)]
 pub struct RawDefaults {
     /// Default AI model for `genie/*` steps. Step-level `model:` overrides;
     /// genie metadata `model:` overrides defaults; provider default applies
@@ -76,7 +77,6 @@ pub struct RawDefaults {
 ///   - `webhook/...` — reserved; not yet implemented.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[allow(dead_code)]
 pub struct RawStep {
     /// Optional explicit step identifier. When absent, the runner derives
     /// one from `uses` (last path segment). Required for downstream
@@ -145,7 +145,6 @@ impl NeedsDef {
 /// `dev-docs/plans/20260418-genie-in-workflow.md` for the rationale.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[allow(dead_code)]
 pub struct RawLimits {
     /// Per-step wall-clock timeout. Accepts a bare integer (seconds) or a
     /// suffixed form: `"30s"`, `"5m"`, `"1h"`. Defaults to 300 s when no
@@ -161,7 +160,9 @@ pub struct RawLimits {
     pub max_tokens: Option<u64>,
     /// Cap on AI provider cost. **Currently parsed but unenforced** — see
     /// D9: cost accounting needs per-provider pricing tables and per-model
-    /// tokenizers, deferred to a future plan.
+    /// tokenizers, deferred to a future plan. Nothing reads the value; it
+    /// stays a field because these structs refuse unknown keys, and a
+    /// workflow that states a budget must still run.
     pub max_cost: Option<String>,
 }
 
@@ -211,3 +212,7 @@ pub struct ExecutionCompleteEvent {
     /// cancelled mid-run).
     pub status: String,
 }
+
+#[cfg(test)]
+#[path = "types.test.rs"]
+mod tests;
