@@ -16,6 +16,7 @@ import { searchWorkspace } from "./search";
 import { buildCsp, SECURITY_HEADERS } from "./headers";
 import { KB_CSS, KB_JS } from "./assets";
 import { assetHref, createAssetHandler } from "./assetRoute";
+import { escapeHtml, htmlShell } from "./pageShell";
 import { containedAbsPath, containedDeck, realContainedPath } from "./pathContainment";
 import { noopLogger, type Logger } from "./logger";
 import { SlidevManager } from "../slidev/manager";
@@ -45,28 +46,6 @@ export interface ContentServer {
   notifyReload: (relPath?: string) => void;
   /** Stop any running Slidev dev servers (called on runtime shutdown). */
   stopSlidev: () => Promise<void>;
-}
-
-function htmlShell(title: string, body: string, sessionToken: string): string {
-  // Asset URLs carry ?s so the cookie-blocked in-app iframe can load them
-  // (grill M2). kb.js propagates ?s to in-page links + the SSE stream.
-  const q = `?s=${encodeURIComponent(sessionToken)}`;
-  return `<!doctype html><html><head><meta charset="utf-8">` +
-    `<meta name="viewport" content="width=device-width, initial-scale=1">` +
-    `<title>${escapeHtml(title)}</title>` +
-    `<link rel="stylesheet" href="/__assets/kb.css${q}">` +
-    `</head><body><main class="kb-content">${body}</main>` +
-    `<script src="/__assets/kb.js${q}"></script></body></html>`;
-}
-
-// grill M14 — strip Unicode bidi-control chars (RTL override etc.) so a crafted
-// filename can't visually spoof entries in the served index list.
-const BIDI_CONTROLS = /[‪-‮⁦-⁩‎‏]/g;
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(BIDI_CONTROLS, "")
-    .replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 }
 
 /**
@@ -225,7 +204,7 @@ export function createContentServer(options: ContentServerOptions): ContentServe
       htmlShell(
         "Workspace",
         `<h1>Workspace</h1><p><a href="/graph">Relationship graph →</a></p><ul class="kb-index">${items}</ul>`,
-        auth.sessionToken
+        auth.urlTokenFor(c)
       )
     );
   });
@@ -253,15 +232,19 @@ export function createContentServer(options: ContentServerOptions): ContentServe
     // hidden/ignored/non-markdown files via a direct /note/ URL, defeating the
     // walk policy (Codex audit; pairs with WI-2.1 .gitignore honoring).
     if (!getIndex().refs.has(fromRel)) return c.json({ error: "not found" }, 404);
+    // The rendered page embeds asset URLs, which differ by whether this
+    // request needs the token in them, so the cache holds each form apart.
+    const urlToken = auth.urlTokenFor(c);
+    const cacheKey = `${urlToken === null ? "cookie" : "token"}:${fromRel}`;
     let content: string;
     let mtimeMs: number;
     try {
       const stat = await fs.stat(real);
       mtimeMs = stat.mtimeMs;
-      const cached = renderCache.get(fromRel);
+      const cached = renderCache.get(cacheKey);
       if (cached && cached.mtimeMs === mtimeMs) {
         const title = getIndex().refs.get(fromRel)?.title ?? path.basename(real);
-        return c.html(htmlShell(title, cached.html, auth.sessionToken));
+        return c.html(htmlShell(title, cached.html, urlToken));
       }
       content = await fs.readFile(real, "utf8");
     } catch (err) {
@@ -281,16 +264,16 @@ export function createContentServer(options: ContentServerOptions): ContentServe
       // Local media resolved against /note/ hits the markdown-only index gate
       // and 404s; point it at the asset route instead (audit 20260906,
       // MCP-C03).
-      resolveAssetUrl: (url) => assetHref(fromRel, url, auth.sessionToken),
+      resolveAssetUrl: (url) => assetHref(fromRel, url, urlToken),
     });
     // Store in the render cache (simple FIFO eviction at the cap).
     if (renderCache.size >= RENDER_CACHE_MAX) {
       const oldest = renderCache.keys().next().value;
       if (oldest !== undefined) renderCache.delete(oldest);
     }
-    renderCache.set(fromRel, { mtimeMs, html });
+    renderCache.set(cacheKey, { mtimeMs, html });
     const title = idx.refs.get(fromRel)?.title ?? path.basename(real);
-    return c.html(htmlShell(title, html, auth.sessionToken));
+    return c.html(htmlShell(title, html, urlToken));
   });
 
   app.get("/api/graph", (c) => c.json(getIndex().graph));
@@ -330,7 +313,7 @@ export function createContentServer(options: ContentServerOptions): ContentServe
         );
       })
       .join("");
-    return c.html(htmlShell("Graph", `<h1>Relationship graph</h1>${sections}`, auth.sessionToken));
+    return c.html(htmlShell("Graph", `<h1>Relationship graph</h1>${sections}`, auth.urlTokenFor(c)));
   });
 
   app.get("/api/backlinks/*", (c) => {

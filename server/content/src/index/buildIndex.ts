@@ -41,7 +41,7 @@ export async function buildIndex(
   const refs = new Map<string, DocRefs>();
 
   for (const doc of docs) {
-    let content = "";
+    let content: string;
     try {
       content = await fs.readFile(doc.absPath, "utf8");
     } catch {
