@@ -196,6 +196,12 @@ const hardBreaks = (md: string): number => {
 /** Seeds that each found one of the defects above; fixed so a failure reproduces. */
 const MESSY_SEEDS = [4, 13, 15, 24];
 
+// These pass no timeout of their own and run under the suite's liveness bound
+// (`LIVENESS_TIMEOUT_MS`, vitest.shared.ts), which is set from what is
+// unambiguously a hang. A messy-document property costs ~5 s alone on a loaded
+// box — measured — and overran the 30 s of PROPERTY_TEST_TIMEOUT_MS in a full
+// run. A real regression fails on an assertion, not by running long.
+
 describe("markdown pipeline — round-trip properties, messy documents", () => {
   it.each(MESSY_SEEDS)("is stable after one round, in either style (seed %i)", (seed) => {
     fc.assert(
@@ -205,7 +211,7 @@ describe("markdown pipeline — round-trip properties, messy documents", () => {
       }),
       { numRuns: 300, seed },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 
   it.each(MESSY_SEEDS)("keeps every hard break, in either style (seed %i)", (seed) => {
     fc.assert(
@@ -214,5 +220,5 @@ describe("markdown pipeline — round-trip properties, messy documents", () => {
       }),
       { numRuns: 300, seed },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 });
