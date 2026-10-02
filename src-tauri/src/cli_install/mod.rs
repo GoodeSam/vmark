@@ -232,3 +232,7 @@ pub fn cli_uninstall() -> Result<CliCommandOutcome, String> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "install_flow.test.rs"]
+mod install_flow_tests;
