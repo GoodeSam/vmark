@@ -166,17 +166,12 @@ export const MANIFEST = {
       checks: [{ mode: "identity", at: "entries", shape: "strings", onAdd: "fail" }],
     },
     {
-      // WI-18's identity list; its header: entries only get REMOVED.
+      // WI-18's store-mock list and the sibling-logic-mock list beside it;
+      // its header: entries only get REMOVED.
       path: "scripts/mock-boundaries-baseline.json",
-      checks: [
-        {
-          mode: "identity",
-          at: "entries",
-          shape: "objects",
-          key: ["file", "api", "target"],
-          onAdd: "fail",
-        },
-      ],
+      checks: ["entries", "siblingEntries"].map((at) => ({
+        mode: "identity", at, shape: "objects", key: ["file", "api", "target"], onAdd: "fail",
+      })),
     },
     {
       // A new top-level surface legitimately needs an entry (check-shell-slots
