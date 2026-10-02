@@ -40,6 +40,8 @@
  *   - Every handler resolves its tab through `tabGuard.ts`, which first
  *     flushes the mounted editors into the store — so it reads, checks and
  *     replaces what the user actually has, pending keystrokes included.
+ *   - `write` and `transform` refuse BUSY, changing nothing, while the user
+ *     is composing with an input method in the editor showing the tab.
  *
  * @coordinates-with tabGuard.ts — tab resolution, the flush, INVALID_TAB and STALE
  * @coordinates-with liveEditor.ts — the mounted WYSIWYG editor ↔ store seam
@@ -58,7 +60,7 @@ import { respond } from "@/services/mcpBridge/utils";
 import { wrapHandler } from "./wrapHandler";
 import { saveTabForBridge } from "./bridgeSave";
 import { describeSizeChange, recordBridgeCheckpoint } from "./checkpoint";
-import { loadIntoLiveWysiwyg } from "./liveEditor";
+import { liveCompositionRefusal, loadIntoLiveWysiwyg } from "./liveEditor";
 import { readOperationArgs } from "./readOperationArgs";
 import { requireCurrentRevision, requireTab, resolveKind, structuredError } from "./tabGuard";
 import {
@@ -67,10 +69,12 @@ import {
   isTransformKind,
   TRANSFORM_KINDS,
 } from "./documentTransform";
-import type { DocumentKind } from "./types";
+import type { DocumentKind, V2Error } from "./types";
 
 /**
- * Replace a tab's content and return the revision the document is then at.
+ * Replace a tab's content and return the revision the document is then at,
+ * or BUSY — with nothing changed — while the live WYSIWYG editor showing the
+ * tab has an IME composition in progress (`liveEditor.ts`).
  * Does NOT call `respond` — callers decide how to package the result.
  *
  * The store takes the content as an EDIT that keeps the document's disk
@@ -83,7 +87,13 @@ import type { DocumentKind } from "./types";
  * The revision is bumped HERE, last, so the token returned is by construction
  * the document's newest: nothing after this point changes the document.
  */
-function writeContent(tabId: string, content: string, kind: DocumentKind): { revision: string } {
+function writeContent(
+  tabId: string,
+  content: string,
+  kind: DocumentKind,
+): { revision: string } | V2Error {
+  const refusal = liveCompositionRefusal(tabId);
+  if (refusal) return refusal;
   useDocumentStore.getState().ingestExternalContent(tabId, content, "mcp-write");
   if (kind === "markdown") loadIntoLiveWysiwyg(tabId, content);
   return { revision: useRevisionStore.getState().updateRevision(tabId) };
@@ -160,6 +170,10 @@ export async function handleDocumentWrite(
     // authoritative source of truth at write time.
     const writeKind = resolveKind(tab.filePath, content);
     const result = writeContent(tab.tabId, content, writeKind);
+    if ("error" in result) {
+      await structuredError(id, result);
+      return;
+    }
     // The buffer this write produced, read back from the store BEFORE any
     // await: canonical text (a client may send CRLF; a live WYSIWYG editor
     // re-serializes), and this request's own — a later request can replace
@@ -243,6 +257,10 @@ export async function handleDocumentTransform(
     }
 
     const result = writeContent(tab.tabId, transformed, tab.kind);
+    if ("error" in result) {
+      await structuredError(id, result);
+      return;
+    }
     recordBridgeCheckpoint({
       tabId: tab.tabId,
       filePath: tab.filePath,

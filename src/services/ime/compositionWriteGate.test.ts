@@ -38,9 +38,7 @@ function endComposition(stub: StubView, view: EditorView): void {
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance", "Date"] });
-  // The fake clock starts at 0, and the grace-period bookkeeping reads a
-  // recorded end time of 0 as "no composition has ended". A page's clock has
-  // been running for a while by the time anyone types.
+  // A page's clock has been running for a while by the time anyone types.
   vi.advanceTimersByTime(10_000);
 });
 

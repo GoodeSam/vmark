@@ -29,6 +29,12 @@
  *     so what gets saved — is the editor's serialization of the client's text,
  *     not its exact characters. Disk, store and editor then agree, which no
  *     other choice can offer while the editor holds a parsed document.
+ *   - A write into an editor with an IME composition in progress is REFUSED,
+ *     not deferred. The browser owns the preedit text and its DOM node until
+ *     the composition ends and is cleaned up; a replaced document under it is
+ *     committed or dropped by WebKit. A handler must answer its client now, so
+ *     it asks `liveCompositionRefusal` before it touches the store and answers
+ *     BUSY; the client retries once the user has finished typing.
  *
  * Known limitations:
  *   - Only the editor registered as the active WYSIWYG editor is loaded
@@ -38,8 +44,9 @@
  *
  * @coordinates-with utils/wysiwygFlush.ts — the flusher registry
  * @coordinates-with components/Editor/useTiptapFlush.ts — what a flush does
- * @coordinates-with components/Editor/tiptapEditorHelpers.ts — the editor's own content loads
+ * @coordinates-with components/Editor/tiptapContentLoad.ts — the editor's own content loads
  * @coordinates-with services/mcpBridge/revisionTracker.ts — bumps on every document transaction
+ * @coordinates-with services/ime/compositionWriteGate.ts — whether a composition is in progress
  * @module services/mcpBridge/v2/liveEditor
  */
 import { useEditorStore } from "@/stores/editorStore";
@@ -47,6 +54,9 @@ import { parseMarkdown } from "@/utils/markdownPipeline";
 import { flushAllWysiwygNow } from "@/utils/wysiwygFlush";
 import { getSerializeOptions } from "@/plugins/toolbarActions/wysiwygAdapterUtils";
 import { mcpBridgeLog } from "@/utils/debug";
+import { isCompositionInProgress } from "@/services/ime/compositionWriteGate";
+import type { Editor } from "@tiptap/core";
+import type { V2Error } from "./types";
 
 /**
  * Bring the document store up to date with every mounted WYSIWYG editor.
@@ -54,6 +64,37 @@ import { mcpBridgeLog } from "@/utils/debug";
  */
 export function flushLiveEditors(): void {
   flushAllWysiwygNow();
+}
+
+/**
+ * The refusal a bridge write gets while the editor it would change has an IME
+ * composition in progress. BUSY: the state is transient, and the client
+ * should retry shortly.
+ */
+export function composingRefusal(): V2Error {
+  return {
+    error: "BUSY",
+    message: "The user is composing text with an input method in this document; retry shortly",
+  };
+}
+
+/** The live WYSIWYG editor, when it is showing `tabId`. */
+function liveWysiwygEditor(tabId: string): Editor | null {
+  const { tiptap, active } = useEditorStore.getState();
+  const editor = tiptap.editor;
+  return editor && active.activeWysiwygTabId === tabId ? editor : null;
+}
+
+/**
+ * The refusal for a write to `tabId` while the live WYSIWYG editor showing it
+ * has an IME composition in progress; `null` when the write may go ahead (the
+ * tab is not the one on screen, or nobody is composing).
+ *
+ * Ask BEFORE changing the store: a refused write must change nothing.
+ */
+export function liveCompositionRefusal(tabId: string): V2Error | null {
+  const editor = liveWysiwygEditor(tabId);
+  return editor && isCompositionInProgress(editor.view) ? composingRefusal() : null;
 }
 
 /**
@@ -66,16 +107,21 @@ export function flushLiveEditors(): void {
  * would replace that one), or the content could not be parsed — the editor
  * then keeps its old document and its own content sync reports the tab as
  * unparseable and moves it to Source mode.
+ *
+ * Throws while an IME composition is in progress in that editor: the caller
+ * was required to ask `liveCompositionRefusal` first and answer BUSY.
  */
 export function loadIntoLiveWysiwyg(tabId: string, content: string): boolean {
-  const { tiptap, active } = useEditorStore.getState();
-  const editor = tiptap.editor;
-  if (!editor || active.activeWysiwygTabId !== tabId) return false;
+  const editor = liveWysiwygEditor(tabId);
+  if (!editor) return false;
+  const view = editor.view;
+  if (isCompositionInProgress(view)) {
+    throw new Error("loadIntoLiveWysiwyg: an IME composition is in progress; ask liveCompositionRefusal first");
+  }
   try {
     const next = parseMarkdown(editor.schema, content, {
       preserveLineBreaks: getSerializeOptions().preserveLineBreaks,
     });
-    const view = editor.view;
     view.dispatch(
       view.state.tr
         .replaceWith(0, view.state.doc.content.size, next.content)

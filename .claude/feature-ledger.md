@@ -1451,10 +1451,10 @@ Every document tab resolves to a format through `src/lib/formats/registry.ts`; `
 - status: shipped-on
 - gate: always on
 - surfaces: automatic; toast; status bar
-- code: `src/services/editor/unparseableDocument.ts`; `src/components/Editor/TiptapEditor.tsx`; `src/components/Editor/tiptapEditorHelpers.ts`; `src/components/Editor/useTiptapFlush.ts`; `src/stores/documentStore/largeFileSession.ts`; `src/components/StatusBar/SourceModeUpgrade.tsx`; `src/utils/markdownPipeline/nestingDepth.ts`
+- code: `src/services/editor/unparseableDocument.ts`; `src/components/Editor/TiptapEditor.tsx`; `src/components/Editor/tiptapContentLoad.ts`; `src/components/Editor/useTiptapFlush.ts`; `src/stores/documentStore/largeFileSession.ts`; `src/components/StatusBar/SourceModeUpgrade.tsx`; `src/utils/markdownPipeline/nestingDepth.ts`
 - rust: none
 - docs: `website/guide/large-files.md` §"What counts as \"large\"" (document WYSIWYG cannot display)
-- tests: `src/services/editor/unparseableDocument.test.ts`, `src/components/Editor/useTiptapFlush.test.ts`, `src/components/StatusBar/SourceModeUpgrade.test.tsx`
+- tests: `src/services/editor/unparseableDocument.test.ts`, `src/components/Editor/tiptapContentLoad.test.ts`, `src/components/Editor/useTiptapFlush.test.ts`, `src/components/StatusBar/SourceModeUpgrade.test.tsx`
 - notes: none
 
 ### Undo integrity guard

@@ -27,7 +27,7 @@ import { getTiptapEditorView } from "@/services/editor/tiptapView";
 import { scheduleTiptapFocusAndRestore } from "@/services/editor/tiptapFocus";
 import { restoreCursorInTiptap } from "@/utils/cursorSync/tiptap";
 import { consumeWysiwygPendingNav } from "./wysiwygPendingNav";
-import { syncMarkdownToEditor } from "./tiptapEditorHelpers";
+import { syncMarkdownToEditor } from "./tiptapContentLoad";
 import { previewSyncDelay } from "./previewDebounce";
 
 interface TiptapContentSyncParams {

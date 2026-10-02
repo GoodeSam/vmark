@@ -1,6 +1,8 @@
 // WI-RA1A.3 — the seam between a bridge handler and the mounted WYSIWYG
 // editor: when content is loaded into the editor, when it is not, and what
 // the flusher is (and is not) allowed to do afterwards.
+// WI-RA18.2 — while the user composes with an IME in that editor, a write is
+// refused (liveCompositionRefusal) and a load that skipped the question throws.
 //
 // A real Tiptap editor and the real editor store and flusher registry; no
 // mocks. The end-to-end behaviour, with the production editor component
@@ -11,7 +13,11 @@ import StarterKit from "@tiptap/starter-kit";
 import type { Transaction } from "@tiptap/pm/state";
 import { useEditorStore } from "@/stores/editorStore";
 import { registerWysiwygFlusher } from "@/utils/wysiwygFlush";
-import { flushLiveEditors, loadIntoLiveWysiwyg } from "@/services/mcpBridge/v2/liveEditor";
+import {
+  flushLiveEditors,
+  liveCompositionRefusal,
+  loadIntoLiveWysiwyg,
+} from "@/services/mcpBridge/v2/liveEditor";
 
 let editor: Editor;
 let transactions: Transaction[];
@@ -96,6 +102,39 @@ describe("loadIntoLiveWysiwyg", () => {
     // The editor still holds the OLD document; a flush now would write it
     // over the content the handler has just put in the store.
     expect(flushes).toEqual([]);
+  });
+});
+
+describe("while an IME composition is in progress in the live editor", () => {
+  beforeEach(() => {
+    goLive("tab-live");
+    vi.spyOn(editor.view, "composing", "get").mockReturnValue(true);
+  });
+
+  it("refuses a write to the tab it is showing with BUSY", () => {
+    expect(liveCompositionRefusal("tab-live")).toMatchObject({ error: "BUSY" });
+  });
+
+  it("does not refuse a write to a tab it is not showing", () => {
+    expect(liveCompositionRefusal("tab-background")).toBeNull();
+  });
+
+  it("throws on a load that did not ask first, leaving the editor untouched", () => {
+    expect(() => loadIntoLiveWysiwyg("tab-live", "new document\n")).toThrow(/composition/);
+    expect(editor.getText()).toBe("old document");
+    expect(transactions).toEqual([]);
+    expect(flushes).toEqual([]);
+  });
+});
+
+describe("liveCompositionRefusal with nobody composing", () => {
+  it("lets the write go ahead", () => {
+    goLive("tab-live");
+    expect(liveCompositionRefusal("tab-live")).toBeNull();
+  });
+
+  it("lets the write go ahead when no editor is mounted", () => {
+    expect(liveCompositionRefusal("tab-live")).toBeNull();
   });
 });
 

@@ -7,8 +7,8 @@ import type { Editor as TiptapEditor } from "@tiptap/core";
 
 const syncMarkdownToEditor = vi.hoisted(() => vi.fn(() => false));
 
-vi.mock("./tiptapEditorHelpers", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("./tiptapEditorHelpers")>()),
+vi.mock("./tiptapContentLoad", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./tiptapContentLoad")>()),
   syncMarkdownToEditor,
 }));
 

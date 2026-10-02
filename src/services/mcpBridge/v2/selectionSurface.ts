@@ -20,11 +20,17 @@
  *   - The editor must belong to the focused tab. An editor still registered
  *     for a previously focused tab is treated as absent: acting on it would
  *     edit a document the request did not name.
+ *   - While an IME composition is in progress in the editor (or has just
+ *     ended and is not yet cleaned up), `writeRefusal` answers BUSY and
+ *     `replaceSelection` throws: a replacement dispatched under the preedit
+ *     text is committed or dropped by the browser. The handler asks first.
  *
  * @coordinates-with selection.ts — the handlers
  * @coordinates-with stores/editorStore.ts — focused editor instances
  * @coordinates-with stores/uiStore.ts — sourceMode picks the editor
  * @coordinates-with utils/markdownPipeline/index.ts — parseMarkdown / serializeMarkdown
+ * @coordinates-with services/ime/compositionWriteGate.ts — WYSIWYG composition state
+ * @coordinates-with utils/imeGuard.ts — Source composition state
  * @module services/mcpBridge/v2/selectionSurface
  */
 import type { Editor as TiptapEditor } from "@tiptap/core";
@@ -33,6 +39,9 @@ import { useUIStore } from "@/stores/uiStore";
 import { useEditorStore } from "@/stores/editorStore";
 import { parseMarkdown, serializeMarkdown } from "@/utils/markdownPipeline";
 import { getSerializeOptions } from "@/plugins/toolbarActions/wysiwygAdapterUtils";
+import { isCompositionInProgress } from "@/services/ime/compositionWriteGate";
+import { isCodeMirrorComposing, isCodeMirrorInCompositionGrace } from "@/utils/imeGuard";
+import { composingRefusal } from "./liveEditor";
 import type { V2Error } from "./types";
 
 /** Which position space a selection's `range` lives in. */
@@ -47,8 +56,20 @@ export interface SelectionSurface {
   selectedText(): string;
   /** The whole document as the editor holds it now. */
   documentText(): string;
-  /** Replace the selection with `content` (an empty string deletes it). */
+  /** BUSY while an IME composition owns part of the editor; otherwise `null`. */
+  writeRefusal(): V2Error | null;
+  /**
+   * Replace the selection with `content` (an empty string deletes it).
+   * Throws when `writeRefusal()` would refuse.
+   */
   replaceSelection(content: string): void;
+}
+
+/** Fail loudly if a caller replaces without asking `writeRefusal` first. */
+function assertNotComposing(composing: boolean): void {
+  if (composing) {
+    throw new Error("replaceSelection: an IME composition is in progress; ask writeRefusal first");
+  }
 }
 
 /**
@@ -94,6 +115,7 @@ function tiptapSelectionText(editor: TiptapEditor): string {
 
 /** Replace the current PM selection with parsed markdown. */
 function replaceTiptapSelection(editor: TiptapEditor, content: string): void {
+  assertNotComposing(isCompositionInProgress(editor.view));
   const { from, to } = editor.state.selection;
   const schema = editor.state.schema;
   const $from = editor.state.doc.resolve(from);
@@ -137,6 +159,7 @@ function wysiwygSurface(editor: TiptapEditor): SelectionSurface {
     selectedText: () => tiptapSelectionText(editor),
     documentText: () =>
       serializeMarkdown(editor.state.schema, editor.state.doc, getSerializeOptions()),
+    writeRefusal: () => (isCompositionInProgress(editor.view) ? composingRefusal() : null),
     replaceSelection: (content) => replaceTiptapSelection(editor, content),
   };
 }
@@ -146,6 +169,7 @@ function sourceSurface(view: CMView): SelectionSurface {
     const { from, to } = view.state.selection.main;
     return { from, to };
   };
+  const composing = () => isCodeMirrorComposing(view) || isCodeMirrorInCompositionGrace(view);
   return {
     mode: "source",
     range,
@@ -154,7 +178,9 @@ function sourceSurface(view: CMView): SelectionSurface {
       return from === to ? "" : view.state.sliceDoc(from, to);
     },
     documentText: () => view.state.doc.toString(),
+    writeRefusal: () => (composing() ? composingRefusal() : null),
     replaceSelection: (content) => {
+      assertNotComposing(composing());
       const { from, to } = range();
       view.dispatch({
         changes: { from, to, insert: content },

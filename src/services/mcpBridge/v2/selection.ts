@@ -24,6 +24,8 @@
  *     `get` and `set`, the edit lands at the new position. The
  *     doc-level revision catches keystrokes; pure cursor movement is
  *     not arbitrated by the server.
+ *   - `set` refuses BUSY, changing nothing, while the user is composing with
+ *     an input method in the focused editor; `get` is never refused.
  *   - After an edit the mounted editor is flushed at once, and the revision
  *     is bumped last, so the revision returned is still the document's
  *     current one after the editor settles (`liveEditor.ts`).
@@ -104,6 +106,13 @@ export async function handleSelectionSet(
       return;
     }
     if (!(await requireCurrentRevision(id, tab.tabId, wire.expected_revision))) return;
+    // Asked after the last await, so nothing can start a composition between
+    // the answer and the replacement.
+    const refusal = surface.writeRefusal();
+    if (refusal) {
+      await structuredError(id, refusal);
+      return;
+    }
 
     const revisionStore = useRevisionStore.getState();
     const revisionBefore = revisionStore.getRevision(tab.tabId);
