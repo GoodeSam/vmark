@@ -167,6 +167,7 @@ Owns: `services/files/applyModifyPolicy.ts`, `plugins/compositionGuard/**`, `hot
 - **WI-RA10A.11 — `restoreListeners` cannot leak an unlisten.** Audit §3 Low.
 - **WI-RA10A.12 — truncation is surrogate-safe.** Audit §3 Low.
 - **WI-RA10A.13 — history index read-modify-write is serialized.** Audit §3 Low.
+- **WI-RA10A.16 — history revert goes through the save pipeline.**
 - **WI-RA10A.14 — `historyMaxAgeDays` minimum is 1.** Audit §3 Low.
 
 #### Phase RA10b — Editor performance (TS)
@@ -190,6 +191,7 @@ Owns: `src-tauri/src/watcher.rs`, `atomic_replace.rs`, `app_paths.rs`, `content_
 - **WI-RA11.3 — content search: one open + `fstat` per file, one deadline budget; function split.** Audit §5, §6.
 - **WI-RA11.4 — coherence commands run blocking work on `spawn_blocking`, hash once, skip unchanged files.** Audit §6 High #2.
 - **WI-RA11.5 — no sync I/O on the main thread** in `workspace.rs`, `watcher.rs`, `shell_env.rs`. Audit §6 Low.
+- **WI-RA11.7 — `gha_lint` does not take a PATH prefix from the webview; no bare `Command::new`.**
 - **WI-RA11.6 — file tree sends relative paths.** Audit §6 Low.
 
 #### Phase RA12a — Rust cleanup
@@ -199,6 +201,7 @@ Owns: `src-tauri/src/content_server/**`, `Cargo.toml`, `pdf_export/page_spec.rs`
 - **WI-RA12A.2 — stale comments:** `block2`, `page_spec.rs`. Audit §1 Low.
 - **WI-RA12A.3 — one `ProviderEndpoint::resolve` in `rest_api.rs`.** Audit §5.
 - **WI-RA12A.4 — every `unsafe` block carries a `// SAFETY:` comment; `nav_delegate_macos.rs` checks the class before the cast; clippy's `undocumented_unsafe_blocks` holds it.** Audit §2 Low.
+- **WI-RA12A.7 — stale workflow completion-event comments.**
 - **WI-RA12A.5 — legacy migration shims carry a version-based removal condition** (Rust and TS; comments carry no calendar dates, rule 22). Audit §1 Low.
 
 #### Phase RA16 — Dependencies and CI
