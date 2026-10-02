@@ -15,7 +15,7 @@ import type { UpdateCheckFrequency } from "@/stores/settingsTypes";
 import { useMcpStore } from "@/stores/mcpStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUpdateOperations } from "@/hooks/useUpdateOperations";
-import { CheckCircle2, AlertCircle, Download, Globe, ScrollText } from "lucide-react";
+import { CheckCircle2, AlertCircle, Download, ExternalLink, Globe } from "lucide-react";
 import { GithubMark } from "./GithubMark";
 import { UpdateAvailableCard } from "./UpdateAvailableCard";
 // `?no-inline`: the icon is three flat polygons and compresses under Vite's 4 KB
@@ -72,7 +72,7 @@ function Links() {
     { icon: Globe, label: t("about.website"), open: () => openLink(WEBSITE_URL) },
     { icon: GithubMark, label: t("about.github"), open: () => openLink(GITHUB_URL) },
     {
-      icon: ScrollText,
+      icon: ExternalLink,
       label: t("about.thirdPartyNotices"),
       open: () => openThirdPartyNotices(t("about.thirdPartyNoticesFailed")),
     },
