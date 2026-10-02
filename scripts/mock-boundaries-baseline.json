@@ -114,41 +114,6 @@
       "target": "src/stores/uiStore"
     },
     {
-      "file": "src/components/Editor/TiptapEditor.lifecycle.test.tsx",
-      "api": "vi.doMock",
-      "target": "src/stores/tabStore"
-    },
-    {
-      "file": "src/components/Editor/TiptapEditor.lifecycle.test.tsx",
-      "api": "vi.mock",
-      "target": "src/stores/activeEditorStore"
-    },
-    {
-      "file": "src/components/Editor/TiptapEditor.lifecycle.test.tsx",
-      "api": "vi.mock",
-      "target": "src/stores/documentStore"
-    },
-    {
-      "file": "src/components/Editor/TiptapEditor.lifecycle.test.tsx",
-      "api": "vi.mock",
-      "target": "src/stores/settingsStore"
-    },
-    {
-      "file": "src/components/Editor/TiptapEditor.lifecycle.test.tsx",
-      "api": "vi.mock",
-      "target": "src/stores/tabStore"
-    },
-    {
-      "file": "src/components/Editor/TiptapEditor.lifecycle.test.tsx",
-      "api": "vi.mock",
-      "target": "src/stores/tiptapEditorStore"
-    },
-    {
-      "file": "src/components/Editor/TiptapEditor.lifecycle.test.tsx",
-      "api": "vi.mock",
-      "target": "src/stores/uiStore"
-    },
-    {
       "file": "src/components/Editor/TiptapEditor.sync.test.tsx",
       "api": "vi.mock",
       "target": "src/stores/activeEditorStore"
@@ -1369,11 +1334,6 @@
       "file": "src/components/Editor/SplitPaneEditor/SplitPaneEditor.trustSeverity.test.tsx",
       "api": "vi.mock",
       "target": "src/components/Editor/SplitPaneEditor/SourcePane"
-    },
-    {
-      "file": "src/components/Editor/TiptapEditor.lifecycle.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Editor/wysiwygPendingNav"
     },
     {
       "file": "src/components/Editor/TiptapEditor.test.tsx",
