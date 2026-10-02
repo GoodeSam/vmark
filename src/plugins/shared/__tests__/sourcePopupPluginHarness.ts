@@ -55,6 +55,7 @@ export function createMockEditorView(): EditorView {
       doc: { lineAt: () => ({ from: 0, to: 20, text: "hello world" }) },
       selection: { main: { from: 5, to: 5 } },
     },
-    coordsAtPos: vi.fn(() => ({ top: 100, left: 50, bottom: 120, right: 200 })),
+    // Position-dependent, so an anchor rect shows which range it was built from.
+    coordsAtPos: vi.fn((pos: number) => ({ top: 100 + pos, left: 50 + pos, bottom: 120 + pos, right: 200 + pos })),
   } as unknown as EditorView;
 }

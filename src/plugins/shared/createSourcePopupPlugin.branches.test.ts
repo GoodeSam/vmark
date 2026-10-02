@@ -7,14 +7,6 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import type { EditorView, ViewUpdate } from "@codemirror/view";
 import type { PopupStoreBase, SourcePopupView, StoreApi } from "./SourcePopupView";
 
-// Mock sourcePopupUtils
-vi.mock("./sourcePopupUtils", () => ({
-  getAnchorRectFromRange: vi.fn(
-    (_view: unknown, from: number, to: number) =>
-      ({ top: 100 + from, left: 50, bottom: 120 + to, right: 200 })
-  ),
-}));
-
 import {
   createSourcePopupPlugin,
   type PopupTriggerConfig,
