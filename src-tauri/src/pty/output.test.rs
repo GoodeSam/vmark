@@ -160,3 +160,80 @@ fn the_writer_still_blocks_rather_than_failing() {
     assert!(flags >= 0, "F_GETFL failed");
     assert_eq!(flags & libc::O_NONBLOCK, 0, "the master must stay blocking");
 }
+
+/// The source used where the master offers no interruptible wait (Windows).
+/// It is plain Rust over a `Read`, so its behaviour is pinned here.
+mod without_a_multiplexer {
+    use super::super::fallback::from_reader;
+    use super::{Chunk, DEADLINE};
+    use std::io::{Cursor, Write};
+    use std::os::unix::net::UnixStream;
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    #[test]
+    fn output_and_its_end_are_reported() {
+        let (mut source, _interrupter) =
+            from_reader(Box::new(Cursor::new("héllo".as_bytes().to_vec())));
+        let mut buf = [0u8; 64];
+
+        let Ok(Chunk::Data(n)) = source.read(&mut buf) else {
+            panic!("expected data");
+        };
+        assert_eq!(&buf[..n], "héllo".as_bytes());
+        assert!(matches!(source.read(&mut buf), Ok(Chunk::Eof)));
+    }
+
+    #[test]
+    fn an_interrupt_is_honoured_before_a_read_and_stays_in_force() {
+        let (mut source, interrupter) = from_reader(Box::new(Cursor::new(b"pending".to_vec())));
+
+        interrupter.interrupt();
+        interrupter.interrupt();
+
+        let mut buf = [0u8; 64];
+        for _ in 0..3 {
+            assert!(matches!(source.read(&mut buf), Ok(Chunk::Interrupted)));
+        }
+    }
+
+    #[test]
+    fn an_interrupt_that_arrives_during_a_blocked_read_wins_over_its_result() {
+        let (blocked, mut peer) = UnixStream::pair().unwrap();
+        let (mut source, interrupter) = from_reader(Box::new(blocked));
+        let (done, result) = mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = done.send(source.read(&mut [0u8; 16]));
+        });
+        assert!(
+            result.recv_timeout(Duration::from_millis(50)).is_err(),
+            "nothing to read yet, so the read is still waiting"
+        );
+
+        interrupter.interrupt();
+        // The read itself cannot be woken here; it returns when data arrives.
+        peer.write_all(b"late").unwrap();
+
+        let chunk = result.recv_timeout(DEADLINE).expect("the read returns");
+        assert!(matches!(chunk, Ok(Chunk::Interrupted)));
+    }
+
+    #[test]
+    fn a_bounded_wait_times_out_or_ends_early_on_an_interrupt() {
+        let (source, interrupter) = from_reader(Box::new(Cursor::new(Vec::new())));
+        assert!(!source
+            .interrupted_within(Duration::from_millis(20))
+            .unwrap());
+
+        let (done, result) = mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = done.send(source.interrupted_within(Duration::from_secs(600)));
+        });
+        interrupter.interrupt();
+
+        let interrupted = result
+            .recv_timeout(DEADLINE)
+            .expect("the interrupt must cut the wait short");
+        assert!(matches!(interrupted, Ok(true)));
+    }
+}
