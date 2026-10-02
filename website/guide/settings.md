@@ -374,7 +374,7 @@ The Language section contains 20+ fine-grained formatting toggles. For a full ex
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| Convert fullwidth letters/numbers | Convert fullwidth alphanumeric characters to halfwidth (e.g., `ABC` to `ABC`) | On |
+| Convert fullwidth letters/numbers | Convert fullwidth alphanumeric characters to halfwidth (e.g., `ＡＢＣ` to `ABC`) | On |
 | Normalize punctuation width | Convert fullwidth commas and periods to halfwidth when between CJK characters | On |
 | Convert parentheses | Convert fullwidth parentheses to halfwidth when content is CJK | On |
 | Convert brackets | Convert halfwidth brackets to fullwidth `【】` when content is CJK | Off |

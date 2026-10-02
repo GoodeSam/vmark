@@ -121,7 +121,8 @@ Update website docs when:
 1. Make the code change
 2. Identify affected website page(s) from the mapping above
 3. Update the relevant `.md` file in `website/guide/`
-4. Commit code and docs together (or in the same PR)
+4. Carry the change into every `website/<locale>/guide/` page (the `translate-docs` skill). `pnpm lint:doc-joins` fails when a locale page's headings, tables, code blocks, Mermaid diagrams or `:::` containers stop matching English (`locale-structure`), and when a guide sentence that states a constant, a name or a list stops matching the code (`guide-claims`, table in `scripts/lib/docJoins/guideClaimsTable.mjs` — add a claim there when you write a new checkable one)
+5. Commit code and docs together (or in the same PR)
 
 ## Verification
 
