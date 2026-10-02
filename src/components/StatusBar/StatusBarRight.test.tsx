@@ -9,7 +9,8 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ReactElement } from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
+import { WindowContext } from "@/contexts/WindowContext";
 
 // --- Mocks ---
 
@@ -47,15 +48,19 @@ vi.mock("@/stores/settingsStore", () => ({
   formatKeyForDisplay: (s: string) => s.toUpperCase(),
 }));
 
-vi.mock("./StatusBarCounts", () => ({
-  StatusBarCounts: () => <span data-testid="status-counts" />,
-}));
-
-vi.mock("./LintBadge", () => ({
-  LintBadge: () => null,
-}));
 
 import { formatClientName, formatMcpTooltip, StatusBarRight } from "./StatusBarRight";
+
+/** Render inside a document window — the real counts and lint badge read it. */
+function render(ui: ReactElement) {
+  return rtlRender(ui, {
+    wrapper: ({ children }) => (
+      <WindowContext.Provider value={{ windowLabel: "main", isDocumentWindow: true }}>
+        {children}
+      </WindowContext.Provider>
+    ),
+  });
+}
 
 // --- Pure function tests ---
 
@@ -163,7 +168,7 @@ describe("StatusBarRight", () => {
 
   it("renders StatusBarCounts", () => {
     render(<StatusBarRight {...baseProps} />);
-    expect(screen.getByTestId("status-counts")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /word count/i })).toHaveAttribute("aria-haspopup", "dialog");
   });
 
   // WI-UB3: paused/divergent are TOASTS (useStatusToasts.test.tsx owns them).
