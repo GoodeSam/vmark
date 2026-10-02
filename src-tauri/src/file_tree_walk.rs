@@ -5,7 +5,8 @@
 //! read (#1357).
 //!
 //! Pipeline: Frontend invoke("list_directory_tree") → this module → one blocking
-//! recursive readdir → nested `TreeEntry` nodes.
+//! recursive readdir → nested `TreeEntry` nodes, named by name only, under a
+//! root prefix sent once (the client rebuilds each absolute path).
 //!
 //! Key decisions:
 //!   - ONE round trip per refresh. The explorer used to recurse in JavaScript with
@@ -29,15 +30,17 @@
 
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::path::Path;
 
 use crate::command_error::{CommandError, ErrorCode};
 use crate::content_search::matching::ALWAYS_SKIP;
 
-/// One node of the listed tree; folders carry their (pruned) children.
+/// One node of the listed tree; folders carry their (pruned) children. A node
+/// carries its name only: its path is its parent's path, the separator, and
+/// the name (see `TreeListing::root_prefix`).
 #[derive(Debug, Serialize, PartialEq, Eq)]
 pub struct TreeEntry {
     pub name: String,
-    pub path: String,
     #[serde(rename = "isDirectory")]
     pub is_directory: bool,
     #[serde(rename = "isHidden")]
@@ -63,8 +66,20 @@ pub struct TreeOptions {
 }
 
 /// The walk's result: the root's children and whether a bound was hit.
+///
+/// The root travels once. A top-level child's path is `root_prefix + name`
+/// and a nested child's is `parent path + separator + name` — exactly what
+/// `Path::join` produced when the walk read it, so the client rebuilds the
+/// same strings (`treeListingPaths.ts`) from a payload a fraction the size.
 #[derive(Debug, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct TreeListing {
+    /// The root as its children's paths begin: the root plus its separator,
+    /// or the root alone when it already ends in one ("/", "C:\").
+    pub root_prefix: String,
+    /// The platform separator `Path::join` inserts between a directory and a
+    /// child name.
+    pub separator: String,
     pub entries: Vec<TreeEntry>,
     pub truncated: bool,
 }
@@ -114,7 +129,7 @@ impl Walk<'_> {
     }
 
     /// Children of `dir`, or `Err` when it cannot be read.
-    fn list(&mut self, dir: &str, depth: usize) -> Result<Vec<TreeEntry>, String> {
+    fn list(&mut self, dir: &Path, depth: usize) -> Result<Vec<TreeEntry>, String> {
         let read = fs::read_dir(dir).map_err(|e| format!("Failed to read dir: {e}"))?;
         let mut out = Vec::new();
         for entry in read.flatten() {
@@ -124,12 +139,10 @@ impl Walk<'_> {
             }
             self.nodes += 1;
             let name = entry.file_name().to_string_lossy().to_string();
-            let path = entry.path().to_string_lossy().to_string();
             let is_directory = entry.file_type().map(|t| t.is_dir()).unwrap_or(false);
             let is_hidden = crate::file_tree::compute_is_hidden(&name, &entry);
             let mut node = TreeEntry {
                 name,
-                path,
                 is_directory,
                 is_hidden,
                 unreadable: false,
@@ -140,10 +153,11 @@ impl Walk<'_> {
                     self.truncated = true;
                     node.children = Some(Vec::new());
                 } else {
-                    match self.list(&node.path, depth + 1) {
+                    let path = entry.path();
+                    match self.list(&path, depth + 1) {
                         Ok(children) => node.children = Some(children),
                         Err(e) => {
-                            log::warn!("[file-tree] unreadable directory {}: {e}", node.path);
+                            log::warn!("[file-tree] unreadable directory {}: {e}", path.display());
                             node.unreadable = true;
                             node.children = Some(Vec::new());
                         }
@@ -168,14 +182,25 @@ pub(crate) fn list_directory_tree_blocking(
         nodes: 0,
         truncated: false,
     };
-    let entries = walk.list(path, 0)?;
+    let entries = walk.list(Path::new(path), 0)?;
     if walk.truncated {
         log::warn!("[file-tree] listing truncated for {path}: {MAX_TREE_NODES} nodes / {MAX_TREE_DEPTH} levels");
     }
     Ok(TreeListing {
+        root_prefix: root_prefix(path),
+        separator: std::path::MAIN_SEPARATOR.to_string(),
         entries,
         truncated: walk.truncated,
     })
+}
+
+/// What `Path::new(root).join(name)` puts before `name`, spelled the way the
+/// listing's paths were: the root plus a separator, unless `join` adds none
+/// (a root that already ends in one, a bare Windows drive prefix).
+fn root_prefix(root: &str) -> String {
+    const PROBE: &str = "x";
+    let joined = Path::new(root).join(PROBE).to_string_lossy().into_owned();
+    joined[..joined.len() - PROBE.len()].to_string()
 }
 
 #[cfg(test)]

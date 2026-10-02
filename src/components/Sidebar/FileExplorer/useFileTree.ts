@@ -12,7 +12,8 @@
  *     unless hidden entries are shown — hidden directories pruned before they are
  *     read. The hook used to recurse here with one IPC round trip per directory,
  *     serially awaited: seconds per scan on a large root, and that slowness was
- *     the fuel of the rescan loop below.
+ *     the fuel of the rescan loop below. The listing names the root once and
+ *     each node by name only; `treeListingPaths` rebuilds the absolute paths.
  *   - WHEN to re-list is `rescanScheduler`'s decision, not this hook's: events are
  *     debounced, a stream that never goes quiet still gets a scan within a bound,
  *     and a scan that saw events while it ran is followed by a rest that doubles
@@ -46,12 +47,14 @@
  * @coordinates-with FileExplorer.tsx — consumes the tree data and refresh callback
  * @coordinates-with components/Sidebar/FileExplorer/rescanScheduler.ts — decides when a scan runs
  * @coordinates-with src-tauri/src/file_tree_walk.rs — the one-call listing this invokes
+ * @coordinates-with components/Sidebar/FileExplorer/treeListingPaths.ts — rebuilds node paths from the compact listing
  * @coordinates-with services/workspaceEvents/subscribeWorkspaceEvents.ts — the shared, scoped fs-event source it subscribes to
  * @module components/Sidebar/FileExplorer/useFileTree
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { FileNode, TreeEntry, TreeListing } from "./types";
+import { withAbsolutePaths, type WireTreeListing } from "./treeListingPaths";
 import { subscribeWorkspaceEvents } from "@/services/workspaceEvents/subscribeWorkspaceEvents";
 import {
   isSupportedFileName,
@@ -66,12 +69,16 @@ import { useRefreshOnWindowFocus } from "./useRefreshOnWindowFocus";
 
 type LoadOptions = FileTreeFilterOptions & { showExtensions: boolean };
 
-/** The whole tree under `rootPath`, in ONE round trip. THROWS when the root cannot be read. */
+/**
+ * The whole tree under `rootPath`, in ONE round trip, every node carrying its
+ * absolute path. THROWS when the root cannot be read or the listing is malformed.
+ */
 async function listDirectoryTree(rootPath: string, options: LoadOptions): Promise<TreeListing> {
-  return invoke<TreeListing>("list_directory_tree", {
+  const listing = await invoke<WireTreeListing>("list_directory_tree", {
     path: rootPath,
     options: { excludeFolders: options.excludeFolders, showHidden: options.showHidden },
   });
+  return withAbsolutePaths(listing);
 }
 
 /** Folders first, then by name. */

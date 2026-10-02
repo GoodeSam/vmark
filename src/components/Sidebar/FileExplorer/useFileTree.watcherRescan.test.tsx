@@ -51,7 +51,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   bridge.handlers.length = 0;
   bridge.invoke.mockReset();
-  bridge.invoke.mockResolvedValue({ root: ROOT, entries: [], truncated: false });
+  bridge.invoke.mockResolvedValue({ rootPrefix: `${ROOT}/`, separator: "/", entries: [], truncated: false });
   _resetWorkspaceEventSources();
   useDocumentStore.setState({ documents: {} });
   useTabStore.setState({ tabs: {}, activeTabId: {} });
