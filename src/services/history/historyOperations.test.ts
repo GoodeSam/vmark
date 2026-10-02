@@ -10,7 +10,11 @@
  *   - markAsDeleted / deleteSnapshot
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+/** The fixed "now" every test runs at; snapshot ages are measured from it. */
+const NOW = Date.UTC(2026, 0, 15, 12, 0, 0);
+
 
 const mockMkdir = vi.fn();
 const mockExists = vi.fn((..._args: unknown[]) => Promise.resolve(false));
@@ -79,12 +83,17 @@ function makeIndex(overrides = {}) {
 
 describe("useHistoryOperations", () => {
   beforeEach(() => {
+    vi.setSystemTime(NOW);
     vi.clearAllMocks();
     mockExists.mockResolvedValue(false);
     mockReadTextFile.mockResolvedValue("{}");
     mockWriteTextFile.mockResolvedValue(undefined);
     mockMkdir.mockResolvedValue(undefined);
     mockRemove.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe("getHistoryIndex", () => {
@@ -145,7 +154,7 @@ describe("useHistoryOperations", () => {
     });
 
     it("merges with previous auto snapshot within merge window", async () => {
-      const now = Date.now();
+      const now = NOW;
       const prevSnapshot = {
         id: "prev-id",
         timestamp: now - 10000, // 10 seconds ago
@@ -255,7 +264,7 @@ describe("useHistoryOperations", () => {
     });
 
     it("removes snapshots exceeding max count", async () => {
-      const now = Date.now();
+      const now = NOW;
       const snapshots = Array.from({ length: 5 }, (_, i) => ({
         id: `snap-${i}`,
         timestamp: now - i * 1000,
@@ -278,7 +287,7 @@ describe("useHistoryOperations", () => {
     });
 
     it("removes snapshots older than maxAgeDays", async () => {
-      const now = Date.now();
+      const now = NOW;
       const oldTime = now - 60 * 24 * 60 * 60 * 1000; // 60 days ago
       const snapshots = [
         { id: "new", timestamp: now, type: "auto" as const, size: 10, preview: "" },
@@ -365,7 +374,7 @@ describe("useHistoryOperations", () => {
 
   describe("createSnapshot — merge window old snapshot does not exist (branch 12, line 189)", () => {
     it("pops last snapshot from index even when old file does not exist on disk", async () => {
-      const now = Date.now();
+      const now = NOW;
       const prevSnapshot = {
         id: "prev-id",
         timestamp: now - 5000,
@@ -398,7 +407,7 @@ describe("useHistoryOperations", () => {
 
   describe("pruneSnapshots — snapshot file does not exist during prune (branch 17, line 313)", () => {
     it("skips remove when snapshot file does not exist on disk", async () => {
-      const now = Date.now();
+      const now = NOW;
       const snapshots = Array.from({ length: 5 }, (_, i) => ({
         id: `snap-${i}`,
         timestamp: now - i * 1000,
@@ -433,7 +442,7 @@ describe("useHistoryOperations", () => {
 
   describe("pruneSnapshots — individual snapshot deletion error (line 316-318)", () => {
     it("continues pruning when individual snapshot file deletion throws", async () => {
-      const now = Date.now();
+      const now = NOW;
       const snapshots = Array.from({ length: 4 }, (_, i) => ({
         id: `snap-${i}`,
         timestamp: now - i * 1000,
@@ -459,7 +468,7 @@ describe("useHistoryOperations", () => {
 
   describe("createSnapshot — merge window sort (line 179)", () => {
     it("sorts snapshots when merge window is active but last snapshot is outside window", async () => {
-      const now = Date.now();
+      const now = NOW;
       // Two snapshots: one old auto (outside merge window), one manual
       const snapshots = [
         { id: "snap-manual", timestamp: now - 5000, type: "manual", size: 10, preview: "" },

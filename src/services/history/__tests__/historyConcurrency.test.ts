@@ -12,7 +12,7 @@
  * Runs the real operations against an in-memory filesystem whose calls are
  * asynchronous, so the interleaving is the one production has.
  */
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { HistoryIndex, HistorySettings, Snapshot } from "@/utils/historyTypes";
 
 vi.mock("@tauri-apps/plugin-fs", async () => (await import("./historyTestFs")).pluginFsMock);
@@ -67,8 +67,16 @@ function testHash(documentPath: string): string {
 const docDir = `${BASE}/${testHash(DOC)}`;
 const otherDir = `${BASE}/${testHash(OTHER_DOC)}`;
 
+/** The fixed "now" every test runs at; snapshot ages are measured from it. */
+const NOW = Date.UTC(2026, 0, 15, 12, 0, 0);
+
 beforeEach(() => {
+  vi.setSystemTime(NOW);
   vfs.reset();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 function seedHistory(
@@ -86,7 +94,7 @@ function seedHistory(
     snapshots: snapshots.map((s, i) => ({
       id: s.id,
       type: s.type,
-      timestamp: Date.now() - (s.ageMs ?? (snapshots.length - i) * 60_000),
+      timestamp: NOW - (s.ageMs ?? (snapshots.length - i) * 60_000),
       size: s.content.length,
       preview: s.content,
     })),
