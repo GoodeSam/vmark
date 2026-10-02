@@ -1346,11 +1346,6 @@
       "target": "src/utils/paths/index"
     },
     {
-      "file": "src/lib/formats/adapters/yamlWorkflowChunkFailure.test.tsx",
-      "api": "vi.mock",
-      "target": "src/lib/formats/adapters/yamlWorkflowRenderer"
-    },
-    {
       "file": "src/main.boot.test.tsx",
       "api": "vi.mock",
       "target": "src/App"
