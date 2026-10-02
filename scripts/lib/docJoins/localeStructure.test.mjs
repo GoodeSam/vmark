@@ -8,7 +8,8 @@ import { describe, it, expect, afterEach } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { compareShapes, localeCodes, pageShape, run } from "./localeStructure.mjs";
+import { DEFAULT_PATHS, compareShapes, id, localeCodes, pageShape, run } from "./localeStructure.mjs";
+import { ROOT } from "../../check-doc-joins.mjs";
 
 const PAGE = [
   "# Title",
@@ -100,6 +101,13 @@ describe("compareShapes", () => {
 });
 
 describe("run", () => {
+  it("is clean on the real site, read through its DEFAULT_PATHS", async () => {
+    const { findings, info } = await run({ root: ROOT, paths: DEFAULT_PATHS });
+    expect(findings).toEqual([]);
+    expect(info[0]).toMatch(/^\d+ pages × 9 locales \(de, es, fr, it, ja, ko, pt-BR, zh-CN, zh-TW\)$/);
+    expect(id).toBe("locale-structure");
+  });
+
   it("is clean when every locale matches", async () => {
     const { findings, info } = await runOn({ "website/guide/a.md": PAGE, "website/ja/guide/a.md": PAGE, "website/de/guide/a.md": PAGE });
     expect(findings).toEqual([]);
