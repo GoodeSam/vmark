@@ -513,7 +513,7 @@ describe("useTabContextMenuActions", () => {
       mocks.revealItemInDir.mockRejectedValueOnce(new Error("fail"));
       const { items } = renderActions();
       await findItem(items, "reveal")!.action();
-      expect(mocks.toast.error).toHaveBeenCalledWith("Failed to reveal file in file manager.");
+      expect(mocks.toast.error).toHaveBeenCalledWith("Failed to reveal in Finder.");
     });
 
     it("handleRevealInFileManager is a no-op when filePath is null", async () => {

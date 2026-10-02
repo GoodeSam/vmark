@@ -4,8 +4,7 @@
  * Builds the tab context-menu items with state-driven availability and
  * getState()-based actions (each calls onClose()): Move-to-New-Window needs a
  * doc; Copy Relative Path needs a workspace file; Rename needs a saved file.
- * Every bulk close leaves pinned tabs open except Close All, which closes
- * them too after one confirmation (services/tabs/closeAllTabs).
+ * Bulk closes skip pinned tabs; Close All asks once, then closes them too.
  *
  * @coordinates-with TabContextMenu.tsx, tabTransferActions.ts, tabCleanup.ts
  * @module components/Tabs/useTabContextMenuActions
@@ -22,6 +21,7 @@ import { closeAllTabs } from "@/services/tabs/closeAllTabs";
 import { closeOthersIds, closeToRightIds, closeAllUnpinnedIds } from "@/services/tabs/bulkCloseSelectors";
 import { getRelativePath, isWithinRoot } from "@/utils/paths";
 import { tabContextError } from "@/utils/debug";
+import { revealFailedKey } from "@/utils/revealFailedKey";
 import { restoreTransferredTab } from "@/components/StatusBar/tabTransferActions";
 import { moveTabToNewWindow } from "@/services/tabs/moveTabToNewWindow";
 import { openToTheSide, canOpenToTheSide } from "@/services/tabs/openToTheSide";
@@ -170,7 +170,7 @@ export function useTabContextMenuActions({
       await revealItemInDir(filePath);
     } catch (error) {
       tabContextError(" Failed to reveal file:", error);
-      toast.error(i18n.t("dialog:toast.failedToRevealInFileManager"));
+      toast.error(i18n.t(revealFailedKey()));
     }
     onClose();
   }, [filePath, onClose]);
