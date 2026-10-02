@@ -320,6 +320,58 @@ describe("sanitizeFileName", () => {
     });
   });
 
+  // WI-RA10A.12 — a name is cut on a character boundary. `slice` stopped
+  // between the halves of a surrogate pair, and the lone surrogate left behind
+  // is a string serde refuses when the name crosses IPC.
+  describe("Length truncation keeps characters whole", () => {
+    const LONE_SURROGATE =
+      /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+    const GRIN = "\u{1F600}";
+    const FAMILY = "\u{1F468}‍\u{1F469}‍\u{1F467}";
+
+    it("drops an emoji that straddles the limit instead of halving it", () => {
+      const result = sanitizeFileName(`${"A".repeat(79)}${GRIN}tail`);
+      expect(result).toBe("A".repeat(79));
+      expect(result).not.toMatch(LONE_SURROGATE);
+    });
+
+    it("keeps an emoji that ends exactly at the limit", () => {
+      const result = sanitizeFileName(`${"A".repeat(78)}${GRIN}tail`);
+      expect(result).toBe(`${"A".repeat(78)}${GRIN}`);
+    });
+
+    it("does not cut a supplementary-plane Han character in half", () => {
+      const rareHan = "\u{20BB7}";
+      const result = sanitizeFileName(`${"野".repeat(79)}${rareHan}家`);
+      expect(result).toBe("野".repeat(79));
+      expect(result).not.toMatch(LONE_SURROGATE);
+    });
+
+    it("does not cut a family emoji between its members", () => {
+      const result = sanitizeFileName(`${"A".repeat(76)}${FAMILY}`);
+      expect(result).toBe("A".repeat(76));
+    });
+
+    it("is well-formed at every limit for an all-emoji title", () => {
+      const title = GRIN.repeat(60);
+      for (let max = 1; max <= 121; max += 1) {
+        const result = sanitizeFileName(title, max);
+        expect(result.length).toBeLessThanOrEqual(max);
+        expect(result).not.toMatch(LONE_SURROGATE);
+      }
+    });
+
+    it("still prefers a word boundary, measured after the character-safe cut", () => {
+      const result = sanitizeFileName(`${"A".repeat(70)} ${"B".repeat(8)}${GRIN}tail`);
+      expect(result).toBe("A".repeat(70));
+    });
+
+    it("reaches the save dialog well-formed through getSaveFileName", () => {
+      const result = getSaveFileName(`# ${"A".repeat(79)}${GRIN}`, "Untitled-1");
+      expect(result).toBe("A".repeat(79));
+    });
+  });
+
   describe("Windows reserved names", () => {
     it("appends suffix to CON", () => {
       expect(sanitizeFileName("CON")).toBe("CON_export");

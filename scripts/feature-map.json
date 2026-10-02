@@ -1462,6 +1462,7 @@
       "src/utils/safeUnlisten.ts",
       "src/utils/voidAsync.ts",
       "src/utils/stringifyUnknown.ts",
+      "src/utils/truncateText.ts",
       "src/utils/errorMessage.ts",
       "src/utils/binary.ts",
       "src/utils/pathUtils.ts",

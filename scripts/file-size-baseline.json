@@ -72,7 +72,7 @@
     "src/stores/mcpStore.ts": 324,
     "src/stores/tabStore.ts": 457,
     "src/utils/cursorSync/codemirror.ts": 306,
-    "src/utils/exportNaming.ts": 327,
+    "src/utils/exportNaming.ts": 324,
     "src/utils/textTransformations.ts": 335
   },
   "limit": 300,

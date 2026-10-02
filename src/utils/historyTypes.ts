@@ -6,6 +6,7 @@
  */
 
 import { getFileName } from "./pathUtils";
+import { truncateToLength } from "./truncateText";
 
 // Types
 
@@ -68,10 +69,11 @@ export function parseHistoryIndex(raw: unknown): HistoryIndex | null {
 // Pure helper functions
 
 /**
- * Generate a preview from content (first N characters)
+ * Generate a preview from content: its first PREVIEW_LENGTH code units, cut on
+ * a character boundary so the stored preview is never a lone surrogate.
  */
 export function generatePreview(content: string): string {
-  return content.slice(0, PREVIEW_LENGTH).replace(/\n/g, " ").trim();
+  return truncateToLength(content, PREVIEW_LENGTH).replace(/\n/g, " ").trim();
 }
 
 /**
