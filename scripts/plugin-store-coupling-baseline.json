@@ -34,12 +34,6 @@
     "imageHandler": {
       "services": 2
     },
-    "imagePreview": {
-      "services": 1
-    },
-    "imageView": {
-      "services": 1
-    },
     "linkCreatePopup": {
       "services": 1
     },
