@@ -194,6 +194,27 @@ export const MANIFEST = {
       checks: [{ mode: "identity", at: "accepted", shape: "object-keys", onAdd: "report" }],
     },
     {
+      // Reviewed RustSec acceptances: unmaintained, unsound and yanked crates
+      // as well as vulnerabilities. An addition REPORTS for the same reason as
+      // the npm registry above: `check-cargo-audit.mjs` already refuses an
+      // entry with no reason, one that names the wrong crate or kind, and one
+      // whose finding has gone away.
+      path: "scripts/cargo-audit-baseline.json",
+      checks: [{ mode: "identity", at: "accepted", shape: "object-keys", onAdd: "report" }],
+    },
+    {
+      // The Rust line-coverage floor, stored as the ceiling on UNCOVERED lines
+      // so that it reads the way a scalar check does: a raise loosens the gate
+      // and fails here. `maxSlackPercent` is how far coverage may rise above
+      // the floor before `check-rust-coverage.mjs` calls the floor stale, so
+      // raising it loosens that half and fails too.
+      path: "scripts/rust-coverage-baseline.json",
+      checks: [
+        { mode: "scalar", at: "maxUncoveredLinePercent" },
+        { mode: "scalar", at: "maxSlackPercent" },
+      ],
+    },
+    {
       // Growth here is separately capped by extension-budget's
       // maxKnownViolations scalar, so per-edge additions report.
       path: ".dependency-cruiser-known-violations.json",
