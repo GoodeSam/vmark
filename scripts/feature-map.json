@@ -1472,6 +1472,7 @@
       "src/utils/rovingTabFocus.ts",
       "src/utils/menuPosition.ts",
       "src/hooks/useMenuPosition.ts",
+      "src/hooks/useDocumentDrag.ts",
       "src/utils/icons.tsx",
       "src/utils/iconSizes.ts",
       "src/lib/utils.ts",
