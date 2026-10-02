@@ -405,3 +405,60 @@ describe("check-new-deps.sh — the package checked is the package installed", (
     },
   );
 });
+
+// WI-RA13B.7 — overrides can redirect a package without touching a dependency
+// map, so they are read exactly like dependencies.
+describe("check-new-deps.sh — overrides redirect what is installed", () => {
+  const withOverrides = (overrides, registry, base = {}) =>
+    scratch({ base: { "package.json": base }, head: { "package.json": { ...base, ...overrides } }, registry });
+
+  it("a pnpm.overrides alias is looked up by its target", () => {
+    const r = run(withOverrides({ pnpm: { overrides: { tar: "npm:tar-evil@1.0.0" } } }, { tar: healthy }));
+    expect(r.status).toBe(1);
+    expect(r.out).toContain("tar-evil — NOT FOUND on npm");
+  });
+
+  it("an npm overrides entry pointing at a git URL is flagged", () => {
+    const r = run(withOverrides({ overrides: { qs: "github:someone/qs" } }, { qs: healthy }));
+    expect(r.status).toBe(1);
+    expect(r.out).toContain("qs — not a registry version");
+  });
+
+  it("a nested npm override is read, including its `.` self-entry", () => {
+    const r = run(withOverrides({ overrides: { foo: { ".": "npm:foo-evil@1", bar: "npm:bar-evil@1" } } }, {}));
+    expect(r.status).toBe(1);
+    expect(r.out).toContain("foo-evil — NOT FOUND on npm");
+    expect(r.out).toContain("bar-evil — NOT FOUND on npm");
+  });
+
+  it("a selector with a version range or a parent path names the package it overrides", () => {
+    const r = run(
+      withOverrides(
+        { pnpm: { overrides: { "undici@<6.24.0": "https://example.com/u.tgz", "a>@scope/b@2": "github:x/b" } } },
+        {},
+      ),
+    );
+    expect(r.status).toBe(1);
+    expect(r.out).toContain("undici — not a registry version");
+    expect(r.out).toContain("@scope/b — not a registry version");
+  });
+
+  it("a version-range override of a healthy package passes", () => {
+    const r = run(withOverrides({ pnpm: { overrides: { tar: ">=7.5.19 <8" } } }, { tar: healthy }));
+    expect(r.status, r.out).toBe(0);
+    expect(r.calls).toContainEqual(["npm", "view", "tar", "--json"]);
+  });
+
+  it("an override already present at the base is not new; `$ref` and `-` install nothing new", () => {
+    const base = { pnpm: { overrides: { tar: ">=7 <8" } }, dependencies: { tar: "^7.0.0" } };
+    const r = run(withOverrides({ pnpm: { overrides: { tar: ">=7.5 <8", foo: "$tar", gone: "-" } } }, {}, base));
+    expect(r.status, r.out).toBe(0);
+    expect(r.calls).toEqual([]);
+  });
+
+  it("yarn resolutions are read too", () => {
+    const r = run(withOverrides({ resolutions: { "**/lodash": "npm:lodahs@1" } }, {}));
+    expect(r.status).toBe(1);
+    expect(r.out).toContain("lodahs — NOT FOUND on npm");
+  });
+});

@@ -42,10 +42,6 @@ vi.mock("./TerminalTabBar", () => ({
   ),
 }));
 
-vi.mock("./TerminalSearchBar", () => ({
-  TerminalSearchBar: () => <div data-testid="search-bar" />,
-}));
-
 vi.mock("@tauri-apps/plugin-clipboard-manager", () => ({
   readText: vi.fn().mockResolvedValue(""),
   writeText: vi.fn().mockResolvedValue(undefined),

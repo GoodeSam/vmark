@@ -10,18 +10,20 @@
  *   - where does it READ the wall clock? (`Date.now()`, `new Date()` with no
  *     argument — `new Date(0)` names an instant and is deterministic)
  *   - where does it SLEEP on the wall clock? (`new Promise(r => setTimeout(r,
- *     N))` with a literal N, directly or through a helper defined in the same
- *     file and called with a literal)
+ *     N))` with a literal N, directly or through a helper — defined in the
+ *     file or imported from a shared test utility — called with a literal)
  *
  * Key decisions:
- *   - A sleep helper is recognized only when it is declared in the file being
- *     read. One imported from a shared test utility is not followed: resolving
- *     imports would make this a module graph, and the inline idiom is the
- *     overwhelming majority.
+ *   - A sleep helper is recognized when it is declared in the file being read,
+ *     or imported by name from a module the caller can resolve (a shared test
+ *     utility). Resolving the import is the caller's job — this module reads
+ *     one file and asks `importedSleepHelper(spec, name)` for each named
+ *     import; `scripts/lib/timerIsolationImports.mjs` answers it.
  *   - A duration that is not a numeric literal is not reported. The gate
  *     reports what it can prove, and a threshold needs a number.
  *
  * @coordinates-with scripts/check-test-timer-isolation.mjs — the gate that applies the rules
+ * @coordinates-with scripts/lib/timerIsolationImports.mjs — resolves imported sleep helpers
  * @module scripts/check-test-timer-isolation.scan
  */
 import ts from "typescript";
@@ -127,11 +129,61 @@ function sleepHelpers(sf) {
   return helpers;
 }
 
+/** Parse `source`, throwing on a syntax error rather than reading a partial tree. */
+function parse(source, fileName) {
+  const kind = fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, kind);
+  const parseErrors = sf.parseDiagnostics ?? [];
+  if (parseErrors.length > 0) {
+    throw new Error(ts.flattenDiagnosticMessageText(parseErrors[0].messageText, " "));
+  }
+  return sf;
+}
+
+/**
+ * What a module offers an importer: the sleep helpers it declares (name ->
+ * duration parameter index) and its re-exports, `{ exported, imported, spec }`
+ * (`imported` is `"*"` for `export * from`).
+ */
+export function sleepExportsOf(source, fileName = "module.ts") {
+  const sf = parse(source, fileName);
+  const reexports = [];
+  for (const stmt of sf.statements) {
+    if (!ts.isExportDeclaration(stmt) || !stmt.moduleSpecifier || !ts.isStringLiteralLike(stmt.moduleSpecifier)) continue;
+    const spec = stmt.moduleSpecifier.text;
+    if (!stmt.exportClause) reexports.push({ exported: "*", imported: "*", spec });
+    else if (ts.isNamedExports(stmt.exportClause)) {
+      for (const el of stmt.exportClause.elements) {
+        reexports.push({ exported: el.name.text, imported: (el.propertyName ?? el.name).text, spec });
+      }
+    }
+  }
+  return { helpers: sleepHelpers(sf), reexports };
+}
+
+/** Named imports whose source module declares (or re-exports) a sleep helper. */
+function importedHelpers(sf, importedSleepHelper) {
+  const helpers = new Map();
+  for (const stmt of sf.statements) {
+    if (!ts.isImportDeclaration(stmt) || !ts.isStringLiteralLike(stmt.moduleSpecifier)) continue;
+    const bindings = stmt.importClause?.namedBindings;
+    if (!bindings || !ts.isNamedImports(bindings)) continue;
+    for (const el of bindings.elements) {
+      const index = importedSleepHelper(stmt.moduleSpecifier.text, (el.propertyName ?? el.name).text);
+      if (index !== undefined) helpers.set(el.name.text, index);
+    }
+  }
+  return helpers;
+}
+
 /**
  * Read one test file.
  *
  * @param {string} source
  * @param {string} [fileName] decides TS vs TSX parsing
+ * @param {{ importedSleepHelper?: (spec: string, name: string) => number | undefined }} [options]
+ *   answers whether a named import is a sleep helper, and which parameter is
+ *   its duration; without it only helpers declared in the file count
  * @returns {{
  *   controlsClock: boolean,
  *   wallClockReads: { line: number, what: string }[],
@@ -140,15 +192,13 @@ function sleepHelpers(sf) {
  * @throws when the file does not parse — the caller reports that rather than
  *   treating an unreadable file as a clean one.
  */
-export function scanTestClockUsage(source, fileName = "file.test.ts") {
-  const kind = fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
-  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, kind);
-  const parseErrors = sf.parseDiagnostics ?? [];
-  if (parseErrors.length > 0) {
-    throw new Error(ts.flattenDiagnosticMessageText(parseErrors[0].messageText, " "));
-  }
-
-  const helpers = sleepHelpers(sf);
+export function scanTestClockUsage(source, fileName = "file.test.ts", { importedSleepHelper } = {}) {
+  const sf = parse(source, fileName);
+  // A helper declared in the file shadows an imported one of the same name.
+  const helpers = new Map([
+    ...(importedSleepHelper ? importedHelpers(sf, importedSleepHelper) : []),
+    ...sleepHelpers(sf),
+  ]);
   let controlsClock = false;
   const wallClockReads = [];
   const sleeps = [];

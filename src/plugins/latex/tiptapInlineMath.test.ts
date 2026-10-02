@@ -8,15 +8,6 @@ import { describe, it, expect, vi } from "vitest";
 // Mock CSS import
 vi.mock("./latex.css", () => ({}));
 
-// Mock the MathInlineNodeView
-vi.mock("./MathInlineNodeView", () => ({
-  MathInlineNodeView: vi.fn().mockImplementation(() => ({
-    dom: document.createElement("span"),
-    update: vi.fn(),
-    destroy: vi.fn(),
-  })),
-}));
-
 const { scheduleKatexFontPreload } = vi.hoisted(() => ({ scheduleKatexFontPreload: vi.fn() }));
 vi.mock("./katexFontPreload", () => ({ scheduleKatexFontPreload }));
 

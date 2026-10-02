@@ -218,12 +218,6 @@ vi.mock("./wysiwygPendingNav", () => ({
   consumeWysiwygPendingNav: (...args: unknown[]) => mocks.consumeWysiwygPendingNav(...args),
 }));
 
-vi.mock("./ImageContextMenu", () => ({
-  ImageContextMenu: ({ onAction }: { onAction: (a: string) => void }) => (
-    <button data-testid="image-ctx" onClick={() => onAction("test")} />
-  ),
-}));
-
 import { TiptapEditorInner } from "./TiptapEditor";
 
 // ── Tests ────────────────────────────────────────────────────────────

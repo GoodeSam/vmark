@@ -28,7 +28,8 @@
  *                    the file controls the clock.
  *   real-sleep       a test sleeps on the wall clock for >= 100 ms
  *                    (`await new Promise(r => setTimeout(r, N))`, or a sleep
- *                    helper declared in the file) with no fake timers.
+ *                    helper declared in the file or imported from a shared
+ *                    test utility) with no fake timers.
  *
  * An `await`ed or returned timer in the SUBJECT is deterministic — the
  * awaiting code decides when it resumes — and does not make it racy. A fully
@@ -55,6 +56,7 @@
  * Usage: node scripts/check-test-timer-isolation.mjs [--root <dir>] [--report-only <rules|none>]
  *
  * @coordinates-with scripts/check-test-timer-isolation.scan.mjs — reads one test file's clock usage
+ * @coordinates-with scripts/lib/timerIsolationImports.mjs — follows imported sleep helpers
  * @coordinates-with scripts/check-test-timer-isolation.test.mjs — runs this against fixture trees
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -62,6 +64,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isMainModule } from "./lib/isMainModule.mjs";
 import { scanTestClockUsage } from "./check-test-timer-isolation.scan.mjs";
+import { importedSleepHelpers } from "./lib/timerIsolationImports.mjs";
 
 export const RULES = ["race-sibling", "race-widened", "wall-clock-read", "real-sleep"];
 
@@ -150,13 +153,14 @@ export function scan(root) {
   const findings = Object.fromEntries(RULES.map((r) => [r, []]));
   const unreadable = [];
   const timersOf = new Map();
+  const importedSleepHelper = importedSleepHelpers(root);
   let unpaired = 0;
 
   for (const testFile of testFiles) {
     const source = read(testFile);
     let usage;
     try {
-      usage = scanTestClockUsage(source, testFile);
+      usage = scanTestClockUsage(source, testFile, { importedSleepHelper: importedSleepHelper(testFile) });
     } catch (error) {
       // Fail closed: a file this gate cannot parse is not a file it cleared.
       unreadable.push(`${testFile} (does not parse: ${error.message})`);

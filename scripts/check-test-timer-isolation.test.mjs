@@ -291,6 +291,51 @@ describe("real-sleep", () => {
     expect(r.out).toMatch(/src\/s\.test\.ts:\d+ {2}250ms/);
   });
 
+  // WI-RA13B.7 — a sleep helper shared from a test utility is followed through
+  // the import, so moving the idiom into a helper cannot hide it.
+  describe("a sleep helper imported from a shared test utility", () => {
+    const SHARED = "export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));\n" +
+      "export function pause(_why: string, ms: number) {\n  return new Promise<void>((resolve) => setTimeout(resolve, ms));\n}\n" +
+      "export const notASleep = (ms: number) => ms;\n";
+    const importing = (spec, names, call) =>
+      `import { it } from "vitest";\nimport { ${names} } from "${spec}";\nit("x", async () => {\n  ${call}\n});\n`;
+
+    it.each([
+      ["a relative import", "../test/timing", "sleep", "await sleep(250);"],
+      ["the @/ alias", "@/test/timing", "sleep", "await sleep(250);"],
+      ["an aliased name", "@/test/timing", "sleep as nap", "await nap(250);"],
+      ["a duration in the second parameter", "@/test/timing", "pause", 'await pause("x", 250);'],
+      ["a re-export through an index module", "@/test", "sleep", "await sleep(250);"],
+    ])("%s is followed and the call is a sleep", (_label, spec, names, call) => {
+      const r = run({
+        "src/test/timing.ts": SHARED,
+        "src/test/index.ts": 'export { sleep } from "./timing";\n',
+        "src/feature/s.test.ts": importing(spec, names, call),
+      });
+      expect(r.status, r.out).toBe(1);
+      expect(r.out).toContain("real-sleep: 1");
+      expect(r.out).toContain("src/feature/s.test.ts:4  250ms");
+    });
+
+    it("an index module declaring the helper itself is followed", () => {
+      const r = run({
+        "src/test/index.ts": "export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));\n",
+        "src/feature/s.test.ts": importing("@/test", "sleep", "await sleep(300);"),
+      });
+      expect(r.status, r.out).toBe(1);
+      expect(r.out).toContain("src/feature/s.test.ts:4  300ms");
+    });
+
+    it("an imported non-sleep, a short sleep and an unresolvable import are not reported", () => {
+      const r = run({
+        "src/test/timing.ts": SHARED,
+        "src/feature/s.test.ts": importing("@/test/timing", "notASleep, sleep", "notASleep(500);\n  await sleep(20);") +
+          'import { sleep as other } from "./missing";\nit("y", async () => { await other(900); });\n',
+      });
+      expect(r.status, r.out).toBe(0);
+    });
+  });
+
   it("a helper called under the threshold, or with a non-literal, is not reported", () => {
     const body =
       'import { it } from "vitest";\nconst sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));\n' +

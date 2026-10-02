@@ -40,7 +40,11 @@
  * raised value.
  *
  * @coordinates-with scripts/check-baseline-ratchet.mjs — the CLI that applies this
+ * @coordinates-with scripts/lib/baselineRatchet/advisoryAcceptanceEntries.mjs — the advisory registries spread in below
+ * @coordinates-with scripts/lib/baselineRatchet/specTierEntries.mjs — the Markdown spec-tier entries spread in below
  */
+import { ADVISORY_ACCEPTANCE_ENTRIES } from "./lib/baselineRatchet/advisoryAcceptanceEntries.mjs";
+import { SPEC_TIER_ENTRIES } from "./lib/baselineRatchet/specTierEntries.mjs";
 
 /**
  * Every committed baseline, with how its loosening is defined. A file
@@ -162,17 +166,12 @@ export const MANIFEST = {
       checks: [{ mode: "identity", at: "entries", shape: "strings", onAdd: "fail" }],
     },
     {
-      // WI-18's identity list; its header: entries only get REMOVED.
+      // WI-18's store-mock list and the sibling-logic-mock list beside it;
+      // its header: entries only get REMOVED.
       path: "scripts/mock-boundaries-baseline.json",
-      checks: [
-        {
-          mode: "identity",
-          at: "entries",
-          shape: "objects",
-          key: ["file", "api", "target"],
-          onAdd: "fail",
-        },
-      ],
+      checks: ["entries", "siblingEntries"].map((at) => ({
+        mode: "identity", at, shape: "objects", key: ["file", "api", "target"], onAdd: "fail",
+      })),
     },
     {
       // A new top-level surface legitimately needs an entry (check-shell-slots
@@ -184,24 +183,8 @@ export const MANIFEST = {
       path: "scripts/merge-drop-allowlist.json",
       checks: [{ mode: "identity", at: "", shape: "object-keys", onAdd: "report" }],
     },
-    {
-      // Reviewed npm advisory acceptances (audit 20260906, C3). An addition
-      // REPORTS rather than fails: a genuinely new advisory in a dev-only
-      // dependency chain is an ordinary event, and the gate that matters —
-      // `check-npm-audit.mjs` — already refuses an entry with no stated reason
-      // and refuses one whose advisory has gone away.
-      path: "scripts/npm-audit-baseline.json",
-      checks: [{ mode: "identity", at: "accepted", shape: "object-keys", onAdd: "report" }],
-    },
-    {
-      // Reviewed RustSec acceptances: unmaintained, unsound and yanked crates
-      // as well as vulnerabilities. An addition REPORTS for the same reason as
-      // the npm registry above: `check-cargo-audit.mjs` already refuses an
-      // entry with no reason, one that names the wrong crate or kind, and one
-      // whose finding has gone away.
-      path: "scripts/cargo-audit-baseline.json",
-      checks: [{ mode: "identity", at: "accepted", shape: "object-keys", onAdd: "report" }],
-    },
+    // Reviewed npm and RustSec advisory acceptances (additions report).
+    ...ADVISORY_ACCEPTANCE_ENTRIES,
     {
       // The Rust line-coverage floor, stored as the ceiling on UNCOVERED lines
       // so that it reads the way a scalar check does: a raise loosens the gate
@@ -294,62 +277,10 @@ export const MANIFEST = {
       format: "text",
       checks: [{ mode: "custom", comparator: "tsIdenticalAllowlist", onAdd: "report" }],
     },
-    // ── Markdown spec tier (WI-0.3, plan ADR-5) ──────────────────────────
-    // Declared-divergence ledgers: one identity per record; additions report
-    // (visible in the diff), removals are tightening. Value drift is the spec
-    // gates' own staleness check, not the ratchet's.
-    {
-      path: "src/utils/markdownPipeline/__tests__/spec/specDeltas.json",
-      checks: [{ mode: "custom", comparator: "specConformanceRecords", onAdd: "report" }],
-    },
-    {
-      path: "src/utils/markdownPipeline/__tests__/spec/specRoundtripDeltas.json",
-      checks: [{ mode: "custom", comparator: "specRoundtripRecords", onAdd: "report" }],
-    },
-    // Vendored corpora: OPPOSITE polarity — content-addressed example
-    // identities that may only be added, so removing or editing an example
-    // fails even when the same commit updates the registry digest to match.
-    {
-      path: "src/utils/markdownPipeline/__tests__/spec/corpus/commonmark-0.31.2.json",
-      checks: [
-        { mode: "custom", comparator: "specCorpusExamples", direction: "no-remove", onAdd: "report" },
-      ],
-    },
-    {
-      path: "src/utils/markdownPipeline/__tests__/spec/corpus/gfm-extensions.json",
-      checks: [
-        { mode: "custom", comparator: "specCorpusExamples", direction: "no-remove", onAdd: "report" },
-      ],
-    },
-    // WI-2.3's external corpora — identical contract per file.
-    ...[
-      "cmark-regression.json",
-      "cmark-gfm-regression.json",
-      "cmark-gfm-extensions.json",
-      "pulldown-cjk-emphasis.json",
-      "pulldown-wikilinks.json",
-      "pulldown-math.json",
-      "markdown-it-extras.json",
-      "markdown-it-xss.json",
-      "tiptap-conversion.json",
-    ].map((file) => ({
-      path: `src/utils/markdownPipeline/__tests__/spec/corpus/${file}`,
-      checks: [
-        { mode: "custom", comparator: "specCorpusExamples", direction: "no-remove", onAdd: "report" },
-      ],
-    })),
-    // Pre-existing ledgers that predate the spec tier, previously
-    // unregistered (self-attesting): now pinned via source-text parsing.
-    {
-      path: "src/utils/markdownPipeline/__tests__/conformance/expectedDeltas.ts",
-      format: "text",
-      checks: [{ mode: "custom", comparator: "tsExpectedDeltas", onAdd: "report" }],
-    },
-    {
-      path: "src/utils/markdownPipeline/__tests__/fidelity/fidelityLedger.ts",
-      format: "text",
-      checks: [{ mode: "custom", comparator: "tsFidelityLedger", onAdd: "report" }],
-    },
+    // ── Markdown spec tier (WI-0.3, plan ADR-5) ── declared-divergence
+    // ledgers, vendored corpora and the two pre-spec TS ledgers; the entries
+    // and their reasoning live in their own module.
+    ...SPEC_TIER_ENTRIES,
   ],
   // Empty by design. An entry here permits exactly ONE re-measurement and is
   // deleted by the PR that follows the one carrying it — the 2026-09-07 entries

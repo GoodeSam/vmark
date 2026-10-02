@@ -46,7 +46,6 @@ vi.mock("./startupFileOpen", () => ({
   openStartupContent: vi.fn(() => Promise.resolve()),
   parseStartupFilesParam: vi.fn(() => []),
 }));
-vi.mock("./prepareWindowStorage", () => ({ prepareWindowStorage: vi.fn() }));
 vi.mock("@/services/persistence/windowBrowserSession", () => ({
   restoreWindowBrowserSession: vi.fn(),
 }));
