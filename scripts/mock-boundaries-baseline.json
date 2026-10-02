@@ -2111,11 +2111,6 @@
       "target": "src/services/assembly/workflowExtensionGates"
     },
     {
-      "file": "src/services/browser/browserTabEvents.test.ts",
-      "api": "vi.mock",
-      "target": "src/services/browser/browserNavEvents"
-    },
-    {
       "file": "src/services/commands/editorCommandBridge.test.ts",
       "api": "vi.mock",
       "target": "src/services/commands/actionAvailability"
