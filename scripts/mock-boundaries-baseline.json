@@ -1386,16 +1386,6 @@
       "target": "src/plugins/mermaidPreview/mermaidPreviewRender"
     },
     {
-      "file": "src/plugins/mermaidPreview/MermaidPreviewView.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/mermaidPreview/mermaidPreviewDOM"
-    },
-    {
-      "file": "src/plugins/mermaidPreview/MermaidPreviewView.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/mermaidPreview/mermaidPreviewRender"
-    },
-    {
       "file": "src/plugins/multiCursor/__tests__/commands.bounds.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/multiCursor/textSearch"
