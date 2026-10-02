@@ -1396,16 +1396,6 @@
       "target": "src/plugins/sourcePopup/sourcePopupUtils"
     },
     {
-      "file": "src/plugins/toolbarActions/sourceImageActions.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/sourceAdapterHelpers"
-    },
-    {
-      "file": "src/plugins/toolbarActions/sourceImageActions.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/sourceAdapterLinks"
-    },
-    {
       "file": "src/plugins/toolbarActions/wysiwygAdapter.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/toolbarActions/multiSelectionPolicy"
