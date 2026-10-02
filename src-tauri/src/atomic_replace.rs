@@ -1,6 +1,6 @@
 //! Byte-oriented atomic file replacement core.
 //!
-//! Purpose: the single temp-file + fsync + rename implementation shared by
+//! Purpose: the single temp-file + fsync + durable-rename implementation shared by
 //! `app_paths::atomic_write_file` (sync, internal callers: workspace config,
 //! MCP port file) and `file_write::atomic_write_file_sync` (frontend save
 //! path). The two previously carried near-duplicate copies that drifted
@@ -154,7 +154,9 @@ pub(crate) fn preserve_target_xattrs(_target: &Path, _temp: &NamedTempFile) {
 /// contents are synced to disk before the rename so a crash can't expose a
 /// zero-length file, and the existing target's permission bits and extended
 /// attributes are carried over — the rename would otherwise replace them with
-/// the temp file's restrictive 0600 on Unix and no metadata at all.
+/// the temp file's restrictive 0600 on Unix and no metadata at all. After the
+/// rename the parent directory is synced (Unix), because the rename is an edit
+/// of that directory and is not durable until it is.
 ///
 /// `target` is used verbatim. A caller saving a USER DOCUMENT should pass it
 /// through [`resolve_link_target`] first, or a save through an alias replaces
@@ -227,7 +229,8 @@ where
     // window with no file at the target at all.
     //
     // On failure the returned temp file is dropped → removed, so no temp leak
-    // and — the property that matters — the existing target is untouched.
+    // and — the property that matters — the existing target is untouched. On
+    // success the same call syncs the parent directory.
     crate::atomic_persist::persist_with_retry(temp, target)
 }
 
