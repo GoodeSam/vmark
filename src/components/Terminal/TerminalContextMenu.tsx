@@ -37,13 +37,14 @@
  * @coordinates-with createTerminalInstance.ts — provides resetDisplay()
  * @module components/Terminal/TerminalContextMenu
  */
-import { useLayoutEffect, useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback } from "react";
 import { Copy, CopyMinus, ClipboardPaste, Square, Trash2, RefreshCw, TextSelect } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { Terminal } from "@xterm/xterm";
 import { useDismissOnOutsideOrEscape } from "@/hooks/useDismissOnOutsideOrEscape";
 import { useMenuRovingFocus } from "@/hooks/useMenuRovingFocus";
+import { useMenuPosition } from "@/hooks/useMenuPosition";
 import { clipboardWarn } from "@/utils/debug";
 import { unwrapTerminalSelection } from "./unwrapSelection";
 import { commandOutputRange, readBufferRange, type CommandMark } from "./setupOsc";
@@ -132,25 +133,10 @@ export function TerminalContextMenu({
   // so it can refocus the terminal — unlike an outside click.
   useDismissOnOutsideOrEscape(true, menuRef, onClose, { escape: false });
 
-  // Adjust position to keep in viewport (useLayoutEffect to avoid flicker)
-  useLayoutEffect(() => {
-    /* v8 ignore next -- @preserve menuRef guard: ref is always set before layout effect runs */
-    if (!menuRef.current) return;
-    const menu = menuRef.current;
-    const rect = menu.getBoundingClientRect();
-    let x = position.x;
-    let y = position.y;
-    if (x + rect.width > window.innerWidth - 10) x = window.innerWidth - rect.width - 10;
-    if (y + rect.height > window.innerHeight - 10) y = window.innerHeight - rect.height - 10;
-    // Floor at a 10px viewport inset — a menu wider/taller than the viewport
-    // (small windows, very long localized labels) would otherwise compute a
-    // negative offset, parking the top-left corner off-screen and putting
-    // the first item out of reach. (Audit Round B M1.)
-    x = Math.max(10, x);
-    y = Math.max(10, y);
-    menu.style.left = `${x}px`;
-    menu.style.top = `${y}px`;
-  }, [position]);
+  // Placement, clamped into the viewport before paint. A menu wider or taller
+  // than the window (small windows, very long localized labels) lands on the
+  // near margin, so its first item stays reachable (see useMenuPosition).
+  useMenuPosition(menuRef, position);
 
   const handleAction = useCallback(
     async (id: string) => {

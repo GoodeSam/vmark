@@ -18,7 +18,6 @@
  * @module components/Sidebar/FileExplorer/ContextMenu
  */
 import {
-  useEffect,
   useRef,
   useCallback,
   useMemo,
@@ -37,6 +36,7 @@ import {
 } from "lucide-react";
 import { useDismissOnOutsideOrEscape } from "@/hooks/useDismissOnOutsideOrEscape";
 import { useMenuRovingFocus } from "@/hooks/useMenuRovingFocus";
+import { useMenuPosition } from "@/hooks/useMenuPosition";
 import { canOpenTerminalHere } from "@/services/terminal/openTerminalHere";
 import "./ContextMenu.css";
 
@@ -183,31 +183,8 @@ export function ContextMenu({ type, position, onAction, onClose }: ContextMenuPr
   // Click-outside only; Escape/Tab are owned by the roving hook.
   useDismissOnOutsideOrEscape(true, menuRef, onClose, { escape: false });
 
-  // Position adjustment to keep menu in viewport
-  useEffect(() => {
-    if (!menuRef.current) return;
-
-    const menu = menuRef.current;
-    const rect = menu.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    let adjustedX = position.x;
-    let adjustedY = position.y;
-
-    // Adjust horizontal position
-    if (position.x + rect.width > viewportWidth - 10) {
-      adjustedX = viewportWidth - rect.width - 10;
-    }
-
-    // Adjust vertical position
-    if (position.y + rect.height > viewportHeight - 10) {
-      adjustedY = viewportHeight - rect.height - 10;
-    }
-
-    menu.style.left = `${adjustedX}px`;
-    menu.style.top = `${adjustedY}px`;
-  }, [position]);
+  // Placement, clamped into the viewport (see useMenuPosition).
+  useMenuPosition(menuRef, position);
 
   const handleItemClick = useCallback(
     (id: ContextMenuActionId) => {

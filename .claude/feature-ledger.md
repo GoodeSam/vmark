@@ -1690,7 +1690,7 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - code: `src/components/Tabs/TabContextMenu.tsx`, `src/components/Tabs/useTabContextMenuActions.ts`, `src/components/Tabs/TabRenameInput.tsx`, `src/stores/tabRenameStore.ts`, `src/services/tabs/bulkCloseSelectors.ts`, `src/services/tabs/tabDiskActions.ts`, `src/services/tabs/openToTheSide.ts`, `src/services/tabs/moveTabToNewWindow.ts`
 - rust: `detach_tab_to_new_window`, `close_window`
 - docs: `website/guide/tab-navigation.md` §"Two documents side by side" (Open to the Side only); the rest of the menu is undocumented
-- tests: `src/components/Tabs/TabContextMenu.test.tsx`, `src/components/Tabs/useTabContextMenuActions.test.ts`, `src/components/Tabs/TabRenameInput.test.tsx`, `src/components/Tabs/useMenuPosition.test.tsx`, `src/stores/tabRenameStore.test.ts`, `src/services/tabs/bulkCloseSelectors.test.ts`, `src/services/tabs/tabDiskActions.test.ts`, `src/services/tabs/openToTheSide.test.ts`, `src/services/tabs/moveTabToNewWindow.test.ts`
+- tests: `src/components/Tabs/TabContextMenu.test.tsx`, `src/components/Tabs/useTabContextMenuActions.test.ts`, `src/components/Tabs/TabRenameInput.test.tsx`, `src/hooks/useMenuPosition.test.tsx`, `src/stores/tabRenameStore.test.ts`, `src/services/tabs/bulkCloseSelectors.test.ts`, `src/services/tabs/tabDiskActions.test.ts`, `src/services/tabs/openToTheSide.test.ts`, `src/services/tabs/moveTabToNewWindow.test.ts`
 - notes: pinned tabs are excluded from every bulk-close selector because `closeTab` refuses them.
 
 ### Tab drag: reorder, detach, cross-window transfer

@@ -70,11 +70,8 @@ interface TerminalTabBarProps {
 function firstGrapheme(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) return "?";
-  const Segmenter = (
-    Intl as unknown as { Segmenter?: typeof Intl.Segmenter }
-  ).Segmenter;
-  if (Segmenter) {
-    const [first] = new Segmenter(undefined, { granularity: "grapheme" }).segment(
+  if ("Segmenter" in Intl) {
+    const [first] = new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(
       trimmed,
     );
     if (first) return first.segment.toUpperCase();
