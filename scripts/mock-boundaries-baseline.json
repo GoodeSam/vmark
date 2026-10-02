@@ -1371,11 +1371,6 @@
       "target": "src/services/assembly/bindHostSettings"
     },
     {
-      "file": "src/plugins/codemirror/sourceMultiCursorPlugin.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/codemirror/sourceAltClick"
-    },
-    {
       "file": "src/plugins/codemirror/sourceShortcuts.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/codemirror/sourceShortcutsHelpers"
