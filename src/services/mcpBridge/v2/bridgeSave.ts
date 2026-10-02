@@ -37,7 +37,7 @@ import { respond } from "@/services/mcpBridge/utils";
 import { saveToPathForMcp } from "@/services/persistence/saveToPath";
 import type { SaveFailure } from "@/services/persistence/saveOutcome";
 import { commandErrorMessage } from "@/services/commands/commandError";
-import { v2ErrorString } from "./types";
+import { v2ErrorString, type V2ErrorCode } from "./types";
 
 /** A bridge save that wrote nothing, and why. */
 export interface BridgeSaveFailure {
@@ -101,6 +101,18 @@ export async function saveTabForBridge(
 }
 
 /**
+ * The error code each refusal is reported under. A refused or vanished
+ * location is a path problem the client can act on; an ownership conflict is
+ * not about the path at all. Keyed by reason so a new one cannot be added
+ * without deciding its code.
+ */
+const REFUSAL_CODE: Record<Exclude<BridgeSaveFailure["reason"], "write-failed">, V2ErrorCode> = {
+  "path-denied": "INVALID_PATH",
+  "parent-missing": "INVALID_PATH",
+  "ownership-conflict": "INTERNAL",
+};
+
+/**
  * Answer a request whose whole purpose was the save (`workspace.save`,
  * `workspace.save_as`) with the failure. `document.write` does not use this:
  * its buffer update succeeded, so it reports the save as a field of a
@@ -112,12 +124,9 @@ export async function saveTabForBridge(
  */
 export async function respondSaveFailed(id: string, failure: BridgeSaveFailure): Promise<void> {
   if (failure.reason === "write-failed") throw failure.cause;
-  // A refused or vanished location is a path problem the client can act on;
-  // an ownership conflict is not about the path at all.
-  const error = failure.reason === "ownership-conflict" ? "INTERNAL" : "INVALID_PATH";
   await respond({
     id,
     success: false,
-    error: v2ErrorString({ error, message: failure.message }),
+    error: v2ErrorString({ error: REFUSAL_CODE[failure.reason], message: failure.message }),
   });
 }

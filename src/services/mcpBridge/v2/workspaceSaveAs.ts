@@ -17,17 +17,16 @@
  * document's line endings and byte-order mark, records history, and captures
  * provenance under the capture-on-save setting like every other MCP write.
  *
+ * @coordinates-with tabGuard.ts — tab resolution, the flush, INVALID_TAB
  * @coordinates-with bridgeSave.ts — the path guard and the save pipeline
  * @coordinates-with liveEditor.ts — flushes pending keystrokes into the buffer first
  * @coordinates-with services/persistence/applyPostSaveState.ts — re-points the document and tab
  */
 
 import { exists } from "@tauri-apps/plugin-fs";
-import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { getFileName, normalizePath } from "@/utils/paths";
-import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { checkBridgePath } from "@/services/mcpBridge/bridgePathGuard";
 import { imeToast } from "@/services/ime/imeToast";
 import i18n from "@/i18n";
@@ -35,32 +34,18 @@ import { respond } from "@/services/mcpBridge/utils";
 import { wrapHandler } from "./wrapHandler";
 import { respondSaveFailed, saveTabForBridge } from "./bridgeSave";
 import { flushLiveEditors } from "./liveEditor";
-import { v2ErrorString } from "./types";
-import type { V2Error } from "./types";
-
-function structuredError(id: string, err: V2Error): Promise<void> {
-  return respond({ id, success: false, error: v2ErrorString(err) });
-}
-
-function resolveTab(tabIdArg: string | undefined): string | V2Error {
-  const tabState = useTabStore.getState();
-  if (tabIdArg) {
-    const exists = Object.values(tabState.tabs).some((list) =>
-      list.some((t) => t.id === tabIdArg),
-    );
-    return exists ? tabIdArg : { error: "INVALID_TAB", message: "Unknown tabId" };
-  }
-  const active = tabState.activeTabId[getCurrentWindowLabel()];
-  return active ?? { error: "INVALID_TAB", message: "No focused tab" };
-}
+import { readOperationArgs } from "./readOperationArgs";
+import { requireTab, structuredError } from "./tabGuard";
 
 export async function handleWorkspaceSaveAs(
   id: string,
   args: Record<string, unknown>,
 ): Promise<void> {
   return wrapHandler(id, async () => {
-    const filePath = args.filePath;
-    if (typeof filePath !== "string" || filePath.length === 0) {
+    const wire = readOperationArgs("vmark.workspace.save_as", args);
+    const filePath = wire.filePath;
+    // A value of the wrong type reads as absent; an empty path names nothing.
+    if (!filePath) {
       await structuredError(id, {
         error: "INVALID_PATH",
         message: "filePath must be a non-empty string",
@@ -77,26 +62,15 @@ export async function handleWorkspaceSaveAs(
       return;
     }
 
-    const tabId = resolveTab(typeof args.tabId === "string" ? args.tabId : undefined);
-    if (typeof tabId !== "string") {
-      await structuredError(id, tabId);
-      return;
-    }
-
-    const doc = useDocumentStore.getState().documents[tabId];
-    if (!doc) {
-      await structuredError(id, {
-        error: "INVALID_TAB",
-        message: "No document for tab",
-      });
-      return;
-    }
+    const tab = await requireTab(id, wire.tabId);
+    if (!tab) return;
+    const { tabId } = tab;
 
     const autoApprove =
       useSettingsStore.getState().advanced.mcpServer.autoApproveEdits;
     const sameOpenPath =
-      doc.filePath != null &&
-      normalizePath(doc.filePath) === normalizePath(filePath);
+      tab.filePath != null &&
+      normalizePath(tab.filePath) === normalizePath(filePath);
     if (!autoApprove && !sameOpenPath) {
       imeToast.warning(
         i18n.t("dialog:toast.mcpApprovalRequired", {
@@ -134,7 +108,7 @@ export async function handleWorkspaceSaveAs(
     // Read the buffer NOW, after flushing pending keystrokes into it: the
     // approval checks above awaited, and the user may have kept typing.
     flushLiveEditors();
-    const buffer = useDocumentStore.getState().documents[tabId]?.content ?? doc.content;
+    const buffer = useDocumentStore.getState().documents[tabId]?.content ?? tab.content;
     const outcome = await saveTabForBridge(tabId, filePath, buffer, "workspace.save_as");
     if (!outcome.saved) {
       await respondSaveFailed(id, outcome);

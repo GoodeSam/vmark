@@ -35,7 +35,7 @@ import { serializeMarkdown } from "@/utils/markdownPipeline";
 import { getSerializeOptions } from "@/plugins/toolbarActions/wysiwygAdapterUtils";
 import { TiptapEditorInner } from "@/components/Editor/TiptapEditor";
 import { handleDocumentRead, handleDocumentWrite } from "@/services/mcpBridge/v2/document";
-import { handleSelectionSet } from "@/services/mcpBridge/v2/selection";
+import { handleSelectionGet, handleSelectionSet } from "@/services/mcpBridge/v2/selection";
 import { handleWorkspaceSave } from "@/services/mcpBridge/v2/workspaceSave";
 import { resetBridge, responseTo, structuredErrorOf } from "./bridgeDiskHarness";
 
@@ -299,6 +299,27 @@ describe("keystrokes the editor has not flushed yet", () => {
     expect(data.revision).toBe(currentRevision(tabId));
     await settleEditor();
     expect(currentRevision(tabId)).toBe(data.revision);
+  });
+
+  it("do not make the revision selection.get returns go stale when they flush", async () => {
+    // The keystroke bumps the revision once when typed and once more when the
+    // debounced flush reaches the store. A revision read in between — which
+    // selection.get did, not flushing first — was stale a frame later with no
+    // further edit, so the selection.set built on it was refused.
+    const { tabId, editor } = await openInLiveEditor("hello\n");
+
+    typeAtEnd(editor, " world");
+    await act(async () => {
+      await handleSelectionGet("req-g", {});
+    });
+    const data = responseTo("req-g").data as { revision: string };
+    await settleEditor();
+
+    expect(currentRevision(tabId)).toBe(data.revision);
+    await act(async () => {
+      await handleSelectionSet("req-s", { content: "!", expected_revision: data.revision });
+    });
+    expect(structuredErrorOf(responseTo("req-s"))).toBeNull();
   });
 
   it("are saved by workspace.save, which leaves the document clean", async () => {

@@ -4,68 +4,23 @@
  * Extracted from workspace.ts (size baseline); re-exported there so dispatch
  * imports are unchanged.
  *
+ * What is saved is the buffer with the editor's pending keystrokes already in
+ * it: the tab guard flushes the mounted editors before it reads, as the human
+ * Save does — otherwise the reply says "saved" one frame before the document
+ * turns dirty again.
+ *
  * @coordinates-with workspace.ts — sibling workspace handlers
+ * @coordinates-with tabGuard.ts — tab resolution, the flush, INVALID_TAB
  * @coordinates-with bridgeSave.ts — the path guard and the save pipeline
- * @coordinates-with liveEditor.ts — flushes pending keystrokes into the buffer first
  * @module services/mcpBridge/v2/workspaceSave
  */
 
-import { useTabStore } from "@/stores/tabStore";
-import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
-import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
+import { useRevisionStore } from "@/stores/documentStore";
 import { respond } from "@/services/mcpBridge/utils";
-import { v2ErrorString } from "./types";
 import { wrapHandler } from "./wrapHandler";
 import { respondSaveFailed, saveTabForBridge } from "./bridgeSave";
-import { flushLiveEditors } from "./liveEditor";
-import type { V2Error } from "./types";
-
-function structuredError(id: string, err: V2Error): Promise<void> {
-  return respond({ id, success: false, error: v2ErrorString(err) });
-}
-
-interface SaveResolution {
-  tabId: string;
-  filePath: string;
-  content: string;
-}
-
-function resolveTabForSave(
-  tabIdArg: string | undefined,
-): SaveResolution | V2Error {
-  const tabState = useTabStore.getState();
-  const docState = useDocumentStore.getState();
-
-  let tabId: string;
-  if (tabIdArg) {
-    if (
-      !Object.values(tabState.tabs).some((list) =>
-        list.some((t) => t.id === tabIdArg),
-      )
-    ) {
-      return { error: "INVALID_TAB", message: "Unknown tabId" };
-    }
-    tabId = tabIdArg;
-  } else {
-    const focused = getCurrentWindowLabel();
-    const active = tabState.activeTabId[focused];
-    if (!active) {
-      return { error: "INVALID_TAB", message: "No focused tab" };
-    }
-    tabId = active;
-  }
-  const doc = docState.documents[tabId];
-  if (!doc) {
-    return { error: "INVALID_TAB", message: "No document for tab" };
-  }
-  if (!doc.filePath) {
-    return {
-      error: "INVALID_PATH",
-      message: "Tab has no filePath; use save_as instead",
-    };
-  }
-  return { tabId, filePath: doc.filePath, content: doc.content };
-}
+import { readOperationArgs } from "./readOperationArgs";
+import { requireTab, structuredError } from "./tabGuard";
 
 /**
  * Handle `vmark.workspace.save`. Args: `{tabId?: string}`.
@@ -75,32 +30,26 @@ export async function handleWorkspaceSave(
   args: Record<string, unknown>,
 ): Promise<void> {
   return wrapHandler(id, async () => {
-    const tabIdArg =
-      typeof args.tabId === "string" ? args.tabId : undefined;
-    // What is saved is the buffer; bring pending keystrokes into it first,
-    // as the human Save does, or the reply says "saved" one frame before the
-    // document turns dirty again.
-    flushLiveEditors();
-    const resolved = resolveTabForSave(tabIdArg);
-    if ("error" in resolved) {
-      await structuredError(id, resolved);
+    const wire = readOperationArgs("vmark.workspace.save", args);
+    const tab = await requireTab(id, wire.tabId);
+    if (!tab) return;
+    if (!tab.filePath) {
+      await structuredError(id, {
+        error: "INVALID_PATH",
+        message: "Tab has no filePath; use save_as instead",
+      });
       return;
     }
-    const outcome = await saveTabForBridge(
-      resolved.tabId,
-      resolved.filePath,
-      resolved.content,
-      "workspace.save",
-    );
+    const outcome = await saveTabForBridge(tab.tabId, tab.filePath, tab.content, "workspace.save");
     if (!outcome.saved) {
       await respondSaveFailed(id, outcome);
       return;
     }
-    const revision = useRevisionStore.getState().getRevision(resolved.tabId);
+    const revision = useRevisionStore.getState().getRevision(tab.tabId);
     await respond({
       id,
       success: true,
-      data: { filePath: resolved.filePath, revision },
+      data: { filePath: tab.filePath, revision },
     });
   });
 }

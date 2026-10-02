@@ -37,126 +37,37 @@
  *     serialization of the client's text, so disk, store and editor agree
  *     and the reply's `saved` and `revision` stay true after the editor
  *     settles (`liveEditor.ts`).
- *   - Every handler here first flushes the mounted editors into the store,
- *     so it reads, checks and replaces what the user actually has — pending
- *     keystrokes included.
+ *   - Every handler resolves its tab through `tabGuard.ts`, which first
+ *     flushes the mounted editors into the store — so it reads, checks and
+ *     replaces what the user actually has, pending keystrokes included.
  *
- * @coordinates-with stores/documentStore/revision.ts — current revision + isCurrentRevision
- * @coordinates-with documentTransform.ts — CJK transform helpers (extracted)
+ * @coordinates-with tabGuard.ts — tab resolution, the flush, INVALID_TAB and STALE
  * @coordinates-with liveEditor.ts — the mounted WYSIWYG editor ↔ store seam
- * @coordinates-with stores/documentStore.ts — content + dirty state
- * @coordinates-with stores/tabStore.ts — tab → window resolution
  * @coordinates-with bridgeSave.ts — the path guard and the save pipeline
+ * @coordinates-with checkpoint.ts — the checkpoint a write leaves behind
+ * @coordinates-with documentTransform.ts — CJK transform helpers (extracted)
+ * @coordinates-with stores/documentStore.ts — content + dirty state
+ * @coordinates-with stores/documentStore/revision.ts — the revision token
  * @coordinates-with services/coherence/mcpCapture.ts — MCP read capture; the write is captured by the save pipeline
  * @module services/mcpBridge/v2/document
  */
 
 import { recordMcpRead } from "@/services/coherence/mcpCapture";
-import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
-import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
-import {
-  isWorkflowYaml,
-  looksLikeWorkflowPath,
-} from "@/lib/ghaWorkflow/detection";
 import { respond } from "@/services/mcpBridge/utils";
 import { wrapHandler } from "./wrapHandler";
 import { saveTabForBridge } from "./bridgeSave";
-import { flushLiveEditors, loadIntoLiveWysiwyg } from "./liveEditor";
+import { describeSizeChange, recordBridgeCheckpoint } from "./checkpoint";
+import { loadIntoLiveWysiwyg } from "./liveEditor";
 import { readOperationArgs } from "./readOperationArgs";
-import { v2ErrorString } from "./types";
-import type { DocumentKind, V2Error } from "./types";
-import { useMcpStore } from "@/stores/mcpStore";
-import { appendCheckpoint } from "@/stores/mcpCheckpointPersistence";
-import type { CheckpointTool } from "@/stores/mcpStore";
-
-interface ResolvedTab {
-  tabId: string;
-  windowLabel: string;
-  filePath: string | null;
-  content: string;
-  dirty: boolean;
-  kind: DocumentKind;
-}
-
-/**
- * Decide a tab's kind from its filePath + content. Pure helper so
- * callers can re-evaluate against incoming content (e.g. on write).
- */
-function resolveKind(filePath: string | null, content: string): DocumentKind {
-  if (looksLikeWorkflowPath(filePath ?? undefined)) return "yaml-workflow";
-  if (isWorkflowYaml(content)) return "yaml-workflow";
-  return "markdown";
-}
-
-function resolveTab(tabIdArg: string | undefined): ResolvedTab | null {
-  const tabState = useTabStore.getState();
-  const docState = useDocumentStore.getState();
-
-  let tabId: string;
-  let windowLabel: string;
-
-  if (tabIdArg) {
-    const owner = Object.entries(tabState.tabs).find(([, list]) =>
-      list.some((t) => t.id === tabIdArg),
-    );
-    if (!owner) return null;
-    tabId = tabIdArg;
-    windowLabel = owner[0];
-  } else {
-    windowLabel = getCurrentWindowLabel();
-    const active = tabState.activeTabId[windowLabel];
-    if (!active) return null;
-    tabId = active;
-  }
-
-  const doc = docState.documents[tabId];
-  if (!doc) return null;
-
-  const content = doc.content;
-  const filePath = doc.filePath;
-  const kind = resolveKind(filePath, content);
-
-  return {
-    tabId,
-    windowLabel,
-    filePath,
-    content,
-    dirty: doc.isDirty,
-    kind,
-  };
-}
-
-function structuredError(id: string, err: V2Error): Promise<void> {
-  return respond({ id, success: false, error: v2ErrorString(err) });
-}
-
-/**
- * Capture a checkpoint for the just-completed MCP write. Push the
- * snapshot synchronously so callers can read it back immediately, then
- * fire the disk append asynchronously (errors are logged, never
- * surfaced — a failed history write must not break the MCP path).
- */
-function recordCheckpoint(args: {
-  resolved: ResolvedTab;
-  tool: CheckpointTool;
-  description: string;
-  contentBefore: string;
-  revisionBefore: string;
-  revisionAfter: string;
-}): void {
-  const id = useMcpStore.getState().checkpointPush({
-    tabId: args.resolved.tabId,
-    filePath: args.resolved.filePath,
-    tool: args.tool,
-    description: args.description,
-    contentBefore: args.contentBefore,
-    revisionBefore: args.revisionBefore,
-    revisionAfter: args.revisionAfter,
-  });
-  const cp = useMcpStore.getState().checkpointGet(id);
-  if (cp) void appendCheckpoint(cp);
-}
+import { requireCurrentRevision, requireTab, resolveKind, structuredError } from "./tabGuard";
+import {
+  applyTransform,
+  currentTransformSettings,
+  isTransformKind,
+  TRANSFORM_KINDS,
+} from "./documentTransform";
+import type { DocumentKind } from "./types";
 
 /**
  * Replace a tab's content and return the revision the document is then at.
@@ -186,31 +97,24 @@ export async function handleDocumentRead(
   args: Record<string, unknown>,
 ): Promise<void> {
   return wrapHandler(id, async () => {
-    const tabIdArg = typeof args.tabId === "string" ? args.tabId : undefined;
-    flushLiveEditors();
-    const resolved = resolveTab(tabIdArg);
-    if (!resolved) {
-      await structuredError(id, {
-        error: "INVALID_TAB",
-        message: "tabId could not be resolved",
-      });
-      return;
-    }
-    const revision = useRevisionStore.getState().getRevision(resolved.tabId);
+    const wire = readOperationArgs("vmark.document.read", args);
+    const tab = await requireTab(id, wire.tabId);
+    if (!tab) return;
+    const revision = useRevisionStore.getState().getRevision(tab.tabId);
     await respond({
       id,
       success: true,
       data: {
-        content: resolved.content,
+        content: tab.content,
         revision,
-        filePath: resolved.filePath,
-        kind: resolved.kind,
-        dirty: resolved.dirty,
+        filePath: tab.filePath,
+        kind: tab.kind,
+        dirty: tab.dirty,
       },
     });
     // Coherence (WI-1.6): only a read the client actually RECEIVED joins the
     // next write's inputs (audit T6), pinned to the content served (#133).
-    if (resolved.filePath) recordMcpRead(resolved.filePath, resolved.content, resolved.tabId);
+    if (tab.filePath) recordMcpRead(tab.filePath, tab.content, tab.tabId);
   });
 }
 
@@ -231,61 +135,42 @@ export async function handleDocumentWrite(
   args: Record<string, unknown>,
 ): Promise<void> {
   return wrapHandler(id, async () => {
-    // One parse against the generated contract (WI-15), not four `typeof`
-    // chains restating it. Wrong runtime shape reads as absent, as before.
+    // One parse against the generated contract, not a `typeof` chain
+    // restating it. Wrong runtime shape reads as absent.
     const wire = readOperationArgs("vmark.document.write", args);
     if (wire.content === undefined) {
       await structuredError(id, { error: "INTERNAL", message: "content must be a string" });
       return;
     }
-    const { content, tabId: tabIdArg, expected_revision: expectedRevision } = wire;
+    const { content } = wire;
     // `save` defaults to true. AI agents shouldn't have to know about
     // VMark's buffer-vs-disk distinction; the natural mental model is
     // "I wrote the file → file is updated."
     const shouldSave = wire.save !== false;
 
-    flushLiveEditors();
-    const resolved = resolveTab(tabIdArg);
-    if (!resolved) {
-      await structuredError(id, {
-        error: "INVALID_TAB",
-        message: "tabId could not be resolved",
-      });
-      return;
-    }
+    const tab = await requireTab(id, wire.tabId);
+    if (!tab || !(await requireCurrentRevision(id, tab.tabId, wire.expected_revision))) return;
 
-    const revisionStore = useRevisionStore.getState();
-    if (
-      expectedRevision !== undefined &&
-      !revisionStore.isCurrentRevision(resolved.tabId, expectedRevision)
-    ) {
-      await structuredError(id, {
-        error: "STALE",
-        message: "Document has changed since the last read",
-        current_revision: revisionStore.getRevision(resolved.tabId),
-      });
-      return;
-    }
-
-    const contentBefore = resolved.content;
-    const revisionBefore = revisionStore.getRevision(resolved.tabId);
-    // Re-detect kind against the INCOMING content. resolveTab read the
-    // current content, which is empty for fresh untitled tabs — that
+    const contentBefore = tab.content;
+    const revisionBefore = useRevisionStore.getState().getRevision(tab.tabId);
+    // Re-detect kind against the INCOMING content. The tab was resolved on
+    // its current content, which is empty for fresh untitled tabs — that
     // would default kind=markdown and run YAML writes through Tiptap's
     // markdown parser, garbling the document. The new content is the
     // authoritative source of truth at write time.
-    const writeKind = resolveKind(resolved.filePath, content);
-    const result = writeContent(resolved.tabId, content, writeKind);
+    const writeKind = resolveKind(tab.filePath, content);
+    const result = writeContent(tab.tabId, content, writeKind);
     // The buffer this write produced, read back from the store BEFORE any
     // await: canonical text (a client may send CRLF; a live WYSIWYG editor
     // re-serializes), and this request's own — a later request can replace
     // the buffer while the save is in flight.
-    const buffer = useDocumentStore.getState().documents[resolved.tabId]?.content ?? content;
+    const buffer = useDocumentStore.getState().documents[tab.tabId]?.content ?? content;
     if (contentBefore !== buffer) {
-      recordCheckpoint({
-        resolved: { ...resolved, kind: writeKind },
+      recordBridgeCheckpoint({
+        tabId: tab.tabId,
+        filePath: tab.filePath,
         tool: "document.write",
-        description: describeWrite(buffer, contentBefore),
+        description: describeSizeChange("Wrote document", contentBefore, buffer),
         contentBefore,
         revisionBefore,
         revisionAfter: result.revision,
@@ -305,15 +190,10 @@ export async function handleDocumentWrite(
     let saveError: string | undefined;
     if (!shouldSave) {
       saveSkipped = "opt_out";
-    } else if (!resolved.filePath) {
+    } else if (!tab.filePath) {
       saveSkipped = "untitled";
     } else {
-      const outcome = await saveTabForBridge(
-        resolved.tabId,
-        resolved.filePath,
-        buffer,
-        "document.write",
-      );
+      const outcome = await saveTabForBridge(tab.tabId, tab.filePath, buffer, "document.write");
       if (outcome.saved) saved = true;
       else saveError = outcome.message;
     }
@@ -331,18 +211,6 @@ export async function handleDocumentWrite(
   });
 }
 
-/** One-line summary of a `document.write` for the checkpoint panel. */
-function describeWrite(after: string, before: string): string {
-  const beforeBytes = before.length;
-  const afterBytes = after.length;
-  const delta = afterBytes - beforeBytes;
-  const sign = delta >= 0 ? "+" : "−";
-  const magnitude = Math.abs(delta);
-  return `Wrote document (${sign}${magnitude} chars, was ${beforeBytes}, now ${afterBytes})`;
-}
-
-import { applyTransform, currentTransformSettings, isTransformKind, TRANSFORM_KINDS } from "./documentTransform";
-
 /**
  * Handle `vmark.document.transform`.
  *
@@ -354,60 +222,33 @@ export async function handleDocumentTransform(
   args: Record<string, unknown>,
 ): Promise<void> {
   return wrapHandler(id, async () => {
-    if (!isTransformKind(args.kind)) {
+    const wire = readOperationArgs("vmark.document.transform", args);
+    const { kind } = wire;
+    if (!isTransformKind(kind)) {
       await structuredError(id, {
         error: "INTERNAL",
         message: `kind must be one of: ${TRANSFORM_KINDS.join(", ")}`,
       });
       return;
     }
-    const tabIdArg = typeof args.tabId === "string" ? args.tabId : undefined;
-    const expectedRevision =
-      typeof args.expected_revision === "string"
-        ? args.expected_revision
-        : undefined;
 
-    flushLiveEditors();
-    const resolved = resolveTab(tabIdArg);
-    if (!resolved) {
-      await structuredError(id, {
-        error: "INVALID_TAB",
-        message: "tabId could not be resolved",
-      });
+    const tab = await requireTab(id, wire.tabId);
+    if (!tab || !(await requireCurrentRevision(id, tab.tabId, wire.expected_revision))) return;
+
+    const revisionBefore = useRevisionStore.getState().getRevision(tab.tabId);
+    const transformed = applyTransform(kind, tab.content, currentTransformSettings());
+    if (transformed === tab.content) {
+      await respond({ id, success: true, data: { revision: revisionBefore } });
       return;
     }
 
-    const revisionStore = useRevisionStore.getState();
-    if (
-      expectedRevision !== undefined &&
-      !revisionStore.isCurrentRevision(resolved.tabId, expectedRevision)
-    ) {
-      await structuredError(id, {
-        error: "STALE",
-        message: "Document has changed since the last read",
-        current_revision: revisionStore.getRevision(resolved.tabId),
-      });
-      return;
-    }
-
-    const transformed = applyTransform(args.kind, resolved.content, currentTransformSettings());
-    if (transformed === resolved.content) {
-      await respond({
-        id,
-        success: true,
-        data: { revision: revisionStore.getRevision(resolved.tabId) },
-      });
-      return;
-    }
-
-    const contentBefore = resolved.content;
-    const revisionBefore = revisionStore.getRevision(resolved.tabId);
-    const result = writeContent(resolved.tabId, transformed, resolved.kind);
-    recordCheckpoint({
-      resolved,
+    const result = writeContent(tab.tabId, transformed, tab.kind);
+    recordBridgeCheckpoint({
+      tabId: tab.tabId,
+      filePath: tab.filePath,
       tool: "document.transform",
-      description: `Transform: ${args.kind}`,
-      contentBefore,
+      description: `Transform: ${kind}`,
+      contentBefore: tab.content,
       revisionBefore,
       revisionAfter: result.revision,
     });

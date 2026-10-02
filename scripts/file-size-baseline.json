@@ -70,8 +70,6 @@
     "src/plugins/toolbarActions/sourceImageActions.ts": 328,
     "src/services/files/fileSave.ts": 312,
     "src/services/history/historyOperations.ts": 369,
-    "src/services/mcpBridge/v2/document.ts": 416,
-    "src/services/mcpBridge/v2/selection.ts": 463,
     "src/services/mcpBridge/v2/workflow.ts": 317,
     "src/stores/aiStore/provider.ts": 327,
     "src/stores/aiStore/suggestion.ts": 336,
