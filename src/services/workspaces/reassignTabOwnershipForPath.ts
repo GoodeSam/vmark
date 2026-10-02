@@ -1,20 +1,27 @@
 /**
  * Ownership reassignment on deliberate navigation (WI-13.4, invariant 10).
  *
- * Purpose: Save As, rename, and cross-root moves change a tab's file path —
- * its workspace ownership must follow ATOMICALLY (explicit claim moves to the
- * new owner), and when the ACTIVE tab's owner changed, the visible context
- * follows too, otherwise the activeTabId alias would point at a tab the new
- * projection hides.
+ * Purpose: an open, Save As, rename or cross-root move gives a tab a file
+ * path — its workspace ownership must follow ATOMICALLY (explicit claim moves
+ * to the new owner), and when the ACTIVE tab's owner changed, the visible
+ * context follows too, otherwise the activeTabId alias would point at a tab
+ * the new projection hides.
  *
  * `allowVisibleSwitch: false` is for MCP/AI flows (plan D10): AI-driven
  * saves reclassify ownership but never yank the human's visible workspace.
  *
- * Callers: saveToPath (Save As), applyPathReconciliation + external-change
- * renames, MCP workspaceSaveAs (with allowVisibleSwitch: false).
+ * Callers: the post-save state update, for every save that points a tab at a
+ * path (it passes `allowVisibleSwitch: false` for a save an AI client asked
+ * for — an MCP save reaches this through the save pipeline, not directly);
+ * path reconciliation; every user-facing open; and `applyExternalRename`
+ * below, for a rename made outside the app.
  *
  * @coordinates-with workspaceContextOwnership.ts — the atomic claim
  * @coordinates-with switchWorkspaceInstance.ts — the visible switch
+ * @coordinates-with services/persistence/applyPostSaveState.ts — the save-side caller
+ * @coordinates-with services/persistence/applyPathReconciliation.ts — the reconciliation caller
+ * @coordinates-with fileOwnership.ts — the open-side caller
+ * @coordinates-with hooks/useExternalFileChanges.ts — applies external renames
  * @module services/workspaces/reassignTabOwnershipForPath
  */
 import { useTabStore } from "@/stores/tabStore";

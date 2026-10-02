@@ -33,6 +33,7 @@ vi.mock("@/utils/reentryGuard", () => ({
 }));
 
 import { handleWorkspaceOpenWorkspace } from "./workspaceOpenFolder";
+import { BRIDGE_OPERATION_FIELDS } from "./generated/bridgeContracts";
 import { useWorkspaceApprovalStore } from "@/stores/workspaceApprovalStore";
 
 beforeEach(() => {
@@ -280,8 +281,28 @@ describe("windowLabel is ignored, and that is a security property", () => {
   // the only check that stays true when the handler is rewritten.
   const handler = readFileSync(join(__dirname, "workspaceOpenFolder.ts"), "utf8");
 
-  it("never reads args.windowLabel", () => {
-    expect(handler).not.toMatch(/args\.windowLabel/);
+  it("never reads a windowLabel off the request, under any name for the payload", () => {
+    // Any `<something>.windowLabel` is a read: the handler now takes its
+    // payload from the parsed contract, so `args.` alone would prove nothing.
+    expect(handler).not.toMatch(/\.windowLabel\b/);
+  });
+
+  it("the wire contract declares no windowLabel for the operation", () => {
+    // The handler reads only what the contract declares, so this is what
+    // makes a client-supplied label unreachable rather than merely unread.
+    expect(BRIDGE_OPERATION_FIELDS["vmark.workspace.open_workspace"].map((f) => f.name)).toEqual([
+      "folderPath",
+    ]);
+  });
+
+  it("a request that carries one still prompts and opens in the delivering window", async () => {
+    await handleWorkspaceOpenWorkspace("id1", { folderPath: "/proj", windowLabel: "doc-9" });
+    expect(useWorkspaceApprovalStore.getState().pending[0]).toMatchObject({ windowLabel: "main" });
+    useWorkspaceApprovalStore.getState().resolveApproval("id1", "approve");
+
+    await handleWorkspaceOpenWorkspace("id2", { folderPath: "/proj", windowLabel: "doc-9" });
+
+    expect(openWorkspaceByPath).toHaveBeenCalledWith("/proj", { windowLabel: "main" });
   });
 
   it("binds to the delivering window explicitly", () => {

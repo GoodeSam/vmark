@@ -67,6 +67,11 @@ export async function collectRemoteLiveRefs(windowLabel: string): Promise<Extern
  * UNTITLED documents count too: a never-saved buffer can hold an
  * absolute-path reference (drag-drop, MCP write), and it exists nowhere on
  * disk for any other evidence source to find. Extra keys only protect.
+ *
+ * That is also why this reads the document store whole rather than the open
+ * tabs: a document left without a tab can only ADD keys here, and a key can
+ * only keep an image. (The buffers that REPLACE files as evidence come from
+ * open tabs only — see `liveDocumentContents.ts`.)
  */
 export function localLiveRefKeys(): string[] {
   flushAllWysiwygNow();

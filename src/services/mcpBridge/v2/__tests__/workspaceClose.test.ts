@@ -3,6 +3,8 @@
 // the handler asked for: a pinned tab the store refuses to close is not
 // `closed: true`, and a tab that did close takes its document with it. Own file
 // because workspace.test.ts sits at its frozen size baseline.
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
 import { useTabStore } from "@/stores/tabStore";
@@ -109,5 +111,89 @@ describe("vmark.workspace.close — the reply is the store's verdict", () => {
     await handleWorkspaceClose("req-2", { tabId });
 
     expect(replyTo("req-2")).toMatchObject({ success: true, data: { closed: true } });
+  });
+});
+
+// WI-RA1C.5 — a DIVERGENT document is clean, but holds content the user chose
+// to keep over an external change ("Keep my changes"). Every human close asks
+// about it; an AI close without `force` must not drop it in silence either.
+describe("vmark.workspace.close — a divergent document is local content", () => {
+  function openDivergent(content: string): string {
+    const tabId = openTab("/repo/kept.md", content);
+    useDocumentStore.getState().markDivergent(tabId);
+    return tabId;
+  }
+
+  it("refuses without force, and the tab and the kept content survive", async () => {
+    const tabId = openDivergent("我保留的内容\n");
+
+    await handleWorkspaceClose("req-div", { tabId });
+
+    expect(replyTo("req-div")).toMatchObject({
+      success: true,
+      data: { closed: false, reason: "DIVERGENT" },
+    });
+    expect(useTabStore.getState().findTabById(tabId)).not.toBeNull();
+    const doc = useDocumentStore.getState().getDocument(tabId);
+    expect(doc).toMatchObject({ content: "我保留的内容\n", isDirty: false, isDivergent: true });
+  });
+
+  it("closes with force, taking the document with it", async () => {
+    const tabId = openDivergent("kept\n");
+
+    await handleWorkspaceClose("req-div-force", { tabId, force: true });
+
+    expect(replyTo("req-div-force")).toMatchObject({ success: true, data: { closed: true } });
+    expect(useTabStore.getState().findTabById(tabId)).toBeNull();
+    expect(useDocumentStore.getState().getDocument(tabId)).toBeUndefined();
+  });
+
+  it("a document that is dirty AND divergent is reported as DIRTY", async () => {
+    const tabId = openDivergent("kept\n");
+    useDocumentStore.getState().setEditorContent(tabId, "kept, then edited\n");
+
+    await handleWorkspaceClose("req-both", { tabId });
+
+    expect(replyTo("req-both")).toMatchObject({ data: { closed: false, reason: "DIRTY" } });
+  });
+
+  it("a pinned divergent tab is refused as DIVERGENT first", async () => {
+    const tabId = openDivergent("kept\n");
+    useTabStore.getState().togglePin(MAIN, tabId);
+
+    await handleWorkspaceClose("req-pin-div", { tabId });
+
+    expect(replyTo("req-pin-div")).toMatchObject({ data: { closed: false, reason: "DIVERGENT" } });
+  });
+});
+
+// WI-RA1C.6 — the sidecar's tool description is the only place an AI client
+// learns what a refused close means. Every reason the handler really answers
+// with must be named there, or a client meets a reason it was never told of.
+describe("vmark.workspace.close — the sidecar documents every refusal", () => {
+  async function reasonFor(setup: (tabId: string) => void): Promise<string> {
+    const tabId = openTab("/repo/r.md", "body\n");
+    setup(tabId);
+    await handleWorkspaceClose("req-reason", { tabId });
+    const { data } = replyTo("req-reason") as { data: { closed: boolean; reason?: string } };
+    expect(data.closed).toBe(false);
+    return data.reason ?? "";
+  }
+
+  it("names DIRTY, DIVERGENT and PINNED in the close action's description", async () => {
+    const reasons = [
+      await reasonFor((tabId) => useDocumentStore.getState().setEditorContent(tabId, "edited\n")),
+      await reasonFor((tabId) => useDocumentStore.getState().markDivergent(tabId)),
+      await reasonFor((tabId) => useTabStore.getState().togglePin(MAIN, tabId)),
+    ];
+    expect(reasons).toEqual(["DIRTY", "DIVERGENT", "PINNED"]);
+
+    const tool = readFileSync(
+      resolve(import.meta.dirname, "../../../../../server/mcp/src/tools/workspace.ts"),
+      "utf8",
+    );
+    const closeLine = tool.split("\n").find((line) => line.includes("'- close:"));
+    expect(closeLine).toBeDefined();
+    for (const reason of reasons) expect(closeLine).toContain(`"${reason}"`);
   });
 });

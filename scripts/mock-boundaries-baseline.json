@@ -703,11 +703,6 @@
       "target": "src/stores/aiStore"
     },
     {
-      "file": "src/hooks/useReloadGuard.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/documentStore"
-    },
-    {
       "file": "src/hooks/useSidebarResize.test.tsx",
       "api": "vi.mock",
       "target": "src/stores/uiStore"
@@ -716,11 +711,6 @@
       "file": "src/hooks/useSourceOutlineSync.test.ts",
       "api": "vi.mock",
       "target": "src/stores/uiStore"
-    },
-    {
-      "file": "src/hooks/useUpdateChecker.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/documentStore"
     },
     {
       "file": "src/hooks/useUpdateChecker.test.ts",

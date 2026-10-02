@@ -6,12 +6,11 @@
  * is a focused, independently testable function here. Document-content restore
  * stays in `restoreHelpers.ts` (these helpers do not depend on it).
  *
+ * @coordinates-with services/windowClose/tabCleanup.ts — frees the state of the tabs `clearExistingWindowTabs` removes
  * @module services/persistence/hotExit/restoreTabsHelpers
  */
 import { hotExitWarn } from '@/utils/debug';
 import { useTabStore } from '@/stores/tabStore';
-import { useDocumentStore } from '@/stores/documentStore';
-import { useUnifiedHistoryStore } from '@/stores/documentStore';
 import { getFormatById } from '@/lib/formats/registry';
 import { normalizePath } from '@/utils/paths';
 import type { TabState, WindowState } from './types';
@@ -50,21 +49,15 @@ export function filterMeaningfulTabs(tabs: TabState[]): TabState[] {
 }
 
 /**
- * Clear the window's existing tabs and their documents/history before a
- * restore overwrites them.
+ * Clear the window's existing tabs before a restore overwrites them.
+ *
+ * Removing the window drops every tab at once (bypassing pin rules) and
+ * announces each removal; the tab-state cleanup then frees the tab's document,
+ * history and the rest of its per-tab state. Nothing is freed here by hand.
  */
 export function clearExistingWindowTabs(windowLabel: string): void {
   const tabStore = useTabStore.getState();
-  const documentStore = useDocumentStore.getState();
-  const historyStore = useUnifiedHistoryStore.getState();
-  const existingTabs = tabStore.getTabsByWindow(windowLabel);
-  existingTabs.forEach((tab) => {
-    documentStore.removeDocument(tab.id);
-    // Also clear unified history to prevent memory leaks
-    historyStore.clearDocument(tab.id);
-  });
-  // Remove window from tab store to clear all tabs at once (bypasses pin rules)
-  if (existingTabs.length > 0) {
+  if (tabStore.getTabsByWindow(windowLabel).length > 0) {
     tabStore.removeWindow(windowLabel);
   }
 }
