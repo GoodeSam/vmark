@@ -31,6 +31,14 @@ export interface FormatOptions {
   startsAtLineStart?: boolean;
   /** The text's last offset is the end of a line in the enclosing document. */
   endsAtLineEnd?: boolean;
+  /**
+   * Set when the text BEGINS with the `)` that closes a markdown link whose
+   * protected URL sits immediately to its left: the link's visible text, with
+   * trailing emphasis and code markers removed (empty for an empty link).
+   * That `)` is link syntax, not a parenthesis, and what the reader sees to
+   * its left is this text.
+   */
+  linkLabel?: string | undefined;
 }
 
 /** Target quote style: curly (""), corner (「」), or guillemets (<<>>). */

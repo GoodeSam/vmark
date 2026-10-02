@@ -33,6 +33,7 @@
  */
 
 import { isCJKLetter } from "./latinSpanScanner";
+import { getLeftNeighbor, getRightNeighbor } from "./rules/shared";
 import {
   STRAIGHT_DOUBLE,
   STRAIGHT_SINGLE,
@@ -111,23 +112,13 @@ function checkCJKInvolvement(
     }
   }
 
-  // Check left boundary (nearest non-space char before the opening quote)
-  for (let i = openIndex - 1; i >= 0; i--) {
-    const ch = text[i];
-    if (ch === " " || ch === "\t") continue;
-    if (isCJKLetter(ch)) return true;
-    break;
-  }
-
-  // Check right boundary (nearest non-space char after the closing quote)
-  for (let i = closeIndex + 1; i < text.length; i++) {
-    const ch = text[i];
-    if (ch === " " || ch === "\t") continue;
-    if (isCJKLetter(ch)) return true;
-    break;
-  }
-
-  return false;
+  // The nearest non-space character on each side of the pair, as a whole
+  // code point: read one UTF-16 unit at a time, a supplementary-plane Han
+  // character is a lone surrogate and never counts as CJK.
+  return (
+    isCJKLetter(getLeftNeighbor(text, openIndex)) ||
+    isCJKLetter(getRightNeighbor(text, closeIndex))
+  );
 }
 
 /** Options for tokenizeQuotes / analyzeQuotes. */

@@ -28,7 +28,11 @@ export function normalizeEllipsis(text: string): string {
   // Replace spaced dots with standard ellipsis. Horizontal whitespace only —
   // dots on separate lines are sentence-ending periods, not a spaced
   // ellipsis, and collapsing them would join those lines.
-  text = text.replace(/[ \t]*\.[ \t]+\.[ \t]+\.(?:[ \t]+\.)*/g, "...");
+  //
+  // The lookbehind pins a match to the START of its whitespace run. The match
+  // is the same either way (the leftmost one always starts there), but without
+  // it a run of spaces that no dot follows was rescanned from every space in it.
+  text = text.replace(/(?<![ \t])[ \t]*\.[ \t]+\.[ \t]+\.(?:[ \t]+\.)*/g, "...");
 
   // The (?!\.) guard anchors to the END of a dot run so 4+ dots are never
   // split in the middle (e.g. "wait.... ok" stays intact). `[ \t]*` only — an

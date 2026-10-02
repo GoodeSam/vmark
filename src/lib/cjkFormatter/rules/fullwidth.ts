@@ -14,7 +14,7 @@
 
 import { scanLatinSpans, isInTechnicalSubspan, isCJKLetter } from "../latinSpanScanner";
 import {
-  CJK_NO_KOREAN,
+  CJK_LETTER_CLASS,
   CJK_CLOSING_BRACKETS,
   CJK_OPENING_BRACKETS,
   CJK_TERMINAL_PUNCTUATION,
@@ -199,7 +199,7 @@ function normalizeFullwidthPunctuationOnce(text: string): string {
 /** Convert half-width parentheses to full-width when content is CJK. */
 export function normalizeFullwidthParentheses(text: string): string {
   return text.replace(
-    new RegExp(`\\(([${CJK_NO_KOREAN}][^()]*)\\)`, "g"),
+    new RegExp(`\\(([${CJK_LETTER_CLASS}][^()]*)\\)`, "gu"),
     "（$1）"
   );
 }
@@ -220,8 +220,8 @@ export function normalizeFullwidthParentheses(text: string): string {
 export function normalizeFullwidthBrackets(text: string): string {
   return text.replace(
     new RegExp(
-      `(?<![\\]!])\\[([${CJK_NO_KOREAN}](?:\\\\.|[^\\[\\]\\\\])*)\\](?![([:])`,
-      "g"
+      `(?<![\\]!])\\[([${CJK_LETTER_CLASS}](?:\\\\.|[^\\[\\]\\\\])*)\\](?![([:])`,
+      "gu"
     ),
     "【$1】"
   );

@@ -68,6 +68,9 @@ function formatMarkdownWithoutTables(
       ...options,
       startsAtLineStart: segment.startsAtLineStart,
       endsAtLineEnd: segment.endsAtLineEnd,
+      // Per segment, never inherited: only this segment can begin with the
+      // `)` of the link to its left.
+      linkLabel: segment.linkLabel,
     }),
   }));
   return reconstructText(text, formattedSegments, protectedRegions);
@@ -144,9 +147,14 @@ export function formatMarkdownChecked(
   // convention so a CRLF file does not silently acquire a lone LF, and an
   // all-whitespace document stays empty rather than being handed a newline it
   // never had.
-  const trailingNewline = /(\r?\n)[\s]*$/.exec(out)?.[1] ?? "";
-  out = out.trimEnd();
-  if (out.length > 0) out += trailingNewline;
+  //
+  // The terminator is looked for in the trimmed-off tail only. Searching the
+  // whole text for "a line break followed by nothing but whitespace" retried
+  // from every line break in the document, and each try read to the end of
+  // its whitespace run — the square of a long run of blank lines.
+  const trimmed = out.trimEnd();
+  const trailingNewline = /\r?\n/.exec(out.slice(trimmed.length))?.[0] ?? "";
+  out = trimmed.length > 0 ? trimmed + trailingNewline : trimmed;
 
   // Integrity check: verify structural patterns survived formatting.
   // If any pattern count changed, the parser has a bug — return original text.
