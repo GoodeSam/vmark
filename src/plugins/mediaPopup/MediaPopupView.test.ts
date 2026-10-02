@@ -14,7 +14,6 @@ const {
   mockSetTitle,
   mockSetPoster,
   mockBrowseAndReplaceMedia,
-  mockInstallKeyboardNavigation,
   mockDirname,
   mockJoin,
   mockActiveFilePath,
@@ -25,7 +24,6 @@ const {
   mockSetTitle: vi.fn(),
   mockSetPoster: vi.fn(),
   mockBrowseAndReplaceMedia: vi.fn(() => Promise.resolve(false)),
-  mockInstallKeyboardNavigation: vi.fn(() => vi.fn()),
   mockDirname: vi.fn((p: string) => Promise.resolve(p.replace(/\/[^/]+$/, ""))),
   mockJoin: vi.fn((...parts: string[]) => Promise.resolve(parts.join("/"))),
   mockActiveFilePath: vi.fn(() => "/docs/test.md"),
@@ -101,41 +99,6 @@ vi.mock("./mediaPopupActions", () => ({
   browseAndReplaceMedia: (...args: unknown[]) => mockBrowseAndReplaceMedia(...args),
 }));
 
-vi.mock("./mediaPopupDom", () => ({
-  createMediaPopupDom: vi.fn((handlers: Record<string, unknown>) => {
-    const container = document.createElement("div");
-    container.className = "media-popup-container";
-    const srcInput = document.createElement("input");
-    srcInput.className = "src-input";
-    const altRow = document.createElement("div");
-    const altInput = document.createElement("input");
-    const dimensionsSpan = document.createElement("span");
-    const titleRow = document.createElement("div");
-    const titleInput = document.createElement("input");
-    const posterRow = document.createElement("div");
-    const posterInput = document.createElement("input");
-    const toggleBtn = document.createElement("button");
-
-    // Store handlers on container for test access
-    (container as unknown as Record<string, unknown>)._handlers = handlers;
-
-    return {
-      container,
-      srcInput,
-      altRow,
-      altInput,
-      dimensionsSpan,
-      titleRow,
-      titleInput,
-      posterRow,
-      posterInput,
-      toggleBtn,
-    };
-  }),
-  installMediaPopupKeyboardNavigation: (...args: unknown[]) => mockInstallKeyboardNavigation(...args),
-  updateMediaPopupToggleButton: vi.fn(),
-}));
-
 vi.mock("@/plugins/shared/popupHostDom", () => ({
   getPopupHostForDom: vi.fn(() => document.createElement("div")),
   toHostCoordsForDom: vi.fn((_host: unknown, pos: { top: number; left: number }) => pos),
@@ -146,7 +109,41 @@ import { useMediaPopupStore } from "@/stores/mediaPopupStore";
 import { isImeKeyEvent } from "@/utils/imeGuard";
 import { getPopupHostForDom } from "@/plugins/shared/popupHostDom";
 import { mediaPopupWarn } from "@/utils/debug";
-import { createMediaPopupDom } from "./mediaPopupDom";
+import type { MediaPopupDom } from "./mediaPopupDom";
+
+/** The popup's real DOM. `dom` is private; tests read it to drive the
+ *  controls a user would use, instead of replacing the DOM builder. */
+function popupDom(popup: MediaPopupView): MediaPopupDom {
+  return (popup as unknown as { dom: MediaPopupDom }).dom;
+}
+
+/** Let a click's async handler (browse, copy) run to completion. */
+const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+/**
+ * The popup's actions, driven through the real controls: each fires the DOM
+ * event the real control listens for. Row 1 holds, in order, the source
+ * input and the browse, copy, toggle and delete buttons.
+ */
+function controls(popup: MediaPopupView) {
+  const dom = popupDom(popup);
+  const [browseBtn, copyBtn, toggleBtn, deleteBtn] = Array.from(
+    dom.srcInput.parentElement!.querySelectorAll<HTMLButtonElement>("button"),
+  );
+  return {
+    onInputKeydown: (event: KeyboardEvent) => dom.srcInput.dispatchEvent(event),
+    onBrowse: () => {
+      browseBtn.click();
+      return settle();
+    },
+    onCopy: () => {
+      copyBtn.click();
+      return settle();
+    },
+    onToggle: () => toggleBtn.click(),
+    onRemove: () => deleteBtn.click(),
+  };
+}
 
 // Helper to create a minimal mock EditorView
 function createMockView() {
@@ -444,12 +441,22 @@ describe("MediaPopupView", () => {
       mediaNodePos: 5,
     };
 
+    const addSpy = vi.spyOn(document, "addEventListener");
     const cb = store.subscribe.mock.calls[0][0] as (s: unknown, p: unknown) => void;
     cb(openState, { isOpen: false, mediaNodePos: -1 });
+    const keydownListeners = addSpy.mock.calls
+      .filter(([type]) => type === "keydown")
+      .map(([, listener]) => listener);
+    addSpy.mockRestore();
+    expect(keydownListeners.length).toBeGreaterThan(0);
 
-    // Now destroy should clean up keyboard nav
+    // Now destroy should clean up keyboard nav: every keydown listener the
+    // open installed on the document is taken off again.
+    const removeSpy = vi.spyOn(document, "removeEventListener");
     popup.destroy();
-    expect(mockInstallKeyboardNavigation).toHaveBeenCalled();
+    const removed = removeSpy.mock.calls.filter(([type]) => type === "keydown").map(([, l]) => l);
+    removeSpy.mockRestore();
+    for (const listener of keydownListeners) expect(removed).toContain(listener);
   });
 });
 
@@ -473,8 +480,7 @@ describe("MediaPopupView — input handlers", () => {
   it("handles Enter key to save", () => {
     popup = new MediaPopupView(view, store as never);
 
-    // Get the onInputKeydown handler from the createMediaPopupDom call
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     const event = new KeyboardEvent("keydown", { key: "Enter" });
     Object.defineProperty(event, "preventDefault", { value: vi.fn() });
@@ -486,7 +492,7 @@ describe("MediaPopupView — input handlers", () => {
   it("handles Escape key to close", () => {
     popup = new MediaPopupView(view, store as never);
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     const event = new KeyboardEvent("keydown", { key: "Escape" });
     Object.defineProperty(event, "preventDefault", { value: vi.fn() });
@@ -499,7 +505,7 @@ describe("MediaPopupView — input handlers", () => {
     vi.mocked(isImeKeyEvent).mockReturnValueOnce(true);
     popup = new MediaPopupView(view, store as never);
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     const event = new KeyboardEvent("keydown", { key: "Enter" });
     handlers.onInputKeydown(event);
@@ -511,7 +517,7 @@ describe("MediaPopupView — input handlers", () => {
     mockBrowseAndReplaceMedia.mockResolvedValueOnce(true);
     popup = new MediaPopupView(view, store as never);
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     await handlers.onBrowse();
     expect(mockBrowseAndReplaceMedia).toHaveBeenCalled();
@@ -522,7 +528,7 @@ describe("MediaPopupView — input handlers", () => {
     mockBrowseAndReplaceMedia.mockResolvedValueOnce(false);
     popup = new MediaPopupView(view, store as never);
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     await handlers.onBrowse();
     expect(mockClosePopup).not.toHaveBeenCalled();
@@ -538,7 +544,7 @@ describe("MediaPopupView — input handlers", () => {
 
     popup = new MediaPopupView(view, store as never);
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     await handlers.onCopy();
     expect(writeTextSpy).toHaveBeenCalledWith("https://example.com/img.png");
@@ -549,7 +555,7 @@ describe("MediaPopupView — input handlers", () => {
     store._state.mediaSrc = "";
     popup = new MediaPopupView(view, store as never);
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     await handlers.onCopy();
     expect(mockClosePopup).toHaveBeenCalled();
@@ -558,7 +564,7 @@ describe("MediaPopupView — input handlers", () => {
   it("handles remove action", () => {
     popup = new MediaPopupView(view, store as never);
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     handlers.onRemove();
     expect(view.dispatch).toHaveBeenCalled();
@@ -569,7 +575,7 @@ describe("MediaPopupView — input handlers", () => {
     store._state.mediaNodeType = "image";
     popup = new MediaPopupView(view, store as never);
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     handlers.onToggle();
     expect(view.dispatch).toHaveBeenCalled();
@@ -579,14 +585,14 @@ describe("MediaPopupView — input handlers", () => {
     store._state.mediaNodeType = "block_video";
     popup = new MediaPopupView(view, store as never);
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     handlers.onToggle();
     expect(view.dispatch).not.toHaveBeenCalled();
   });
 });
 
-describe("MediaPopupView — keyboard nav onClose callback (lines 231-232)", () => {
+describe("MediaPopupView — keyboard nav Escape", () => {
   let view: ReturnType<typeof createMockView>;
   let popup: MediaPopupView;
 
@@ -603,7 +609,11 @@ describe("MediaPopupView — keyboard nav onClose callback (lines 231-232)", () 
     if (popup) popup.destroy();
   });
 
-  it("invokes closePopup and focus when onClose callback is called (lines 231-232)", () => {
+  it("Escape inside the open popup closes it and refocuses the editor", () => {
+    // Mount the popup in the live document so focus can sit inside it.
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    vi.mocked(getPopupHostForDom).mockReturnValueOnce(host);
     popup = new MediaPopupView(view, store as never);
 
     // Trigger show() to call installMediaPopupKeyboardNavigation with the onClose callback
@@ -621,16 +631,12 @@ describe("MediaPopupView — keyboard nav onClose callback (lines 231-232)", () 
     const cb = store.subscribe.mock.calls[0][0] as (s: unknown, p: unknown) => void;
     cb(openState, { isOpen: false, mediaNodePos: -1 });
 
-    // Extract the onClose callback passed to installMediaPopupKeyboardNavigation
-    expect(mockInstallKeyboardNavigation).toHaveBeenCalled();
-    const [, onClose] = mockInstallKeyboardNavigation.mock.calls[0] as [unknown, () => void];
-    expect(onClose).toBeDefined();
-
-    // Invoke the onClose callback — covers lines 231-232
-    onClose();
+    popupDom(popup).srcInput.focus();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
 
     expect(mockClosePopup).toHaveBeenCalled();
     expect(view.focus).toHaveBeenCalled();
+    host.remove();
   });
 });
 
@@ -655,7 +661,7 @@ describe("MediaPopupView — editorState null guard (lines 276, 304, 383)", () =
     store._state.mediaNodeType = "image";
 
     popup = new MediaPopupView(nullStateView as never, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     const event = new KeyboardEvent("keydown", { key: "Enter" });
     Object.defineProperty(event, "preventDefault", { value: vi.fn() });
@@ -676,7 +682,7 @@ describe("MediaPopupView — editorState null guard (lines 276, 304, 383)", () =
     store._state.mediaNodeType = "image";
 
     popup = new MediaPopupView(nullStateView as never, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     expect(() => handlers.onToggle()).not.toThrow();
     expect(nullStateView.dispatch).not.toHaveBeenCalled();
@@ -693,7 +699,7 @@ describe("MediaPopupView — editorState null guard (lines 276, 304, 383)", () =
     store._state.mediaNodeType = "image";
 
     popup = new MediaPopupView(nullStateView as never, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     expect(() => handlers.onRemove()).not.toThrow();
     expect(nullStateView.dispatch).not.toHaveBeenCalled();
@@ -733,7 +739,7 @@ describe("MediaPopupView — toggle newNodeType not found (lines 313-314)", () =
     store._state.mediaNodeType = "image";
 
     popup = new MediaPopupView(view as never, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     handlers.onToggle();
 
@@ -802,8 +808,7 @@ describe("MediaPopupView — click outside", () => {
     popup = new MediaPopupView(view, store as never);
     store._state.isOpen = true;
 
-    // The container is created by the mock
-    const container = vi.mocked(createMediaPopupDom).mock.results[0].value.container;
+    const container = popupDom(popup).container;
 
     const event = new MouseEvent("mousedown", { bubbles: true });
     Object.defineProperty(event, "target", { value: container });
@@ -882,7 +887,7 @@ describe("MediaPopupView — src/alt/title/poster input change handlers", () => 
 
   it("handles src input change and updates node attr", () => {
     popup = new MediaPopupView(view, store as never);
-    const dom = vi.mocked(createMediaPopupDom).mock.results[0].value;
+    const dom = popupDom(popup);
 
     dom.srcInput.value = "new-src.png";
     dom.srcInput.dispatchEvent(new Event("input"));
@@ -893,7 +898,7 @@ describe("MediaPopupView — src/alt/title/poster input change handlers", () => 
 
   it("handles alt input change and updates node attr", () => {
     popup = new MediaPopupView(view, store as never);
-    const dom = vi.mocked(createMediaPopupDom).mock.results[0].value;
+    const dom = popupDom(popup);
 
     dom.altInput.value = "new alt text";
     dom.altInput.dispatchEvent(new Event("input"));
@@ -904,7 +909,7 @@ describe("MediaPopupView — src/alt/title/poster input change handlers", () => 
 
   it("handles title input change and updates node attr", () => {
     popup = new MediaPopupView(view, store as never);
-    const dom = vi.mocked(createMediaPopupDom).mock.results[0].value;
+    const dom = popupDom(popup);
 
     dom.titleInput.value = "new title";
     dom.titleInput.dispatchEvent(new Event("input"));
@@ -915,7 +920,7 @@ describe("MediaPopupView — src/alt/title/poster input change handlers", () => 
 
   it("handles poster input change and updates node attr", () => {
     popup = new MediaPopupView(view, store as never);
-    const dom = vi.mocked(createMediaPopupDom).mock.results[0].value;
+    const dom = popupDom(popup);
 
     dom.posterInput.value = "poster.jpg";
     dom.posterInput.dispatchEvent(new Event("input"));
@@ -927,7 +932,7 @@ describe("MediaPopupView — src/alt/title/poster input change handlers", () => 
   it("updateNodeAttr skips when mediaNodePos is negative", () => {
     store._state.mediaNodePos = -1;
     popup = new MediaPopupView(view, store as never);
-    const dom = vi.mocked(createMediaPopupDom).mock.results[0].value;
+    const dom = popupDom(popup);
 
     dom.srcInput.value = "new.png";
     dom.srcInput.dispatchEvent(new Event("input"));
@@ -950,7 +955,7 @@ describe("MediaPopupView — src/alt/title/poster input change handlers", () => 
       },
     };
     popup = new MediaPopupView(view as never, store as never);
-    const dom = vi.mocked(createMediaPopupDom).mock.results[0].value;
+    const dom = popupDom(popup);
 
     dom.srcInput.value = "new.png";
     dom.srcInput.dispatchEvent(new Event("input"));
@@ -964,7 +969,7 @@ describe("MediaPopupView — src/alt/title/poster input change handlers", () => 
       throw new Error("dispatch error");
     });
     popup = new MediaPopupView(view as never, store as never);
-    const dom = vi.mocked(createMediaPopupDom).mock.results[0].value;
+    const dom = popupDom(popup);
 
     dom.srcInput.value = "new.png";
     expect(() => dom.srcInput.dispatchEvent(new Event("input"))).not.toThrow();
@@ -988,7 +993,7 @@ describe("MediaPopupView — handleSave edge cases", () => {
     store._state.mediaNodeType = "image";
 
     popup = new MediaPopupView(view, store as never);
-    const dom = vi.mocked(createMediaPopupDom).mock.results[0].value;
+    const dom = popupDom(popup);
 
     // Clear the src input (empty)
     dom.srcInput.value = "";
@@ -996,7 +1001,7 @@ describe("MediaPopupView — handleSave edge cases", () => {
     const event = new KeyboardEvent("keydown", { key: "Enter" });
     Object.defineProperty(event, "preventDefault", { value: vi.fn() });
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
     handlers.onInputKeydown(event);
 
     // Should call dispatch (via handleRemove)
@@ -1023,13 +1028,13 @@ describe("MediaPopupView — handleSave edge cases", () => {
     store._state.mediaNodeType = "image";
 
     popup = new MediaPopupView(view as never, store as never);
-    const dom = vi.mocked(createMediaPopupDom).mock.results[0].value;
+    const dom = popupDom(popup);
     dom.srcInput.value = "updated.png";
 
     const event = new KeyboardEvent("keydown", { key: "Enter" });
     Object.defineProperty(event, "preventDefault", { value: vi.fn() });
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
     handlers.onInputKeydown(event);
 
     // dispatch should NOT be called since node type doesn't match
@@ -1053,13 +1058,13 @@ describe("MediaPopupView — handleSave edge cases", () => {
     store._state.mediaNodeType = "image";
 
     popup = new MediaPopupView(view as never, store as never);
-    const dom = vi.mocked(createMediaPopupDom).mock.results[0].value;
+    const dom = popupDom(popup);
     dom.srcInput.value = "updated.png";
 
     const event = new KeyboardEvent("keydown", { key: "Enter" });
     Object.defineProperty(event, "preventDefault", { value: vi.fn() });
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
     expect(() => handlers.onInputKeydown(event)).not.toThrow();
     expect(mockClosePopup).toHaveBeenCalled();
   });
@@ -1083,7 +1088,7 @@ describe("MediaPopupView — handleSave edge cases", () => {
     store._state.mediaNodeType = "block_video";
 
     popup = new MediaPopupView(view as never, store as never);
-    const dom = vi.mocked(createMediaPopupDom).mock.results[0].value;
+    const dom = popupDom(popup);
     dom.srcInput.value = "new.mp4";
     dom.titleInput.value = "My Video";
     dom.posterInput.value = "poster.jpg";
@@ -1091,7 +1096,7 @@ describe("MediaPopupView — handleSave edge cases", () => {
     const event = new KeyboardEvent("keydown", { key: "Enter" });
     Object.defineProperty(event, "preventDefault", { value: vi.fn() });
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
     handlers.onInputKeydown(event);
 
     expect(view.dispatch).toHaveBeenCalled();
@@ -1122,7 +1127,7 @@ describe("MediaPopupView — handleToggle edge cases", () => {
     store._state.mediaNodeType = "image";
 
     popup = new MediaPopupView(view as never, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     expect(() => handlers.onToggle()).not.toThrow();
   });
@@ -1141,7 +1146,7 @@ describe("MediaPopupView — handleToggle edge cases", () => {
     store._state.mediaNodeType = "block_image";
 
     popup = new MediaPopupView(view as never, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     handlers.onToggle();
     expect(view.dispatch).not.toHaveBeenCalled();
@@ -1174,7 +1179,7 @@ describe("MediaPopupView — handleRemove edge cases", () => {
     store._state.mediaNodeType = "image";
 
     popup = new MediaPopupView(view as never, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     handlers.onRemove();
     expect(view.dispatch).not.toHaveBeenCalled();
@@ -1195,7 +1200,7 @@ describe("MediaPopupView — handleRemove edge cases", () => {
     store._state.mediaNodeType = "image";
 
     popup = new MediaPopupView(view as never, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     expect(() => handlers.onRemove()).not.toThrow();
     expect(mockClosePopup).toHaveBeenCalled();
@@ -1263,7 +1268,7 @@ describe("MediaPopupView — toggle block_image to image (branch 30)", () => {
     store._state.mediaNodeType = "block_image";
 
     popup = new MediaPopupView(view as never, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     handlers.onToggle();
     // Should dispatch a replaceWith transaction using "image" node type
@@ -1294,13 +1299,13 @@ describe("MediaPopupView — handleSave with nodeAt returning null (line 279)", 
     store._state.mediaNodeType = "image";
 
     popup = new MediaPopupView(view as never, store as never);
-    const dom = vi.mocked(createMediaPopupDom).mock.results[0].value;
+    const dom = popupDom(popup);
     dom.srcInput.value = "updated.png";
 
     const event = new KeyboardEvent("keydown", { key: "Enter" });
     Object.defineProperty(event, "preventDefault", { value: vi.fn() });
 
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
     handlers.onInputKeydown(event);
 
     expect(view.dispatch).not.toHaveBeenCalled();
@@ -1329,7 +1334,7 @@ describe("MediaPopupView — handleRemove with nodeAt null (line 385)", () => {
     store._state.mediaNodeType = "image";
 
     popup = new MediaPopupView(view as never, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     handlers.onRemove();
     expect(view.dispatch).not.toHaveBeenCalled();
@@ -1361,7 +1366,7 @@ describe("MediaPopupView — handleCopy", () => {
     });
 
     popup = new MediaPopupView(view, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     await handlers.onCopy();
     expect(writeTextSpy).toHaveBeenCalledWith("/docs/test.png");
@@ -1381,7 +1386,7 @@ describe("MediaPopupView — handleCopy", () => {
     });
 
     popup = new MediaPopupView(view, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     await handlers.onCopy();
     expect(writeTextSpy).toHaveBeenCalledWith("/absolute/image.png");
@@ -1401,7 +1406,7 @@ describe("MediaPopupView — handleCopy", () => {
     });
 
     popup = new MediaPopupView(view, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     await handlers.onCopy();
     expect(writeTextSpy).toHaveBeenCalledWith("https://example.com/image.png");
@@ -1425,7 +1430,7 @@ describe("MediaPopupView — handleCopy", () => {
     });
 
     popup = new MediaPopupView(view, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     await handlers.onCopy();
     expect(mockClosePopup).toHaveBeenCalled();
@@ -1447,7 +1452,7 @@ describe("MediaPopupView — handleCopy", () => {
     });
 
     popup = new MediaPopupView(view, store as never);
-    const handlers = vi.mocked(createMediaPopupDom).mock.calls[0][0];
+    const handlers = controls(popup);
 
     await handlers.onCopy();
     expect(writeTextSpy).toHaveBeenCalledWith("test.png");
