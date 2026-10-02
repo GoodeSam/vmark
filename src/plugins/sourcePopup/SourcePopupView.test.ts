@@ -623,7 +623,9 @@ describe("SourcePopupView", () => {
         getState: () => current,
         subscribe: (cb) => {
           listeners.add(cb);
-          return () => listeners.delete(cb);
+          return () => {
+            listeners.delete(cb);
+          };
         },
         set: (next) => {
           current = { ...current, ...next };
@@ -672,9 +674,9 @@ describe("SourcePopupView", () => {
     });
 
     it("never re-shows by default", () => {
-      store.trigger({ isOpen: true, anchorRect: ANCHOR, closePopup: store.mockClosePopup });
+      store.trigger({ ...store.getState(), isOpen: true, anchorRect: ANCHOR });
       popup.showCalled = false;
-      store.trigger({ isOpen: true, anchorRect: { ...ANCHOR, top: 5 }, closePopup: store.mockClosePopup });
+      store.trigger({ ...store.getState(), isOpen: true, anchorRect: { ...ANCHOR, top: 5 } });
       expect(popup.showCalled).toBe(false);
     });
 

@@ -64,11 +64,17 @@ function setup(initialLatex: string) {
     getState: () => state,
     subscribe: (listener: (s: MathPopupState) => void) => {
       listeners.add(listener);
-      return () => listeners.delete(listener);
+      return () => {
+        listeners.delete(listener);
+      };
     },
   };
 
-  const popup = new MathPopupView(view, store as ConstructorParameters<typeof MathPopupView>[1]);
+  const popup = new MathPopupView(
+    view,
+    // The view reads only getState/subscribe; zustand's StoreApi asks for more.
+    store as unknown as ConstructorParameters<typeof MathPopupView>[1]
+  );
   const open = () => set({ isOpen: true, anchorRect: ANCHOR, latex: initialLatex, nodePos: mathPos });
   const type = (latex: string) => {
     const textarea = document.querySelector<HTMLTextAreaElement>(".math-popup-input");
