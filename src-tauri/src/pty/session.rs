@@ -172,6 +172,10 @@ pub(super) fn create_session(
         .map_err(|e| e.to_string())?;
 
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
+    // So a full input queue answers `WouldBlock` instead of holding a write
+    // for as long as the foreground program does not read (`input.rs`).
+    #[cfg(unix)]
+    super::input::make_nonblocking(pair.master.as_ref()).map_err(|e| e.to_string())?;
     // Before the spawn: a failure here must not leave a shell nobody owns.
     let (output, interrupter) = output::channel(pair.master.as_ref()).map_err(|e| e.to_string())?;
 

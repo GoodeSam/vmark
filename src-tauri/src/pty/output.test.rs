@@ -237,3 +237,41 @@ mod without_a_multiplexer {
         assert!(matches!(interrupted, Ok(true)));
     }
 }
+
+/// WI-RA7C.6 — on the fallback (ConPTY) a bounded read is the plain read: the
+/// pipe cannot be waited on with a bound, so it never reports idle.
+#[test]
+fn a_bounded_read_on_the_fallback_is_the_plain_read() {
+    let (mut source, _interrupter) =
+        super::fallback::from_reader(Box::new(std::io::Cursor::new(b"abc".to_vec())));
+    let mut buf = [0u8; 8];
+    assert!(matches!(
+        source.read_within(&mut buf, Duration::from_millis(1)),
+        Ok(Some(Chunk::Data(3)))
+    ));
+    assert!(matches!(
+        source.read_within(&mut buf, Duration::from_millis(1)),
+        Ok(Some(Chunk::Eof))
+    ));
+}
+
+/// WI-RA7C.6 — a bounded read on a real pty returns `None` once the terminal
+/// has been quiet that long, and still returns output that is waiting.
+#[test]
+fn a_bounded_read_reports_a_quiet_terminal_and_still_returns_output() {
+    let pair = open_pty();
+    let (mut source, _interrupter) = channel(pair.master.as_ref()).expect("channel");
+    let mut slave = open_slave(&pair);
+    let mut buf = [0u8; 64];
+
+    assert!(matches!(
+        source.read_within(&mut buf, Duration::from_millis(20)),
+        Ok(None)
+    ));
+
+    slave.write_all(b"now\n").unwrap();
+    let Ok(Some(Chunk::Data(n))) = source.read_within(&mut buf, DEADLINE) else {
+        panic!("expected the pending output");
+    };
+    assert!(String::from_utf8_lossy(&buf[..n]).contains("now"));
+}
