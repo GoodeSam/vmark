@@ -259,8 +259,12 @@ pub async fn capture_save_file_ordered<R: Runtime>(
                 return;
             }
         };
-        let Ok(mut kernel) = kernel.lock() else {
-            log::warn!("coherence: workflow capture skipped: kernel poisoned");
+        // A poisoned kernel may hold a half-rebuilt index; it refuses until
+        // reopened (logged by the helper), and the step is untouched.
+        let Some(mut kernel) = crate::lock_policy::lock_or_refuse(
+            &kernel,
+            "the coherence kernel (workflow capture skipped)",
+        ) else {
             return;
         };
         let reachable = reachable_from(&steps, &step_id);

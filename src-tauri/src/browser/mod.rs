@@ -51,6 +51,7 @@ pub mod commands;
 pub mod commands_auth;
 pub mod eval_outcome;
 pub mod geometry;
+pub(crate) mod locks;
 pub mod main_thread_hop;
 pub mod mint;
 pub mod native_failure;

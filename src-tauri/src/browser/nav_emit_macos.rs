@@ -21,6 +21,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
 use super::NavDelegate;
+use crate::browser::locks;
 use crate::browser::surface::BrowserSurface;
 
 impl NavDelegate {
@@ -35,7 +36,7 @@ impl NavDelegate {
 /// The window that owns `tab_id`, per the registry.
 fn owner_of(app: &AppHandle, tab_id: &str) -> Option<String> {
     let state = app.try_state::<BrowserSurface>()?;
-    let registry = state.registry.lock().ok()?;
+    let registry = locks::registry(&state)?;
     registry.window_of(tab_id).map(str::to_string)
 }
 

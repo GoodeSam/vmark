@@ -36,6 +36,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::browser::origin_guard::StandingGrant;
 use crate::browser::surface::{self, BrowserSurface};
+use crate::lock_policy::lock_or_refuse;
 
 /// Forget every tab belonging to `window_label` — registry entry, crash budget,
 /// one-shots, attachment — under ONE registry guard, returning the tab ids that were
@@ -77,11 +78,9 @@ pub fn destroy_window(app: &AppHandle, window_label: &str) {
 
     // Grants first, and independently of whether the window had tabs: a window can
     // have synced grants and closed every browser tab before it went away.
-    match state.grants.lock() {
-        Ok(mut grants) => {
-            forget_window_grants(&mut grants, window_label);
-        }
-        Err(e) => log::warn!("[browser] grants lock poisoned during window teardown: {e}"),
+    if let Some(mut grants) = lock_or_refuse(&state.grants, "the browser grants (window teardown)")
+    {
+        forget_window_grants(&mut grants, window_label);
     }
 
     // Every tab's state, under one guard: a concurrent command sees the window

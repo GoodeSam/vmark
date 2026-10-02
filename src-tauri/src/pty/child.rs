@@ -69,13 +69,13 @@ impl ChildSlot {
         self.pid
     }
 
-    fn lock(&self) -> MutexGuard<'_, State> {
+    fn lock_state(&self) -> MutexGuard<'_, State> {
         self.state.lock().unwrap_or_else(|p| p.into_inner())
     }
 
     /// Reap the child if it has exited. `None` while it is still running.
     pub(super) fn try_reap(&self) -> Option<u32> {
-        let mut state = self.lock();
+        let mut state = self.lock_state();
         let code = match &mut *state {
             State::Gone(code) => return Some(*code),
             State::Live(child) => match child.try_wait() {
@@ -94,7 +94,7 @@ impl ChildSlot {
     /// Ask the child to exit. Returns whether a request it can act on was
     /// delivered — there is nothing to wait for otherwise.
     fn hang_up(&self) -> bool {
-        match &*self.lock() {
+        match &*self.lock_state() {
             State::Live(_) => self.pid.is_some_and(platform::hang_up),
             State::Gone(_) => false,
         }
@@ -103,7 +103,7 @@ impl ChildSlot {
     /// Kill the child outright. Returns whether it is worth waiting for it to
     /// disappear.
     fn kill(&self) -> bool {
-        match &mut *self.lock() {
+        match &mut *self.lock_state() {
             State::Live(child) => platform::kill(self.pid, child),
             State::Gone(_) => false,
         }
@@ -112,7 +112,7 @@ impl ChildSlot {
     /// Give up waiting on a child that is still unreaped: a detached thread
     /// reaps it when it finally exits, and the slot stops signalling its pid.
     fn abandon(&self) {
-        let mut state = self.lock();
+        let mut state = self.lock_state();
         match std::mem::replace(&mut *state, State::Gone(UNKNOWN_EXIT)) {
             State::Gone(code) => *state = State::Gone(code),
             State::Live(mut child) => {

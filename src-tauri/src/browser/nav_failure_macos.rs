@@ -7,6 +7,7 @@ use tauri::Manager;
 
 use super::super::payloads::FailedPayload;
 use super::NavDelegate;
+use crate::browser::locks;
 use crate::browser::registry::Lifecycle;
 use crate::browser::surface::BrowserSurface;
 
@@ -31,7 +32,7 @@ impl NavDelegate {
         let Some(state) = ivars.app.try_state::<BrowserSurface>() else {
             return;
         };
-        let Ok(mut reg) = state.registry.lock() else {
+        let Some(mut reg) = locks::registry(&state) else {
             return;
         };
         if matches!(

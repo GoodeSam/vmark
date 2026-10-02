@@ -5,6 +5,7 @@
 //! because macOS GUI apps inherit a minimal PATH) and reads well-known
 //! API-key environment variables for REST providers.
 
+use std::collections::HashMap;
 use std::process::Command;
 use std::sync::Mutex;
 use tauri::command;
@@ -160,24 +161,45 @@ fn query_login_shell_zdotdir(shell: &str) -> Option<String> {
 /// the injected zsh rc can re-point `ZDOTDIR` at the user's real config (see
 /// `shell_integration.rs` / `vmark.zsh`).
 pub(crate) fn login_shell_zdotdir(shell: &str) -> Option<String> {
-    use std::collections::HashMap;
-    use std::sync::{Mutex, OnceLock};
-    static CACHE: OnceLock<Mutex<HashMap<String, Option<String>>>> = OnceLock::new();
+    use std::sync::OnceLock;
+    static CACHE: OnceLock<ZdotdirCache> = OnceLock::new();
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
-    if let Ok(c) = cache.lock() {
-        if let Some(v) = c.get(shell) {
-            return v.clone();
+    cached_zdotdir(cache, shell, || {
+        // zsh integration is Unix-only; skip the shell spawn on Windows.
+        if cfg!(target_os = "windows") {
+            None
+        } else {
+            query_login_shell_zdotdir(shell)
         }
+    })
+}
+
+/// Per-shell `ZDOTDIR` answers, `None` included: a shell with no `ZDOTDIR` is
+/// asked once, not on every spawn.
+type ZdotdirCache = Mutex<HashMap<String, Option<String>>>;
+
+fn recover(cache: &ZdotdirCache) -> std::sync::MutexGuard<'_, HashMap<String, Option<String>>> {
+    cache
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+/// The cached answer for `shell`, or `query`'s — stored for next time.
+fn cached_zdotdir(
+    cache: &ZdotdirCache,
+    shell: &str,
+    query: impl FnOnce() -> Option<String>,
+) -> Option<String> {
+    // A poisoned cache is read through: its entries are independent, so a
+    // panic mid-insert cannot have torn one, and skipping the cache would run
+    // a login shell on every spawn. The lock is not held across `query`, which
+    // can take seconds.
+    let cached = recover(cache).get(shell).cloned();
+    if let Some(answer) = cached {
+        return answer;
     }
-    // zsh integration is Unix-only; skip the shell spawn on Windows.
-    let result = if cfg!(target_os = "windows") {
-        None
-    } else {
-        query_login_shell_zdotdir(shell)
-    };
-    if let Ok(mut c) = cache.lock() {
-        c.insert(shell.to_string(), result.clone());
-    }
+    let result = query();
+    recover(cache).insert(shell.to_string(), result.clone());
     result
 }
 
@@ -215,22 +237,20 @@ fn check_command(cmd: &str) -> (bool, Option<String>) {
 /// Returns a map of `RestProviderType -> key` for any env var that is set
 /// and non-empty. The frontend uses this to pre-fill empty API key fields.
 #[command]
-pub fn read_env_api_keys() -> std::collections::HashMap<String, String> {
+pub fn read_env_api_keys() -> HashMap<String, String> {
     read_env_api_keys_with(|var| std::env::var(var).ok())
 }
 
 /// Pure core of `read_env_api_keys` over an injectable env getter — testable
 /// without mutating the process environment (WI-5.4, TQ5).
-fn read_env_api_keys_with<F: Fn(&str) -> Option<String>>(
-    get: F,
-) -> std::collections::HashMap<String, String> {
+fn read_env_api_keys_with<F: Fn(&str) -> Option<String>>(get: F) -> HashMap<String, String> {
     let mapping: &[(&str, &[&str])] = &[
         ("anthropic", &["ANTHROPIC_API_KEY"]),
         ("openai", &["OPENAI_API_KEY"]),
         ("google-ai", &["GOOGLE_API_KEY", "GEMINI_API_KEY"]),
     ];
 
-    let mut result = std::collections::HashMap::new();
+    let mut result = HashMap::new();
     for (provider, vars) in mapping {
         for var in *vars {
             if let Some(val) = get(var) {

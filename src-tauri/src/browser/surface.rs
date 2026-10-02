@@ -33,6 +33,7 @@ use crate::browser::origin_guard::{self, StandingGrant};
 use crate::browser::profile_open::ProfileOpen;
 use crate::browser::recovery::CrashTracker;
 use crate::browser::registry::BrowserRegistry;
+use crate::lock_policy::lock_or_refuse;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -129,6 +130,9 @@ pub(crate) fn grants_of<'a>(
         .unwrap_or(&[])
 }
 
+/// What the attachments lock is called when it is refused.
+const ATTACHMENTS: &str = "the browser tab attachments";
+
 impl BrowserSurface {
     /// Does the window `window_label` grant `operation` on `url`? The navigation
     /// delegate's question, asked with the registry guard held (registry → grants
@@ -139,16 +143,9 @@ impl BrowserSurface {
         url: &str,
         operation: &str,
     ) -> bool {
-        self.grants
-            .lock()
-            .map(|by_window| {
-                origin_guard::is_operation_granted(
-                    url,
-                    operation,
-                    grants_of(&by_window, window_label),
-                )
-            })
-            .unwrap_or(false)
+        lock_or_refuse(&self.grants, "the browser grants").is_some_and(|by_window| {
+            origin_guard::is_operation_granted(url, operation, grants_of(&by_window, window_label))
+        })
     }
 
     /// Drop every trace of a tab: its registry entry, its crash budget, its
@@ -209,7 +206,7 @@ impl BrowserSurface {
     /// new navigation and when it is forgotten, so an approval never outlives the
     /// page it was granted on. Best-effort: a poisoned lock leaves nothing to leak.
     pub fn clear_tab_one_shots(&self, tab_id: &str) {
-        if let Ok(mut shots) = self.one_shots.lock() {
+        if let Some(mut shots) = lock_or_refuse(&self.one_shots, "the browser one-shot approvals") {
             crate::browser::one_shot::clear_one_shots_for_tab(&mut shots, tab_id);
         }
     }
@@ -235,14 +232,12 @@ impl BrowserSurface {
     }
 
     pub fn is_tab_attached(&self, tab_id: &str, generation: u64) -> bool {
-        self.attachments
-            .lock()
-            .map(|attachments| attachment_present(&attachments, tab_id, generation))
-            .unwrap_or(false)
+        lock_or_refuse(&self.attachments, ATTACHMENTS)
+            .is_some_and(|attachments| attachment_present(&attachments, tab_id, generation))
     }
 
     pub fn clear_tab_attachment(&self, tab_id: &str) {
-        if let Ok(mut attachments) = self.attachments.lock() {
+        if let Some(mut attachments) = lock_or_refuse(&self.attachments, ATTACHMENTS) {
             attachments.retain(|attachment| attachment.tab_id != tab_id);
         }
     }

@@ -213,8 +213,8 @@ pub(super) fn ai_policy(state: &BrowserSurface) -> Result<AiBrowserPolicy, Comma
     state
         .ai_policy
         .lock()
-        .map(|policy| *policy)
         .map_err(lock_failure)
+        .map(|policy| *policy)
 }
 
 /// May a shared-posture tab navigate to `url` without a prompt? Standing

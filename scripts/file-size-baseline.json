@@ -13,7 +13,7 @@
     "src-tauri/src/gha_workflow/actionlint.rs": 419,
     "src-tauri/src/hot_exit/coordinator.rs": 579,
     "src-tauri/src/hot_exit/migration_v5_tests.rs": 306,
-    "src-tauri/src/menu/dynamic.rs": 378,
+    "src-tauri/src/menu/dynamic.rs": 370,
     "src-tauri/src/workflow/condition.rs": 335,
     "src-tauri/src/workflow/genie_step.rs": 686,
     "src-tauri/src/workflow/step_config.rs": 425,
