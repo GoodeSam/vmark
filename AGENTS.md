@@ -108,7 +108,6 @@ Each script's header explains its rules and exemption markers.
 ## GitHub
 
 - Reply to issues in the reporter's language. Use `Closes #N` in PRs; close issues once fixed.
-- Cost reports use one rolling issue; the workflow manages it.
 
 ## Plans and governance (full rules: `.claude/rules/60-ai-governance.md`)
 
