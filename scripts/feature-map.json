@@ -1279,8 +1279,10 @@
       "paths": [
         "src/services/windowClose",
         "src-tauri/src/quit.rs",
+        "src-tauri/src/quit_broadcast.rs",
         "src/hooks/useConfirmQuitSync.ts",
         "src-tauri/src/quit.test.rs",
+        "src-tauri/src/quit_broadcast.test.rs",
         "src/hooks/useConfirmQuitSync.test.ts"
       ],
       "flag": "general.confirmQuit",

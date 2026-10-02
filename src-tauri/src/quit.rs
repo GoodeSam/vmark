@@ -3,8 +3,9 @@
 //! Purpose: Manages graceful application shutdown with unsaved-changes prompts
 //! and an optional double-press confirmation gate (Cmd+Q twice to quit).
 //!
-//! Pipeline: Cmd+Q → `request_quit` → confirm gate → `start_quit` → emit
-//! `app:quit-requested` to each document window → windows close one by one →
+//! Pipeline: Cmd+Q → `request_quit` → confirm gate → `start_quit` → ask each
+//! document window to quit (`quit_broadcast.rs`: now if it is listening, when
+//! it is ready otherwise) → windows close one by one →
 //! `handle_window_destroyed` → when all targets gone → `finalize_quit` → `app.exit(0)`.
 //!
 //! Key decisions:
@@ -14,6 +15,8 @@
 //!     the event loop is busy.
 //!   - `cancel_quit` clears all state including the first-press timestamp to prevent
 //!     stale timestamps from acting as a second press after cancellation.
+//!   - A quit in progress swallows a repeated request only for a bounded time,
+//!     so a quit that stalls can be asked again (`quit_broadcast.rs`).
 //!
 //! Known limitations:
 //!   - Tests mutate shared statics and must run serially (guarded by TEST_LOCK).
@@ -27,6 +30,10 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::mcp_server;
+
+#[path = "quit_broadcast.rs"]
+mod broadcast;
+use broadcast::{abort_quit_on_emit_failure, claim_quit_attempt, QuitAttempt};
 
 static QUIT_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
@@ -203,10 +210,14 @@ fn finalize_quit(app: &AppHandle) {
     app.exit(0);
 }
 
-/// Start coordinated quit: request close of all document windows.
+/// Start coordinated quit: request close of all document windows. A request
+/// arriving while a quit is under way is a duplicate, until that quit has gone
+/// unfinished long enough to be asked again (`quit_broadcast.rs`).
 pub fn start_quit(app: &AppHandle) {
-    if QUIT_IN_PROGRESS.swap(true, Ordering::SeqCst) {
-        return;
+    match claim_quit_attempt(Instant::now()) {
+        QuitAttempt::AlreadyRunning => return,
+        QuitAttempt::Retry => log::warn!("[quit] quit has not finished — asking again"),
+        QuitAttempt::Fresh => {}
     }
     set_exit_allowed(false);
 
@@ -241,30 +252,16 @@ pub fn start_quit(app: &AppHandle) {
     // audit 20260612).
     set_quit_targets(targets);
 
-    for (label, window) in document_windows {
-        if let Err(e) = window.emit("app:quit-requested", &label) {
-            abort_quit_on_emit_failure(&label, e);
-            return;
-        }
+    if let Err((label, e)) = broadcast::request_quit_of(&document_windows) {
+        abort_quit_on_emit_failure(&label, e);
     }
-}
-
-/// Abort a coordinated quit because a window never received
-/// `app:quit-requested`: that window would stay in `QUIT_TARGETS` forever and
-/// `QUIT_IN_PROGRESS` would swallow every retry — the quit would be
-/// permanently stuck. Cancelling resets all quit state so the user can retry
-/// (safest for unsaved data: no window is force-closed).
-fn abort_quit_on_emit_failure(label: &str, err: impl std::fmt::Display) {
-    log::error!(
-        "[quit] Failed to emit app:quit-requested to '{label}': {err} — cancelling coordinated quit"
-    );
-    cancel_quit();
 }
 
 /// Cancel an in-progress quit (e.g., user cancelled save prompt).
 #[tauri::command]
 pub fn cancel_quit() {
     QUIT_IN_PROGRESS.store(false, Ordering::SeqCst);
+    broadcast::forget_quit_attempt();
     set_exit_allowed(false);
     set_quit_targets(HashSet::new());
     // Clear stale first-press so a leftover timestamp can't pass as second press.

@@ -18,6 +18,9 @@
 //!   - Recent files/workspaces/genies resolve paths from snapshot Mutexes in `menu.rs`
 //!     to avoid TOCTOU races if the store changes between menu build and click.
 //!   - "close" events include the target window label so the frontend can filter correctly.
+//!   - The readiness queue is shared with quit (`deliver_when_ready`): a window
+//!     still mounting has no listener for a quit request either, and one
+//!     record of who is listening cannot disagree with itself.
 //!
 //! Known limitations:
 //!   - On Windows, clicking a menu item can momentarily defocus the webview, so
@@ -71,7 +74,7 @@ fn get_state() -> std::sync::MutexGuard<'static, Option<WindowReadyState>> {
 }
 
 /// Mark a window as ready and flush any pending events
-pub fn mark_window_ready(app: &AppHandle, label: &str) {
+pub fn mark_window_ready<R: tauri::Runtime>(app: &AppHandle<R>, label: &str) {
     let pending: Vec<PendingMenuEvent>;
     {
         let mut state = get_state();
@@ -145,7 +148,7 @@ fn check_ready_or_queue(label: &str, event: PendingMenuEvent) -> bool {
 /// closes the window while a menu accelerator is in flight). Silent loss
 /// was making race-condition reports very hard to diagnose; the warning
 /// makes the dropped event visible without producing a crash.
-fn emit_event(window: &tauri::WebviewWindow, event: &PendingMenuEvent) {
+fn emit_event<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>, event: &PendingMenuEvent) {
     let label = window.label();
     let result = if let Some(ref path) = event.recent_file_path {
         window.emit(&event.event_name, (path.as_str(), label))
@@ -181,6 +184,52 @@ fn emit_or_queue_atomic(window: &tauri::WebviewWindow, event: PendingMenuEvent) 
             label,
             event_name
         );
+    }
+}
+
+/// What [`deliver_when_ready`] did with an event.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum Delivery {
+    /// The window's frontend is listening; the event was emitted.
+    Emitted,
+    /// The window has not signalled `ready`; the event is queued and will be
+    /// emitted when it does.
+    Deferred,
+}
+
+/// Deliver a label-payload event to `window`: now if its frontend is
+/// listening, when it signals `ready` otherwise.
+///
+/// Unlike a menu event, the caller needs the outcome — a failed emit is
+/// returned rather than logged — and asking twice must not deliver twice, so
+/// an event already waiting for this window is not queued again.
+pub(crate) fn deliver_when_ready<R: tauri::Runtime>(
+    window: &tauri::WebviewWindow<R>,
+    event_name: &str,
+) -> tauri::Result<Delivery> {
+    let label = window.label();
+    {
+        let mut state = get_state();
+        let s = state.get_or_insert_with(WindowReadyState::new);
+        if !s.ready_windows.contains(label) {
+            let waiting = s.pending_events.entry(label.to_string()).or_default();
+            if !waiting.iter().any(|event| event.event_name == event_name) {
+                waiting.push(make_menu_event(event_name));
+            }
+            return Ok(Delivery::Deferred);
+        }
+    }
+    window.emit(event_name, label)?;
+    Ok(Delivery::Emitted)
+}
+
+/// Withdraw `event_name` from every window it is still waiting for, so a
+/// window that becomes ready later is not handed a request that was called off.
+pub(crate) fn withdraw_deferred(event_name: &str) {
+    if let Some(s) = get_state().as_mut() {
+        for waiting in s.pending_events.values_mut() {
+            waiting.retain(|event| event.event_name != event_name);
+        }
     }
 }
 
