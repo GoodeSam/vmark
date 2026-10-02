@@ -1336,11 +1336,6 @@
       "target": "src/components/Editor/wysiwygPendingNav"
     },
     {
-      "file": "src/components/Editor/TiptapEditor.test.tsx",
-      "api": "vi.mock",
-      "target": "src/components/Editor/ImageContextMenu"
-    },
-    {
       "file": "src/components/Editor/useTiptapContentSync.test.tsx",
       "api": "vi.mock",
       "target": "src/components/Editor/tiptapEditorHelpers"
