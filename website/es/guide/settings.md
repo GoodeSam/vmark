@@ -467,7 +467,7 @@ Consulta [Terminal Integrado](/es/guide/terminal) para más información sobre s
 
 ## Acerca de
 
-Muestra la versión de la app, enlaces al sitio web y al repositorio de GitHub, y gestión de actualizaciones.
+Muestra la versión de la app, enlaces al sitio web y al repositorio de GitHub, y gestión de actualizaciones. El enlace **Avisos de terceros** abre los textos de licencia del software de código abierto incluido con VMark en la app predeterminada del sistema para archivos de texto.
 
 ### Actualizaciones
 

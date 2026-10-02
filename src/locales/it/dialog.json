@@ -271,5 +271,20 @@
   "exportError.rollbackRestored": "Nient’altro è stato modificato: la cartella è stata riportata al contenuto precedente.",
   "exportError.backupKeptAt": "{{path}} (il contenuto precedente è conservato in {{backup}}: {{reason}})",
   "exportError.backupGone": "{{path}} (anche il backup in {{backup}} è scomparso: {{reason}})",
-  "exportError.listItem": "«{{item}}»"
+  "exportError.listItem": "«{{item}}»",
+  "unsavedChanges.buttonSave": "Salva",
+  "unsavedChanges.buttonDontSave": "Non salvare",
+  "unsavedChanges.buttonSaveAll": "Salva tutto",
+  "unsavedChanges.buttonCancel": "Annulla",
+  "fileError.fileExists": "Esiste già un file chiamato «{{name}}».",
+  "fileError.folderExists": "Esiste già una cartella chiamata «{{name}}».",
+  "fileError.createFailed": "Impossibile creare «{{name}}».",
+  "fileError.renameFailed": "Impossibile rinominare «{{name}}».",
+  "fileError.deleteFailed": "Impossibile eliminare «{{name}}».",
+  "fileError.moveFailed": "Impossibile spostare «{{name}}».",
+  "fileError.duplicateFailed": "Impossibile duplicare «{{name}}».",
+  "fileError.copyFailed": "Impossibile copiare negli appunti.",
+  "fileError.exportFailed": "Impossibile esportare in {{format}}.",
+  "fileError.tooManyCopies": "Esistono troppe copie di «{{name}}». Eliminane prima alcune.",
+  "unsavedChanges.newDocEntry": "{{title}} (nuovo)"
 }

@@ -32,7 +32,7 @@ Après avoir sélectionné un génie ou soumis une invite libre, le sélecteur a
 - **Aperçu** — La réponse de l'IA apparaît au fur et à mesure qu'elle arrive&nbsp;: les fournisseurs CLI la diffusent pendant sa génération, tandis que les fournisseurs REST livrent la réponse entière d'un seul coup à la fin de la requête. Utilisez `Accepter` pour appliquer ou `Rejeter` pour ignorer.
 - **Erreur** — En cas de problème, le message d'erreur apparaît avec un bouton `Réessayer`.
 
-La barre d'état affiche également la progression de l'IA — une icône tournante avec le temps écoulé pendant l'exécution, un bref flash « Terminé » en cas de succès, ou un indicateur d'erreur avec des boutons **Réessayer** et **Ignorer**. Dans la barre d'état, tous deux ne font qu'effacer l'erreur — pour réessayer, relancez le génie depuis le sélecteur. La barre d'état s'affiche automatiquement quand l'IA a un statut actif, même si vous l'avez précédemment masquée avec `F7`.
+La barre d'état affiche également la progression de l'IA — une icône tournante avec le temps écoulé pendant l'exécution, un bref flash « Terminé » en cas de succès, ou un indicateur d'erreur avec des boutons **Réessayer** et **Ignorer**. **Réessayer** relance la requête en échec — le même génie ou la même invite, sur la sélection actuelle — même après la fermeture du sélecteur ; le bouton est absent quand il n'y a rien à relancer, par exemple sans fournisseur. La barre d'état s'affiche automatiquement quand l'IA a un statut actif, même si vous l'avez précédemment masquée avec `F7`.
 
 ## Génies intégrés
 

@@ -1,7 +1,7 @@
 /**
  * Save-on-Close Shared Surface (leaf)
  *
- * Purpose: the types, button labels and filename/filter helpers shared by
+ * Purpose: the types, translated button labels and filename/filter helpers shared by
  * closeSave.ts (the prompts) and closeSaveBatch.ts (the batch persistence).
  * A leaf so neither of those imports the other — the two-file split otherwise
  * forms a cycle.
@@ -10,6 +10,8 @@
  * @coordinates-with closeSaveBatch.ts — batch persistence
  * @module services/windowClose/closeSaveShared
  */
+
+import i18n from "@/i18n";
 
 /** Context describing a dirty document that may need saving before close. */
 export interface CloseSaveContext {
@@ -50,17 +52,28 @@ export interface MultiSaveOptions {
   revalidate?: (context: CloseSaveContext) => CloseSaveContext | null;
 }
 
-export const CLOSE_SAVE_BUTTONS = {
-  save: "Save",
-  dontSave: "Don't Save",
-  cancel: "Cancel",
-} as const;
+/**
+ * Button labels for the single-document save prompt, translated per call.
+ * The dialog reports a click by returning the clicked label, so the caller
+ * must compare against the SAME object it showed (`closeSave.i18n.test.ts`
+ * checks every locale keeps the three labels distinct).
+ */
+export function closeSaveButtons(): { save: string; dontSave: string; cancel: string } {
+  return {
+    save: i18n.t("dialog:unsavedChanges.buttonSave"),
+    dontSave: i18n.t("dialog:unsavedChanges.buttonDontSave"),
+    cancel: i18n.t("dialog:unsavedChanges.buttonCancel"),
+  };
+}
 
-export const MULTI_SAVE_BUTTONS = {
-  saveAll: "Save All",
-  dontSave: "Don't Save",
-  cancel: "Cancel",
-} as const;
+/** Button labels for the multi-document save prompt; see `closeSaveButtons`. */
+export function multiSaveButtons(): { saveAll: string; dontSave: string; cancel: string } {
+  return {
+    saveAll: i18n.t("dialog:unsavedChanges.buttonSaveAll"),
+    dontSave: i18n.t("dialog:unsavedChanges.buttonDontSave"),
+    cancel: i18n.t("dialog:unsavedChanges.buttonCancel"),
+  };
+}
 
 // WI-1B.8 — derive Save dialog filters per-tab from the format registry.
 // Untitled tabs default to markdown (the canonical "Save As" flow). Filter

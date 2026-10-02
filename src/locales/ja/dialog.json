@@ -271,5 +271,20 @@
   "exportError.rollbackRestored": "それ以外は何も変更されていません。フォルダーは以前の内容に復元されました。",
   "exportError.backupKeptAt": "{{path}}（以前の内容は {{backup}} に保管されています：{{reason}}）",
   "exportError.backupGone": "{{path}}（{{backup}} のバックアップも失われています：{{reason}}）",
-  "exportError.listItem": "「{{item}}」"
+  "exportError.listItem": "「{{item}}」",
+  "unsavedChanges.buttonSave": "保存",
+  "unsavedChanges.buttonDontSave": "保存しない",
+  "unsavedChanges.buttonSaveAll": "すべて保存",
+  "unsavedChanges.buttonCancel": "キャンセル",
+  "fileError.fileExists": "「{{name}}」という名前のファイルはすでに存在します。",
+  "fileError.folderExists": "「{{name}}」という名前のフォルダーはすでに存在します。",
+  "fileError.createFailed": "「{{name}}」を作成できませんでした。",
+  "fileError.renameFailed": "「{{name}}」の名前を変更できませんでした。",
+  "fileError.deleteFailed": "「{{name}}」を削除できませんでした。",
+  "fileError.moveFailed": "「{{name}}」を移動できませんでした。",
+  "fileError.duplicateFailed": "「{{name}}」を複製できませんでした。",
+  "fileError.copyFailed": "クリップボードにコピーできませんでした。",
+  "fileError.exportFailed": "{{format}} へのエクスポートに失敗しました。",
+  "fileError.tooManyCopies": "「{{name}}」のコピーが多すぎます。先にいくつか削除してください。",
+  "unsavedChanges.newDocEntry": "{{title}}（新規）"
 }

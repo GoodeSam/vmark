@@ -485,7 +485,7 @@ La barre d'état court le long du bas de la fenêtre (`F7` la masque). Le côté
 | Enregistrement automatique | Une icône d'enregistrement et depuis combien de temps le document a été enregistré automatiquement ; s'estompe après quelques secondes | — |
 | Compteurs | Mots et caractères (espaces non comptés) ; avec une sélection, *sélection / total* | Ouvre une fenêtre contextuelle **Nombre de mots** : mots, caractères, caractères sans espaces, caractères CJK, caractères sans ponctuation |
 | Lint | ⊗ erreurs ou ⚠ avertissements trouvés par la dernière exécution du [lint](#lint-markdown) ; masqué lorsqu'il n'y en a aucun | Va au problème suivant |
-| IA | Pendant l'exécution d'un génie, *Réflexion…* avec les secondes écoulées et un × pour annuler ; puis *Terminé*, ou l'erreur avec **Réessayer** et **Ignorer** — ici, les deux effacent l'erreur ; relancez le génie depuis le sélecteur pour réessayer | — |
+| IA | Pendant l'exécution d'un génie, *Réflexion…* avec les secondes écoulées et un × pour annuler ; puis *Terminé*, ou l'erreur avec **Réessayer**, qui relance la requête en échec, et **Ignorer** ; Réessayer est absent quand il n'y a rien à relancer, par exemple sans fournisseur | — |
 | MCP | Une icône satellite, teintée lorsqu'un client IA est connecté ; le mot *off*, *…* ou *error* lorsqu'il ne fonctionne pas normalement. L'infobulle nomme les clients connectés | Ouvre **Paramètres → Intégrations** |
 | Historique MCP | Les écritures de l'IA dans cet onglet, de la plus récente à la plus ancienne, chacune avec **Restaurer l'état d'avant cette écriture** ; un bouton corbeille efface l'historique de l'onglet sans demander | Ouvre la liste |
 | Terminal | — | Affiche ou masque le terminal |

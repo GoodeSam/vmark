@@ -32,7 +32,7 @@ Nach der Auswahl eines Genie oder dem Absenden eines freien Prompts zeigt die Au
 - **Vorschau** — Die KI-Antwort erscheint, sobald sie eintrifft: CLI-Anbieter streamen sie während der Generierung, während REST-Anbieter die gesamte Antwort auf einmal liefern, wenn die Anfrage abgeschlossen ist. Verwenden Sie `Annehmen`, um anzuwenden, oder `Ablehnen`, um zu verwerfen.
 - **Fehler** — Falls etwas schiefgeht, wird die Fehlermeldung mit einer Schaltfläche `Erneut versuchen` angezeigt.
 
-Die Statusleiste zeigt ebenfalls den KI-Fortschritt an — ein drehendes Symbol mit Zeitzähler während der Ausführung, ein kurzes „Fertig“-Symbol bei Erfolg oder ein Fehlerindikator mit den Schaltflächen **Erneut versuchen** und **Schließen**. In der Statusleiste löschen beide nur den Fehler — um es erneut zu versuchen, führen Sie das Genie erneut aus der Auswahl aus. Die Statusleiste wird automatisch eingeblendet, wenn die KI aktiv ist, selbst wenn Sie sie zuvor mit `F7` ausgeblendet haben.
+Die Statusleiste zeigt ebenfalls den KI-Fortschritt an — ein drehendes Symbol mit Zeitzähler während der Ausführung, ein kurzes „Fertig“-Symbol bei Erfolg oder ein Fehlerindikator mit den Schaltflächen **Erneut versuchen** und **Schließen**. **Erneut versuchen** führt die fehlgeschlagene Anfrage erneut aus — dasselbe Genie oder denselben Prompt, auf die aktuelle Auswahl — auch nachdem die Auswahl geschlossen wurde; die Schaltfläche fehlt, wenn es nichts zu wiederholen gibt, etwa ohne Anbieter. Die Statusleiste wird automatisch eingeblendet, wenn die KI aktiv ist, selbst wenn Sie sie zuvor mit `F7` ausgeblendet haben.
 
 ## Integrierte Genies
 

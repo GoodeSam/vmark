@@ -469,7 +469,7 @@ Voir [Terminal intégré](/fr/guide/terminal) pour plus d'informations sur les s
 
 ## À propos
 
-Affiche la version de l'application, les liens vers le site web et le dépôt GitHub, et la gestion des mises à jour.
+Affiche la version de l'application, les liens vers le site web et le dépôt GitHub, et la gestion des mises à jour. Le lien **Mentions de tiers** ouvre les textes de licence des logiciels open source fournis avec VMark dans l'application par défaut du système pour les fichiers texte.
 
 ### Mises à jour
 

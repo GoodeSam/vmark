@@ -25,6 +25,8 @@
  *   - Workflow genies route to run_workflow instead of run_ai_prompt
  *   - Genie and freeform invocations share one prompt pipeline
  *     (runPromptGenie); only the prompt plan differs
+ *   - Each prompt run hands the stream a `retry` that repeats the same call;
+ *     a failure stores it so the status bar's Retry re-runs that request
  *
  * @coordinates-with genieInvocation/streamRunner.ts — provider validation + streaming
  * @coordinates-with genieInvocation/cancelRequest.ts — asks Rust to stop the provider on cancel
@@ -56,7 +58,7 @@ import {
   type ExtractionResult,
 } from "@/services/genieInvocation/extraction";
 import { runGenieStream, type RunGenieStreamOptions } from "@/services/genieInvocation/streamRunner";
-import { cancelGenieRequest } from "@/services/genieInvocation/cancelRequest";
+import { cancelActiveInvocation } from "@/services/genieInvocation/cancelRequest";
 import { workflowProviderPayload } from "@/services/workflow/providerPayload";
 
 /**
@@ -122,6 +124,8 @@ async function checkPromptPreconditions(): Promise<boolean> {
   return notInSourceMode();
 }
 
+type ListenerRef = RunGenieStreamOptions["listenerRef"];
+
 /** What a prompt plan contributes once the content is extracted: the prompt and how to run it. */
 type PromptPlan = Omit<RunGenieStreamOptions, "extraction" | "listenerRef" | "cancelEpoch">;
 
@@ -133,7 +137,7 @@ type PromptPlan = Omit<RunGenieStreamOptions, "extraction" | "listenerRef" | "ca
 async function runPromptGenie(
   scope: GenieScope,
   contextRadius: number,
-  listenerRef: RunGenieStreamOptions["listenerRef"],
+  listenerRef: ListenerRef,
   plan: (extracted: ExtractionResult) => PromptPlan,
 ): Promise<boolean> {
   // Taken FIRST, before `ensureProvider()` can await (audit #375): a cancel
@@ -150,6 +154,63 @@ async function runPromptGenie(
   return runGenieStream({ ...plan(extracted), extraction: extracted, listenerRef, cancelEpoch });
 }
 
+/**
+ * Run a genie. Each prompt run carries `retry`, a re-run of this same call, so
+ * a failure can be retried from the status bar after the picker has closed.
+ */
+async function runGenie(genie: GenieDefinition, scopeOverride: GenieScope | undefined, listenerRef: ListenerRef): Promise<void> {
+  if (genie.kind === "workflow") {
+    await runWorkflowGenie(genie);
+    return;
+  }
+
+  const scope = scopeOverride ?? genie.metadata.scope;
+  const retry = () => void runGenie(genie, scopeOverride, listenerRef);
+  const dispatched = await runPromptGenie(scope, genie.metadata.context ?? 0, listenerRef, (extracted) => {
+    // Build context string only if template uses {{context}}
+    const hasContextVar = /\{\{\s*context\s*\}\}/.test(genie.template);
+    /* v8 ignore start -- ?? fallbacks are defensive; context fields may be undefined */
+    const contextStr = hasContextVar
+      ? formatContext(extracted.contextBefore ?? "", extracted.contextAfter ?? "")
+      : undefined;
+    /* v8 ignore stop */
+
+    return {
+      filledPrompt: fillTemplate(genie.template, extracted.text, contextStr),
+      model: genie.metadata.model,
+      action: genie.metadata.action ?? "replace",
+      processingLabel: genie.metadata.name,
+      retry,
+    };
+  });
+  // Recency records that the genie RAN (audit #730). It used to be written
+  // inside the plan callback, which is evaluated as an argument — before
+  // provider validation and before the invocation lock — so a genie
+  // refused for a missing API key, or because another run held the lock,
+  // still became the most recent one. `runWorkflowGenie` already recorded
+  // it after its dispatch; this is the same rule for the prompt path.
+  if (dispatched) useGeniesStore.getState().addRecent(genie.metadata.name);
+}
+
+/** Run a freeform prompt; retryable the same way as `runGenie`. */
+async function runFreeform(userPrompt: string, scope: GenieScope, listenerRef: ListenerRef): Promise<void> {
+  const retry = () => void runFreeform(userPrompt, scope, listenerRef);
+  // Auto-include ±1 context for selection/block scope
+  await runPromptGenie(scope, scope !== "document" ? 1 : 0, listenerRef, (extracted) => {
+    const hasContext = extracted.contextBefore || extracted.contextAfter;
+    let filledPrompt: string;
+    if (hasContext) {
+      /* v8 ignore start -- ?? fallbacks are defensive; context fields may be undefined */
+      const ctx = formatContext(extracted.contextBefore ?? "", extracted.contextAfter ?? "");
+      /* v8 ignore stop */
+      filledPrompt = `${userPrompt}\n\n## Context (do not modify):\n${ctx}\n\n## Content:\n${extracted.text}`;
+    } else {
+      filledPrompt = `${userPrompt}\n\n${extracted.text}`;
+    }
+    return { filledPrompt, action: "replace", processingLabel: userPrompt, retry };
+  });
+}
+
 export function useGenieInvocation() {
   const isRunning = useAiInvocationStore((s) => s.isRunning);
   const unlistenRef = useRef<UnlistenFn | null>(null);
@@ -162,11 +223,8 @@ export function useGenieInvocation() {
     // way: a listener we could not remove is still not ours to release twice.
     safeUnlisten(unlistenRef.current);
     unlistenRef.current = null;
-    // Reach the provider, not just our listener (audit #375) — read the id
-    // BEFORE the store reset clears it.
-    const { requestId } = useAiInvocationStore.getState();
-    if (requestId) cancelGenieRequest(requestId);
-    useAiInvocationStore.getState().cancel();
+    // Reach the provider, not just our listener (audit #375).
+    cancelActiveInvocation();
   }, []);
 
   // Cancel running invocation on unmount (releases lock + unlistens)
@@ -177,57 +235,12 @@ export function useGenieInvocation() {
   }, [cancel]);
 
   const invokeGenie = useCallback(
-    async (genie: GenieDefinition, scopeOverride?: GenieScope) => {
-      if (genie.kind === "workflow") {
-        await runWorkflowGenie(genie);
-        return;
-      }
-
-      const scope = scopeOverride ?? genie.metadata.scope;
-      const dispatched = await runPromptGenie(scope, genie.metadata.context ?? 0, unlistenRef, (extracted) => {
-        // Build context string only if template uses {{context}}
-        const hasContextVar = /\{\{\s*context\s*\}\}/.test(genie.template);
-        /* v8 ignore start -- ?? fallbacks are defensive; context fields may be undefined */
-        const contextStr = hasContextVar
-          ? formatContext(extracted.contextBefore ?? "", extracted.contextAfter ?? "")
-          : undefined;
-        /* v8 ignore stop */
-
-        return {
-          filledPrompt: fillTemplate(genie.template, extracted.text, contextStr),
-          model: genie.metadata.model,
-          action: genie.metadata.action ?? "replace",
-          processingLabel: genie.metadata.name,
-        };
-      });
-      // Recency records that the genie RAN (audit #730). It used to be written
-      // inside the plan callback, which is evaluated as an argument — before
-      // provider validation and before the invocation lock — so a genie
-      // refused for a missing API key, or because another run held the lock,
-      // still became the most recent one. `runWorkflowGenie` already recorded
-      // it after its dispatch; this is the same rule for the prompt path.
-      if (dispatched) useGeniesStore.getState().addRecent(genie.metadata.name);
-    },
+    (genie: GenieDefinition, scopeOverride?: GenieScope) => runGenie(genie, scopeOverride, unlistenRef),
     []
   );
 
   const invokeFreeform = useCallback(
-    async (userPrompt: string, scope: GenieScope) => {
-      // Auto-include ±1 context for selection/block scope
-      await runPromptGenie(scope, scope !== "document" ? 1 : 0, unlistenRef, (extracted) => {
-        const hasContext = extracted.contextBefore || extracted.contextAfter;
-        let filledPrompt: string;
-        if (hasContext) {
-          /* v8 ignore start -- ?? fallbacks are defensive; context fields may be undefined */
-          const ctx = formatContext(extracted.contextBefore ?? "", extracted.contextAfter ?? "");
-          /* v8 ignore stop */
-          filledPrompt = `${userPrompt}\n\n## Context (do not modify):\n${ctx}\n\n## Content:\n${extracted.text}`;
-        } else {
-          filledPrompt = `${userPrompt}\n\n${extracted.text}`;
-        }
-        return { filledPrompt, action: "replace", processingLabel: userPrompt };
-      });
-    },
+    (userPrompt: string, scope: GenieScope) => runFreeform(userPrompt, scope, unlistenRef),
     []
   );
 

@@ -32,7 +32,7 @@ Dopo aver selezionato un genie o inviato un prompt libero, il selettore mostra u
 - **Anteprima** — La risposta IA compare man mano che arriva: i provider CLI la trasmettono in streaming mentre viene generata, mentre i provider REST consegnano l'intera risposta in una volta quando la richiesta è completata. Usa `Accetta` per applicare o `Rifiuta` per scartare.
 - **Errore** — Se qualcosa va storto, appare il messaggio di errore con un pulsante `Riprova`.
 
-La barra di stato mostra anche i progressi dell'IA — un'icona girevole con il tempo trascorso durante l'esecuzione, un breve flash "Completato" al completamento, o un indicatore di errore con i pulsanti **Riprova** e **Ignora**. Nella barra di stato entrambi si limitano a cancellare l'errore — per riprovare, esegui di nuovo il genie dal selettore. La barra di stato si mostra automaticamente quando l'IA è attiva, anche se in precedenza l'hai nascosta con `F7`.
+La barra di stato mostra anche i progressi dell'IA — un'icona girevole con il tempo trascorso durante l'esecuzione, un breve flash "Completato" al completamento, o un indicatore di errore con i pulsanti **Riprova** e **Ignora**. **Riprova** esegue di nuovo la richiesta fallita — lo stesso genie o lo stesso prompt, sulla selezione corrente — anche dopo la chiusura del selettore; non compare quando non c'è nulla da ripetere, per esempio senza provider. La barra di stato si mostra automaticamente quando l'IA è attiva, anche se in precedenza l'hai nascosta con `F7`.
 
 ## Genies Integrati
 

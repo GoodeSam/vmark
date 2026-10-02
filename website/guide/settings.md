@@ -464,7 +464,7 @@ See [Integrated Terminal](/guide/terminal) for more about sessions, keyboard sho
 
 ## About
 
-Displays app version, links to the website and GitHub repository, and update management.
+Displays app version, links to the website and GitHub repository, and update management. The **Third-party notices** link opens the license texts of the open-source software bundled with VMark, in your system's default app for text files.
 
 ### Updates
 

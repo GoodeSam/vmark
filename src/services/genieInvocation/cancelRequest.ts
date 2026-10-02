@@ -26,6 +26,7 @@
  *     cannot overwrite the newer run's state.
  *
  * @coordinates-with hooks/useGenieInvocation.ts — calls this from cancel()
+ * @coordinates-with components/StatusBar/StatusBar.tsx — its Cancel button
  * @coordinates-with streamRunner.ts — mints the request id run_ai_prompt is keyed by
  * @module services/genieInvocation/cancelRequest
  */
@@ -35,6 +36,18 @@ import { commandErrorMessage } from "@/services/commands/commandError";
 import { useAiInvocationStore } from "@/stores/aiStore";
 import { imeToast as toast } from "@/services/ime/imeToast";
 import { genieWarn } from "@/utils/debug";
+
+/**
+ * Stop the active invocation: ask Rust to stop its provider, then reset the
+ * status. The request id is read BEFORE the reset clears it. Every Cancel
+ * surface goes through this — the status bar's used to reset the store alone,
+ * which hid the run while the provider went on to completion.
+ */
+export function cancelActiveInvocation(): void {
+  const { requestId } = useAiInvocationStore.getState();
+  if (requestId) cancelGenieRequest(requestId);
+  useAiInvocationStore.getState().cancel();
+}
 
 /** Ask Rust to cancel the streaming request `requestId`; never rejects. */
 export function cancelGenieRequest(requestId: string): void {

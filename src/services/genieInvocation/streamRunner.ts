@@ -60,7 +60,7 @@ function createChunkHandler(ctx: RunContext): (event: { payload: AiResponseChunk
     if (useAiInvocationStore.getState().requestId !== ctx.requestId) return;
 
     if (chunk.error) {
-      failInvocation(chunk.error, ctx.requestId);
+      failInvocation(chunk.error, ctx.requestId, ctx.retry);
       releaseListener(ctx.listenerRef);
       return;
     }
@@ -85,7 +85,7 @@ function createChunkHandler(ctx: RunContext): (event: { payload: AiResponseChunk
         releaseListener(ctx.listenerRef);
       }
     } catch (error) {
-      failInvocation(errorMessage(error), ctx.requestId);
+      failInvocation(errorMessage(error), ctx.requestId, ctx.retry);
       releaseListener(ctx.listenerRef);
     }
   };
@@ -106,6 +106,12 @@ export interface RunGenieStreamOptions {
    * (audit #375). A cancel in between bumps it and this run never dispatches.
    */
   cancelEpoch?: number | undefined;
+  /**
+   * Re-runs this invocation from the top (preconditions, extraction, prompt).
+   * Stored with a failure so the status bar's Retry repeats the request that
+   * failed, even after the picker that started it has closed.
+   */
+  retry?: (() => void) | undefined;
 }
 
 /**
@@ -120,7 +126,7 @@ export interface RunGenieStreamOptions {
  * it up front made a genie the app never invoked its most-recent entry.
  */
 export async function runGenieStream(options: RunGenieStreamOptions): Promise<boolean> {
-  const { filledPrompt, extraction, model, action = "replace", processingLabel, listenerRef, cancelEpoch } = options;
+  const { filledPrompt, extraction, model, action = "replace", processingLabel, listenerRef, cancelEpoch, retry } = options;
 
   const validated = validateProvider(useAiProviderStore.getState());
   if (!validated) return false;
@@ -166,6 +172,7 @@ export async function runGenieStream(options: RunGenieStreamOptions): Promise<bo
     extraction,
     action,
     listenerRef,
+    retry,
     docAtStart,
   };
 
@@ -221,7 +228,7 @@ export async function runGenieStream(options: RunGenieStreamOptions): Promise<bo
     // had just asked for, or onto whatever run started after it. A rejection
     // that no longer owns the invocation has nobody to report to.
     if (useAiInvocationStore.getState().requestId === requestId) {
-      failInvocation(errorMessage(e), requestId);
+      failInvocation(errorMessage(e), requestId, retry);
     }
     return false;
   }

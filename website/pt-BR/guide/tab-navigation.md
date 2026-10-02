@@ -453,7 +453,7 @@ Clique com o botão direito em uma aba para abrir seu menu. As teclas de seta, H
 | Fechar outras | Fecha todas as outras abas não fixadas. | Existe outra aba não fixada |
 | Fechar guias à direita | Fecha as abas não fixadas à sua direita. | Existe alguma |
 | Fechar guias não fixadas | Fecha todas as abas não fixadas, inclusive esta. | Existe uma aba não fixada |
-| Fechar todas | Fecha todas as abas. Uma aba fixada se recusa a fechar, então, enquanto houver alguma aba fixada, use **Fechar guias não fixadas**. | Sempre |
+| Fechar todas | Fecha todas as abas, exceto as fixadas, que continuam abertas até você desafixá-las. | Existe uma aba não fixada |
 
 Os fechamentos em massa atuam sobre as abas do workspace atual e as fecham uma de cada vez. Cada aba com alterações não salvas pergunta antes, e cancelar qualquer uma dessas perguntas interrompe o restante.
 
@@ -472,7 +472,7 @@ Não há atalho de teclado para fixar.
 
 Escolha **Renomear** no menu de contexto de uma aba. O nome fica editável na aba, com a parte antes da extensão selecionada. Enter ou clicar fora confirma; Escape cancela. O arquivo é renomeado no disco e todas as abas abertas que apontam para ele acompanham. O VMark nunca sobrescreve: se o nome já estiver em uso, uma caixa de diálogo diz *Já existe um arquivo chamado "X".* Um nome vazio, inalterado, `.` ou `..`, ou que contenha `/` ou `\` é recusado ou ignorado. O que você digita é o nome inteiro — apague a extensão e o arquivo fica sem ela.
 
-No **macOS**, com **Configurações → Aparência → Mostrar nome do arquivo na barra de título** ativado, você também pode dar um clique duplo no nome do arquivo na barra de título para renomeá-lo. As mesmas regras se aplicam, exceto que uma colisão ou um erro não mostra mensagem — o nome simplesmente continua editável — e, se **Mostrar extensões de arquivo** estiver desativado, a extensão original é mantida quando você digita um nome sem extensão. Um clique duplo no título de um documento não salvo abre **Salvar** em vez disso.
+No **macOS**, com **Configurações → Aparência → Mostrar nome do arquivo na barra de título** ativado, você também pode dar um clique duplo no nome do arquivo na barra de título para renomeá-lo. As mesmas regras e mensagens se aplicam; depois de uma colisão ou de um erro o nome continua editável para você tentar outro. Se **Mostrar extensões de arquivo** estiver desativado, a extensão original é mantida quando você digita um nome sem extensão. Um clique duplo no título de um documento não salvo abre **Salvar** em vez disso.
 
 ## Fechando abas e janelas
 
