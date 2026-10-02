@@ -127,14 +127,22 @@ function getTurndown(): TurndownService {
 
 /**
  * Pre-process HTML to clean up common issues from Word and web pages.
+ *
+ * The markup is parsed into an INERT document — one with no browsing context,
+ * which loads nothing and runs nothing. A detached element of the page's own
+ * document is not inert: the parser starts an `<img src>` fetching the moment
+ * it creates the element, so pasting was a beacon to whoever wrote the
+ * clipboard, and the image's `onerror` ran.
  */
 function preprocessHtml(html: string): string {
-  // Create a temporary container to parse HTML
-  if (typeof document === "undefined") {
+  if (typeof DOMParser === "undefined") {
     return html;
   }
 
-  const container = document.createElement("div");
+  // Parsed as a fragment inside a `div`, exactly as before — only the
+  // document that owns the nodes changed.
+  const inert = new DOMParser().parseFromString("", "text/html");
+  const container = inert.createElement("div");
   container.innerHTML = html;
 
   // Remove Word-specific junk tags (no visible content). Note: content
@@ -166,14 +174,14 @@ function preprocessHtml(html: string): string {
   // Convert <b> to <strong>, <i> to <em> for consistency
   const boldElements = container.querySelectorAll("b");
   boldElements.forEach((b) => {
-    const strong = document.createElement("strong");
+    const strong = inert.createElement("strong");
     strong.innerHTML = b.innerHTML;
     b.replaceWith(strong);
   });
 
   const italicElements = container.querySelectorAll("i");
   italicElements.forEach((i) => {
-    const em = document.createElement("em");
+    const em = inert.createElement("em");
     em.innerHTML = i.innerHTML;
     i.replaceWith(em);
   });

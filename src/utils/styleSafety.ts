@@ -166,15 +166,18 @@ export function sanitizeStylesheetText(css: string): string {
  * Rewrite every `style` attribute in `html` through the shared declaration
  * filter, using the given property allow-list. Without a DOM (SSR, worker)
  * the attributes are dropped entirely — the safe direction.
+ *
+ * The markup is re-parsed in an inert document: an element of the page's own
+ * document starts loading as the parser creates it, attached or not.
  */
 export function filterStyleAttributes(
   html: string,
   allowedProps: ReadonlySet<string>,
 ): string {
-  if (typeof document === "undefined") {
+  if (typeof DOMParser === "undefined") {
     return html.replace(/\s+style="[^"]*"/gi, "");
   }
-  const container = document.createElement("div");
+  const container = new DOMParser().parseFromString("", "text/html").createElement("div");
   container.innerHTML = html;
   for (const element of container.querySelectorAll<HTMLElement>("[style]")) {
     const filtered = sanitizeDeclarations(
