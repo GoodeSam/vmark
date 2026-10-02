@@ -292,6 +292,7 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 - **WI-RA20.4 — shortcut import errors are translated.**
 - **WI-RA20.5 — the untitled fallback filename is translated.**
 - **WI-RA20.6 — the AI response listener is released on cancel.**
+- **WI-RA20.7 — with no AI provider configured, a genie shows the no-provider message instead of falling back (maintainer decision 2026-10-03).**
 
 #### Phase RA21 — BOM lost on open, and defects the journeys found
 - **WI-RA21.1 — a file's BOM is detected from bytes at every open path.**
