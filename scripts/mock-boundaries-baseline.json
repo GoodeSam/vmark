@@ -1426,11 +1426,6 @@
       "target": "src/plugins/tableUI/TiptapTableContextMenu"
     },
     {
-      "file": "src/plugins/tableUI/TiptapTableContextMenu.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/tableUI/tableActions.tiptap"
-    },
-    {
       "file": "src/plugins/toolbarActions/sourceImageActions.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/toolbarActions/sourceAdapterHelpers"
