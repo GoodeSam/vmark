@@ -16,6 +16,7 @@ import type { Extension } from "@codemirror/state";
 import { parseSvg, renderSvgBlock } from "@/plugins/svg/svgRender";
 import { sanitizeSvg } from "@/utils/sanitize";
 import { registerFormat } from "../registry";
+import { usePreviewLinkGuard } from "./usePreviewLinkGuard";
 import "./svg-preview.css";
 import type {
   FormatConfig,
@@ -61,8 +62,9 @@ export const svgValidator: Validator = (content) => {
   }
 };
 
-function SvgPreview({ content, diagnostics }: PreviewRendererProps) {
+function SvgPreview({ content, diagnostics, path }: PreviewRendererProps) {
   const { t } = useTranslation("editor");
+  const linkGuard = usePreviewLinkGuard(path);
   const rendered = useMemo(() => {
     const raw = renderSvgBlock(content);
     if (raw === null) return null;
@@ -95,6 +97,8 @@ function SvgPreview({ content, diagnostics }: PreviewRendererProps) {
 
   return (
     <div
+      // The SVG's own links and forms must not navigate the app's page.
+      ref={linkGuard}
       className="svg-preview"
       // The renderer's well-formedness check above is the source of
       // trust: only valid SVG well-formed XML reaches this branch.

@@ -23,6 +23,7 @@ import type { Extension } from "@codemirror/state";
 import { renderMermaid } from "@/plugins/mermaid";
 import { sanitizeSvg } from "@/utils/sanitize";
 import { registerFormat } from "../registry";
+import { usePreviewLinkGuard } from "./usePreviewLinkGuard";
 import "./mermaid-preview.css";
 import type {
   FormatConfig,
@@ -101,11 +102,11 @@ export const mermaidValidator: Validator = (content) => {
   return [];
 };
 
-function MermaidPreview({ content, diagnostics }: PreviewRendererProps) {
+function MermaidPreview({ content, diagnostics, path }: PreviewRendererProps) {
   const { t } = useTranslation("editor");
   const [svg, setSvg] = useState<string | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const linkGuard = usePreviewLinkGuard(path);
   const renderToken = useRef(0);
 
   // Legitimate setState-in-effect: clears then fills from an async Mermaid render
@@ -177,11 +178,12 @@ function MermaidPreview({ content, diagnostics }: PreviewRendererProps) {
 
   return (
     <div
-      ref={containerRef}
+      // A diagram's `click` links are the document's; they must not
+      // navigate the app's page.
+      ref={linkGuard}
       className="mermaid-preview"
-      // SVG comes from Mermaid (trusted source library); no user
-      // strings injected. Same pattern the existing markdown
-      // mermaid plugin already uses.
+      // Mermaid draws the SVG, but its labels and links are the
+      // document's text — it is sanitized where the render resolves.
       dangerouslySetInnerHTML={{ __html: svg ?? "" }}
     />
   );

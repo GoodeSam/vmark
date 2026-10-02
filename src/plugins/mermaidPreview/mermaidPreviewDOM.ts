@@ -2,10 +2,14 @@
  * Mermaid Preview DOM Builder
  *
  * Constructs the popup container DOM for mermaid/SVG/markmap preview.
- * Pure DOM creation -- no state, no event handlers.
+ * DOM creation only -- no state, and no behaviour of its own. The one
+ * listener it mounts is the navigation guard on the content element, which
+ * belongs to that element for as long as it exists: whatever is rendered into
+ * it is the document's markup.
  */
 
 import i18n from "@/i18n";
+import { guardPreviewNavigation } from "@/utils/previewNavigation";
 
 /** Build the preview popup container with header, content, error, and resize handles. */
 export function buildContainer(): HTMLElement {
@@ -54,6 +58,10 @@ export function buildContainer(): HTMLElement {
 
   const preview = document.createElement("div");
   preview.className = "mermaid-preview-content";
+  // A link or a form in the rendered diagram must not navigate the app's
+  // page. No opener is bound here: this plugin has no route to the app's
+  // link opener, so the click is prevented and goes nowhere.
+  guardPreviewNavigation(preview);
 
   const error = document.createElement("div");
   error.className = "mermaid-preview-error";

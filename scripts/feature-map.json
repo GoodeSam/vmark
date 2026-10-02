@@ -1337,7 +1337,8 @@
     {
       "name": "Code-fence live previews & edit mode",
       "paths": [
-        "src/plugins/codePreview"
+        "src/plugins/codePreview",
+        "src/utils/previewNavigation.ts"
       ],
       "doc": "website/guide/features.md"
     },
