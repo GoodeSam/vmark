@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useDocumentStore, setTabExistenceGuard } from "./documentStore";
 import { useTabStore } from "./tabStore";
 
@@ -236,14 +236,17 @@ describe("documentStore", () => {
       initDocument(WINDOW_LABEL, "Initial");
       setEditorContent(WINDOW_LABEL, "Modified");
 
-      const beforeTime = Date.now();
-      markAutoSaved(WINDOW_LABEL, { editorSnapshot: "Modified", diskSnapshot: "Modified" });
-      const afterTime = Date.now();
+      const savedAt = Date.UTC(2026, 0, 2, 3, 4, 5);
+      vi.setSystemTime(savedAt);
+      try {
+        markAutoSaved(WINDOW_LABEL, { editorSnapshot: "Modified", diskSnapshot: "Modified" });
+      } finally {
+        vi.useRealTimers();
+      }
 
       const doc = getDocument(WINDOW_LABEL);
       expect(doc?.isDirty).toBe(false);
-      expect(doc?.lastAutoSave).toBeGreaterThanOrEqual(beforeTime);
-      expect(doc?.lastAutoSave).toBeLessThanOrEqual(afterTime);
+      expect(doc?.lastAutoSave).toBe(savedAt);
     });
 
     it("keeps isDirty true when content diverged during auto-save (TOCTOU)", () => {

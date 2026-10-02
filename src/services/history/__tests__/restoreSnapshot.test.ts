@@ -43,6 +43,9 @@ const HISTORY_DIR = `/Users/test/.config/history/${testHash(DOC)}`;
 const CURRENT = "# Notes\n\nCurrent text.\n";
 const OLD = "# Notes\n\nOld text.\n";
 
+/** The fixed "now" every test runs at; snapshot ages are measured from it. */
+const NOW = Date.UTC(2026, 0, 15, 12, 0, 0);
+
 function seedHistory(snapshots: Array<Pick<Snapshot, "id" | "type"> & { content: string }>): void {
   const index: HistoryIndex = {
     documentPath: DOC,
@@ -53,7 +56,7 @@ function seedHistory(snapshots: Array<Pick<Snapshot, "id" | "type"> & { content:
     snapshots: snapshots.map((s, i) => ({
       id: s.id,
       type: s.type,
-      timestamp: Date.now() - (snapshots.length - i) * 60_000,
+      timestamp: NOW - (snapshots.length - i) * 60_000,
       size: s.content.length,
       preview: s.content,
     })),
@@ -69,6 +72,7 @@ const snapshotTypes = () =>
   );
 
 beforeEach(() => {
+  vi.setSystemTime(NOW);
   writeGate.reset();
   resetTier0();
   statefulFs.mkdirp("/Users/test/.config");
@@ -79,6 +83,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   writeGate.reset();
   vi.restoreAllMocks();
 });

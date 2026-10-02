@@ -338,11 +338,11 @@ describe("wiring (case 13) — real package.json and real baseline", () => {
     expect(registered).toBeDefined();
     expect(registered.checks).toEqual([
       { mode: "identity", at: "entries", shape: "objects", key: ["file", "api", "target"], onAdd: "fail" },
-      { mode: "identity", at: "siblingEntries", shape: "objects", key: ["file", "api", "target"], onAdd: "fail" },
     ]);
-    expect(Array.isArray(baseline.siblingEntries)).toBe(true);
+    // Sibling mocks are not baselined at all: zero are allowed.
+    expect(Object.keys(baseline)).not.toContain("siblingEntries");
     expect(JSON.stringify(baseline["//"])).not.toContain("MANIFEST-PENDING");
-    for (const e of [...baseline.entries, ...baseline.siblingEntries]) {
+    for (const e of baseline.entries) {
       expect(typeof e.file).toBe("string");
       expect(typeof e.api).toBe("string");
       expect(typeof e.target).toBe("string");

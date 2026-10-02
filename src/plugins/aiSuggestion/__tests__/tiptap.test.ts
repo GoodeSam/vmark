@@ -93,7 +93,7 @@ function makeSuggestion(overrides: Partial<AiSuggestion> = {}): AiSuggestion {
     type: "insert",
     from: 0,
     to: 0,
-    createdAt: Date.now(),
+    createdAt: Date.UTC(2026, 0, 1), // fixed: the plugin never reads it
     ...overrides,
   };
 }

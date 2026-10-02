@@ -62,6 +62,12 @@ const OLD_IN_EDITOR = "# 标题\n\n从前的正文\n";
 /** The same version in the file's own convention. */
 const OLD_ON_DISK = `${BOM}# 标题\r\n\r\n从前的正文\r\n`;
 
+/**
+ * The pinned "now": snapshots are stamped and pruned relative to it, so the
+ * history and the revert's own safety snapshot see one fixed clock.
+ */
+const NOW = Date.UTC(2026, 0, 2, 3, 4, 5);
+
 const historyDir = (documentPath: string) => `${HISTORY_BASE}/${testHash(documentPath)}`;
 
 /** Put a history on the disk: an index and one file per snapshot. */
@@ -80,7 +86,7 @@ function seedHistory(
       id: s.id,
       type: s.type,
       // Oldest first, a minute apart, all recent enough to survive a prune.
-      timestamp: Date.now() - (snapshots.length - i) * 60_000,
+      timestamp: NOW - (snapshots.length - i) * 60_000,
       size: s.content.length,
       preview: s.content,
     })),
@@ -105,6 +111,7 @@ async function clickRevert(position = 0): Promise<void> {
 const confirmRevert = () => vi.mocked(ask).mockResolvedValueOnce(true);
 
 beforeEach(() => {
+  vi.setSystemTime(NOW);
   writeGate.reset();
   resetTier0();
   statefulFs.mkdirp("/Users/test/.config");
@@ -120,6 +127,7 @@ beforeEach(() => {
 
 afterEach(() => {
   writeGate.reset();
+  vi.useRealTimers();
 });
 
 describe("reverting keeps the file's own convention", () => {

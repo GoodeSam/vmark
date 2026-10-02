@@ -1,6 +1,6 @@
 // Phase 1/4 — live HTTP: real socket, cookie handshake over the wire, port-file,
 // watcher-driven index refresh. (Server-half evidence for spike S0.1.)
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { promises as fs } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -36,14 +36,11 @@ const LIVE_SOCKET_TIMEOUT_MS = 30_000;
  * 600ms when the rebuild lands in 20ms, and it fails when a loaded machine
  * takes 700ms — the same wall-clock-as-correctness mistake as the timeout above.
  */
-async function until(read: () => Promise<number>, expected: number): Promise<number> {
-  const deadline = Date.now() + LIVE_SOCKET_TIMEOUT_MS;
-  let seen = await read();
-  while (seen !== expected && Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, 25));
-    seen = await read();
-  }
-  return seen;
+async function until(read: () => Promise<number>, expected: number): Promise<void> {
+  await vi.waitFor(async () => expect(await read()).toBe(expected), {
+    timeout: LIVE_SOCKET_TIMEOUT_MS,
+    interval: 25,
+  });
 }
 
 /** Mint a nonce over the wire, bootstrap, return the session Cookie header. */
@@ -111,12 +108,11 @@ describe("startKbServer — live over a real socket", () => {
     await write("B.md", "b");
 
     // Poll for the debounced watcher rebuild rather than guessing its duration.
-    const after = await until(async () => {
+    await until(async () => {
       const health = (await (
         await fetch(`${running.url}/__health`, { headers: { cookie } })
       ).json()) as { docs: number };
       return health.docs;
     }, 2);
-    expect(after).toBe(2);
   }, LIVE_SOCKET_TIMEOUT_MS);
 });

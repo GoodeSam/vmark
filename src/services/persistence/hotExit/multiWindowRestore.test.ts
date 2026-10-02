@@ -24,6 +24,9 @@ vi.mock('@tauri-apps/api/webviewWindow', () => ({
   getCurrentWebviewWindow: () => ({ label: 'main' }),
 }));
 
+/** A fixed capture time (seconds); restore never compares it with the clock. */
+const SESSION_TIMESTAMP = 1_768_478_400;
+
 // Helper to create mock session
 function createMockSession(windowConfigs: Array<{
   label: string;
@@ -32,7 +35,7 @@ function createMockSession(windowConfigs: Array<{
 }>) {
   return {
     version: 1,
-    timestamp: Math.floor(Date.now() / 1000),
+    timestamp: SESSION_TIMESTAMP,
     vmark_version: '0.3.24',
     windows: windowConfigs.map(config => ({
       window_label: config.label,

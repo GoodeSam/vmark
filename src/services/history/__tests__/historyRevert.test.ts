@@ -7,7 +7,7 @@
  * so when the safety snapshot was taken first, reverting to the oldest version
  * deleted that version and then failed to read it.
  */
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { HistoryIndex, HistorySettings, Snapshot } from "@/utils/historyTypes";
 
 vi.mock("@tauri-apps/plugin-fs", async () => (await import("./historyTestFs")).pluginFsMock);
@@ -40,6 +40,9 @@ const settings: HistorySettings = {
   maxFileSizeKB: 0,
 };
 
+/** The fixed "now" every test runs at; snapshot ages are measured from it. */
+const NOW = Date.UTC(2026, 0, 15, 12, 0, 0);
+
 function seedHistory(snapshots: Array<Pick<Snapshot, "id" | "type"> & { content: string }>): void {
   const index: HistoryIndex = {
     documentPath: DOC,
@@ -50,7 +53,7 @@ function seedHistory(snapshots: Array<Pick<Snapshot, "id" | "type"> & { content:
     snapshots: snapshots.map((s, i) => ({
       id: s.id,
       type: s.type,
-      timestamp: Date.now() - (snapshots.length - i) * 60_000,
+      timestamp: NOW - (snapshots.length - i) * 60_000,
       size: s.content.length,
       preview: s.content,
     })),
@@ -73,7 +76,12 @@ function expectConsistent(): void {
 const types = () => readIndex().snapshots.map((s) => s.type).sort();
 
 beforeEach(() => {
+  vi.setSystemTime(NOW);
   vfs.reset();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("revertToSnapshot", () => {
