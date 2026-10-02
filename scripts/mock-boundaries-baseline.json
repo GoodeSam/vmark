@@ -1396,56 +1396,6 @@
       "target": "src/plugins/sourcePopup/sourcePopupUtils"
     },
     {
-      "file": "src/plugins/toolbarActions/wysiwygAdapter.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/multiSelectionPolicy"
-    },
-    {
-      "file": "src/plugins/toolbarActions/wysiwygAdapter.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/wysiwygAdapterBlockInsert"
-    },
-    {
-      "file": "src/plugins/toolbarActions/wysiwygAdapter.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/wysiwygAdapterBlockOps"
-    },
-    {
-      "file": "src/plugins/toolbarActions/wysiwygAdapter.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/wysiwygAdapterCjk"
-    },
-    {
-      "file": "src/plugins/toolbarActions/wysiwygAdapter.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/wysiwygAdapterCodeBlock"
-    },
-    {
-      "file": "src/plugins/toolbarActions/wysiwygAdapter.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/wysiwygAdapterFormatting"
-    },
-    {
-      "file": "src/plugins/toolbarActions/wysiwygAdapter.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/wysiwygAdapterLinkEditor"
-    },
-    {
-      "file": "src/plugins/toolbarActions/wysiwygAdapter.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/wysiwygAdapterLinks"
-    },
-    {
-      "file": "src/plugins/toolbarActions/wysiwygAdapter.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/wysiwygHeadingLevel"
-    },
-    {
-      "file": "src/plugins/toolbarActions/wysiwygAdapter.test.ts",
-      "api": "vi.mock",
-      "target": "src/plugins/toolbarActions/wysiwygMultiSelection"
-    },
-    {
       "file": "src/plugins/toolbarActions/wysiwygAdapterInsert.test.ts",
       "api": "vi.mock",
       "target": "src/plugins/toolbarActions/wysiwygAdapterUtils"
