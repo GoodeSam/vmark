@@ -203,6 +203,18 @@ export const MANIFEST = {
       checks: [{ mode: "identity", at: "accepted", shape: "object-keys", onAdd: "report" }],
     },
     {
+      // The Rust line-coverage floor, stored as the ceiling on UNCOVERED lines
+      // so that it reads the way a scalar check does: a raise loosens the gate
+      // and fails here. `maxSlackPercent` is how far coverage may rise above
+      // the floor before `check-rust-coverage.mjs` calls the floor stale, so
+      // raising it loosens that half and fails too.
+      path: "scripts/rust-coverage-baseline.json",
+      checks: [
+        { mode: "scalar", at: "maxUncoveredLinePercent" },
+        { mode: "scalar", at: "maxSlackPercent" },
+      ],
+    },
+    {
       // Growth here is separately capped by extension-budget's
       // maxKnownViolations scalar, so per-edge additions report.
       path: ".dependency-cruiser-known-violations.json",

@@ -139,3 +139,68 @@ jobs:
 
       - name: Security audit (Rust)
         run: node scripts/check-cargo-audit.mjs
+
+  # The header declares `on-failure: rolling-issue`; these two jobs are what
+  # make that true. A scheduled run gates no pull request, so without them a
+  # red drift check is visible only to someone who opens the Actions tab.
+  #
+  # They are the ONLY jobs with `issues: write`, and they check out nothing and
+  # run no project code. `if: failure()` on a job with `needs` fires exactly
+  # when one of those jobs failed, so a cancelled run reports nothing.
+  report:
+    name: Report failures in the tracking issue
+    needs: [rust-drift, rust-audit]
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Create or update the rolling issue
+        env:
+          # No checkout here, so gh is told the repository explicitly rather
+          # than inferring it from a git remote.
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          TITLE="Rust drift check failed"
+          BODY="The weekly Rust drift check failed on $(date -u +%Y-%m-%d): $RUN_URL (commit ${GITHUB_SHA}). The toolchain, the dependency graph or the RustSec database moved under an unchanged tree; the job log says which."
+          NUMBER=$(gh issue list --state open --search "\"$TITLE\" in:title" \
+            --json number,title --jq ".[] | select(.title == \"$TITLE\") | .number" | head -n1)
+          if [ -n "$NUMBER" ]; then
+            gh issue comment "$NUMBER" --body "$BODY"
+          else
+            gh issue create --title "$TITLE" --body "$BODY"
+          fi
+
+  resolve:
+    # A rolling issue needs both edges: without this one a fixed failure stays
+    # open and the next reader re-investigates a solved problem.
+    name: Close the tracking issue once the drift check passes
+    needs: [rust-drift, rust-audit]
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Close the rolling issue
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          TITLE="Rust drift check failed"
+          NUMBER=$(gh issue list --state open --search "\"$TITLE\" in:title" \
+            --json number,title --jq ".[] | select(.title == \"$TITLE\") | .number" | head -n1)
+          if [ -z "$NUMBER" ]; then
+            echo "No open tracking issue — nothing to close."
+            exit 0
+          fi
+          gh issue close "$NUMBER" --reason completed --comment \
+            "Drift check passed on $(date -u +%Y-%m-%d): $RUN_URL (commit ${GITHUB_SHA}). Closing automatically; a later failure opens a fresh issue."
