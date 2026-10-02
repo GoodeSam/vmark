@@ -1404,16 +1404,6 @@
       "file": "src/utils/cursorSync/tiptap.test.ts",
       "api": "vi.mock",
       "target": "src/utils/cursorSync/tiptapAnchors"
-    },
-    {
-      "file": "src/utils/markdownPipeline/proseMirrorToMdast.test.ts",
-      "api": "vi.mock",
-      "target": "src/utils/markdownPipeline/pmBlockConverters"
-    },
-    {
-      "file": "src/utils/markdownPipeline/proseMirrorToMdast.test.ts",
-      "api": "vi.mock",
-      "target": "src/utils/markdownPipeline/pmInlineConverters"
     }
   ]
 }
