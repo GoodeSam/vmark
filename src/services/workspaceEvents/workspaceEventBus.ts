@@ -1,8 +1,9 @@
 /**
  * Workspace event bus — coalescing pub/sub over normalized fs events.
  *
- * Purpose: The single subscription point for the workspace event layer. One
- *   Rust `fs:changed` stream in ({@link attachFsSource}); coalesced, batched
+ * Purpose: The single subscription point for the workspace event layer. The
+ *   Rust watcher's `fs:changed` batches addressed to THIS window, plus its
+ *   rescan signal, come in ({@link attachFsSource}); coalesced, batched
  *   {@link SemanticWorkspaceEvent} arrays out to any number of subscribers.
  *   Publishes are batched on a fixed window (flushed `coalesceMs` after the
  *   first buffered event, repeatedly while a storm keeps arriving), so a git
