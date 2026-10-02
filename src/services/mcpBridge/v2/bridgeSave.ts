@@ -55,12 +55,14 @@ export type BridgeSaveResult = { saved: true } | BridgeSaveFailure;
 function describeFailure(failure: SaveFailure): string {
   switch (failure.reason) {
     case "ownership-conflict": {
-      const holder = failure.conflicts[0];
-      const where = holder?.workspaceDisplayName ?? holder?.windowLabel;
+      // Named by tab id and window label: the identifiers `session.get_state`
+      // gives the client, so it can act on the tab that holds the file.
+      const holders = failure.conflicts
+        .map((claim) => `tab ${claim.tabId} in window ${claim.windowLabel}`)
+        .join(", ");
       return (
-        "Another open tab has unsaved changes to this file" +
-        (where ? ` (${where})` : "") +
-        "; it must be saved or closed before this tab can write the file"
+        `Another open tab has unsaved changes to this file (${holders}); ` +
+        "it must be saved or closed before this tab can write the file"
       );
     }
     case "parent-missing":

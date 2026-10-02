@@ -467,7 +467,8 @@ describe("a file another tab holds unsaved changes to", () => {
     const data = writeData("req-owned");
     expect(data.saved).toBe(false);
     expect(data.save_error).toContain("unsaved changes to this file");
-    expect(data.save_error).toContain("doc-1");
+    // By the identifiers session.get_state exposes, so the client can act.
+    expect(data.save_error).toContain("tab tab-elsewhere in window doc-1");
     expect(statefulFs.writesTo(DOC)).toEqual([]);
     expect(doc(tabId).content).toBe("after\n");
     expect(doc(tabId).isDirty).toBe(true);
