@@ -18,9 +18,6 @@ vi.mock("@tauri-apps/plugin-fs", () => ({ exists: (...a: unknown[]) => existsMoc
 vi.mock("@/services/mcpBridge/utils", () => ({
   respond: async (r: Record<string, unknown>) => { responses.push(r); },
 }));
-vi.mock("./wrapHandler", () => ({
-  wrapHandler: async (_id: string, fn: () => Promise<void>) => fn(),
-}));
 vi.mock("@/services/persistence/workspaceStorage", () => ({
   getCurrentWindowLabel: () => "main",
 }));

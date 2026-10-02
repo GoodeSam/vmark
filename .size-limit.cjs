@@ -226,6 +226,23 @@ module.exports = [
     limit: "731 kB",
     brotli: false,
   },
+  {
+    // The shared side chunk Rolldown names after src/utils/popupComponents:
+    // modules reached both from App-side code and from the lazy surfaces
+    // land here, and index.html modulepreloads it. It was unbudgeted, so
+    // weight could migrate into cold start without any per-chunk gate
+    // noticing. Budgeted when the markdown paste extension and turndown
+    // (htmlToMarkdown) left it: once the AI suggestion, genie and HTML paste
+    // paths imported the slice builder in plugins/shared/markdownPasteSlice
+    // instead of markdownPaste/tiptap, those modules were reachable only
+    // from markdownSurface. 287,385 -> 264,644 bytes. Limit = new size times
+    // the markdownSurface headroom ratio (285,000 / 267,339 = 1.0661), so the
+    // 22.7 kB that left cannot come back silently.
+    name: "EAGER: popupComponents (shared side chunk)",
+    path: "dist/assets/popupComponents-*.js",
+    limit: "283 kB",
+    brotli: false,
+  },
 
   // --- LAZY CHUNKS (off cold-start path) ---
 
@@ -265,9 +282,19 @@ module.exports = [
     // loads (this chunk plus its static imports) went 2,876.6 → 2,894.4 kB,
     // 78 → 35 files: +0.6%, from the dependency bumps, not the move.
     // Actual 272.4 kB.
+    //
+    // 285 -> 309 kB: bytes moved IN, nothing new. The markdown paste
+    // extension, htmlToMarkdown and turndown left the cold-start
+    // popupComponents chunk (287,385 -> 264,644 bytes) when their App-side
+    // importers switched to plugins/shared/markdownPasteSlice, so they now
+    // live only here (267,339 -> 289,772 bytes). All chunks together shrank
+    // about 0.3 kB, and the cold-start closure fell 3,246,541 -> 3,223,808
+    // bytes (MAX_EAGER_BYTES lowered to match). Limit = new size times the
+    // old headroom ratio (285,000 / 267,339 = 1.0661), and popupComponents
+    // now has its own budget, so the move is a net tightening.
     name: "LAZY: markdownSurface",
     path: "dist/assets/markdownSurface-*.js",
-    limit: "285 kB",
+    limit: "309 kB",
     brotli: false,
   },
   {

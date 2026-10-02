@@ -8,13 +8,13 @@
 import { Selection, SelectionRange } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
-import { MultiSelection } from "./MultiSelection";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
 import { isImeKeyEvent } from "@/utils/imeGuard";
 import {
   normalizeRangesWithPrimary,
   remapBackwardFlags,
   sortRangesDescending,
-} from "./rangeUtils";
+} from "@/plugins/shared/rangeUtils";
 import {
   handleMultiCursorHorizontal,
   type HorizontalUnit,

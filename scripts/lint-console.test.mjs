@@ -48,11 +48,21 @@ describe("lint-console.sh — what it flags", () => {
     expect(r.out).toContain("OK: No bare console.* calls found in production code (2 files scanned).");
   });
 
-  it.each(["error", "warn", "log"])("a bare console.%s fails and is reported with file and line", (method) => {
-    const r = run(withFiles({ "src/feature/thing.ts": `export const f = () => {\n  console.${method}("x");\n};\n` }));
-    expect(r.status).toBe(1);
-    expect(r.out).toContain("Found bare console.* calls in production code");
-    expect(r.out).toContain(`src/feature/thing.ts:2:  console.${method}("x");`);
+  // WI-RA13B.7 — every console method writes to the user's devtools; the gate
+  // used to see only error, warn and log.
+  it.each(["error", "warn", "log", "info", "debug", "trace", "table", "dir", "group"])(
+    "a bare console.%s fails and is reported with file and line",
+    (method) => {
+      const r = run(withFiles({ "src/feature/thing.ts": `export const f = () => {\n  console.${method}("x");\n};\n` }));
+      expect(r.status).toBe(1);
+      expect(r.out).toContain("Found bare console.* calls in production code");
+      expect(r.out).toContain(`src/feature/thing.ts:2:  console.${method}("x");`);
+    },
+  );
+
+  it("a name that merely ends in console is not a call on the console", () => {
+    const r = run(withFiles({ "src/x.ts": "const myconsole = { info: () => 1 };\nexport const v = myconsole.info();\n" }));
+    expect(r.status, r.out).toBe(0);
   });
 
   it("finds a call in a .tsx file and in a deeply nested directory", () => {

@@ -520,6 +520,8 @@
   "about.checking": "확인 중...",
   "about.website": "웹사이트",
   "about.github": "GitHub",
+  "about.thirdPartyNotices": "타사 고지",
+  "about.thirdPartyNoticesFailed": "타사 고지를 열 수 없습니다",
   "shortcuts.hint": "단축키를 클릭하여 변경합니다.",
   "shortcuts.searchPlaceholder": "단축키 검색...",
   "shortcuts.export": "내보내기",

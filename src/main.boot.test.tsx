@@ -20,7 +20,6 @@ vi.mock("@/services/secrets/secureStorage", () => ({
 }));
 vi.mock("./lib/formats", () => ({ bootstrapFormats: () => events.push("formats") }));
 vi.mock("./services/assembly/bindHostSettings", () => ({ bindPluginHostSettings: () => events.push("hostSettings") }));
-vi.mock("./i18n", () => ({}));
 vi.mock("./services/menu/startupMenuSync", () => ({}));
 vi.mock("react-dom/client", () => ({ default: { createRoot: () => ({ render: () => events.push("render") }) } }));
 // Evaluating App is what hydrates the AI provider store from the cache.

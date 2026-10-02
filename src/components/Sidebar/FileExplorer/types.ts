@@ -38,10 +38,11 @@ export interface DirectoryEntry {
 }
 
 /**
- * One node of the one-call tree listing (`list_directory_tree`, #1357): a
- * `DirectoryEntry` plus its pruned children. `unreadable` marks a directory the
- * walker could not read (shown empty, logged); a pruned directory has `children:
- * []` and is not unreadable.
+ * One node of the one-call tree listing (`list_directory_tree`, #1357), with
+ * its absolute path rebuilt by `treeListingPaths` (the wire form carries names
+ * only): a `DirectoryEntry` plus its pruned children. `unreadable` marks a
+ * directory the walker could not read (shown empty, logged); a pruned directory
+ * has `children: []` and is not unreadable.
  */
 export interface TreeEntry extends DirectoryEntry {
   unreadable?: boolean;

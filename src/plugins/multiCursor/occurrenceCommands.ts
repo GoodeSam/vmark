@@ -11,8 +11,8 @@
  */
 import { TextSelection, SelectionRange } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
-import { MultiSelection } from "./MultiSelection";
-import { normalizeRangesWithPrimary } from "./rangeUtils";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
+import { normalizeRangesWithPrimary } from "@/plugins/shared/rangeUtils";
 import { filterRangesToBounds, getCodeBlockBounds } from "./codeBlockBounds";
 import type { CodeBlockBounds } from "./codeBlockBounds";
 import { getTextblockBounds } from "./blockBounds";

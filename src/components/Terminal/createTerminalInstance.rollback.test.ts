@@ -59,15 +59,6 @@ vi.mock("./resolveHelperTextarea", () => ({
 }));
 vi.mock("./setupWebLinks", () => ({ setupWebLinks: vi.fn() }));
 vi.mock("./setupFileLinks", () => ({ setupFileLinks: vi.fn() }));
-vi.mock("./setupOsc", () => ({
-  setupOsc7: () => ({ getCwd: () => null }),
-  setupOsc133: () => ({
-    getCommands: () => [],
-    isRunning: () => false,
-    setOnIdle: vi.fn(),
-  }),
-  scrollToAdjacentCommand: vi.fn(),
-}));
 vi.mock("@/theme", () => ({ buildXtermThemeForId: () => ({}), drawBoldTextInBrightColorsForId: () => true }));
 
 import { createTerminalInstance } from "./createTerminalInstance";

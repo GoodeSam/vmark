@@ -150,10 +150,6 @@ vi.mock("@/hooks/useWorkspaceSync", () => ({
   useWorkspaceSync: vi.fn(),
 }));
 
-vi.mock("../utils/linebreakDetection", () => ({
-  detectLinebreaks: vi.fn(() => ({ type: "lf" })),
-}));
-
 // startupFileOpen delegates to openFileInNewTabCore; its mechanics are covered
 // by its own tests. Mocked here (parse behavior real) so the orchestration
 // assertions (which path opens which file) stay meaningful.

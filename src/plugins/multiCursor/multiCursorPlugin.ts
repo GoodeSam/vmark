@@ -9,7 +9,7 @@
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
-import { MultiSelection } from "./MultiSelection";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
 import { createMultiCursorDecorations } from "./decorations";
 import { handleMultiCursorInput, handleMultiCursorKeyDown } from "./inputHandling";
 import { isImeKeyEvent } from "@/utils/imeGuard";

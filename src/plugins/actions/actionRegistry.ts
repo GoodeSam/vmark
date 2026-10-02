@@ -27,7 +27,7 @@ import type {
 import menuIdsData from "@shared/menu-ids.json";
 import { MENU_TO_ACTION } from "./menuMapping";
 import { ACTION_DEFINITIONS } from "./actionDefinitions";
-import { actionRegistryWarn } from "@/utils/debug";
+import { actionRegistryLog, actionRegistryWarn } from "@/utils/debug";
 
 // Re-export for consumers that import from this module
 export { MENU_TO_ACTION } from "./menuMapping";
@@ -99,8 +99,8 @@ if (import.meta.env?.DEV) {
     );
   }
   if (extraInRegistry.length > 0) {
-    console.info(
-      "[ActionRegistry] Extra menu IDs in MENU_TO_ACTION (not extracted from Rust):",
+    actionRegistryLog(
+      "Extra menu IDs in MENU_TO_ACTION (not extracted from Rust):",
       extraInRegistry
     );
   }

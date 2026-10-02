@@ -7,7 +7,7 @@
 
 import type { EditorView } from "@codemirror/view";
 import i18n from "@/i18n";
-import { SourcePopupView, type StoreApi } from "@/plugins/sourcePopup";
+import { SourcePopupView, type StoreApi } from "@/plugins/shared/SourcePopupView";
 import type { MediaPopupState } from "@/plugins/shared/popupPorts";
 import { buildPopupIconButton, popupIcons } from "@/utils/popupComponents";
 import { isImeKeyEvent } from "@/utils/imeGuard";

@@ -59,7 +59,7 @@ A claim the inspector could not confirm is marked **unverified** in place rather
 
 ## Open findings
 
-Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 178 open.
+Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 159 open.
 
 ### Security boundaries (14)
 
@@ -99,31 +99,10 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 14) `useLintStore.runLint` and `runYamlLint` (`src/stores/documentStore/lint.ts`) have no production caller; only `src/stores/__tests__/lintStore.test.ts` reaches them.
 - (area 15) `register_dock_recent` exists only on macOS, but `registerDockRecent` (`src/stores/workspaceStoreHelpers.ts`) calls it on every platform and swallows the rejection.
 
-### Documentation that disagrees with the code (4)
 
-- (area 1) `website/guide/popups.md` §"Media Popup (Images, Video, Audio)" says Source mode shows a floating preview for video/audio "on hover". The Source-mode preview (`src/plugins/codemirror/sourceImagePreview.ts`, `src/plugins/imagePreview/ImagePreviewView.ts`) also covers images and follows the cursor inside `![alt](path)`, not the mouse; no guide page describes it as such.
-- (area 2) `website/guide/shortcuts.md` §"F-Key Quick Reference" lists `F4` / `Shift + F4` Sort Lines with no mode caveat; sorting is Source-only (`src/plugins/toolbarActions/adapterActions.ts`; `src/plugins/editorPlugins.tiptap.ts` binds none), as the same page's §"Line Operations" and `website/guide/features.md` §"Line Operations" now say.
-- (area 3) `website/guide/formats.md` §"Schema-aware previews" lists GitHub Actions, `Cargo.toml`, `package.json` and `pyproject.toml` but not the yaml adapter's `vmark-workflow` schema (the engine Run/Cancel panel, `src/lib/formats/adapters/yamlEngineRenderer.tsx`); only `website/guide/workflows.md` describes it.
-- (area 12) `website/guide/workflows.md` §"Running a workflow" says that while one workflow runs, "Run is disabled in every other workflow file"; the busy state comes from the window's own store (`src/components/Editor/WorkflowPanel/useWorkflowRunControls.ts`), so a workflow file in another window keeps Run enabled and the start is refused by the backend with a toast.
+### User-facing behaviour with no guide page (1)
 
-### User-facing behaviour with no guide page (16)
-
-- (area 2) Inactive-selection overlay (`src/plugins/inactiveSelection/`) and the inline-code left-boundary behaviour (`src/plugins/inlineCodeBoundary/`) have no guide mention.
-- (area 3) The markdown pipeline has no guide coverage; its spine page `website/guide/formats.md` never mentions parsing, the dialect, or the 1000-level nesting refusal (only `website/guide/large-files.md` states the limit; code in `src/utils/markdownPipeline/nestingDepth.ts`).
-- (area 5) The tab context menu (pin, bulk close, Move to New Window, Copy Path, Revert to Saved, Restore to Disk, Rename) and tab pinning have no guide page; only Open to the Side is described (`website/guide/tab-navigation.md` §"Two documents side by side"). Evidence: `src/components/Tabs/useTabContextMenuActions.ts`.
-- (area 5) The save-on-close prompts (Save / Don't Save / Cancel, multi-document aggregate prompt, one folder picker for several untitled files, pinned-tabs confirmation on window close) have no guide section; `website/guide/features.md` §"Session Recovery (Hot Exit)" says only that a quit asks you to save first, and `website/guide/shortcuts.md` has the Save All and Quit row — code in `src/services/windowClose/closeSave.ts`, `src/services/windowClose/windowCloseFlow.ts`.
-- (area 8) The start page (`NEW_BROWSER_TAB_URL` in `src/services/commands/browserCommands.ts`) and the omnibox search provider (`SEARCH_URL_BASE` in `src/lib/browser/omnibox.ts`) are hardcoded DuckDuckGo; no guide page says so and no setting changes either.
-- (area 9) The prompt-history dropdown's Clear button (`src/components/GeniePicker/PromptHistoryDropdown.tsx`) is not mentioned in `website/guide/ai-genies.md` §"The Genie Picker".
-- (area 10) Install writes a per-client secret (`env.VMARK_MCP_TOKEN`) into each AI client's config file, and delegated coherence actions authorize against it; no guide page mentions it (`src-tauri/src/mcp_config/client_tokens.rs`, `src-tauri/src/mcp_config/vmark_entry.rs`).
-- (area 11) The Claims panel's only entry point, palette command "Canon Claims" (`view.toggleClaims`, `src/services/commands/claimCommands.ts`), is not named in `website/guide/coherence.md` (only *Extract Claim from Selection* is).
-- (area 12) `website/guide/formats.md` §"Schema-aware previews" lists the yaml adapter's GitHub Actions schema but not its `vmark-workflow` schema (`src/lib/formats/adapters/yaml.tsx`, `src/lib/workflow/detection.ts`); the rule is documented only in `website/guide/workflows.md` §"Workflow file or GitHub Actions file?".
-- (area 13) OS reduced-motion support (`src/utils/motion.ts`, the `prefers-reduced-motion` block in `src/styles/index.css`) is on no guide page.
-- (area 13) Double-click rename in the macOS title bar (`src/components/TitleBar/useTitleBarRename.ts`) is on no guide page.
 - (area 13) Shortcut import errors use a raw `window.alert` (`handleImport` in `src/pages/settings/ShortcutsSettings.tsx`), and a rejected `update_menu_accelerators` is only logged (`shortcutsWarn` in `src/stores/settingsStore/shortcuts.ts`) — neither reaches the app's dialog/toast surface.
-- (area 13) No guide section describes the status bar's right-side indicators as a whole (counts popover, lint badge, AI indicator, MCP tooltip and history, mode toggle, read-only lock, auto-save label); `website/guide/index.md` has one bullet.
-- (area 14) Editor IME composition handling (composition guard, grace period, empty-table-cell commit fix, IME-safe toasts) has no guide page; only `website/guide/multi-cursor.md` and the chord-guard entry in `website/guide/troubleshooting.md` mention IME — `src/plugins/compositionGuard/tiptap.ts`.
-- (area 14) The verified monospace stack (#1334) appears on no guide page — `src/services/fonts/verifiedMonoStack.ts`.
-- (area 15) No guide page lists the OS file associations VMark registers, or that the Windows installer hands the default back to an existing handler while keeping VMark in Open With (#1378) — `src-tauri/tauri.conf.json`, `src-tauri/windows/installer-hooks.nsh`.
 
 ### Platform coverage (20)
 
@@ -162,16 +141,15 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 14) The PDF export dialog seeds CJK letter spacing at `0.05em` regardless of `appearance.cjkLetterSpacing` (default off), while it seeds fonts from settings (`src/export/PdfExportDialog.tsx`).
 - (area 14) `advanced.customLinkProtocols` is unioned with the defaults on every hydration, so removing `obsidian` / `vscode` / `dict` / `x-dictionary` in Settings lasts only until restart (now stated in `website/guide/settings.md` §"Link Protocols", but the UI still offers the removal) — `src/stores/settingsStore.ts`.
 
-### Test gaps (34)
+### Test gaps (33)
 
-- (area 1) `src/plugins/latex/katexLoader.ts` keeps a rejected `import("katex")` promise forever, so one failed chunk load disables all math rendering until reload. The mermaid, graphviz and markmap loaders (`src/plugins/mermaid/plugin.ts`, `src/plugins/graphviz/plugin.ts`, `src/plugins/markmap/plugin.ts`) clear the promise and retry. `katexLoader.test.ts` has no rejection case.
 - (area 1) `src/services/media/closeCleanup.ts` has no test of its own (its callers mock it: `src/services/windowClose/windowCloseFlow.test.ts`). `src/components/Editor/MediaView/useMediaAsset.ts` (grant lifecycle, reload key) and `src/plugins/tableOfContents/TocNodeView.ts` have no dedicated tests. `src/plugins/safeBlockSplit/` has no test beside it (its pins are in `src/test/splitBlockSelection.test.ts`).
 - (area 2) `src/plugins/search/__tests__/search.test.ts` mocks `@/stores/searchStore`, a module that no longer exists (state moved to `src/stores/uiStore/searchSlice.ts`); the mock is dead, and `src/plugins/search/tiptap.test.ts` still names a test "view subscribes to searchStore".
 - (area 3) No dedicated tests for `src/services/commands/paneCommands.ts` (only loaded by `src/services/commands/registrationFlag.test.ts`), `src/contexts/PaneContext.tsx`, `src/services/editor/markdownSplitToggle.ts` or `src/hooks/useFormatSettingsBridge.ts` (mocked in `src/hooks/lifecycle/__tests__/useWorkspaceLifecycle.test.ts`); `src/components/Editor/DocumentSplit/useSplitDrag.ts` is exercised only through `src/components/Editor/DocumentSplit/SplitDivider.test.tsx`.
 - (area 4) No test references `src/services/workspaces/workspaceConfigGuard.ts`, `src/hooks/useActiveWorkspaceScope.ts` or `src/services/files/resolveDirtyBatch.ts`; `src/services/files/applyModifyPolicy.ts` is reached by one indirect test only (`src/stores/documentStore/__tests__/externalWriterGate.test.ts`).
 - (area 5) `src/services/navigation/finderOpenDispatch.ts` (its header calls the dispatch half "the one with rules worth testing on its own") and `src/components/StatusBar/useStatusBarTabDrag.ts` have no dedicated test.
 - (area 5) `src/services/files/applyModifyPolicy.ts` (header: "tested as one"), `src/services/files/resolveDirtyBatch.ts` and `src/services/windowClose/fsRenameHandlers.ts` have no dedicated test file; only indirect hook tests and the `externalWriterGate.test.ts` source scan reach them.
-- (area 5) `src-tauri/src/atomic_persist.rs` (`persist_with_retry`, the one Windows replacement rule) has no test module of its own; it is exercised only through `src-tauri/src/mcp_bridge/token_file.test.rs` and the `atomic_replace` tests, and its retry branch is `#[cfg(windows)]`.
+- (area 5) `src-tauri/src/atomic_persist.rs` (`persist_with_retry`, the one Windows replacement rule): `src-tauri/src/atomic_persist.test.rs` covers the rename and the parent-directory sync that makes it durable, but the retry branch is `#[cfg(windows)]` and runs only in Windows CI.
 - (area 5) `src/services/navigation/replaceTabWithFile.ts` (the shared replace flow for Open and Open Recent) has no dedicated test.
 - (area 5) `src/components/Sidebar/HistoryView.tsx` (restore, delete, grouping) has no dedicated test; `src/components/Sidebar/Sidebar.test.tsx` mocks it out.
 - (area 5) `src/stores/instanceRekeyBus.ts` has no dedicated test.
@@ -433,7 +411,7 @@ Every WYSIWYG block plugin below is registered in `src/services/assembly/tiptapE
 - surfaces: automatic on a ```svg fence; in-preview export button; double-click to edit; no toolbar, menu or shortcut insert
 - code: `src/plugins/svg/svgRender.ts`, `src/plugins/svg/svgExport.ts`, `src/plugins/codePreview/renderers/renderSvgPreview.ts`, `src/utils/svgSanitize.ts`, `src/utils/svgResourcePolicy.ts`, `src/utils/styleSafety.ts`, `src/utils/cssNormalize.ts`, `src/utils/svgToPng.ts`, `src/lib/formats/adapters/svg.tsx`
 - rust: none
-- docs: `website/guide/svg.md`
+- docs: `website/guide/svg.md` (§"Security": stylesheet confinement, `<form>` removal and link handling as well as script and external-reference stripping)
 - tests: `src/plugins/svg/{svgRender,svgExport}.test.ts`, `src/plugins/codePreview/renderers/renderSvgPreview.test.ts`
 - notes: no `index.ts`/`plugin.ts` in `src/plugins/svg/` — reached only through the fence registry and the format adapter.
 
@@ -445,11 +423,11 @@ Every WYSIWYG block plugin below is registered in `src/services/assembly/tiptapE
 - status: shipped-on
 - gate: always on
 - surfaces: toolbar `insert-math`; Insert menu id `math-block`; shortcut `mathBlock` Alt-Mod-Shift-m; shortcut `inlineMath` Alt-Mod-m (no menu id; routed via `editorPlugins.tiptap.ts` → `runEditorAction("insertInlineMath")`); click / double-click to edit
-- code: `src/plugins/latex/tiptapInlineMath.ts`, `src/plugins/latex/MathInlineNodeView.ts`, `src/plugins/latex/scheduleInlineMathRender.ts`, `src/plugins/latex/inlineMathRenderCache.ts`, `src/plugins/latex/katexFontPreload.ts`, `src/plugins/shared/nearViewport.ts`, `src/plugins/shared/editorScrollRoot.ts`, `src/plugins/shared/renderMarks.ts`, `src/plugins/shared/renderQueue.ts`, `src/plugins/latex/inlineMathEditingRegistry.ts`, `src/plugins/latex/katexLoader.ts`, `src/plugins/latex/latexErrorParser.ts`, `src/plugins/mathPopup/MathPopupView.ts`, `src/plugins/mathPreview/MathPreviewView.ts`, `src/plugins/codePreview/blockMathKeymap.ts`, `src/plugins/codePreview/renderers/renderLatex.ts`, `src/stores/mathPopupStore.ts`, `src/stores/blockMathEditingStore.ts`, `src/styles/katexFixes.css`
+- code: `src/plugins/latex/tiptapInlineMath.ts`, `src/plugins/latex/MathInlineNodeView.ts`, `src/plugins/latex/scheduleInlineMathRender.ts`, `src/plugins/latex/inlineMathRenderCache.ts`, `src/plugins/latex/katexFontPreload.ts`, `src/plugins/shared/nearViewport.ts`, `src/plugins/shared/editorScrollRoot.ts`, `src/plugins/shared/renderMarks.ts`, `src/plugins/shared/renderQueue.ts`, `src/plugins/latex/inlineMathEditingRegistry.ts`, `src/plugins/shared/katexLoader.ts`, `src/plugins/latex/latexErrorParser.ts`, `src/plugins/mathPopup/MathPopupView.ts`, `src/plugins/mathPreview/MathPreviewView.ts`, `src/plugins/codePreview/blockMathKeymap.ts`, `src/plugins/codePreview/renderers/renderLatex.ts`, `src/stores/mathPopupStore.ts`, `src/stores/blockMathEditingStore.ts`, `src/styles/katexFixes.css`
 - rust: none
 - docs: `website/guide/features.md` §"Mathematical Equations"; `website/guide/popups.md` §"Math Popup"; `website/guide/large-files.md` §"Known limitations" (inline math renders near the viewport)
-- tests: `src/plugins/latex/{tiptapInlineMath,MathInlineNodeView,MathInlineNodeView.deferred,inlineMathRenderCache,katexFontPreload,katexLoader,latexErrorParser,inlineMathEditingRegistry,displayMathTag}.test.ts`, `src/plugins/latex/__tests__/MathInlineNodeView.test.ts`, `src/plugins/shared/{nearViewport,nearViewport.prosemirror,editorScrollRoot,renderQueue}.test.ts`, `src/plugins/latex/inlineMathLayers.webkit.test.ts`, `src/plugins/codePreview/displayMathTag.webkit.test.ts`, `src/plugins/mathPopup/tiptap.test.ts`, `src/plugins/mathPopup/__tests__/{MathPopupView,mathPopupStore}.test.ts`, `src/plugins/mathPreview/MathPreviewView.test.ts`, `src/plugins/codePreview/blockMathKeymap.test.ts`, `src/plugins/codePreview/renderers/renderLatex.test.ts`
-- notes: `katexLoader.ts` caches the load promise and never clears it on rejection, so a failed KaTeX chunk load is permanent until reload — unlike the mermaid, graphviz and markmap loaders, which reset and retry; its test has no rejection case. The math toolbar button emits the `MATH_BLOCK_LANGUAGE` sentinel (serializes to `$$`) rather than a ```latex fence (`wysiwygAdapterBlockInsert.ts`). Fixed #1376 / #1402 (tag overlap). A formula once rendered is never un-rendered, so the positioned-element count still grows as a reader moves deeper into a math-heavy document (#1473). Where the engine has no CSS scroll anchoring (WKWebView before macOS 27, WebKitGTK), a formula rendered above the viewport moves the visible text by the height it gained.
+- tests: `src/plugins/latex/{tiptapInlineMath,MathInlineNodeView,MathInlineNodeView.deferred,inlineMathRenderCache,katexFontPreload,latexErrorParser,inlineMathEditingRegistry,displayMathTag}.test.ts`, `src/plugins/latex/__tests__/MathInlineNodeView.test.ts`, `src/plugins/shared/{nearViewport,nearViewport.prosemirror,editorScrollRoot,renderQueue,katexLoader}.test.ts`, `src/plugins/latex/inlineMathLayers.webkit.test.ts`, `src/plugins/codePreview/displayMathTag.webkit.test.ts`, `src/plugins/mathPopup/tiptap.test.ts`, `src/plugins/mathPopup/__tests__/{MathPopupView,mathPopupStore}.test.ts`, `src/plugins/mathPreview/MathPreviewView.test.ts`, `src/plugins/codePreview/blockMathKeymap.test.ts`, `src/plugins/codePreview/renderers/renderLatex.test.ts`
+- notes: `katexLoader.ts` clears its cached load promise on rejection, so a failed KaTeX chunk load is retried on the next render, as the mermaid, graphviz and markmap loaders do. The math toolbar button emits the `MATH_BLOCK_LANGUAGE` sentinel (serializes to `$$`) rather than a ```latex fence (`wysiwygAdapterBlockInsert.ts`). Fixed #1376 / #1402 (tag overlap). A formula once rendered is never un-rendered, so the positioned-element count still grows as a reader moves deeper into a math-heavy document (#1473). Where the engine has no CSS scroll anchoring (WKWebView before macOS 27, WebKitGTK), a formula rendered above the viewport moves the visible text by the height it gained.
 
 ### Code-fence live preview framework
 - id: code-fence-previews
@@ -615,9 +593,9 @@ Every WYSIWYG block plugin below is registered in `src/services/assembly/tiptapE
 - surfaces: cursor position in Source mode
 - code: `src/plugins/imagePreview/{ImagePreviewView,resolveSrc,containerDom}.ts`, `src/plugins/codemirror/sourceImagePreview.ts`, `src/services/assembly/modeSwitchCleanup.ts`
 - rust: none
-- docs: `website/guide/popups.md` §"Media Popup (Images, Video, Audio)" — one sentence, which names only video/audio and says "on hover"
+- docs: `website/guide/popups.md` §"Media Popup (Images, Video, Audio)" → "Source Mode"
 - tests: `src/plugins/imagePreview/resolveSrc.test.ts`, `src/plugins/imagePreview/__tests__/ImagePreviewView.test.ts`, `src/plugins/codemirror/sourceImagePreview.test.ts`
-- notes: The preview follows the cursor inside `![alt](path)`, not the mouse, and covers images too; the one guide sentence describes neither.
+- notes: Two triggers: the cursor inside `![alt](path)` with a collapsed selection, and mouse hover over the syntax; the cursor's preview takes priority. Only a recognized media extension or a `data:image/` URL previews. Hidden while the Source media popup is open.
 
 ### Media file viewer (image / video / audio tabs)
 - id: media-file-viewer
@@ -677,7 +655,7 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - surfaces: automatic
 - code: `src/plugins/inlineCodeBoundary/plugin.ts`; `src/plugins/inlineCodeBoundary/tiptap.ts`
 - rust: none
-- docs: none
+- docs: `website/guide/features.md` §"Editing Details"
 - tests: `src/plugins/inlineCodeBoundary/__tests__/inlineCodeBoundary.test.ts`
 - notes: The IME skip cites upstream ProseMirror #1476 (setting `storedMarks` mid-composition corrupts mark state). `src/plugins/tabIndent/shiftTabEscape.ts` relies on the `storedMarks` this plugin sets for single-cursor Shift+Tab escape; multi-cursor reads `nodeAfter.marks` instead.
 
@@ -819,7 +797,7 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - rust: none
 - docs: none
 - tests: `src/plugins/shared/WysiwygPopupView.test.ts`; `src/plugins/shared/popupHostDom.test.ts`; `src/utils/popupComponents.test.ts`; `src/utils/popupPosition.test.ts`
-- notes: Source-mode popups use the parallel `src/plugins/sourcePopup/SourcePopupView.ts` (Area 3 *source-popups*).
+- notes: Source-mode popups use the parallel `src/plugins/shared/SourcePopupView.ts` (Area 3 *source-popups*).
 
 ### Paste pipeline (smart / markdown / HTML / code / plain)
 - id: paste-pipeline
@@ -943,9 +921,9 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - surfaces: automatic
 - code: `src/plugins/inactiveSelection/inactiveSelectionPlugin.ts`; `src/plugins/inactiveSelection/constants.ts`; `src/plugins/inactiveSelection/tiptap.ts`; `src/plugins/codemirror/inactiveSelectionPlugin.ts`
 - rust: none
-- docs: none
+- docs: `website/guide/features.md` §"Editing Details"
 - tests: `src/plugins/inactiveSelection/inactiveSelectionPlugin.test.ts`; `src/plugins/codemirror/inactiveSelectionPlugin.test.ts`
-- notes: Multi-range selections are out of scope — multi-cursor draws its own highlights.
+- notes: The WYSIWYG overlay draws the one main range (multi-cursor draws its own highlights); the Source-mode counterpart `src/plugins/codemirror/inactiveSelectionPlugin.ts` draws every non-empty range.
 
 ### Universal Toolbar
 - id: universal-toolbar
@@ -983,7 +961,7 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - status: shipped-on
 - gate: always on where called
 - surfaces: indirect (Universal Toolbar List/Blockquote/Link groups, editor context menu, `editorStore.tiptapContext`)
-- code: `src/plugins/formatToolbar/nodeActions.tiptap.ts`; `src/plugins/formatToolbar/linkPopupUtils.ts`; `src/plugins/formatToolbar/tiptapContext.ts`; `src/plugins/formatToolbar/tiptapContextHelpers.ts`; `src/plugins/formatToolbar/listToggle.ts`; `src/plugins/formatToolbar/listRangeConversion.ts`; `src/plugins/toolbarContext/types.ts`
+- code: `src/plugins/formatToolbar/nodeActions.tiptap.ts`; `src/plugins/formatToolbar/linkPopupUtils.ts`; `src/plugins/formatToolbar/tiptapContext.ts`; `src/plugins/formatToolbar/tiptapContextHelpers.ts`; `src/plugins/formatToolbar/listToggle.ts`; `src/plugins/formatToolbar/listRangeConversion.ts`; `src/plugins/shared/toolbarContextTypes.ts`
 - rust: none
 - docs: none
 - tests: `src/plugins/formatToolbar/{nodeActions.tiptap,nodeActions.headingToList,listToggle,listRangeConversion,listOutdentDepth,tiptapContext,tiptapContextHelpers,linkPopupUtils}.test.ts`
@@ -1025,10 +1003,10 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - status: shipped-on
 - gate: always on (`enableKeymap` defaults `true`)
 - surfaces: fixed chords `Mod-d`, `Mod-Shift-l`, `Escape`; rebindable shortcut ids `skipOccurrence` `Mod-Shift-d`, `selectAllOccurrencesInBlock` `Alt-Mod-Shift-l`, `softUndoCursor` `Alt-Mod-z`, `addCursorAbove` `Mod-Alt-Up`, `addCursorBelow` `Mod-Alt-Down`; Alt+Click; toolbar actions filtered by `multiSelectionPolicy`
-- code: `src/plugins/multiCursor/tiptap.ts`; `src/plugins/multiCursor/keymap.ts`; `src/plugins/multiCursor/MultiSelection.ts`; `src/plugins/multiCursor/commands.ts`; `src/plugins/multiCursor/occurrenceCommands.ts`; `src/plugins/multiCursor/blockBounds.ts`; `src/plugins/multiCursor/codeBlockBounds.ts`; `src/plugins/multiCursor/cursorCommands.ts`; `src/plugins/multiCursor/multiCursorPlugin.ts`; `src/plugins/multiCursor/clipboard.ts`; `src/plugins/multiCursor/inputHandling.ts`; `src/plugins/multiCursor/altClick.ts`; `src/plugins/multiCursor/decorations.ts`; Source twin `src/plugins/codemirror/sourceSelectOccurrenceInBlock.ts` bound in `src/services/assembly/sourceEditorKeymap.ts`
+- code: `src/plugins/multiCursor/tiptap.ts`; `src/plugins/multiCursor/keymap.ts`; `src/plugins/shared/MultiSelection.ts` and `src/plugins/shared/rangeUtils.ts` (the selection type, shared with tabIndent, toolbarActions, editorPlugins and the paste tests); `src/plugins/multiCursor/commands.ts`; `src/plugins/multiCursor/occurrenceCommands.ts`; `src/plugins/multiCursor/blockBounds.ts`; `src/plugins/multiCursor/codeBlockBounds.ts`; `src/plugins/multiCursor/cursorCommands.ts`; `src/plugins/multiCursor/multiCursorPlugin.ts`; `src/plugins/multiCursor/clipboard.ts`; `src/plugins/multiCursor/inputHandling.ts`; `src/plugins/multiCursor/altClick.ts`; `src/plugins/multiCursor/decorations.ts`; Source twin `src/plugins/codemirror/sourceSelectOccurrenceInBlock.ts` bound in `src/services/assembly/sourceEditorKeymap.ts`
 - rust: none
 - docs: `website/guide/multi-cursor.md` (§"Select All Occurrences (`Mod + Shift + L`)", §"Scoping" and §"Limitations" agree: document-wide in prose, block-bounded in code, `Alt + Mod + Shift + L` for the current block); `website/guide/features.md` §"Multi-Cursor Editing"; `website/guide/shortcuts.md` §"Selection & Multi-Cursor"
-- tests: 26 files in `src/plugins/multiCursor/__tests__/` including `multiSelection.property.test.ts`, `multiSelectionMapping.property.test.ts` (fast-check), `imeHandling.test.ts`, `undoRedoIntegration.test.ts`, `selectAllOccurrencesInBlock.test.ts`; `src/plugins/multiCursor/blockBounds.test.ts`; `src/plugins/codemirror/sourceSelectOccurrenceInBlock.test.ts`
+- tests: 24 files in `src/plugins/multiCursor/__tests__/` including `multiSelection.property.test.ts`, `multiSelectionMapping.property.test.ts` (fast-check), `imeHandling.test.ts`, `undoRedoIntegration.test.ts`, `selectAllOccurrencesInBlock.test.ts`; `src/plugins/multiCursor/blockBounds.test.ts`; `src/plugins/shared/{MultiSelection,rangeUtils}.test.ts`; `src/plugins/codemirror/sourceSelectOccurrenceInBlock.test.ts`
 - notes: Issue refs `#311` (`MultiSelection.ts`) and `#526`, `#692`, `#762`, `#763` pinned in `src/plugins/multiCursor/__tests__/multiSelectionInvariants.ts`. No cursors inside atom nodes; IME composition affects only the primary cursor. A rebind onto a fixed chord is inert — the fixed binding wins.
 
 ### Smart Select All
@@ -1185,10 +1163,10 @@ Every document tab resolves to a format through `src/lib/formats/registry.ts`; `
 - status: shipped-on
 - gate: always on in markdown Source mode
 - surfaces: automatic (caret/click triggers); Mod+K
-- code: `src/plugins/sourcePopup/{createSourcePopupPlugin,SourcePopupView}.ts`; `src/plugins/sourceLinkPopup/**`; `src/plugins/sourceLinkCreatePopup/**`; `src/plugins/sourceWikiLinkPopup/**`; `src/plugins/sourceImagePopup/**`; `src/plugins/sourceFootnotePopup/**`; `src/plugins/sourceMathPopup/SourceMathPopupView.ts`; `src/stores/sourceMathPopupStore.ts`; `src/services/assembly/hostAdapters.ts`
+- code: `src/plugins/shared/{createSourcePopupPlugin,SourcePopupView,sourcePopupPlacement,sourcePopupUtils}.ts`; `src/plugins/sourceLinkPopup/**`; `src/plugins/sourceLinkCreatePopup/**`; `src/plugins/sourceWikiLinkPopup/**`; `src/plugins/sourceImagePopup/**`; `src/plugins/sourceFootnotePopup/**`; `src/plugins/sourceMathPopup/SourceMathPopupView.ts`; `src/stores/sourceMathPopupStore.ts`; `src/services/assembly/hostAdapters.ts`
 - rust: none
 - docs: `website/guide/popups.md` §"Source Mode" (links, images/media), math-popup "Source Mode" callout
-- tests: `src/plugins/sourceLinkPopup/sourceLinkPopupPlugin.test.ts`, `src/plugins/sourceLinkPopup/__tests__/**`, `src/plugins/sourceLinkCreatePopup/SourceLinkCreatePopupView.test.ts`, `src/plugins/sourceWikiLinkPopup/{sourceWikiLinkPopupPlugin,sourceWikiLinkActions}.test.ts`, `src/plugins/sourceImagePopup/{sourceImagePopupPlugin,sourceImageActions}.test.ts`, `src/plugins/sourceFootnotePopup/{sourceFootnotePopupPlugin,sourceFootnoteActions}.test.ts`, `src/plugins/sourceMathPopup/SourceMathPopupView.test.ts`, `src/stores/sourceMathPopupStore.test.ts`, `src/plugins/sourcePopup/{createSourcePopupPlugin,SourcePopupView,sourcePopupUtils}.test.ts`, `src/plugins/sourceLinkCreatePopup/__tests__/sourceLinkCreatePopup.test.ts` (the plugin)
+- tests: `src/plugins/sourceLinkPopup/sourceLinkPopupPlugin.test.ts`, `src/plugins/sourceLinkPopup/__tests__/**`, `src/plugins/sourceLinkCreatePopup/SourceLinkCreatePopupView.test.ts`, `src/plugins/sourceWikiLinkPopup/{sourceWikiLinkPopupPlugin,sourceWikiLinkActions}.test.ts`, `src/plugins/sourceImagePopup/{sourceImagePopupPlugin,sourceImageActions}.test.ts`, `src/plugins/sourceFootnotePopup/{sourceFootnotePopupPlugin,sourceFootnoteActions}.test.ts`, `src/plugins/sourceMathPopup/SourceMathPopupView.test.ts`, `src/stores/sourceMathPopupStore.test.ts`, `src/plugins/shared/{createSourcePopupPlugin,createSourcePopupPlugin.hover,createSourcePopupPlugin.branches,SourcePopupView,sourcePopupPlacement,sourcePopupUtils}.test.ts`, `src/plugins/shared/__tests__/sourcePopupBase.test.ts`, `src/plugins/sourceLinkCreatePopup/__tests__/sourceLinkCreatePopup.test.ts` (the plugin)
 - notes: Plugins declare a store port and never import an app store; the binding is `pluginStores` in `hostAdapters.ts`. Network hrefs (UNC, `//host`) and drive-relative `C:foo` are refused by the shared opener (#1448).
 
 ### Source-mode cursor context, toolbar/menu actions and shortcuts
@@ -1299,7 +1277,7 @@ Every document tab resolves to a format through `src/lib/formats/registry.ts`; `
 - surfaces: Settings → Formats toggles; automatic on open; read-only banner for viewers; `HtmlTrustBar` for trusted HTML
 - code: `src/lib/formats/adapters/{markdown,json,yaml,toml,mermaid,svg,html,HtmlPreview,HtmlTrustBar,DepList,cargoToml,packageJson,pyprojectToml,yamlWorkflowRenderer,yamlEngineRenderer}.tsx`; `src/lib/workflow/detection.ts` (engine-workflow shape, area 12); `src/lib/formats/adapters/{txt,code,media,htmlTrust,useHtmlTrust,jsonViewStyles,yamlWorkflowExtensions}.ts`; `src/components/Editor/MediaViewer/MediaViewer.tsx`
 - rust: `src-tauri/src/trusted_html/protocol.rs` (trusted HTML scheme); asset protocol for media
-- docs: `website/guide/formats.md` §"At a glance", §"Schema-aware previews", §"Security model for HTML", §"Trusted HTML preview (opt-in)"; `website/guide/media-support.md`; `website/guide/workflow-viewer.md`; `website/guide/workflows.md` (engine-workflow files); `website/guide/settings.md` §"Format support"
+- docs: `website/guide/formats.md` §"At a glance", §"Schema-aware previews" (incl. "VMark workflow"), §"Security model for HTML", §"Trusted HTML preview (opt-in)"; `website/guide/media-support.md`; `website/guide/workflow-viewer.md`; `website/guide/workflows.md` (engine-workflow files); `website/guide/settings.md` §"Format support"
 - tests: `src/lib/formats/adapters/*.test.ts`, `src/lib/formats/adapters/*.test.tsx` (incl. `src/lib/formats/adapters/yamlEngineRenderer.test.tsx`), `src/lib/formats/adapters/__tests__/darkThemeStyles.test.tsx`, `src/lib/formats/adapters/__tests__/parserRobustness.webkit.test.ts`, `src/lib/formats/adapters/__tests__/trustedHtmlIsolation.webkit.test.ts`
 - notes: markdown/txt/yaml/media are on; data, diagram, HTML and code-viewer adapters ship off. `.zig` is deliberately out of scope (no maintained language pack). Workflow authoring aids load as individually degradable chunks (`yamlWorkflowExtensions.ts`). HTML preview's OWASP sign-off (WI-3.4) is pending, and the adapter header, the settings description, the in-preview notice (`preview.signOffPending`) and `formats.md` §"Security model for HTML" all say so. The engine renderer's chunk is not fetched while `advanced.workflowEngine` is off, except to keep a live run's Cancel reachable in the tab that owns it. `formats.md` §"Schema-aware previews" does not list the engine-workflow schema. Trusted HTML preview is disabled on Windows (area 15 platform notes).
 
@@ -1315,7 +1293,7 @@ Every document tab resolves to a format through `src/lib/formats/registry.ts`; `
 - rust: `external_editor::open_in_external_editor` (async, `spawn_blocking`, legacy `Result<(), String>`)
 - docs: `website/guide/formats.md` §"Open in external editor", §"Security gate"; `website/guide/settings.md` §"External editor"
 - tests: `src-tauri/src/external_editor.test.rs`, `src/components/Editor/SplitPaneEditor/ReadOnlyBanner.test.tsx`, `src/components/Editor/SplitPaneEditor/SplitPaneEditor.test.tsx`, `src/pages/settings/FormatsSettings.test.tsx`
-- notes: Platform defaults — macOS `open -t`, Windows `notepad.exe`, else `xdg-open`; `maybe_open_app_bundle` is macOS-only. Known limitation (`external_editor.rs` header): env-var editor commands split on whitespace with no quoting, so an executable path containing a space breaks; the GUI override (single token) is the workaround. Security gate: override must be one token, no shell metacharacters, no leading `-`; the path is canonicalized and checked against `is_openable_supported`.
+- notes: Platform defaults — macOS `open -t`, Windows `notepad.exe`, else `xdg-open`; `maybe_open_app_bundle` is macOS-only. Known limitation (`external_editor.rs` header): env-var editor commands split on whitespace with no quoting, so an executable path containing a space breaks; the GUI override (single token) is the workaround. Security gate: the override (`src-tauri/src/external_editor/override_guard.rs`) must be one token with no shell metacharacters and no leading `-`, and either a bare name in `KNOWN_EDITORS` or an existing absolute path without `..` whose spelled and resolved names are not in `RUNS_ITS_ARGUMENT` (shells, interpreters, launchers, terminal emulators — `src-tauri/src/external_editor/program_names.rs`); the env-var chain is not restricted. The file path is canonicalized and checked against `is_openable_supported`. Both rules are in `website/guide/formats.md` §"Security gate".
 
 ### Set File Type override
 - id: format-associations
@@ -1439,7 +1417,7 @@ Every document tab resolves to a format through `src/lib/formats/registry.ts`; `
 - surfaces: automatic
 - code: `src/utils/markdownPipeline/{index,adapter,parser,serializer,dialect,dialectDescriptors,dialectQueries,nestingDepth,mdastToProseMirror,proseMirrorToMdast}.ts`; `src/utils/markdownPipeline/parser/fastPaths/**`; `src/utils/markdownPipeline/plugins/**`; `patches/micromark@4.0.2.patch`; `patches/micromark-extension-gfm-autolink-literal@2.1.0.patch`; `patches/mdast-util-from-markdown@2.0.3.patch`; `patches/mdast-util-find-and-replace@3.0.2.patch`; `patches/mdast-util-to-markdown@2.1.2.patch`
 - rust: none
-- docs: `website/guide/large-files.md` (nesting limit only); no guide page describes the pipeline or its dialect
+- docs: `website/guide/formats.md` §"Markdown dialect" (dialect and the 1000-level nesting limit); `website/guide/large-files.md` (nesting limit)
 - tests: `src/utils/markdownPipeline/__tests__/**` (conformance, characterization corpus, fidelity, spec, round-trip property tests, pathological scaling), `src/utils/markdownPipeline/parser/fastPaths/inlineFastPaths.test.ts`, `src/utils/markdownPipeline/parser/*.test.ts`
 - notes: Five `pnpm` patches cover costs no extension API reaches; a Dependabot bump of `micromark`, `micromark-extension-gfm-autolink-literal`, `mdast-util-from-markdown`, `mdast-util-find-and-replace` or `mdast-util-to-markdown` fails install until its patch is re-made. The `mdast-util-from-markdown` patch has a recorded unpatched reference (`listPreparation.differential.test.ts`); upstream's own list fix (syntax-tree/mdast-util-from-markdown#51) batches per list and does not replace it. The `mdast-util-find-and-replace` patch has one too (`findAndReplace.differential.test.ts`). `nested-strong-emph` and `nested-brackets` remain super-linear (upstream algorithm), and so does one paragraph of tens of thousands of inline siblings: `remarkResolveReferences` walks every node with `unist-util-visit`, whose index lookup is an `indexOf` over the siblings (linear on realistic documents, so not patched). The spine names `website/guide/formats.md` as this feature's page, but that page says nothing about the pipeline.
 
@@ -1527,11 +1505,11 @@ A window's workspace lives in `src/stores/workspaceStore.ts` (window-scoped, reh
 - status: shipped-on
 - gate: workspace mode only; `showHiddenFiles` / `showAllFiles` per-workspace config, both default false; `general.showFileExtensions = true`
 - surfaces: sidebar Files view and header buttons; shortcuts `toggleHiddenFiles` Mod+Shift+. (Ctrl+H off macOS), `toggleAllFiles` Mod+Shift+A; palette `explorer.toggleHiddenFiles`, `explorer.toggleAllFiles`; Settings → Files & Images → File Browser
-- code: `src/components/Sidebar/FileExplorer/{FileExplorer,FileNode,useTreeWiring,FileExplorerEmptyState}.tsx`; `src/components/Sidebar/FileExplorer/{useFileTree,useObservedHeight,useFileExplorerOpenState,useRefreshOnWindowFocus,rescanScheduler,fileTreeFilters,types}.ts`; `src/services/commands/explorerCommands.ts`; `src/pages/settings/FileBrowserSettingsGroup.tsx`
+- code: `src/components/Sidebar/FileExplorer/{FileExplorer,FileNode,useTreeWiring,FileExplorerEmptyState}.tsx`; `src/components/Sidebar/FileExplorer/{useFileTree,useObservedHeight,useFileExplorerOpenState,useRefreshOnWindowFocus,rescanScheduler,fileTreeFilters,treeListingPaths,types}.ts`; `src/services/commands/explorerCommands.ts`; `src/pages/settings/FileBrowserSettingsGroup.tsx`
 - rust: `file_tree_walk::list_directory_tree` (`src-tauri/src/file_tree_walk.rs`); `file_tree::compute_is_hidden` (`src-tauri/src/file_tree.rs`); `watcher::start_watching` / `stop_watching`
 - docs: `website/guide/workspace-management.md` §"File Explorer", §"Visibility Toggles", §"Excluded Folders"; `website/guide/settings.md` §"File Browser"
-- tests: `src/components/Sidebar/FileExplorer/{useFileTree.focus,useFileTree.races,useFileTree.rescan}.test.tsx`, `src/components/Sidebar/FileExplorer/{rescanScheduler,fileTreeFilters,useFileExplorerOpenState,useObservedHeight,useRefreshOnWindowFocus}.test.ts`, `src/components/Sidebar/FileExplorer/{FileNode,FileExplorer.a11y}.test.tsx`, `src/services/commands/explorerCommands.test.ts`, `src/pages/settings/FileBrowserSettingsGroup.test.tsx`, `src-tauri/src/file_tree_walk.test.rs`, inline `mod tests` in `src-tauri/src/file_tree.rs`
-- notes: Windows hidden detection also honours `FILE_ATTRIBUTE_HIDDEN` / `SYSTEM` (`#[cfg(windows)]`); dot-prefix everywhere. Symlinks are never descended. The skip list is shared with content search (`content_search::matching::ALWAYS_SKIP`).
+- tests: `src/components/Sidebar/FileExplorer/{useFileTree.focus,useFileTree.races,useFileTree.rescan,useFileTree.relativePaths,useFileTree.watcherRescan}.test.tsx`, `src/components/Sidebar/FileExplorer/{rescanScheduler,fileTreeFilters,treeListingPaths,useFileExplorerOpenState,useObservedHeight,useRefreshOnWindowFocus}.test.ts`, `src/components/Sidebar/FileExplorer/{FileNode,FileExplorer.a11y}.test.tsx`, `src/services/commands/explorerCommands.test.ts`, `src/pages/settings/FileBrowserSettingsGroup.test.tsx`, `src-tauri/src/file_tree_walk.test.rs`, inline `mod tests` in `src-tauri/src/file_tree.rs`
+- notes: The listing sends the root once and each node by name; `treeListingPaths.ts` rebuilds the absolute paths exactly as `Path::join` spelled them. Windows hidden detection also honours `FILE_ATTRIBUTE_HIDDEN` / `SYSTEM` (`#[cfg(windows)]`); dot-prefix everywhere. Symlinks are never descended. The skip list is shared with content search (`content_search::matching::ALWAYS_SKIP`).
 
 ### File explorer context menu and file operations
 - id: file-explorer-operations
@@ -1584,9 +1562,9 @@ A window's workspace lives in `src/stores/workspaceStore.ts` (window-scoped, reh
 - gate: always on (needs a workspace root)
 - surfaces: shortcut `contentSearch` Mod+Shift+H (menu `find-in-files`, Edit → Find); palette `view.contentSearch`
 - code: `src/components/ContentSearch/{ContentSearch,ContentSearchToggles,ContentSearchResults,contentSearchUtils}.tsx`; `src/components/ContentSearch/useContentSearchScheduler.ts`; `src/stores/uiStore/contentSearchSlice.ts`; `src/services/navigation/contentSearchNavigation.ts`
-- rust: `content_search::search_workspace_content`, `content_search::search_workspace_content_checked` (`src-tauri/src/content_search.rs`, `src-tauri/src/content_search_match.rs`)
+- rust: `content_search::search_workspace_content`, `content_search::search_workspace_content_checked` (`src-tauri/src/content_search.rs`; the walk in `src-tauri/src/content_search_walk.rs`, the per-file scan in `src-tauri/src/content_search_file.rs`, line matching in `src-tauri/src/content_search_match.rs`)
 - docs: `website/guide/workspace-management.md` §"Workspace Content Search"; `website/guide/shortcuts.md`
-- tests: `src/components/ContentSearch/__tests__/ContentSearch.test.tsx`, `src/components/ContentSearch/__tests__/contentSearchUtils.test.tsx`, `src/components/ContentSearch/{ContentSearchResults,ContentSearchToggles}.test.tsx`, `src/components/ContentSearch/useContentSearchScheduler.test.ts`, `src-tauri/src/content_search.test.rs`
+- tests: `src/components/ContentSearch/__tests__/ContentSearch.test.tsx`, `src/components/ContentSearch/__tests__/contentSearchUtils.test.tsx`, `src/components/ContentSearch/{ContentSearchResults,ContentSearchToggles}.test.tsx`, `src/components/ContentSearch/useContentSearchScheduler.test.ts`, `src-tauri/src/content_search.test.rs`, `src-tauri/src/content_search_fixture.test.rs`, `src-tauri/src/content_search_walk.test.rs`, `src-tauri/src/content_search_file.test.rs`
 - notes: Rust guarantees — 5 s deadline with partial results, 1000-match / file-count / file-size caps, 200-character line cap, NUL-byte binary skip, symlinks and dotfiles skipped (dot-directories are descended unless on the skip list), regex size and DFA limits, character (not byte) offsets. The ".md" toggle ("Markdown Files Only") actually restricts to every registered format flagged `contentSearchIndexed` (markdown, txt, yaml, plus json/toml/mermaid/svg/html when enabled); off searches every non-hidden, non-binary file. The overlay's placeholder, status, toggle and hint strings (`contentSearch.placeholder`, `.searching`, `.minChars`, `.resultCount`, `.noResults`, `.noWorkspace`, `.ariaLabel`, `.caseSensitive`, `.wholeWord`, `.regex`, `.markdownOnly`, `.hintNavigate`, `.hintOpen`, `.hintClose`) exist in no locale file, so they render their inline English defaults in every language.
 
 ### Recent files and recent workspaces
@@ -1675,7 +1653,7 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - surfaces: shortcuts `newTab` = Mod-T (`tab.new`), `closeFile` = Mod-W (`tab.close`, menu id `close`); tab context menu; status-bar "+"
 - code: `src/stores/tabStore.ts`, `src/stores/tabStoreHelpers.ts`, `src/stores/tabStoreTypes.ts`, `src/services/tabs/tabOperations.ts`, `src/services/commands/tabCommands.ts`, `src/services/windowClose/tabCleanup.ts`, `src/stores/tabRemovalBus.ts`
 - rust: none
-- docs: `website/guide/workspace-management.md` §"Detaching Tabs into New Windows" (pinned tabs cannot be dragged); closing and pinning themselves are not described in any guide page
+- docs: `website/guide/workspace-management.md` §"Detaching Tabs into New Windows" (pinned tabs cannot be dragged); `website/guide/tab-navigation.md` §"Pinned tabs", §"Closing tabs and windows"
 - tests: `src/stores/tabStore.test.ts`, `src/stores/__tests__/tabStore.test.ts`, `src/stores/tabStore.closeReturn.test.ts`, `src/stores/tabStore.titleIdentity.test.ts`, `src/stores/tabStoreHelpers.test.ts`, `src/stores/tabStoreTypes.test.ts`, `src/services/tabs/tabOperations.test.ts`, `src/services/tabs/tabOperations.resolution.test.ts`, `src/stores/paneTabIntegration.test.ts`, `src/stores/tabRemovalBus.test.ts`, `src/services/windowClose/tabCleanup.test.ts`, `src/services/commands/tabCommands.test.ts`; e2e `e2e/journeys/02-scratch-tab-roundtrip.mjs`, `e2e/journeys/04-tab-lifecycle.mjs`, `e2e/journeys/15-dirty-file-close-guard.mjs`
 - notes: limitations stated in the `tabStore.ts` header — there is no cross-window dedup, so one file can be open in several windows. The same header still says tabs are restored "via workspaceStore.lastOpenTabs"; restore now prefers the additive `sessionTabs` field (`src/services/persistence/sessionTabs.ts`).
 
@@ -1689,9 +1667,9 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - surfaces: context menu (right-click a tab pill)
 - code: `src/components/Tabs/TabContextMenu.tsx`, `src/components/Tabs/useTabContextMenuActions.ts`, `src/components/Tabs/TabRenameInput.tsx`, `src/stores/tabRenameStore.ts`, `src/services/tabs/bulkCloseSelectors.ts`, `src/services/tabs/tabDiskActions.ts`, `src/services/tabs/openToTheSide.ts`, `src/services/tabs/moveTabToNewWindow.ts`
 - rust: `detach_tab_to_new_window`, `close_window`
-- docs: `website/guide/tab-navigation.md` §"Two documents side by side" (Open to the Side only); the rest of the menu is undocumented
+- docs: `website/guide/tab-navigation.md` §"The tab context menu", §"Pinned tabs", §"Renaming a file", §"Two documents side by side"
 - tests: `src/components/Tabs/TabContextMenu.test.tsx`, `src/components/Tabs/useTabContextMenuActions.test.ts`, `src/components/Tabs/TabRenameInput.test.tsx`, `src/hooks/useMenuPosition.test.tsx`, `src/stores/tabRenameStore.test.ts`, `src/services/tabs/bulkCloseSelectors.test.ts`, `src/services/tabs/tabDiskActions.test.ts`, `src/services/tabs/openToTheSide.test.ts`, `src/services/tabs/moveTabToNewWindow.test.ts`
-- notes: pinned tabs are excluded from every bulk-close selector because `closeTab` refuses them.
+- notes: pinned tabs are excluded from every bulk-close selector because `closeTab` refuses them — except **Close All**, which passes every tab, pinned ones first (they sit at the left), so `closeTabsWithDirtyCheck` stops at the first refused pin and closes nothing while any tab is pinned (`src/components/Tabs/useTabContextMenuActions.ts` `handleCloseAll`, `src/services/tabs/tabOperations.ts`); the guide steers to Close All Unpinned Tabs. Pins are not part of the persisted session record (`src/services/persistence/sessionTabs.ts`), so they last until quit (and through an update restart).
 
 ### Tab drag: reorder, detach, cross-window transfer
 - id: tab-drag-transfer
@@ -1830,7 +1808,7 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - code: `src/services/persistence/saveToPath.ts`, `src/services/persistence/applyPostSaveState.ts`, `src/services/persistence/saveTargetClaim.ts`, `src/services/persistence/serializeByPath.ts`, `src/services/persistence/saveHistorySnapshot.ts`, `src/services/files/fileSave.ts`, `src/services/windowClose/saveDialog.ts`, `src/services/windowClose/reserveBatchDestinations.ts`, `src/utils/pendingSaves.ts`, `src/utils/linebreaks.ts`
 - rust: `file_write::atomic_write_file`, `file_create::create_file_exclusive` (grant-list guard via `src-tauri/src/workspace_grants/protect.rs`); held-folder write core (Unix) in `src-tauri/src/file_write_anchored.rs`; path-based core (Windows) in `src-tauri/src/atomic_replace.rs`, `src-tauri/src/atomic_persist.rs`; link resolution in `src-tauri/src/link_target.rs`
 - docs: `website/guide/settings.md` §"Whitespace" (Line endings on save)
-- tests: `src/services/persistence/saveToPath.test.ts`, `src/services/persistence/saveToPath.ordering.test.ts`, `src/services/persistence/saveTargetClaim.test.ts`, `src/services/persistence/serializeByPath.test.ts`, `src/services/persistence/applyPathReconciliation.test.ts`, `src/services/windowClose/reserveBatchDestinations.test.ts`, `src/services/files/fileSave.test.ts`, `src/utils/pendingSaves.test.ts`, `src/utils/linebreaks.test.ts`; Rust `src-tauri/src/file_write.test.rs`, `src-tauri/src/atomic_replace.test.rs`, `src-tauri/src/link_target.test.rs`, `src-tauri/src/mcp_bridge/token_file.test.rs` (exercises `persist_with_retry`); e2e `e2e/journeys/10-save-to-disk.mjs`, `e2e/journeys/14-multi-doc-save-integrity.mjs`, `e2e/journeys/19-line-ending-preservation.mjs`, `e2e/journeys/20-failed-save-preserves-document.mjs`; `src-tauri/src/atomic_persist.rs` has no test module of its own
+- tests: `src/services/persistence/saveToPath.test.ts`, `src/services/persistence/saveToPath.ordering.test.ts`, `src/services/persistence/saveTargetClaim.test.ts`, `src/services/persistence/serializeByPath.test.ts`, `src/services/persistence/applyPathReconciliation.test.ts`, `src/services/windowClose/reserveBatchDestinations.test.ts`, `src/services/files/fileSave.test.ts`, `src/utils/pendingSaves.test.ts`, `src/utils/linebreaks.test.ts`; Rust `src-tauri/src/file_write.test.rs`, `src-tauri/src/atomic_replace.test.rs`, `src-tauri/src/link_target.test.rs`, `src-tauri/src/mcp_bridge/token_file.test.rs` (exercises `persist_with_retry`); e2e `e2e/journeys/10-save-to-disk.mjs`, `e2e/journeys/14-multi-doc-save-integrity.mjs`, `e2e/journeys/19-line-ending-preservation.mjs`, `e2e/journeys/20-failed-save-preserves-document.mjs`, `src-tauri/src/atomic_persist.test.rs` (the parent-directory sync)
 - notes: a hung history backend holds the save promise open after the file and stores are already updated (named in the `saveToPath.ts` header; a bounded timeout is the proposed fix). Linux and Windows document metadata (ACLs) is not carried across an atomic replace. The native save dialog passes no file-type filters because rfd's filter API hangs or crashes on macOS 26.
 
 ### Auto-save
@@ -1857,7 +1835,7 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - surfaces: menu id `save-all-quit` (`saveAllQuit` = Alt-Mod-Shift-Q; File menu, and the app menu on macOS) → `file.saveAllQuit`; window close button; Mod-W; Mod-Q
 - code: `src/services/windowClose/closeSave.ts`, `src/services/windowClose/closeSaveBatch.ts`, `src/services/windowClose/closeSaveShared.ts`, `src/services/windowClose/reserveBatchDestinations.ts`, `src/services/files/fileSave.ts`, `src/services/commands/fileCommands.ts`
 - rust: `create_file_exclusive`, `force_quit`
-- docs: `website/guide/shortcuts.md` (Save All and Quit row); `website/guide/features.md` §"Session Recovery (Hot Exit)" says only that a quit asks you to save first — the prompts themselves are undocumented
+- docs: `website/guide/tab-navigation.md` §"Closing tabs and windows"; `website/guide/shortcuts.md` (Save All and Quit row); `website/guide/features.md` §"Session Recovery (Hot Exit)"
 - tests: `src/services/windowClose/closeSave.test.ts`, `src/services/windowClose/reserveBatchDestinations.test.ts`, `src/services/windowClose/windowCloseFlow.test.ts`, `src/services/files/fileSave.test.ts`; e2e `e2e/journeys/15-dirty-file-close-guard.mjs`, `e2e/journeys/14-multi-doc-save-integrity.mjs`
 - notes: Save All and Quit collects dirty documents only; a divergent-but-clean document is not saved before the quit. The `closeSave.ts` header names a `decideOnClose()` util that no longer exists.
 
@@ -1871,7 +1849,7 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - surfaces: window close button; Mod-W (`menu:close`); Mod-Q; workspace-instance removal
 - code: `src/hooks/useWindowClose.ts`, `src/services/windowClose/windowCloseFlow.ts`, `src/services/windowClose/tabCleanup.ts`, `src-tauri/src/window_manager/window_events.rs`, `src-tauri/src/app_setup.rs`
 - rust: `close_window`, `window_close_log`; `window_manager::window_events::handle_document_window_close_event`
-- docs: `website/guide/workspace-management.md` §"Empty Workspace Window" (closing the window)
+- docs: `website/guide/tab-navigation.md` §"Closing tabs and windows"; `website/guide/workspace-management.md` §"Empty Workspace Window" (closing the window)
 - tests: `src/hooks/useWindowClose.comprehensive.test.tsx`, `src/hooks/useWindowClose.lifecycle.test.tsx`, `src/services/windowClose/windowCloseFlow.test.ts`, `src/services/windowClose/tabCleanup.test.ts`, `src-tauri/src/window_manager/window_events.test.rs`
 - notes: `prevent_close` hands the outcome to the frontend with no timeout and no fallback, which is why the close is logged in release builds (`#1253`). On Windows with `general.closeToTray` on, the last document window is hidden instead of closed and no save flow runs — see `src-tauri/src/close_to_tray/mod.rs` (area 15, `#1419`).
 
@@ -1906,16 +1884,16 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 ### Filesystem watcher
 - id: file-watcher
 - feature: Save pipeline & file watching
-- summary: A Rust `notify` watcher per window reports external changes under the workspace root (or the active document's folder) as `fs:changed` events, which a coalescing event bus fans out to the file tree and the external-change handler.
-- capabilities: per-`watch_id` (window label) recursive watchers; 200 ms leading-edge debounce keyed by (watch_id, path, kind); paths rebased onto the requested root rather than the OS realpath; `.git`, `.svn`, `.hg`, `node_modules`, `.obsidian`, `__pycache__`, `.DS_Store`, `.Trash` filtered while `.github`/`.vscode` pass; debounce map pruned after 10 min; a bare Windows drive root refused as a watch root; start/stop serialized per window on the frontend; a destroyed window's watcher stopped natively in `app_setup.rs`; normalized, deduplicated, self-write-flagged events coalesced into batches
+- summary: A Rust `notify` watcher per window reports external changes under the workspace root (or the active document's folder) as `fs:changed` batches addressed to that window, which a coalescing event bus fans out to the file tree and the external-change handler.
+- capabilities: per-`watch_id` (window label) recursive watchers, started off the IPC thread; changes collected for 75 ms and emitted as one batch of at most 512, in order, a repeat dropped only when nothing else touched its paths since; a bounded queue that blocks the watcher thread rather than drop; `emit_to` the owning window, and a listener registered on that window; a watcher error or the OS's overflow report surfaced as `rescan`, which re-lists the file tree; paths rebased onto the requested root rather than the OS realpath; `.git`, `.svn`, `.hg`, `node_modules`, `.obsidian`, `__pycache__`, `.DS_Store`, `.Trash` filtered while `.github`/`.vscode` pass; a bare Windows drive root refused as a watch root; start/stop serialized per window on the frontend; a destroyed window's watcher stopped natively in `app_setup.rs`, and a watcher that finishes starting after its window closed removed again; normalized, deduplicated, self-write-flagged events coalesced into batches
 - status: shipped-on
 - gate: always on
 - surfaces: automatic
-- code: `src-tauri/src/watcher.rs`, `src-tauri/src/app_setup.rs`, `src/hooks/useWindowFileWatcher.ts`, `src/utils/watchRoot.ts`, `src/services/workspaceEvents/workspaceEventBus.ts`, `src/services/workspaceEvents/normalizeFsEvents.ts`, `src/services/workspaceEvents/subscribeWorkspaceEvents.ts`
+- code: `src-tauri/src/watcher.rs`, `src-tauri/src/watcher/batch.rs`, `src-tauri/src/watcher/paths.rs`, `src-tauri/src/app_setup.rs`, `src/hooks/useWindowFileWatcher.ts`, `src/utils/watchRoot.ts`, `src/services/workspaceEvents/workspaceEventBus.ts`, `src/services/workspaceEvents/normalizeFsEvents.ts`, `src/services/workspaceEvents/subscribeWorkspaceEvents.ts`
 - rust: `watcher::start_watching`, `watcher::stop_watching`
 - docs: `website/guide/workspace-management.md` §"External Changes"
-- tests: `src-tauri/src/watcher.test.rs`, `src/hooks/useWindowFileWatcher.test.ts`, `src/utils/watchRoot.test.ts`, `src/services/workspaceEvents/workspaceEventBus.test.ts`, `src/services/workspaceEvents/normalizeFsEvents.test.ts`, `src/services/workspaceEvents/subscribeWorkspaceEvents.test.ts`, `src/services/workspaceEvents/suppressUnchanged.test.ts`
-- notes: no glob or recursive ignore patterns (component-based filtering only); debounce is suppress-not-defer, so a burst's trailing events are dropped and the UI may sit one write behind until the next event. Watchers live in a process-global static rather than `.manage()` state. `useWindowFileWatcher.ts` and `watchRoot.ts` headers name a `useWorkspaceEventBus` hook that does not exist.
+- tests: `src-tauri/src/watcher.test.rs`, `src-tauri/src/watcher/batch.test.rs`, `src/hooks/useWindowFileWatcher.test.ts`, `src/utils/watchRoot.test.ts`, `src/services/workspaceEvents/workspaceEventBus.test.ts`, `src/services/workspaceEvents/normalizeFsEvents.test.ts`, `src/services/workspaceEvents/subscribeWorkspaceEvents.test.ts`, `src/services/workspaceEvents/suppressUnchanged.test.ts`, `src/components/Sidebar/FileExplorer/useFileTree.watcherRescan.test.tsx`
+- notes: no glob or recursive ignore patterns (component-based filtering only). A `rescan` re-lists the tree, but the external-change handler does not yet re-verify open documents on it, so a change the OS dropped can still leave an open document one write behind. Watchers live in a process-global static rather than `.manage()` state. The `watchRoot.ts` header names a `useWorkspaceEventBus` hook that does not exist.
 
 ### Document version history (snapshots)
 - id: document-history
@@ -2317,7 +2295,7 @@ The panel is lazy-imported in `src/App.tsx` behind a `FeatureErrorBoundary`; `sr
 - surfaces: automatic
 - code: `src-tauri/src/pty.rs`, `src-tauri/src/pty/reader.rs`, `src-tauri/src/pty/session.rs`, `src-tauri/src/pty/window_sessions.rs`, `src-tauri/src/app_setup.rs`, `src-tauri/src/quit.rs`, `src/lib/pty.ts`, `src/components/Terminal/spawnPty.ts`, `src/components/Terminal/fitAndResizePty.ts`
 - rust: `pty_spawn`, `pty::reader::pty_start`, `pty_write`, `pty_resize`, `pty_kill`, `pty_close`, `pty_pause`, `pty_resume` (registered in `src-tauri/src/command_registry.rs`); `pty::close_window_sessions`, `pty::kill_all`
-- docs: `website/guide/terminal.md` §"Not yet implemented" (pause/resume is internal flow control only)
+- docs: `website/guide/terminal.md` §"Not yet implemented" (pause/resume is internal flow control only), §"Sessions" (closing a session: SIGHUP to the process group, then SIGKILL)
 - tests: `src/lib/pty.test.ts`, `src/lib/__tests__/pty.test.ts`, `src/components/Terminal/spawnPty.test.ts`, `src/components/Terminal/fitAndResizePty.test.ts`; Rust `src-tauri/src/pty/session.test.rs` (7 fns, real `/bin/sleep` children under a PTY for kill/reap), `src-tauri/src/pty/window_sessions.test.rs` (8 fns). Gap: nothing exercises the reader thread / Channel streaming path (`pty_start`) against a real PTY.
 - notes: `pty_pause`/`pty_resume` are wired only to internal backpressure — no user-facing control, as terminal.md says. ConPTY vs unix pty is delegated entirely to `portable_pty::native_pty_system()`; there is no `#[cfg(target_os)]` in `src-tauri/src/pty.rs` or `src-tauri/src/pty/`.
 
@@ -2331,7 +2309,7 @@ The panel is lazy-imported in `src/App.tsx` behind a `FeatureErrorBoundary`; `sr
 - surfaces: settings pane (Shell dropdown); automatic otherwise
 - code: `src/components/Terminal/terminalSpawnEnv.ts`, `src/components/Terminal/spawnPty.ts`, `src/components/Terminal/resolveTerminalSpawnContext.ts`, `src-tauri/src/shell_env.rs`, `src-tauri/src/pty/session.rs`
 - rust: `get_default_shell`, `get_login_shell_path`, `list_available_shells` (module `shell_env`)
-- docs: `website/guide/terminal.md` §"Shell Environment"; `website/guide/settings.md` §"Terminal" (Shell row); `website/guide/workspace-management.md` §"Terminal Integration"
+- docs: `website/guide/terminal.md` §"Shell Environment" (incl. which shells may be spawned and the fallback for one that is not); `website/guide/settings.md` §"Terminal" (Shell row); `website/guide/workspace-management.md` §"Terminal Integration"
 - tests: `src/components/Terminal/terminalSpawnEnv.test.ts`, `src/components/Terminal/spawnPty.test.ts`, `src/components/Terminal/resolveTerminalSpawnContext.test.ts`; Rust `src-tauri/src/shell_env.test.rs` (18 fns)
 - notes: `EDITOR` is deliberately unset — a blocking `vmark --wait` does not exist. `TERM_PROGRAM=WezTerm` is deliberate impersonation (ADR-006). `LC_CTYPE` is macOS-only because bare `UTF-8` is not a glibc locale.
 
@@ -2619,7 +2597,7 @@ The browser is macOS-only end to end: `src-tauri/src/browser/surface_stub.rs` re
 - rust: `browser_navigate`, `browser_back`, `browser_forward`, `browser_stop`
 - docs: `website/guide/browser.md` §"Using it"
 - tests: `src/components/Browser/BrowserOmnibox.test.tsx`, `src/components/Browser/BrowserChrome.test.tsx`, `src/components/Browser/AppTitleBar.test.tsx`, `src/components/Browser/BrowserWorkspaceSurface.test.tsx`, `src/lib/browser/omnibox.test.ts`, `src/lib/browser/url.test.ts`, `src/services/browser/browserNavigation.test.ts`, `src/services/browser/navigationOrder.test.ts`, `src/stores/browserUiStore.test.ts`; e2e `e2e/journeys/23-browser-chrome-controls.mjs`
-- notes: Find-in-page and page zoom are not implemented (both `pending` in `src/lib/browser/__tests__/uxPolicyLedger.ts`; `browser.md` §"Current limitations" says so). The start page and search provider are hardcoded DuckDuckGo (`NEW_BROWSER_TAB_URL`, `SEARCH_URL_BASE`), undocumented; no `browser.homepage` setting exists.
+- notes: Find-in-page and page zoom are not implemented (both `pending` in `src/lib/browser/__tests__/uxPolicyLedger.ts`; `browser.md` §"Current limitations" says so). The start page and search provider are hardcoded DuckDuckGo (`NEW_BROWSER_TAB_URL`, `SEARCH_URL_BASE`), as `browser.md` §"Using it" states; no `browser.homepage` setting exists.
 
 ### Browser page tabs and browser workspace
 - id: browser-page-tabs-workspace
@@ -3017,7 +2995,7 @@ Genies are prompt files in `<appDataDir>/genies/`, listed by `src-tauri/src/geni
 - rust: `run_ai_prompt`, `cancel_ai_prompt` (`src-tauri/src/ai_provider/cancel.rs`)
 - docs: `website/guide/ai-genies.md` §"Processing Feedback", §"Scope", §"Status Bar Indicator", §"Limitations"; `website/guide/settings.md` §"Integrations" (Auto-approve row)
 - tests: `src/hooks/__tests__/useGenieInvocation.test.ts`, `src/hooks/__tests__/useGenieInvocation.cancel.test.ts`, `src/hooks/__tests__/useGenieInvocation.dispatchGating.test.ts`, `src/hooks/__tests__/useGenieInvocation.workflowRace.test.ts`, `src/hooks/useGenieShortcuts.invokeGenie.test.ts`, `src/services/genieInvocation/streamRunner.test.ts`, `src/services/genieInvocation/extraction.test.ts`, `src/services/genieInvocation/providerValidation.test.ts`, `src/services/genieInvocation/cancelRequest.test.ts`, `src/stores/aiStore/invocation.test.ts`, `src/stores/__tests__/aiInvocationStore.test.ts`, `src-tauri/src/ai_provider/cancel.test.rs`; `applyGenieResult.ts` is covered only through `streamRunner.test.ts`
-- notes: the direct picker path does not fence document text — `fillTemplate` substitutes `{{content}}` literally; `<<<DOCUMENT-DATA-…>>>` fencing is applied only to workflow genie steps (`src-tauri/src/workflow/untrusted.rs`, `src-tauri/src/workflow/genie_step.rs`), which `ai-genies.md` now states. The `menu:invoke-genie` listener runs in the main window and ignores the window label in the payload, so a menu genie click while another document window is focused is handled by the main window's editor — inferred from code (`src-tauri/src/menu_events_dispatch.rs`, `src/hooks/useGenieShortcuts.ts`), unverified at runtime.
+- notes: the direct picker path does not fence document text — `fillTemplate` substitutes `{{content}}` literally; `<<<DOCUMENT-DATA-…>>>` fencing is applied only to workflow genie steps (`src-tauri/src/workflow/untrusted.rs`, `src-tauri/src/workflow/genie_step.rs`), which `ai-genies.md` now states. The `menu:invoke-genie` listener runs in the main window and ignores the window label in the payload, so a menu genie click while another document window is focused is handled by the main window's editor — inferred from code (`src-tauri/src/menu_events_dispatch.rs`, `src/hooks/useGenieShortcuts.ts`), unverified at runtime. The status bar's **Retry** after an error only dismisses it (`handleRetryAi` in `src/components/StatusBar/StatusBar.tsx`); `ai-genies.md` says so.
 
 ### Inline AI suggestions (accept/reject diff UI)
 - id: ai-suggestions
@@ -3045,7 +3023,7 @@ Genies are prompt files in `<appDataDir>/genies/`, listed by `src-tauri/src/geni
 - rust: none
 - docs: `website/guide/ai-genies.md` §"The Genie Picker" (Prompt history paragraph)
 - tests: `src/hooks/usePromptHistory.test.ts`, `src/hooks/usePromptHistory.comprehensive.test.ts`, `src/hooks/usePromptHistory.clearHistory.test.ts`, `src/hooks/usePromptHistory.filterIndex.test.tsx`, `src/hooks/usePromptHistory.liveEntries.test.ts`, `src/services/promptHistory/promptHistoryCore.test.ts`, `src/components/GeniePicker/PromptHistoryDropdown.test.tsx`, `src/stores/__tests__/promptHistoryStore.test.ts`
-- notes: a clear in one window can be resurrected by another window's later merge (no tombstones; stated in `src/stores/aiStore/promptHistory.ts`). The dropdown's Clear button is not mentioned in `ai-genies.md`.
+- notes: a clear in one window can be resurrected by another window's later merge (no tombstones; stated in `src/stores/aiStore/promptHistory.ts`). The dropdown's **Clear history** button is in `ai-genies.md` §"The Genie Picker".
 
 ### Workflow genies (YAML multi-step)
 - id: workflow-genies
@@ -3175,7 +3153,7 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - surfaces: automatic; connected-client names in Settings → Integrations and the status-bar tooltip
 - code: `src-tauri/src/mcp_bridge/handshake.rs`, `src-tauri/src/mcp_bridge/principal.rs`, `src-tauri/src/mcp_bridge/connection.rs`, `src-tauri/src/mcp_bridge/identify.rs`, `src-tauri/src/peer_text.rs`, `src-tauri/src/mcp_config/client_tokens.rs`, `server/mcp/src/utils/clientIdentity.ts`, `server/mcp/src/bridge/authHandshake.ts`
 - rust: `mcp_bridge::handshake`, `mcp_bridge::principal`, `mcp_bridge::identify`, `mcp_config::client_tokens::{snapshot, refresh, mint_client_token}`
-- docs: none — the per-client credential is not described on any guide page
+- docs: `website/guide/mcp-setup.md` §"Install Configuration" (per-client credential), §"Security Notes"
 - tests: `src-tauri/src/mcp_bridge/handshake.test.rs`, `src-tauri/src/mcp_bridge/principal.test.rs`, `src-tauri/src/mcp_bridge/connection.test.rs`, `src-tauri/src/mcp_bridge/identify.test.rs`, `src-tauri/src/peer_text.test.rs`, `src-tauri/src/mcp_config/client_tokens.test.rs`, `src-tauri/src/mcp_config/client_token_field.test.rs`, `server/mcp/__tests__/unit/utils/clientIdentity.test.ts`, `server/mcp/__tests__/unit/utils/parentProcess.test.ts`
 - notes: The client configs are the token store — no keychain entry, no separate secret file. The registry is refreshed before the accept loop starts; a panic in the refresh publishes an empty registry. Installs predating the mechanism connect as `Anonymous` and lose only delegated actions. No server-side rate limit; the token bucket is sidecar-side.
 
@@ -3287,7 +3265,7 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - surfaces: MCP tool `workspace`
 - code: `server/mcp/src/tools/workspace.ts`, `src/services/mcpBridge/v2/workspace.ts`, `src/services/mcpBridge/v2/workspaceOpen.ts`, `src/services/mcpBridge/v2/workspaceOpenFolder.ts`, `src/services/mcpBridge/v2/workspaceSave.ts`, `src/services/mcpBridge/v2/workspaceSaveAs.ts`
 - rust: all write-class
-- docs: `website/guide/mcp-tools.md` §`workspace`
+- docs: `website/guide/mcp-tools.md` §`workspace` (incl. `close` refusal reasons `DIRTY` / `DIVERGENT` / `PINNED` and the browser-tab refusal); `server/mcp/README.md`
 - tests: `server/mcp/__tests__/unit/tools/workspace.test.ts`, `src/services/mcpBridge/v2/__tests__/workspace.test.ts`, `src/services/mcpBridge/v2/__tests__/workspaceOpenBackground.test.ts`, `src/services/mcpBridge/v2/__tests__/workspaceOpenErrors.test.ts`, `src/services/mcpBridge/v2/__tests__/workspaceSaveAs.test.ts`, `src/services/mcpBridge/v2/__tests__/workspaceSaveAsCapture.test.ts`, `src/services/mcpBridge/v2/__tests__/workspaceSaveCapture.test.ts`, `src/services/mcpBridge/v2/__tests__/workspaceSwitchTabVerify.test.ts`, `src/services/mcpBridge/v2/workspaceOpenFolder.test.ts`
 - notes: `save` and `save_as` feed coherence capture through `src/services/coherence/mcpCapture.ts` under the same capture policy as a human save (see `coherence-capture`, Area 11).
 
@@ -3301,7 +3279,7 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - surfaces: MCP tool `document`
 - code: `server/mcp/src/tools/document.ts`, `server/mcp/src/tools/staleError.ts`, `src/services/mcpBridge/v2/document.ts`, `src/services/mcpBridge/v2/documentTransform.ts`, `src/services/mcpBridge/v2/cjkMaps.ts`, `src/services/coherence/mcpCapture.ts`, `src/services/coherence/capturePolicy.ts`
 - rust: `document.read` read-class; `write`/`transform` write-class
-- docs: `website/guide/mcp-tools.md` §`document`; `website/guide/mcp-setup.md` §"How Edits Work"
+- docs: `website/guide/mcp-tools.md` §`document` (incl. `write`'s `save` and the live-WYSIWYG serialization note); `website/guide/mcp-setup.md` §"How Edits Work"
 - tests: `server/mcp/__tests__/unit/tools/document.test.ts`, `src/services/mcpBridge/v2/__tests__/document.test.ts`, `src/services/mcpBridge/v2/documentTransform.test.ts`, `src/services/mcpBridge/v2/documentTransformRefusal.test.ts`
 - notes: `write` saves to disk by default so agents do not bypass MCP. Every mutation is checkpointed (`mcp-edit-checkpoints`). A saved write calls `captureMcpWrite` (`src/services/coherence/mcpCapture.ts`), which funnels through `captureWrite` with the capture policy from `general.coherenceCaptureOnSave`: off (`tracked-only`) never creates `.vmark/` or stamps a `vmark:` block; on (`adopt`) may do both.
 
@@ -3567,9 +3545,9 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - surfaces: GitHub Actions
 - code: `.github/workflows/tier0-e2e.yml`, `.github/actions/setup-tauri-deps`, `scripts/check-gate-liveness.mjs`
 - rust: debug-only automation bridge
-- docs: `e2e/README.md`
+- docs: `e2e/README.md` §"Prerequisites" and §"CI" (weekly, Linux and macOS, manual dispatch)
 - tests: liveness metadata (`liveness-gate: true`, `cadence-days: 8`, `on-failure: rolling-issue`) read by `scripts/check-gate-liveness.mjs`
-- notes: Browser journeys (macOS-only), journeys 38 and 39, and the smoke harness are not in CI.
+- notes: `e2e/run-journeys.mjs` runs every journey on both legs (`ubuntu-latest` under Xvfb, `macos-latest`); a journey declaring `platforms: ["darwin"]`, which every browser journey does, executes only on the macOS leg. The smoke harness is not in CI.
 
 ## Area 11 — Coherence, knowledge base, claims
 
@@ -3595,14 +3573,14 @@ Two unrelated features share this area. The coherence layer is a Rust kernel (`s
 - id: coherence-scan
 - feature: Coherence & breakdown
 - summary: A debounced background scan reconciles files edited outside VMark into the ledger as "observed external" history, and classifies git operations so checkouts and branch switches never mint phantom revisions.
-- capabilities: 3 s trailing debounce, one scan in flight, re-run if events land mid-scan; git-first classification (navigation vs mutation); `git revert` and merges captured as git-attributed transformations; duplicate-identity detection surfaced as a diagnostic plus capture hold, never auto-fixed; objects marked absent only after a complete walk; a `merge-completed` diagnostic per merge SHA
+- capabilities: 3 s trailing debounce, one scan in flight, re-run if events land mid-scan; scans triggered only by the window's own watcher, including its rescan reports; git-first classification (navigation vs mutation); `git revert` and merges captured as git-attributed transformations; duplicate-identity detection surfaced as a diagnostic plus capture hold, never auto-fixed; objects marked absent only after a complete walk; a `merge-completed` diagnostic per merge SHA; a markdown file whose size, mtime (and on Unix inode and ctime) are unchanged since a scan read it is not read or hashed again, a file modified within 2 s of being stamped is never trusted; all kernel work on the blocking pool
 - status: shipped-on
 - gate: always on once a workspace root is open (`startCoherenceScanOnChange` via `src/services/runtimeWiring.ts`); each scan carries the capture-on-save policy, and with `general.coherenceCaptureOnSave = false` a workspace without a ledger is not scanned, and a `.vmark/` that vanishes before the lock is not recreated (`scan_on_change` in `src-tauri/src/coherence/capture_policy.rs`, existing-only lock in `src-tauri/src/coherence/state_lock.rs`)
 - surfaces: automatic (workspace file-watcher events)
 - code: `src/services/coherence/scanOnChange.ts`, `src/services/coherence/capturePolicy.ts`, `src/services/runtimeWiring.ts`
-- rust: `coherence_scan`; `coherence::{capture_policy, state_lock, scan, scan_git, scan_walk, scan_report, scan_diagnostics, gitops, gitops_cmd}`
+- rust: `coherence_scan`; `coherence::{capture_policy, state_lock, scan, scan_git, scan_walk, scan_cache, scan_report, scan_diagnostics, gitops, gitops_cmd}`
 - docs: `website/guide/coherence.md` §"How it works (30 seconds)", §"Git interoperability"
-- tests: `src/services/coherence/scanOnChange.test.ts`, `src-tauri/src/coherence/capture_policy.test.rs`, `src-tauri/src/coherence/scan.test.rs`, `src-tauri/src/coherence/scan_git.test.rs`, `src-tauri/src/coherence/gitops.test.rs`
+- tests: `src/services/coherence/scanOnChange.test.ts`, `src/services/coherence/scanOnChange.window.test.ts`, `src-tauri/src/coherence/capture_policy.test.rs`, `src-tauri/src/coherence/scan.test.rs`, `src-tauri/src/coherence/scan_git.test.rs`, `src-tauri/src/coherence/scan_cache.test.rs`, `src-tauri/src/coherence/gitops.test.rs`
 - notes: A policy-declined scan returns an empty (incomplete) report, which can never drive a deletion. `GitObserver` is an injected seam so the observation-unreliable branch is testable (#1207). `gitops_cmd.rs` has no registered command; it is the `git_output` helper `gitops.rs` uses.
 
 ### Breakdown view (stale/diverged dependency edges)
@@ -3659,7 +3637,7 @@ Two unrelated features share this area. The coherence layer is a Rust kernel (`s
 - rust: `coherence_claim`, `coherence_claim_scope`, `coherence_claims` (`src-tauri/src/coherence/claim_commands_ipc.rs`); `coherence::{claims, claim_commands, claim_entry}`
 - docs: `website/guide/coherence.md` §"Semantic checking, claims, and contexts"; `website/guide/mcp-tools.md` §`coherence` (`claims` read)
 - tests: `src/components/ClaimPanel/ClaimPanel.test.tsx`, `src/stores/claimStore.test.ts`, `src/services/claims/claimService.test.ts`, `src/services/commands/claimCommands.test.ts`, `src-tauri/src/coherence/claims.test.rs`, `src-tauri/src/coherence/claim_commands.test.rs`
-- notes: `website/guide/coherence.md` names *Extract Claim from Selection* but never the "Canon Claims" palette command, so the panel where claims are promoted, corrected and retired has no documented way in. Claim mutation is never exposed over MCP.
+- notes: The panel's only way in is the palette command **Canon Claims** (no menu item, no shortcut), which `coherence.md` names. Claim mutation is never exposed over MCP.
 
 ### Contexts (named workspace views) & branch contexts
 - id: coherence-contexts
@@ -3965,7 +3943,7 @@ Two unrelated features share the word "workflow", and the yaml adapter (`src/lib
 - id: gha-actionlint
 - feature: GHA workflow viewer
 - summary: When the optional `actionlint` binary is on the login-shell PATH, its findings are appended to the workbench's Diagnostics banner as `GHA-ACTIONLINT-<rule>` rows; the MCP `workflow.validate` operation runs the same check on demand.
-- capabilities: typed outcome (`ok` / `binary_missing` / `failed`); login-shell PATH so Homebrew installs are found from a GUI launch; runs on the blocking pool with a 5 s kill timeout; frontend debounce (500 ms) and serialized runs with a stale-result discard and a queue timeout; one info toast per session when the binary is missing, one warning toast when it fails; rows vanish when the setting goes off or the tab changes
+- capabilities: typed outcome (`ok` / `binary_missing` / `failed`); login-shell PATH, resolved in Rust, so Homebrew installs are found from a GUI launch (the webview sends only the YAML, never a PATH); runs on the blocking pool with a 5 s kill timeout; frontend debounce (500 ms) and serialized runs with a stale-result discard and a queue timeout; one info toast per session when the binary is missing, one warning toast when it fails; rows vanish when the setting goes off or the tab changes
 - status: shipped-on
 - gate: `advanced.workflowActionlint = true` (not developer-gated); checked in the hook and in the MCP handler
 - surfaces: Diagnostics banner (automatic); settings pane (Settings → Advanced → Workflow files); MCP operation `vmark.workflow.validate`
@@ -4120,14 +4098,14 @@ Two unrelated features share the word "workflow", and the yaml adapter (`src/lib
 - feature: Workflow engine (bespoke YAML)
 - summary: `with:` values interpolate earlier step outputs and env vars; `if:` conditions skip a step; `model`/`approval`/`limits` resolve down a precedence chain.
 - capabilities: `${{ steps.ID.outputs.FIELD }}`, `${{ steps.ID.output }}`, `${{ env.NAME }}`, legacy `${VAR}` and bare `stepId.output`; unknown refs fatal; condition grammar with `success()`/`failure()`/`always()`, literals, comparisons, `&&`/`||`/`!`/parens, capped depth; unparseable condition fails the step; timeout step → defaults → 300 s; 5 MB cap on one step's output; `max_tokens` enforced for REST providers only
-- status: shipped-off, partial
+- status: shipped-off
 - gate: `advanced.workflowEngine = false`
 - surfaces: automatic (inside a run)
 - code: none frontend
-- rust: `src-tauri/src/workflow/{expressions.rs,condition.rs,condition_lexer.rs,step_config.rs}`
+- rust: `src-tauri/src/workflow/{expressions.rs,condition.rs,condition_lexer.rs,condition_status.rs,run_context.rs,step_preflight.rs,step_config.rs}`
 - docs: `website/guide/workflows.md` §"Wiring steps together: expressions", §"Conditions", §"Per-step settings", §"Timeouts"
-- tests: `src-tauri/src/workflow/condition.test.rs` (36); inline tests in `expressions.rs` (15) and `step_config.rs` (21)
-- notes: `failure()` and `always()` never fire: the runner skips every remaining step once one fails, before evaluating `if:` (documented in the guide as a current limitation).
+- tests: `src-tauri/src/workflow/condition.test.rs` (45), `src-tauri/src/workflow/expressions.test.rs` (25), `src-tauri/src/workflow/runner_flow.test.rs` (21 — status functions across `needs`, timeouts and cancel), `src-tauri/src/workflow/step_preflight.test.rs` (5); inline tests in `step_config.rs` (21)
+- notes: GitHub Actions rules: `success()` is implied when an `if:` names no status function, and is false when a needed step did not complete; `failure()` is true once any earlier step failed; `always()` and `failure()` steps run after a needed step failed. A cancel is checked before the `if:` and skips every remaining step, `always()` included. A run with a failed step still ends failed, naming the first one.
 
 ### Workflow file snapshots and Restore Files
 - id: workflow-snapshots
@@ -4439,9 +4417,9 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - surfaces: automatic
 - code: `src/utils/motion.ts`, `src/styles/index.css`
 - rust: none
-- docs: none
+- docs: `website/guide/features.md` §"Editing Details" (Reduced motion)
 - tests: `src/utils/motion.test.ts`
-- notes: The behaviour is not documented on any guide page.
+- notes: OS setting only; there is no in-app reduced-motion setting.
 
 ### Localization (i18n)
 - id: localization
@@ -4789,7 +4767,7 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - surfaces: title bar strip; double-click rename; Settings → Appearance → Show filename in titlebar
 - code: `src/components/TitleBar/TitleBar.tsx`, `src/components/TitleBar/useTitleBarRename.ts`, `src/components/Browser/AppTitleBar.tsx`, `src/services/persistence/renameFile.ts`, `src/shell/trafficLights.ts`, `src-tauri/src/window_manager/traffic_lights.rs`
 - rust: `window_manager::traffic_lights` (`#[cfg(target_os = "macos")]`, needs the `macos-private-api` tauri feature)
-- docs: `website/guide/settings.md` §Appearance ("Show filename in titlebar", macOS only); title-bar rename is not documented on any guide page
+- docs: `website/guide/settings.md` §Appearance ("Show filename in titlebar", macOS only); `website/guide/tab-navigation.md` §"Renaming a file" (title-bar double-click rename)
 - tests: `src/components/TitleBar/TitleBar.a11y.test.tsx`, `src/components/TitleBar/TitleBar.filename.test.tsx`, `src/components/TitleBar/titleBarShellOffset.test.ts`, `src/components/TitleBar/useTitleBarRename.test.ts`, `src/components/Browser/AppTitleBar.test.tsx`, `src/shell/trafficLights.test.ts`
 - notes: `#1224` (extension policy on rename). The traffic-light position is declared in three places — `src-tauri/tauri.conf.json`, `src-tauri/src/window_manager/mod.rs`, `src/shell/trafficLights.ts` — and `src/shell/trafficLights.test.ts` fails if they disagree. OS chrome theming off macOS is *native-chrome-theme*. `AppTitleBar.tsx` is owned by the Embedded browser feature.
 
@@ -4803,7 +4781,7 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - surfaces: status bar; shortcut `toggleStatusBar` = `F7` → `view.toggleStatusBar`
 - code: `src/components/StatusBar/StatusBar.tsx`, `src/components/StatusBar/StatusBarRight.tsx`, `src/components/StatusBar/StatusBarCounts.tsx`, `src/components/StatusBar/StatusBarAiIndicator.tsx`, `src/components/StatusBar/WordCountPopover.tsx`, `src/components/StatusBar/LintBadge.tsx`, `src/components/StatusBar/useAutoSaveDisplay.ts`, `src/components/StatusBar/useQuitFeedback.ts`, `src/components/StatusBar/FileLoadIndicator.tsx`, `src/components/StatusBar/SourceModeUpgrade.tsx`, `src/components/BottomBar/BottomBar.tsx`
 - rust: none (listens for `app:quit-first-press` emitted by `src-tauri/src/quit.rs`)
-- docs: `website/guide/index.md` (Status Bar bullet); `website/guide/large-files.md` §"Status bar cues"; `website/guide/tab-navigation.md`; `website/guide/shortcuts.md` (F7); no guide section describes the right-side indicators as a whole
+- docs: `website/guide/index.md` (Status Bar bullet); `website/guide/large-files.md` §"Status bar cues"; `website/guide/tab-navigation.md`; `website/guide/shortcuts.md` (F7); `website/guide/features.md` §"Status Bar" (every right-side indicator)
 - tests: `src/components/StatusBar/StatusBar.test.tsx`, `src/components/StatusBar/StatusBar.a11y.test.tsx`, `src/components/StatusBar/StatusBarRight.test.tsx`, `src/components/StatusBar/StatusBarCounts.test.tsx`, `src/components/StatusBar/WordCountPopover.test.tsx`, `src/components/StatusBar/useAutoSaveDisplay.test.ts`, `src/components/StatusBar/useQuitFeedback.test.ts`, `src/components/StatusBar/FileLoadIndicator.test.tsx`, `src/components/StatusBar/SourceModeUpgrade.test.tsx`, `src/components/StatusBar/LintBadge.test.tsx`, `src/components/StatusBar/incrementalTextMetrics.test.ts`, `src/components/StatusBar/statusTextMetrics.test.ts`, `src/components/StatusBar/__tests__/mcpTooltip.test.ts`, `src/components/BottomBar/BottomBar.test.tsx`
 - notes: the tab strip inside the status bar (`src/components/StatusBar/StatusBarTabStrip.tsx`, drag, keyboard) is spine-owned by this feature but described by the tab-strip block in area 5. Rare states (update lifecycle, auto-save paused, divergent) are toasts — see `resilient-chrome`. The `src/components/BottomBar/BottomBar.tsx` header still says "StatusBar and FindBar always render"; FindBar is withheld on a browser tab.
 
@@ -4991,7 +4969,7 @@ Lint runs only on demand through the `lint.check` command (`src/services/lint/ru
 - surfaces: automatic
 - code: `src/plugins/compositionGuard/tiptap.ts`, `src/plugins/compositionGuard/compositionKeys.ts`, `src/plugins/compositionGuard/splitBlockFix.ts`, `src/utils/imeGuard.ts`, `src/plugins/codemirror/imeGuard.ts`, `src/hooks/useImeComposition.ts`
 - rust: none
-- docs: none — no guide page covers editor IME handling (`website/guide/multi-cursor.md` notes composition affects only the primary cursor)
+- docs: `website/guide/features.md` §"Editing Details" (Input methods); `website/guide/multi-cursor.md` (composition affects only the primary cursor)
 - tests: `src/plugins/compositionGuard/__tests__/tiptap.test.ts`, `src/plugins/compositionGuard/__tests__/tiptap.imecleanup.test.ts`, `src/plugins/compositionGuard/__tests__/tiptap.splitblock.test.ts`, `src/plugins/compositionGuard/__tests__/tiptap.tablefix.test.ts`, `src/plugins/compositionGuard/__tests__/tiptap.domreconciliation.test.ts`, `src/plugins/compositionGuard/__tests__/compositionKeys.test.ts`, `src/plugins/compositionGuard/__tests__/splitBlockFix.test.ts`, `src/utils/imeGuard.test.ts`, `src/hooks/useImeComposition.test.ts`; real-engine tiers in block `ime-test-tiers`
 - notes: stated known limitation in `src/plugins/compositionGuard/tiptap.ts`: the Safari table-header fix uses heuristic position detection and may not cover all edge cases. The `tiptap.ts` header summary does not yet mention the dispatched-event rule in `compositionKeys.ts`.
 
@@ -5005,7 +4983,7 @@ Lint runs only on demand through the `lint.check` command (`src/services/lint/ru
 - surfaces: toast (the app-wide toast entry point — about 70 production modules import it)
 - code: `src/services/ime/imeToast.ts`, `src/services/ime/imeToastPinAction.tsx`
 - rust: none
-- docs: none
+- docs: `website/guide/features.md` §"Editing Details" (Input methods)
 - tests: `src/services/ime/imeToast.test.ts`
 - notes: `imeToastPinAction.tsx` imports `i18next` directly rather than `@/i18n` to break a dependency cycle. `src/plugins/toolbarActions/cjkFormatFeedback.ts` calls sonner directly, which is safe only because it emits `error` (never deferred anyway).
 
@@ -5075,7 +5053,7 @@ Lint runs only on demand through the `lint.check` command (`src/services/lint/ru
 - surfaces: automatic — `--font-mono` (code blocks, Source mode), terminal creation and live terminal font sync
 - code: `src/services/fonts/verifiedMonoStack.ts`, `src/hooks/useTheme.ts`, `src/components/Terminal/createTerminalInstance.ts`, `src/components/Terminal/terminalSessionStoreSync.ts`
 - rust: none
-- docs: none — no guide page mentions the verification
+- docs: `website/guide/features.md` §"Fonts"
 - tests: `src/services/fonts/verifiedMonoStack.test.ts` (injectable `rendersMonospace`); `src/services/fonts/verifiedMonoStack.webkit.test.ts` leads a stack with `sans-serif` so the guard fails on every engine
 - notes: #1334. The memo assumes the installed font set is session-stable; a font installed while VMark runs is measured against a stale cache until restart. Sibling block *terminal-theme-font* (area 7) covers the terminal side.
 
@@ -5361,7 +5339,7 @@ The Rust composition root is `src-tauri/src/lib.rs` (`run`, `manage_state`), wit
 - surfaces: Finder / Explorer / desktop launcher double-click, Open With
 - code: `src-tauri/tauri.conf.json`, `src-tauri/windows/installer-hooks.nsh`
 - rust: consumed by `file_open` and `supported_files::filter_supported_args`
-- docs: `website/guide/workspace-management.md` §"Opening a file from outside the current workspace" (single-instance handoff only); nothing lists the associated types or the Windows installer behaviour
+- docs: `website/guide/workspace-management.md` §"Opening a file from outside the current workspace" (single-instance handoff only); `website/guide/formats.md` §"Opening files from your system" (the associated types and the Windows installer behaviour)
 - tests: `scripts/release-smoke-windows-installer.test.mjs` (hook macros, the smoke job's extension list and `fileAssociations` must agree), `.github/workflows/release-smoke.yml` job `windows-installer` (two install/uninstall cycles against the published installer)
 - notes: Verified on a real Windows runner by release-smoke from v0.9.67 on. The `.nsh` header still says "Both repairs below run from NSIS_HOOK_POSTUNINSTALL" although the file now holds a third, POSTINSTALL repair; the `windows-installer` job header still says the hook "had never run on Windows".
 

@@ -28,7 +28,7 @@ import { useDocumentStore } from "@/stores/documentStore";
 import { useEditorStore } from "@/stores/editorStore";
 import { captureAiEdit } from "@/services/coherence/captureFunnel";
 import { useGeniePickerStore } from "@/stores/geniePickerStore";
-import { createMarkdownPasteSlice } from "@/plugins/markdownPaste/tiptap";
+import { createMarkdownPasteSlice } from "@/plugins/shared/markdownPasteSlice";
 import type { ExtractionResult } from "./extraction";
 import { failInvocation, type ApplyOutcome, type RunContext } from "./streamRunnerContext";
 

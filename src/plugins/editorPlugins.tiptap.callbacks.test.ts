@@ -16,11 +16,6 @@ vi.mock("@/services/editor/runEditorAction", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/services/editor/runEditorAction")>();
   return { ...actual, runEditorAction: (...args: unknown[]) => runEditorActionMock(...args) };
 });
-
-// Handlers still invoked directly by the keymap (CommandBus gaps).
-vi.mock("./editorPlugins/linkCommands", () => ({
-  handleUnlinkShortcut: vi.fn(() => true),
-}));
 vi.mock("@/plugins/markdownPaste/tiptap", () => ({
   triggerPastePlainText: vi.fn(() => Promise.resolve()),
 }));
@@ -35,13 +30,6 @@ vi.mock("@/services/history/unifiedUndoRedo", () => ({
   performUnifiedUndo: vi.fn(() => true),
   performUnifiedRedo: vi.fn(() => true),
 }));
-vi.mock("./editorPlugins/keymapUtils", async () => {
-  const actual = await vi.importActual<typeof import("./editorPlugins/keymapUtils")>("./editorPlugins/keymapUtils");
-  return {
-    ...actual,
-    wrapWithMultiSelectionGuard: (_id: string, cmd: (...args: unknown[]) => boolean) => cmd,
-  };
-});
 
 import { useShortcutsStore } from "@/stores/settingsStore";
 import { buildEditorKeymapBindings } from "./editorPlugins.tiptap";

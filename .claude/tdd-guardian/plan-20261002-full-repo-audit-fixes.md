@@ -6,7 +6,7 @@ mode: "full-plan"
 
 # Full-repo audit fixes
 
-**Status:** IN PROGRESS (started 2026-10-02).
+**Status:** IN PROGRESS (started 2026-10-02). Waves 1–2 merged and green.
 **Tree:** `fa785a700` (v0.9.91). **Branch:** `fix/full-repo-audit-20261002`.
 **Evidence:** `dev-docs/deep-researches/20261002-full-repo-audit.md` (maintainer-local) — 129 findings (0 Critical, 24 High, 55 Medium, 50 Low). Each work item cites the audit section it closes; the audit carries the paths and the reasoning, this plan carries the decision and the check.
 **Namespace:** `WI-RA<phase><lane>.<n>` (rule 60 §1) — a phase split across lanes carries the lane letter (`WI-RA1A.2`, `WI-RA13B.7`) so each lane is gated on its own. Decisions are `D<n>`.
@@ -260,6 +260,31 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 - **WI-RA15B.6 — release notes reach `latest.json`; the bump rule has a notes step.** Audit §9 Medium.
 - **WI-RA15C.10 — the 16 undocumented behaviours and 4 contradicting pages, in all locales; the trigger table in rule 21 gains their rows.** Audit §9 Medium.
 
+#### Phase RA19 — TypeScript defects found by the docs and component lanes
+- **WI-RA19.1 — shortcut import errors use the app's dialog convention.**
+- **WI-RA19.2 — Close All closes every unpinned tab.**
+- **WI-RA19.3 — AI Retry re-runs the failed invocation.**
+- **WI-RA19.4 — remaining hard-coded English strings are translated.**
+- **WI-RA19.5 — title-bar rename reports a name collision.**
+- **WI-RA19.6 — combined save dialog path display verified.**
+- **WI-RA19.7 — Korean punctuation.**
+- **WI-RA19.8 — website deploys when its imported app sources change; About docs.**
+- **WI-RA19.9 — a size budget that matches no file fails.**
+- **WI-RA19.10 — StepForm under the size limit.**
+
+#### Phase RA7C — Rust class sweep
+- **WI-RA7C.1 — lock poison recovered everywhere, and gated.**
+- **WI-RA7C.2 — no unescaped external text in logs.**
+- **WI-RA7C.3 — durable renames.**
+- **WI-RA7C.4 — no blocking work on the IPC thread or async workers.**
+- **WI-RA7C.5 — commands take the calling window, not a label.**
+- **WI-RA7C.6 — terminal exit detection, bounded writes, transcript delta parse.**
+- **WI-RA7C.7 — rescan re-checks open documents; dead watcher subscription.**
+- **WI-RA7C.8 — quit readiness tied to the close listeners.**
+
+#### Phase RA14E — remove the frozen sibling mocks
+- **WI-RA14E.1 — zero sibling mocks of app logic, no baseline.**
+
 ### Wave 4 (cross-cutting, strictly serial, after everything else merged)
 
 Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), RA12B, RA17F, RA17E, RA17G, then the DoD script and the final gate pass. Ownership for wave 3 and 4 lanes is in each lane brief.
@@ -281,7 +306,7 @@ Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), R
 
 ## Status trail
 
-(appended per wave)
+- **Waves 1–2 (19 lanes) merged, 2026-10-03.** On the merged tree: `pnpm check:predelta` 47/47, `pnpm check:all` exit 0 (app 43,301 tests with coverage floors, gates 3,170, sidecar 746, content server 261, build and size budgets), `cargo fmt --check`, `cargo clippy --all-targets -D warnings`, `cargo test` (3,733), `check-cross-target.sh` all exit 0. Merge conflicts were baseline JSON (resolved to the lower value / both removals) and one real one: two lanes extracted the workspace legacy migration to different files; kept `workspace/legacy.rs` (superset) with both lanes' version-based sunset notes. Integration finding fixed at merge: the Rust CI filter missed `src/utils/sanitize.ts`, which a new Rust test reads.
 
 ## Codex review
 

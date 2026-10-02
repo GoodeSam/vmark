@@ -1,7 +1,8 @@
 /**
  * Shared workspace event source — one bus + one fs subscription per window.
  *
- * Purpose: The single owner of the `fs:changed` subscription for a window. It
+ * Purpose: The single owner of the `fs:changed` subscription for a window —
+ *   registered ON that window, so another window's watcher never wakes it. It
  *   normalizes (scope + self-write flag + kind + dedup), coalesces, and — via
  *   the content-hash cache — suppresses no-op touches, then fans the resulting
  *   {@link SemanticWorkspaceEvent} batches out to every subscriber
@@ -93,7 +94,11 @@ function ensureSource(windowLabel: string): Source {
   sources.set(windowLabel, source);
 
   void attachFsSource(bus, windowLabel, {
-    listen,
+    // Scoped to this window: the watcher addresses each batch to the window
+    // that owns it. A listener with no target is woken by every window's
+    // watcher, which is the fan-out the targeting exists to end.
+    listen: (event, handler) =>
+      listen(event, handler, { target: { kind: "WebviewWindow", label: windowLabel } }),
     getRootPath: () => resolveWatchRoot(windowLabel),
     normalizePath,
     hasPendingSave,

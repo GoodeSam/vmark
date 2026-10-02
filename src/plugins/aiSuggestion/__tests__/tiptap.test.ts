@@ -24,8 +24,8 @@ vi.mock("@/utils/imeGuard", () => ({
   runOrQueueProseMirrorAction: vi.fn((_view, action) => action()),
 }));
 
-// Mock markdownPaste
-vi.mock("@/plugins/markdownPaste/tiptap", () => ({
+// Mock the markdown slice builder
+vi.mock("@/plugins/shared/markdownPasteSlice", () => ({
   createMarkdownPasteSlice: vi.fn((state, _content) => {
     // Return a simple text slice
     return state.schema.text ? state.doc.slice(0, 0) : null;

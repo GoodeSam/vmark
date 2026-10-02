@@ -4,8 +4,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 
 vi.mock("../mermaid-preview.css", () => ({}));
-// The renderers need real layout; this test supplies the rendered markup.
-vi.mock("../mermaidPreviewRender", () => ({ renderPreview: vi.fn(() => 1) }));
 
 import { MermaidPreviewView } from "../MermaidPreviewView";
 

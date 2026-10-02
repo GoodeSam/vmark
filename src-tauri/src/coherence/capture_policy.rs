@@ -37,7 +37,6 @@
 //! @coordinates-with src/services/coherence/capturePolicy.ts — the webview side
 //! @module coherence/capture_policy
 
-use super::canonical::canonicalize_text;
 use super::capture::{capture_locked, CaptureReceipt, CaptureRequest};
 use super::frontmatter::read_identity;
 use super::scan::scan_workspace;
@@ -115,9 +114,9 @@ pub(super) fn admits_output(
     req: &CaptureRequest,
     policy: CapturePolicy,
 ) -> Result<bool, String> {
-    // Canonical form first, exactly as `capture_locked` parses it: a CRLF
-    // identity block is still an identity block.
-    if policy.may_stamp() || read_identity(&canonicalize_text(&req.content)).is_some() {
+    // `capture_locked` canonicalized the content before asking, so a CRLF
+    // identity block is still read as an identity block.
+    if policy.may_stamp() || read_identity(&req.content).is_some() {
         return Ok(true);
     }
     Ok(kernel

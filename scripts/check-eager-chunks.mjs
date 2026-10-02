@@ -30,11 +30,21 @@
  *
  * Run after `pnpm build` (wired into check:all as lint:eager).
  * Helpers are exported for scripts/check-eager-chunks.test.ts.
+ *
+ * @coordinates-with scripts/lib/eagerChunkGraph.mjs — HTML parsing and the static chunk graph
  */
 
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { isMainModule } from "./lib/isMainModule.mjs";
+import { buildStaticGraph, collectEagerAssets, staticClosurePaths } from "./lib/eagerChunkGraph.mjs";
+
+export {
+  collectEagerAssets,
+  staticImportsOf,
+  buildStaticGraph,
+  staticClosurePaths,
+} from "./lib/eagerChunkGraph.mjs";
 
 // Chunk families that must NEVER be reachable statically at cold start.
 export const DENYLIST = [
@@ -129,11 +139,6 @@ export function findLazyOnlyViolations(names, reachable, patterns = LAZY_ONLY_CH
 }
 
 /**
- * Chunks the entry awaits unconditionally at boot. Their static graph is
- * cold-start even though Vite emits no modulepreload link for them.
- * `src/main.tsx` → `bootstrap()` → `await import("./App")`.
- */
-/**
  * Byte budget for everything statically reachable at cold start.
  *
  * The per-chunk EAGER budgets in .size-limit.cjs cannot tell "more code" from
@@ -141,8 +146,14 @@ export function findLazyOnlyViolations(names, reachable, patterns = LAZY_ONLY_CH
  * chunks into their importers, so `entry` went 14.6 → 185 kB while the
  * closure went 3.05 → 3.09 MiB. This bounds what launch actually loads,
  * whatever shape the bundler gives it. ~5% above the measured 3.09 MiB.
+ *
+ * Lowered 3,407,872 → 3,384,010 bytes when the markdown paste extension and
+ * turndown stopped being reachable from App-side code (they moved out of the
+ * cold-start popupComponents chunk into the lazy markdownSurface chunk). The
+ * measured closure went 3,246,541 → 3,223,808 bytes; the headroom ratio over
+ * the measurement is unchanged (1.0497).
  */
-export const MAX_EAGER_BYTES = Math.round(3.25 * 1024 * 1024);
+export const MAX_EAGER_BYTES = 3_384_010;
 
 /** A failure message when `closureBytes` exceeds `max`, else null. */
 export function eagerBudgetViolation(closureBytes, max = MAX_EAGER_BYTES) {
@@ -155,102 +166,16 @@ export function eagerBudgetViolation(closureBytes, max = MAX_EAGER_BYTES) {
   );
 }
 
+/**
+ * Chunks the entry awaits unconditionally at boot. Their static graph is
+ * cold-start even though Vite emits no modulepreload link for them.
+ * `src/main.tsx` → `bootstrap()` → `await import("./App")`.
+ */
 export const BOOT_CHUNK_PATTERNS = [/^App-[^/]*\.js$/];
-
-/**
- * Parse one HTML tag's attributes into a lowercase-keyed map.
- * Handles double-quoted, single-quoted, and unquoted values in any order.
- */
-function parseAttributes(tag) {
-  const attrs = {};
-  const re = /([a-zA-Z][a-zA-Z0-9-]*)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/g;
-  for (const m of tag.matchAll(re)) {
-    attrs[m[1].toLowerCase()] = m[3] ?? m[4] ?? m[5] ?? "";
-  }
-  return attrs;
-}
-
-/** True when a rel attribute's space-separated token list contains `token`. */
-function relContains(rel, token) {
-  return (rel ?? "").toLowerCase().split(/\s+/).includes(token);
-}
-
-/**
- * Collect every asset URL the document loads eagerly at cold start:
- * modulepreload link hrefs first, then script srcs (matches the original
- * reporting order).
- */
-export function collectEagerAssets(html) {
-  const preloads = [];
-  for (const [tag] of html.matchAll(/<link\b[^>]*>/gi)) {
-    const attrs = parseAttributes(tag);
-    if (relContains(attrs.rel, "modulepreload") && attrs.href) {
-      preloads.push(attrs.href);
-    }
-  }
-  const scripts = [];
-  for (const [tag] of html.matchAll(/<script\b[^>]*>/gi)) {
-    const attrs = parseAttributes(tag);
-    if (attrs.src) scripts.push(attrs.src);
-  }
-  return [...preloads, ...scripts];
-}
 
 /** Filter asset names/URLs down to those in a denylisted chunk family. */
 export function findOffenders(eager, denylist = DENYLIST) {
   return eager.filter((href) => denylist.some((name) => href.includes(name)));
-}
-
-/**
- * Sibling chunk files a built chunk imports STATICALLY.
- *
- * Rolldown emits dynamic imports as `import(`./x.js`)` and static ones as
- * `import … from "./x.js"` / `import "./x.js"` / `export … from "./x.js"`.
- * Rather than trying to match every static form, count each specifier's
- * occurrences and subtract the ones sitting inside `import(...)`: a specifier
- * left with a positive count has at least one static edge. Under-counting is
- * the safe direction only for false NEGATIVES, so the subtraction is per
- * specifier, not a set difference — a chunk imported both ways still counts.
- */
-export function staticImportsOf(code) {
-  const counts = new Map();
-  for (const m of code.matchAll(/(['"`])(\.\/[^'"`\s]+\.js)\1/g)) {
-    counts.set(m[2], (counts.get(m[2]) ?? 0) + 1);
-  }
-  for (const m of code.matchAll(/\bimport\s*\(\s*(['"`])(\.\/[^'"`\s]+\.js)\1\s*\)/g)) {
-    counts.set(m[2], (counts.get(m[2]) ?? 0) - 1);
-  }
-  return [...counts.entries()].filter(([, n]) => n > 0).map(([spec]) => spec.slice(2));
-}
-
-/** Build `chunk name → statically imported chunk names` from `[name, code]` pairs. */
-export function buildStaticGraph(entries) {
-  return new Map(entries.map(([name, code]) => [name, staticImportsOf(code)]));
-}
-
-/**
- * Breadth-first static closure from `seeds`, remembering the shortest path to
- * each reachable chunk so a failure can name the import chain, not just the
- * offender. Unknown seeds are ignored (a hashed asset may be a stylesheet).
- */
-export function staticClosurePaths(seeds, graph) {
-  const paths = new Map();
-  const queue = [];
-  for (const seed of seeds) {
-    if (graph.has(seed) && !paths.has(seed)) {
-      paths.set(seed, [seed]);
-      queue.push(seed);
-    }
-  }
-  while (queue.length > 0) {
-    const current = queue.shift();
-    for (const next of graph.get(current) ?? []) {
-      if (paths.has(next)) continue;
-      paths.set(next, [...paths.get(current), next]);
-      queue.push(next);
-    }
-  }
-  return paths;
 }
 
 /** Chunk names matching the boot patterns, in listing order. */

@@ -13,7 +13,7 @@
  *
  * @coordinates-with sourceContextDetection/tableDetection.ts — table structure detection
  * @coordinates-with sourceContextDetection/tableActions.ts — table manipulation functions
- * @coordinates-with sourcePopup/ — popup host and coordinate system
+ * @coordinates-with shared/sourcePopupUtils.ts — popup host and coordinate system
  * @coordinates-with utils/menuPosition.ts — the shared clamp
  * @module plugins/codemirror/sourceTableContextMenu
  */
@@ -22,7 +22,7 @@ import { EditorView, ViewPlugin } from "@codemirror/view";
 import { imeToast as toast } from "@/services/ime/imeToast";
 import i18n from "@/i18n";
 import { icons } from "@/utils/icons";
-import { getPopupHost, toHostCoords } from "@/plugins/sourcePopup";
+import { getPopupHost, toHostCoords } from "@/plugins/shared/sourcePopupUtils";
 import { clampMenuPosition, menuBoundsWithin, viewportMenuBounds } from "@/utils/menuPosition";
 import { getSourceTableInfo } from "@/plugins/sourceContextDetection/tableDetection";
 import type { SourceTableInfo, TableAlignment } from "@/plugins/sourceContextDetection/tableTypes";

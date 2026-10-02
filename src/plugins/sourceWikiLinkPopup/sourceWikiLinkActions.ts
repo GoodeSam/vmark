@@ -7,7 +7,7 @@
 
 import type { EditorView } from "@codemirror/view";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-import type { StoreApi } from "@/plugins/sourcePopup";
+import type { StoreApi } from "@/plugins/shared/types";
 import type { WikiLinkPopupState } from "@/plugins/shared/popupPorts";
 
 /** The popup state these actions read — injected, never imported (ADR-015). */

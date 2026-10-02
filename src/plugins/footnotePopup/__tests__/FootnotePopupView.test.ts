@@ -55,10 +55,6 @@ vi.mock("@/plugins/shared/popupHostDom", () => ({
   toHostCoordsForDom: (_host: HTMLElement, pos: { top: number; left: number }) => pos,
 }));
 
-vi.mock("../tiptapDomUtils", () => ({
-  scrollToPosition: vi.fn(),
-}));
-
 // The real parser needs a real schema; the view tests use a mock schema,
 // so return an empty parsed doc (normalization then builds an empty paragraph).
 vi.mock("@/utils/markdownPipeline", () => ({

@@ -9,7 +9,7 @@
  */
 
 import { escapeHtml } from "@/utils/sanitize";
-import { loadKatex, type KatexOptions } from "./katexLoader";
+import { loadKatex, type KatexOptions } from "@/plugins/shared/katexLoader";
 
 /**
  * Render LaTeX content to HTML using KaTeX.

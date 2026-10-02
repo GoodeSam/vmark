@@ -132,7 +132,11 @@
     {
       "name": "Multi-cursor editing",
       "paths": [
-        "src/plugins/multiCursor"
+        "src/plugins/multiCursor",
+        "src/plugins/shared/MultiSelection.ts",
+        "src/plugins/shared/MultiSelection.test.ts",
+        "src/plugins/shared/rangeUtils.ts",
+        "src/plugins/shared/rangeUtils.test.ts"
       ],
       "flag": null,
       "flagDefault": null,
@@ -160,6 +164,8 @@
         "src/components/spotlight",
         "src-tauri/src/content_search.rs",
         "src-tauri/src/content_search_match.rs",
+        "src-tauri/src/content_search_walk.rs",
+        "src-tauri/src/content_search_file.rs",
         "src-tauri/src/content_search.test.rs"
       ],
       "flag": null,
@@ -339,6 +345,8 @@
         "src/plugins/shared/renderMarks.ts",
         "src/plugins/shared/renderQueue.ts",
         "src/plugins/shared/renderQueue.test.ts",
+        "src/plugins/shared/katexLoader.ts",
+        "src/plugins/shared/katexLoader.test.ts",
         "src/stores/blockMathEditingStore.ts",
         "src/stores/__tests__/blockMathEditingStore.test.ts"
       ],
@@ -405,7 +413,6 @@
         "src/plugins/linkCreatePopup",
         "src/plugins/footnotePopup",
         "src/plugins/wikiLinkPopup",
-        "src/plugins/sourcePopup",
         "src/plugins/sourceLinkPopup",
         "src/plugins/sourceLinkCreatePopup",
         "src/plugins/sourceMathPopup",
@@ -444,6 +451,8 @@
         "src/plugins/smartPaste",
         "src/plugins/htmlPaste",
         "src/plugins/markdownPaste",
+        "src/plugins/shared/markdownPasteSlice.ts",
+        "src/plugins/shared/markdownPasteSlice.test.ts",
         "src/plugins/codePaste",
         "src/plugins/markdownCopy",
         "src/plugins/textDragDrop",
@@ -488,7 +497,7 @@
         "src/components/Editor/UniversalToolbar",
         "src/plugins/formatToolbar",
         "src/plugins/toolbarActions",
-        "src/plugins/toolbarContext",
+        "src/plugins/shared/toolbarContextTypes.ts",
         "src/hooks/useUniversalToolbar.ts"
       ],
       "flag": null,
@@ -617,7 +626,7 @@
         "src/components/Workspace",
         "src/services/workspaces",
         "src-tauri/src/workspace.rs",
-        "src-tauri/src/workspace_legacy.rs",
+        "src-tauri/src/workspace",
         "src-tauri/src/workspace_transfer.rs",
         "src-tauri/src/workspace_validation.rs",
         "src/stores/workspaceStore.ts",
@@ -715,6 +724,7 @@
         "src-tauri/src/file_write.rs",
         "src-tauri/src/atomic_replace.rs",
         "src-tauri/src/watcher.rs",
+        "src-tauri/src/watcher",
         "src-tauri/src/file_open.rs",
         "src/services/files",
         "src/services/workspaceEvents",
@@ -1426,6 +1436,7 @@
         "src/stores/settingsShortcutLabels.ts",
         "src/hooks/useSettingsSync.ts",
         "src-tauri/src/window_manager/settings_window.rs",
+        "src-tauri/src/third_party_notices.rs",
         "src/stores/settingsStore.browser.test.ts",
         "src/stores/settingsStore.test.ts",
         "src/stores/__tests__/settingsStore.clamp.test.ts",
@@ -1435,7 +1446,8 @@
         "src/stores/settingsStore/defaults.test.ts",
         "src/stores/settingsStore/migrations.test.ts",
         "src/hooks/useSettingsSync.test.ts",
-        "src-tauri/src/window_manager/settings_window.test.rs"
+        "src-tauri/src/window_manager/settings_window.test.rs",
+        "src-tauri/src/third_party_notices.test.rs"
       ],
       "doc": "website/guide/settings.md"
     },

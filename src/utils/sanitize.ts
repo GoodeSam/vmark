@@ -22,7 +22,7 @@
  *
  * @coordinates-with htmlAllowlists.ts — preview allow/deny tag + attr lists
  * @coordinates-with mermaid/index.ts — uses sanitizeSvg for Mermaid diagram output
- * @coordinates-with latex/katexLoader.ts — uses sanitizeKatex for math rendering
+ * @coordinates-with codePreview/renderers/renderLatex.ts — uses sanitizeKatex for math rendering
  * @module utils/sanitize
  */
 

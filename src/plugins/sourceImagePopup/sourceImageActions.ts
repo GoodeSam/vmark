@@ -11,7 +11,7 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { dirname, join } from "@tauri-apps/api/path";
 import i18n from "@/i18n";
 import { hostDocument } from "@/plugins/shared/hostDocument";
-import type { StoreApi } from "@/plugins/sourcePopup";
+import type { StoreApi } from "@/plugins/shared/types";
 import type { MediaPopupState } from "@/plugins/shared/popupPorts";
 
 /** The popup state these actions read — injected, never imported (ADR-015). */

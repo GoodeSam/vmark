@@ -236,38 +236,21 @@ fn safe_manifest_stem(name: &str) -> Result<&str, String> {
     Ok(name)
 }
 
-/// Atomic manifest write (spec §6: temp + rename — manifests are the
-/// only mutable-in-place files under `.vmark/`).
+/// Atomic, durable manifest write (spec §6: temp + rename — manifests are
+/// the only mutable-in-place files under `.vmark/`).
+///
+/// Through the crate's one atomic writer: the temp file is created `O_EXCL`
+/// with a random name, so a pre-planted symlink is never followed (audit #1)
+/// and concurrent writers never collide; it is synced before the rename, the
+/// directory after it, and removed on any failure, so a failed write leaves no
+/// orphan temp behind (audit R3 #1).
 pub fn write_manifest(dir: &Path, m: &ContextManifest) -> Result<(), String> {
     let stem = safe_manifest_stem(&m.name)?;
     std::fs::create_dir_all(dir).map_err(|e| format!("contexts dir: {e}"))?;
     let final_path = dir.join(format!("{stem}.json"));
-    // A unique temp name created O_EXCL: a pre-planted `.{stem}.tmp`
-    // symlink can't be followed to overwrite an arbitrary file, because
-    // create_new fails when the path already exists (audit #1). The
-    // per-write uuid also avoids collisions between concurrent writers.
-    let tmp = dir.join(format!(".{stem}.{}.tmp", Uuid::now_v7()));
     let json = serde_json::to_string_pretty(m).map_err(|e| e.to_string())?;
-    // A `?` here returns BEFORE the temp is ours (create_new may have failed
-    // against a pre-planted symlink) — so no cleanup, we must not touch it.
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&tmp)
-        .map_err(|e| format!("manifest temp create: {e}"))?;
-    // From here the temp is exclusively ours: remove it on any failure so a
-    // failed write leaves no orphan `.tmp` behind (audit R3 #1).
-    if let Err(e) = std::io::Write::write_all(&mut file, json.as_bytes()) {
-        drop(file);
-        let _ = std::fs::remove_file(&tmp);
-        return Err(format!("manifest temp write: {e}"));
-    }
-    drop(file); // release the handle before rename (Windows)
-    if let Err(e) = std::fs::rename(&tmp, &final_path) {
-        let _ = std::fs::remove_file(&tmp);
-        return Err(format!("manifest rename: {e}"));
-    }
-    Ok(())
+    crate::atomic_replace::atomic_replace(&final_path, dir, json.as_bytes())
+        .map_err(|e| format!("manifest write: {e:?}"))
 }
 
 #[cfg(test)]

@@ -8,7 +8,7 @@ import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
 // Mock dependencies
-vi.mock("@/plugins/sourcePopup", () => ({
+vi.mock("@/plugins/shared/createSourcePopupPlugin", () => ({
   createSourcePopupPlugin: vi.fn((config) => {
     (createSourcePopupPlugin as ReturnType<typeof vi.fn>).__lastConfig = config;
     return { extension: {} };
@@ -44,7 +44,7 @@ vi.mock("@tauri-apps/api/webviewWindow", () => ({
   getCurrentWebviewWindow: () => ({ label: "main", emit: mockEmit }),
 }));
 
-import { createSourcePopupPlugin } from "@/plugins/sourcePopup";
+import { createSourcePopupPlugin } from "@/plugins/shared/createSourcePopupPlugin";
 import { createSourceLinkPopupPlugin } from "./sourceLinkPopupPlugin";
 import { findMarkdownLinkAtPosition } from "@/utils/markdownLinkPatterns";
 import { bindHostDocument, resetHostDocument } from "@/plugins/shared/hostDocument";

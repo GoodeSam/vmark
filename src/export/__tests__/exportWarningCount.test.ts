@@ -23,12 +23,6 @@ vi.mock("@/i18n", () => ({
   default: { t: (key: string, params?: Record<string, unknown>) => (params ? `${key}:${JSON.stringify(params)}` : key) },
 }));
 vi.mock("../renderMarkdownToHtml", () => ({ renderMarkdownToHtml: (...a: unknown[]) => mockRender(...a) }));
-vi.mock("../printDocument", () => ({
-  buildPrintHtml: vi.fn(async () => "<html></html>"),
-  prepareExportBody: vi.fn(async (html: string) => html),
-  liveEditorElement: vi.fn(() => null),
-  renderPrintableHtml: vi.fn(async () => "<p>rendered</p>"),
-}));
 
 import { copyAsHtml, exportToHtml, exportToPdf, exportToPdfNative } from "../useExportOperations";
 

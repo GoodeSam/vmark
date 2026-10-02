@@ -56,6 +56,7 @@ macro_rules! all_commands {
             workspace_grants::picker::request_workspace_confirmation,
             asset_access::grant_asset_access,
             external_editor::open_in_external_editor,
+            third_party_notices::open_third_party_notices,
             menu::update_recent_files,
             menu::update_recent_workspaces,
             menu::refresh_genies_menu,

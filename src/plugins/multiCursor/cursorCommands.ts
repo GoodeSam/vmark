@@ -11,7 +11,7 @@
 import { TextSelection, SelectionRange } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
-import { MultiSelection } from "./MultiSelection";
+import { MultiSelection } from "@/plugins/shared/MultiSelection";
 import { multiCursorPluginKey } from "./multiCursorPlugin";
 import {
   positionWithinRanges,

@@ -124,7 +124,9 @@ assert_test_run() {
   if [[ "$pattern" == */* && "$pattern" != *'*'* && ! -f "$pattern" ]]; then fail "$label missing: $pattern"; return; fi
   [[ "$tier" == "gates" ]] && roots="scripts .claude/hooks"
   if [[ "$pattern" == */* ]]; then expected_list="$pattern"
-  else expected_list="$(find $roots -name "*${pattern}" -not -path "*/node_modules/*" 2>/dev/null | sed 's|^\./||')"; fi
+  # -H: a root given as a symlink (the self-test's repository mirror) is
+  # followed; links found below a root are not.
+  else expected_list="$(find -H $roots -name "*${pattern}" -not -path "*/node_modules/*" 2>/dev/null | sed 's|^\./||')"; fi
   report="$(mktemp)"
   TEMP_FILES+=("$report")
   if [[ "$tier" == "gates" ]]; then pnpm vitest run --config vitest.gates.config.ts "$pattern" --reporter=json --outputFile="$report" >/dev/null 2>&1
@@ -152,16 +154,13 @@ assert_empty_list() {
   " 2>/dev/null; then ok "$label"; else fail "$label ($key in $file is not empty)"; fi
 }
 
-# dev-docs/ is maintainer-local (gitignored — AGENTS.md). Two guards against
-# the same race, belt and braces: a sibling gate test (clean-dev.test.mjs)
-# fabricates fixtures under the REAL dev-docs/ in the same vitest tier, so a
-# bare `-d dev-docs` probe mid-run is the read half of a TOCTOU race — on a
-# checkout where dev-docs/ is normally absent (CI, a fresh worktree) it can
-# see the transient fixture and then demand maintainer files the fixture does
-# not carry. So (1) the probe keys on dev-docs/README.md — the index
-# AGENTS.md requires of a real dev-docs and no fixture creates — and (2) the
-# self-test sets VMARK_UI_PHASE_NO_DEVDOCS=1 to force the absent branch
-# deterministically regardless of tree class.
+# dev-docs/ is maintainer-local (gitignored — AGENTS.md). A bare `-d dev-docs`
+# probe would read any stray directory of that name — a test fixture, a
+# half-created tree — as a maintainer tree and then demand maintainer files it
+# does not carry. So (1) the probe keys on dev-docs/README.md, the index
+# AGENTS.md requires of a real dev-docs, and (2) the self-test sets
+# VMARK_UI_PHASE_NO_DEVDOCS=1 to force the absent branch deterministically
+# regardless of tree class.
 has_devdocs() {
   [[ "${VMARK_UI_PHASE_NO_DEVDOCS:-0}" != "1" && -f dev-docs/README.md ]]
 }

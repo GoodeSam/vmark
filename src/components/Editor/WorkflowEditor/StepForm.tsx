@@ -2,7 +2,10 @@
  * Purpose: Edit form for one step inside a job. Handles both `uses:`
  *   and `run:` step kinds. The `with:` block renders as key/value
  *   rows; users can add, edit, or remove individual keys, each
- *   producing a typed IRPatch.
+ *   producing a typed IRPatch. The component owns layout; the logic
+ *   lives in `useStepNavigation` (back/prev/next and Alt+Arrow),
+ *   `useStepFields` (scalar fields and the expand editor) and
+ *   `useStepWithRows` (the `with:` rows and action-metadata suggestions).
  *
  * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired) §6
  *   Phase 7 / WI-7.1 + WI-7.2.
@@ -11,11 +14,8 @@
  *   - `uses:` is read-only in this form (Phase 7). Changing the action
  *     reference is a structural edit better expressed in source until
  *     a dedicated action picker exists.
- *   - `with:` rows hold local state; blur commits via the pure plans in
- *     withRowPlans.ts (rename = remove + set, chains cancel intermediate
- *     keys, duplicate keys are rejected with an inline error). Removing a
- *     row cancels its queued sets and queues with.remove for its original
- *     key, so a deleted row never writes back on Save.
+ *   - `with:` rows hold local state and commit on blur through the pure
+ *     plans in withRowPlans.ts (see `useStepWithRows`).
  *   - `with:` key suggestions, required-input warnings and default
  *     placeholders come from the action's metadata (`useActionMetadata`,
  *     setting-gated); a failed fetch falls back to free-form rows.
@@ -24,23 +24,15 @@
  * @module components/Editor/WorkflowEditor/StepForm
  */
 
-import { useEffect, useState, type ReactElement } from "react";
+import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, ArrowUp } from "lucide-react";
 import type { StepIR } from "@/lib/ghaWorkflow/types";
-import { useWorkflowStore } from "@/stores/workflowStore";
-import { useActionMetadata } from "./useActionMetadata";
 import { ExpressionEditor } from "./ExpressionEditor";
-import {
-  newWithRow,
-  planWithRowCommit,
-  planWithRowRemoval,
-  withRowsFromStep,
-  type WithRow,
-} from "./withRowPlans";
+import { useStepFields } from "./useStepFields";
+import { useStepNavigation } from "./useStepNavigation";
+import { useStepWithRows } from "./useStepWithRows";
 import "./workflow-editor.css";
-
-type ExpandTarget = null | { field: "if" | "run"; value: string };
 
 interface StepFormProps {
   jobId: string;
@@ -75,154 +67,15 @@ export function StepForm({
   const totalSteps = stepCount ?? stepIndex + 1;
   const { t } = useTranslation("workflowEditor");
 
-  const goToStep = (stepId: string | null): void => {
-    if (!stepId) return;
-    useWorkflowStore.getState().selectStep(jobId, stepId);
-  };
-  const backToJob = (): void => {
-    useWorkflowStore.getState().selectJob(jobId);
-  };
-
-  // Focus restoration after a step→step navigation remount is owned by
-  // WorkflowEditorPanel: a remounted StepForm has no memory of whether the
-  // mount came from user nav, so the panel observes selectedStepId
-  // transitions and reaches into the fresh DOM via querySelector to land
-  // focus on the appropriate nav button.
-
-  // Keyboard nav: Alt+Left / Alt+Right walk steps. Listens on the
-  // window so the form doesn't have to be focused — accessible from
-  // anywhere within the side panel context. Bails out when the user
-  // is typing in an editable element so we don't steal native
-  // word-navigation (Alt+Arrow on macOS) or any child shortcut that
-  // already called preventDefault.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      if (!e.altKey) return;
-      if (e.defaultPrevented) return;
-      // Skip when focus is inside an editable surface (input, textarea,
-      // contenteditable host, or CodeMirror). These all need the native
-      // Alt+Arrow word-jump and would silently lose it otherwise.
-      // The instanceof check handles Window/Document/null targets that
-      // don't expose tagName/closest/isContentEditable.
-      const target = e.target;
-      if (target instanceof HTMLElement) {
-        const tag = target.tagName;
-        if (
-          tag === "INPUT" ||
-          tag === "TEXTAREA" ||
-          tag === "SELECT" ||
-          target.isContentEditable ||
-          target.closest(".cm-editor")
-        ) {
-          return;
-        }
-      }
-      if (e.key === "ArrowLeft" && prevStepId) {
-        e.preventDefault();
-        goToStep(prevStepId);
-      } else if (e.key === "ArrowRight" && nextStepId) {
-        e.preventDefault();
-        goToStep(nextStepId);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // jobId is captured into goToStep via useWorkflowStore.getState();
-    // we only need to refresh the listener when prev/next change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prevStepId, nextStepId]);
-
-  const [name, setName] = useState(step.name ?? "");
-  const [run, setRun] = useState(step.run ?? "");
-  const [workingDir, setWorkingDir] = useState(step.workingDirectory ?? "");
-  const [ifCond, setIfCond] = useState(step.if ?? "");
-  const [withRows, setWithRows] = useState<WithRow[]>(withRowsFromStep(step));
-  const [expand, setExpand] = useState<ExpandTarget>(null);
-
-  const queue = useWorkflowStore((s) => s.queuePatch);
-  const cancel = useWorkflowStore((s) => s.cancelPatchForTarget);
-
-  const commitField = (path: string, next: string, original: string): void => {
-    if (next === original) {
-      // Back at the pre-edit IR value: drop any queued patch for this target.
-      cancel({ kind: "step.set", jobId, stepIndex, path, value: "" });
-      return;
-    }
-    queue({ kind: "step.set", jobId, stepIndex, path, value: next });
-  };
-
-  const handleExpandSave = (value: string): void => {
-    if (!expand) return;
-    const field = expand.field;
-    if (field === "if") setIfCond(value);
-    else setRun(value);
-    // The modal is just another way to edit the field, so it commits by the
-    // same rule as a blur: saving the pre-edit value back drops the stale
-    // queued patch (cross-validator audit round 2 finding).
-    const was = field === "if" ? baseline.if : baseline.run;
-    commitField(field, value, was ?? "");
-    setExpand(null);
-  };
-
-  // Action metadata for the structured `with:` UI. Idle for run-steps;
-  // unavailable falls back to the existing free-form rows so the form
-  // stays usable even when the registry can't reach GitHub.
-  const metadataResult = useActionMetadata(step.uses);
-  const inputs =
-    metadataResult.state === "success"
-      ? metadataResult.metadata.inputs
-      : null;
-  const setKeys = new Set(withRows.map((r) => r.key));
-  const missingRequired = inputs
-    ? Object.entries(inputs).filter(
-        ([key, schema]) => schema.required && !setKeys.has(key),
-      )
-    : [];
-  // Stable id for the per-step datalist — keyed on jobId+stepIndex so
-  // multiple StepForms in the panel (which can't actually coexist, but
-  // unit tests render sequentially) get distinct ids.
-  const datalistId = `workflow-form-with-keys-${jobId}-${stepIndex}`;
-  const knownInputKeys = inputs ? Object.keys(inputs) : [];
-
-  const addSuggestedKey = (key: string): void => {
-    setWithRows((rows) =>
-      rows.some((r) => r.key === key) ? rows : [...rows, newWithRow(key)],
-    );
-  };
-
-  // Every OTHER row — duplicate detection + patch-ownership guards.
-  const otherRows = (idx: number): WithRow[] =>
-    withRows.filter((_, i) => i !== idx);
-
-  const commitWithRow = (idx: number): void => {
-    const row = withRows[idx];
-    const plan = planWithRowCommit({ jobId, stepIndex }, row, otherRows(idx), baseline.with);
-    if (plan.kind === "noop") return;
-    for (const patch of plan.cancels) cancel(patch);
-    if (plan.kind === "duplicate") {
-      updateRow(idx, { duplicateKey: true, committedKey: null });
-      return;
-    }
-    for (const patch of plan.queues) queue(patch);
-    updateRow(idx, { duplicateKey: false, committedKey: plan.committedKey });
-  };
-
-  const updateRow = (idx: number, patch: Partial<WithRow>): void => {
-    setWithRows((rows) =>
-      rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)),
-    );
-  };
-
-  const removeRow = (idx: number): void => {
-    const plan = planWithRowRemoval({ jobId, stepIndex }, withRows[idx], otherRows(idx));
-    for (const patch of plan.cancels) cancel(patch);
-    for (const patch of plan.queues) queue(patch);
-    setWithRows((rows) => rows.filter((_, i) => i !== idx));
-  };
-
-  const addRow = (): void => {
-    setWithRows((rows) => [...rows, newWithRow()]);
-  };
+  const { goToStep, backToJob } = useStepNavigation(jobId, prevStepId, nextStepId);
+  const {
+    name, setName, run, setRun, workingDir, setWorkingDir, ifCond, setIfCond,
+    expand, setExpand, commitField, handleExpandSave,
+  } = useStepFields({ jobId, stepIndex, step, baseline });
+  const {
+    withRows, metadataResult, inputs, setKeys, missingRequired, datalistId, knownInputKeys,
+    addSuggestedKey, updateRow, commitWithRow, removeRow, addRow,
+  } = useStepWithRows({ jobId, stepIndex, step, baseline });
 
   return (
     <form className="workflow-form" onSubmit={(e) => e.preventDefault()}>
