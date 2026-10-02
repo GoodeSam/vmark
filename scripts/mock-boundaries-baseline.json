@@ -1296,11 +1296,6 @@
   ],
   "siblingEntries": [
     {
-      "file": "server/mcp/__tests__/unit/utils/healthCheck.test.ts",
-      "api": "vi.mock",
-      "target": "server/mcp/src/index"
-    },
-    {
       "file": "src/components/Editor/cvSizingScope.webkit.test.tsx",
       "api": "vi.mock",
       "target": "src/components/Editor/ImageContextMenu"
