@@ -357,7 +357,8 @@ errors:
 
   # === CLI install ===
   cli.noFile: "インストールは成功したように見えますが、ファイルが作成されませんでした。"
-  cli.mismatch: "インストールは完了しましたが、ファイル内容が想定したスクリプトと一致しません。"
+  cli.mismatch: "インストールされたコマンドが想定したスクリプトと一致しなかったため、削除しました。"
+  cli.mismatchNotRemoved: "「%{path}」のファイルは想定したスクリプトと一致せず、削除もできませんでした。手動で削除してください。"
 
   # === External editor ===
   externalEditor.unknownName: "「%{name}」は VMark が名前で認識できるエディタではありません。エディタのフルパスを入力してください"

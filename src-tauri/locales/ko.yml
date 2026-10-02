@@ -357,7 +357,8 @@ errors:
 
   # === CLI install ===
   cli.noFile: "설치가 성공한 것처럼 보이지만 파일이 생성되지 않았습니다."
-  cli.mismatch: "설치가 완료되었지만 파일 내용이 예상 스크립트와 일치하지 않습니다."
+  cli.mismatch: "설치된 명령이 예상 스크립트와 일치하지 않아 삭제했습니다."
+  cli.mismatchNotRemoved: "“%{path}” 파일이 예상 스크립트와 일치하지 않으며 삭제할 수 없었습니다. 직접 삭제하세요."
 
   # === External editor ===
   externalEditor.unknownName: "“%{name}”은(는) VMark가 이름으로 인식하는 편집기가 아닙니다. 편집기의 전체 경로를 입력하세요"

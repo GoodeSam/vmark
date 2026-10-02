@@ -357,7 +357,8 @@ errors:
 
   # === CLI install ===
   cli.noFile: "A instalação parece ter tido sucesso, mas o arquivo não foi criado."
-  cli.mismatch: "Instalação concluída, mas o conteúdo do arquivo não corresponde ao script esperado."
+  cli.mismatch: "O comando instalado não correspondia ao script esperado, por isso foi removido."
+  cli.mismatchNotRemoved: "O arquivo “%{path}” não corresponde ao script esperado e não pôde ser removido. Exclua-o manualmente."
 
   # === External editor ===
   externalEditor.unknownName: "“%{name}” não é um editor que o VMark reconheça pelo nome: informe o caminho completo do editor"

@@ -357,7 +357,8 @@ errors:
 
   # === CLI install ===
   cli.noFile: "安装似乎成功，但文件未能创建。"
-  cli.mismatch: "安装完成，但文件内容与预期脚本不符。"
+  cli.mismatch: "已安装的命令与预期脚本不符，已将其移除。"
+  cli.mismatchNotRemoved: "“%{path}”处的文件与预期脚本不符，且无法移除。请手动删除该文件。"
 
   # === External editor ===
   externalEditor.unknownName: "VMark 无法按名称识别编辑器“%{name}”，请改为填写该编辑器的完整路径"
