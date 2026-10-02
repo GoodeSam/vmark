@@ -194,6 +194,15 @@ export const MANIFEST = {
       checks: [{ mode: "identity", at: "accepted", shape: "object-keys", onAdd: "report" }],
     },
     {
+      // Reviewed RustSec acceptances: unmaintained, unsound and yanked crates
+      // as well as vulnerabilities. An addition REPORTS for the same reason as
+      // the npm registry above: `check-cargo-audit.mjs` already refuses an
+      // entry with no reason, one that names the wrong crate or kind, and one
+      // whose finding has gone away.
+      path: "scripts/cargo-audit-baseline.json",
+      checks: [{ mode: "identity", at: "accepted", shape: "object-keys", onAdd: "report" }],
+    },
+    {
       // Growth here is separately capped by extension-budget's
       // maxKnownViolations scalar, so per-edge additions report.
       path: ".dependency-cruiser-known-violations.json",

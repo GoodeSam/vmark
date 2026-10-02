@@ -9,7 +9,9 @@ name: Rust drift check
 #
 #   - `dtolnay/rust-toolchain@stable` follows the channel, so a new release adds
 #     lints that `-D warnings` turns into errors with no code change;
-#   - `cargo machete` and the dependency graph move under the lockfile.
+#   - `cargo machete` and the dependency graph move under the lockfile;
+#   - RustSec publishes advisories against crates already in the lockfile, and
+#     crates get yanked, with no change here at all (the `rust-audit` job).
 #
 # That gap is not hypothetical. On 2026-08-20 a PR that changed nothing but
 # version strings failed `rust-test` on two clippy 1.98 errors
@@ -116,3 +118,24 @@ jobs:
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
       - run: cargo test --manifest-path src-tauri/Cargo.toml
+
+  # The same gate as ci.yml's `rust-audit`, which only runs when a pull request
+  # touches Rust. An advisory published in between is otherwise first seen by
+  # whoever next edits src-tauri, as a failure unrelated to their change.
+  rust-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@7623a79cdfecb99d681017af368ca353d9f49bb5 # v2.87.19
+        with:
+          tool: cargo-audit
+
+      - name: Security audit (Rust)
+        run: node scripts/check-cargo-audit.mjs
