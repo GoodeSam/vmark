@@ -28,9 +28,6 @@
     "editorContextMenu": {
       "components": 1
     },
-    "editorPlugins": {
-      "services": 1
-    },
     "editorPlugins.tiptap.ts": {
       "services": 1
     },

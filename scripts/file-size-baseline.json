@@ -106,7 +106,6 @@
     "src/plugins/codeBlockLineNumbers/tiptap.test.ts": 1616,
     "src/plugins/codemirror/smartPasteImage.test.ts": 1259,
     "src/plugins/codemirror/structuralCharProtection.test.ts": 1082,
-    "src/plugins/editorPlugins/linkCommands.test.ts": 1068,
     "src/plugins/footnotePopup/__tests__/FootnotePopupView.test.ts": 1124,
     "src/plugins/footnotePopup/tiptap.test.ts": 1887,
     "src/plugins/formatToolbar/nodeActions.tiptap.test.ts": 1310,
