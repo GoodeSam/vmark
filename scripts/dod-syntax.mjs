@@ -159,7 +159,7 @@ async function serve(owner) {
  *
  * ONE parser, because it was written twice — and the pair is exactly how the
  * `lastIndex` defect (see `statelessRe`) came to exist in both branches at once, and how a
- * fix to one of them would have left the other wrong (audit R3 #117). The
+ * fix to one of them would have left the other wrong. The
  * regex is built STATELESS here as well as defensively in `rustCodeMatches`,
  * since the `ts-code-grep` branch tests it directly.
  */
@@ -221,8 +221,8 @@ export function main(argv) {
       if (!file || rest.length < 1 || rest.length > 2) break;
       const sf = parseSource(file, readOrExit(file));
       // A file the parser only RECOVERED is not a file whose cases run: error
-      // recovery invents nodes, so counting them is counting a guess
-      // (audit R2 #118). journeyShape already refused on this; this did not.
+      // recovery invents nodes, so counting them is counting a guess.
+      // journeyShape already refused on this; this did not.
       if (sf.parseDiagnostics.length > 0) {
         console.error(`${file}: does not parse: ${ts.flattenDiagnosticMessageText(sf.parseDiagnostics[0].messageText, " ")}`);
         return 1;

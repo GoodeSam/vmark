@@ -44,7 +44,7 @@ const CODE_LANGS = new Set(["TypeScript", "Tsx", "JSX", "JavaScript", "Rust"]);
 export function normalizePaths(paths) {
   // `path.posix.normalize` collapses `.`, `..` and repeated separators, so
   // `a//b`, `a/./b` and `a/c/../b` are ONE path rather than three that each
-  // measure the same files again (audit R2 #126). A path that normalises to
+  // measure the same files again. A path that normalises to
   // an absolute one, or that climbs out of the repository, is dropped here and
   // reported by `spineShapeErrors` — a measurement rooted outside the tree is
   // not this repository's.
@@ -62,7 +62,7 @@ export function normalizePaths(paths) {
  * (`src-tauri/src/content_search.test.rs` is one of "Find in files"'s paths).
  * So 2,582 lines of test code across five features were counted BOTH as
  * production Code and as Test lines, under a provenance table that says
- * "tests excluded" (audit R2 #127). Passing the files removes the exclusion
+ * "tests excluded". Passing the files removes the exclusion
  * flags entirely: the population tokei measures IS the population `isTest`
  * left in `srcFiles`, by construction rather than by two rules agreeing.
  */
@@ -89,18 +89,18 @@ export function tokeiCode(files, runner = run) {
  * Files under `paths`: the `CODE_EXTENSIONS` sources by default, or every file
  * with `{ any: true }`. `cwd` is the tree the relative paths are read against —
  * without it an exported helper could validate one root with `existsSync` and
- * enumerate another with `find` (audit R2 #124).
+ * enumerate another with `find`.
  *
  * NUL-delimited, because a newline is a legal character in a filename and
  * splitting on one turned a single such file into two nonexistent paths — which
- * a later `readFileSync` would then blame on the wrong file (audit R2 #128).
+ * a later `readFileSync` would then blame on the wrong file.
  */
 export function listFiles(paths, runner = run, { any = false, cwd } = {}) {
   // ONE enumeration, filtered in JS. `find` used to be run twice per path —
   // once with `-name` predicates for the code view and once without for the
   // all-files view — so the two views were separate measurements of a tree
   // that could change between them, and the extension list lived in `find`
-  // argv where nothing else could reuse it (audit R2 #125).
+  // argv where nothing else could reuse it.
   const out = runner("find", [...paths, "-type", "f", "-print0"], cwd ? { cwd } : {});
   const all = out ? out.split("\0").filter((f) => f !== "") : [];
   return any ? all : all.filter(isCodeFile);

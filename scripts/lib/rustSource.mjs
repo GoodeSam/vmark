@@ -8,7 +8,7 @@
  * second implementation of this grammar always drifts: the keybinding gate's
  * private copy knew nothing of nested block comments, raw strings or char
  * literals, so a lone `'"'` sent it into string mode and silently swallowed
- * every later call site in the file (audit R3 #58/#59).
+ * every later call site in the file.
  *
  * `rustCode(src)` returns `src` with every comment blanked to spaces (line
  * comments, and block comments — which NEST in Rust) and, unless
@@ -49,10 +49,10 @@ const isIdentChar = (ch) => ch !== undefined && /[A-Za-z0-9_]/.test(ch);
  * The hashes are COUNTED to the opening quote rather than matched inside a
  * fixed 16-unit slice: that slice could not see a delimiter past 14 hashes for
  * `r` (13 for `br`), though Rust allows 255, so a longer one was mis-tokenised
- * as ordinary code (audit R2 #192). `c` is accepted beside `b` because
+ * as ordinary code. `c` is accepted beside `b` because
  * `cr"…"` / `cr#"…"#` are C string literals (stable since Rust 1.77);
  * unrecognised, `cr#"a"b"#` was read as an ordinary `"a"` and the rest of the
- * literal became code (audit R2 #191).
+ * literal became code.
  */
 function rawStringHashes(src, i) {
   let j = i;
@@ -94,7 +94,7 @@ function blockCommentEnd(src, i, n) {
  * The body is one Unicode SCALAR, not one UTF-16 unit: `'😀'` is two units, so
  * a `src[i + 2] === "'"` test read it as a lifetime and left the literal
  * unblanked — its contents then counted as code for every probe built on this
- * lexer (audit R3 #193). An ESCAPED body (`'\''`, `'\n'`, `'\u{1F600}'`) runs
+ * lexer. An ESCAPED body (`'\''`, `'\n'`, `'\u{1F600}'`) runs
  * to the next quote instead, since the escape decides its own length.
  */
 function charLiteralEnd(src, i, n) {
@@ -120,8 +120,7 @@ function charLiteralEnd(src, i, n) {
  * hand-rolled comment/string loop for that. That copy had drifted exactly the
  * way a second lexer does: no nested block comments, no raw strings, and no
  * char literals, so a lone `'"'` flipped it into string mode and every later
- * `accel(...)` in the file vanished from the check with nothing to fail on
- * (audit R3 #58/#59).
+ * `accel(...)` in the file vanished from the check with nothing to fail on.
  *
  * `value` applies Rust's `\` escapes the way the crate's own contract test
  * reads them: a backslash takes the FOLLOWING character literally (`\"` → `"`,

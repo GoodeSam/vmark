@@ -11,7 +11,7 @@ import { join } from "node:path";
 
 import { ROOT } from "./paths.js";
 
-// ─── Copy conventions (WI-UI4.2, R14) ────────────────────────────────────────
+// ─── Copy conventions (R14) ──────────────────────────────────────────────────
 //
 // Two casing registers, keyed on the KEY PATTERN (never guessed from the
 // value): chrome nouns (menus, titles, buttons) read Title Case; running copy

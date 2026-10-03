@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Production-reachability gate (WI-FL0.1) — a module that only its tests import
+ * Production-reachability gate — a module that only its tests import
  * is dead in production, and knip's default mode cannot see it.
  *
  * Why: `pnpm knip` treats every test file as an ENTRY (knip.json), so a module
@@ -100,8 +100,8 @@ const USAGE = "usage: node scripts/check-test-only-modules.mjs [--update [--allo
  * one by one. This was a `test[A-Z]\w*` FILENAME pattern, which is a claim
  * about every future file too: `testConnection.ts`, `testHarness.ts`,
  * `testRenderer.ts` are ordinary production names, and one of them going dead
- * would have been excluded from the measurement rather than reported
- * (audit R2 #83). Measured across `src/`, `scripts/`, `server/` and
+ * would have been excluded from the measurement rather than reported.
+ * Measured across `src/`, `scripts/`, `server/` and
  * `e2e/`: the pattern matched exactly three files, two of them already covered
  * by the `__tests__/` rule, so the whole heuristic was carrying ONE entry.
  * The self-test asserts every entry still exists in THIS repository (it cannot

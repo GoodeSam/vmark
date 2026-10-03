@@ -79,7 +79,7 @@ export function manualChunks(id: string): string | undefined {
   // modulepreload list. Pin it to vendor-react, which is always
   // eagerly loaded anyway.
   //
-  // MEASURED (WI-13): this pin no longer takes effect. The id
+  // MEASURED: this pin no longer takes effect. The id
   // reaching here IS "\0vite/preload-helper.js" and this branch DOES return
   // "vendor-react", but vite 8 / rolldown emits the helper into
   // `vendor-codemirror-languages-*` regardless, and `vendor-react-*` imports

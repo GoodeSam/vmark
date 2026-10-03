@@ -1,5 +1,5 @@
 /**
- * The scanned tree behind the header-reference gate (WI-FL0.2): which
+ * The scanned tree behind the header-reference gate: which
  * directories are scanned, a memoised view of the filesystem under one root,
  * and the two indexes built over it once per run — every file and directory by
  * basename (for suffix matching) and every declared npm dependency.
@@ -28,8 +28,8 @@ export const TREES = [
   { dir: ".claude/hooks", moduleBase: ".", packageRoot: ".", lang: "ts" },
   { dir: "e2e", moduleBase: ".", packageRoot: ".", lang: "ts" },
 ];
-// `.sh` is NOT scanned, and that is a KNOWN GAP, not an oversight (audit R2
-// #169): the DoD checkers and `lib/dod-assertions.sh` do carry `# Plan:` and
+// `.sh` is NOT scanned, and that is a KNOWN GAP, not an oversight: the DoD
+// checkers and `lib/dod-assertions.sh` do carry `# Plan:` and
 // `# @coordinates-with` headers. Adding `.sh` here (with the `#`-comment
 // branch in headerComments.mjs, which exists) was measured and
 // immediately reports TWELVE `# Plan: dev-docs/plans/*.md` headers whose plan
@@ -107,8 +107,8 @@ export function* walkSources(fs, dir) {
  * ONE rule, one place. It was written twice (here for the tail index, and in
  * `pathExistsAt` in headerReferenceTargets.mjs for location resolution), and the pair had already had the
  * same bug fixed in both copies: appending variants unconditionally let a
- * missing `foo.js` resolve through a `foo.js.ts` that exists for other reasons
- * (audit R2 #170, then R3 #171). Two copies of a resolution rule are two
+ * missing `foo.js` resolve through a `foo.js.ts` that exists for other reasons.
+ * Two copies of a resolution rule are two
  * resolvers, and only one of them gets the next fix.
  */
 export function extensionCandidates(spec, dirOnly) {

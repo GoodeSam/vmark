@@ -26,7 +26,7 @@ const NAMED_KEY_RE = new RegExp(`^(?:${NAMED_KEYS.join("|")})$`);
  * one key. Built from the SAME vocabularies `chordTokens` accepts — a
  * hand-written alternation listed only `F\d` and a single character, so a
  * stale `Cmd + Enter` or `Alt + PageDown` in prose matched nothing and was
- * never checked (audit R2 #141). Longer alternatives first, so `PageUp` is not
+ * never checked. Longer alternatives first, so `PageUp` is not
  * consumed as `P`.
  */
 const PROSE_CHORD_RE = new RegExp(
@@ -49,7 +49,7 @@ function chordTokens(text) {
       // TRIMMED: the prose matcher accepts a space either side of the
       // separator, so `Cmd - Shift - L` reaches here as ["Cmd ", " Shift ",
       // " L"] — no token matched a modifier, the chord read as "not a chord",
-      // and a stale one written that way was never checked (audit R2 #145).
+      // and a stale one written that way was never checked.
       tokens = keyTokens(s).map((t) => t.trim());
     } catch {
       return null;
@@ -88,7 +88,7 @@ export const docsChord = (tokens) => prosemirrorToDocs(tokens.join("-"));
  * of the same character and at least the opening length closes it. A boolean
  * toggle closed a ```` ``` ```` block on a `~~~` line inside it, and on a
  * shorter run of the same character, so the rest of the block was read as prose
- * and its example chords reported as stale (audit R2 #147).
+ * and its example chords reported as stale.
  */
 export function chordsInDoc(doc) {
   const out = [];

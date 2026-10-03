@@ -102,7 +102,7 @@ export function ledgerBlocksByFeature(ledger) {
 /**
  * COVERAGE PROVENANCE. Nothing ties coverage/coverage-summary.json to the tree
  * it was measured on, so a summary from an older checkout was reported as this
- * tree's coverage for as long as the filenames still matched (audit R2 #134).
+ * tree's coverage for as long as the filenames still matched.
  * There is no commit stamp in the summary, so the check is the honest one
  * available: if any measured source is NEWER than the summary, it did not
  * measure this tree, and the columns say `--` rather than a number from

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Hooks-tier purity gate (WI-10, B1).
+ * Hooks-tier purity gate (B1).
  *
  * ADR-013: `src/hooks/` is the React-adapter tier over `src/services/`. The
  * tier restoration (`.claude/adr/plans/20260722-tier-boundary-restoration.md`)
- * and the WI-10 migration moved every non-React business module out (74 files,
+ * and its hooks migration moved every non-React business module out (74 files,
  * 8.4k lines had accumulated); this gate makes the regression class structural
  * instead of review-dependent.
  *

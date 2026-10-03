@@ -25,7 +25,7 @@ const isPlainObject = (v) => typeof v === "object" && v !== null && !Array.isArr
  * so `{"features": []}` produced an authoritative EMPTY ledger, and a feature
  * with `"paths": []` reached `find`/`tokei`/`git log` with no path operand at
  * all — where `find` defaults to the working directory and would have measured
- * the whole repository as that one feature (audit R2 #123).
+ * the whole repository as that one feature.
  */
 export function spineShapeErrors(spine) {
   const errors = [];
@@ -47,7 +47,7 @@ export function spineShapeErrors(spine) {
       errors.push(`${f.name}: a path normalises away to nothing or to the repository root ("" / "." / "./") — the measurement would have no path operand, and \`find\` with none walks the working directory`);
     }
     // An absolute path, or one that climbs out of the repository, measures a
-    // tree that is not this one (audit R2 #126).
+    // tree that is not this one.
     for (const p of normalized.filter((q) => q.startsWith("/") || q === ".." || q.startsWith("../"))) {
       errors.push(`${f.name}: a path is absolute or climbs out of the repository -> ${p}`);
     }
@@ -70,8 +70,8 @@ export function spineErrors(root, spine, defaultsSource, runner = run) {
     for (const d of dataOnly) if (!f.paths.includes(d)) errors.push(`${f.name}: dataOnly names a path that is not one of its paths -> ${d}`);
     for (const p of f.paths) {
       if (!existsSync(path.join(root, p))) { errors.push(`${f.name}: path does not exist -> ${p}`); continue; }
-      // ONE enumeration of the SAME tree `existsSync` just probed (audit R2
-      // #124/#125): the all-files and code-file views are two filters over it,
+      // ONE enumeration of the SAME tree `existsSync` just probed:
+      // the all-files and code-file views are two filters over it,
       // not two `find` runs that could disagree.
       const files = featureInventory([p], runner, root);
       if (files.all.length === 0) { errors.push(`${f.name}: path holds no file at all (its measured zeros would be about nothing) -> ${p}`); continue; }

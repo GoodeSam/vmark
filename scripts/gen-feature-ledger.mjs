@@ -142,7 +142,7 @@ const USAGE = "usage: node scripts/gen-feature-ledger.mjs [--since=<git date exp
  * read as "absent" (so a `null` feature-map reported "missing" and a `null`
  * coverage summary printed `--`), and a malformed one threw a bare
  * `SyntaxError` that named no path — the stack trace pointed at this line, not
- * at the file the reader has to fix (audit R2 #120).
+ * at the file the reader has to fix.
  */
 function readJson(p, label = p) {
   if (!existsSync(p)) return null;
@@ -244,7 +244,7 @@ function main() {
   mkdirSync(path.join(ROOT, "dev-docs"), { recursive: true });
   // Written through a sibling temporary file and RENAMED into place: a direct
   // write truncates first, so an interruption leaves a half-written ledger that
-  // still looks like the document (audit R2 #135). A rename within one
+  // still looks like the document. A rename within one
   // directory is atomic, so a reader sees the old file or the new one.
   const outPath = path.join(ROOT, OUTPUT_REL);
   const tmpPath = `${outPath}.tmp-${process.pid}`;

@@ -3,8 +3,9 @@
  * Provenance-id gate — a production comment that cites a work item or an
  * audit must cite one a fresh clone can find.
  *
- * Comments in `src/`, `src-tauri/src/`, `server/` and `e2e/` used to carry
- * about two thousand `WI-x.y` ids and several hundred audit citations, most of
+ * Comments in `src/`, `src-tauri/src/`, `server/`, `e2e/` and the tooling
+ * (`scripts/`, `.claude/hooks/`, shell scripts included) used to carry
+ * about two thousand `WI-<id>` ids and several hundred audit citations, most of
  * them pointing into maintainer-local plans that no clone has — and some of
  * them, read against the tracked plans, pointing at an unrelated item that
  * shares the number. The reason a line exists has to be readable without a
@@ -17,7 +18,7 @@
  * or on how much history was cloned. Issue numbers are not checked.
  *
  * Two citations a clone can never follow are refused outright, over the same
- * trees plus `scripts/` (rules in `scripts/lib/commentCitations.mjs`): a
+ * trees (rules in `scripts/lib/commentCitations.mjs`): a
  * calendar date, which says when instead of what was observed, and a path to a
  * document under the gitignored `dev-docs/`. There is no baseline: the tree
  * carries zero findings of any kind.

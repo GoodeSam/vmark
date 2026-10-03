@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Doc-join gate (WI-FL0.3–0.6) — the website's factual claims are joined to the
+ * Doc-join gate — the website's factual claims are joined to the
  * code that makes them true, in the GATES tier so a docs-only PR still runs it.
  *
  * Why here and not an app-tier test: ci.yml skips fe-test on docs-only PRs

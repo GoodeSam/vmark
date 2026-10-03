@@ -63,7 +63,7 @@ export const MANIFEST = {
       ],
     },
     {
-      // WI-FL0.1: modules unreachable from every production root, measured by
+      // Modules unreachable from every production root, measured by
       // scripts/check-test-only-modules.mjs over knip's production graph. An
       // IDENTITY list that only shrinks: a module only its tests reach is a
       // defect, so an addition fails here as well as in the gate itself.
@@ -71,7 +71,7 @@ export const MANIFEST = {
       checks: [{ mode: "identity", at: "entries", shape: "strings", onAdd: "fail" }],
     },
     {
-      // WI-FL0.2: header references (@coordinates-with, @module, Plan:) that
+      // Header references (@coordinates-with, @module, Plan:) that
       // resolve to nothing, measured by scripts/check-header-references.mjs.
       // IDENTITY list, only shrinks: a new dangling reference is a comment
       // written against a file that does not exist, so additions fail.
@@ -160,13 +160,13 @@ export const MANIFEST = {
       ],
     },
     {
-      // WI-UI4.2 — casing/punctuation conventions (R14). Identity list of
+      // Casing/punctuation conventions (R14). Identity list of
       // "file:key:check" violations in the ENGLISH copy; ratchets down only.
       path: "scripts/i18n-copy-baseline.json",
       checks: [{ mode: "identity", at: "entries", shape: "strings", onAdd: "fail" }],
     },
     {
-      // WI-18's store-mock list; its header: entries only get REMOVED.
+      // The store-mock list; its header: entries only get REMOVED.
       // Sibling logic mocks have no list — none are allowed.
       path: "scripts/mock-boundaries-baseline.json",
       checks: [{ mode: "identity", at: "entries", shape: "objects", key: ["file", "api", "target"], onAdd: "fail" }],
@@ -210,7 +210,7 @@ export const MANIFEST = {
       ],
     },
     {
-      // WI-UI0.1 — the catalog contrast gate's identity baseline. Each theme's
+      // The catalog contrast gate's identity baseline. Each theme's
       // failing-pair list is a SEPARATE identity check (shape "strings",
       // onAdd: "fail") because `object-keys` at `failing` would only see theme
       // names — a pair added under an existing theme would pass silently, the
@@ -230,7 +230,7 @@ export const MANIFEST = {
       ],
     },
     {
-      // WI-UI0.3 — the ui-consistency gate's identity lists, one per check.
+      // The ui-consistency gate's identity lists, one per check.
       // Registered per-check (not root object-keys) for the same reason as the
       // theme-contrast baseline: a site added under an existing check must
       // fail. C4 alone reports additions — a NEW overlay surface legitimately
@@ -247,14 +247,14 @@ export const MANIFEST = {
       ],
     },
     {
-      // WI-UI0.4 (C12) — check:static gates with no sibling self-test. The
+      // C12 — check:static gates with no sibling self-test. The
       // parity test enforces exact equality with the census, so this ratchet's
       // job is only to stop the list growing back via history the PR wrote.
       path: "scripts/gate-tests-baseline.json",
       checks: [{ mode: "identity", at: "untested", shape: "strings", onAdd: "fail" }],
     },
     {
-      // WI-UI0.2 — identity lists for the two non-zero declaration-integrity
+      // Identity lists for the two non-zero declaration-integrity
       // checks (C2b rgba literals PER DECLARATION — file:selector:prop, so a
       // baselined selector cannot accumulate new colour literals invisibly;
       // renamed from the per-rule `rgbaLiterals` in the same change that
@@ -275,7 +275,7 @@ export const MANIFEST = {
       format: "text",
       checks: [{ mode: "custom", comparator: "tsIdenticalAllowlist", onAdd: "report" }],
     },
-    // ── Markdown spec tier (WI-0.3, plan ADR-5) ── declared-divergence
+    // ── Markdown spec tier (plan ADR-5) ── declared-divergence
     // ledgers, vendored corpora and the two pre-spec TS ledgers; the entries
     // and their reasoning live in their own module.
     ...SPEC_TIER_ENTRIES,

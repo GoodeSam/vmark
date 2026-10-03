@@ -79,7 +79,7 @@ const titleText = (arg, sf) => (ts.isStringLiteralLike(arg) ? arg.text : arg.get
  * An argument that could BE the handler. A title with nothing after it is
  * vitest's todo form — `it("placeholder")` registers a case that never runs —
  * and `test("x", undefined)` is the same placeholder spelled out, so neither
- * is the deliverable a DoD checker is asserting (audit R2 #112). Anything that
+ * is the deliverable a DoD checker is asserting. Anything that
  * can evaluate to a function counts, including `it(title, options, fn)`.
  */
 const isHandlerArg = (arg) =>
@@ -97,7 +97,7 @@ const isHandlerArg = (arg) =>
  * Roots a file DECLARES for itself, so its `it(...)` is not vitest's.
  * `import { it } from "vitest"` is the ordinary form and does not shadow; a
  * local `const it = () => {}` does, and it is exactly how a placeholder would
- * satisfy a "declares a case" probe (audit R2 #113).
+ * satisfy a "declares a case" probe.
  */
 function shadowedRoots(sf) {
   const shadowed = new Set();

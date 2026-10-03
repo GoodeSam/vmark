@@ -1,5 +1,5 @@
 /**
- * Header-reference resolution and collection (WI-FL0.2) — the pure half of
+ * Header-reference resolution and collection — the pure half of
  * `scripts/check-header-references.mjs`.
  *
  * Purpose: take the references a file header carries (read by
@@ -60,7 +60,7 @@ export function identityKey(ref) {
  * Matched by SEGMENT. The prefix/substring form required a following slash, so
  * the directory itself — a bare `dev-docs`, `../dev-docs`, or `website/dev-docs`
  * — was not classified maintainer-local and became an unresolvable finding on
- * every machine that does not have the folder, i.e. CI (audit R3 #183). A
+ * every machine that does not have the folder, i.e. CI. A
  * segment test also cannot be fooled by a `dev-docs-archive/` sibling, which
  * `startsWith` would have needed the slash to exclude anyway.
  */
@@ -97,7 +97,7 @@ function pathMountedModulePaths(file, tree, fs) {
     if (!fs.isFile(siblingFile)) continue;
     // Over CODE, not raw text: a `#[path = "…"] mod x;` inside a doc comment
     // or quoted in a string minted a module alias that let an invalid
-    // `@module` header resolve (audit R2 #184). `keepStrings` because the path
+    // `@module` header resolve. `keepStrings` because the path
     // IS a literal; the fully-blanked copy then tells a real attribute from
     // one that lived inside a literal — the two-pass rule dod-syntax.mjs's
     // rustModIncludes already applies to the same grammar.

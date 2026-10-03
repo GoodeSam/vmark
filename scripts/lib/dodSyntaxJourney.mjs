@@ -15,7 +15,7 @@ import ts from "typescript";
  * The initializer (or function declaration) a top-level `name` binds to, if
  * any. Variable bindings must be `const`: a `let` can be reassigned after the
  * literal the checker inspected, so its initializer is not what the runner
- * will import (audit R2 #115).
+ * will import.
  */
 function topLevelBinding(sf, name) {
   for (const st of sf.statements) {
@@ -58,9 +58,9 @@ const isFunctionLike = (node) =>
  * The property that DECIDES `name` at runtime: the LAST assignment in source
  * order, because that is the one the object literal keeps. Taking the first
  * meant `{ name: "journey", name: "" }` — and any spread or computed key that
- * overrides it — read as valid while the runner saw something else
- * (audit R2 #116). A spread or a computed key is not resolvable statically at
- * all, so it is reported rather than skipped.
+ * overrides it — read as valid while the runner saw something else. A
+ * spread or a computed key is not resolvable statically at all, so it is
+ * reported rather than skipped.
  */
 function propertyNamed(obj, name) {
   let found;

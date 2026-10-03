@@ -15,7 +15,7 @@
  */
 
 export const SPEC_TIER_ENTRIES = [
-  // ── Markdown spec tier (WI-0.3, plan ADR-5) ──────────────────────────
+  // ── Markdown spec tier (plan ADR-5) ──────────────────────────────────
   // Declared-divergence ledgers: one identity per record; additions report
   // (visible in the diff), removals are tightening. Value drift is the spec
   // gates' own staleness check, not the ratchet's.
@@ -42,7 +42,7 @@ export const SPEC_TIER_ENTRIES = [
       { mode: "custom", comparator: "specCorpusExamples", direction: "no-remove", onAdd: "report" },
     ],
   },
-  // WI-2.3's external corpora — identical contract per file.
+  // The external corpora — identical contract per file.
   ...[
     "cmark-regression.json",
     "cmark-gfm-regression.json",

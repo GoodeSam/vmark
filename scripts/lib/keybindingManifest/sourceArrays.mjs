@@ -23,7 +23,7 @@ import { RUST_PATH, fail } from "./context.mjs";
  * builds). Read from the parser, not from a regex over the literal's text: a
  * `// id: "x"` inside the entry, and an `id` inside a NESTED object, both
  * satisfied the old boundary-anchored search and stood in for the real
- * property (audit R2 #62).
+ * property.
  *
  * A SPREAD or a COMPUTED key fails the gate rather than being skipped: either
  * can override a literal that is right there in the source, so the value this
@@ -54,7 +54,7 @@ function objectStringFields(obj, rel, name) {
  * `{ … }` groups it found and IGNORED every other array element, so a
  * `...MORE_SHORTCUTS`, a bare identifier or a `makeEntry("x")` contributed
  * definitions the drift check never saw — and the entry-count guard compared
- * two numbers that both excluded them, so it could not notice (audit R2 #64).
+ * two numbers that both excluded them, so it could not notice.
  * Every element must now be an object literal, or the gate fails closed.
  */
 export function parseObjectLiterals(region, rel, name) {
@@ -119,7 +119,7 @@ export function parseObjectLiterals(region, rel, name) {
  * A declaration-shaped comment or string anchored the regex: `// const
  * DEFAULT_SHORTCUTS: Shortcut[] = [` in a header, or the same text inside a
  * template literal, matched before the real declaration and handed the parse an
- * array that is not the one the app builds (audit R3 #65). The parser has no
+ * array that is not the one the app builds. The parser has no
  * such ambiguity, and it already has to succeed here — `arrayLiteralEnd` refuses
  * a source with parse diagnostics — so this costs one extra parse and no new
  * failure mode. `as const` / `satisfies` / parentheses are unwrapped, since each
@@ -163,7 +163,7 @@ function tsDeclarationOpen(src, ident, rel) {
  * Matched over fully-blanked CODE — `rustCode` blanks comments AND literals
  * while preserving offsets — for the same reason as the TypeScript side: this
  * gate's Rust input already arrives with `keepStrings: true`, so a
- * declaration-shaped string would still have anchored it (audit R3 #65).
+ * declaration-shaped string would still have anchored it.
  */
 function rustDeclarationOpen(src, ident) {
   const decl = new RegExp(`(?:const|let|var|static)\\s+${ident}\\b[^=\\n]*=\\s*&?\\s*\\[`);
@@ -189,7 +189,7 @@ export function arrayBody(src, name, rel) {
   if (open === -1) fail(`${rel}: could not find a declaration of ${ident}`);
   // The scanner is language-specific: TS regex literals and nested templates,
   // Rust nested block comments and raw strings each need their own tokenizer,
-  // and one hand-rolled loop was wrong for both (audit R2 #136/#138/#139/#140).
+  // and one hand-rolled loop was wrong for both.
   const close = arrayLiteralEnd(src, open, { lang: rel.endsWith(".rs") ? "rust" : "ts" });
   if (close === -1) fail(`${rel}: no balanced array closing after ${name}`);
   return src.slice(open, close);
@@ -199,7 +199,7 @@ export function arrayBody(src, name, rel) {
  * Every element of a contract array must be read by `re`. Matching and moving
  * on lets a tuple shape this parser does not understand vanish silently — and
  * an id missing from the mirror is only caught when a manifest entry names it,
- * so a mirror-only entry disappeared with nothing to fail on (audit R2 #68).
+ * so a mirror-only entry disappeared with nothing to fail on.
  */
 export function readTuples(body, re, name) {
   const matches = [...body.matchAll(re)];

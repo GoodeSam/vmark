@@ -45,7 +45,7 @@ export function writeBaseline(findings, root = ROOT) {
   // Written to a SIBLING temporary file and renamed into place. A direct
   // write truncates first, so an interruption or a full disk leaves a
   // half-written baseline — which the next run cannot parse, and which a
-  // reviewer reads as a deliberate reset (audit R2 #87). A rename inside one
+  // reviewer reads as a deliberate reset. A rename inside one
   // directory is atomic: a reader sees the old baseline or the new one.
   const target = join(root, BASELINE_PATH);
   const tmp = `${target}.tmp-${process.pid}`;

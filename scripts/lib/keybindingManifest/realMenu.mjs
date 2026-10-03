@@ -31,8 +31,8 @@ import { ROOT, LOCALIZED_DIR, fail, readOrDie } from "./context.mjs";
  * `*​/`, knew nothing of raw strings (`r#"a"b"#`, whose unescaped quote opened
  * an ordinary string), and did not recognise char literals at all — so a single
  * `'"'` anywhere in a menu file sent it into string mode and every later
- * `accel(...)` disappeared from the check with nothing to fail on
- * (audit R3 #58/#59). Skipping a span is also what keeps a commented-out or
+ * `accel(...)` disappeared from the check with nothing to fail on.
+ * Skipping a span is also what keeps a commented-out or
  * quoted call from being read as a real one, which is the promise this scan
  * already made.
  */
@@ -85,7 +85,7 @@ function scanAccelCalls(src, rel) {
       // Four literals with "macos" second is NOT enough to know which branch is
       // which: `if !cfg!(target_os = "macos") { A } else { B }` has exactly the
       // same literals in the same order and means the opposite, and so does a
-      // shape with the branches swapped (audit R2 #60). Check the TEXT BETWEEN
+      // shape with the branches swapped. Check the TEXT BETWEEN
       // the literals — over code, so a comment between arguments is whitespace.
       const between = (a, b) => rustCode(src.slice(litSpans[a][1], litSpans[b][0]), { keepStrings: true });
       const bad =

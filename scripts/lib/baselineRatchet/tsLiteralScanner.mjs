@@ -207,7 +207,7 @@ export function scalarOf(rawValue, field) {
  *
  * A bare `indexOf(declName)` treated `// EXPECTED_DELTAS = []` in a comment
  * as the declaration and returned an EMPTY identity set — and since removals
- * pass, that silently disabled the ledger ratchet (audit round 1). This walk
+ * pass, that silently disabled the ledger ratchet. This walk
  * reuses the string/comment skippers so only real source can match.
  */
 export function declarationIndex(source, declName) {

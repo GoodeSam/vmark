@@ -47,7 +47,7 @@ export function findStringifiedTypedErrors(files, typedCommands) {
     // initializer, and a file-global map meant two same-named consts in
     // different scopes resolved to whichever was visited last — a guessed
     // command name either enables this gate on the wrong file or attributes a
-    // finding to a command the file never invokes (audit R2 #22). An ambiguous
+    // finding to a command the file never invokes. An ambiguous
     // name is left UNRESOLVED rather than guessed.
     const constStrings = new Map();
     const ambiguous = new Set();
@@ -105,7 +105,7 @@ export function findStringifiedTypedErrors(files, typedCommands) {
         // (`@tauri-apps/api/core`). Accepting `x.invoke(...)` made any method
         // of that name the IPC entry point — `src/test/statefulFsFake.ts`
         // exposes exactly one — so an unrelated call could arm this gate on a
-        // file that invokes no command at all (audit R2 #24).
+        // file that invokes no command at all.
         const callee = node.expression;
         const name = ts.isIdentifier(callee) ? callee.text : null;
         if (name === "invoke") {
@@ -142,8 +142,7 @@ export function findStringifiedTypedErrors(files, typedCommands) {
         // A promise binds its rejection in two places, not one: `.catch(cb)`
         // and `.then(onFulfilled, onRejected)`. Only the first was recognised,
         // so a two-argument `.then` stringified a typed CommandError with the
-        // gate silent — a false NEGATIVE, the direction that matters here
-        // (audit R2 #25).
+        // gate silent — a false NEGATIVE, the direction that matters here.
         const method = node.expression.name.text;
         const cb =
           method === "catch" ? node.arguments[0] : method === "then" ? node.arguments[1] : undefined;
@@ -206,7 +205,7 @@ export function findStringifiedTypedErrors(files, typedCommands) {
  * whether the path `includes(".ts")`, which is false for `foo.mts` and
  * `foo.cts` — both of which `FRONTEND_SOURCE` scans — so every ESM/CJS
  * TypeScript module in `src/` was handed to the parser as JavaScript, and a
- * stringified typed error inside one was invisible (audit R2 #26).
+ * stringified typed error inside one was invisible.
  */
 function scriptKindFor(file) {
   const ext = /\.([cm]?[jt]sx?)$/.exec(file)?.[1];

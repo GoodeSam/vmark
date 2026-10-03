@@ -135,9 +135,9 @@ function checkSelectionInk(css, file, { problems }) {
 export function checkStateVocabulary(css, file, { problems }) {
   const findings = checkSelectionInk(css, file, { problems });
   const seen = new Set();
-  // R5 (WI-UI1.3) — tertiary is decorative/disabled ink: an ENABLED control
+  // R5 — tertiary is decorative/disabled ink: an ENABLED control
   // (`-btn|-toggle|-close` selector outside :disabled) may not rest at
-  // `--text-tertiary`. Measured 0 after the WI, so no baseline entries exist
+  // `--text-tertiary`. Measured 0 on adoption, so no baseline entries exist
   // and none may be added.
   for (const rule of rulesWithMarkers(css)) {
     if (!/(-btn\b|-toggle\b|-close\b)/.test(rule.selector)) continue;

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Plugin→host coupling ratchet — FOUR channels (WI-11).
+ * Plugin→host coupling ratchet — FOUR channels.
  *
  * A plugin that imports `@/stores/…` reaches into the app's Zustand singletons.
  * That is the property which makes it unshippable as a standalone/third-party
@@ -142,7 +142,7 @@ const EXPLAIN = {
 
 const BASELINE_HEADER = [
   "Frozen plugin->host coupling, per plugin unit and per channel (@/stores, @/services, @/hooks, @/components).",
-  "A plugin importing any of them cannot ship as a standalone extension - the app's services are themselves store-coupled, so @/services is transitive @/stores. See scripts/check-plugin-store-coupling.mjs and dev-docs/deep-researches/20260725-extension-goal-progress-audit.md.",
+  "A plugin importing any of them cannot ship as a standalone extension - the app's services are themselves store-coupled, so @/services is transitive @/stores. The policy is .claude/rules/00-engineering-principles.md; the gate is scripts/check-plugin-store-coupling.mjs.",
   "Checked by pnpm lint:store-coupling (in check:all). Two-way ratchet: a count above baseline fails, and a count below baseline also fails until the win is recorded here.",
   "Ratchets DOWN only: never raise a number. Decouple the file instead - read host state at the call site, pass it in as a parameter, or declare a seam under plugins/shared/.",
 ];

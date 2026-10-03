@@ -45,8 +45,8 @@ export function checkEntries({
     const manOther = entry.defaultKeyOther;
     // `defaultKeyMac` is runtime-wired (settingsStore/shortcuts.ts resolves it on
     // macOS) but no entry uses it yet. Still validate it so the day one appears, the
-    // gate compares the macOS surfaces against the override rather than defaultKey
-    // (audit-fix, round 3). `macKey`/`manMac` below feed the macOS Rust + real-menu
+    // gate compares the macOS surfaces against the override rather than defaultKey.
+    // `macKey`/`manMac` below feed the macOS Rust + real-menu
     // checks; they collapse to `manKey` while defaultKeyMac is absent.
     const defMac = def.defaultKeyMac;
     const manMac = entry.defaultKeyMac;
@@ -121,7 +121,7 @@ export function checkEntries({
     // `defaultKey` and `defaultKeyOther` only, so a macOS override went
     // undocumented with nothing to fail on — and, worse, an entry with an EMPTY
     // `defaultKey` skipped the whole leg even when the macOS override was a real
-    // chord (audit R3 #70). No entry uses `defaultKeyMac` today, which is exactly
+    // chord. No entry uses `defaultKeyMac` today, which is exactly
     // why the gap was invisible; the Rust legs above already read `macKey`.
     const docKeys = [...new Set([macKey, manOther ?? manKey])].filter((k) => k !== undefined && k !== "");
     if (docKeys.length === 0) {
@@ -183,7 +183,7 @@ export function checkOrphanAccels({
   // so an id the mirror carries and nothing else does was never examined: a
   // renamed or deleted shortcut left its old tuple behind in
   // `localized.test.rs`, where it kept validating against itself while the gate
-  // reported green (audit R3 #69). The real-menu direction has had this check
+  // reported green. The real-menu direction has had this check
   // since the leg was written; the mirror is the same shape and needed the same
   // one, with the same allow-lists — an id excluded from the manifest on purpose
   // is excluded from both directions or from neither.

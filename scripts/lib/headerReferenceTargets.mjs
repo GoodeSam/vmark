@@ -1,5 +1,5 @@
 /**
- * Header-reference TARGET resolution (WI-FL0.2) — does the thing a header
+ * Header-reference TARGET resolution — does the thing a header
  * names exist? The grammar that finds the references lives in
  * `scripts/lib/headerComments.mjs`; this module answers for one target.
  *
@@ -60,12 +60,11 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * header's contract is that "a `*` glob resolves when at least one FILE
  * matches", and counting every entry let `foo/*.ts` resolve through a
  * DIRECTORY named `x.ts` — while a glob with a trailing slash, which asks for
- * a directory, accepted a file (audit R2 #173).
+ * a directory, accepted a file.
  *
  * A segment holding no `*` is PATH ARITHMETIC, not a directory entry: `readdir`
  * never lists `.` or `..`, so an anchored glob (`./foo/*.ts`, `../foo/*.ts`)
- * matched nothing at its very first segment and could never resolve
- * (audit R2 #172).
+ * matched nothing at its very first segment and could never resolve.
  */
 export function globHits(fs, base, pattern, { require } = {}) {
   let frontier = [posix.normalize(base)];
@@ -124,7 +123,7 @@ function pathExistsAt(fs, base, spec, dirOnly) {
  * The root PACKAGE a module specifier names: `@tauri-apps/api/core` →
  * `@tauri-apps/api`, `yaml/util` → `yaml`. A manifest declares the package,
  * never its subpaths, so an exact-key lookup rejected every deep import a
- * header could legitimately name (audit R2 #175).
+ * header could legitimately name.
  */
 function packageRoot(specifier) {
   const parts = specifier.split("/");
@@ -137,7 +136,7 @@ function packageRoot(specifier) {
  * happened to come last. A single mutable `via` made the provenance
  * order-dependent, so `{a,b}` where `a` needed the suffix fallback and `b` was
  * a dependency reported "dependency" and hid the trade the header says is
- * reported per run (audit R2 #174).
+ * reported per run.
  */
 const VIA_RANK = { tail: 2, dependency: 1, location: 0 };
 
@@ -204,8 +203,7 @@ export function resolveRustModuleTarget(target, ref, tree, ctx) {
   }
   // `crate::`, `self::`, `super::super::` — a qualifier with no module after
   // it names nothing. The empty relative path used to join to the base itself,
-  // which is a directory that exists, so a prefix-only target "resolved"
-  // (audit R2 #177).
+  // which is a directory that exists, so a prefix-only target "resolved".
   if (segs.length === 0) {
     return { status: "unresolved", reason: `"${target}": names no module after its qualifier` };
   }

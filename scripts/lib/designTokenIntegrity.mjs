@@ -1,5 +1,5 @@
 /**
- * WI-UI0.2 declaration integrity (C2b–C2g) of the design-token gate, run over
+ * Declaration integrity (C2b–C2g) of the design-token gate, run over
  * the tree: rgb()/hsl() literals and className literals against their identity
  * baseline, duplicate declarations, undeclared keyframes, undefined var()
  * fallbacks, and rule-31 parity. Findings are pushed onto the caller's

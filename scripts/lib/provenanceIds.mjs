@@ -9,17 +9,17 @@
  * offline and from tracked files alone, which of them can be followed.
  *
  * Resolution (a token that does not resolve is a finding):
- *   - A NAMESPACED work item (`WI-RA27.1`, `WI-FL0.2`, letters after `WI-`)
+ *   - A NAMESPACED work item (`WI-RA27.1`, `WI-RA17E.5`, letters after `WI-`)
  *     resolves when exactly one tracked plan mentions it, or when a tracked
  *     plan that mentions it is named in the same file's comments.
- *   - A BARE work item (`WI-4.4`, digits straight after `WI-`) resolves only
- *     when a tracked plan that mentions it is named in the same file's
- *     comments. Every plan numbers its items from `WI-1`, so a bare id with no
+ *   - A BARE work item (`WI-<n>.<m>`, digits straight after `WI-`) resolves
+ *     only when a tracked plan that mentions it is named in the same file's
+ *     comments. Every plan numbers its items from 1, so a bare id with no
  *     plan beside it names a dozen plans at once — or, when the plan it came
  *     from was never tracked, a different plan's item that happens to share
  *     the number.
  *   - An AUDIT citation — `audit` followed by an identifier (`audit
- *     20260907 #84`, `audit R2 #179`, `audit-fix H3`, `audit round 2`) —
+ *     20260907 #84`, `audit R<n> #<n>`, `audit-fix H<n>`, `audit round <n>`) —
  *     resolves when it carries a date and a tracked audit record for that date
  *     exists (`.cc-suite/audits/`, `.claude/tdd-guardian/audit-*`). An
  *     undated citation names no record at all.
@@ -31,7 +31,7 @@
  *     it never makes a token resolve.
  *
  * Key decisions:
- *   - Commit history is NOT a resolver. A commit subject tagged `(WI-2)` is
+ *   - Commit history is NOT a resolver. A commit subject tagged `(WI-<n>)` is
  *     one of dozens with that tag, and history depends on how the tree was
  *     cloned; a gate that reads it gives different answers on different
  *     machines. Plans and audit records are files in the tree, so the verdict
@@ -41,6 +41,9 @@
  *     judgment. A `#N` inside an audit citation is part of that citation.
  *   - Test files are out of scope: a test header is where a WI id belongs
  *     (`scripts/check-wi-linkage.sh` reads it there).
+ *   - The tooling is in scope (`TOOLING_TREES`), shell scripts included: a
+ *     gate's comment that cites an id a clone cannot resolve leaves the
+ *     contributor it blocks without the reason.
  *
  * @coordinates-with scripts/lib/sourceComments.mjs — every comment of a file, with offsets
  * @coordinates-with scripts/check-provenance-ids.mjs — the CLI over these functions
@@ -56,7 +59,7 @@ import { commentRuns, isCommentedSource, lineAt } from "./sourceComments.mjs";
 const posix = path.posix;
 
 /** Production source trees, repo-relative. */
-export const PRODUCTION_TREES = [
+const PRODUCTION_TREES = [
   "src",
   "src-tauri/src",
   "server/mcp/src",
@@ -65,6 +68,17 @@ export const PRODUCTION_TREES = [
   "server/content/scripts",
   "e2e",
 ];
+/**
+ * The tooling: the gates, generators and phase checkers under `scripts/`, and
+ * the Claude Code hooks that run on every edit. Production code for the
+ * comment rules — their comments explain why a gate decides what it decides,
+ * and a contributor whose change it blocks reads them from a clone.
+ */
+const TOOLING_TREES = ["scripts", ".claude/hooks"];
+/** Every tree the comment rules read: production source and the tooling. */
+export const COMMENT_RULE_TREES = [...PRODUCTION_TREES, ...TOOLING_TREES];
+/** A file whose comments the rules read: the languages `comments` parses, plus shell scripts, read line-wise. */
+export const isRuleSource = (file) => isCommentedSource(file) || file.endsWith(".sh");
 const PLAN_DIRS = [".claude/tdd-guardian", ".claude/adr/plans"];
 const AUDIT_DIRS = [".cc-suite/audits", ".claude/tdd-guardian"];
 
@@ -192,11 +206,11 @@ function scanSource(source, file, ctx) {
   return found;
 }
 
-/** Every provenance token in the production tree, resolved. */
-export function scanTree(root) {
+/** Every provenance token in the comments of `trees` (by default production source and the tooling), resolved. */
+export function scanTree(root, trees = COMMENT_RULE_TREES) {
   const ctx = { plans: readPlans(root), dates: auditDates(root) };
   const out = [];
-  for (const file of productionFiles(root)) {
+  for (const file of productionFiles(root, trees, isRuleSource)) {
     const source = readFileSync(path.join(root, file), "utf8");
     if (!/WI-|audit/i.test(source)) continue;
     out.push(...scanSource(source, file, ctx));

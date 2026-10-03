@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * `Result<T, String>` command ratchet (WI-14).
+ * `Result<T, String>` command ratchet.
  *
  * Rule 50 §10 used to canonize `Result<T, String>` for every Tauri command, so
  * the only thing that crossed the IPC boundary was prose. The frontend then
@@ -25,7 +25,7 @@
  * carried its own `stripCommentsAndStrings`, and it had already DRIFTED from
  * the shared one in both directions a duplicated lexer drifts: it capped
  * raw-string delimiter detection at a 16-character slice (Rust allows 255
- * hashes, so a longer one was mis-tokenised as code — audit R2 #18/#192) and
+ * hashes, so a longer one was mis-tokenised as code) and
  * it had never heard of the C string literals `c"…"` / `cr#"…"#` stable since
  * Rust 1.77. Two lexers over one language is the defect; there is one now.
  *
@@ -132,7 +132,7 @@ const BASELINE_HEADER = [
  * it read `argv[++i]` as `undefined` and then fell through to `args.root ??
  * <default>` — so a mistyped invocation silently scanned the repository the
  * script lives in rather than the tree the caller named, and reported a verdict
- * about the wrong tree (audit R2 #28). A following `--flag` is the same
+ * about the wrong tree. A following `--flag` is the same
  * mistake spelled differently, so it is refused too.
  */
 export function parseArgs(argv) {

@@ -16,8 +16,7 @@ import { NEGATED } from "./mcpReadmeJoin.mjs";
  * The reference page's `## \`<tool>\`` sections: tool name → the section's
  * lines. A tool documented under TWO headings contributes both: `set` on a
  * repeat replaced the earlier section's lines, so an action documented there
- * was reported as missing — a false failure with the entry sitting on the page
- * (audit R2 #78).
+ * was reported as missing — a false failure with the entry sitting on the page.
  */
 export function toolSections(docText) {
   const sections = new Map();

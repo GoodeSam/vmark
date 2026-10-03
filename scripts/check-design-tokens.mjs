@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Design Token Enforcement Script
- * Checks CSS files for design system violations, and (WI-UI0.2) the
+ * Checks CSS files for design system violations, and the
  * declaration-integrity checks C2a–C2g of the UI-consistency plan:
  *
  *   C2a  hardcoded hex — ERROR (was warning; the tree is measured clean
@@ -57,8 +57,8 @@ if (isMainModule(import.meta.url)) {
   const violations = [];
 
   // Files whose colour literals are the point (palettes, print/export
-  // overrides, token definitions). editor.css and App.css were dropped in
-  // WI-UI0.2; the three syntax stylesheets left in WI-UI1.5 — the palette is
+  // overrides, token definitions). editor.css and App.css are no longer
+  // listed; the three syntax stylesheets left too — the palette is
   // per-theme catalog data now (ThemeTokens.syntax), the static fallback
   // lives in index.css, and hljs-syntax.css/source-syntax.css are pure role
   // maps onto var(--syntax-*) with zero literals.
@@ -184,7 +184,7 @@ if (isMainModule(import.meta.url)) {
     }
   }
 
-  // ── WI-UI0.2 declaration integrity (C2b–C2g) ─────────────────────────────
+  // ── Declaration integrity (C2b–C2g) ──────────────────────────────────────
   checkDeclarationIntegrity({ args, files, fixtureMode, readTree, definedVars, colorExclude: COLOR_EXCLUDE, violations });
 
 

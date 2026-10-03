@@ -35,7 +35,7 @@ export const ROOTS = ["src", "src-tauri/src", "server/mcp/src", "server/content/
 // gate entirely while every .ts file ratcheted.
 export const EXTS = [".ts", ".tsx", ".rs", ".js", ".jsx", ".mjs"];
 export const BASELINE_PATH = "scripts/file-size-baseline.json";
-/** Separate, more generous cap for test/bench files (WI-7): suites grow
+/** Separate, more generous cap for test/bench files: suites grow
  * legitimately faster than production files, but 3,000-line suites are
  * maintainability debt too. Same ratchet-down semantics as the main gate. */
 export const DEFAULT_TEST_LIMIT = 800;
@@ -75,7 +75,7 @@ const GENERATED_HEADER_LINES = 12;
 
 /**
  * A generated file: inside a `generated/` directory AND declaring itself so in
- * its header (WI-15). Exempt because the ~300-line rule protects HUMAN
+ * its header. Exempt because the ~300-line rule protects HUMAN
  * maintainability — a generated contract grows one block per operation, and
  * "split it" is not an action available to anyone. Drift is policed by its
  * own regenerate-and-compare gate instead.

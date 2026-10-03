@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# DoD checker for the UI-consistency plan (WI-UI0.5).
+# DoD checker for the UI-consistency plan.
 # Origin: the UI-consistency plan (maintainer-local; no tracked copy)
 #
 # Usage: bash scripts/check-ui-phase.sh <phase-number>
@@ -35,12 +35,12 @@ usage() {
 # `set -e` is deliberately off (an assertion may fail and the run continues), so
 # a failed `cd` used to be IGNORED and every path assertion below then resolved
 # against the caller's working directory — a phase reporting on whatever tree
-# the reader happened to stand in (audit R2 #90).
+# the reader happened to stand in.
 cd "$(dirname "$0")/.." || { echo "cannot cd to the repository root from $0"; exit 64; }
 
 # Exactly one argument. A second positional used to be discarded in silence, so
-# `check-ui-phase.sh 2 3` ran phase 2 and said nothing about the 3 (audit R2
-# #91) — the same class check-terminal-edge-phase.sh already refuses.
+# `check-ui-phase.sh 2 3` ran phase 2 and said nothing about the 3 — the same
+# class check-terminal-edge-phase.sh already refuses.
 if (( $# > 1 )); then
   usage
   echo "  (unexpected extra argument: $2)"
@@ -60,8 +60,8 @@ ok()   { echo "  ✓ $1"; PASS=$((PASS+1)); }
 MISSING_HELPER_MARK="$(mktemp -t vmark-dod-missing)"
 # Every temp file this run creates. The vitest report used to be removed only
 # on the normal path, so an interrupted run (Ctrl-C during a several-minute
-# vitest invocation is the ordinary case here) left it in $TMPDIR (audit R2
-# #95). INT and TERM are trapped as well as EXIT — bash does not run an EXIT
+# vitest invocation is the ordinary case here) left it in $TMPDIR. INT and
+# TERM are trapped as well as EXIT — bash does not run an EXIT
 # trap for an uncaught SIGINT.
 TEMP_FILES=("$MISSING_HELPER_MARK")
 cleanup_temp() { rm -f "${TEMP_FILES[@]}"; }
@@ -92,7 +92,7 @@ assert_grep() {
 
 # The gate's own output IS the diagnostic. Discarding it left "command failed:
 # pnpm lint:ui-consistency" and nothing to act on, for a gate whose whole job is
-# to name the offending file and line (audit R2 #93).
+# to name the offending file and line.
 ASSERT_CMD_TAIL=20
 assert_cmd() {
   local label="$1"; shift
@@ -112,7 +112,7 @@ assert_cmd() {
 # suite reports `status: "passed"` with only skipped assertions, and beside one
 # green suite it vanished into a green total (audit 20260907 #66).
 #
-# Two things this used to get wrong (audit R2 #96/#97): vitest's exit status
+# Two things this used to get wrong: vitest's exit status
 # was DISCARDED, so a run that wrote a green-looking report and then died (a
 # reporter crash, a teardown failure, an unhandled rejection) was reported as
 # successful; and the suite check compared COUNTS, only rejecting "too few", so
@@ -134,8 +134,8 @@ assert_test_run() {
   vitest_status=$?
   # The verdict is scripts/vitestReportVerdict.mjs — a MODULE, not a
   # `node -e` string. Code inside a shell string is checked by nothing here,
-  # and two of this validator's branches were unreachable from any test
-  # (audit R2 #94). stderr is folded into the message so a crash in the
+  # and two of this validator's branches were unreachable from any test.
+  # stderr is folded into the message so a crash in the
   # validator says why, instead of degrading to "report unreadable".
   why="$(node scripts/vitestReportVerdict.mjs "$report" "$expected_list" "$vitest_status" 2>&1)"
   status=$?
@@ -167,7 +167,7 @@ has_devdocs() {
 
 # ONE theme list. Phases 0 and 1 each carried their own copy — the baseline
 # screenshots and the contrast lists — so a seventh theme would have been
-# covered by whichever phase somebody remembered (audit R2 #98).
+# covered by whichever phase somebody remembered.
 THEMES=(white paper mint sepia night solarized)
 # And the list is CHECKED, not merely shared: `scripts/theme-contrast-baseline.json`
 # is written from the typed catalog by check-theme-contrast.ts, so its `failing`
