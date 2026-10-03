@@ -17,7 +17,8 @@
  * or on how much history was cloned. Issue numbers are not checked.
  *
  * Two citations a clone can never follow are refused outright, over the same
- * trees plus `scripts/` (rules in `scripts/lib/commentCitations.mjs`): a
+ * trees plus the tooling, `scripts/` and `.claude/hooks/` (rules in
+ * `scripts/lib/commentCitations.mjs`): a
  * calendar date, which says when instead of what was observed, and a path to a
  * document under the gitignored `dev-docs/`. There is no baseline: the tree
  * carries zero findings of any kind.

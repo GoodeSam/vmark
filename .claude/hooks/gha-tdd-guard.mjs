@@ -3,7 +3,9 @@
 // PreToolUse hook: scoped TDD guard. Blocks Write/Edit on production source
 // files unless a sibling test file already exists (RED before GREEN).
 //
-// Enforced feature scopes (see .claude/rules/60-ai-governance.md §5).
+// Enforced feature scopes (see .claude/rules/60-ai-governance.md §5). The
+// WI-6, WI-10 and WI-19 cited below are work items of the tracked plan
+// .claude/tdd-guardian/plan-20260803-161713.md.
 //
 // EVERY PATH BELOW MUST EXIST. WI-19 found the scope had drifted into fiction:
 // four of the seven workflow entries named directories and stores that had not
@@ -27,7 +29,7 @@
 //     - src/plugins/workflowPreview/**/*.{ts,tsx} (the graph view)
 //     - src/components/WorkflowApproval/**/*.{ts,tsx}
 //     - src/services/workflow/**/*.{ts,tsx}       (mostly the embedded
-//       browser's workflow RUN engine — WI-NB6/NB7: executor, registry,
+//       browser's workflow RUN engine: executor, registry,
 //       approval, recorder. This engine owns workflowEnginePolicySync.ts —
 //       the flag push to Rust — and providerPayload.ts, run_workflow's
 //       provider block; saveGhaWorkflowDocument.ts is the VIEWER's save)
@@ -164,7 +166,7 @@ const SCOPED = [
   /^src\/lib\/workflow\/.*\.tsx?$/,
   /^src\/plugins\/workflowPreview\/.*\.tsx?$/,
   /^src\/components\/WorkflowApproval\/.*\.tsx?$/,
-  // Mostly the embedded browser's workflow RUN engine (WI-NB6/NB7). The YAML
+  // Mostly the embedded browser's workflow RUN engine. The YAML
   // engine owns workflowEnginePolicySync.ts (flag push) and providerPayload.ts
   // (run_workflow's provider block); saveGhaWorkflowDocument.ts is the GHA
   // viewer's save. All of it is scoped, whichever feature a file serves.
@@ -196,7 +198,7 @@ const SCOPED = [
   /^src\/components\/Browser\/.*\.tsx?$/,
   /^src\/services\/browser\/.*\.tsx?$/,
   // src/stores/browserStore.ts was scoped here until the hibernation store was
-  // judged fiction and deleted (review finding E4, WI-6 2026-08-03).
+  // judged fiction and deleted (review finding E4, WI-6).
   // src/stores/webWorkflowStore.ts went the same way in WI-19: never created.
   /^src\/stores\/browserApprovalStore\.ts$/,
   // The automation lease's state, moved here from services/browser (which the

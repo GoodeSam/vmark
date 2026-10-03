@@ -1,4 +1,5 @@
 // WI-RA17G.9 / WI-RA17G.10 — no calendar date and no dev-docs/ document path in a production comment, or the gate fails.
+// WI-RA28.2 — the Claude Code hooks under .claude/hooks/ are read by the same date and dev-docs rules.
 /**
  * Drives the date and dev-docs rules of `scripts/lib/commentCitations.mjs`,
  * the shell comment reader they use, and the provenance CLI that reports them.
@@ -156,6 +157,20 @@ describe("scanCitations", () => {
       "dev-docs src-tauri/src/c.rs:1 dev-docs/specs/format-v0.md",
       "dev-docs scripts/d.mjs:1 dev-docs/plans/x.md",
       "date scripts/e.sh:2 2026-08-09",
+    ]);
+  });
+
+  it("reads the Claude Code hooks too — they run on every edit, and their comments explain why", () => {
+    const root = tree({
+      ".claude/hooks/guard.mjs": "// relocated by the 2026-07 refactors\n// Scope (per dev-docs/plans/x.md)\nexport {};\n",
+      ".claude/hooks/run.sh": "#!/bin/bash\n# since 2026-08-03\n",
+      ".claude/hooks/guard.test.mjs": "// 2026-08-16\n",
+      ".claude/settings.json": '{ "//": "2026-08-16" }\n',
+    });
+    expect(scanCitations(root).map((c) => `${c.kind} ${c.file}:${c.line} ${c.token}`)).toEqual([
+      "date .claude/hooks/guard.mjs:1 2026-07",
+      "dev-docs .claude/hooks/guard.mjs:2 dev-docs/plans/x.md",
+      "date .claude/hooks/run.sh:2 2026-08-03",
     ]);
   });
 });

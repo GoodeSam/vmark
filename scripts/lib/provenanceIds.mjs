@@ -65,6 +65,17 @@ export const PRODUCTION_TREES = [
   "server/content/scripts",
   "e2e",
 ];
+/**
+ * The tooling: the gates, generators and phase checkers under `scripts/`, and
+ * the Claude Code hooks that run on every edit. Production code for the
+ * comment rules — their comments explain why a gate decides what it decides,
+ * and a contributor whose change it blocks reads them from a clone.
+ */
+export const TOOLING_TREES = ["scripts", ".claude/hooks"];
+/** Every tree the comment rules read: production source and the tooling. */
+export const COMMENT_RULE_TREES = [...PRODUCTION_TREES, ...TOOLING_TREES];
+/** A file whose comments the rules read: the languages `comments` parses, plus shell scripts, read line-wise. */
+export const isRuleSource = (file) => isCommentedSource(file) || file.endsWith(".sh");
 const PLAN_DIRS = [".claude/tdd-guardian", ".claude/adr/plans"];
 const AUDIT_DIRS = [".cc-suite/audits", ".claude/tdd-guardian"];
 

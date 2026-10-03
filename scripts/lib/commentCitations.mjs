@@ -31,8 +31,9 @@
  *     `<D> <Month> <YYYY>`, `<Month> <YYYY>`). A bare year is not a date.
  *   - Shell scripts are read line-wise (`sourceComments.mjs`): whole-line `#`
  *     comments outside heredocs. Their trailing comments are not read.
- *   - Scope is the provenance trees plus `scripts/` — the tooling is
- *     production code for this rule; tests and fixtures are not.
+ *   - Scope is production source plus the tooling (`scripts/`,
+ *     `.claude/hooks/`), which is production code for these rules; tests and
+ *     fixtures are not.
  *
  * @coordinates-with scripts/lib/provenanceIds.mjs — the trees, the test-path rule, audit-token spans and tracked audit dates
  * @coordinates-with scripts/lib/sourceComments.mjs — every comment of a file, shell included
@@ -43,11 +44,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { PRODUCTION_TREES, auditDates, productionFiles, tokensIn } from "./provenanceIds.mjs";
-import { commentRuns, isCommentedSource, lineAt } from "./sourceComments.mjs";
-
-/** The trees this rule reads: the provenance trees and the tooling. */
-const CITATION_TREES = [...PRODUCTION_TREES, "scripts"];
+import { COMMENT_RULE_TREES, auditDates, isRuleSource, productionFiles, tokensIn } from "./provenanceIds.mjs";
+import { commentRuns, lineAt } from "./sourceComments.mjs";
 
 const MONTH = String.raw`(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)`;
 const MM = String.raw`(?:0[1-9]|1[0-2])`;
@@ -152,13 +150,11 @@ function codeOnly(source, spans) {
   return out + source.slice(at);
 }
 
-const isCitationSource = (file) => isCommentedSource(file) || file.endsWith(".sh");
-
 /** Every date and `dev-docs/` finding in the production comments under `root`: `{ kind, file, line, token, reason }`. */
-export function scanCitations(root, trees = CITATION_TREES) {
+export function scanCitations(root, trees = COMMENT_RULE_TREES) {
   const dates = auditDates(root);
   const out = [];
-  for (const file of productionFiles(root, trees, isCitationSource)) {
+  for (const file of productionFiles(root, trees, isRuleSource)) {
     const source = readFileSync(path.join(root, file), "utf8");
     if (!/20\d\d|dev-docs\//.test(source)) continue;
     const spans = commentRuns(source, file);
