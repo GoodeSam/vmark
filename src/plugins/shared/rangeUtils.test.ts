@@ -1,7 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
+import fc from "fast-check";
 import { Schema } from "@tiptap/pm/model";
 import { EditorState, SelectionRange } from "@tiptap/pm/state";
+import { measureGrowth, growthExponent } from "@/test/cpuClock";
 import {
   mergeOverlappingRanges,
   sortAndDedupeRanges,
@@ -326,6 +328,70 @@ describe("rangeUtils", () => {
 
       const result = remapBackwardFlags(original, backward, normalized);
       expect(result).toEqual([false]);
+    });
+
+    /**
+     * The rule, stated as the direct search it replaced: the first original
+     * range equal to the normalized one, else the last original inside it.
+     */
+    function remapByLinearSearch(
+      original: readonly SelectionRange[],
+      backward: boolean[],
+      normalized: readonly SelectionRange[],
+    ): boolean[] {
+      return normalized.map((nr) => {
+        const same = original.findIndex((r) => r.$from.pos === nr.$from.pos && r.$to.pos === nr.$to.pos);
+        if (same >= 0) return backward[same] ?? false;
+        const inside = original.findLastIndex((r) => r.$from.pos >= nr.$from.pos && r.$to.pos <= nr.$to.pos);
+        return inside >= 0 ? (backward[inside] ?? false) : false;
+      });
+    }
+
+    it("picks the flag the direct search picks, for deduplicated, merged and arbitrary ranges", () => {
+      const doc = createDoc("0123456789abcdefghij");
+      const rangeArb = fc
+        .tuple(fc.integer({ min: 1, max: 21 }), fc.integer({ min: 1, max: 21 }))
+        .map(([a, b]) => new SelectionRange(doc.resolve(Math.min(a, b)), doc.resolve(Math.max(a, b))));
+      fc.assert(
+        fc.property(
+          fc.array(rangeArb, { minLength: 1, maxLength: 10 }),
+          fc.array(fc.boolean(), { maxLength: 10 }),
+          fc.array(rangeArb, { maxLength: 4 }),
+          (original, backward, arbitrary) => {
+            for (const normalized of [
+              sortAndDedupeRanges(original, doc),
+              mergeOverlappingRanges(original, doc),
+              arbitrary,
+            ]) {
+              expect(remapBackwardFlags(original, backward, normalized)).toEqual(
+                remapByLinearSearch(original, backward, normalized),
+              );
+            }
+          },
+        ),
+        { numRuns: 500 },
+      );
+    });
+
+    // WI-RA23.1: every arrow key and every edit made elsewhere remaps the flags
+    // of all N cursors; a search per cursor made that N² (measured N^1.88
+    // between 50 and 500 ranges). Measured as growth on the CPU clock; sorting
+    // is the most it may cost (N log N reads about 1.2 over this range).
+    it("costs at most about linearly in the number of ranges", () => {
+      const doc = createDoc("0".repeat(2000));
+      const flagsFor = (count: number) => {
+        const ranges = Array.from({ length: count }, (_, i) => {
+          const $pos = doc.resolve(1 + i * Math.floor(2000 / count));
+          return new SelectionRange($pos, $pos);
+        });
+        return { ranges, backward: ranges.map((_, i) => i % 2 === 0) };
+      };
+      const growth = measureGrowth(
+        ({ ranges, backward }: ReturnType<typeof flagsFor>) => remapBackwardFlags(ranges, backward, ranges),
+        flagsFor(50),
+        flagsFor(500),
+      );
+      expect(growthExponent(growth, 50, 500)).toBeLessThan(1.5);
     });
   });
 });

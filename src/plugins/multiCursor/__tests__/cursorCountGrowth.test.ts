@@ -20,10 +20,12 @@ import { MultiSelection } from "@/plugins/shared/MultiSelection";
 import { measureGrowth, growthExponent } from "@/test/cpuClock";
 import { multiCursorPlugin } from "../multiCursorPlugin";
 import {
+  handleMultiCursorArrow,
   handleMultiCursorBackspace,
   handleMultiCursorDelete,
   handleMultiCursorInput,
 } from "../inputHandling";
+import { handleMultiCursorHorizontal } from "../horizontalMovement";
 import { handleMultiCursorEnter } from "../enterHandling";
 import { handleMultiCursorCut, handleMultiCursorPaste } from "../clipboard";
 
@@ -100,6 +102,32 @@ describe("multi-cursor cost grows at most linearly with the cursor count", () =>
 
   it("cutting every selection", () => {
     expect(exponentOf(selectionsAcross, handleMultiCursorCut)).toBeLessThan(MAX_EXPONENT);
+  });
+
+  it.each(["char", "word", "line"] as const)("moving every cursor right by %s", (unit) => {
+    expect(
+      exponentOf(cursorsAcross, (s) => handleMultiCursorHorizontal(s, "ArrowRight", false, unit)),
+    ).toBeLessThan(MAX_EXPONENT);
+  });
+
+  it("extending every cursor by a character", () => {
+    expect(
+      exponentOf(cursorsAcross, (s) => handleMultiCursorHorizontal(s, "ArrowLeft", true, "char")),
+    ).toBeLessThan(MAX_EXPONENT);
+  });
+
+  // Without a view: the coordinate path needs layout, which a node test has not.
+  it("moving every cursor down", () => {
+    expect(exponentOf(cursorsAcross, (s) => handleMultiCursorArrow(s, "ArrowDown", false))).toBeLessThan(
+      MAX_EXPONENT,
+    );
+  });
+
+  // Another plugin, an MCP edit or undo changing the document maps every cursor.
+  it("following an edit made elsewhere", () => {
+    expect(exponentOf(cursorsAcross, (s) => s.tr.insertText("Z", PARAGRAPH_LENGTH))).toBeLessThan(
+      MAX_EXPONENT,
+    );
   });
 
   // Enter is the one operation whose floor is ProseMirror's, not linear: each
