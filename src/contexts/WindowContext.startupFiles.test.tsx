@@ -4,7 +4,7 @@
 // params — runs here end to end: the real startup opener, the real
 // open-in-new-tab core, the real open policy that derives a file's workspace,
 // and the real tab, document, recent-files and workspace stores. Only the
-// Tauri boundary (window handle, `invoke`, `readTextFile`) and the toast
+// Tauri boundary (window handle, `invoke`, `readFile`) and the toast
 // package are replaced. These cases used to live in WindowContext.test.tsx
 // against a hand-written copy of the startup opener, which had drifted: it
 // left an empty document behind for a file that failed to read, where the real
@@ -29,15 +29,20 @@ vi.mock("@tauri-apps/api/webviewWindow", () => ({
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(() => Promise.resolve(null)),
 }));
-vi.mock("@tauri-apps/plugin-fs", () => ({
-  readTextFile: vi.fn((path: string) => {
-    const content = boundary.files.get(path);
-    return content === undefined
-      ? Promise.reject(new Error(`ENOENT: ${path}`))
-      : Promise.resolve(content);
-  }),
-  exists: vi.fn(() => Promise.resolve(false)),
-}));
+vi.mock("@tauri-apps/plugin-fs", async () => {
+  const { fileBytes } = await import("@/test/fileBytes");
+  // Documents are read as bytes (plugin-fs `readTextFile` drops a BOM), so the
+  // boundary serves the stored text as the bytes the real `readFile` returns.
+  return {
+    readFile: vi.fn((path: string) => {
+      const content = boundary.files.get(path);
+      return content === undefined
+        ? Promise.reject(new Error(`ENOENT: ${path}`))
+        : fileBytes(content);
+    }),
+    exists: vi.fn(() => Promise.resolve(false)),
+  };
+});
 vi.mock("sonner", () => ({
   toast: { error: vi.fn(), success: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));

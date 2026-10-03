@@ -121,12 +121,14 @@ function installRustHotExit(): void {
     const session = args.session as { windows: WindowState[] };
     for (const window of session.windows) rust.pending.set(window.window_label, window);
   });
-  statefulFs.stubCommand("hot_exit_get_window_state", (args) => {
+  // Both commands act for the CALLING window (Rust reads it from the IPC
+  // message, not from an argument), and every call here comes from WINDOW.
+  statefulFs.stubCommand("hot_exit_get_window_state", () => {
     if (rust.failRestore) throw new Error("coordinator unavailable");
-    return rust.pending.get(args.windowLabel as string) ?? null;
+    return rust.pending.get(WINDOW) ?? null;
   });
-  statefulFs.stubCommand("hot_exit_window_restore_complete", (args) => {
-    rust.pending.delete(args.windowLabel as string);
+  statefulFs.stubCommand("hot_exit_window_restore_complete", () => {
+    rust.pending.delete(WINDOW);
     return rust.pending.size === 0;
   });
   statefulFs.stubCommand("hot_exit_clear_session", () => {

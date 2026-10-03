@@ -13,7 +13,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn(() => Promise.resolve(() => {})) }));
-vi.mock("@tauri-apps/plugin-fs", () => ({ readTextFile: mocks.readTextFile, exists: mocks.exists }));
+vi.mock("@tauri-apps/plugin-fs", async () => {
+  const { fileBytes } = await import("@/test/fileBytes");
+  return { readFile: (path: string) => fileBytes(mocks.readTextFile(path)), exists: mocks.exists };
+});
 vi.mock("@tauri-apps/plugin-dialog", () => ({ message: vi.fn(), save: vi.fn() }));
 vi.mock("sonner", () => ({
   toast: { info: mocks.toastInfo, success: vi.fn(), error: vi.fn(), warning: vi.fn() },
