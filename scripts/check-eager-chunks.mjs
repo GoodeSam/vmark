@@ -75,7 +75,7 @@ export const DENYLIST = [
  * a static import inlined it) and must NOT be statically reachable at cold
  * start (a present one may still have been pulled onto the boot graph).
  *
- * All six are format-registry surfaces. `bootstrapFormats()` runs in every
+ * All seven are format-registry surfaces. `bootstrapFormats()` runs in every
  * window — Settings, PDF export — before `import("./App")`, so an adapter's
  * static import is cold-start cost for windows that never open an editor.
  * Measured on the pre-WI-13 build: 4.52 MB across 71 chunks, of which the
@@ -113,6 +113,10 @@ export const LAZY_ONLY_CHUNK_PATTERNS = [
   {
     re: /^sourceWorkflowGoto-[^/]*\.js$/,
     why: "yaml adapter's loadExtraExtensions — uses: goto-def",
+  },
+  {
+    re: /^vendor-toml-[^/]*\.js$/,
+    why: "toml adapters' parser (smol-toml), loaded on first TOML validate/preview (tomlParser.ts)",
   },
 ];
 
@@ -157,8 +161,12 @@ export function findLazyOnlyViolations(names, reachable, patterns = LAZY_ONLY_CH
  * (the hot-exit schemas use `zod/mini`) and the JSON tree view left the entry
  * chunk for a lazy one. The measured closure went 3,223,808 → 3,153,662
  * bytes; same ratio again.
+ *
+ * Lowered 3,310,399 → 3,305,484 bytes when smol-toml left the entry chunk for
+ * the lazy `vendor-toml` chunk (the TOML parser now loads on first use). The
+ * measured closure is 3,148,980 bytes; same ratio again.
  */
-export const MAX_EAGER_BYTES = 3_310_399;
+export const MAX_EAGER_BYTES = 3_305_484;
 
 /** A failure message when `closureBytes` exceeds `max`, else null. */
 export function eagerBudgetViolation(closureBytes, max = MAX_EAGER_BYTES) {

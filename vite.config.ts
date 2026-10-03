@@ -3,7 +3,7 @@ import { sourceAliases } from "./vitest.shared.ts";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { readFileSync } from "node:fs";
-import { manualChunks } from "./scripts/manualChunks.ts";
+import { chunkFileNames, manualChunks } from "./scripts/manualChunks.ts";
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -211,19 +211,14 @@ export default defineConfig(() => ({
         // glob — hash-pinned `index-<hash>*` globs silently rotted and the
         // 1.2 MB entry chunk went unbudgeted (audit 20260612 H9).
         entryFileNames: "assets/entry-[hash].js",
-        // The Settings page emits as `Settings-<hash>.js`, and the i18n locale
-        // chunks built from src/locales/<lang>/settings.json emit as
-        // `settings-<hash>.js` — differing ONLY by case. size-limit 13 matches
-        // globs case-insensitively (12 did not), so the page's 101 kB budget
-        // silently swept in ten ~45 kB locale chunks and reported 541 kB
-        // against a healthy 99.6 kB bundle. Glob negation cannot separate them
-        // (the exclude matches both cases), and pinning the page in
-        // manualChunks drags its transitive deps in (2.8 MB), so rename the
-        // EMITTED FILE only — chunk membership is untouched.
-        chunkFileNames: (chunk: { name: string }) =>
-          chunk.name === "Settings"
-            ? "assets/SettingsPage-[hash].js"
-            : "assets/[name]-[hash].js",
+        // Two chunks need a name a size budget can glob, and get it by
+        // renaming the EMITTED FILE only — chunk membership is untouched
+        // (pinning in manualChunks drags dependencies along). The Settings
+        // page (`Settings-*` collides by case with the i18n `settings-*`
+        // locale chunks, which size-limit 13's case-insensitive globs swept
+        // into the page's budget) and the shared Settings primitives
+        // (`components-*`, too generic). See scripts/manualChunks.ts.
+        chunkFileNames,
         // Chunk policy lives in scripts/manualChunks.ts so it is
         // unit-tested (scripts/manualChunks.test.ts — characterization
         // cases lock every branch). Keep it in lockstep with

@@ -21,11 +21,15 @@
  * The source pane's own gutter diagnostics are NOT this hook's business: they
  * track the caret and come live from `SourcePane`.
  *
+ * A format whose validator can answer differently for the same content (its
+ * parser loads on first use) says so through `FormatConfig.validatorUpdates`;
+ * the detector and the validator then run again without an edit.
+ *
  * @coordinates-with ../previewDebounce.ts — how long a large document waits
  * @module components/Editor/SplitPaneEditor/usePreviewModel
  */
 
-import { useDeferredValue, useMemo } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useSettledPreviewContent } from "../previewDebounce";
 import type {
   FormatConfig,
@@ -68,13 +72,16 @@ export function usePreviewModel({
   // first waits for typing to settle (the WYSIWYG flush's size tiers), since
   // each render validates and draws all of it.
   const previewContent = useDeferredValue(useSettledPreviewContent(content));
+  // Renewed when the validator says its answer changed for the same content
+  // (FormatConfig.validatorUpdates): the detector and validator run again.
+  const checks = useFormatChecks(formatConfig);
 
   const Preview = useMemo(() => {
     const renderers = formatConfig.schemaRenderers;
     if (renderers) {
       const chosen = activeSchemaId ? renderers[activeSchemaId] : undefined;
       if (chosen) return chosen;
-      const detector = formatConfig.schemaDetector;
+      const detector = checks.detect;
       if (detector) {
         try {
           const schemaId = detector(filePath ?? "", previewContent);
@@ -85,17 +92,17 @@ export function usePreviewModel({
       }
     }
     return formatConfig.genericPreview;
-  }, [activeSchemaId, previewContent, filePath, formatConfig]);
+  }, [activeSchemaId, previewContent, filePath, formatConfig, checks]);
 
   const diagnostics = useMemo(() => {
     // Runs during render with no SourcePane to sandbox it, so a buggy
     // validator must not take the preview surface down with it.
     try {
-      return formatConfig.validator?.(previewContent, filePath ?? undefined) ?? [];
+      return checks.validate?.(previewContent, filePath ?? undefined) ?? [];
     } catch {
       return [];
     }
-  }, [formatConfig, previewContent, filePath]);
+  }, [checks, previewContent, filePath]);
 
   return {
     Preview,
@@ -104,4 +111,26 @@ export function usePreviewModel({
     liveContent: content,
     diagnostics,
   };
+}
+
+/** The format's content checks, as one value per answer they can give. */
+interface FormatChecks {
+  validate: FormatConfig["validator"];
+  detect: FormatConfig["schemaDetector"];
+  /** Which answer: renewed each time `validatorUpdates` fires. */
+  epoch: number;
+}
+
+/**
+ * The format's validator and schema detector, renewed each time
+ * `formatConfig.validatorUpdates` fires — so memos keyed on the result run
+ * them again on unchanged content.
+ */
+function useFormatChecks(formatConfig: FormatConfig): FormatChecks {
+  const [epoch, setEpoch] = useState(0);
+  useEffect(() => formatConfig.validatorUpdates?.(() => setEpoch((n) => n + 1)), [formatConfig]);
+  return useMemo(
+    () => ({ validate: formatConfig.validator, detect: formatConfig.schemaDetector, epoch }),
+    [formatConfig, epoch],
+  );
 }

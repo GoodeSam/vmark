@@ -21,7 +21,8 @@ import { detectSourceLanguage } from "@/lib/formats/sourceLanguage";
 // Side-effect import: ships the `.cm-hl-*` color rules (scoped to
 // `.source-editor`/`.source-pane`) used by the shared source theme.
 import "@/plugins/codemirror/source-syntax.css";
-import { buildSourcePaneExtensions, reconfigureWhenLoaded } from "./sourcePaneExtensions";
+import { buildSourcePaneExtensions, reconfigureWhenLoaded, revalidate } from "./sourcePaneExtensions";
+import { runOrQueueCodeMirrorAction } from "@/utils/imeGuard";
 import { useTrustedSeveritySync } from "./useTrustedSeveritySync";
 import type {
   FormatConfig,
@@ -120,6 +121,7 @@ export function SourcePane({
     (docSnapshot?.readOnly ?? false) ||
     (formatConfig.adapters.readOnlyDefault && !editingEnabled);
   const validator = formatConfig.validator;
+  const validatorUpdates = formatConfig.validatorUpdates;
   const filePath = docSnapshot?.filePath ?? null;
   // A format may ship its own language pack (json/yaml/code viewers). When
   // it doesn't (plain text), fall back to filename-based highlighting so a
@@ -198,8 +200,15 @@ export function SourcePane({
       reconfigureWhenLoaded(viewRef, extrasCompartmentRef.current, load, isCancelled);
     }
 
+    // A validator whose answer changed for the same content (its parser just
+    // loaded) is re-run now, not on the next edit.
+    const stopValidatorUpdates = validatorUpdates?.(() => {
+      if (!cancelled) runOrQueueCodeMirrorAction(view, () => revalidate(view));
+    });
+
     return () => {
       cancelled = true;
+      stopValidatorUpdates?.();
       releaseActiveView();
       view.destroy();
       viewRef.current = null;
@@ -209,7 +218,7 @@ export function SourcePane({
     // from this dep array so the editor doesn't remount on every parent render.
     // focusedRef is a stable ref and trustedLint is memoized on the format's
     // rule list, so neither remounts it.
-  }, [tabId, formatId, readOnly, validator, loadLanguage, loadExtraExtensions, focusedRef, trustedLint]);
+  }, [tabId, formatId, readOnly, validator, validatorUpdates, loadLanguage, loadExtraExtensions, focusedRef, trustedLint]);
 
   // Reconfigure the line-number gutter when the toggle flips. Kept out of
   // the mount effect so toggling never tears down the view (preserves undo
