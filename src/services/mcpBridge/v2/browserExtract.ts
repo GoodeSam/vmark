@@ -1,5 +1,5 @@
 /**
- * MCP v2 `vmark.browser.extract` handler (WI-NB4.1) — reader-mode extraction.
+ * MCP v2 `vmark.browser.extract` handler — reader-mode extraction.
  *
  * Purpose: give the model the page as clean Markdown — title, byline, article
  * prose — instead of an accessibility snapshot, for pages it wants to READ

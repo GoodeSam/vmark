@@ -1,5 +1,5 @@
 /**
- * MCP v2 `vmark.browser.query` handler (WI-P5.1) — structured DOM detection by CSS
+ * MCP v2 `vmark.browser.query` handler — structured DOM detection by CSS
  * selector, read-class. Runs in the driver's ISOLATED content world. Split from
  * `browserPower.ts` (the write-class `style`/`execute_js`) for the file-size gate.
  *

@@ -1,6 +1,6 @@
 /**
  * open_workspace MCP handler — open a FOLDER as the active workspace, gated by a
- * one-shot approval (plan WI-1.5 / ADR-2/3/4).
+ * one-shot approval (ADR-2/3/4).
  *
  * Flow (fail-now → approve → AI-retry, since the transport can't hold a call for
  * human input — Codex F-04):
@@ -73,7 +73,7 @@ import { commandErrorMessage } from "@/services/commands/commandError";
  * There is exactly one, deliberately. This used to read `args.clientId` and
  * fall back to a constant — but the bridge event carries no principal, and the
  * wire contract declares `clientId` on no operation, so the read could never
- * fire and the fallback was the only behaviour that ever ran (WI-15 RED, the
+ * fire and the fallback was the only behaviour that ever ran (the
  * `windowId` class again: code shaped like a feature that nothing can reach).
  *
  * The constant is honest: the one-shot binds per SESSION, not per client, so

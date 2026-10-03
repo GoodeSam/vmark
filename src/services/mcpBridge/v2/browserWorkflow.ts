@@ -1,5 +1,5 @@
 /**
- * MCP v2 browser workflow handlers (WI-NB6.3) — the async run surface.
+ * MCP v2 browser workflow handlers — the async run surface.
  *
  * `workflow_run` (act-class) validates and STARTS a run, returning a `runId`
  * immediately: a run outlives the bridge's ~20s request bound, so it executes

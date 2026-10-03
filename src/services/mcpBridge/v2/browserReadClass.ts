@@ -1,5 +1,5 @@
 /**
- * Shared read-class execution for the MCP browser handlers (WI-P1.2 / audit #8).
+ * Shared read-class execution for the MCP browser handlers.
  *
  * `read` and `screenshot` are both non-mutating "read-class" ops with the exact
  * same envelope: feature gate → tab resolution → human-attachment gate → a native

@@ -1,5 +1,5 @@
 /**
- * MCP v2 `vmark.browser.screenshot` handler (WI-P1.2).
+ * MCP v2 `vmark.browser.screenshot` handler.
  *
  * Purpose: give the AI a visual channel onto the embedded browser. `read`
  * returns only an ARIA tree; `screenshot` returns a base64 JPEG of the tab's

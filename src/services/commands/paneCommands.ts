@@ -12,7 +12,7 @@ import i18n from "@/i18n";
 type Ctx = { windowLabel?: string };
 
 /**
- * Whether the window has a LIVE split (audit #924).
+ * Whether the window has a LIVE split.
  *
  * All three commands below are meaningless without one. `closePane` and
  * `focusOtherPane` already checked internally and did nothing, but the palette
@@ -85,7 +85,7 @@ function buildPaneCommandSpecs(): CommandDefinition[] {
   return specs;
 }
 
-/** Register the split-editor command set as one owner batch (audit #459). */
+/** Register the split-editor command set as one owner batch. */
 export function registerPaneCommands(): void {
   registerCommands(PANE_COMMANDS_OWNER, buildPaneCommandSpecs());
 }

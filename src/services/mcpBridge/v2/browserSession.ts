@@ -1,5 +1,5 @@
 /**
- * MCP v2 session/storage tools (WI-P6.2 / P6.3): `session.save` and
+ * MCP v2 session/storage tools: `session.save` and
  * `session.load`.
  *
  * A saved session is a credential-bearing blob (cookies + localStorage) that the

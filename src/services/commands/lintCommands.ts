@@ -58,7 +58,7 @@ function buildLintCommandSpecs(): CommandDefinition[] {
   return specs;
 }
 
-/** Register the markdown-lint command set as one owner batch (audit #459). */
+/** Register the markdown-lint command set as one owner batch. */
 export function registerLintCommands(): void {
   registerCommands(LINT_COMMANDS_OWNER, buildLintCommandSpecs());
 }

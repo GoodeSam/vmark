@@ -122,8 +122,8 @@ export async function handleDocumentRead(
         dirty: tab.dirty,
       },
     });
-    // Coherence (WI-1.6): only a read the client actually RECEIVED joins the
-    // next write's inputs (audit T6), pinned to the content served (#133).
+    // Coherence: only a read the client actually RECEIVED joins the
+    // next write's inputs, pinned to the content served.
     if (tab.filePath) recordMcpRead(tab.filePath, tab.content, tab.tabId);
   });
 }

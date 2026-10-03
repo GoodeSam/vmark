@@ -4,7 +4,7 @@
  *   that `document.{read, write}` requires on large files.
  *
  *   Restored after the May 2026 pruning. See ADR-7 in
- *   `dev-docs/plans/20260504-mcp-pruning.md` for the cost analysis that
+ *   `.claude/adr/plans/20260504-mcp-pruning.md` for the cost analysis that
  *   motivated re-adding it.
  *
  * Key decisions:

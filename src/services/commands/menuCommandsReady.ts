@@ -24,7 +24,7 @@
  *   - The mount signals whether it succeeded, and the window announces itself
  *     either way. A mount that threw will never become mounted, and hanging
  *     the handshake on it would turn dead menus into a dead window — but the
- *     signal has to CARRY that (audit #359, round 3). It used to fire from a
+ *     signal has to CARRY that. It used to fire from a
  *     `finally` with no payload, so a completely failed mount announced itself
  *     as ready and nothing downstream could tell the difference.
  *
@@ -41,8 +41,8 @@ export { clampWaitBudget };
 
 /** One webview per window, so module scope IS window scope here. */
 const barrier = createReadinessBarrier((later, first) =>
-  // A DISAGREEING second call is a bug happening, so it is reported (audit
-  // #909). Keeping the first verdict stays right; discarding it without a
+  // A DISAGREEING second call is a bug happening, so it is reported.
+  // Keeping the first verdict stays right; discarding it without a
   // word left the one observable trace of a double mount — or of a retry this
   // barrier cannot honour — indistinguishable from an ordinary idempotent
   // repeat.
@@ -52,7 +52,7 @@ const barrier = createReadinessBarrier((later, first) =>
 );
 
 /**
- * Called once the menu bridge has settled, with WHETHER it mounted (#359).
+ * Called once the menu bridge has settled, with WHETHER it mounted.
  *
  * The outcome is the payload, not a formality: the bootstrap signals whether
  * the mount succeeded, failed, or came up incomplete, so a waiter is never

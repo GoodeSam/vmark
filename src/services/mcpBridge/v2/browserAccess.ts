@@ -8,7 +8,7 @@
  * read as `BROWSER_DISABLED` there), then the user's setting.
  *
  * `resolveBrowserTarget` is the envelope every handler opens with: that gate, then
- * the tab the request names (round 3, #62). The gate → tabId validation → tab
+ * the tab the request names. The gate → tabId validation → tab
  * resolution → refusal sequence used to be copied into seven handlers, error
  * strings and all; here it is once, and a handler that needs a different tab
  * contract (`close` requires a tabId; `navigate` speaks `TAB_NOT_FOUND`) is the
@@ -25,7 +25,7 @@
  * operation with `permission-denied` — a lockout until the tab navigated.
  *
  * A success is a certain spend and is mirrored directly. A REJECTION is not
- * classified here at all (round 4, #37): `browser_eval` can fail before the gate
+ * classified here at all: `browser_eval` can fail before the gate
  * too — a poisoned lock, a script over the size bound, a half-specified target —
  * and a token denylist read every one of those as "spent" while the driver kept
  * the attachment. So after a rejection the mirror is reconciled to the driver's

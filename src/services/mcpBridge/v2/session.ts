@@ -9,7 +9,7 @@
  *
  * Key decisions:
  *   - The per-tab and per-window serialization, the human-tab privacy rule and
- *     the protocol gate live in `sessionSerializers.ts` (round 3, #76); this
+ *     the protocol gate live in `sessionSerializers.ts`; this
  *     module composes them into the payload and answers the request.
  *   - `focused` comes from the PLATFORM, not from this webview's own label.
  *     The bridge routes a request to whichever window owns the workspace, so
