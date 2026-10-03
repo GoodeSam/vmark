@@ -221,3 +221,7 @@ fn carry_xattrs(existing: &File, temp: &File) {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "file_write_anchored.test.rs"]
+mod tests;
