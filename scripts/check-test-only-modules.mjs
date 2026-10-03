@@ -4,7 +4,7 @@
  * is dead in production, and knip's default mode cannot see it.
  *
  * Why: `pnpm knip` treats every test file as an ENTRY (knip.json), so a module
- * reachable only from a test counts as used. The 2026-09-07 feature ledger found
+ * reachable only from a test counts as used. The feature ledger found
  * 14 such modules by hand (finding F1). A direct-importer rule ("does any
  * non-test file import it?") was rejected in review: it is fooled by dead→dead
  * chains — GhaWorkflowPanel imports WorkflowPanelShell, and nothing imports
@@ -101,7 +101,7 @@ const USAGE = "usage: node scripts/check-test-only-modules.mjs [--update [--allo
  * about every future file too: `testConnection.ts`, `testHarness.ts`,
  * `testRenderer.ts` are ordinary production names, and one of them going dead
  * would have been excluded from the measurement rather than reported
- * (audit R2 #83). Measured 2026-09-08 across `src/`, `scripts/`, `server/` and
+ * (audit R2 #83). Measured across `src/`, `scripts/`, `server/` and
  * `e2e/`: the pattern matched exactly three files, two of them already covered
  * by the `__tests__/` rule, so the whole heuristic was carrying ONE entry.
  * The self-test asserts every entry still exists in THIS repository (it cannot

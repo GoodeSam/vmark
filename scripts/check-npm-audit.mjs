@@ -8,7 +8,7 @@
  *
  * Why it exists: the CI step was `continue-on-error: true` at
  * `--audit-level=critical`, so a vulnerable dependency could merge with the
- * advisory check visibly red (audit 20260906, C3). Its stated justification —
+ * advisory check visibly red. Its stated justification —
  * that pnpm 10's audit endpoint returns 410 — did not reproduce: the scan runs
  * fine and returns real findings. So the gate was disabled for a reason that
  * had stopped being true, which is the worst kind of disabled gate: one nobody

@@ -66,14 +66,14 @@ fi
 
 # All shipped npm manifests — the sidecar is compiled into release
 # binaries and the website deploys publicly, so a hallucinated package
-# in either is just as dangerous as in the root (audit 20260612 H26).
+# in either is just as dangerous as in the root.
 # Rust deps are covered separately: cargo-audit in CI + Dependabot's
 # cargo ecosystem (see .claude/rules/60-ai-governance.md §4).
 MANIFESTS=("package.json" "server/mcp/package.json" "server/content/package.json" "website/package.json")
 
 # Diff dependency OBJECTS via JSON parsing, not grep over diff lines —
 # the old grep matched script entries like "e2e:smoke" and fed npm
-# unparseable names, which then failed open (audit 20260612 H26).
+# unparseable names, which then failed open.
 NEW_PKGS=""
 for mf in "${MANIFESTS[@]}"; do
   [[ -f "$mf" ]] || continue
@@ -173,8 +173,7 @@ while IFS=$'\t' read -r kind pkg spec; do
 
   # Fetch metadata. `npm view <pkg> --json` returns full registry doc.
   # Fail CLOSED: any error — 404, invalid name, network failure — flags
-  # the package. A gate that can't see the registry must not pass
-  # (audit 20260612 H26).
+  # the package. A gate that can't see the registry must not pass.
   META=$(npm view "$pkg" --json 2>&1) || {
     if echo "$META" | grep -q "E404"; then
       echo "  ✗ $pkg — NOT FOUND on npm (likely hallucinated)"

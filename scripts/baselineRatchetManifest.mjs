@@ -281,7 +281,7 @@ export const MANIFEST = {
     ...SPEC_TIER_ENTRIES,
   ],
   // Empty by design. An entry here permits exactly ONE re-measurement and is
-  // deleted by the PR that follows the one carrying it — the 2026-09-07 entries
+  // deleted by the PR that follows the one carrying it — the entries
   // for the three `#[command]`-visibility files in command-error-baseline.json
   // expired when 76589b510 landed those counts, which is the gate reporting
   // them stale rather than anyone remembering.

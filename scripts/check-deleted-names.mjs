@@ -4,7 +4,7 @@
  *
  * ADR-009 deleted `src/stores/editorStore.ts`; a later refactor re-created that
  * filename for a different concept and nothing caught it, so an "Accepted" ADR's
- * central decision was silently reversed (`dev-docs/audit/20260722-adr-reality-audit.md`).
+ * central decision was silently reversed.
  *
  * This gate gives that lesson teeth going forward: when an ADR/plan declares a
  * file or exported symbol deleted, a later change that re-introduces it fails

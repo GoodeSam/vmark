@@ -13,7 +13,7 @@
 #
 # Assertion kinds, strongest first (helpers: scripts/lib/dod-assertions.sh;
 # text assertions are FIXED-STRING matches):
-#   - negative text: the exact stale phrase the 2026-09-07 inspection found must
+#   - negative text: the exact stale phrase the inspection found must
 #     be GONE, so an unstarted phase is red today and cannot round up to done;
 #   - test deliverables must be DISCOVERED, not merely present, and the probes
 #     read CODE, not text (scripts/dod-syntax.mjs): a Rust `x.test.rs` needs an

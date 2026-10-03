@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Eager-chunk regression gate (audit 20260612 H9; extended by WI-12).
+ * Eager-chunk regression gate (extended by WI-12).
  *
  * "Lazy chunk became eager" regressions were previously invisible: a stray
  * static import drags a heavyweight chunk onto the cold-start path and nothing

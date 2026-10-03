@@ -8,7 +8,7 @@
  * a glob, or a Rust `a::b` module path), `@module <path>` (the file's OWN path
  * relative to its tree root, extension dropped) and `Plan: <file>`. A target
  * that moved, was renamed or was deleted kept reading as documentation: the
- * 2026-09-07 inspection (feature ledger F4) found `@coordinates-with
+ * feature-ledger inspection (finding F4) found `@coordinates-with
  * closeDecision.ts` with no such file under `src/`, two `@module utils/…`
  * headers on files living in `services/ime/`, and a Rust header pointing at a
  * TypeScript hook that no longer exists. Rule 22 asks for headers to be kept

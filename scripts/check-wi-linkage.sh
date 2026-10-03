@@ -14,7 +14,7 @@
 # Usage:
 #   bash scripts/check-wi-linkage.sh <plan-file> [--phase=N]
 # Example:
-#   bash scripts/check-wi-linkage.sh dev-docs/plans/20260504-github-actions-workflow-viewer.md --phase=1
+#   bash scripts/check-wi-linkage.sh .claude/adr/plans/20260504-github-actions-workflow-viewer.md --phase=1
 #
 # Without --phase, every WI in the plan is checked. With --phase=N, only WIs
 # whose ID matches WI-N.* are checked — useful per-phase gates, since later
@@ -28,7 +28,7 @@
 # Notes:
 # - Scope: EVERY work item the plan declares is checked. Use `--phase=N` to
 #   check one phase while later ones are still in flight.
-#   (WI-AF1.4, 2026-08-09: this note used to claim the script "only checks WIs
+#   (WI-AF1.4: this note used to claim the script "only checks WIs
 #   from phases reported as 'complete' in the plan's Status header" and "skips
 #   phases not yet started". No code ever parsed a Status header — the claim was
 #   false in the file whose job is enforcing honesty about linkage. Deleted
@@ -38,7 +38,7 @@
 # - "Current branch" means commits since the merge-base with `main` — keeps
 #   feature branches honest without forcing every WI to land on main.
 #
-# AUTHORIZED CHANGE (2026-07-14) — .claude/rules/60-ai-governance.md §9 forbids
+# AUTHORIZED CHANGE 1 — .claude/rules/60-ai-governance.md §9 forbids
 # changing this script's regex without explicit user authorization. Authorization
 # was granted, and the reason is recorded here as §9 requires:
 #
@@ -53,7 +53,7 @@
 # The fix widens the grammar and makes the zero-match case FAIL CLOSED. A gate
 # that cannot see any work items must never report success.
 #
-# AUTHORIZED CHANGE (2026-08-09) — §9 authorization granted by the maintainer.
+# AUTHORIZED CHANGE 2 — §9 authorization granted by the maintainer.
 # Plan: .claude/tdd-guardian/plan-20260809-followups.md, Phase 1. Reasons:
 #
 #   3. WI-AF1.2 — the test-header search saw only src/ and src-tauri/src/. This
@@ -61,12 +61,13 @@
 #      .claude/hooks/ (32 files). WI-16's only test lives in scripts/, so a
 #      correctly linked work item reported NOT LINKED.
 #   4. WI-AF1.3 — IDs were grepped from anywhere in the plan, so PROSE created
-#      phantom work items: the 2026-08-03 plan quotes "WI-1.6 live-webview cap
-#      enforced" inside WI-6's description, and the gate then demanded linkage
+#      phantom work items: .claude/tdd-guardian/plan-20260803-161713.md
+#      quotes "WI-1.6 live-webview cap enforced" inside WI-6's description,
+#      and the gate then demanded linkage
 #      for an item that does not exist. IDs now come from DECLARATIONS only.
 #      The ID grammar itself (WI_RE) is deliberately UNCHANGED — only the
 #      context it is searched in narrows, which keeps this widening's blast
-#      radius off the namespace the 2026-07-14 change fixed.
+#      radius off the namespace authorized change 1 fixed.
 #   5. WI-AF1.5 — commit linkage accepted the ID anywhere in a message, so a
 #      commit that merely DESCRIBED a work item vouched for it. Observed live:
 #      this plan's own first commit explained the WI-16 defect, and the gate
@@ -74,7 +75,7 @@
 #      documents — the ID inside a parenthesised tag, `(WI-1.2)`.
 #
 # All three are pinned by scripts/check-wi-linkage.test.mjs, which landed first
-# (WI-AF1.1) precisely so this widening could not repeat 2026-07-14's false green.
+# (WI-AF1.1) precisely so this widening could not repeat change 1's false green.
 
 set -uo pipefail
 

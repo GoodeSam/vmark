@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * WI-UI0.3 — the ui-consistency gate: C3, C4, C5, C7, C8, C9, C10, C11 of
- * dev-docs/plans/20260829-ui-consistency.md, with ONE identity baseline.
+ * the UI-consistency plan, with ONE identity baseline.
  *
  *   C3   chrome font-size is a --font-size-* token (editor em ratios exempt)
  *   C4   overlay/popup shells compose a canonical panel class
