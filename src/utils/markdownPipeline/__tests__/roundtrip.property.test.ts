@@ -73,17 +73,12 @@ const document = fc
   .array(block, { minLength: 1, maxLength: 6 })
   .map((blocks) => blocks.join("\n\n"));
 
-/**
- * These properties are CPU-bound and run 200–300 generated cases each. The file
- * completes in well under a second on an idle machine, but vitest's default 5 s
- * timeout is wall-clock: when the suite runs at full worker parallelism on a
- * loaded box, contention alone pushed the idempotence property past it and
- * failed `check:all` on a green tree (2026-07-28). The generous ceiling below
- * removes that false signal while staying far short of anything that would hide
- * a genuine hang — a real regression here fails on an assertion in
- * milliseconds, not by running long.
- */
-const PROPERTY_TEST_TIMEOUT_MS = 30_000;
+// These properties pass no timeout of their own: they run under the suite's
+// liveness bound (`LIVENESS_TIMEOUT_MS`, vitest.shared.ts), set from what is
+// unambiguously a hang. A per-test bound below it is a performance assertion
+// in disguise: CPU-bound properties overran 30 s and 120 s on a loaded box
+// while correct, and a real regression fails on an assertion, not by running
+// long.
 
 describe("markdown pipeline — round-trip properties", () => {
   it("is idempotent: a second round-trip does not change the first's output", () => {
@@ -95,7 +90,7 @@ describe("markdown pipeline — round-trip properties", () => {
       }),
       { numRuns: 300 },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 
   // ---- D1: block media alt text survives (was dropped: ![](clip.mp4)) -------
   it("D1: preserves media alt text through the round-trip", () => {
@@ -107,7 +102,7 @@ describe("markdown pipeline — round-trip properties", () => {
       }),
       { numRuns: 200 },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 
   // ---- D2: link title survives (was dropped: [t](url)) ---------------------
   it("D2: preserves link titles through the round-trip", () => {
@@ -118,7 +113,7 @@ describe("markdown pipeline — round-trip properties", () => {
       }),
       { numRuns: 200 },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 
   // ---- D3: highlight (incl. nested mark) is not corrupted / escaped --------
   it("D3: preserves highlight marks (including nested bold) without escaping", () => {
@@ -132,7 +127,7 @@ describe("markdown pipeline — round-trip properties", () => {
       }),
       { numRuns: 200 },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 
   // ---- D4: escaped superscript markers stay escaped (were lost) ------------
   it("D4: keeps escaped ^ markers escaped through the round-trip", () => {
@@ -145,7 +140,7 @@ describe("markdown pipeline — round-trip properties", () => {
       }),
       { numRuns: 200 },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 });
 
 // ---- messy documents (WI-RA18.3) ---------------------------------------------
@@ -196,11 +191,8 @@ const hardBreaks = (md: string): number => {
 /** Seeds that each found one of the defects above; fixed so a failure reproduces. */
 const MESSY_SEEDS = [4, 13, 15, 24];
 
-// These pass no timeout of their own and run under the suite's liveness bound
-// (`LIVENESS_TIMEOUT_MS`, vitest.shared.ts), which is set from what is
-// unambiguously a hang. A messy-document property costs ~5 s alone on a loaded
-// box — measured — and overran the 30 s of PROPERTY_TEST_TIMEOUT_MS in a full
-// run. A real regression fails on an assertion, not by running long.
+// Like the properties above, these run under the suite's liveness bound. A
+// messy-document property costs ~5 s alone on a loaded box — measured.
 
 describe("markdown pipeline — round-trip properties, messy documents", () => {
   it.each(MESSY_SEEDS)("is stable after one round, in either style (seed %i)", (seed) => {
