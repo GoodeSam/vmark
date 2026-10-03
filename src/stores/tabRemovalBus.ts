@@ -1,5 +1,5 @@
 /**
- * Tab-removal pub/sub (#1081, WI-11.1).
+ * Tab-removal pub/sub (#1081).
  *
  * `tabStore.closeTab` / `detachTab` / `removeWindow` are the only ways a tab
  * leaves a window. Each calls `notifyTabRemoved` after the removal; subscribers
@@ -9,7 +9,7 @@
  * reopen history, and the tab-state cleanup frees the tab's document and
  * every other piece of per-tab state.
  *
- * WI-11.1 extended the event with an optional `info` payload carrying the
+ * The event carries an optional `info` payload carrying the
  * removed tab and the removal reason — `close` (user closed it; reopenable),
  * `detach` (moved to another window, or rolled back; NOT reopen history) or
  * `window` (the whole window's tab list was dropped; NOT reopen history).

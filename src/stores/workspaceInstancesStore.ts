@@ -117,7 +117,7 @@ export const useWorkspaceInstancesStore = create<WorkspaceInstancesState>()((set
     }),
 
   ensureLooseInstance: (windowLabel, instanceId) => {
-    // WI-13.1 (plan D6): STRUCTURAL — never yanks the visible context. A
+    // STRUCTURAL (plan D6): never yanks the visible context. A
     // valid activation is preserved; loose becomes active only as a fallback.
     let result: WorkspaceInstanceRecord | null = null;
     let rekeyedFrom: string | null = null;
@@ -215,7 +215,7 @@ export const useWorkspaceInstancesStore = create<WorkspaceInstancesState>()((set
       throw new Error(`Failed to create loose workspace instance for window '${windowLabel}'`);
     }
     // Parallel per-instance stores follow the identity re-key so no UI/pane
-    // state is orphaned (WI-9.1/10.2 lifecycle contract).
+    // state is orphaned (lifecycle contract).
     if (rekeyedFrom && instanceId) {
       useWorkspaceInstanceUiStore.getState().rekeyInstanceUiState(rekeyedFrom, instanceId);
       useWorkspacePaneLayoutsStore.getState().rekeyPaneLayout(rekeyedFrom, instanceId);

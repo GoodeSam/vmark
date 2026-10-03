@@ -51,7 +51,7 @@ function addBrowserPage(
       lastActiveBrowserPageId: { ...state.lastActiveBrowserPageId, [windowLabel]: id },
     };
   });
-  // WI-TNAV0.1 (F5) — this helper WRITES activeTabId, so it owns the
+  // This helper WRITES activeTabId (F5), so it owns the
   // announcement. Routing it through the caller instead is what let both
   // browser entry points bypass the bus: no MRU could see a browser
   // activation, and paneStore's split convergence silently skipped them.

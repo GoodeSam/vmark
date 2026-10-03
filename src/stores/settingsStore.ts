@@ -203,7 +203,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         const rawPersisted = persistedState;
         // Every persisted-blob migration, in order, on the raw untrusted blob
         // BEFORE shape-sanitization (the pipeline is pinned complete by
-        // migrations.test.ts — audit #495).
+        // migrations.test.ts).
         runPersistedSettingsMigrations(rawPersisted);
         // T4/D4: the shared trust boundary — shape-sanitize, deep-merge, clamp
         // bounded numerics, normalize browser posture. The cross-window

@@ -17,7 +17,7 @@ import type { StoreApi } from "zustand";
 export type SidebarViewMode = "files" | "outline" | "history";
 
 /**
- * The sidebar's views when a BROWSER tab is active (ADR-2, WI-S2.1).
+ * The sidebar's views when a BROWSER tab is active (ADR-2).
  *
  * A separate type from `SidebarViewMode`, not an extension of it, and deliberately: the
  * document mode is persisted into the hot-exit snapshot as a bare string, and widening
