@@ -1,4 +1,4 @@
-//! # Live Document References (WI-9)
+//! # Live Document References
 //!
 //! Purpose: let one window ask every OTHER document window for the image
 //! references held in its live buffers. Zustand state is per-webview, so

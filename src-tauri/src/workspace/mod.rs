@@ -65,7 +65,7 @@ pub struct WorkspaceConfig {
     pub show_hidden_files: bool,
     #[serde(rename = "lastOpenTabs")]
     pub last_open_tabs: Vec<String>,
-    /// WI-1.1 — versioned session-tab records (documents + browser tabs), kept
+    /// Versioned session-tab records (documents + browser tabs), kept
     /// as an opaque JSON value here: the schema and its migration live on the TS
     /// side (`services/persistence/sessionTabs.ts`). Additive and downgrade-safe:
     /// `lastOpenTabs` still carries document paths so an older binary keeps

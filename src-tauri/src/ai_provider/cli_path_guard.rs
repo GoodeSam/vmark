@@ -1,4 +1,4 @@
-//! `cli_path` boundary guard — WI-0B.2.
+//! `cli_path` boundary guard.
 //!
 //! Purpose: stop `run_ai_prompt`'s `cli_path` parameter from being an arbitrary
 //! process-execution primitive.

@@ -30,7 +30,7 @@
 //!     resolved refuses the write instead.
 //!   - Link resolution is the caller's (`files/write.rs`, the one place that
 //!     follows document links); this module only compares.
-//!   - WHAT A PATH CHECK CANNOT HOLD (audit F2 #91): a verdict on a path is
+//!   - WHAT A PATH CHECK CANNOT HOLD: a verdict on a path is
 //!     about the path at that instant. The generic writers therefore also
 //!     judge the folder they HOLD open and write through
 //!     (`held_write_reaches_list`, `files/write/anchored.rs`), which a later

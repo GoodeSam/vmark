@@ -10,7 +10,7 @@
 //! this one is async for the frontend invoke path and carries frontend-only
 //! validation and error semantics.
 //!
-//! WI-14: this was the first command migrated to [`CommandError`]. The
+//! This was the first command migrated to [`CommandError`]. The
 //! parent-directory failure used to travel as a `"PARENT_MISSING:"` string
 //! prefix that `saveToPath.ts` re-parsed — a cross-language contract held
 //! together by a comment in each file asking the reader to keep the other in
@@ -120,7 +120,7 @@ pub(crate) fn reject_unsafe_target(target: &std::path::Path) -> Result<(), Comma
 /// The referent is resolved BEFORE choosing a directory. A save writes a temp
 /// file and renames it, and renaming onto a symlink replaces the LINK — the
 /// alias stops being an alias and the real document keeps its old bytes, while
-/// the save reports success (audit 20260906, B2). The temp file is created in
+/// the save reports success. The temp file is created in
 /// the REFERENT's directory too, or the rename crosses filesystems.
 pub(crate) fn write_checked(
     target: &std::path::Path,

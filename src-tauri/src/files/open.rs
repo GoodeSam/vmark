@@ -126,7 +126,7 @@ pub(crate) struct OpenedPaths {
     pub files: Vec<String>,
     /// Rejected inputs (non-file URL, non-UTF-8 path, or unsupported
     /// extension) — logged, never opened. Unsupported files would create
-    /// broken empty tabs (#661 audit gap 9.1). Media flows through this same
+    /// broken empty tabs. Media flows through this same
     /// gate so CLI and Finder filters stay in sync.
     pub skipped: Vec<String>,
 }
@@ -207,7 +207,7 @@ fn log_skipped_opens(skipped: &[String]) {
 /// granted recursively and recorded like a folder-picker choice before the
 /// window can read it — without that, a folder outside the static scope opened
 /// a window that could read nothing in it. The window gets the canonical root
-/// the grant judged (#250); a folder that vanished since the partition opens
+/// the grant judged; a folder that vanished since the partition opens
 /// nothing. Compiled where it runs: the macOS Opened handler, and the tests
 /// (which need MockRuntime, and so skip Windows).
 #[cfg(any(target_os = "macos", all(test, not(target_os = "windows"))))]
@@ -260,7 +260,7 @@ pub(crate) fn route_file_opens<R: tauri::Runtime>(
             Some(workspace_key.as_str())
         };
 
-        // Decide + queue atomically under one lock (WI-0.8, C3): the readiness
+        // Decide + queue atomically under one lock: the readiness
         // check and any queue insertion happen in a single critical section, so
         // a concurrent get_pending_file_opens can't interleave to drop or
         // double-deliver.

@@ -9,7 +9,7 @@
 //!
 //! Focus contract: the frontend must return focus to the editor before
 //! invoking (the first responder receives the action). See
-//! `dev-docs/plans/20260709-editor-context-menu.md` ADR-3.
+//! `.claude/adr/plans/20260709-editor-context-menu.md` ADR-3.
 //!
 //! Non-macOS: returns an error; the frontend falls back to
 //! `document.execCommand` / clipboard-manager reads (best-effort per the

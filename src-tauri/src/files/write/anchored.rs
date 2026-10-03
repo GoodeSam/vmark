@@ -1,4 +1,4 @@
-//! Saving through a HELD folder (Unix) — audit F2 #60/#61/#91.
+//! Saving through a HELD folder (Unix).
 //!
 //! Purpose: the webview names a path; `files::write` resolves it once, and the
 //! workspace-grant list guard judges the result. A path is only a NAME,
@@ -22,7 +22,7 @@
 //!
 //! Metadata is carried as `atomic_replace` carries it — permission bits and
 //! (macOS) extended attributes such as Finder tags, BEFORE the temp file is
-//! synced (#528) — but read from the existing entry opened through the held
+//! synced — but read from the existing entry opened through the held
 //! folder, never by path.
 //!
 //! @coordinates-with files/write.rs — write_checked, create_checked

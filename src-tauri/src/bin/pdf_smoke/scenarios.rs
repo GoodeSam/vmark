@@ -30,7 +30,7 @@ use super::verify::{check, contains_text, lacks_text, pages_at_least};
 ///
 /// Until WI-PDF1.4 every one of them produced the system default paper on
 /// macOS, so this asserts the whole surface rather than a sample. The sizes
-/// are the fixtures' (#108); landscape is the swap, never a flag (ADR-PDF1a).
+/// are the fixtures'; landscape is the swap, never a flag (ADR-PDF1a).
 pub async fn geometry_matrix(app: &tauri::AppHandle, out: &Path) -> usize {
     const SIZES: [(&str, PageSpec); 4] =
         [("A4", A4), ("letter", LETTER), ("A3", A3), ("legal", LEGAL)];
@@ -123,7 +123,7 @@ pub async fn pagination(app: &tauri::AppHandle, out: &Path) -> usize {
 /// four blank pages through a real one.
 pub async fn bad_path(app: &tauri::AppHandle) -> usize {
     // The fixture and the refusal rule are `missing_path`'s, shared with
-    // `progress_case::refused` (#251, #253).
+    // `progress_case::refused`.
     let fixture = match missing_parent() {
         Ok(fixture) => fixture,
         Err(e) => {

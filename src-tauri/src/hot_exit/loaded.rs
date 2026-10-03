@@ -26,7 +26,7 @@ pub struct LoadedSession {
     /// FILE stood in. A lossy repair of the main file used to be reported as
     /// ordinary main data with the details only in the log, so a successful
     /// restore then deleted the original bytes and the dropped documents were
-    /// gone for good (audit 20260906, B5/B6). The frontend uses this the same
+    /// gone for good. The frontend uses this the same
     /// way it uses the backup flag: preserve the originals rather than clear
     /// them.
     pub lossy_repair: bool,

@@ -11,7 +11,7 @@
 //! Sharing it is not tidiness. Both call sites carried the same DESTRUCTIVE
 //! Windows fallback — `remove_file(target)` then retry, on the false premise
 //! that Windows `rename` refuses an existing target — and fixing one copy
-//! (audit 20260906 B1) left the other live for a year. One rule, one place.
+//! left the other live for a year. One rule, one place.
 //!
 //! Publication is two steps, and both live here: the rename that swaps the
 //! new file in, and the sync of the parent directory that makes the rename

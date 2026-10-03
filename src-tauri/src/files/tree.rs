@@ -6,7 +6,7 @@
 //! History: this module was the per-directory `list_directory_entries` IPC
 //! (one invoke per expanded folder, serially awaited). #1357 replaced that
 //! with the single `list_directory_tree` call and the command stayed
-//! registered with zero callers until WI-FL3.2 deleted it. The hidden-detection
+//! registered with zero callers until it was deleted. The hidden-detection
 //! rule it carried was the only part still load-bearing, so that is what
 //! remains.
 //!

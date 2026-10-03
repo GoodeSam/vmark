@@ -1,6 +1,6 @@
 //! Partial-capture session merging — pure logic extracted from
 //! `hot_exit_capture` so the data-loss-critical branches are table-testable
-//! (audit 20260612 H12: this path had zero tests).
+//! (this path had zero tests).
 //!
 //! When a capture is partial (some windows timed out during the IPC
 //! broadcast), windows that were expected-but-missing are resurrected from

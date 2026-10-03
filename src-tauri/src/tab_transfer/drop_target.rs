@@ -81,7 +81,7 @@ pub fn focus_existing_window(app: AppHandle, window_label: String) -> Result<(),
         .map_err(|e| CommandError::internal(e.to_string()))
 }
 
-/// Pure point-in-rect test for a window's outer bounds (WI-5.4, TQ5).
+/// Pure point-in-rect test for a window's outer bounds.
 ///
 /// A zero-size window is never a drop target. Edges are inclusive — a point
 /// exactly on a border counts as inside (matches the original drop behavior).

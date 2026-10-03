@@ -51,7 +51,7 @@ pub(crate) fn allow_fs_read<R: tauri::Runtime, P: AsRef<std::path::Path>>(
     }
 }
 
-/// [`allow_fs_read`], reporting whether `path` ended up READABLE (#481).
+/// [`allow_fs_read`], reporting whether `path` ended up READABLE.
 ///
 /// `allow_fs_read` is best-effort by design — it logs a failed grant and
 /// returns — which is right for the Finder/CLI callers, where the static scope
@@ -90,7 +90,7 @@ pub(crate) fn grant_fs_read<R: tauri::Runtime>(
 }
 
 /// Confirm, after a grant, that a name still resolves to the target the caller
-/// judged (#250).
+/// judged.
 ///
 /// `Scope::allow_file` / `allow_directory` resolve the name they are given
 /// AGAIN and also allow whatever it resolves to at that instant: tauri 2.11.5's

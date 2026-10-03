@@ -7,15 +7,15 @@
 //! Key decisions:
 //!   - `async`, with its filesystem work on the blocking pool: a non-`async`
 //!     command runs on the thread that delivered the IPC message, and
-//!     `canonicalize` on a dead network mount blocks for the mount's timeout
-//!     (audit #470). At most `MAX_CONCURRENT_CHECKS` checks resolve at once,
-//!     one per path, so a repeated call cannot drain the pool (#82).
+//!     `canonicalize` on a dead network mount blocks for the mount's timeout.
+//!     At most `MAX_CONCURRENT_CHECKS` checks resolve at once,
+//!     one per path, so a repeated call cannot drain the pool.
 //!   - Going `async` removes the serialization the blocking IPC loop gave for
 //!     free (rule 50 §10). The check-then-act here is "is it recorded? then
 //!     grant": the list only grows except for oldest-first eviction, so a root
 //!     evicted between the two steps was recorded a moment earlier, and the
 //!     grant it gets is the one it already had.
-//!   - No oracle (#83): see `authorize`.
+//!   - No oracle: see `authorize`.
 //!
 //! @coordinates-with workspace/grants/mod.rs — the state and `canonical_dir`
 //! @coordinates-with workspace/grants/scope.rs — the grant itself

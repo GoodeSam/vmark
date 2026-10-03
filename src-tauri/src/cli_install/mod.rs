@@ -25,7 +25,7 @@ use script::{
     EXIT_TARGET_EXISTS,
 };
 
-/// Menu-action orchestration + localized result dialog (audit 20260612).
+/// Menu-action orchestration + localized result dialog.
 pub mod dialog;
 mod script;
 
@@ -71,7 +71,7 @@ impl From<CliInstallError> for String {
 
 /// Structured success outcome so the caller localizes the dialog text
 /// instead of string-matching English Ok messages across the module
-/// boundary (audit 20260612 deferred i18n).
+/// boundary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CliCommandOutcome {
     Installed,

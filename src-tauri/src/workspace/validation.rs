@@ -8,7 +8,7 @@
 //! bind to the REAL target rather than a symlink name (Codex F-06). The
 //! canonical path is spelled for the frontend by `canonical_path` — the
 //! UTF-8 refusal and the Windows verbatim strip live there, shared with the
-//! window-open commands (#250).
+//! window-open commands.
 
 use crate::canonical_path::canonical_string;
 use crate::command_error::{CommandError, ErrorCode};
@@ -23,8 +23,8 @@ use crate::command_error::{CommandError, ErrorCode};
 /// "invalid workspace folder" as prose is what `CommandError` exists to end
 /// (rule 50 §10).
 ///
-/// `async` for the reason `secure_store` records at its own `off_ipc_thread`
-/// (audit #470): a non-`async` `#[tauri::command]` is
+/// `async` for the reason `secure_store` records at its own `off_ipc_thread`:
+/// a non-`async` `#[tauri::command]` is
 /// `ExecutionContext::Blocking`, so Tauri runs its body inline on the thread
 /// that delivered the IPC message — and `canonicalize` is an unbounded
 /// filesystem call. On a disconnected SMB share or a stale automount it blocks
@@ -106,11 +106,11 @@ mod tests {
         );
     }
 
-    /// An ISOLATED directory, not `$TMPDIR` with a fixed name (#563). The old
+    /// An ISOLATED directory, not `$TMPDIR` with a fixed name. The old
     /// fixture wrote `$TMPDIR/vmark-ws-validate-test.txt` — a path any other
     /// process may already own — overwrote whatever was there, and deleted it
     /// on the way out; two runs of this suite at once raced each other for it.
-    /// #560 — the three refusals carry three CODES, not one prose string.
+    /// The three refusals carry three CODES, not one prose string.
     ///
     /// `open_workspace` is an approval flow: a folder that was deleted, a path
     /// that is a file, and one this process may not traverse call for three

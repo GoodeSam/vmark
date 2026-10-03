@@ -20,7 +20,7 @@
 //!     re-granted at launch (`launch.rs`), within a bounded wait.
 //!   - A recorded root is re-granted only if it still resolves to ITSELF. Tauri
 //!     also inserts the canonical form of a granted path, so re-granting a name
-//!     that has since become a link would grant the link's target (#250).
+//!     that has since become a link would grant the link's target.
 //!   - The list is protected against WEBVIEW-SUPPLIED writes: the fs plugin
 //!     is fenced off it (the static scope covers `$HOME/**`, which holds the
 //!     app data directory on macOS and Windows), and the file is created at

@@ -3,7 +3,7 @@
 //! Purpose: hold the documents the user has explicitly authorized to execute,
 //! keyed by an unguessable token and OWNED by the window that authorized them.
 //! `protocol.rs` serves them; `commands.rs` mints and revokes them. Managed
-//! state (`.manage()`, WI-20) rather than a static: every command that reaches
+//! state (`.manage()`) rather than a static: every command that reaches
 //! this carries an `AppHandle`, and a process-global would make one test's
 //! grants visible to every other test in the binary.
 //!
