@@ -617,9 +617,11 @@ describe("TiptapEditorInner — content-visibility toggle", () => {
       // DOM diff doesn't pay the content-visibility reflow cost.
       expect(el.classList.contains("cv-idle")).toBe(false);
 
-      // After the idle debounce elapses, the class returns so scroll and
-      // initial paint keep the optimization.
+      // After the idle debounce and a rendered frame, the class returns so
+      // scroll and initial paint keep the optimization.
       vi.advanceTimersByTime(500);
+      vi.advanceTimersToNextFrame();
+      vi.advanceTimersToNextFrame();
       expect(el.classList.contains("cv-idle")).toBe(true);
     } finally {
       vi.useRealTimers();

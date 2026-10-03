@@ -184,6 +184,9 @@ describe("suppressCvIdleDuringEdit", () => {
 
     // Idle re-add: anchor moves back 50 → 10, and the viewport returns too.
     vi.advanceTimersByTime(500);
+    // The re-add waits for a rendered frame after the window.
+    vi.advanceTimersToNextFrame();
+    vi.advanceTimersToNextFrame();
     expect(container.classList.contains("cv-idle")).toBe(true);
     expect(scroller.scrollTop).toBe(500);
     expect(timeoutRef.current).toBeNull();
@@ -204,6 +207,9 @@ describe("suppressCvIdleDuringEdit", () => {
     // The idle re-add is still scheduled for large docs.
     expect(timeoutRef.current).not.toBeNull();
     vi.advanceTimersByTime(500);
+    // The re-add waits for a rendered frame after the window.
+    vi.advanceTimersToNextFrame();
+    vi.advanceTimersToNextFrame();
     expect(container.classList.contains("cv-idle")).toBe(true);
   });
 
@@ -238,6 +244,9 @@ describe("suppressCvIdleDuringEdit", () => {
     vi.advanceTimersByTime(300);
     expect(container.classList.contains("cv-idle")).toBe(false);
     vi.advanceTimersByTime(200);
+    // The re-add waits for a rendered frame after the window.
+    vi.advanceTimersToNextFrame();
+    vi.advanceTimersToNextFrame();
     expect(container.classList.contains("cv-idle")).toBe(true);
   });
 
@@ -260,6 +269,9 @@ describe("suppressCvIdleDuringEdit", () => {
     anchorRect.mockImplementation(() => ({ top: 0, bottom: 0 }));
 
     vi.advanceTimersByTime(500);
+    // The re-add waits for a rendered frame after the window.
+    vi.advanceTimersToNextFrame();
+    vi.advanceTimersToNextFrame();
     expect(container.classList.contains("cv-idle")).toBe(true);
     expect(writes.length).toBe(writesAfterStrip);
   });
@@ -305,6 +317,9 @@ describe("suppressCvIdleDuringEdit — the sizing marker", () => {
     const { container } = edit("tiptap-editor cv-enabled cv-idle", CV_IDLE_CHAR_THRESHOLD);
     expect(cvState(container)).toEqual({ enabled: true, idle: false });
     vi.advanceTimersByTime(500);
+    // The re-add waits for a rendered frame after the window.
+    vi.advanceTimersToNextFrame();
+    vi.advanceTimersToNextFrame();
     expect(cvState(container)).toEqual({ enabled: true, idle: true });
   });
 
@@ -332,7 +347,49 @@ describe("suppressCvIdleDuringEdit — the sizing marker", () => {
     vi.advanceTimersByTime(499);
     expect(cvState(container)).toEqual({ enabled: true, idle: false });
     vi.advanceTimersByTime(1);
+    // The re-add waits for a rendered frame after the window.
+    vi.advanceTimersToNextFrame();
+    vi.advanceTimersToNextFrame();
     expect(cvState(container)).toEqual({ enabled: true, idle: true });
+  });
+
+  // `contain-intrinsic-size: auto` remembers a block's size only when a frame
+  // renders it. A timer can fire before any frame has — right after a long load
+  // task — and skipping then collapses every block to the estimate (a measured
+  // 20,000 px jump on a large document in Linux WebKit).
+  it("re-adds cv-idle only once a frame has rendered after the idle window", () => {
+    const { container, timeoutRef } = edit("tiptap-editor", CV_IDLE_CHAR_THRESHOLD);
+    vi.advanceTimersByTime(500);
+    expect(cvState(container), "the window elapsed, no frame yet").toEqual({ enabled: true, idle: false });
+    expect(timeoutRef.current, "the re-add is still due").not.toBeNull();
+    vi.advanceTimersToNextFrame();
+    expect(cvState(container), "the frame that records the sizes").toEqual({ enabled: true, idle: false });
+    vi.advanceTimersToNextFrame();
+    expect(cvState(container)).toEqual({ enabled: true, idle: true });
+    expect(timeoutRef.current).toBeNull();
+  });
+
+  it("an edit during the frame wait restarts the window instead of re-adding", () => {
+    const { container, timeoutRef } = edit("tiptap-editor", CV_IDLE_CHAR_THRESHOLD);
+    vi.advanceTimersByTime(500);
+    suppressCvIdleDuringEdit({ current: container as HTMLDivElement }, CV_IDLE_CHAR_THRESHOLD, timeoutRef);
+    vi.advanceTimersToNextFrame();
+    vi.advanceTimersToNextFrame();
+    expect(cvState(container), "the stale re-add did not land").toEqual({ enabled: true, idle: false });
+    vi.advanceTimersByTime(500);
+    vi.advanceTimersToNextFrame();
+    vi.advanceTimersToNextFrame();
+    expect(cvState(container)).toEqual({ enabled: true, idle: true });
+  });
+
+  it("a cancel during the frame wait (the editor hidden) drops the re-add", () => {
+    const { container, timeoutRef } = edit("tiptap-editor", CV_IDLE_CHAR_THRESHOLD);
+    vi.advanceTimersByTime(500);
+    // What useContentVisibilityMode's cancelReAdd does on hide.
+    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
+    vi.advanceTimersByTime(2000);
+    expect(cvState(container)).toEqual({ enabled: true, idle: false });
   });
 
   it("unmarks a document that shrinks below the threshold, with nothing left to re-add", () => {

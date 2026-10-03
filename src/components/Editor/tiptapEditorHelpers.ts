@@ -181,7 +181,7 @@ export function followContentVisibility(
 /**
  * Suppress content-visibility during active typing — keeping cv on during
  * edits costs O(blocks-after-insertion)/keystroke (378ms on a 2250-block
- * doc). Re-enables after 500ms idle so scroll/repaint keep the optimization.
+ * doc). Re-enables after 500ms idle and a rendered frame so scroll/repaint keep the optimization.
  *
  * Documents that do not get the optimization at all ({@link usesContentVisibility})
  * skip the re-enable entirely: every document on macOS, and small ones
@@ -216,7 +216,7 @@ export function suppressCvIdleDuringEdit(
 }
 
 /**
- * Strip `.cv-idle`; when `enabled`, bring it back after 500ms idle. The marker goes on before
+ * Strip `.cv-idle`; when `enabled`, bring it back after 500ms idle and a rendered frame. The marker goes on before
  * the strip and off after it, so the rule never lapses while the optimization is on and a
  * re-add is pending only while it is set. A forced toggle writes nothing if the class matches.
  */
@@ -237,10 +237,34 @@ function setContentVisibility(
     cvIdleTimeoutRef.current = null;
   }
   if (enabled) {
-    cvIdleTimeoutRef.current = window.setTimeout(() => {
+    const id = window.setTimeout(() => reAddAfterARenderedFrame(containerRef, cvIdleTimeoutRef, id), 500);
+    cvIdleTimeoutRef.current = id;
+  }
+}
+
+/**
+ * The idle window's end: re-add `.cv-idle` once a frame has rendered.
+ * `contain-intrinsic-size: auto` remembers a block's size only when a frame
+ * renders it, and the timer can fire before any has — straight after a long
+ * load task. Skipping then collapses every block to the estimate (a measured
+ * 20,000 px jump on a large document in Linux WebKit). The second callback runs
+ * after the first one's frame has rendered. The ref stays set through the wait,
+ * so the re-add is still "due"; any cancel or new window replaces it, and a
+ * callback that no longer owns the ref does nothing.
+ */
+function reAddAfterARenderedFrame(
+  containerRef: MutableRefObject<HTMLDivElement | null>,
+  cvIdleTimeoutRef: MutableRefObject<number | null>,
+  id: number,
+): void {
+  const owns = () => cvIdleTimeoutRef.current === id;
+  window.requestAnimationFrame(() => {
+    if (!owns()) return;
+    window.requestAnimationFrame(() => {
+      if (!owns()) return;
       cvIdleTimeoutRef.current = null;
       const idleContainer = containerRef.current;
       if (idleContainer) setCvIdlePreservingViewport(idleContainer, true);
-    }, 500);
-  }
+    });
+  });
 }
