@@ -5,7 +5,7 @@
  * user clicks a detected file path in terminal output, the file is opened
  * as a new editor tab — guarded by a 10MB size cap to avoid stalling the UI.
  * A parsed `:line` suffix is carried through as a pending nav so the editor
- * scrolls to that line on mount (WI-4.1), reusing the Find-in-Files bridge.
+ * scrolls to that line on mount, reusing the Find-in-Files bridge.
  *
  * Key decisions:
  *   - File size is checked via `stat()` before reading; oversized files are
@@ -35,7 +35,7 @@ import { readDocumentText } from "@/services/files/readDocumentText";
 const MAX_FILE_LINK_SIZE = 10 * 1024 * 1024; // 10 MB
 
 /** Attach the file-link provider to a Terminal. `getCwd` supplies the shell's
- *  live cwd (OSC 7) so relative paths resolve against it (WI-2.3). */
+ *  live cwd (OSC 7) so relative paths resolve against it. */
 export function setupFileLinks(term: Terminal, getCwd?: () => string | null): void {
   term.registerLinkProvider(createFileLinkProvider(term, (filePath, line) => {
     import("@tauri-apps/plugin-fs").then(async ({ stat }) => {
@@ -57,7 +57,7 @@ export function setupFileLinks(term: Terminal, getCwd?: () => string | null): vo
         const windowLabel = getCurrentWindowLabel();
         const tabId = useTabStore.getState().createTab(windowLabel, filePath);
         useDocumentStore.getState().ingestExternalContent(tabId, content, "disk-open", { filePath });
-        // Jump to the parsed line (WI-4.1). Empty query → scroll only, no FindBar.
+        // Jump to the parsed line. Empty query → scroll only, no FindBar.
         // The Source/WYSIWYG editor consumes this pending nav on mount.
         if (line && line > 0) {
           setPendingContentSearchNav(tabId, line, "");

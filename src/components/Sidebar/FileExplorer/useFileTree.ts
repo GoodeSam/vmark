@@ -110,7 +110,7 @@ function toNodes(entries: TreeEntry[], options: LoadOptions): FileNode[] {
 
 // Phase 1B: file explorer surfaces every registered format. The
 // workflow + markdown-only narrowing of the legacy filter is preserved as a
-// fallback when the registry isn't bootstrapped. WI-19: either workflow
+// fallback when the registry isn't bootstrapped. Either workflow
 // feature makes a standalone .yml a VMark file, so the fallback ORs them —
 // gating on the engine alone would hide workflow files from a viewer-only user.
 const mdFilter = (name: string, isFolder: boolean): boolean => {
@@ -181,8 +181,8 @@ export function useFileTree(
         showExtensions,
       };
       const listing = await listDirectoryTree(rootPath, loadOptions);
-      // Diagnostics are gated on the SAME request id as the state updates
-      // (audit R3 #651). A listing superseded by a root change used to report
+      // Diagnostics are gated on the SAME request id as the state updates.
+      // A listing superseded by a root change used to report
       // truncation — and, below, a failure — against a workspace the user had
       // already left, so the log described a tree nothing was going to render.
       // A stale outcome is still logged, but SAID to be stale and named.
@@ -224,7 +224,7 @@ export function useFileTree(
       // just closed must not repopulate the cleared tree.
       requestIdRef.current += 1;
       // …which means the in-flight scan's `finally` will NOT clear `isLoading`
-      // either — it is gated on the same id (audit R3 #652). Closing a
+      // either — it is gated on the same id. Closing a
       // workspace mid-scan left the flag true forever, and the explorer shows
       // "loading" for a workspace that no longer exists. Clearing it here is
       // the other half of the invalidation, and `treeRoot` goes with it: it
@@ -282,7 +282,7 @@ export function useFileTree(
   // Every RESULT belongs to the root it was listed for, not just the tree:
   // gating `tree` alone left the previous workspace's error banner and its
   // truncation notice standing over the new workspace's empty, still-loading
-  // tree — status about a folder the user has already left (audit R2, #653).
+  // tree — status about a folder the user has already left.
   const isCurrent = treeRoot === rootPath;
   return {
     tree: isCurrent ? tree : EMPTY_TREE,

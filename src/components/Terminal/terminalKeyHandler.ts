@@ -24,7 +24,7 @@
  *     Option+Left/Right) → readline control bytes. See terminalReadlineKeys.ts.
  *   - Cmd +/-/0 → zoom the terminal font (terminal.fontSize), preventDefault so
  *     the native zoom accelerator doesn't zoom the editor font instead.
- *   - Cmd/Ctrl+Up/Down → jump to previous/next command prompt (WI-3.3, requires
+ *   - Cmd/Ctrl+Up/Down → jump to previous/next command prompt (requires
  *     shell integration; no-op when there are no command marks).
  *   - Shift+Enter → emits the CSI-u sequence "\x1b[13;2u" (codepoint 13 with
  *     modifier 2 = Shift) so CLI tools that key off TERM_PROGRAM=WezTerm
@@ -90,7 +90,7 @@ export interface KeyHandlerCallbacks {
    * would leak past the IME guard and fire shortcuts.
    */
   isComposing: () => boolean;
-  /** Jump to the previous/next command prompt (WI-3.3, shell integration). */
+  /** Jump to the previous/next command prompt (shell integration). */
   onPromptNav?: (direction: "prev" | "next") => void;
 }
 
@@ -115,7 +115,7 @@ export function createTerminalKeyHandler(
     // services/keybinding/imeChordGuard.ts: the IME commits it BEFORE this
     // keydown exists, so no preventDefault here could ever have caught it.)
     //
-    // WI-1.4: ALWAYS stopPropagation on a match, even during composition. Without
+    // ALWAYS stopPropagation on a match, even during composition. Without
     // it, xterm's keyCode-229 keydown doesn't cancel the event, so it bubbles to
     // the WINDOW handler, which toggles the panel anyway (audit: high). Owning it
     // here makes each chord fire exactly once. During a REAL active composition
@@ -172,7 +172,7 @@ export function createTerminalKeyHandler(
     const isMod = event.metaKey || event.ctrlKey;
     if (!isMod) return true;
 
-    // Prompt navigation (WI-3.3): Cmd/Ctrl + Up/Down jumps between command
+    // Prompt navigation: Cmd/Ctrl + Up/Down jumps between command
     // prompts (requires shell integration; no-op otherwise). Plain arrows fall
     // through to the shell for history.
     if (

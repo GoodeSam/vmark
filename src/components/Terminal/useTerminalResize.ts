@@ -19,7 +19,7 @@
  *   - On drag end, computes the ratio from final pixel / available dimension
  *     and persists it to settingsStore — for every end except unmount, where
  *     the panel that was being measured is going away.
- *   - `toggleMaximize` (WI-4.5/F6) snaps the panel to the cap and back to the
+ *   - `toggleMaximize` (F6) snaps the panel to the cap and back to the
  *     STORED ratio, without rewriting that ratio.
  *   - The cap was 50%, on the reasoning that a bigger panel is a temporary
  *     need the maximize toggle covers. That reasoning did not survive contact:
@@ -140,7 +140,7 @@ export function useTerminalResize(
   );
 
   /**
-   * Toggle between the persisted ratio and the cap (WI-4.5). Deliberately does
+   * Toggle between the persisted ratio and the cap. Deliberately does
    * NOT write `panelRatio`: restoring must land on whatever the user chose,
    * and a maximize should not silently become their new default.
    */

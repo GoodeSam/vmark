@@ -26,7 +26,7 @@ import {
 import { dispatchEditor } from "@/lib/formats/registry";
 
 // Memoized so a cursor move (active-heading change) reconciles only the items
-// whose active state actually flips, not the whole tree (O5 / WI-2.4). Each
+// whose active state actually flips, not the whole tree (O5). Each
 // item self-subscribes to its own active state rather than receiving a shared
 // `activeIndex` prop (which would change for every item on every cursor move).
 const OutlineItem = memo(function OutlineItem({
@@ -110,7 +110,7 @@ export function OutlineView() {
   const content = useDocumentContent();
   const filePath = useDocumentFilePath();
   const deferredContent = useDeferredValue(content);
-  // WI-9.3: outline presentation state is per (workspace instance, tab) when
+  // Outline presentation state is per (workspace instance, tab) when
   // the rail is on; the adapter falls back to local state otherwise.
   const windowLabel = useWindowLabel();
   const workspaceInstanceId = useExplorerWorkspaceInstance(windowLabel);
@@ -127,7 +127,7 @@ export function OutlineView() {
   const scrollElRef = useRef<HTMLDivElement | null>(null);
   // NOTE: active-heading state is intentionally NOT subscribed here — each
   // OutlineItem self-subscribes, so a cursor move doesn't re-render the whole
-  // OutlineView and its tree (O5 / WI-2.4).
+  // OutlineView and its tree (O5).
 
   // Check if document is too large (used after hooks)
   const isTooLarge = deferredContent.length > MAX_CONTENT_FOR_OUTLINE;
@@ -147,7 +147,7 @@ export function OutlineView() {
   const headings = useMemo(() => {
     if (isTooLarge) return [];
     perfStart("OutlineView:extractHeadings");
-    // WI-4.4: the FORMAT supplies its outline. Previously a markdown ATX
+    // The FORMAT supplies its outline. Previously a markdown ATX
     // scanner ran for every format, so a YAML or JSON tab was searched for
     // `#` headings. A format without an outline yields none.
     const outline = (() => {
@@ -183,12 +183,12 @@ export function OutlineView() {
 
   // Collapsed state is keyed by heading identity (level:line:text) — line
   // number included so duplicate headings don't collapse together. Keys the
-  // document no longer produces are pruned (WI-9.3).
+  // document no longer produces are pruned.
   useEffect(() => {
     pruneCollapsedKeys(new Set(headings.map((h) => `${h.level}:${h.line}:${h.text}`)));
   }, [headings, pruneCollapsedKeys]);
 
-  // WI-9.3: restore the persisted outline scroll when the (instance, tab)
+  // Restore the persisted outline scroll when the (instance, tab)
   // context changes and headings are available.
   useEffect(() => {
     if (headings.length > 0) restoreScrollTo(scrollElRef.current);
@@ -205,7 +205,7 @@ export function OutlineView() {
   }, [headings, collapsedKeys]);
 
   // Stable identities so memoized OutlineItems don't re-render when an
-  // unrelated OutlineView state change recreates these handlers (O5 / WI-2.4).
+  // unrelated OutlineView state change recreates these handlers (O5).
   const handleToggle = useCallback(
     (index: number) => {
       const heading = headings[index];

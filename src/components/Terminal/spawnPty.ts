@@ -25,7 +25,7 @@
  *     the shell starts without one; it never blocks the shell.
  *   - Watermark-based flow control pauses the PTY when xterm.js's parser can't
  *     keep up with rapid output (e.g. AI tool redraws), preventing lag/freezes.
- *     Retained after WI-1.1: the binary Channel removed the IPC-encoding
+ *     Retained after the move to binary output: the binary Channel removed the IPC-encoding
  *     bottleneck, but xterm's parse/render rate is a separate limit this guards.
  *   - PTY output arrives as a Uint8Array (the binary Channel delivers an
  *     ArrayBuffer, coerced once in lib/pty.ts), passed straight to xterm.js.
@@ -133,7 +133,7 @@ export const LOW_WATERMARK = 2;
 /**
  * Wire PTY → xterm with watermark-based flow control.
  * Fast producers (e.g. claude-code with rapid ANSI redraws) can overwhelm
- * xterm.js's PARSER (not the transport — output is now binary, WI-1.1). We pause
+ * xterm.js's PARSER (not the transport — output is now binary). We pause
  * the PTY when too many write callbacks are pending, and resume when the parser
  * catches up. This backpressure guards the parse/render rate, so it is retained.
  */
@@ -219,7 +219,7 @@ export async function spawnPty(options: SpawnOptions): Promise<IPty> {
       "so forcing it would break $EDITOR-aware tools. Inheriting the shell's own value.",
   );
 
-  // Shell integration (WI-3.1): inject OSC 133 command marks + OSC 7 cwd via a
+  // Shell integration: inject OSC 133 command marks + OSC 7 cwd via a
   // per-shell rc. The overrides are SHELL-SPECIFIC (e.g. ZDOTDIR points at a
   // zsh rc), so each shell gets its own fresh env — applying one shell's
   // overrides to a different (fallback) shell would poison its startup.

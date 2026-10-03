@@ -57,10 +57,10 @@ export function resolveTerminalSpawnContext(
     ? owner.rootPath ?? undefined
     : resolveTerminalWorkspaceRoot(windowLabel);
 
-  // WI-4.2: an explicit request outranks everything.
+  // An explicit request outranks everything.
   let cwd: string | undefined = session?.requestedCwd;
 
-  // WI-2.2, scope-narrowed (D-T9): inherit a live sibling's cwd, but only
+  // Scope-narrowed (D-T9): inherit a live sibling's cwd, but only
   // from the SAME scope — another workspace's shell is somewhere the user
   // never put THIS scope.
   if (!cwd && session) {

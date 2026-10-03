@@ -28,7 +28,7 @@
  *   - "Reset Display" (#856) clears the WebGL texture atlas and re-paints
  *     the viewport. Hidden when the parent does not provide an action,
  *     so the menu stays minimal in non-terminal contexts.
- *   - "Copy Command Output" (WI-4.4) is HIDDEN, not disabled, when the click
+ *   - "Copy Command Output" is HIDDEN, not disabled, when the click
  *     lands outside any OSC 133 command range — which is the whole menu's
  *     state without shell integration. A permanently-greyed item would just
  *     be noise for users who never turn integration on.
@@ -64,7 +64,7 @@ interface TerminalContextMenuProps {
   term: Terminal;
   /** Optional: clears the WebGL texture atlas and re-paints the viewport (#856). */
   onResetDisplay?: () => void;
-  /** OSC 133 command marks, for "Copy Command Output" (WI-4.4). Empty or
+  /** OSC 133 command marks, for "Copy Command Output". Empty or
    *  absent without shell integration, which hides the item. */
   getCommands?: () => CommandMark[];
   /** Buffer line the right-click landed on, used to pick the command whose
@@ -108,8 +108,8 @@ export function TerminalContextMenu({
     ...(onResetDisplay
       ? [{ id: "resetDisplay", label: t("terminal.contextMenu.resetDisplay"), icon: <RefreshCw size={14} /> } satisfies MenuItem]
       : []),
-    // Only offered when the click actually sits inside a command's output
-    // (WI-4.4) — see the header note on hidden-vs-disabled.
+    // Only offered when the click actually sits inside a command's output —
+    // see the header note on hidden-vs-disabled.
     ...(commandRange
       ? [{
           id: "copyCommandOutput",
@@ -143,7 +143,7 @@ export function TerminalContextMenu({
       // Always close the menu and restore focus — even when a clipboard
       // call rejects (permission denial, headless test env). Without the
       // finally, a thrown writeText/readText would leave the menu open
-      // and focus parked on whatever stole it. (Audit finding M1.)
+      // and focus parked on whatever stole it.
       try {
         switch (id) {
           case "copy":
