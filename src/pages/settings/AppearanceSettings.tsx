@@ -4,6 +4,8 @@
  * Theme and window configuration. The theme group offers manual selection,
  * or — with follow-system-appearance on (#1125) — a paired light/dark theme
  * that auto-switches with the OS.
+ *
+ * @module pages/settings/AppearanceSettings
  */
 
 import { useTranslation } from "react-i18next";

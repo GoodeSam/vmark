@@ -1,3 +1,11 @@
+/**
+ * useBrowserWorkspaceState — React hooks that expose the window's
+ * browser-workspace projection and a cheap is-the-browser-workspace-active
+ * flag.
+ *
+ * @module components/Browser/useBrowserWorkspaceState
+ */
+
 import { useIsDocumentWindow, useWindowLabel } from "@/contexts/WindowContext";
 import { useTabStore } from "@/stores/tabStore";
 import { useVisibleWindowTabs } from "@/hooks/useVisibleWindowTabs";

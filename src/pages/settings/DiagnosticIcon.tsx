@@ -2,6 +2,8 @@
  * Diagnostic status icon for the MCP config installer. Extracted from
  * McpConfigInstaller to keep that file under its size baseline
  * (the file-size gate).
+ *
+ * @module pages/settings/DiagnosticIcon
  */
 
 export type DiagnosticStatus =

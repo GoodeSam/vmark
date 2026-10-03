@@ -19,6 +19,8 @@
  * The scan itself is escape- and nesting-aware: `\(text)[url]` is a
  * literal parenthesis, and `(a (b))[url]` is a reversed link the old flat
  * `\(([^)]+)\)\[([^\]]+)\]` could not see.
+ *
+ * @module lib/lintEngine/rules/noReversedLink
  */
 
 import { visit } from "unist-util-visit";

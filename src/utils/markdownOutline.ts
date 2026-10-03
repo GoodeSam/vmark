@@ -2,6 +2,8 @@
  * Outline View Utility Functions
  *
  * Extracts headings from markdown content and builds a tree structure.
+ *
+ * @module utils/markdownOutline
  */
 
 import { stripInlineMarkdown } from "@/utils/stripInlineMarkdown";

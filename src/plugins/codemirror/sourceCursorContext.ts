@@ -1,3 +1,10 @@
+/**
+ * Source cursor context — a CodeMirror update listener that publishes the
+ * cursor's formatting context from the active source view to the host.
+ *
+ * @module plugins/codemirror/sourceCursorContext
+ */
+
 import { EditorView } from "@codemirror/view";
 import { hostEditors } from "@/plugins/shared/hostEditors";
 import { computeSourceCursorContext } from "@/plugins/sourceContextDetection/cursorContext";

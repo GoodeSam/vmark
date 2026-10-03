@@ -1,3 +1,10 @@
+/**
+ * Inline math node view — renders an inline math node as KaTeX and switches
+ * to an editable input with a floating preview while it is being edited.
+ *
+ * @module plugins/latex/MathInlineNodeView
+ */
+
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { Selection } from "@tiptap/pm/state";
 import type { NodeView, EditorView } from "@tiptap/pm/view";

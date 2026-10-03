@@ -1,3 +1,10 @@
+/**
+ * BrowserChrome — renders the browser workspace's page tabs and omnibox,
+ * either stacked inside the pane or side by side in the macOS title bar.
+ *
+ * @module components/Browser/BrowserChrome
+ */
+
 import { useTranslation } from "react-i18next";
 import { useWindowLabel } from "@/contexts/WindowContext";
 import { useTabStore } from "@/stores/tabStore";

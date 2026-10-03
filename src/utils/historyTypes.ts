@@ -3,6 +3,8 @@
  *
  * Type definitions, constants, and pure utility functions for document history.
  * Async operations are in services/history/historyOperations and services/history/historyRecovery.
+ *
+ * @module utils/historyTypes
  */
 
 import { getFileName } from "./pathUtils";

@@ -3,6 +3,8 @@
  *
  * DOM management for the inline math editing popup with live KaTeX preview.
  * Extends WysiwygPopupView for common popup lifecycle management.
+ *
+ * @module plugins/mathPopup/MathPopupView
  */
 
 import i18n from "@/i18n";

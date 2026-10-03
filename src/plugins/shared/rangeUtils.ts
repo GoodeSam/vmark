@@ -2,7 +2,10 @@
  * Range utilities for multi-cursor
  *
  * Handles merging overlapping ranges and sorting/deduplication.
+ *
+ * @module plugins/shared/rangeUtils
  */
+
 import { SelectionRange } from "@tiptap/pm/state";
 import type { Node } from "@tiptap/pm/model";
 

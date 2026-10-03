@@ -14,6 +14,8 @@
  * the shared line index splits on "\n", so every line of a CRLF document
  * retains it, and rejecting it would report an unclosed fence on every
  * correctly-closed CRLF file.
+ *
+ * @module lib/lintEngine/rules/unclosedFencedCode
  */
 
 import type { LintRule } from "../types";

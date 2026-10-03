@@ -11,6 +11,7 @@
  *
  * @module utils/iconSizes
  */
+
 export const ICON_XS = 12;
 export const ICON_SM = 14;
 export const ICON_MD = 16;

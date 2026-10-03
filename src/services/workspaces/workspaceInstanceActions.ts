@@ -1,3 +1,10 @@
+/**
+ * workspaceInstanceActions — opens a workspace root as a workspace instance in
+ * a window, or activates the existing instance for the same root.
+ *
+ * @module services/workspaces/workspaceInstanceActions
+ */
+
 import { isWorkspaceRailEnabled } from "@/services/featureFlags/workspaceRailFeatureFlag";
 import {
   useWorkspaceInstancesStore,

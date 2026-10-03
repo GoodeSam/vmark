@@ -23,6 +23,8 @@
  * because our custom listItem node doesn't register Tiptap commands.
  *
  * This prevents Tab from moving focus outside the editor.
+ *
+ * @module plugins/tabIndent/tiptap
  */
 
 import { Extension } from "@tiptap/core";

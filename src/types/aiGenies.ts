@@ -3,6 +3,8 @@
  *
  * Core types for the AI genies system — genie definitions,
  * provider configuration, and streaming response chunks.
+ *
+ * @module types/aiGenies
  */
 
 // ============================================================================

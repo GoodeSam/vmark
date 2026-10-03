@@ -2,6 +2,8 @@
  * User-facing error dialog utility
  *
  * Provides consistent error messaging for file operations.
+ *
+ * @module services/dialogs/errorDialog
  */
 
 import { message } from "@tauri-apps/plugin-dialog";

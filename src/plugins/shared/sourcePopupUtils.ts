@@ -2,6 +2,8 @@
  * Source Popup Utilities
  *
  * Helper functions for positioning and managing popups in Source mode (CodeMirror 6).
+ *
+ * @module plugins/shared/sourcePopupUtils
  */
 
 import type { EditorView } from "@codemirror/view";

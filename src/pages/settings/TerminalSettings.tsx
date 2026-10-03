@@ -3,6 +3,8 @@
  *
  * Shell selection, panel position, panel size, font size, line height,
  * and other terminal options.
+ *
+ * @module pages/settings/TerminalSettings
  */
 
 import { useEffect, useState } from "react";

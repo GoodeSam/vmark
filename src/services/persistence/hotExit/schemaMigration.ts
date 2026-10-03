@@ -16,6 +16,8 @@
  * - Future sessions (higher version) cannot be migrated (fail gracefully)
  * - Version 0 is invalid and rejected
  * - Every version step MUST have an explicit migration function
+ *
+ * @module services/persistence/hotExit/schemaMigration
  */
 
 import type {

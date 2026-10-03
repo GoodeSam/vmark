@@ -17,7 +17,10 @@
  *
  * @coordinates-with plugins/shared/hostShortcuts.ts (reads current shortcut bindings through the host seam)
  * @coordinates-with utils/keybinding/proseMirrorKey.ts (toProseMirrorKey helper)
+ *
+ * @module plugins/multiCursor/keymap
  */
+
 import { hostShortcuts } from "@/plugins/shared/hostShortcuts";
 import { keydownHandler } from "@tiptap/pm/keymap";
 import { Plugin, PluginKey } from "@tiptap/pm/state";

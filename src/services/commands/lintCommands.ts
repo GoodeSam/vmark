@@ -3,6 +3,8 @@
  * for the file-size gate. These are `lint.*`, a namespace of their own rather
  * than a corner of `view.*`, so they were the natural seam. Registered by
  * `registerViewCommands()`, so callers and tests keep a single entry point.
+ *
+ * @module services/commands/lintCommands
  */
 
 import { registerCommands, type CommandDefinition } from "./CommandBus";

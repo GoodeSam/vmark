@@ -1,3 +1,9 @@
+/**
+ * white — design tokens for the White theme, the pure-white light theme.
+ *
+ * @module theme/themes/white
+ */
+
 import type { ThemeTokens } from "../tokens";
 import { sharedPrimitives, lightShadows, subtleLight, hoverLight } from "../tokens";
 

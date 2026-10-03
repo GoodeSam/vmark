@@ -1,3 +1,10 @@
+/**
+ * tabStoreBrowserWorkspace — tab-store actions that create browser tabs and
+ * pages in a window, keeping browser creation out of the general tab store.
+ *
+ * @module stores/tabStoreBrowserWorkspace
+ */
+
 import type { BrowserAutomationMode, Tab } from "./tabStoreTypes";
 import { browserTabUrl, findBrowserTab, makeBrowserTab } from "./tabStoreBrowser";
 import { generateTabId } from "./tabStoreHelpers";

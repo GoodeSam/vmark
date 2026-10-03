@@ -4,7 +4,10 @@
  * Range-membership, next-occurrence lookup, and selection-building logic
  * used by both the occurrence commands (occurrenceCommands.ts) and the
  * cursor commands (cursorCommands.ts). Extracted from commands.ts.
+ *
+ * @module plugins/multiCursor/commandHelpers
  */
+
 import { SelectionRange } from "@tiptap/pm/state";
 import type { Node } from "@tiptap/pm/model";
 import { MultiSelection } from "@/plugins/shared/MultiSelection";

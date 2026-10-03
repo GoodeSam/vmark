@@ -1,3 +1,11 @@
+/**
+ * useDragDropOpen — React hook that listens for files dragged onto the
+ * window, shows the drop overlay, and opens supported dropped files in tabs
+ * or workspaces.
+ *
+ * @module hooks/useDragDropOpen
+ */
+
 import { useEffect, useRef } from "react";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { imeToast as toast } from "@/services/ime/imeToast";

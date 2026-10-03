@@ -1,8 +1,12 @@
-// Format registry types (multi-format rebrand Phase 1A).
-//
-// Source of truth for FormatConfig, FormatAdapters, ValidationDiagnostic,
-// and TabFormatState. Plan reference:
-// .claude/adr/plans/20260506-multi-format-rebrand.md § Format registry contract.
+/**
+ * Format registry types — the shared contract every format adapter implements.
+ *
+ * Source of truth for FormatConfig, FormatAdapters, ValidationDiagnostic,
+ * and TabFormatState. Contract:
+ * .claude/adr/plans/20260506-multi-format-rebrand.md § Format registry contract.
+ *
+ * @module lib/formats/types
+ */
 
 import type { Extension } from "@codemirror/state";
 import type { LintDiagnostic } from "@/lib/lintEngine";

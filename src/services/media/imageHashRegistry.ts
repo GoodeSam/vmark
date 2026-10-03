@@ -3,6 +3,8 @@
  *
  * Manages a registry of image content hashes to prevent duplicates.
  * Registry is stored as JSON in assets/images/image-hashes.json
+ *
+ * @module services/media/imageHashRegistry
  */
 
 import { exists, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";

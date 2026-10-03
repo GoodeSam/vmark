@@ -1,3 +1,9 @@
+/**
+ * paper — design tokens for the Paper theme, the default light theme.
+ *
+ * @module theme/themes/paper
+ */
+
 import type { ThemeTokens } from "../tokens";
 import { sharedPrimitives, lightShadows, subtleLight, hoverLight } from "../tokens";
 

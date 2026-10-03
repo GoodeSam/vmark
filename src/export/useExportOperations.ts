@@ -3,6 +3,8 @@
  *
  * Print: sends self-contained HTML to the Rust `print_document` command
  * (helper webview + system print dialog). HTML Export: ExportSurface.
+ *
+ * @module export/useExportOperations
  */
 
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";

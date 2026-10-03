@@ -1,3 +1,10 @@
+/**
+ * restoreHelpers — hot-exit restore steps for one window: pull its saved state
+ * with retries, validate its shape, and restore its UI layout and tabs.
+ *
+ * @module services/persistence/hotExit/restoreHelpers
+ */
+
 import { invoke } from '@tauri-apps/api/core';
 import { hotExitLog, hotExitWarn } from '@/utils/debug';
 import { useTabStore } from '@/stores/tabStore';

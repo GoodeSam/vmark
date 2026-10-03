@@ -7,6 +7,7 @@
  *
  * @coordinates-with mermaidPreviewDOM.ts — DOM construction
  * @coordinates-with mermaidPreviewRender.ts — diagram rendering dispatch
+ * @module plugins/mermaidPreview/MermaidPreviewView
  */
 
 import { cleanupDescendants } from "@/plugins/shared/diagramCleanup";

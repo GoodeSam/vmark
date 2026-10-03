@@ -1,8 +1,12 @@
-// Jobs subparser.
-//
-// Translates the `jobs:` mapping into JobIR[]. Step parsing is delegated
-// to ./steps.ts; matrix to ./matrix.ts; permissions to ./permissions.ts.
-// Each job is parsed independently; failures in one don't abort others.
+/**
+ * Jobs subparser — translates a workflow's `jobs:` mapping into the IR.
+ *
+ * Translates the `jobs:` mapping into JobIR[]. Step parsing is delegated
+ * to ./steps.ts; matrix to ./matrix.ts; permissions to ./permissions.ts.
+ * Each job is parsed independently; failures in one don't abort others.
+ *
+ * @module lib/ghaWorkflow/parser/jobs
+ */
 
 import type { MappingToken } from "@actions/workflow-parser/templates/tokens/mapping-token";
 import type { TemplateToken } from "@actions/workflow-parser/templates/tokens/template-token";

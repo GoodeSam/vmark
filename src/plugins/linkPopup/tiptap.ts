@@ -15,6 +15,8 @@
  * HTML, SVG, a diagram) holds `<a>` and `<form>` elements the document wrote.
  * Their clicks and submits are prevented here, so they can never navigate the
  * webview, and a click opens through the same opener a link mark uses.
+ *
+ * @module plugins/linkPopup/tiptap
  */
 
 import { Extension } from "@tiptap/core";

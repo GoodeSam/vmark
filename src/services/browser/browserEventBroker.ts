@@ -16,7 +16,10 @@
  *
  * @coordinates-with services/browser/browserNativeEvents — the typed-event source
  * @coordinates-with services/mcpBridge/v2/browserNavigationShared — waits on tickets
+ *
+ * @module services/browser/browserEventBroker
  */
+
 import {
   browserNativeEvents,
   type BrowserNativeEvent,

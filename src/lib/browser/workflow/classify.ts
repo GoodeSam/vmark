@@ -4,7 +4,6 @@
  * the engine's `EngineStep.write` flag. Execution tier (api/action/goal) and
  * read-vs-write semantics are ORTHOGONAL: a `goal` step can "find the article"
  * (read) or "publish the draft" (write), so `kind` alone cannot decide write-ness.
- * Origin: Embedded browser sites and workflows plan (2026-07-12, retired).
  *
  * Classification is STRUCTURAL and FAIL-SAFE, never a keyword guess:
  *   - `extract` (reader) and `confirm` (human gate) are read-only by construction —
@@ -27,7 +26,9 @@
  * such steps run conservatively (no auto-heal), which is safe, just cautious.
  *
  * @coordinates-with lib/browser/workflow/engine.ts — consumes EngineStep.write
+ * @module lib/browser/workflow/classify
  */
+
 import type { EngineStep } from "./engine";
 import type { StepKind, WorkflowStep } from "./types";
 

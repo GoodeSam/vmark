@@ -9,6 +9,8 @@
  * with the GHA workflow viewer). Every other adapter — JSON / TOML,
  * Mermaid / SVG, HTML, code viewers — is OFF by default so existing
  * users aren't surprised on upgrade.
+ *
+ * @module pages/settings/FormatsSettings
  */
 
 import { useEffect, useId, useRef, useState } from "react";

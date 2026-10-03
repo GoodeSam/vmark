@@ -20,6 +20,8 @@
  *   - Focus follows `autoFocus`: a click-opened popup leaves the keyboard in
  *     the document (#1448), and an explicit edit (Cmd+K) arriving while it is
  *     open re-shows it to take focus.
+ *
+ * @module plugins/linkPopup/LinkPopupView
  */
 
 import i18n from "@/i18n";

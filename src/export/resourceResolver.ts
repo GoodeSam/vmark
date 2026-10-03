@@ -3,6 +3,8 @@
  *
  * Handles image bundling and URL rewriting for export.
  * Resolves relative paths, copies local files, and rewrites URLs.
+ *
+ * @module export/resourceResolver
  */
 
 import { readFile, copyFile, exists, mkdir, stat, lstat } from "@tauri-apps/plugin-fs";

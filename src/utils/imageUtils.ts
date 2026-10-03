@@ -7,6 +7,8 @@
  * - Relative path construction
  *
  * Async operations (mkdir, copyFile, etc.) are in services/media/imageOperations.
+ *
+ * @module utils/imageUtils
  */
 
 import { IMAGE_EXTENSIONS } from "./mediaExtensions";

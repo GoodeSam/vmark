@@ -3,6 +3,8 @@
  * viewCommands.ts for the file-size gate. Registered by
  * `registerViewCommands()`, so callers and tests keep a single entry point
  * (the same arrangement as paneCommands.ts and lintCommands.ts).
+ *
+ * @module services/commands/explorerCommands
  */
 
 import { registerCommands, type CommandDefinition } from "./CommandBus";

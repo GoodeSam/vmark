@@ -1,5 +1,5 @@
 /**
- * Purpose: workflow-level concurrency editor.
+ * Purpose: the form that edits a GitHub Actions workflow's top-level `concurrency:` setting.
  *
  * @coordinates-with src/lib/ghaWorkflow/save/mutators.ts — workflow.concurrency.set patch
  * @module components/Editor/WorkflowEditor/ConcurrencyForm

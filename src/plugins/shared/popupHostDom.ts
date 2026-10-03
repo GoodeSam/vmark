@@ -5,6 +5,8 @@
  * host element, consumed by plugins on both the WYSIWYG and Source surfaces.
  * Anything CodeMirror-specific (EditorView bounds, positions, anchor rects)
  * lives in sourcePopupUtils.ts.
+ *
+ * @module plugins/shared/popupHostDom
  */
 
 /**

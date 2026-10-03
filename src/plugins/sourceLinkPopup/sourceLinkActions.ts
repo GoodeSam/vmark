@@ -3,6 +3,8 @@
  *
  * Actions for link editing in Source mode (CodeMirror 6).
  * Handles save, open, copy, and remove operations.
+ *
+ * @module plugins/sourceLinkPopup/sourceLinkActions
  */
 
 import type { EditorView } from "@codemirror/view";

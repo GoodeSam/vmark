@@ -1,3 +1,10 @@
+/**
+ * KaTeX loader — imports the KaTeX module lazily, once, and caches it; a
+ * failed chunk load is not cached, so the next render retries.
+ *
+ * @module plugins/shared/katexLoader
+ */
+
 import type { KatexOptions } from "katex";
 
 export type KatexModule = typeof import("katex");

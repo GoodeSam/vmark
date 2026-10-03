@@ -1,17 +1,21 @@
-// Normalized validation gutter.
-//
-// Consumes ValidationDiagnostic[] from any format's validator() output.
-// Single component, single visual language across markdown lint, JSON
-// parse errors, YAML parse errors, etc. Phase 2 adapters wire validator
-// → SplitPaneEditor → SourcePane → ValidationGutter via props.
-//
-// With `onJump`, each row's content is a BUTTON (click or Enter/Space calls
-// onJump(line, column) so the source pane can move the cursor); without it the
-// rows are plain content — nothing focusable, no action for assistive
-// technology to announce (audit 20260907, #282).
-//
-// The rule pill shows the bare id and carries the engine's documented title
-// localized here at the UI boundary — see RuleBadge.
+/**
+ * Normalized validation gutter.
+ *
+ * Consumes ValidationDiagnostic[] from any format's validator() output.
+ * Single component, single visual language across markdown lint, JSON
+ * parse errors, YAML parse errors, etc. Format adapters wire validator
+ * → SplitPaneEditor → SourcePane → ValidationGutter via props.
+ *
+ * With `onJump`, each row's content is a BUTTON (click or Enter/Space calls
+ * onJump(line, column) so the source pane can move the cursor); without it the
+ * rows are plain content — nothing focusable, no action for assistive
+ * technology to announce (audit 20260907, #282).
+ *
+ * The rule pill shows the bare id and carries the engine's documented title
+ * localized here at the UI boundary — see RuleBadge.
+ *
+ * @module components/Editor/SplitPaneEditor/ValidationGutter
+ */
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";

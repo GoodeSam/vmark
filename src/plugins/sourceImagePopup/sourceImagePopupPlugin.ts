@@ -3,6 +3,8 @@
  *
  * CodeMirror 6 plugin for editing images in Source mode.
  * Shows a popup when cursor is inside image markdown syntax.
+ *
+ * @module plugins/sourceImagePopup/sourceImagePopupPlugin
  */
 
 import type { EditorView } from "@codemirror/view";

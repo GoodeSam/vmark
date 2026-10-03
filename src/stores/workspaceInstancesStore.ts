@@ -1,3 +1,10 @@
+/**
+ * workspaceInstancesStore — Zustand store of workspace instances and, per
+ * window, their order, the active instance and each instance's tabs.
+ *
+ * @module stores/workspaceInstancesStore
+ */
+
 import { create } from "zustand";
 import { createWorkspaceInstance, generateUUID } from "@/utils/workspaceIdentity";
 import { notifyInstanceRekeyed } from "@/stores/instanceRekeyBus";

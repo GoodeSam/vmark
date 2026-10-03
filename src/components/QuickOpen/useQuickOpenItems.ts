@@ -1,6 +1,7 @@
 /**
  * Purpose: Build and rank Quick Open file items from recent, open, and workspace sources.
  * @coordinates-with fuzzyMatch.ts, quickOpenStore.ts, recentFilesStore, tabStore, workspaceStore
+ * @module components/QuickOpen/useQuickOpenItems
  */
 
 import { useRecentFilesStore } from "@/stores/workspaceStore";

@@ -1,3 +1,11 @@
+/**
+ * workspaceInstances — captures a window's workspace instances into hot-exit
+ * state, restores them, and reconciles the restored instances with the
+ * recreated tabs so each tab has one owner.
+ *
+ * @module services/persistence/hotExit/workspaceInstances
+ */
+
 import { isWorkspaceRailEnabled } from "@/services/featureFlags/workspaceRailFeatureFlag";
 import {
   useWorkspaceInstancesStore,

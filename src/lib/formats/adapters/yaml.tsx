@@ -1,18 +1,22 @@
-// YAML adapter.
-//
-// Real CodeMirror language (@codemirror/lang-yaml — installed since
-// Phase 1A) + `yaml`-library validator. Tree preview shares the
-// react-json-view-lite component used by the JSON/TOML adapters
-// (LazyJsonTree, loaded on first use).
-//
-// The GHA-workflow schemaDetector is wired into this adapter.
-//
-// yaml is in the ALWAYS-ON trio, so every static import here is cold
-// start for every window, including the ones with no editor. The workbench +
-// workflow IR parser moved behind `React.lazy` (./yamlWorkflowRenderer), the
-// CodeMirror pack behind the `language`/`loadLanguage` thunks, and the GHA
-// source extensions behind dynamic imports inside `loadExtraExtensions` —
-// which was already async, so nothing but the import site changed.
+/**
+ * YAML adapter — editor language, validation, and tree or workflow preview for YAML files.
+ *
+ * Real CodeMirror language (@codemirror/lang-yaml) + `yaml`-library validator.
+ * Tree preview shares the
+ * react-json-view-lite component used by the JSON/TOML adapters
+ * (LazyJsonTree, loaded on first use).
+ *
+ * The GHA-workflow schemaDetector is wired into this adapter.
+ *
+ * yaml is in the ALWAYS-ON trio, so every static import here is cold
+ * start for every window, including the ones with no editor. The workbench +
+ * workflow IR parser moved behind `React.lazy` (./yamlWorkflowRenderer), the
+ * CodeMirror pack behind the `language`/`loadLanguage` thunks, and the GHA
+ * source extensions behind dynamic imports inside `loadExtraExtensions` —
+ * which was already async, so nothing but the import site changed.
+ *
+ * @module lib/formats/adapters/yaml
+ */
 
 import { useMemo, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";

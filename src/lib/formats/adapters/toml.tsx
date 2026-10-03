@@ -1,15 +1,19 @@
-// TOML adapter.
-//
-// CodeMirror highlighting via @codemirror/legacy-modes/mode/toml (the
-// pack the project already pulls in via @codemirror/language-data).
-// Validation via smol-toml — Phase 0 picked it over @iarna/toml
-// (actively maintained, prior CVEs all fixed in 1.6.1).
-// Tree preview via the same react-json-view-lite component used by
-// the JSON adapter — TOML parses to a plain object, so the renderer
-// is shared (LazyJsonTree, loaded on first use). smol-toml itself loads
-// on first use too (tomlParser.ts): until it arrives the validator reports
-// nothing and the preview is empty, and `validatorUpdates` has the source
-// pane and the preview run again once it has.
+/**
+ * TOML adapter — editor highlighting, validation, and tree preview for TOML files.
+ *
+ * CodeMirror highlighting via @codemirror/legacy-modes/mode/toml (the
+ * pack the project already pulls in via @codemirror/language-data).
+ * Validation via smol-toml — picked over @iarna/toml
+ * (actively maintained, prior CVEs all fixed in 1.6.1).
+ * Tree preview via the same react-json-view-lite component used by
+ * the JSON adapter — TOML parses to a plain object, so the renderer
+ * is shared (LazyJsonTree, loaded on first use). smol-toml itself loads
+ * on first use too (tomlParser.ts): until it arrives the validator reports
+ * nothing and the preview is empty, and `validatorUpdates` has the source
+ * pane and the preview run again once it has.
+ *
+ * @module lib/formats/adapters/toml
+ */
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";

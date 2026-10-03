@@ -5,6 +5,8 @@
  * Provides common functionality: DOM lifecycle, store subscription,
  * keyboard navigation and click-outside handling; placement geometry and
  * listener wiring live in sourcePopupPlacement.ts.
+ *
+ * @module plugins/shared/SourcePopupView
  */
 
 import type { EditorView } from "@codemirror/view";

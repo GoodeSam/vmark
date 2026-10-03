@@ -23,6 +23,7 @@
  * @coordinates-with components/WorkspaceRail/workspaceRailHandlers.ts — the rail's own Close, same path
  * @coordinates-with services/workspaces/openWorkspaceByPath.ts — the shared open sequence and its guard key
  * @coordinates-with services/workspaces/workspaceAccess.ts — the Rust folder picker (grants + records the pick)
+ * @module services/commands/workspaceCommands
  */
 
 import { registerCommands } from "./CommandBus";

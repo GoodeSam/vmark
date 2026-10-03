@@ -1,3 +1,11 @@
+/**
+ * browserHelpers — shared helpers for the MCP browser tools: resolve and
+ * activate the target browser tab, validate arguments, timeouts and script
+ * size, redact URLs, and read a tab's AI state.
+ *
+ * @module services/mcpBridge/v2/browserHelpers
+ */
+
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { useSettingsStore } from "@/stores/settingsStore";

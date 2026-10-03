@@ -16,6 +16,8 @@
  * (auth + fixture extraction) had no possible honest consumer without
  * credentialed site flows, and neither a listSites surface nor a status panel
  * exists. Re-introduce both together if ADR-S4 is ever revisited.
+ *
+ * @module lib/sites/types
  */
 
 /** Current agent API version the host exposes to in-page plugin modules. */

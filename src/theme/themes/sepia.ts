@@ -1,3 +1,10 @@
+/**
+ * sepia — design tokens for the Sepia light theme and its warm beige
+ * background.
+ *
+ * @module theme/themes/sepia
+ */
+
 import type { ThemeTokens } from "../tokens";
 import { sharedPrimitives, lightShadows, subtleLight, hoverLight } from "../tokens";
 

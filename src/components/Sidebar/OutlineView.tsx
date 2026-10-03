@@ -2,6 +2,8 @@
  * Outline View Component
  *
  * Displays document heading structure as a tree with a substring filter.
+ *
+ * @module components/Sidebar/OutlineView
  */
 
 import { memo, useDeferredValue, useEffect, useMemo, useCallback, useRef } from "react";

@@ -3,6 +3,8 @@
  *
  * Searchable popup that appears above the freeform textarea (Ctrl+R).
  * Shows filtered history entries for quick selection.
+ *
+ * @module components/GeniePicker/PromptHistoryDropdown
  */
 
 import { useEffect, useRef } from "react";

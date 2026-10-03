@@ -1,3 +1,11 @@
+/**
+ * FileExplorer types — the tree node and directory-entry shapes the file
+ * explorer works with, plus the DOM class and attribute names its rows and
+ * scroller share.
+ *
+ * @module components/Sidebar/FileExplorer/types
+ */
+
 /** A node in the file explorer tree (file or folder). */
 export interface FileNode {
   id: string; // Full path

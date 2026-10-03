@@ -2,6 +2,8 @@
  * Language Settings Section
  *
  * UI language picker and CJK formatting configuration.
+ *
+ * @module pages/settings/LanguageSettings
  */
 
 import { useRef } from "react";

@@ -1,10 +1,14 @@
-// SourcePane.
-//
-// CodeMirror-backed source editor for split-pane / viewer formats.
-// Phase 1A delivers raw CodeMirror with line numbers, undo, find,
-// keyboard editing, and the basic keymap. Phase 2 adapters wire
-// language packs (loadLanguage), validators (linter → ValidationGutter),
-// and per-format extras (loadExtraExtensions).
+/**
+ * SourcePane.
+ *
+ * CodeMirror-backed source editor for split-pane / viewer formats.
+ * It provides raw CodeMirror with line numbers, undo, find,
+ * keyboard editing, and the basic keymap. Format adapters wire
+ * language packs (loadLanguage), validators (linter → ValidationGutter),
+ * and per-format extras (loadExtraExtensions).
+ *
+ * @module components/Editor/SplitPaneEditor/SourcePane
+ */
 
 import { useCallback, useEffect, useRef } from "react";
 import {

@@ -4,11 +4,14 @@
  * Commands that match text occurrences of the current selection or word:
  * - selectNextOccurrence: Add next match (Cmd+D)
  * - selectAllOccurrences: Select all matches (Cmd+Shift+L)
- * - selectAllOccurrencesInBlock: Select all matches in the current block (#1418)
+ * - selectAllOccurrencesInBlock: Select all matches in the current block
  * - skipOccurrence: Skip current match, take the next (Cmd+Shift+D)
  *
  * Extracted from commands.ts, which remains the stable entry point.
+ *
+ * @module plugins/multiCursor/occurrenceCommands
  */
+
 import { TextSelection, SelectionRange } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import { MultiSelection } from "@/plugins/shared/MultiSelection";

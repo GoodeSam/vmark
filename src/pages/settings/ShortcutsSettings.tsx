@@ -2,6 +2,8 @@
  * Shortcuts Settings
  *
  * UI for viewing and customizing keyboard shortcuts.
+ *
+ * @module pages/settings/ShortcutsSettings
  */
 
 import { useState, useRef } from "react";

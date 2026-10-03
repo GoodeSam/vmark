@@ -9,6 +9,8 @@
  * - Orphan cleanup
  * - Sequential renumbering with consolidation at document end (the steps
  *   live in footnoteRenumber.ts)
+ *
+ * @module plugins/sourceContextDetection/footnoteActions
  */
 
 import {

@@ -1,3 +1,11 @@
+/**
+ * fileOwnership — decides whether a tab may write a file that is also open in
+ * other tabs: duplicate opens become read-only, and a dirty writable copy
+ * elsewhere blocks writing unless forced.
+ *
+ * @module services/workspaces/fileOwnership
+ */
+
 import { isWorkspaceRailEnabled } from "@/services/featureFlags/workspaceRailFeatureFlag";
 import { imeToast as toast } from "@/services/ime/imeToast";
 import { useDocumentStore } from "@/stores/documentStore";

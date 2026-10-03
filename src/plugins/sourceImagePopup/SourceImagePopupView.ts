@@ -3,6 +3,8 @@
  *
  * Popup view for editing images in Source mode (CodeMirror 6).
  * Allows editing image src and alt text.
+ *
+ * @module plugins/sourceImagePopup/SourceImagePopupView
  */
 
 import type { EditorView } from "@codemirror/view";

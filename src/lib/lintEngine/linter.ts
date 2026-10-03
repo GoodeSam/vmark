@@ -3,6 +3,8 @@
  *
  * Purpose: Parses markdown via remark (lint-safe mode) and runs all
  * registered rules over the MDAST + raw source text. Returns sorted diagnostics.
+ *
+ * @module lib/lintEngine/linter
  */
 
 import { createMarkdownProcessor } from "@/utils/markdownPipeline/parser";

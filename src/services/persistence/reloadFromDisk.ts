@@ -4,6 +4,8 @@
  * Used by:
  * - useExternalFileChanges (auto-reload, user-confirmed reload)
  * - MCP bridge workspaceHandlers (workspace.reloadDocument)
+ *
+ * @module services/persistence/reloadFromDisk
  */
 
 import { readDocumentText } from "@/services/files/readDocumentText";

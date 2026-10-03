@@ -1,3 +1,10 @@
+/**
+ * main — the webview entry point: loads i18n, global styles and KaTeX CSS,
+ * then bootstraps the app and lazily imports App.
+ *
+ * @module main
+ */
+
 import "./i18n";
 import "./services/menu/startupMenuSync";
 import { bootstrap } from "./bootstrap";

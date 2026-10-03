@@ -1,3 +1,10 @@
+/**
+ * workspaceContextOwnership — assigns a tab to the workspace instance that owns
+ * its file path, first ensuring the window has an instance to receive it.
+ *
+ * @module services/workspaces/workspaceContextOwnership
+ */
+
 import {
   useWorkspaceInstancesStore,
   type WorkspaceInstanceRecord,

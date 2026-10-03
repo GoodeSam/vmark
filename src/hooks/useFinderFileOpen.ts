@@ -1,3 +1,10 @@
+/**
+ * useFinderFileOpen — React hook that opens files sent from Finder into the
+ * right tab or window, including files queued during cold start.
+ *
+ * @module hooks/useFinderFileOpen
+ */
+
 import { useEffect, useRef } from "react";
 // Global listen() is correct here — Rust emits app:open-file via app.emit() (global
 // broadcast), and only global listen() is guaranteed to receive global events.

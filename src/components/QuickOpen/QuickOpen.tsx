@@ -18,6 +18,7 @@
  * @coordinates-with quickOpenStore.ts, useQuickOpenItems.ts, fuzzyMatch.ts
  * @coordinates-with Sidebar/FileExplorer/useFileTree.ts — the workspace tier's listing
  * @coordinates-with services/navigation/openWithDefaultApp.ts — the system-app door
+ * @module components/QuickOpen/QuickOpen
  */
 
 import {

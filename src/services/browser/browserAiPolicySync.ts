@@ -1,4 +1,9 @@
-/** Synchronize user browser posture settings with Rust's fail-closed policy. */
+/**
+ * Synchronize user browser posture settings with Rust's fail-closed policy.
+ *
+ * @module services/browser/browserAiPolicySync
+ */
+
 import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useTabStore } from "@/stores/tabStore";

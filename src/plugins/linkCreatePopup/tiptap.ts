@@ -2,6 +2,8 @@
  * Link Create Popup Tiptap Extension
  *
  * Registers the link create popup view with the editor.
+ *
+ * @module plugins/linkCreatePopup/tiptap
  */
 
 import { Extension } from "@tiptap/core";

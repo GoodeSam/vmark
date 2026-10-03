@@ -1,14 +1,18 @@
-// JSON / JSONL adapter.
-//
-// Real CodeMirror language (@codemirror/lang-json), JSON.parse-based
-// validator that emits ValidationDiagnostic[], and a tree preview via
-// react-json-view-lite (Phase 0 pick — only candidate with
-// documented keyboard nav + ARIA labelling), loaded when a preview first
-// shows it (LazyJsonTree).
-//
-// JSONL handling: when filePath ends in `.jsonl`, the validator parses
-// each line independently so a single bad line doesn't poison the whole
-// document. Lines that are blank or whitespace-only are skipped.
+/**
+ * JSON / JSONL adapter — editor language, validator, and tree preview for JSON files.
+ *
+ * Real CodeMirror language (@codemirror/lang-json), JSON.parse-based
+ * validator that emits ValidationDiagnostic[], and a tree preview via
+ * react-json-view-lite (picked as the only candidate with
+ * documented keyboard nav + ARIA labelling), loaded when a preview first
+ * shows it (LazyJsonTree).
+ *
+ * JSONL handling: when filePath ends in `.jsonl`, the validator parses
+ * each line independently so a single bad line doesn't poison the whole
+ * document. Lines that are blank or whitespace-only are skipped.
+ *
+ * @module lib/formats/adapters/json
+ */
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";

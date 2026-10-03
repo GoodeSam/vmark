@@ -13,6 +13,8 @@
  * at offset 0, which navigates the user to the top of the document instead of
  * to the image. That fallback was written in five rules; it lives in
  * `positionOffset.ts` now.
+ *
+ * @module lib/lintEngine/rules/requireAltText
  */
 
 import { visit } from "unist-util-visit";

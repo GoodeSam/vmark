@@ -1,14 +1,18 @@
-// Standalone SVG (.svg) adapter.
-//
-// CodeMirror language: @codemirror/lang-xml.
-// Validator: well-formedness check (must start with <svg or <?xml,
-// must parse as XML, root element must be <svg>). Reuses the same
-// rules as the existing src/plugins/svg/svgRender.ts so the
-// behavior stays consistent.
-// Preview: inline SVG render via the existing renderSvgBlock helper.
-//
-// Per the plan, the SVG renderer is pure (no environment coupling),
-// so the wrapper is thin compared to Mermaid's.
+/**
+ * Standalone SVG (.svg) adapter — source editing, well-formedness validation and inline preview.
+ *
+ * CodeMirror language: @codemirror/lang-xml.
+ * Validator: well-formedness check (must start with <svg or <?xml,
+ * must parse as XML, root element must be <svg>). Reuses the same
+ * rules as the existing src/plugins/svg/svgRender.ts so the
+ * behavior stays consistent.
+ * Preview: inline SVG render via the existing renderSvgBlock helper.
+ *
+ * The SVG renderer is pure (no environment coupling),
+ * so the wrapper is thin compared to Mermaid's.
+ *
+ * @module lib/formats/adapters/svg
+ */
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";

@@ -1,3 +1,11 @@
+/**
+ * workspaceWindowActions — moves or duplicates a workspace instance into a new
+ * window, and claims and applies the transferred workspace in the receiving
+ * window, with an acknowledgement handshake between the two.
+ *
+ * @module services/workspaces/workspaceWindowActions
+ */
+
 import { invoke } from "@tauri-apps/api/core";
 import { isWorkspaceRailEnabled } from "@/services/featureFlags/workspaceRailFeatureFlag";
 import { useDocumentStore } from "@/stores/documentStore";

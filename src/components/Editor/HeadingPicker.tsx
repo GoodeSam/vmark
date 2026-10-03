@@ -3,6 +3,8 @@
  *
  * Popup for selecting a document heading to create bookmark links.
  * Shows all headings with indentation by level and filter support.
+ *
+ * @module components/Editor/HeadingPicker
  */
 
 import { useEffect, useRef, useState, useCallback } from "react";

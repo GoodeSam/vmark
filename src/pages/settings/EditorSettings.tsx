@@ -2,6 +2,8 @@
  * Editor Settings Section
  *
  * Typography, display, behavior, and whitespace configuration.
+ *
+ * @module pages/settings/EditorSettings
  */
 
 import { useTranslation } from "react-i18next";

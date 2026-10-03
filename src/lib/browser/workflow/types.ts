@@ -6,6 +6,8 @@
  * into this IR. The step KIND selects the execution tier (R8); `api`/`action` are
  * deterministic tiers that self-heal by escalating to `goal` (reads only — never
  * writes, R8a). This module is pure data — no execution, no driver.
+ *
+ * @module lib/browser/workflow/types
  */
 
 /**

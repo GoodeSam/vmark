@@ -1,24 +1,29 @@
-// SplitPaneEditor.
-//
-// Mounted by Editor.tsx for FormatConfig.kind === "split-pane"
-// or "viewer". Composes:
-//
-//   ┌──────────────────────────┬──────────────────────────┐
-//   │ SourcePane               │ Preview slot             │
-//   │ (CodeMirror)             │ (genericPreview or       │
-//   │                          │  schemaRenderers)        │
-//   │                          │                          │
-//   └──────────────────────────┴──────────────────────────┘
-//                              ▲
-//                              │
-//                          resize handle
-//                          (keyboard ArrowLeft/Right)
-//
-// Validation: SourcePane runs the adapter's validator and reports its
-// diagnostics (`onDiagnostics`); this component renders them in
-// ValidationGutter beside the source pane, with click-to-jump back into the
-// source. The split fraction is held in component state and clamped to
-// [0.2, 0.8].
+/**
+ * SplitPaneEditor — the side-by-side source and preview editor for
+ * non-markdown formats.
+ *
+ * Mounted by Editor.tsx for FormatConfig.kind === "split-pane"
+ * or "viewer". Composes:
+ *
+ *   ┌──────────────────────────┬──────────────────────────┐
+ *   │ SourcePane               │ Preview slot             │
+ *   │ (CodeMirror)             │ (genericPreview or       │
+ *   │                          │  schemaRenderers)        │
+ *   │                          │                          │
+ *   └──────────────────────────┴──────────────────────────┘
+ *                              ▲
+ *                              │
+ *                          resize handle
+ *                          (keyboard ArrowLeft/Right)
+ *
+ * Validation: SourcePane runs the adapter's validator and reports its
+ * diagnostics (`onDiagnostics`); this component renders them in
+ * ValidationGutter beside the source pane, with click-to-jump back into the
+ * source. The split fraction is held in component state and clamped to
+ * [0.2, 0.8].
+ *
+ * @module components/Editor/SplitPaneEditor/SplitPaneEditor
+ */
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";

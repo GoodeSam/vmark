@@ -1,3 +1,11 @@
+/**
+ * WorkspaceRail — the vertical rail of open workspace instances in a
+ * document window, letting the user switch, reorder, duplicate, close or
+ * move them through a context menu.
+ *
+ * @module components/WorkspaceRail/WorkspaceRail
+ */
+
 import { CopyPlus, FileStack } from "lucide-react";
 import { useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";

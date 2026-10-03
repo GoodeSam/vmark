@@ -8,6 +8,7 @@
  * it is the document's markup.
  *
  * @coordinates-with plugins/shared/hostLinks.ts — where a clicked link is opened
+ * @module plugins/mermaidPreview/mermaidPreviewDOM
  */
 
 import i18n from "@/i18n";

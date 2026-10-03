@@ -1,13 +1,17 @@
-// Path-only open for binary media (image/audio/video) tabs.
-//
-// Split out of useFileOpen.ts: media never goes through the text-read
-// pipeline. No text read, no size gate, no linebreak detection — the bytes
-// never enter the JS heap. The document is initialized with EMPTY content so
-// hot-exit never serializes binary; the media surface (MediaView) resolves the
-// tab's filePath to an asset:// URL, granting asset access itself before it
-// streams the file. Synchronous — no close-during-read race.
-//
-// See .claude/adr/plans/20260703-media-viewer.md.
+/**
+ * Path-only open for binary media (image/audio/video) tabs.
+ *
+ * Split out of useFileOpen.ts: media never goes through the text-read
+ * pipeline. No text read, no size gate, no linebreak detection — the bytes
+ * never enter the JS heap. The document is initialized with EMPTY content so
+ * hot-exit never serializes binary; the media surface (MediaView) resolves the
+ * tab's filePath to an asset:// URL, granting asset access itself before it
+ * streams the file. Synchronous — no close-during-read race.
+ *
+ * See .claude/adr/plans/20260703-media-viewer.md.
+ *
+ * @module services/navigation/openMediaFile
+ */
 
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";

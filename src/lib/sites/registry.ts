@@ -1,7 +1,7 @@
 /**
  * Purpose: Site plugin registry — a module-singleton that dispatches on origin,
  * mirroring `src/lib/formats/registry.ts` (which dispatches on extension).
- * Wiring plan: dev-docs/plans/20260819-browser-wire-and-borrows.md (ADR-S1).
+ * Wiring decision: ADR-S1.
  *
  * Validation is hand-rolled (the repo does not use zod; the format registry sets the
  * precedent). Pattern parsing is delegated to the origin module so wildcard semantics
@@ -17,7 +17,9 @@
  *
  * @coordinates-with lib/browser/origin/originGuard.ts — pattern parsing + matching
  * @coordinates-with lib/browser/reader/siteReader.ts — the SiteReader contract + fallback
+ * @module lib/sites/registry
  */
+
 import {
   canonicalizeOrigin,
   describeOriginPattern,

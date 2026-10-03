@@ -2,6 +2,8 @@
  * Source Footnote Actions
  *
  * Actions for editing footnotes in Source mode (CodeMirror 6).
+ *
+ * @module plugins/sourceFootnotePopup/sourceFootnoteActions
  */
 
 import type { Text } from "@codemirror/state";

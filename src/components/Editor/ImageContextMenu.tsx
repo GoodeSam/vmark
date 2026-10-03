@@ -15,6 +15,7 @@
  *   - First item is focused when the menu opens.
  *
  * @coordinates-with imageContextMenuStore.ts — open/position/close state
+ * @module components/Editor/ImageContextMenu
  */
 
 import {

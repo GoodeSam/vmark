@@ -9,6 +9,8 @@
  * toolbar adapters' enable rules and the WYSIWYG context extractor. The
  * `ToolbarIntent` union that once lived here went with its only producer,
  * `resolveToolbarIntent` (feature-ledger plan).
+ *
+ * @module plugins/shared/toolbarContextTypes
  */
 
 /**

@@ -7,7 +7,10 @@
  * - addCursorAbove / addCursorBelow: Add a cursor vertically (Cmd+Alt+Arrow)
  *
  * Extracted from commands.ts, which remains the stable entry point.
+ *
+ * @module plugins/multiCursor/cursorCommands
  */
+
 import { TextSelection, SelectionRange } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";

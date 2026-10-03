@@ -14,7 +14,9 @@
  * @coordinates-with src-tauri/src/coherence/commands.rs — the IPC surface
  * @coordinates-with stores/breakdownStore.ts — the mirror this writes
  * @module services/breakdown/breakdownService
- */import {
+ */
+
+import {
   invoke,
 } from "@tauri-apps/api/core";
 

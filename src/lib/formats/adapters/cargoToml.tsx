@@ -1,12 +1,15 @@
-// Cargo.toml schema detector + dependency-tree renderer.
-//
-// Schema POC #2 (after GHA workflows). Validates the
-// "schema-aware preview" differentiator: rendering the *right* view
-// for a known artifact instead of a generic JSON tree.
-//
-// No network calls in v1. The renderer reads the manifest, displays
-// the dep tree (runtime / dev / build), and stops there — no version
-// resolution, no crates.io lookup, no transitive resolution.
+/**
+ * Cargo.toml schema detector + dependency-tree renderer for the TOML preview.
+ *
+ * A schema-aware preview (the second, after GHA workflows): rendering the *right*
+ * view for a known artifact instead of a generic JSON tree.
+ *
+ * No network calls in v1. The renderer reads the manifest, displays
+ * the dep tree (runtime / dev / build), and stops there — no version
+ * resolution, no crates.io lookup, no transitive resolution.
+ *
+ * @module lib/formats/adapters/cargoToml
+ */
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";

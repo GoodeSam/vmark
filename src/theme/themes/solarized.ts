@@ -1,3 +1,10 @@
+/**
+ * solarized — design tokens for the Solarized theme, a dark theme on the
+ * Solarized Dark palette.
+ *
+ * @module theme/themes/solarized
+ */
+
 import type { ThemeTokens } from "../tokens";
 import { sharedPrimitives, darkShadows, subtleDark, hoverDark } from "../tokens";
 

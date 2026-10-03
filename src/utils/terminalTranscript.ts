@@ -2,6 +2,7 @@
  * A follower holds decoded messages, never the raw text: each delta is parsed
  * once (`appendTranscript`) and merged by id, so a poll costs what it brought.
  * @module utils/terminalTranscript */
+
 export interface TranscriptMessage { id: string; text: string }
 /** What a follower holds: the messages, and how many complete lines produced them. */
 export interface TranscriptTail { messages: TranscriptMessage[]; lines: number }

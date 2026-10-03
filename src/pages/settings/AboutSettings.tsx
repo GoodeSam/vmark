@@ -3,6 +3,8 @@
  *
  * Shows app info (version, links, the bundled third-party notices) and update
  * status.
+ *
+ * @module pages/settings/AboutSettings
  */
 
 import { useState, useEffect } from "react";
