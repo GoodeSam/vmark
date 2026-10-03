@@ -269,3 +269,7 @@ fn create_window_and_queue(app: &AppHandle, event: PendingMenuEvent) {
         queue_event(&label, event);
     }
 }
+
+#[cfg(test)]
+#[path = "menu_events.test.rs"]
+mod tests;
