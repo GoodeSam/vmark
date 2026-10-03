@@ -9,7 +9,7 @@
 /**
  * Internal identifiers that must never reach a user (rule 35).
  *
- * "HTML preview is sandboxed but pending OWASP sign-off (WI-3.4)." shipped in
+ * "HTML preview is sandboxed but pending OWASP sign-off (WI-<id>)." shipped in
  * ten languages, beside an issue number in a shortcut description and a
  * design-decision id in a tooltip: process notes and cross-references written
  * for maintainers. Zero tolerance, no baseline — an identifier in copy is

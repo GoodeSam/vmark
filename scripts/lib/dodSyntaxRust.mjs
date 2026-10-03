@@ -75,7 +75,7 @@ export function rustModIncludes(moduleSource, base) {
  * file 2 is tested from an offset file 1 left behind, and a real match is
  * missed. That is a silent FALSE NEGATIVE in a probe whose whole job is to
  * report a match, and both `rustCodeMatches` and the `ts-code-grep` filter did
- * it (audit R3 #111). Cloning is preferred to resetting `lastIndex` because the
+ * it. Cloning is preferred to resetting `lastIndex` because the
  * caller's regex is not this function's to mutate.
  */
 export function statelessRe(re) {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * MCP docs-drift gate (WI-NB9.1) — every action the sidecar tools ship must be
+ * MCP docs-drift gate — every action the sidecar tools ship must be
  * documented on the public MCP reference page.
  *
  * The website page `website/guide/mcp-tools.md` is hand-written. A new tool
@@ -104,7 +104,7 @@ export function declaredActionSchemas(source) {
  * A spread (`z.enum([...BROWSER_ACTIONS, 'wait'])`), an identifier or a call
  * used to be ignored as long as ONE literal was present, so every action the
  * spread contributed shipped without a docs check — the third form the header
- * promises cannot hide (audit R2 #73). The residue after the literals are
+ * promises cannot hide. The residue after the literals are
  * removed must be separators only, or the gate fails closed.
  */
 function stringLiterals(body, where) {
@@ -152,7 +152,7 @@ function stringLiterals(body, where) {
  * The DECLARATION is located in CODE (`codeOnly`, which preserves offsets), so
  * a commented-out or string-quoted declaration cannot shadow the real one —
  * and the closing bracket is found in code too, so a `]` inside a string
- * cannot end the array early (audit R2 #75). The BODY is then sliced from the
+ * cannot end the array early. The BODY is then sliced from the
  * raw source, because the literals are what this reads.
  */
 const declaredArray = (source, name) => {
@@ -207,8 +207,8 @@ export function extractActions(source, readSibling = () => null) {
 export function toolName(source) {
   // Located in CODE, so a `registerTool({ name: 'x'` inside a comment or a
   // description string is not a registration; and a file with TWO of them is
-  // refused rather than silently attributing every action to the first
-  // (audit R2 #77). `codeOnly` preserves offsets, so the literal is read back
+  // refused rather than silently attributing every action to the first.
+  // `codeOnly` preserves offsets, so the literal is read back
   // out of the raw source at the position code says it starts.
   const code = codeOnly(source);
   const sites = [...code.matchAll(/registerTool\(\s*\{\s*name:\s*/g)];

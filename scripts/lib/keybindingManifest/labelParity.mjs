@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { rustCode } from "../rustSource.mjs";
 import { DEFS_PATH, LOCALIZED_DIR, ROOT, fail, readOrDie, unquote } from "./context.mjs";
 
-// --- Label parity (WI-UI4.3): ONE label per command ------------------------
+// --- Label parity: ONE label per command -----------------------------------
 //
 // The native menu's en.yml label (minus a trailing ellipsis) must equal the
 // shortcutDefinitions label for every menu-backed id: the palette, Settings
@@ -80,7 +80,7 @@ function menuLabelPairs() {
     // the fully-blanked copy then says whether the surrounding call is real
     // CODE. With one pass, builder-shaped text inside a raw string
     // (`r#""save", &t!("menu.save")"#`) labelled a menu item that no builder
-    // ever calls (audit R2 #71). `&t!(` survives blanking only outside a
+    // ever calls. `&t!(` survives blanking only outside a
     // literal, so its offset is the discriminator.
     const source = readOrDie(rel);
     const code = rustCode(source, { keepStrings: true });
@@ -101,8 +101,8 @@ function menuLabelPairs() {
  * SECTION-SCOPED. The scan used to take every two-space-indented key in the
  * file and prefix it `menu.`, so the 100+ keys under `errors:`, `window:` and
  * `cli:` became phantom `menu.*` entries — and since `errors:` comes after
- * `menu:`, a key sharing a dotted tail would have OVERWRITTEN the real label
- * (audit R2 #72). Duplicates are refused rather than silently kept-last, and
+ * `menu:`, a key sharing a dotted tail would have OVERWRITTEN the real label.
+ * Duplicates are refused rather than silently kept-last, and
  * the double-quoted scalar is UNQUOTED, so `\"` and `\\` compare as the text
  * the app renders rather than as their source spelling.
  *

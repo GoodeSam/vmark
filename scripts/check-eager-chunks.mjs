@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /**
- * Eager-chunk regression gate (extended by WI-12).
+ * Eager-chunk regression gate (extended to walk the static-import closure).
  *
  * "Lazy chunk became eager" regressions were previously invisible: a stray
  * static import drags a heavyweight chunk onto the cold-start path and nothing
  * fails.
  *
- * WHAT WI-12 CHANGED — and why the previous version could not have caught
+ * WHAT THE EXTENSION CHANGED — and why the previous version could not have caught
  * anything under App. The gate used to read `dist/index.html` alone. Vite emits
  * `<link rel=modulepreload>` only for the ENTRY chunk's static import graph;
  * `src/main.tsx` reaches the application through `await import("./App")` inside
  * `bootstrap()`, so every chunk under App is fetched at cold start but appears
- * nowhere in index.html. Measured on the pre-WI-12 build: App statically
+ * nowhere in index.html. Measured on the build before it: App statically
  * imported the xyflow chunk, which statically imports vendor-mermaid (2.4 MB),
  * which statically imports vendor-graph (660 kB) — three denylisted-or-heavy
  * chunks on the boot path, with `lint:eager` green. The HTML list was never the
@@ -52,7 +52,7 @@ export const DENYLIST = [
   "vendor-graph",
   "vendor-graphviz",
   "vendor-export",
-  // WI-12: @xyflow/react (123 kB) and @dagrejs/dagre (39 kB) belong to graph
+  // @xyflow/react (123 kB) and @dagrejs/dagre (39 kB) belong to graph
   // surfaces that are all lazily mounted. xyflow additionally drags
   // vendor-mermaid in through its d3-* dependencies, so a static edge to it
   // costs ~3 MB, not 123 kB.
@@ -61,7 +61,7 @@ export const DENYLIST = [
 ];
 
 /**
- * WI-13 — app-source modules that must reach the app ONLY through a dynamic
+ * Lazy-only chunks — app-source modules that must reach the app ONLY through a dynamic
  * import, checked by existence AND by closure membership.
  *
  * The DENYLIST above cannot express this class. It matches chunk NAMES, and a
@@ -78,7 +78,7 @@ export const DENYLIST = [
  * All seven are format-registry surfaces. `bootstrapFormats()` runs in every
  * window — Settings, PDF export — before `import("./App")`, so an adapter's
  * static import is cold-start cost for windows that never open an editor.
- * Measured on the pre-WI-13 build: 4.52 MB across 71 chunks, of which the
+ * Measured before these were made lazy: 4.52 MB across 71 chunks, of which the
  * markdown WYSIWYG surface and the GHA workflow machinery were ~0.66 MB.
  *
  * NOT covered here, deliberately: `vendor-codemirror` and `vendor-tiptap`.

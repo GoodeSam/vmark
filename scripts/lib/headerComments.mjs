@@ -1,5 +1,5 @@
 /**
- * Header-reference comment scanning and tag grammar (WI-FL0.2) — the reading
+ * Header-reference comment scanning and tag grammar — the reading
  * half of `scripts/lib/headerReferences.mjs`.
  *
  * Purpose: find the comment lines of a source file and the three reference
@@ -70,15 +70,14 @@ function literalsBlanked(source, file) {
   // way literal text can put `//` or `/*` at the start of one. A backtick is
   // not the only such literal: JSX TEXT spans lines with no backtick at all,
   // and so does a backslash line continuation inside a quoted string, so a
-  // `@generated`-shaped line in either used to skip the whole file
-  // (audit R2 #179).
+  // `@generated`-shaped line in either used to skip the whole file.
   if (!source.includes("`") && !/\\\r?\n/.test(source) && !/\.[jt]sx$/.test(file)) return source;
   const kind = /\.[jt]sx$/.test(file) ? ts.ScriptKind.TSX : /\.(m?js|cjs)$/.test(file) ? ts.ScriptKind.JS : ts.ScriptKind.TS;
   const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, false, kind);
   // UTF-16 CODE UNITS, not code points: TypeScript AST offsets are UTF-16, so
   // `[...source]` misaligned every blanking range after the first astral
   // character — an emoji or a rare CJK glyph — and could expose literal text
-  // as a comment (audit R2 #180).
+  // as a comment.
   const chars = source.split("");
   const visit = (node) => {
     if (LITERAL_KINDS.some((is) => is(node))) {
@@ -113,7 +112,7 @@ function blockDelta(text) {
  * RUST BLOCK COMMENTS NEST, and TypeScript's do not — so Rust is tracked by
  * DEPTH and everything else by the first `*​/`. A boolean for both left the
  * scan reading the tail of an outer Rust comment as code after an inner one
- * closed, and every reference in it went unchecked (audit R2 #181). Measured
+ * closed, and every reference in it went unchecked. Measured
  * over every `.rs` file in this tree on adoption: the two models select the
  * identical line set, so this is correct-for-the-grammar rather than a fix for
  * a live miss.
@@ -155,7 +154,7 @@ export function commentLines(source, file = "") {
  * before punctuation removal, so a combined form — `"foo.rs",` in a prose list,
  * or `` `foo.ts`. `` at the end of a sentence — kept its closing quote or
  * backtick and could never resolve: the reference was reported unresolved and
- * the wrong remedy suggested (audit R3 #182). Looping terminates because every
+ * the wrong remedy suggested. Looping terminates because every
  * iteration either removes a character or changes nothing.
  */
 export function firstTarget(rest) {

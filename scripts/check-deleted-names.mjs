@@ -30,10 +30,10 @@
  *
  * It searches the WORKING TREE, not just the index: `git grep --untracked`
  * covers a new-but-not-ignored file, so a re-created symbol fires on the run
- * that reintroduced it rather than on a later one (audit R2 #34) — the same
+ * that reintroduced it rather than on a later one — the same
  * reasoning `check-no-nul-bytes.mjs` records. And a tombstoned PATH is probed
  * with `lstat`, so a broken symlink standing where the deleted file was counts
- * as the path being back (audit R2 #36); `existsSync` follows the link and
+ * as the path being back; `existsSync` follows the link and
  * reported it gone.
  *
  * KNOWN LIMITATION — this is still git grep, so two things remain unseen:
@@ -79,8 +79,8 @@ export { rustSymbolPatterns, symbolPatterns, wrappedExportClausePattern } from "
  *  `--untracked` searches the WORKING TREE's new-but-not-ignored files as well
  *  as the tracked ones. Without it a locally re-created symbol was invisible
  *  until it was staged, so the tripwire fired on the commit AFTER the one that
- *  reintroduced the name — or never, if the author never re-ran the gate
- *  (audit R2 #34). It honours `.gitignore`, so `node_modules/`, `dev-docs/`
+ *  reintroduced the name — or never, if the author never re-ran the gate.
+ *  It honours `.gitignore`, so `node_modules/`, `dev-docs/`
  *  and build output stay out. */
 function gitGrepFiles(patterns, pathspec, cwd) {
   const args = ["grep", "-lE", "--untracked"];
@@ -145,7 +145,7 @@ export function evaluateRegistry(registry, cwd) {
     if (entry.kind === "path") {
       // `lstat`, not `existsSync`: the latter FOLLOWS a symlink, so a broken
       // one at the tombstoned path reported "gone" while git — and every
-      // reader of the tree — sees the path back (audit R2 #36). Any entry at
+      // reader of the tree — sees the path back. Any entry at
       // the path is the path existing again, whatever it points at.
       if (pathEntryExists(join(cwd, entry.path))) {
         failures.push(

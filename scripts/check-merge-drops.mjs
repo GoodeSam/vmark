@@ -8,9 +8,9 @@
  * conflict marker, no failing test, nothing to review. Both directions of that
  * happened in the origin/main merge on this branch:
  *
- *   - `fileOpen.ts` taken from our side would have reverted main's WI-12.2
+ *   - `fileOpen.ts` taken from our side would have reverted main's
  *     ownership-aware activate, which lived inside the switch we had moved out.
- *   - Rebuilding it from main's side then dropped OUR WI-1.5 ingest routing.
+ *   - Rebuilding it from main's side then dropped OUR ingest routing.
  *
  * The check is a four-way comparison per file: base, ours, theirs, merged. If
  * the merged content is byte-identical to one side while the OTHER side had

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Keybinding drift gate (WI-1.5 / Phase 8; gap audit #2).
+ * Keybinding drift gate.
  *
  * A keyboard shortcut with a native menu accelerator lives in THREE sources that
  * must agree (`.claude/rules/41-keyboard-shortcuts.md`):
@@ -34,8 +34,7 @@
  * accelerator the real menu builder binds, and every non-empty tuple the
  * contract mirror holds, must map to a synced entry (or an explicit
  * allow-listed id with a stated reason). Without the mirror half, a renamed or
- * deleted shortcut left its old tuple behind to validate against itself
- * (audit R3 #69).
+ * deleted shortcut left its old tuple behind to validate against itself.
  *
  * Nothing is EXECUTED — no TS runtime, no cargo — so the gate runs under plain
  * `node`; but the TypeScript sources are PARSED (`typescript`, the way this
@@ -43,8 +42,8 @@
  * `lib/rustSource.mjs`'s comment/literal lexer. Text scanning was the defect:
  * a definitions entry could hide its `id` behind a comment or a nested object,
  * a `...SPREAD` element contributed shortcuts nothing checked, and a
- * commented-out mirror tuple stood in for the contract (audit R2
- * #62/#64/#68). It fails closed: a missing file, an unreadable table, a parse
+ * commented-out mirror tuple stood in for the contract.
+ * It fails closed: a missing file, an unreadable table, a parse
  * error, or an array element shape it does not understand exits non-zero.
  * Run via `pnpm lint:keybinding-manifest` (wired into check:all).
  *
@@ -73,7 +72,7 @@ import { checkLabelParity } from "./lib/keybindingManifest/labelParity.mjs";
  * accel. Each names the SOURCE that binds it, and that binding is verified to
  * still exist below: an exemption is a claim about live code, and an
  * un-checked one silently removes a real shortcut from every cross-language
- * comparison the moment the dynamic path is deleted (audit R2 #55).
+ * comparison the moment the dynamic path is deleted.
  */
 const DYNAMIC_MENU_IDS = new Map([
   ["search-genies", { source: "src/hooks/useGenieShortcuts.ts", reason: "accelerator registered at runtime by useGenieShortcuts" }],
@@ -102,8 +101,8 @@ const NON_MANIFEST_MENU_ACCELS = new Map([
  * the rule `DYNAMIC_MENU_IDS` already carries. Each entry was a permanent pass
  * granted on a range nothing read: delete the range row, narrow it to
  * `Mod + 1` through `Mod + 3`, or rename the id, and four menu-backed
- * shortcuts left every docs comparison with the gate still green (audit R3
- * #56). Now the range row must exist, its endpoints must share the entry's
+ * shortcuts left every docs comparison with the gate still green.
+ * Now the range row must exist, its endpoints must share the entry's
  * modifiers, and the entry's own key must fall between them.
  */
 const DOCS_RANGE_DOCUMENTED = new Map([
@@ -144,7 +143,7 @@ const manifest = defs
 // Zero DEFINITIONS first, then zero DERIVED entries. The other order made the
 // definitions check unreachable — no definitions implies no manifest, so the
 // manifest `fail()` always fired first and reported a derivation problem for
-// what is really a parse that read nothing (audit R3 #66).
+// what is really a parse that read nothing.
 if (defs.length === 0) fail(`${DEFS_PATH}: parsed zero shortcut definitions`);
 if (manifest.length === 0) fail(`${DEFS_PATH}: derived zero menu-backed shortcuts`);
 const defById = new Map(defs.map((d) => [d.id, d]));
@@ -153,7 +152,7 @@ const defById = new Map(defs.map((d) => [d.id, d]));
 // Comments are blanked (nested-aware, offsets preserved) before the tuple
 // regexes run: a commented-out tuple counted as the contract, so a mirror
 // whose live entry had been deleted could still validate against the comment
-// left behind (audit R2 #68). `keepStrings` because the accelerators ARE the
+// left behind. `keepStrings` because the accelerators ARE the
 // string literals this reads.
 const rustSrc = rustCode(readOrDie(RUST_PATH), { keepStrings: true });
 const rustDefaultBody = arrayBody(rustSrc, "const DEFAULT_ACCELERATORS", RUST_PATH);
@@ -161,8 +160,7 @@ const rustPlatformBody = arrayBody(rustSrc, "const PLATFORM_ACCELERATORS", RUST_
 
 // Duplicate ids in either contract table (or an id in BOTH) silently overwrote
 // earlier entries via Map.set — a wrong-then-right duplicate would let the gate
-// validate against the surviving tuple and pass. Fail closed on any duplicate
-// (audit-fix, round 3).
+// validate against the surviving tuple and pass. Fail closed on any duplicate.
 const rustDefault = new Map();
 for (const m of readTuples(rustDefaultBody, /\("([a-z0-9-]+)",\s*"((?:[^"\\]|\\.)*)"\)/g, "DEFAULT_ACCELERATORS")) {
   if (rustDefault.has(m[1])) fail(`${RUST_PATH}: duplicate id "${m[1]}" in DEFAULT_ACCELERATORS`);

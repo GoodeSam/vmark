@@ -24,7 +24,7 @@ export const WINDOW_BUILDER = "WebviewWindowBuilder::new";
  * the count non-zero, so a NEW site built through `WindowBuilder::new` (a
  * window with no webview), `WebviewBuilder::new` (a webview added to an
  * existing window) or `…::from_config` is simply not a seed, and every command
- * reaching it passes (audit R3 #99). A turbofish between the type and the
+ * reaching it passes. A turbofish between the type and the
  * constructor (`WebviewWindowBuilder::<R>::new`) defeated the substring too.
  *
  * The word boundary matters: `\bWindowBuilder` must not match inside

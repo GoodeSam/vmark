@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Extension-boundary budget gate — WI-1.8.
+ * Extension-boundary budget gate.
  *
  * `plugin-isolation` is now severity `error`, with today's violations frozen in
  * `.dependency-cruiser-known-violations.json` so the gate can fail on anything

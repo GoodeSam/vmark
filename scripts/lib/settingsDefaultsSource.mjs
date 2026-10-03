@@ -37,7 +37,7 @@ export function parseSettingsDefaults(source) {
   // A source with parse diagnostics is a RECOVERED fragment, not the shipped
   // defaults: TypeScript invents nodes around a syntax error, so the verifier
   // could approve a flag against a partial initializer and report the rest as
-  // "not found" (audit R2 #121). The same guard scripts/lib/arrayLiteralEnd.mjs
+  // "not found". The same guard scripts/lib/arrayLiteralEnd.mjs
   // applies for the same reason. Recorded rather than thrown so the caller can
   // REFUSE with a message instead of a stack trace.
   if (sf.parseDiagnostics?.length > 0) {
@@ -57,8 +57,8 @@ export function parseSettingsDefaults(source) {
   // computed key can override a literal that sits right there in the source,
   // and JavaScript keeps the last write. Skipping them silently meant the
   // verifier could approve a default the runtime does not use, so the affected
-  // prefixes are recorded and `verifyFlagDefaults` refuses them by name
-  // (audit R2 #122). `initialState.cjkFormatting` is one today.
+  // prefixes are recorded and `verifyFlagDefaults` refuses them by name.
+  // `initialState.cjkFormatting` is one today.
   map.unverifiable = new Set();
   const walk = (obj, prefix) => {
     const composed = obj.properties.some(

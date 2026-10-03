@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# WI-ID linkage check.
+# Work-item linkage check.
 #
 # Mechanism: a plan file at dev-docs/plans/*.md defines work items as headings
 # of the form `**WI-N.M — title**`. Once a WI is implemented, the implementer
@@ -8,8 +8,9 @@
 #   (a) a commit message on the current branch, OR
 #   (b) a top-of-file comment in the test file that covers it
 #
-# This script scans the plan, extracts every WI-ID, and verifies the linkage.
-# Drift detection: if a WI-ID is missing both, you've shipped without trace.
+# This script scans the plan, extracts every work-item id, and verifies the
+# linkage. Drift detection: if an id is missing both, you've shipped without
+# trace.
 #
 # Usage:
 #   bash scripts/check-wi-linkage.sh <plan-file> [--phase=N]
@@ -21,8 +22,8 @@
 # phases will be unlinked until they start.
 #
 # Exit codes:
-#   0  every checked WI-ID found in either commits or tests
-#   1  one or more WI-IDs missing
+#   0  every checked work-item id found in either commits or tests
+#   1  one or more work-item ids missing
 #  64  bad invocation
 #
 # Notes:
@@ -42,9 +43,9 @@
 # changing this script's regex without explicit user authorization. Authorization
 # was granted, and the reason is recorded here as §9 requires:
 #
-#   1. The WI-ID regex was numeric-only (`WI-N.M`). The browser-shell plan uses an
+#   1. The work-item id regex was numeric-only (`WI-N.M`). The browser-shell plan uses an
 #      alphanumeric phase segment (`WI-S1.3`, `WI-SOC.2`) precisely so its work
-#      items cannot collide with the embedded-browser plan's `WI-1.x`. The old
+#      items cannot collide with the embedded-browser plan's `WI-<n>.<m>`. The old
 #      regex matched ZERO work items in that plan...
 #   2. ...and the zero-match branch exited 0. Together those produced a FALSE
 #      GREEN: a plan whose namespace this script cannot parse silently "passed".
@@ -72,7 +73,7 @@
 #      commit that merely DESCRIBED a work item vouched for it. Observed live:
 #      this plan's own first commit explained the WI-16 defect, and the gate
 #      immediately reported WI-16 linked. Linkage now requires the form §2
-#      documents — the ID inside a parenthesised tag, `(WI-1.2)`.
+#      documents — the ID inside a parenthesised tag, `(WI-<id>)`.
 #
 # All three are pinned by scripts/check-wi-linkage.test.mjs, which landed first
 # (WI-AF1.1) precisely so this widening could not repeat change 1's false green.
@@ -100,20 +101,20 @@ if [[ ! -f "$PLAN" ]]; then
   exit 64
 fi
 
-# Extract WI-IDs from the plan's DECLARATIONS (WI-AF1.3).
+# Extract work-item ids from the plan's DECLARATIONS (WI-AF1.3).
 #
 # The ID grammar is unchanged: the phase segment is alphanumeric so separate
-# plans can namespace their work items apart (`WI-1.2` in one plan, `WI-S1.2` /
-# `WI-SOC.2` / `WI-VC0.1` in another) without colliding. A numeric-only grammar
-# would match zero WIs in such a plan.
+# plans can namespace their work items apart (`WI-<n>.<m>` in one plan, a
+# letter-prefixed phase such as `WI-<letters><n>.<m>` in another) without
+# colliding. A numeric-only grammar would match zero WIs in such a plan.
 #
 # What changed is WHERE it is searched. Four declaration forms are in use across
 # this repo's plans, and all four are accepted:
 #
-#   ## WI-1                        ATX heading, any level, optional bold
-#   - **WI-0.1** title             bold list item, ID closed by **
-#   **WI-1.2 — title**             bold standalone, ID followed by a dash
-#   | WI-VC0.1 | title |           table row
+#   ## WI-<id>                     ATX heading, any level, optional bold
+#   - **WI-<id>** title            bold list item, ID closed by **
+#   **WI-<id> — title**            bold standalone, ID followed by a dash
+#   | WI-<id> | title |            table row
 #
 # Everything else is prose. That distinction is the whole point: a plan's Risks
 # section is full of lines like `- **WI-AF2.1 has unbounded cost.**`, which names
@@ -157,7 +158,7 @@ WIS=()
 while IFS= read -r line; do
   [[ -n "$line" ]] || continue
   # --phase=N narrows to one phase; the ID must START with WI-<phase> followed
-  # by a boundary, so --phase=1 selects WI-1 and WI-1.2 but never WI-12.
+  # by a boundary, so --phase=1 selects WI-1 and WI-1.<n> but never WI-12.
   if [[ -n "$PHASE_FILTER" ]]; then
     [[ "$line" =~ ^WI-${PHASE_FILTER}(\.[0-9]+)?[a-z]?$ ]] || continue
   fi
@@ -199,7 +200,7 @@ COMMIT_LOG=$(git log --pretty=format:"%s%n%b" "$RANGE" 2>/dev/null || echo "")
 # groups only, so a message that merely mentions a work item in prose cannot
 # vouch for it. Extracting groups first (rather than matching around each ID)
 # handles every tag shape the history actually uses in one pass: `(WI-1)`,
-# `(WI-1, WI-2, WI-3)`, and `(WI-AF3.3 … WI-3.7)`.
+# `(WI-1, WI-2, WI-3)`, and `(WI-AF3.3 … WI-<n>.<m>)`.
 COMMIT_TAG_IDS=$(grep -o -E "\([^)]*WI-[^)]*\)" <<<"$COMMIT_LOG" \
   | grep -E -o "$WI_RE" | sort -u)
 

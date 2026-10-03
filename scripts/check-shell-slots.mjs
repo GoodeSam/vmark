@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Shell-surface identity gate — ADR-007 (WI-12).
+ * Shell-surface identity gate — ADR-007.
  *
  * ADR-007 makes `src/shell/AppShell.tsx` the composition root and says "New
  * top-level surfaces (panels, overlays) become slot registrations, not edits to
@@ -9,7 +9,7 @@
  * is narrower and checkable: the SET of surfaces App.tsx mounts changes only
  * with a deliberate, reviewable baseline edit.
  *
- * WHAT THIS REPLACED (WI-12). The previous gate counted a line-anchored NAME
+ * WHAT THIS REPLACED. The previous gate counted a line-anchored NAME
  * regex — /^\s*<([A-Z][A-Za-z]*(?:Overlay|Panel|Dialog|Picker|Modal|Toast))[\s\/>]/gm
  * — against one integer budget. All three halves leaked:
  *   - name shape: `<CoherenceOverlays />` (plural), `<CommandPalette />`,

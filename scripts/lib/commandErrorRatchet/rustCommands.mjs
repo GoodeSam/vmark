@@ -58,7 +58,7 @@ function splitGenericArgs(inner) {
  * type was found by scanning without any cap — so one declaration had two
  * answers, and a command carrying enough attributes between
  * `#[tauri::command]` and its `fn` was counted by `countLegacyCommands` and
- * dropped by `typedCommandNames` (audit R2 #20). A fixed-distance cutoff is
+ * dropped by `typedCommandNames`. A fixed-distance cutoff is
  * the defect; there is no cutoff now.
  */
 function declAfter(text, from) {
@@ -88,7 +88,7 @@ function declAfter(text, from) {
     // A `where` clause is not part of the return TYPE. Swallowing it produced
     // `"Result<T, String> where T: Clone"`, which no longer ends in `>`, so
     // `isLegacyStringResult` did not match and the legacy signature was
-    // invisible to the ratchet (audit R2 #19).
+    // invisible to the ratchet.
     else if (angle === 0 && ch === "w" && text.startsWith("where", j) && !identChar(text[j - 1]) && !identChar(text[j + 5])) {
       return { name, returnType: text.slice(arrow, j).trim() };
     }
@@ -244,7 +244,7 @@ function walk(dir, rootLen, out) {
  * The crate used to be walked, read and lexed TWICE, once per question, which
  * is the same work done twice and — since the two passes are what feed the two
  * halves of this gate — two chances for them to disagree about which files the
- * crate contains (audit R2 #27). It is also where the alias set has to be
+ * crate contains. It is also where the alias set has to be
  * built: an alias is declared once and used elsewhere, so nothing per-file can
  * see it.
  */

@@ -25,7 +25,7 @@ export function joinSources({ fileSize, mockB, depX, coupling }) {
   const problems = [];
   // A count is a NON-NEGATIVE SAFE INTEGER. `typeof v === "number"` alone
   // accepted -1, 1.5 and NaN — each of which lands in a column this document
-  // promises was measured (audit R2 #130).
+  // promises was measured.
   const isCount = (v) => Number.isSafeInteger(v) && v >= 0;
   const files = fileSize?.files;
   const testFiles = fileSize?.testFiles;
@@ -83,8 +83,8 @@ export function featureCoverage(covSummary, eligible, root) {
     if (abs === "total") continue;
     // `path.relative`, not a string-prefix slice: `/x/vmark-old/src/a.ts`
     // starts with `/x/vmark` and used to be sliced into `old/src/a.ts` — a
-    // sibling checkout's file keyed as though it were this tree's
-    // (audit R2 #131). A result that climbs out is not this tree's file.
+    // sibling checkout's file keyed as though it were this tree's.
+    // A result that climbs out is not this tree's file.
     let rel = abs;
     if (path.isAbsolute(abs)) {
       rel = path.relative(root, abs);
@@ -97,7 +97,7 @@ export function featureCoverage(covSummary, eligible, root) {
     const v = byRel.get(f);
     // A record without numeric `lines` is not a measurement of that file, and
     // counting it as `seen` while folding in zeros made a PARTIAL summary look
-    // complete and understated the percentage (audit R2 #132). Not seen →
+    // complete and understated the percentage. Not seen →
     // `complete` is false → the cell says so.
     if (!v || typeof v.lines?.covered !== "number" || typeof v.lines?.total !== "number") continue;
     covered += v.lines.covered;

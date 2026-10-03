@@ -1,4 +1,5 @@
 // WI-RA17E.5 — provenance ids in production comments resolve, or the gate fails.
+// WI-RA28.4 — the tooling (scripts/ and .claude/hooks/, shell included) is held to the same rule.
 /**
  * Drives the comment reader and the resolution rules against fixture trees in a
  * temp dir, and the real CLI as a subprocess for its exit-code contract. Each
@@ -163,6 +164,24 @@ describe("scope", () => {
       "scripts/e.mjs": "",
     });
     expect(productionFiles(root)).toEqual(["src/a.ts", "server/mcp/src/b.ts", "e2e/lib/d.mjs"]);
+  });
+
+  it("holds the tooling to the same rule: scripts/ and .claude/hooks/, shell scripts included", () => {
+    const root = tree({
+      ...PLANS,
+      "scripts/gate.mjs": "// fails closed (audit R2 #83)\nexport {};\n",
+      "scripts/lib/phase.sh": "#!/usr/bin/env bash\n# WI-NOPE9.1 linked here\n",
+      "scripts/ok.mjs": "// WI-AB1.2 resolves\nexport {};\n",
+      ".claude/hooks/guard.mjs": "// moved by WI-10\nexport {};\n",
+      "scripts/gate.test.mjs": "// WI-NOPE9.2 belongs in a test header\n",
+      "scripts/fixtures/x.mjs": "// audit R9 #1\n",
+    });
+    expect(scanTree(root).map((t) => `${t.file}:${t.line} ${t.token} ${t.reason === null ? "resolves" : "dangling"}`)).toEqual([
+      "scripts/gate.mjs:1 audit R2 #83 dangling",
+      "scripts/lib/phase.sh:2 WI-NOPE9.1 dangling",
+      "scripts/ok.mjs:1 WI-AB1.2 resolves",
+      ".claude/hooks/guard.mjs:1 WI-10 dangling",
+    ]);
   });
 });
 

@@ -1,5 +1,5 @@
 /**
- * WI-UI0.2 — C2g: colour/size/z literals inside `className` strings.
+ * C2g: colour/size/z literals inside `className` strings.
  *
  * The CSS gates cannot see a defect written in JSX, which is where the
  * Tailwind surfaces (Settings, PDF sidebar, tab strip) write theirs. This

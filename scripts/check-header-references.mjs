@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Header-reference gate (WI-FL0.2) — every file header that names another file
+ * Header-reference gate — every file header that names another file
  * must name one that exists.
  *
  * Headers carry three reference grammars and nothing resolved any of them:
@@ -65,7 +65,7 @@ export function parseArgs(argv, defaultRoot) {
   // `path.resolve("")` is the CWD, so a bare `--root=` used to silently scan
   // wherever the caller happened to stand instead of the tree it named — the
   // difference between "checked nothing" and "checked something else" is
-  // invisible in the output (audit R2 #51).
+  // invisible in the output.
   const root = (raw, spelling) => {
     if (raw.trim() === "") throw new Error(`${spelling} needs a directory path\n${USAGE}`);
     return path.resolve(raw);
@@ -169,7 +169,7 @@ function main() {
     // scripts/gen-feature-ledger.mjs writes the ledger: a direct write
     // TRUNCATES first, so an interruption or a full disk leaves a partial
     // baseline. A write failure is reported here rather than escaping as an
-    // unhandled stack trace with no mention of --update (audit R2 #53).
+    // unhandled stack trace with no mention of --update.
     const tmpPath = `${baselinePath}.tmp-${process.pid}`;
     try {
       writeFileSync(tmpPath, formatBaseline(next));

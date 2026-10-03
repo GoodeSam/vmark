@@ -1,5 +1,5 @@
 /**
- * WI-UI0.3 — CSS-side checks of the ui-consistency gate: C3, C4, C5, C8 and
+ * CSS-side checks of the ui-consistency gate: C3, C4, C5, C8 and
  * C10's class→focus-paint map here; C9 and C11/C12 live in sibling modules and
  * are re-exported, so this file stays the one import for the CLI. Pure
  * functions over source text; the CLI owns files, the baseline and the exit code.

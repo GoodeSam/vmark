@@ -1,5 +1,5 @@
 /**
- * Doc join `lint-table` (WI-FL0.3): `website/guide/lint.md` ↔ the lint engine.
+ * Doc join `lint-table`: `website/guide/lint.md` ↔ the lint engine.
  *
  * Two things the page states are restatements of code, and both had drifted
  * through every green CI run — a docs-only PR runs no test that reads the rules:
@@ -79,7 +79,7 @@ const severityLabel = (s) => s[0].toUpperCase() + s.slice(1);
  * Cells of one table row. Delegates to `markdownTables.splitRow` — the shared
  * GFM splitter — rather than carrying a second one: the lookbehind this
  * replaced read the `\` of an even backslash run as an escape, and stripped a
- * TRAILING `\|` as though it were the row's outer delimiter (audit R2 #142).
+ * TRAILING `\|` as though it were the row's outer delimiter.
  */
 const splitCells = splitRow;
 
@@ -87,8 +87,7 @@ const isRow = (line) => line.trim().startsWith("|");
 /**
  * A GFM delimiter row: every cell is `-`/`:`, and it has the SAME number of
  * cells as its header. GFM requires that equality — without it a pipe line
- * followed by a shorter dash line was read as a table nothing renders as one
- * (audit R2 #143).
+ * followed by a shorter dash line was read as a table nothing renders as one.
  */
 const isDelimiterRow = (line, headerCells) => {
   const cells = splitCells(line);
@@ -157,7 +156,7 @@ function joinTriggers(doc, shortcuts, renderShortcut, { docPath, defsPath }, fin
   // A trigger table row is `| Trigger | Action |`. A row of any other arity is
   // a malformed table, not a documented trigger — and `cells[1]` on one still
   // matched, so a three-cell row could satisfy the join. Duplicate Action rows
-  // are refused too: `find` would take an arbitrary one of them (audit R2 #149).
+  // are refused too: `find` would take an arbitrary one of them.
   const seenActions = new Set();
   for (const { line, cells } of rows) {
     if (cells.length !== 2) {
@@ -215,8 +214,7 @@ function checkedRuleMeta(meta, source) {
     }
     // A duplicate id makes both directions of the join lie: `byId` keeps the
     // LAST entry, so the row is checked against one of them, and the
-    // completeness loop finds `seen` holds the id and calls BOTH documented
-    // (audit R2 #150).
+    // completeness loop finds `seen` holds the id and calls BOTH documented.
     if (ids.has(m.id)) throw new Error(`${source}: RULE_META declares "${m.id}" twice — one rule, one row`);
     ids.add(m.id);
   }
@@ -227,7 +225,7 @@ function checkedRuleMeta(meta, source) {
  * The three shortcut definitions this join consumes must each exist exactly
  * once and carry string keys. `Array.isArray` alone let a duplicate id through
  * — `find` then picked an arbitrary one — and a non-string `defaultKey` reached
- * the renderer as whatever it was (audit R2 #151).
+ * the renderer as whatever it was.
  */
 function checkedShortcuts(defs, source) {
   if (!Array.isArray(defs)) throw new Error(`${source}: DEFAULT_SHORTCUTS is not an array`);

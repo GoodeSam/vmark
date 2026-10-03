@@ -13,7 +13,7 @@ import ts from "typescript";
 
 import { ROOT } from "./paths.js";
 
-// ─── Dialog-literal check (WI-UI4.1) ─────────────────────────────────────────
+// ─── Dialog-literal check ────────────────────────────────────────────────────
 //
 // A string LITERAL passed to ask()/confirm()/message()/confirmAction()/toast.*
 // is hardcoded English the locale files cannot reach. The check walks a real

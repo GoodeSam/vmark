@@ -46,7 +46,7 @@ export function parseKnipFiles(jsonText) {
   // EVERY issue record must carry a `files` array. Accepting one without it
   // meant a reporter-schema change could drop findings while the rest of the
   // report kept the run looking valid — a partial measurement that reads as a
-  // clean tree (audit R2 #84). Measured against knip's real production output:
+  // clean tree. Measured against knip's real production output:
   // 58 of 58 records carry it, so this refuses nothing that
   // ships. The pre-knip-6 shape (a ROOT `files` array) is still accepted, and
   // then `issues` is not the carrier.
@@ -74,7 +74,7 @@ export function productionEntries(config) {
       const bare = pattern.slice(0, -1);
       // The character class must match what globToRegExp UNDERSTANDS: `[`/`]`
       // are refused there, so classifying them as glob syntax here would turn a
-      // literal path into a glob that matches nothing (audit R2 #85).
+      // literal path into a glob that matches nothing.
       out.push({ dir, pattern: bare, isGlob: /[*?{}]/.test(bare) });
     }
   }
@@ -87,7 +87,7 @@ export function productionEntries(config) {
  *
  * An unmatched `{` set `i = pattern.indexOf("}", i)` to -1, the loop's `i++`
  * made it 0, and the scan restarted from the beginning: a HANG, in a gate, on
- * a one-character typo (audit R2 #85). A bracket expression is refused for the
+ * a one-character typo. A bracket expression is refused for the
  * matching reason — the converter escapes `[` and `]` as literals, so a
  * `[abc]` pattern would be classified as a glob and then matched literally,
  * quietly matching nothing.
@@ -188,6 +188,6 @@ export function runKnip(root = ROOT, exec = execFileSync) {
   // The VALIDATED list, not the raw text. Returning the text made `measure()`
   // parse the same report a second time, so the shape this function has already
   // checked was re-derived by a second call that could drift from it — two
-  // readings of one measurement (audit R3 #86).
+  // readings of one measurement.
   return files;
 }

@@ -28,7 +28,7 @@ import { rustCode } from "./rustSource.mjs";
  * ordinary string moved the brace balance, and it knew nothing of raw strings
  * (`r#"…"#`, whose unescaped quotes flipped it in and out of string mode) or
  * char literals (`'{'`). Either could truncate a function body — hiding every
- * call edge after it — or extend one over the next item (audit R2 #104).
+ * call edge after it — or extend one over the next item.
  * `lib/rustSource.mjs` is the repo's one Rust lexer and already handles all
  * three, plus NESTED block comments.
  */
@@ -44,7 +44,7 @@ const commentsOnly = (src) => rustCode(src, { keepComments: true });
  *
  * `indexOf("{")` did none of this: a bodyless `fn a(&self);` in a trait
  * consumed the NEXT item's body, so a phantom function carried someone else's
- * call edges (audit R2 #103).
+ * call edges.
  */
 function signatureEnd(src, from) {
   let depth = 0;
@@ -92,8 +92,7 @@ export function parseFns(file, rawSrc) {
   const src = stripComments(rawSrc);
   const commented = commentsOnly(rawSrc);
   // `r#name` is the SAME item as `name` — a raw identifier only escapes a
-  // keyword — and the bare class stopped at the `r`, naming the function "r"
-  // (audit R2 #102).
+  // keyword — and the bare class stopped at the `r`, naming the function "r".
   const FN =
     /(?:^|\n)[ \t]*((?:pub(?:\s*\([^)]*\))?\s+)?(?:const\s+)?(?:async\s+)?(?:unsafe\s+)?(?:extern\s+"[^"]*"\s+)?fn\s+(?:r#)?([A-Za-z0-9_]+))/g;
   const out = [];
@@ -121,8 +120,8 @@ export function parseFns(file, rawSrc) {
     // groups. It used to be a 600-BYTE slice: a longer contiguous block —
     // several `#[cfg(…)]` lines, or a doc comment blanked to spaces between the
     // attribute and the `fn` — pushed `#[tauri::command]` outside the window,
-    // the item stopped being a command, and it left the gate silently
-    // (audit R3 #105). Walking the structure has no window to overflow, and it
+    // the item stopped being a command, and it left the gate silently.
+    // Walking the structure has no window to overflow, and it
     // still cannot reach past the first non-attribute token, which is what kept
     // the small window from binding an unrelated function's attribute.
     const before = attributeBlock(src, start);
@@ -137,7 +136,7 @@ export function parseFns(file, rawSrc) {
       params,
       // Comments KEPT, literals blanked: the opt-out marker is a comment, and
       // reading it out of raw source let a string containing
-      // `// window-thread-ok: …` suppress a real violation (audit R2 #109).
+      // `// window-thread-ok: …` suppress a real violation.
       rawBody: commented.slice(open, i + 1),
       isAsync: /\basync\s+fn\b/.test(header),
       isCommand: !!attr,
@@ -146,8 +145,7 @@ export function parseFns(file, rawSrc) {
       crateVisible: !!vis && (vis[1] === undefined || /crate|super|in\s+/.test(vis[1])),
       // The OFFSET is part of the identity: two `fn start` in one file (two
       // impl blocks, a nested fn) shared `file::name`, so marking one reachable
-      // marked the other, and a command calling the innocent one was reported
-      // (audit R2 #107).
+      // marked the other, and a command calling the innocent one was reported.
       id: `${file}::${name}@${start}`,
     });
   }

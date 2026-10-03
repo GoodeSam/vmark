@@ -2,7 +2,7 @@
  * Purpose: join the Default columns of website/guide/settings.md and
  *   website/guide/terminal.md to src/stores/settingsStore/defaults.ts, in both
  *   directions, so a documented default cannot drift from the shipped one and a
- *   row cannot appear or vanish unnoticed (WI-FL0.4).
+ *   row cannot appear or vanish unnoticed.
  *
  * Why structural and two-way (Codex objection #7): the previous guard,
  * `terminalDocDefaults.test.ts`, transcribed the terminal table by hand and

@@ -17,7 +17,7 @@
  * could come back as `export async function`, or be re-exported from a new
  * file under its old name, without the gate noticing.
  *
- * RUST ITEMS are covered too (WI-FL3.2): `[pub[(crate|super|self|in path)]]
+ * RUST ITEMS are covered too:`[pub[(crate|super|self|in path)]]
  * [const] [async] [unsafe] [extern ["ABI"]] (fn|struct|enum|type|const|static|
  * mod|trait|union) [r#]Name`, with any whitespace the grammar allows inside
  * `pub ( crate )` / `pub(in  path )` and a raw identifier (`fn r#name`) treated
@@ -36,7 +36,7 @@
  * confirmed with a multiline `export { … }` match, so an import clause does
  * not fire. The header used to record this as a limitation left open on the
  * grounds that the registry was "eight entries long"; it is now a dozen symbol
- * tombstones and the premise expired (audit R2 #30).
+ * tombstones and the premise expired.
  *
  * @coordinates-with scripts/check-deleted-names.mjs — the gate that greps with these patterns
  * @coordinates-with scripts/check-deleted-names.test.mjs — fixture-tests each form
@@ -65,7 +65,7 @@ export function symbolPatterns(name) {
   // Qualifiers that may sit between `export` and the declarator, in any order
   // the language allows: `export const enum X`, `export declare abstract class
   // X`, `export async function* x`. Written as a repeated alternation rather
-  // than a fixed chain — the chain missed `const enum` outright (audit R2 #32).
+  // than a fixed chain — the chain missed `const enum` outright.
   const quals = `((default|declare|async|abstract|const)${SP}+)*`;
   // `export type { X }` / `export type * as X from …` are the type-only
   // spellings, and the brace pattern anchored on `export` + `{` did not reach
@@ -103,7 +103,7 @@ export function symbolPatterns(name) {
  *
  * The header used to record this as a limitation deliberately left open "for a
  * coarse tripwire whose registry is eight entries long". The registry now
- * carries a dozen symbol tombstones, so the premise expired (audit R2 #30).
+ * carries a dozen symbol tombstones, so the premise expired.
  */
 export function wrappedExportClausePattern(name) {
   const id = ereEscape(name);

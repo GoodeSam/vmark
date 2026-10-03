@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Plugin→host coupling ratchet — FOUR channels (WI-11).
+ * Plugin→host coupling ratchet — FOUR channels.
  *
  * A plugin that imports `@/stores/…` reaches into the app's Zustand singletons.
  * That is the property which makes it unshippable as a standalone/third-party

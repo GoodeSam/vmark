@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// WI-UI0.1 — the catalog contrast gate (C1a–C1f; rules R1, D10, D11).
+// The catalog contrast gate (C1a–C1f; rules R1, D10, D11).
 /**
  * Measures every colour token in the typed theme catalog against every
  * background the theme actually puts it on, per `dev-docs/plans/
@@ -14,8 +14,8 @@
  *        computed through the SAME adapter + legacy-writer projection the
  *        runtime uses, so Phase-1 emission fixes move this gate automatically.
  *   C1b  boundary/icon tokens ≥ 3.0 on bg.primary/bg.secondary: media.*,
- *        decorative text.tertiary (D3), the emitted mdChar (syntax markers,
- *        WI-UI1.3), and controlBorder once the catalog carries it (D8).
+ *        decorative text.tertiary (D3), the emitted mdChar (syntax
+ *        markers), and controlBorder once the catalog carries it (D8).
  *   C1c  text.primary over blend(accent.bg), text.primary over
  *        blend(selection) — rgba COMPOSITED over bg.primary first — and the
  *        emitted contrastText over accent.primary, all ≥ 4.5.
@@ -26,7 +26,7 @@
  *        (`terminal.boldTextInBrightColors`). The floors assume xterm's
  *        minimumContrastRatio lift, so the default is pinned ≥ 4.5 here too.
  *   C1e  syntax.* ≥ 4.5 on bg.primary AND bg.secondary — self-activates when
- *        a theme carries a `syntax` block (WI-UI1.5).
+ *        a theme carries a `syntax` block.
  *   C1f  bg.secondary ≥ 1.15:1 from bg.primary (`surface-ramp/bg.secondary`,
  *        open question Q1).
  *
@@ -202,7 +202,7 @@ export function contrastFindings(
       });
     }
 
-    // C1e — syntax block, when present (typed since WI-UI1.5).
+    // C1e — syntax block, when present (a typed catalog field).
     const syntax = (t as unknown as { syntax?: Record<string, string> }).syntax;
     if (syntax) {
       for (const [role, value] of Object.entries(syntax)) {

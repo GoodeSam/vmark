@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Mock-boundary identity ratchet (WI-18, D4).
+ * Mock-boundary identity ratchet (D4).
  *
  * Tests must mock BOUNDARIES (`@tauri-apps/*`, network, fs), not app state.
  * A test that mocks `src/stores/*` re-declares the store's contract by hand;

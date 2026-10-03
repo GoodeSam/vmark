@@ -84,7 +84,7 @@ function localesOf(rawValue, consts) {
  * Generic form of the parser below: the identity set of
  * `const <declName> = [ {…}, … ]`, one JSON-tuple identity per entry, fields
  * read by name in any order and quote style. Built for the spec-ledger
- * ratchet entries (WI-0.3), which pin TS ledgers the same way this module
+ * ratchet entries, which pin TS ledgers the same way this module
  * already pins the i18n allowlist.
  */
 export function tsObjectArrayIdentities(source, declName, fieldNames, label) {
