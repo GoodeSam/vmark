@@ -40,12 +40,19 @@ vi.mock("@/utils/debug", () => ({
   historyError: vi.fn(),
 }));
 
-vi.mock("@/utils/historyTypes", () => ({
+// A non-English UI: the stored name of a document with no file name must be
+// the translation, not a hard-coded "Untitled" (WI-RA26.6).
+vi.mock("@/i18n", () => ({
+  default: { t: (key: string) => (key === "common:untitled" ? "未命名" : key) },
+}));
+
+vi.mock("@/utils/historyTypes", async (importOriginal) => ({
   HISTORY_FOLDER: "history",
   INDEX_FILE: "index.json",
+  // Pure constructor: the real one, so the stored index is what production writes.
+  createHistoryIndex: (await importOriginal<typeof import("@/utils/historyTypes")>()).createHistoryIndex,
   generatePreview: vi.fn((c: string) => c.slice(0, 50)),
   getByteSize: vi.fn((c: string) => c.length),
-  getDocumentName: vi.fn((p: string) => p.split("/").pop()),
   hashPath: vi.fn((p: string) => Promise.resolve("hash_" + p.replace(/\//g, "_"))),
   parseHistoryIndex: vi.fn((obj: unknown) => obj),
 }));
@@ -133,6 +140,14 @@ describe("useHistoryOperations", () => {
       mockExists.mockResolvedValue(false);
       await createSnapshot("/test/doc.md", "content", "manual", defaultSettings);
       expect(mockWriteTextFile).toHaveBeenCalledTimes(2); // snapshot file + index
+    });
+
+    // WI-RA26.6 — a path with no file name is stored under the translated name.
+    it("names a document with no file name in the UI language", async () => {
+      mockExists.mockResolvedValue(false);
+      await createSnapshot("/test/folder/", "content", "manual", defaultSettings);
+      const indexWrite = mockWriteTextFile.mock.calls.find(([path]) => String(path).endsWith("index.json"));
+      expect(JSON.parse(String(indexWrite?.[1])).documentName).toBe("未命名");
     });
 
     it("skips auto-save when file size exceeds limit", async () => {
