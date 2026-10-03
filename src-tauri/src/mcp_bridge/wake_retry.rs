@@ -160,3 +160,7 @@ pub(super) async fn wake_retry_after_timeout<R: tauri::Runtime>(
     };
     Some(response)
 }
+
+#[cfg(all(test, not(target_os = "windows")))]
+#[path = "wake_retry.test.rs"]
+mod tests;

@@ -97,6 +97,71 @@ fn missing_root_returns_empty_stats() {
     assert_eq!(stats.error_count, 0);
 }
 
+// WI-RA14B.3 — best-effort means counted, never fatal: a root whose entries
+// cannot be listed, and a child whose attribute cannot be removed, are each
+// one error, and the rest of the pass still runs.
+#[test]
+fn an_unlistable_root_is_stripped_and_its_listing_counted_as_one_error() {
+    use std::os::unix::fs::PermissionsExt;
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("ws");
+    fs::create_dir(&root).unwrap();
+    fs::write(root.join("a.md"), b"x").unwrap();
+    set_quarantine(&root.join("a.md"));
+    set_quarantine(&root);
+    // Write + search, no read: the root's own attribute can go, its entries
+    // cannot be listed.
+    fs::set_permissions(&root, fs::Permissions::from_mode(0o300)).unwrap();
+
+    let stats = strip_workspace_quarantine(&root);
+    fs::set_permissions(&root, fs::Permissions::from_mode(0o700)).unwrap();
+
+    assert_eq!(stats.stripped_count, 1, "the root itself");
+    assert_eq!(stats.error_count, 1, "the listing");
+    assert!(!has_quarantine(&root));
+    assert!(has_quarantine(&root.join("a.md")), "never reached");
+}
+
+#[test]
+fn a_child_whose_attribute_cannot_be_removed_is_counted_and_the_rest_continue() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    for name in ["a.md", "b.md", "c.md"] {
+        fs::write(root.join(name), b"x").unwrap();
+        set_quarantine(&root.join(name));
+    }
+    // An immutable file (`UF_IMMUTABLE`): removing its attribute fails with
+    // EPERM. The guard clears the flag on every exit so the temp dir can be
+    // removed.
+    fn set_flags(path: &Path, flags: libc::c_uint) -> std::io::Result<()> {
+        use std::os::unix::ffi::OsStrExt;
+        let c_path = std::ffi::CString::new(path.as_os_str().as_bytes())?;
+        // SAFETY: `c_path` is a NUL-terminated string that outlives the call.
+        if unsafe { libc::chflags(c_path.as_ptr(), flags) } == 0 {
+            Ok(())
+        } else {
+            Err(std::io::Error::last_os_error())
+        }
+    }
+    struct Immutable(PathBuf);
+    impl Drop for Immutable {
+        fn drop(&mut self) {
+            let _ = set_flags(&self.0, 0);
+        }
+    }
+    let locked = root.join("b.md");
+    set_flags(&locked, libc::UF_IMMUTABLE).expect("chflags");
+    let _unlock = Immutable(locked.clone());
+
+    let stats = strip_workspace_quarantine(root);
+
+    assert_eq!(stats.error_count, 1, "the locked file");
+    assert_eq!(stats.stripped_count, 2, "the other two");
+    assert!(has_quarantine(&locked));
+    assert!(!has_quarantine(&root.join("a.md")));
+    assert!(!has_quarantine(&root.join("c.md")));
+}
+
 #[test]
 fn root_pointing_to_file_returns_empty() {
     let tmp = tempfile::tempdir().unwrap();

@@ -290,3 +290,7 @@ impl WorkspaceKernel {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "state_write.test.rs"]
+mod tests;

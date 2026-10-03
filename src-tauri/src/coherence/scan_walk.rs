@@ -259,3 +259,7 @@ fn finish(
     kernel.scan_cache.keep_only(&seen);
     Ok(out)
 }
+
+#[cfg(test)]
+#[path = "scan_walk.test.rs"]
+mod tests;

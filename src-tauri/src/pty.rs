@@ -269,6 +269,9 @@ pub async fn pty_resume(pid: u32, state: tauri::State<'_, PtyState>) -> Result<(
 
 // Unix-only: the tests spawn `/bin/sh` and probe pids and descriptors.
 #[cfg(all(test, unix))]
+#[path = "pty/commands.test.rs"]
+mod command_tests;
+#[cfg(all(test, unix))]
 #[path = "pty/lifecycle.test.rs"]
 mod lifecycle_tests;
 #[cfg(all(test, unix))]

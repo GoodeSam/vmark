@@ -230,3 +230,7 @@ impl Envelope {
         })
     }
 }
+
+#[cfg(test)]
+#[path = "envelope_typed.test.rs"]
+mod tests;
