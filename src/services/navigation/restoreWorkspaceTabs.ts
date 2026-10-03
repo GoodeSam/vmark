@@ -10,7 +10,7 @@
  * (e.g. restored by hot exit), so restoration never creates a duplicate tab
  * for an already-loaded file. The command paths previously omitted this guard.
  *
- * Ownership (audit #480): a restored text tab goes through
+ * Ownership: a restored text tab goes through
  * `applyFileOwnershipAfterOpen` like every other open — fileOpen, Finder,
  * media, replace-tab — so it is claimed for its workspace instance and a copy
  * already writable in another window makes this one read-only. The media
@@ -108,7 +108,7 @@ async function restoreOnePath(windowLabel: string, filePath: string): Promise<bo
   // persisted tabs are document paths, and a media tab IS a document tab with a
   // path, so an image or video in `lastOpenTabs` reached the text read.
   //
-  // INSIDE the failure boundary (audit #976). This ran outside either catch, so
+  // INSIDE the failure boundary. This ran outside either catch, so
   // a throw from media routing, document init or the ownership claim rejected
   // `restoreOnePath` — and with it the whole loop, abandoning every sibling
   // path after it. One unrestorable file must cost one tab, not the session.
@@ -120,8 +120,8 @@ async function restoreOnePath(windowLabel: string, filePath: string): Promise<bo
   } catch (error) {
     // Read failure only. Nothing was created, so there is nothing to roll back.
     // Kept separate from the catch below so a post-create failure cannot be
-    // mislabelled as an unreadable file — and the CAUSE travels with it (audit
-    // #978): moved, deleted, permission-denied and undecodable all land here,
+    // mislabelled as an unreadable file — and the CAUSE travels with it:
+    // moved, deleted, permission-denied and undecodable all land here,
     // and the message alone could not tell a user which of them happened.
     workspaceWarn(`Could not restore tab: ${filePath}`, error);
     return false;
@@ -133,7 +133,7 @@ async function restoreOnePath(windowLabel: string, filePath: string): Promise<bo
   // and hand back THEIR tab, and the ingest below would overwrite its contents.
   if (findExistingTabForPath(windowLabel, filePath)) return false;
 
-  // …and the two dedup rules are NOT the same rule (audit #979).
+  // …and the two dedup rules are NOT the same rule.
   // `findExistingTabForPath` matches on the DOCUMENT's filePath, while
   // `createTab` matches on the TAB's — so a tab another opener created but has
   // not ingested yet is invisible above and deduplicated here, and `createTab`
@@ -145,13 +145,13 @@ async function restoreOnePath(windowLabel: string, filePath: string): Promise<bo
     // Deduplicated onto someone else's tab. Ingesting would overwrite whatever
     // they are loading into it, and the rollback below would CLOSE it — a
     // user-facing close, complete with a false "recently closed" entry — for a
-    // failure in this loop (audit #980).
+    // failure in this loop.
     return false;
   }
   try {
     // The disk-open door canonicalises AND derives line metadata.
     useDocumentStore.getState().ingestExternalContent(tabId, content, "disk-open", { filePath });
-    // Claim + cross-window writable check, after the document exists (#480).
+    // Claim + cross-window writable check, after the document exists.
     applyFileOwnershipAfterOpen(tabId, filePath);
     return true;
   } catch (error) {
@@ -166,7 +166,7 @@ async function restoreOnePath(windowLabel: string, filePath: string): Promise<bo
 }
 
 /**
- * Drop a restoration-cleanup close from the reopen history (audit #983).
+ * Drop a restoration-cleanup close from the reopen history.
  *
  * `closeTab` is the USER's close: it files the tab under "recently closed", so
  * removing the startup blank left a synthetic Untitled entry there — and as the
@@ -190,7 +190,7 @@ function forgetClosedTab(windowLabel: string, tabId: string): void {
  * Restore the given file paths as tabs in `windowLabel`. Paths that already
  * have an open tab are skipped (dedup). Unreadable paths (moved/deleted) are
  * skipped with a warning. The list comes from a persisted workspace config, so
- * it is untrusted (WI-3): wrong-typed entries are skipped, siblings restored.
+ * it is untrusted: wrong-typed entries are skipped, siblings restored.
  * Returns the number of tabs newly created.
  */
 export async function restoreWorkspaceTabs(
@@ -235,7 +235,7 @@ export async function restoreWorkspaceTabs(
     forgetClosedTab(windowLabel, replaceable.tabId);
   }
 
-  // WI-TNAV2.5 — every `createTab` above ACTIVATES, so without this the session
+  // Every `createTab` above ACTIVATES, so without this the session
   // opens with an MRU in reverse-restore order that the user never produced,
   // and the first `Ctrl+Tab` jumps somewhere arbitrary. Hot-exit restore has
   // the same shape and the same fix; this is the second path, which the first
@@ -261,7 +261,7 @@ export function restoreSplitLayout(windowLabel: string, rootPath: string): void 
   if (!primaryTabId || !secondaryTabId || primaryTabId === secondaryTabId) return;
 
   const pane = usePaneStore.getState();
-  // Under a `restore` origin (audit #985). Every activation below is
+  // Under a `restore` origin. Every activation below is
   // rehydration, and `user` — the default — makes the MRU record a visit the
   // user never made, immediately after `restoreWorkspaceTabs` collapsed the MRU
   // for exactly that reason. A scope is available here, unlike in that loop,

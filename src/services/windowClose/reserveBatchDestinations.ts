@@ -5,7 +5,7 @@
  * turn each tab's title into a real path in that folder. Doing that with
  * `joinPath(folder, title)` and the ordinary overwrite writer silently replaced
  * whatever was already sitting at that name — a document the user need not
- * even have open (audit 20260906, F1).
+ * even have open.
  *
  * Two distinct collisions have to be handled, and a within-batch-only fix
  * misses the one that costs bytes:

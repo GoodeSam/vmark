@@ -7,9 +7,9 @@
  * wiring and this is testable orchestration.
  *
  * Key decisions:
- *   - Dirty AND divergent documents need resolution (WI-2), same rule as the
+ *   - Dirty AND divergent documents need resolution, same rule as the
  *     per-tab close.
- *   - The dirty set is REVALIDATED after EVERY await (WI-5): save prompts, the
+ *   - The dirty set is REVALIDATED after EVERY await: save prompts, the
  *     pin dialog, and the cleanup/persist steps inside finalize all yield, and
  *     an edit (human or MCP) landing mid-await must produce another prompt,
  *     not a silent discard. Bounded — a document that cannot be brought to
@@ -17,14 +17,14 @@
  *     discarded (that choice covers whatever the buffer holds), and a doc
  *     whose buffer is byte-identical to a completed save (save-time
  *     normalization can leave isDirty standing with the bytes safely on disk).
- *   - NOTHING is destroyed until `close_window` is invoked (WI-3). Cleanup and
+ *   - NOTHING is destroyed until `close_window` is invoked. Cleanup and
  *     persistence read live stores; the store teardown runs after the native
  *     close call, so a rejected persist or close leaves the window fully
  *     intact instead of alive-but-empty. On success the webview dies and the
  *     teardown is moot.
  *   - The tab list for teardown is re-read at finalize time — tabs opened
  *     during a prompt are included instead of leaking.
- *   - One-pass dirty-context construction (WI-8e), in dirtyContexts.ts: there
+ *   - One-pass dirty-context construction, in dirtyContexts.ts: there
  *     is no await between the filter and the map, so the old two-pass
  *     null-filter was dead code reachable only through a fabricated test.
  *
@@ -65,7 +65,7 @@ async function confirmPinnedTabs(tabs: Tab[], log: CloseLog, windowLabel: string
 }
 
 /**
- * The point of no return — but ordered so failure destroys nothing (WI-3):
+ * The point of no return — but ordered so failure destroys nothing:
  * cleanup and persistence first (they READ the stores), then the native close,
  * and store teardown only after that call is issued. If `close_window`
  * rejects, every document, tab and pane is still intact.
@@ -127,7 +127,7 @@ export async function runWindowCloseFlow(
   let pinsConfirmed = false;
 
   for (let attempt = 0; attempt < MAX_RESOLUTION_ATTEMPTS; attempt++) {
-    // WI-10: sync every mounted editor before judging dirtiness — an edit
+    // Sync every mounted editor before judging dirtiness — an edit
     // still in the debounce window is otherwise invisible to the check.
     flushAllWysiwygNow();
     const tabs = useTabStore.getState().tabs[windowLabel] ?? [];
@@ -171,7 +171,7 @@ export async function runWindowCloseFlow(
       }
     }
     // Loop: revalidate. A doc still dirty after "saved" with CHANGED content
-    // means an edit landed during the save (WI-5) — it gets another prompt,
+    // means an edit landed during the save — it gets another prompt,
     // not a silent drop. Unchanged content is a normalization artifact and is
     // exempted via `settled` above.
   }

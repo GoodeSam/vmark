@@ -7,7 +7,7 @@
 // tab's filePath to an asset:// URL, granting asset access itself before it
 // streams the file. Synchronous — no close-during-read race.
 //
-// See dev-docs/plans/20260703-media-viewer.md.
+// See .claude/adr/plans/20260703-media-viewer.md.
 
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";

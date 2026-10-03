@@ -16,7 +16,7 @@ import { cleanupBeforeModeSwitch } from "@/services/assembly/modeSwitchCleanup";
 
 export function toggleMarkdownSplitWithCheckpoint(windowLabel: string): void {
   // Flush pending debounced WYSIWYG edits to the store first, so the checkpoint
-  // captures current content and the editor swap doesn't drop them (Codex #8).
+  // captures current content and the editor swap doesn't drop them.
   cleanupBeforeModeSwitch();
   const ui = useUIStore.getState();
   const tabId = useTabStore.getState().activeTabId[windowLabel];

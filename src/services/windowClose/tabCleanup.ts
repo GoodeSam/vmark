@@ -54,7 +54,7 @@ export function cleanupTabState(tabId: string): void {
   clearEditorScrollOffsets(tabId);
   forgetLintTab(tabId);
   // A save still in flight for this tab must not re-point stores that no
-  // longer describe an open document (audit 20260906, F3).
+  // longer describe an open document.
   forgetSaveTarget(tabId);
 }
 

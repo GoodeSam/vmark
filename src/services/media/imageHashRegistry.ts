@@ -112,7 +112,7 @@ export async function findExistingImage(
 }
 
 /**
- * Drop every registry entry whose filename is in `filenames` (WI-8a).
+ * Drop every registry entry whose filename is in `filenames`.
  *
  * Orphan cleanup removes the files; without this the registry keeps their
  * hashes forever, and a future paste of identical content would "dedup" to a

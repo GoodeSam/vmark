@@ -223,7 +223,7 @@ export async function runOrphanCleanup(
     return { status: "failed" };
   }
 
-  // WI-11: cross-directory references live in documents the sibling scan
+  // Cross-directory references live in documents the sibling scan
   // never reads — the workspace content search is the wider net.
   const clearedForDeletion = await withoutWorkspaceReferenced(stillOrphaned);
   const { deleted, failed } = await deleteOrphanedImages(clearedForDeletion);

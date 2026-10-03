@@ -118,8 +118,8 @@ export async function persistDocumentBatch(
   // Reserve every destination BEFORE writing any of them. Building
   // `folder/title.md` and handing it to the overwrite writer replaced
   // whatever already sat at that name — a closed document the user never
-  // opened — and gave two same-titled tabs the same path (audit 20260906,
-  // F1). Reservation is one `O_EXCL` create per name, so it settles both
+  // opened — and gave two same-titled tabs the same path.
+  // Reservation is one `O_EXCL` create per name, so it settles both
   // collisions and cannot race a concurrent creator. Only documents that
   // still need a file once the picker has closed get one reserved.
   const reserving = pending.filter((doc) => revalidate(doc) !== null);

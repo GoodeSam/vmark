@@ -87,7 +87,7 @@ export async function buildDefaultSavePath(
   const tab = useTabStore.getState().tabs[windowLabel]?.find(t => t.id === tabId);
   const docTab = tab && tab.kind === "document" ? tab : null; // untitled save is document-only
   const suggestedName = getSaveFileName(content, tab?.title ?? "", i18n.t("common:untitled"));
-  // WI-1B.9 — default extension = active format's untitledExtension (untitled → markdown → ".md").
+  // Default extension = active format's untitledExtension (untitled → markdown → ".md").
   let ext = "md";
   try {
     const cfg = docTab?.formatId

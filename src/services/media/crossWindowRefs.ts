@@ -1,5 +1,5 @@
 /**
- * Cross-Window Live References (WI-9)
+ * Cross-Window Live References
  *
  * Purpose: the frontend half of the cross-window bridge. Zustand state is
  * per-webview, so another VMark window's unsaved buffer — possibly the SOLE
@@ -12,8 +12,8 @@
  *     window missing the deadline yields `complete: false`, which the scanner
  *     folds into `scanComplete: false` — and nothing is deleted on partial
  *     evidence. The single-window common case is a complete empty answer.
- *   - The responder flushes its editors before reading the store (WI-10
- *     applies across windows too) and sends extracted KEYS, not contents —
+ *   - The responder flushes its editors before reading the store (the
+ *     pre-read flush applies across windows too) and sends extracted KEYS, not contents —
  *     parsing happens where the buffer lives, and the IPC stays small.
  *
  * @coordinates-with src-tauri/src/live_docs.rs — the relay

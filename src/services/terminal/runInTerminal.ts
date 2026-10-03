@@ -2,7 +2,7 @@
  * runInTerminal
  *
  * Purpose: Send a fenced shell code block from the document into the
- * integrated terminal (F1/WI-4.3). VMark is a markdown editor full of `bash`
+ * integrated terminal (F1). VMark is a markdown editor full of `bash`
  * fences; this closes the copy-switch-paste loop.
  *
  * SECURITY BOUNDARY — read before changing anything here.

@@ -91,7 +91,7 @@ export async function handleRenameEvent(
   // Per PAIR, not per batch. `handled` used to be a single flag for the whole
   // array: one recognised rename returned early and every other path in the
   // same batch was dropped, so an atomic replacement arriving alongside a real
-  // rename was silently lost (audit finding #21). Each pair is an independent
+  // rename was silently lost. Each pair is an independent
   // filesystem event and gets an independent verdict.
   const unmatched: string[] = [];
   let i = 0;
@@ -134,7 +134,7 @@ export async function probeOpenFile(
   // which is how an atomic write lands, and therefore how most tools rewrite
   // a picture. It is new bytes under an unchanged path, so it needs the same
   // announcement the modify branch makes; without it the viewer keeps
-  // rendering what it decoded at open time (issue #1328, audit finding #1).
+  // rendering what it decoded at open time (issue #1328).
   if (ctx.isMedia(changedPath)) {
     try {
       if (await ctx.fileExists(changedPath)) {
@@ -174,7 +174,7 @@ export async function probeOpenFile(
  * snapshot for the whole group broke a chained `a -> b -> c` rename arriving in
  * one batch: the second hop looked the tab up under a name the snapshot still
  * held, found nothing, and left the tab pointing at `b` while the file was at
- * `c` (audit finding #24). Re-reading is cheap — it is a map build over the
+ * `c`. Re-reading is cheap — it is a map build over the
  * window's open tabs — and correctness here is not optional.
  *
  * Paired renames go first, then unpaired ones (atomic-write targets / lone

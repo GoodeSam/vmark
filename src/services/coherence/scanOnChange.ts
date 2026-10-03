@@ -1,5 +1,5 @@
 /**
- * Coherence scan-on-change (WI-1.12 watcher wiring)
+ * Coherence scan-on-change (watcher wiring)
  *
  * Purpose: keep the coherence ledger's observed-external history current
  * by running a debounced kernel scan after workspace file events. Display
@@ -59,7 +59,7 @@ export function startCoherenceScanOnChange(deps: ScanOnChangeDeps = tauriDeps): 
     if (!root || disposed) return;
     if (scanning) {
       // An event landed mid-scan: run once more afterwards so nothing is
-      // permanently lost (audit T10).
+      // permanently lost.
       rerunAfter = true;
       return;
     }
@@ -81,7 +81,7 @@ export function startCoherenceScanOnChange(deps: ScanOnChangeDeps = tauriDeps): 
 
   const schedule = (event: unknown) => {
     if (disposed) return;
-    // Only this window's workspace triggers a scan (audit T11). The batch is
+    // Only this window's workspace triggers a scan. The batch is
     // addressed to this window, but it carries its root, and a batch from the
     // watcher of a root the window has since left must not scan the new one.
     const root = useWorkspaceStore.getState().rootPath;
