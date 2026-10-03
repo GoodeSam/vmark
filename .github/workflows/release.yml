@@ -49,9 +49,9 @@ jobs:
               echo "::error::workflow_dispatch.version must look like 'vX.Y.Z' (got '$INPUT_VERSION')"
               exit 1
             fi
-            echo "version=$INPUT_VERSION" >> $GITHUB_OUTPUT
+            echo "version=$INPUT_VERSION" >> "$GITHUB_OUTPUT"
           else
-            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           fi
 
       # A manual dispatch used to accept a version string with NO relationship to
@@ -266,14 +266,23 @@ jobs:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
-          echo $APPLE_CERTIFICATE | base64 --decode > certificate.p12
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
           security create-keychain -p actions build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p actions build.keychain
           security set-keychain-settings -t 3600 -u build.keychain
           security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions build.keychain
-          security list-keychains -d user -s build.keychain $(security list-keychains -d user | tr -d '"')
+          # Put build.keychain first on the user search list without dropping
+          # the keychains already on it. `list-keychains` prints one quoted
+          # path per line; each is read into the array as ONE argument, so a
+          # path with a space survives. A read loop, not mapfile: mapfile
+          # needs bash 4 and macOS's /bin/bash is 3.2.
+          EXISTING_KEYCHAINS=()
+          while IFS= read -r keychain; do
+            EXISTING_KEYCHAINS+=("$keychain")
+          done < <(security list-keychains -d user | sed -n 's/^[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p')
+          security list-keychains -d user -s build.keychain "${EXISTING_KEYCHAINS[@]}"
           rm certificate.p12
 
       - uses: ./.github/actions/setup-tauri-deps
@@ -322,7 +331,7 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           pnpm build
-          node scripts/build-sidecar.js --target $SIDECAR_TARGET
+          node scripts/build-sidecar.js --target "$SIDECAR_TARGET"
 
       - name: Health check MCP sidecar (macOS)
         if: matrix.platform == 'macos-latest'
@@ -534,7 +543,18 @@ jobs:
           done
 
           TARGET="${MATRIX_ARGS##*--target }"
-          DMG=$(ls "src-tauri/target/$TARGET/release/bundle/dmg/"*.dmg | head -1)
+          # A leg builds exactly one dmg. The glob goes into an array instead
+          # of through `ls`: nullglob turns "none" into an empty array, and a
+          # second dmg would otherwise ship without notarization, so both fail.
+          DMG_DIR="src-tauri/target/$TARGET/release/bundle/dmg"
+          shopt -s nullglob
+          DMGS=("$DMG_DIR"/*.dmg)
+          shopt -u nullglob
+          if [ "${#DMGS[@]}" -ne 1 ]; then
+            echo "::error::expected exactly one .dmg in $DMG_DIR, found ${#DMGS[@]}: ${DMGS[*]-}"
+            exit 1
+          fi
+          DMG="${DMGS[0]}"
           echo "Notarizing $DMG"
 
           # notarytool has no internal retry and Apple's notary service drops
@@ -678,8 +698,11 @@ jobs:
           for entry in "${TARGETS[@]}"; do
             key="${entry%%|*}"
             glob="${entry#*|}"
-            matches=( sigs/$glob.sig )
-            if [ ! -e "${matches[0]}" ]; then
+            # The table's glob is a pattern handed to find -name, the same
+            # matcher the reverse check below lists signatures with, so both
+            # directions agree on which files exist.
+            mapfile -t matches < <(find sigs -maxdepth 1 -type f -name "$glob.sig" | sort)
+            if [ "${#matches[@]}" -eq 0 ]; then
               echo "::error::no signature matched 'sigs/$glob.sig' for platform key '$key'."
               echo "::error::That bundle either was not built or was not signed; releasing without it would strand every install of that format."
               exit 1
