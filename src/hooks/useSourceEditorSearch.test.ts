@@ -16,12 +16,8 @@ const {
   mockCountMatches,
 } = vi.hoisted(() => ({
   mockSetSearchQuery: { of: vi.fn(() => "set-search-query-effect") },
-  // getCursor finds nothing: these tests mock CodeMirror and assert wiring.
-  // Match positions after a Replace are pinned against real CodeMirror in
-  // useSourceEditorSearch.replaceResume.test.ts.
-  mockSearchQuery: vi.fn(function(this: unknown, opts: unknown) {
-    Object.assign(this as object, opts, { getCursor: () => [][Symbol.iterator]() });
-  }),
+  // getCursor finds nothing; match positions are pinned in *.replaceResume.test.ts.
+  mockSearchQuery: vi.fn(function(this: unknown, opts: unknown) { Object.assign(this as object, opts, { getCursor: () => [][Symbol.iterator]() }); }),
   mockFindNext: vi.fn(),
   mockFindPrevious: vi.fn(),
   mockReplaceNext: vi.fn(),
@@ -55,9 +51,7 @@ import { useSourceEditorSearch } from "./useSourceEditorSearch";
 function createMockView(docText = "hello world") {
   return {
     state: {
-      doc: {
-        toString: () => docText,
-      },
+      doc: { toString: () => docText },
       selection: { main: { from: 0, to: 0 } },
     },
     dispatch: vi.fn(),
@@ -723,8 +717,6 @@ describe("useSourceEditorSearch", () => {
     mockRaf.mockRestore();
   });
 
-  // Which index follows a Replace is a position rule, pinned against real
-  // CodeMirror in useSourceEditorSearch.replaceResume.test.ts (WI-RA22.6).
   it("updates the match count after replace-current", () => {
     const mockView = createMockView("hello world hello");
     viewRef.current = mockView;

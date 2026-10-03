@@ -22,6 +22,9 @@ function options(): PdfOptions {
     latinFont: "system",
     cjkFont: "system",
     useEditorTheme: false,
+    pageNumberPosition: "none",
+    pageNumberFormat: "plain",
+    pageNumberSkipFirst: false,
   };
 }
 
