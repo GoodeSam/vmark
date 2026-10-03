@@ -70,7 +70,7 @@
   font-size: var(--font-size-xs);
 }
 
-/* The switch: a borderless 36×20 track (maintainer direction 2026-09-02,
+/* The switch: a borderless 36×20 track (maintainer direction,
    superseding the D8 control-border ring here) — the off state is the
    hover-strong fill, the on state the solid accent, and the page-colour
    knob supplies the shape contrast on both. A fixed white knob vanished

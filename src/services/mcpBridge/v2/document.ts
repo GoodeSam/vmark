@@ -9,7 +9,7 @@
  *   `transform` runs the deterministic CJK rewriter — kept because CJK
  *   rules are too nuanced for AI prose to reimplement reliably.
  *
- * Origin: MCP pruning plan (2026-05-04, retired) ADR-1, ADR-2, ADR-4.
+ * Origin: MCP pruning plan (retired) ADR-1, ADR-2, ADR-4.
  *
  * Key decisions:
  *   - Full-content write, not diff. Correctness first; if large-doc

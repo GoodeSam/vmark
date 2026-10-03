@@ -5,7 +5,7 @@
  *   split the eager App bundle absorbs xyflow on every cold start, even
  *   for users who never open a workflow.
  *
- * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired)
+ * Origin: GitHub Actions workflow viewer plan (retired)
  *   Phase 9 audit follow-up — judgment-agent finding.
  *
  * Key decisions:

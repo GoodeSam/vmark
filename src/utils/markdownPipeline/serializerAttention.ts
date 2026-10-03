@@ -19,7 +19,7 @@
  *   - Emphasis beside a `strong` sibling is written with `_`. Flush `*`
  *     delimiters merge into one run — `**a***b*` — whose flanking is decided by
  *     characters neither node looked at, and italic typed next to bold was lost
- *     on save (#1407 soak: seeds 20260805, 5, 6). `_` and `*` never merge.
+ *     on save (found by the #1407 soak). `_` and `*` never merge.
  *     Everywhere else emphasis stays `*`, the house style; a parent/child edge
  *     such as `***x***` is fine as it is and keeps its spelling.
  *   - A character reference always covers a whole CODE POINT. Encoding one half

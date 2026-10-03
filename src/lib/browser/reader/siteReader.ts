@@ -16,7 +16,7 @@
  * its probe contract had no honest consumer without the
  * credentialed site flows that left with `SitePublisher`.
  *
- * PUBLISHING WAS REMOVED (WI-DP1.2, 2026-08-09). `SitePublisher`, `PublishInput`
+ * PUBLISHING WAS REMOVED (WI-DP1.2). `SitePublisher`, `PublishInput`
  * and `PublishResult` were declared here "for symmetry" against an
  * implementation that was planned but never landed. Nothing ever imported them, and the
  * header's own warning said the draft-only guarantee was documented but

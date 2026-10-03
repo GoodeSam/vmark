@@ -4,7 +4,7 @@
  *   Enter). The store accumulates the patches; the panel's Save button
  *   serializes them through the Phase 8 CST mutator pipeline.
  *
- * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired) §6
+ * Origin: GitHub Actions workflow viewer plan (retired) §6
  *   Phase 7.
  *
  * Key decisions:

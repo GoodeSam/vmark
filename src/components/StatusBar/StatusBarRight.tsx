@@ -179,8 +179,8 @@ export function StatusBarRight({
         <Satellite size={ICON_SM} />
         {/* Second channel beside colour: a state WORD, but only
             when something needs saying — connected already speaks through
-            the tinted badge, so its "on" was redundant (maintainer,
-            2026-09-02). off/starting/error still carry their word. */}
+            the tinted badge, so its "on" was redundant (maintainer).
+            off/starting/error still carry their word. */}
         {(mcpError || mcpLoading || !mcpRunning) && (
           <span className="status-mcp__state" aria-hidden="true">
             {mcpError ? t("mcpStateError") : mcpLoading ? t("mcpStateStarting") : t("mcpStateOff")}

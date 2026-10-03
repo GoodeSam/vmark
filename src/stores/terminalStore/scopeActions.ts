@@ -5,7 +5,8 @@
  * to move terminal sessions between per-workspace-instance scopes. Split from
  * sessionActions.ts to keep both files under the size gate.
  *
- * Key decisions (plan 20260831-terminal-per-instance-sessions):
+ * Key decisions (plan
+ *   `.claude/tdd-guardian/20260831-terminal-per-instance-sessions.md`):
  *   - D-T3: a scope switch NEVER removes sessions from the store — hiding is
  *     the activeSessionId change; only remove/rekey touch membership.
  *   - D-T5: adoption/rekey never kill and never consult the cap; ordinals are

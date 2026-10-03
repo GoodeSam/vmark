@@ -84,8 +84,8 @@ export interface CoherenceCaptureReceipt {
   content_with_identity: string | null;
 }
 
-// All captures from this webview run strictly in submission order (audit
-// T2): overlapping saves/applies must not reach the kernel out of order,
+// All captures from this webview run strictly in submission order:
+// overlapping saves/applies must not reach the kernel out of order,
 // or an older buffer could become the newest revision.
 let captureQueue: Promise<unknown> = Promise.resolve();
 

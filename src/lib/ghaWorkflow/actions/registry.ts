@@ -6,7 +6,7 @@
  *   cache; this module adds an in-session memoization layer so the
  *   same uses-string invokes Rust at most once per session.
  *
- * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired)
+ * Origin: GitHub Actions workflow viewer plan (retired)
  *
  * Failure mode is "return null":
  *   - Unparseable uses (./local, docker://, missing @ref): null, no invoke

@@ -5,7 +5,7 @@
  *   (scalar fields and the expand editor). The `with:` block is its own
  *   component, `StepWithSection`.
  *
- * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired) §6
+ * Origin: GitHub Actions workflow viewer plan (retired) §6
  *   Phase 7.
  *
  * Key decisions:

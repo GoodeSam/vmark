@@ -8,7 +8,7 @@
  * metadata the docs are checked against is the metadata users see.
  *
  * Why it exists: `website/guide/lint.md` carries a rule table that restates
- * the engine, and nothing joined the two. By 2026-09-07 four rows had drifted —
+ * the engine, and nothing joined the two. Four rows had drifted —
  * E05 was documented as an Error while the code emits a warning, and the
  * E06/E08/W05 descriptions had rotated onto each other's ids — through every
  * green CI run, because a docs-only change runs no test that reads the rules.

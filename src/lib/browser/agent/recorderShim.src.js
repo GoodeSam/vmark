@@ -5,8 +5,8 @@
 // page world at document start; `recorderShim.ts` assembles the identical string as
 // RECORDER_SHIM_SRC, which `recorderShim.test.ts` (jsdom) and
 // `recorder.webkit.test.ts` (real WebKit) execute — the tested bytes ARE the shipped
-// bytes. `__vmarkRole` / `__vmarkName` / `__vmarkParent` come from the core (audit
-// 2026-09-03 S-02): the recorder's own role and name rules had drifted from the
+// bytes. `__vmarkRole` / `__vmarkName` / `__vmarkParent` come from the core (an
+// audit finding): the recorder's own role and name rules had drifted from the
 // replayer's, so it emitted locators the replayer could not resolve. Now a recorded
 // locator resolves by construction; a target the core gives no role is recorded
 // WITHOUT `role`, and the converter turns that into a human `confirm:` step.

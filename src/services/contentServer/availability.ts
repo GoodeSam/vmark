@@ -15,9 +15,9 @@
  * So the entry points hide behind Developer Mode, which is exactly what that
  * setting already means here — "reveals the experimental toggles" — and is the
  * same treatment the embedded browser's menu item got for the same reason
- * (`browserAvailableHere`). This is decision D1 option (c) of
- * `dev-docs/plans/20260907-feature-ledger-fixes.md`: developer-mode-only until
- * a runtime story exists. When one lands, this predicate is what changes.
+ * (`browserAvailableHere`). This is a deliberate interim choice:
+ * developer-mode-only until a runtime story exists. When one lands, this
+ * predicate is what changes.
  *
  * Read the store on every call, never a captured value: the toggle must take
  * effect without a reload.

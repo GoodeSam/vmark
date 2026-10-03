@@ -87,7 +87,7 @@ export async function refreshMergeNotice(workspaceRoot: string): Promise<void> {
 /**
  * Mark a document FROZEN (finished history) or back to LIVE.
  *
- * Measured motivation (2026-07-20): M2 read 0 relevant / 5 noise, and every
+ * Measured motivation: M2 read 0 relevant / 5 noise, and every
  * flag had the same cause — the downstream was already finished. Freezing stops
  * the interruption; the edge and its provenance stay recorded.
  *

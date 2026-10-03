@@ -7,7 +7,7 @@
  *   enumerates supported tools (diagnostic errors, capability docs)
  *   must import this rather than carry its own list.
  *
- * Origin: MCP pruning plan (2026-05-04, retired) — the initial 4 tools,
+ * Origin: MCP pruning plan (retired) — the initial 4 tools,
  *   and the selection re-add per ADR-7.
  *
  * Key decisions:

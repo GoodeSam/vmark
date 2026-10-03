@@ -1,7 +1,8 @@
 /**
  * Purpose: Site plugin registry — a module-singleton that dispatches on origin,
  * mirroring `src/lib/formats/registry.ts` (which dispatches on extension).
- * Wiring decision: ADR-S1.
+ * That is the wiring decision: one origin-keyed registry, as format dispatch
+ * has one extension-keyed registry.
  *
  * Validation is hand-rolled (the repo does not use zod; the format registry sets the
  * precedent). Pattern parsing is delegated to the origin module so wildcard semantics

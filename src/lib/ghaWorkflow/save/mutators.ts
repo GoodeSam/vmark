@@ -7,7 +7,7 @@
  *   the per-family mutators below, then the Document is serialized
  *   via stringifyCst().
  *
- * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired)
+ * Origin: GitHub Actions workflow viewer plan (retired)
  *   §6 Phase 8.
  *
  * Key decisions:

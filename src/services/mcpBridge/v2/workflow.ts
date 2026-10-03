@@ -8,7 +8,7 @@
  *   and key order are preserved. `validate` runs actionlint and
  *   forwards diagnostics.
  *
- * Origin: MCP pruning plan (2026-05-04, retired) ADR-5.
+ * Origin: MCP pruning plan (retired) ADR-5.
  *
  * Key decisions:
  *   - `IRPatch` is a public contract once exposed via MCP. We accept

@@ -9,7 +9,7 @@
  * the GitHub Actions authoring aids and the bespoke execution engine. A later change
  * split them; D6 then removed the viewer flag outright, because the
  * workbench was always unconditional, the split-pane source aids never
- * consulted it, and rule 60 §12 wanted it on by 2026-09-15.
+ * consulted it, and rule 60 §12 set a deadline for turning it on.
  *
  *   - **Viewer** — no flag. The GHA workbench (the yaml adapter's
  *     `gha-workflow` schema renderer) and its source-pane aids — `${{ }}`

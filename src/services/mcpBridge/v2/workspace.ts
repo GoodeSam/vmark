@@ -6,7 +6,7 @@
  *   in-document. The pruned MCP surface relies on these for everything
  *   the AI cannot derive from text round-trip alone.
  *
- * Origin: MCP pruning plan (2026-05-04, retired).
+ * Origin: MCP pruning plan (retired).
  *
  * Key decisions:
  *   - `tabId`-based addressing, not `windowId` + "active tab" implicit.
