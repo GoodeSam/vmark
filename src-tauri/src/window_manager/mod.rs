@@ -15,10 +15,14 @@
 //! | `finder_open_delivery` | Hot-open focus, targeted emit, and retry fallback |
 //! | `document_windows` | Document/main window construction, URLs, labels, dock-reopen pick |
 //! | `path_validation` | Security gates for frontend-supplied paths / workspace roots |
-//! | `commands` | `open_*_in_new_window`, `close_window`, quit commands |
+//! | `window_url` | The query string a document window opens on (the URL contract with the frontend router) |
+//! | `commands` | `open_*_in_new_window`, `close_window` (quitting is `crate::quit`) |
 //! | `settings_window` | Settings window singleton (create / focus / navigate) |
+//! | `pdf_export_window` | The Export-PDF window, built in Rust so it can carry an empty menu |
 //! | `window_creation` | Check-and-build as one step for the fixed labels (`settings`, `main`, `pdf-export`) |
+//! | `window_events` | What happens when the OS acts on a window: the close the frontend confirms, the native resources that die with it |
 //! | `native_theme` | Keeps OS-drawn chrome (title bar, Windows menu bar) on the in-app theme |
+//! | `traffic_lights` | Keeps the macOS window controls where the app places them (macOS only) |
 //! | `navigation_guard` | Which URLs an app webview may navigate to (a plugin hook, so `main` is covered) |
 //!
 //! Everything is re-exported here so call sites keep using

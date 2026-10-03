@@ -59,7 +59,7 @@ A claim the inspector could not confirm is marked **unverified** in place rather
 
 ## Open findings
 
-Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 156 open.
+Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 154 open.
 
 ### Security boundaries (14)
 
@@ -127,11 +127,10 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 15) `PREDEFINED_ICONS` matches English muda titles only, so predefined menu items get no SF Symbol in the other nine locales (`src-tauri/src/macos_menu_icons.rs`).
 - (area 15) The close-to-tray icon has never run on a real Windows desktop; `src-tauri/src/close_to_tray/tray.rs` compiles only for Windows and has no unit test (decision logic is tested).
 
-### Settings that do more or less than their name (11)
+### Settings that do more or less than their name (10)
 
 - (area 3) Source-mode `Mod+D` / `Mod+Shift+L` are literal keys in `src/services/assembly/sourceEditorKeymap.ts`, not shortcut-store entries, so they cannot be rebound in Source mode (the in-block variant `selectAllOccurrencesInBlock` can).
 - (area 4) Content search's ".md" toggle is labelled "Markdown Files Only" (`src/components/ContentSearch/ContentSearchToggles.tsx`, default on) but restricts to every registered format flagged `contentSearchIndexed` — txt, yaml, and json/toml/mermaid/svg/html when their categories are on (`src/stores/uiStore/contentSearchSlice.ts`).
-- (area 5) Save All and Quit collects only DIRTY documents (`getAllDirtyDocuments` in `src/services/files/fileSave.ts`), while window close treats dirty OR divergent as needing resolution (`needsResolution` in `src/services/windowClose/windowCloseFlow.ts`); a divergent-but-clean document is not saved before a Save All and Quit.
 - (area 6) HTML export embeds only the Latin and mono font settings (`src/export/exportToHtmlFolder.ts` passes `latinFont` and `monoFont`); the CJK font setting is never embedded, and a `custom:<family>` font (#1429) or a curated family outside the Google Fonts map in `src/export/fontEmbedder.ts` silently falls back to the system stack.
 - (area 7) `terminal.osc52Clipboard` ("Remote Clipboard") controls writes only; reads are refused unconditionally (`src/components/Terminal/setupOsc52.ts`). Documented in both guide pages; recorded because the setting name suggests a two-way channel.
 - (area 9) Detect cannot find a CLI installed mid-session: `detect_ai_providers` returns `DETECTION_CACHE` for the process lifetime (`src-tauri/src/ai_provider/detection.rs`), while `website/guide/ai-providers.md` §"How CLI Detection Works" presents Detect as a fresh `$PATH` scan.
@@ -176,7 +175,7 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 14) The IME chord guard has no automated real-IME case: `e2e/run-ime.mjs` documents that System Events injection produces no modifier keydown, so the real-IME half is a manual checklist step in `src/test/editorComposition.webkit.test.ts`.
 - (area 15) No tests for `src-tauri/src/app_nap.rs`, `apply_linux_webkit_workarounds` (`src-tauri/src/main.rs`), the logging commands, or `handle_run_event`'s window-destroyed cleanup as a whole (`src-tauri/src/app_setup.rs`).
 
-### Stale comments and headers (60)
+### Stale comments and headers (59)
 
 - (area 1) `src/plugins/shared/mediaSecurity.ts` header argues that refusing `..` bought no containment because "the asset protocol scope is `**`"; `src-tauri/tauri.conf.json` now scopes it to the fs static roots plus runtime grants.
 - (area 1) `src-tauri/src/trusted_html/mod.rs` says a grant ends "in exactly two ways" (revoke or process exit) and that a destroyed webview leaves its grants resident until quit; `src-tauri/src/window_manager/window_events.rs` calls `TrustedHtmlState::revoke_window` on window destroy. `state.rs` and `commands.rs` both carry `@coordinates-with ../app_setup.rs` for that call, but `app_setup.rs` does not make it (the header-refs gate passes because the file exists).
@@ -193,7 +192,6 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 4) `src/stores/workspaceStore.ts` header, "Known limitations": "Config is stored in localStorage … not on disk". The config is written to `<appData>/workspaces/<hash>.json` by `src-tauri/src/workspace/mod.rs` through `src/services/workspaces/workspaceConfig.ts`, and `website/guide/workspace-management.md` §"Workspace Settings" says so.
 - (area 4) `src/hooks/useOutlineSync.ts` header pipeline names the Tauri event `outline:navigate`; nothing emits or listens for it — the event is `outline:scroll-to-heading` (`src/components/Sidebar/OutlineView.tsx`).
 - (area 4) `src/stores/fileLoadStore.test.ts` is named for a `fileLoadStore.ts` that does not exist; it tests `useFileLoadStore` from `src/stores/documentStore/fileLoad.ts` and its `describe` is titled "documentStore".
-- (area 5) `src-tauri/src/window_manager/mod.rs` module-map table omits `window_url`, `pdf_export_window`, `window_events` and `traffic_lights`, and lists `commands` as owning "quit commands" (only `force_quit` remains).
 - (area 5) `src/stores/tabStore.ts` header says tabs are restored "via workspaceStore.lastOpenTabs"; restore prefers the additive `sessionTabs` field (`src/services/persistence/sessionTabs.ts`).
 - (area 5) `src/services/workspaces/reopenClosedTab.ts` header calls reopen "the Cmd+Shift+T behavior"; `reopenClosedTab` ships unbound (`src/stores/settingsStore/shortcutDefinitions.ts`), Mod-Shift-T is `insertTable`.
 - (area 5) `src/stores/documentStore/document.ts` header says `setContent` "survives only as a deprecated test alias"; `src/stores/documentStore/storeContract.ts` and `externalWriterGate.test.ts` say it is gone, and it is.
@@ -1827,15 +1825,15 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - id: close-save-prompts
 - feature: Quit & save-all behavior
 - summary: Closing a tab or a window, or quitting, resolves unsaved documents first — a native Save/Discard/Cancel prompt per document or one aggregate prompt for several, with a single folder pick for multiple untitled files.
-- capabilities: single-doc and multi-doc prompts; divergent documents need resolution as well as dirty ones, and the prompt says the file changed on disk; Save As for untitled with a default-folder fallback; batch persist of every pathed document, then one Save As (single) or one folder picker (several) for untitled ones; collision-free destination reservation; Save All and Quit flushes every mounted editor, saves all dirty documents, then calls `force_quit` (cancel keeps the app open)
+- capabilities: single-doc and multi-doc prompts; divergent documents need resolution as well as dirty ones, and the prompt says the file changed on disk; Save As for untitled with a default-folder fallback; batch persist of every pathed document, then one Save As (single) or one folder picker (several) for untitled ones; collision-free destination reservation; Save All and Quit is a mode of the coordinated quit: every document window flushes its mounted editors, saves each dirty or divergent document without prompting (untitled ones still get one Save As or one folder picker), revalidates the dirty set, then closes through the normal close flow; a cancelled or failed save keeps that window open and cancels the quit
 - status: shipped-on
 - gate: always on
-- surfaces: menu id `save-all-quit` (`saveAllQuit` = Alt-Mod-Shift-Q; File menu, and the app menu on macOS) → `file.saveAllQuit`; window close button; Mod-W; Mod-Q
-- code: `src/services/windowClose/closeSave.ts`, `src/services/windowClose/closeSaveBatch.ts`, `src/services/windowClose/closeSaveShared.ts`, `src/services/windowClose/reserveBatchDestinations.ts`, `src/services/files/fileSave.ts`, `src/services/commands/fileCommands.ts`
-- rust: `create_file_exclusive`, `force_quit`
+- surfaces: menu id `save-all-quit` (`saveAllQuit` = Alt-Mod-Shift-Q; File menu, and the app menu on macOS), handled in Rust (`MenuAction::SaveAllQuit`); command palette `file.saveAllQuit` → `save_all_and_quit`; window close button; Mod-W; Mod-Q
+- code: `src/services/windowClose/closeSave.ts`, `src/services/windowClose/closeSaveBatch.ts`, `src/services/windowClose/closeSaveShared.ts`, `src/services/windowClose/reserveBatchDestinations.ts`, `src/services/files/fileSave.ts`, `src/services/files/saveAllQuit.ts`, `src/services/commands/fileCommands.ts`
+- rust: `create_file_exclusive`, `quit::save_all_and_quit`
 - docs: `website/guide/tab-navigation.md` §"Closing tabs and windows"; `website/guide/shortcuts.md` (Save All and Quit row); `website/guide/features.md` §"Session Recovery (Hot Exit)"
-- tests: `src/services/windowClose/closeSave.test.ts`, `src/services/windowClose/reserveBatchDestinations.test.ts`, `src/services/windowClose/windowCloseFlow.test.ts`, `src/services/files/fileSave.test.ts`; e2e `e2e/journeys/15-dirty-file-close-guard.mjs`, `e2e/journeys/14-multi-doc-save-integrity.mjs`
-- notes: Save All and Quit collects dirty documents only; a divergent-but-clean document is not saved before the quit. The `closeSave.ts` header names a `decideOnClose()` util that no longer exists.
+- tests: `src/services/windowClose/closeSave.test.ts`, `src/services/windowClose/reserveBatchDestinations.test.ts`, `src/services/windowClose/windowCloseFlow.test.ts`, `src/services/files/fileSave.test.ts`, `src/services/files/saveAllQuit.test.ts`, `src/hooks/useWindowClose.saveAllQuit.test.tsx`; e2e `e2e/journeys/15-dirty-file-close-guard.mjs`, `e2e/journeys/14-multi-doc-save-integrity.mjs`
+- notes: The `closeSave.ts` header names a `decideOnClose()` util that no longer exists.
 
 ### Window close flow
 - id: window-close
@@ -1855,15 +1853,15 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - id: quit
 - feature: Quit & save-all behavior
 - summary: Quitting closes every document window through its save flow, one at a time, and an optional gate requires pressing Cmd+Q twice.
-- capabilities: `request_quit` → confirm gate (2 s wall-clock window; `app:quit-first-press` shows status-bar feedback for 2 s) → `start_quit` emits `app:quit-requested` to each document window → windows close → `finalize_quit` kills the MCP sidecar, content servers and PTYs → `app.exit(0)`; non-document windows closed immediately; OS-level exit requests bypass the gate; a failed emit cancels the quit rather than hanging; `cancel_quit` clears all state including the first-press timestamp; tray-parked windows are restored before quit asks them to save (Windows); `EXIT_ALLOWED` set only immediately before exit; the setting is mirrored into a Rust `AtomicBool`; macOS keeps the app alive with no document windows, Windows/Linux exit
+- capabilities: `request_quit` → confirm gate (2 s wall-clock window; `app:quit-first-press` shows status-bar feedback for 2 s) → `start_quit` emits `app:quit-requested` to each document window → windows close → `finalize_quit` kills the MCP sidecar, content servers and PTYs → `app.exit(0)`; non-document windows closed immediately; OS-level exit requests bypass the gate; a failed emit cancels the quit rather than hanging; `cancel_quit` clears all state including the first-press timestamp; tray-parked windows are restored before quit asks them to save (Windows); `EXIT_ALLOWED` set only immediately before exit; the setting is mirrored into a Rust `AtomicBool`; macOS keeps the app alive with no document windows, Windows/Linux exit; Save All and Quit (`start_save_all_quit`, no confirm gate) runs the same pipeline with `saveAll: true` in `app:quit-requested`, and a window that cannot save answers `cancel_quit`
 - status: shipped-on
 - gate: `general.confirmQuit = true`
-- surfaces: Mod-Q (app menu Quit → `MenuAction::Quit`); menu id `save-all-quit`; tray menu "Quit VMark" (Windows, close-to-tray on); settings pane Files & Images → Quit Behavior
+- surfaces: Mod-Q (app menu Quit → `MenuAction::Quit`); menu id `save-all-quit` (`MenuAction::SaveAllQuit` → `quit::start_save_all_quit`); tray menu "Quit VMark" (Windows, close-to-tray on); settings pane Files & Images → Quit Behavior
 - code: `src-tauri/src/quit.rs`, `src-tauri/src/app_setup.rs`, `src-tauri/src/menu/events/dispatch.rs`, `src/hooks/useConfirmQuitSync.ts`, `src/components/StatusBar/useQuitFeedback.ts`, `src/services/files/fileSave.ts`
-- rust: `quit::cancel_quit`, `quit::set_confirm_quit`, `window_manager::force_quit`; `quit::request_quit` / `quit::start_quit` are called from Rust only
+- rust: `quit::cancel_quit`, `quit::set_confirm_quit`, `quit::save_all_and_quit`; `quit::request_quit` / `quit::start_quit` / `quit::start_save_all_quit` are called from Rust only
 - docs: `website/guide/settings.md` §"Quit Behavior"; `website/guide/shortcuts.md` (Save All and Quit)
-- tests: `src-tauri/src/quit.test.rs`, `src-tauri/src/menu/events/dispatch.test.rs`, `src/hooks/useConfirmQuitSync.test.ts`, `src/components/StatusBar/useQuitFeedback.test.ts`
-- notes: `force_quit` calls `app.exit(0)` directly rather than `finalize_quit`; child processes are then cleaned up by the `ExitRequested` → `AllowExit` branch in `app_setup.rs`. Quit state lives in process-global statics, so `quit.rs` tests run serially under `TEST_LOCK`.
+- tests: `src-tauri/src/quit.test.rs`, `src-tauri/src/quit_broadcast.test.rs`, `src-tauri/src/menu/events/dispatch.test.rs`, `src/hooks/useConfirmQuitSync.test.ts`, `src/components/StatusBar/useQuitFeedback.test.ts`
+- notes: Quit state lives in process-global statics, so `quit.rs` tests run serially under `TEST_LOCK`.
 
 ### External file-change detection and conflict resolution
 - id: external-change-handling

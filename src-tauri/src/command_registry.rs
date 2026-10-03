@@ -75,7 +75,6 @@ macro_rules! all_commands {
             window_manager::open_settings_window,
             window_manager::set_native_theme,
             window_manager::close_window,
-            window_manager::force_quit,
             quit::cancel_quit,
             quit::save_all_and_quit,
             quit::set_confirm_quit,
