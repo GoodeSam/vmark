@@ -14,21 +14,61 @@ import { rustCode } from "./rustSource.mjs";
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+/** Top-level comma-separated arguments of `s` (no surrounding parentheses). */
+function cfgArgs(s) {
+  const out = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === "(") depth++;
+    else if (s[i] === ")") depth--;
+    else if (s[i] === "," && depth === 0) { out.push(s.slice(start, i)); start = i + 1; }
+  }
+  if (s.slice(start) !== "") out.push(s.slice(start));
+  return out;
+}
+
+/** A predicate decided by the build target alone: `unix`, `windows`, `target_*` = "…", and `not`/`any`/`all` of those. */
+function platformOnly(p) {
+  if (/^(unix|windows)$/.test(p) || /^target_(os|family|arch|env|pointer_width|endian|vendor)="[^"]*"$/.test(p)) return true;
+  const m = /^(not|any|all)\((.*)\)$/.exec(p);
+  if (!m) return false;
+  const args = cfgArgs(m[2]);
+  if (m[1] === "not") return args.length === 1 && platformOnly(args[0]);
+  return args.length > 0 && args.every(platformOnly);
+}
+
 /**
- * A `cfg` gate this probe cannot evaluate. `cfg(test)` is the one it can:
- * `cargo test` sets it, and a test module needs to compile in no other build.
- * Anything else — `cfg(any())` (the canonical "disable this"), a feature, a
- * target — makes the include CONDITIONAL, and a conditional include is not a
- * discovered test. Measured across all 222 `#[path = "*.test.rs"]` sites in
- * `src-tauri/src`: 221 carry exactly `#[cfg(test)]`, one carries no attribute
- * at all, and none carries any other `cfg` — so this refuses nothing that
- * ships today (audit 20260907 #26).
+ * Is a cfg predicate (whitespace removed) true in a `cargo test` build on SOME
+ * target, with no feature switched on? `test`, a platform predicate, and
+ * `all`/`any` over those are; `not` only of a platform predicate. Anything
+ * else — `any()` (the canonical "disable this"), a feature, `not(test)` —
+ * depends on something this probe cannot see.
+ */
+function liveInSomeTestBuild(p) {
+  if (p === "test" || platformOnly(p)) return true;
+  const m = /^(any|all)\((.*)\)$/.exec(p);
+  if (!m) return false;
+  const args = cfgArgs(m[2]);
+  return m[1] === "all" ? args.every(liveInSomeTestBuild) : args.some(liveInSomeTestBuild);
+}
+
+/**
+ * A `cfg` gate this probe cannot evaluate. `cargo test` sets `cfg(test)`, and
+ * a test module needs to compile in no other build; a PLATFORM predicate
+ * beside it (`cfg(all(test, unix))`, `cfg(all(test, not(target_os =
+ * "windows")))`) is decided by the target alone, so the include is compiled by
+ * `cargo test` on that target — the crate gates its `tauri::test` items off
+ * Windows exactly this way. Anything else — `cfg(any())`, a feature,
+ * `cfg_attr` — makes the include CONDITIONAL on something this probe cannot
+ * see, and a conditional include is not a discovered test (audit 20260907 #26).
  */
 function unevaluatableCfg(attrRun) {
   for (const m of attrRun.matchAll(/#\[([^\]]*)\]/g)) {
-    const body = m[1].trim();
+    const body = m[1].replace(/\s+/g, "");
     if (!/^cfg(_attr)?\b/.test(body)) continue;
-    if (body.replace(/\s+/g, "") !== "cfg(test)") return true;
+    const inner = /^cfg\((.*)\)$/.exec(body);
+    if (!inner || !liveInSomeTestBuild(inner[1])) return true;
   }
   return false;
 }

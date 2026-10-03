@@ -12,6 +12,7 @@
 # the result does not depend on which grep is installed.
 #
 # @coordinates-with scripts/check-feature-ledger-phase.sh — the first consumer
+# @coordinates-with scripts/check-repo-audit-phase.sh — asserts the audit plan's tests through assert_test_file
 
 PASS=0; FAIL=0; UNVERIFIED=0; FAIL_DETAIL=()
 ok()   { echo "  ✓ $1"; PASS=$((PASS+1)); }
@@ -247,13 +248,22 @@ assert_ts_code_grep() {
 # once per `.rs` in a directory of eighty is minutes, not seconds.
 # Also leaves the path in `_DOD_MOUNT`, so a caller can read it without a
 # command substitution — a subshell would not use the probe server.
+# The 2018-edition directory-module file `<dir>.rs`, one level up, mounts a
+# test inside `<dir>/` as `#[path = "<dir>/<basename>"]` (a top-level `#[path]`
+# is relative to the directory of the file that carries it): `pty.rs` mounts
+# `pty/commands.test.rs` that way, and looking only beside the test reported
+# those tests as included by nothing.
 rust_mount_owner() {
-  local file="$1" dir base cand; dir="$(dirname "$file")"; base="$(basename "$file")"
+  local file="$1" dir base cand up; dir="$(dirname "$file")"; base="$(basename "$file")"
   _DOD_MOUNT=""
   while IFS= read -r cand; do
     [[ -n "$cand" && "$cand" != "$file" ]] || continue
     if rust_test_included "$cand" "$base"; then _DOD_MOUNT="$cand"; printf '%s\n' "$cand"; return 0; fi
   done < <(grep -lF -- "\"$base\"" "$dir"/*.rs 2>/dev/null)
+  up="$(basename "$dir")/$base"
+  if [[ -f "$dir.rs" ]] && grep -qF -- "\"$up\"" "$dir.rs" 2>/dev/null && rust_test_included "$dir.rs" "$up"; then
+    _DOD_MOUNT="$dir.rs"; printf '%s\n' "$dir.rs"; return 0
+  fi
   return 1
 }
 # Is `mod <stem>;` declared, in CODE, by a mod.rs/lib.rs/main.rs beside `$1`?
