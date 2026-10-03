@@ -1,5 +1,5 @@
 /**
- * DEV-only `window.__VMARK_DEBUG__` publication (WI-4.0).
+ * DEV-only `window.__VMARK_DEBUG__` publication.
  *
  * Purpose: give the E2E harness a way to reach the app that does not exist
  * otherwise. The debug automation bridge exposes only `list_windows`,

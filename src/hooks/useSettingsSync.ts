@@ -73,7 +73,7 @@ export function handleSettingsStorageEvent(event: StorageEvent): void {
   // Application errors below (reconcile, setState, synchronous store
   // subscribers) are NOT parse errors and must not be silently swallowed as
   // if they were — that hid real failures behind a "corrupt JSON" catch and
-  // could leave partially applied state (audit Medium-11).
+  // could leave partially applied state.
   try {
     if (!parsed.state) return;
 
@@ -81,7 +81,7 @@ export function handleSettingsStorageEvent(event: StorageEvent): void {
     const incoming: Record<string, unknown> = {};
 
     // Collect the groups that actually differ. Validate each group's SHAPE
-    // first (WI-4.2, T3): a malformed cross-window write must not inject a
+    // first: a malformed cross-window write must not inject a
     // string/array/primitive where a settings group object is expected.
     // Settings groups are always plain objects.
     for (const group of SYNC_GROUPS) {

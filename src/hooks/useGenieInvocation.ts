@@ -17,11 +17,11 @@
  *   - Streaming via Tauri events (not WebSocket) for reliability
  *   - Cancel drops the stream listener AND asks Rust to stop the provider
  *     (cancelGenieRequest → cancel_ai_prompt, keyed by the store's request
- *     id, read before the reset clears it — audit #375)
+ *     id, read before the reset clears it)
  *   - A cancel that arrives BEFORE the request registers still counts: the run
  *     captures `cancelEpoch` up front and `tryStart` refuses it, so a click
  *     during `ensureProvider()` or the `listen()` round-trip stops the
- *     dispatch instead of silently letting the provider run (audit #375)
+ *     dispatch instead of silently letting the provider run
  *   - Workflow genies route to run_workflow instead of run_ai_prompt
  *   - Genie and freeform invocations share one prompt pipeline
  *     (runPromptGenie); only the prompt plan differs
@@ -62,7 +62,7 @@ import { cancelActiveInvocation } from "@/services/genieInvocation/cancelRequest
 import { workflowProviderPayload } from "@/services/workflow/providerPayload";
 
 /**
- * WI-7.1: workflow genies dispatch through run_workflow instead of
+ * Workflow genies dispatch through run_workflow instead of
  * run_ai_prompt. The picker still shows them inline; invocation routes
  * the YAML body to the Rust runner. The register/dispatch/rollback
  * transaction is `dispatchWorkflowRun`, shared with the workflow panel —
@@ -93,7 +93,7 @@ async function runWorkflowGenie(genie: GenieDefinition): Promise<void> {
     }
     useGeniesStore.getState().addRecent(genie.metadata.name);
   } catch (err) {
-    // `run_workflow` returns a typed CommandError since WI-19 (feature-disabled
+    // `run_workflow` returns a typed CommandError (feature-disabled
     // when the engine is off, invalid-input for bad YAML). `String(err)` on that
     // object renders the literal "[object Object]" — the exact defect
     // commandErrorMessage exists to close.
@@ -117,7 +117,7 @@ async function checkPromptPreconditions(): Promise<boolean> {
     toast.error(i18n.t("dialog:toast.genieNoProvider"));
     return false;
   }
-  // Asked AGAIN after the await (audit #729). Provider detection spawns a
+  // Asked AGAIN after the await. Provider detection spawns a
   // process and can take seconds; F6 during that wait left the check answered
   // for a surface that is no longer mounted, and the extraction and Tiptap
   // application below went ahead against the editor the user had just left.
@@ -130,7 +130,7 @@ type ListenerRef = RunGenieStreamOptions["listenerRef"];
 type PromptPlan = Omit<RunGenieStreamOptions, "extraction" | "listenerRef" | "cancelEpoch">;
 
 /**
- * The prompt pipeline shared by genie and freeform invocations (audit #377):
+ * The prompt pipeline shared by genie and freeform invocations:
  * preconditions → extraction → prompt → stream. Only `plan` differs between
  * the two — the prompt and the run options it derives from the extraction.
  */
@@ -140,7 +140,7 @@ async function runPromptGenie(
   listenerRef: ListenerRef,
   plan: (extracted: ExtractionResult) => PromptPlan,
 ): Promise<boolean> {
-  // Taken FIRST, before `ensureProvider()` can await (audit #375): a cancel
+  // Taken FIRST, before `ensureProvider()` can await: a cancel
   // during that wait has no request id to name, so this epoch is the only
   // record that the user already said no.
   const cancelEpoch = useAiInvocationStore.getState().cancelEpoch;
@@ -183,7 +183,7 @@ async function runGenie(genie: GenieDefinition, scopeOverride: GenieScope | unde
       retry,
     };
   });
-  // Recency records that the genie RAN (audit #730). It used to be written
+  // Recency records that the genie RAN. It used to be written
   // inside the plan callback, which is evaluated as an argument — before
   // provider validation and before the invocation lock — so a genie
   // refused for a missing API key, or because another run held the lock,
@@ -216,14 +216,14 @@ export function useGenieInvocation() {
   const unlistenRef = useRef<UnlistenFn | null>(null);
 
   const cancel = useCallback(() => {
-    // Through safeUnlisten (audit #732). Tauri TYPES `UnlistenFn` as
+    // Through safeUnlisten. Tauri TYPES `UnlistenFn` as
     // `() => void` while the implementation is async, so a failing unlisten
     // hands back a rejected promise that no synchronous try/catch can see —
     // an unhandled rejection on the cancel path. The ref is cleared either
     // way: a listener we could not remove is still not ours to release twice.
     safeUnlisten(unlistenRef.current);
     unlistenRef.current = null;
-    // Reach the provider, not just our listener (audit #375).
+    // Reach the provider, not just our listener.
     cancelActiveInvocation();
   }, []);
 

@@ -68,7 +68,7 @@ export function useDragDropOpen(): void {
         const { type } = event.payload;
 
         if (type === "enter") {
-          // WI-1B.2 — accept any registered extension on drag-enter so
+          // Accept any registered extension on drag-enter so
           // the drop overlay shows for .json/.yaml/.toml/etc. as well.
           const paths = event.payload.paths;
           const hasSupported = paths.some((p: string) =>
@@ -94,7 +94,7 @@ export function useDragDropOpen(): void {
         useUIStore.getState().setDraggingFiles(false);
 
         const paths = event.payload.paths;
-        // WI-1B.2 — drop accepts any registered format. The legacy
+        // The drop accepts any registered format. The legacy
         // markdownPaths variable name is kept (it's used by the
         // downstream replacement pipeline) but the filter is broader.
         const markdownPaths = filterSupportedPaths(paths);

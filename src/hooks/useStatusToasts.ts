@@ -1,5 +1,5 @@
 /**
- * Status toasts (WI-UB3, re-audit 20260901)
+ * Status toasts
  *
  * Purpose: the status bar's RARE states — update lifecycle, auto-save
  * paused, divergent — live as transient/sticky toasts instead of inline

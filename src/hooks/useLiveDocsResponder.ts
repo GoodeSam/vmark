@@ -1,5 +1,5 @@
 /**
- * Live-Docs Responder Hook (WI-9)
+ * Live-Docs Responder Hook
  *
  * Purpose: answer another window's `live-docs:request` with this window's
  * live image-reference keys. Mounted once per document window (via

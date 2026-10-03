@@ -4,7 +4,7 @@
  * Drop-in for `Map<K, V>`: reading via `get()` marks the entry most-recently-
  * used; `set()` evicts the least-recently-used entries once `maxSize` is
  * exceeded. Used to bound caches that would otherwise grow per-keystroke for a
- * whole session (e.g. codePreview render cache — WI-4.4, R1).
+ * whole session (e.g. codePreview render cache).
  *
  * @module utils/lruCache
  */
