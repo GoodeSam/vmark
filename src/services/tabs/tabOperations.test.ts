@@ -1,5 +1,14 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { fileBytes } from "@/test/fileBytes";
+
+// Documents are read as bytes; `fileText` is the text the mocked file holds.
+const { fileText } = vi.hoisted(() => ({
+  fileText: vi.fn<(path: string) => Promise<string>>(async () => ""),
+}));
+vi.mock("@tauri-apps/plugin-fs", () => ({
+  readFile: (path: string) => fileBytes(fileText(path)),
+}));
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { closeTabWithDirtyCheck, closeTabsWithDirtyCheck } from "./tabOperations";
@@ -472,9 +481,7 @@ describe("closeTabWithDirtyCheck — orphan cleanup", () => {
   it("runs orphan cleanup against the ON-DISK content when changes are discarded", async () => {
     const { useSettingsStore } = await import("@/stores/settingsStore");
     useSettingsStore.setState({ image: { cleanupOrphansOnClose: true } } as never);
-
-    const { readTextFile } = await import("@tauri-apps/plugin-fs");
-    vi.mocked(readTextFile).mockResolvedValue("hello");
+    fileText.mockResolvedValue("hello");
 
     const { findOrphanedImages } = await import("@/services/media/orphanAssetCleanup");
 
@@ -494,9 +501,7 @@ describe("closeTabWithDirtyCheck — orphan cleanup", () => {
   it("skips cleanup when the discarded document cannot be re-read from disk", async () => {
     const { useSettingsStore } = await import("@/stores/settingsStore");
     useSettingsStore.setState({ image: { cleanupOrphansOnClose: true } } as never);
-
-    const { readTextFile } = await import("@tauri-apps/plugin-fs");
-    vi.mocked(readTextFile).mockRejectedValue(new Error("ENOENT"));
+    fileText.mockRejectedValue(new Error("ENOENT"));
 
     const { findOrphanedImages } = await import("@/services/media/orphanAssetCleanup");
 
@@ -631,8 +636,7 @@ describe("cleanupOrphansForClosingTabs", () => {
   it("does not treat a closing tab's own buffer as a live sibling", async () => {
     const { cleanupOrphansForClosingTabs } = await import("@/services/media/closeCleanup");
     const { findOrphanedImages } = await import("@/services/media/orphanAssetCleanup");
-    const { readTextFile } = await import("@tauri-apps/plugin-fs");
-    vi.mocked(readTextFile).mockResolvedValue("on disk");
+    fileText.mockResolvedValue("on disk");
 
     const a = useTabStore.getState().createTab(WINDOW_LABEL, "/tmp/a.md");
     useDocumentStore.getState().initDocument(a, "saved", "/tmp/a.md");
@@ -652,8 +656,7 @@ describe("cleanupOrphansForClosingTabs", () => {
   it("reads from disk for a divergent document even when it is not dirty", async () => {
     const { cleanupOrphansForClosingTabs } = await import("@/services/media/closeCleanup");
     const { findOrphanedImages } = await import("@/services/media/orphanAssetCleanup");
-    const { readTextFile } = await import("@tauri-apps/plugin-fs");
-    vi.mocked(readTextFile).mockResolvedValue("![](./assets/images/external.png)");
+    fileText.mockResolvedValue("![](./assets/images/external.png)");
 
     const a = useTabStore.getState().createTab(WINDOW_LABEL, "/tmp/a.md");
     useDocumentStore.getState().initDocument(a, "local", "/tmp/a.md");
@@ -672,8 +675,7 @@ describe("cleanupOrphansForClosingTabs", () => {
   it("skips a directory whose only closing document could not be re-read", async () => {
     const { cleanupOrphansForClosingTabs } = await import("@/services/media/closeCleanup");
     const { findOrphanedImages } = await import("@/services/media/orphanAssetCleanup");
-    const { readTextFile } = await import("@tauri-apps/plugin-fs");
-    vi.mocked(readTextFile).mockRejectedValue(new Error("ENOENT"));
+    fileText.mockRejectedValue(new Error("ENOENT"));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const a = useTabStore.getState().createTab(WINDOW_LABEL, "/tmp/a.md");

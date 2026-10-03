@@ -180,12 +180,6 @@ still lists the (deleted) fixture path until reload.
   content is written into the NEWLY ACTIVE tab's document, and the original
   tab stays empty. Reproduced deterministically via
   `execCommand("insertText")` immediately followed by `vmark.workspace.new`.
-- **A file's BOM is lost on the first save (data change):** plugin-fs
-  `readTextFile` returns the text of a file that starts with `EF BB BF`
-  WITHOUT the leading U+FEFF, so the open path never records that the document
-  had a BOM and the save has nothing to put back. `mcp-document-write` fails on
-  exactly this, naming it; the jsdom tiers cannot see it because their
-  in-memory disk returns the BOM.
 - **HMR crash (dev-only):** a Vite hot reload can re-run
   `useCommandBootstrap` registrations and crash the window with
   `Command already registered: view.toggleSourceMode` (error boundary).

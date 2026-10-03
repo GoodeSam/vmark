@@ -1,7 +1,7 @@
 import { imeToast as toast } from "@/services/ime/imeToast";
 import i18n from "@/i18n";
 import { open } from "@tauri-apps/plugin-dialog";
-import { readTextFile } from "@tauri-apps/plugin-fs";
+import { readDocumentText } from "@/services/files/readDocumentText";
 import { fileOpsError } from "@/utils/debug";
 import { perfReset, perfStart, perfEnd, perfMark } from "@/utils/perfLog";
 import { useDocumentStore, useFileLoadStore } from "@/stores/documentStore";
@@ -97,9 +97,9 @@ export async function openFileInNewTabCore(
   }
 
   try {
-    perfStart("readTextFile");
-    const content = await readTextFile(path);
-    perfEnd("readTextFile", { size: content.length });
+    perfStart("readDocumentText");
+    const content = await readDocumentText(path);
+    perfEnd("readDocumentText", { size: content.length });
 
     // Close-during-open guard (WI-0.2, C1): the tab can be closed while this
     // read is in flight. Writing the document now would resurrect an orphan

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { clickFileLink } from "./__tests__/clickFileLink";
+import { fileBytes } from "@/test/fileBytes";
 
 // --- Hoisted mocks (available before vi.mock factories execute) ---
 
@@ -53,7 +54,7 @@ vi.mock("@tauri-apps/plugin-clipboard-manager", () => ({
 }));
 
 vi.mock("@tauri-apps/plugin-fs", () => ({
-  readTextFile: (...args: unknown[]) => mockReadTextFile(...(args as [string])),
+  readFile: (...args: unknown[]) => fileBytes(mockReadTextFile(...(args as [string]))),
   stat: (...args: unknown[]) => mockStat(...(args as [string])),
 }));
 
@@ -105,7 +106,6 @@ vi.mock("@xterm/addon-fit", () => ({
 vi.mock("@xterm/addon-search", () => ({
   SearchAddon: class { findNext = vi.fn(); findPrevious = vi.fn(); clearDecorations = vi.fn(); dispose = vi.fn(); },
 }));
-
 
 vi.mock("@xterm/addon-unicode11", () => ({
   Unicode11Addon: class { dispose = vi.fn(); },

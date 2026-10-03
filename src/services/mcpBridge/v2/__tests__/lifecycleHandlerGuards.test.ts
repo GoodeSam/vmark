@@ -10,8 +10,17 @@
 // Real stores throughout. Only the Tauri boundary is mocked (the shared test
 // setup): replies are read off `mcp_bridge_respond`, the linter off `gha_lint`.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fileBytes } from "@/test/fileBytes";
+
+// A document is read as BYTES (services/files/readDocumentText.ts); `fileText`
+// is the text the mocked file holds, served through plugin-fs `readFile`.
+const { fileText } = vi.hoisted(() => ({
+  fileText: vi.fn<(path: string) => Promise<string>>(async () => ""),
+}));
+vi.mock("@tauri-apps/plugin-fs", () => ({
+  readFile: (path: string) => fileBytes(fileText(path)),
+}));
 import { invoke } from "@tauri-apps/api/core";
-import { readTextFile } from "@tauri-apps/plugin-fs";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
 import { useMcpStore } from "@/stores/mcpStore";
@@ -88,7 +97,7 @@ beforeEach(() => {
   vi.mocked(invoke).mockImplementation(async (cmd: string) =>
     cmd === "gha_lint" ? { kind: "ok", diagnostics: [] } : undefined,
   );
-  vi.mocked(readTextFile).mockReset();
+  fileText.mockReset();
   useTabStore.setState({ tabs: {}, activeTabId: {}, untitledCounter: 0 });
   useDocumentStore.setState({ documents: {} });
   useRevisionStore.setState({ revisions: {} });
@@ -303,7 +312,7 @@ describe("workspace.open", () => {
   it("does not reload an open tab whose unsaved keystrokes are still in the editor", async () => {
     const tabId = openTab("/w/a.md", "saved\n");
     editorHoldsUnflushed(tabId, "saved\n正在输入的内容\n");
-    vi.mocked(readTextFile).mockResolvedValue("what is on disk\n");
+    fileText.mockResolvedValue("what is on disk\n");
 
     await handleWorkspaceOpen("req-open", { filePath: "/w/a.md" });
 
@@ -317,7 +326,7 @@ describe("workspace.open", () => {
   it("still reloads an open tab that is clean once the editor has been flushed", async () => {
     const tabId = openTab("/w/a.md", "saved\n");
     editorHoldsUnflushed(tabId, "saved\n");
-    vi.mocked(readTextFile).mockResolvedValue("what is on disk\n");
+    fileText.mockResolvedValue("what is on disk\n");
 
     await handleWorkspaceOpen("req-reload", { filePath: "/w/a.md" });
 
@@ -339,7 +348,7 @@ describe("workspace.open", () => {
       error: "INVALID_PATH",
       message: "filePath must be a non-empty string",
     });
-    expect(vi.mocked(readTextFile)).not.toHaveBeenCalled();
+    expect(fileText).not.toHaveBeenCalled();
   });
 });
 

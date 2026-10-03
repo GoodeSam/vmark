@@ -5,6 +5,7 @@
 // real link provider detects the path in a terminal line; link *detection*
 // edge cases are covered by fileLinkProvider.test.ts.
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { fileBytes } from "@/test/fileBytes";
 import type { ILink, ILinkProvider, Terminal } from "@xterm/xterm";
 
 const h = vi.hoisted(() => ({
@@ -15,7 +16,7 @@ const h = vi.hoisted(() => ({
   setPendingContentSearchNav: vi.fn(),
 }));
 
-vi.mock("@tauri-apps/plugin-fs", () => ({ stat: h.stat, readTextFile: h.readTextFile }));
+vi.mock("@tauri-apps/plugin-fs", () => ({ stat: h.stat, readFile: (path: string) => fileBytes(h.readTextFile(path)) }));
 vi.mock("@/stores/tabStore", () => ({
   useTabStore: { getState: () => ({ createTab: h.createTab }) },
 }));

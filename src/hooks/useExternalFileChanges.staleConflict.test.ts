@@ -24,6 +24,7 @@
  * @module hooks/useExternalFileChanges.staleConflict.test
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { fileBytes } from "@/test/fileBytes";
 import { renderHook } from "@testing-library/react";
 
 // --- Hoisted mocks ---
@@ -47,7 +48,7 @@ vi.mock("@tauri-apps/api/event", () => ({
 }));
 
 vi.mock("@tauri-apps/plugin-fs", () => ({
-  readTextFile: mocks.readTextFile,
+  readFile: (path: string) => fileBytes(mocks.readTextFile(path)),
   exists: mocks.exists,
 }));
 

@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fileBytes } from "@/test/fileBytes";
 
 const mockReadTextFile = vi.fn();
 const mockFindExistingTabForPath = vi.fn();
@@ -9,7 +10,7 @@ const mockSetLineMetadata = vi.fn();
 const mockCloseTab = vi.fn();
 const mockGetReplaceableTab = vi.fn();
 
-vi.mock("@tauri-apps/plugin-fs", () => ({ readTextFile: (...a: unknown[]) => mockReadTextFile(...a) }));
+vi.mock("@tauri-apps/plugin-fs", () => ({ readFile: (...a: unknown[]) => fileBytes(mockReadTextFile(...a)) }));
 vi.mock("@/services/tabs/findExistingTabForPath", () => ({
   findExistingTabForPath: (...a: unknown[]) => mockFindExistingTabForPath(...a),
 }));

@@ -13,7 +13,10 @@
  *     ANSI message so the user knows why nothing happened.
  *   - `stat()` failures (permission denied, missing) surface to the user
  *     via the same ANSI channel — fail loud, never silent.
- *   - Dynamic import keeps the fs plugin out of the initial bundle.
+ *   - `stat` comes through a dynamic import of the fs plugin; the text itself
+ *     through `readDocumentText`, the one reader that keeps a file's BOM and
+ *     refuses UTF-16/UTF-32 (its message reaches the terminal like any other
+ *     read failure).
  *
  * @coordinates-with createTerminalInstance.ts — sole caller
  * @coordinates-with fileLinkProvider.ts — link-detection logic
@@ -27,6 +30,7 @@ import { createFileLinkProvider } from "./fileLinkProvider";
 import { setPendingContentSearchNav } from "@/services/navigation/contentSearchNavigation";
 import { terminalLog } from "@/utils/debug";
 import { errorMessage } from "@/utils/errorMessage";
+import { readDocumentText } from "@/services/files/readDocumentText";
 
 const MAX_FILE_LINK_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -34,7 +38,7 @@ const MAX_FILE_LINK_SIZE = 10 * 1024 * 1024; // 10 MB
  *  live cwd (OSC 7) so relative paths resolve against it (WI-2.3). */
 export function setupFileLinks(term: Terminal, getCwd?: () => string | null): void {
   term.registerLinkProvider(createFileLinkProvider(term, (filePath, line) => {
-    import("@tauri-apps/plugin-fs").then(async ({ readTextFile, stat }) => {
+    import("@tauri-apps/plugin-fs").then(async ({ stat }) => {
       try {
         const info = await stat(filePath);
         if (info.size > MAX_FILE_LINK_SIZE) {
@@ -49,7 +53,7 @@ export function setupFileLinks(term: Terminal, getCwd?: () => string | null): vo
         term.writeln(`\x1b[33m[Cannot open file: ${message}]\x1b[0m`);
         return;
       }
-      readTextFile(filePath).then((content) => {
+      readDocumentText(filePath).then((content) => {
         const windowLabel = getCurrentWindowLabel();
         const tabId = useTabStore.getState().createTab(windowLabel, filePath);
         useDocumentStore.getState().ingestExternalContent(tabId, content, "disk-open", { filePath });

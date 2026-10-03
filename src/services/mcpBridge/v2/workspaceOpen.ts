@@ -19,7 +19,7 @@
  * @coordinates-with services/workspaces/workspaceContextOwnership.ts — claim
  * @module services/mcpBridge/v2/workspaceOpen
  */
-import { readTextFile } from "@tauri-apps/plugin-fs";
+import { readDocumentText } from "@/services/files/readDocumentText";
 import { useTabStore } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
@@ -64,7 +64,7 @@ export async function handleWorkspaceOpen(
     }
     let content: string;
     try {
-      content = await readTextFile(filePath);
+      content = await readDocumentText(filePath);
     } catch (e) {
       await structuredError(id, {
         error: "INVALID_PATH",
