@@ -185,7 +185,7 @@ which cites these cells.
 - Gate defaults are VERIFIED against ${codeSpan(defaultsRel)} at generation time; a
   disagreement refuses to generate rather than printing the spine's value.
 - Coverage source: ${covPresent
-    ? "`coverage/coverage-summary.json` (gitignored — regenerate with `pnpm test:coverage`). A cell reads `-- (n/m files)` when the summary holds only some of the feature's coverage-eligible files: the summary lists the files some test loaded, and a fraction is not the feature."
+    ? "`coverage/coverage-summary.json` (gitignored — regenerate with `pnpm test:coverage`). A cell reads `-- (n/m files)` when the summary holds only some of the feature's coverage-eligible files. `vitest.config.ts` sets `coverage.include`, so a full run lists every src file, untested ones at 0%; a summary written before that, or under another coverage config, can lack some, and a fraction is not the feature."
     : "**absent.** Run `pnpm test:coverage`, then regenerate. All coverage cells read `--`."}
 
 ## Measured

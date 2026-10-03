@@ -250,7 +250,7 @@ Unter macOS und Linux erscheint die Einstellung nicht.
 | Maximale Versionen | Anzahl der Verlaufs-Snapshots pro Dokument | 50 Versionen | 10, 25, 50, 100 |
 | Versionen behalten für | Maximales Alter von Verlaufs-Snapshots, bevor sie bereinigt werden | 7 Tage | 1 Tag, 7 Tage, 14 Tage, 30 Tage |
 | Zusammenführungsfenster | Aufeinanderfolgende Autospeicherungen innerhalb dieses Fensters werden in einem einzigen Snapshot zusammengefasst | 30 Sekunden | Aus, 10s, 30s, 1 Min., 2 Min. |
-| Maximale Dateigröße für Verlauf | Verlaufs-Snapshots für Dateien überspringen, die größer als dieser Schwellenwert sind | 512 KB | 256 KB, 512 KB, 1 MB, 5 MB, Unbegrenzt |
+| Maximale Dateigröße für Verlauf | Verlaufs-Snapshots der automatischen Speicherung für Dateien überspringen, die größer als dieser Schwellenwert sind. Manuelle Speicherungen, MCP-Speicherungen und die Sicherheitskopie vor dem Wiederherstellen einer Version werden immer behalten | 512 KB | 256 KB, 512 KB, 1 MB, 5 MB, Unbegrenzt |
 
 ### Bilder
 

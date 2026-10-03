@@ -23,7 +23,7 @@
     },
     "GHSA-g7r4-m6w7-qqqr": {
       "module": "esbuild",
-      "reason": "esbuild dev-server file read via server__content>tsup. Build-time bundling only; tsup never starts a server here."
+      "reason": "Windows-only file read through esbuild's own development server (servedir). esbuild 0.27.7 is reached only through build and test tooling: Vitest's browser mode (.>@vitest/coverage-v8>@vitest/browser>@vitest/mocker>vite>esbuild, the path pnpm audit reports), plus server__content's tsup bundler and Slidev's Vite. None of them starts esbuild's server: Vite serves with its own, tsup only bundles, and the shipped app contains no esbuild."
     },
     "GHSA-v6wh-96g9-6wx3": {
       "module": "vite",

@@ -250,7 +250,7 @@ El ajuste no aparece en macOS ni en Linux.
 | Versiones máximas | Número de instantáneas del historial a conservar por documento | 50 versiones | 10, 25, 50, 100 |
 | Conservar versiones durante | Antigüedad máxima de las instantáneas del historial antes de ser eliminadas | 7 días | 1 día, 7 días, 14 días, 30 días |
 | Ventana de fusión | Los guardados automáticos consecutivos dentro de esta ventana se consolidan en una única instantánea, reduciendo el ruido de almacenamiento | 30 segundos | Desactivado, 10s, 30s, 1 min, 2 min |
-| Tamaño máximo de archivo para el historial | Omite las instantáneas del historial para archivos más grandes que este umbral | 512 KB | 256 KB, 512 KB, 1 MB, 5 MB, Ilimitado |
+| Tamaño máximo de archivo para el historial | Omite las instantáneas del historial del autoguardado para archivos más grandes que este umbral. Los guardados manuales, los guardados por MCP y la copia de seguridad que se toma antes de restaurar una versión se conservan siempre | 512 KB | 256 KB, 512 KB, 1 MB, 5 MB, Ilimitado |
 
 ### Imágenes
 
