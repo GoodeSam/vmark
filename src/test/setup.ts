@@ -1,7 +1,5 @@
 /**
- * setup — global setup for the app test tier: jest-dom matchers, the
- * localStorage shim, and module mocks for i18n, the Tauri APIs and xterm.
- *
+ * setup — global setup for the app test tier: jest-dom, the localStorage shim, and i18n/Tauri/xterm mocks.
  * @module test/setup
  */
 

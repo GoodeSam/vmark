@@ -1,9 +1,6 @@
 /**
- * Resource Resolver
- *
- * Handles image bundling and URL rewriting for export.
- * Resolves relative paths, copies local files, and rewrites URLs.
- *
+ * Resource Resolver — handles image bundling and URL rewriting for export:
+ * resolves relative paths, copies local files, and rewrites URLs.
  * @module export/resourceResolver
  */
 

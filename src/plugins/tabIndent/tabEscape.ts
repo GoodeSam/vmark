@@ -1,9 +1,7 @@
 /**
- * Tab Escape for WYSIWYG Mode
- *
- * Detects when cursor is at the end of an inline mark (bold, italic, code, strike)
- * or inside a link, and provides target position for Tab to jump out.
- *
+ * Tab Escape for WYSIWYG Mode — detects when the cursor is at the end of an
+ * inline mark (bold, italic, code, strike) or inside a link, and provides the
+ * target position for Tab to jump out.
  * @module plugins/tabIndent/tabEscape
  */
 

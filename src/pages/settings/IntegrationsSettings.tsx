@@ -1,8 +1,5 @@
 /**
- * Integrations Settings Section
- *
- * MCP server and AI assistant integration settings.
- *
+ * Integrations Settings Section — MCP server and AI assistant integration settings.
  * @module pages/settings/IntegrationsSettings
  */
 

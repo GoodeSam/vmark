@@ -40,7 +40,7 @@ import { expectedModulePaths } from "./headerReferences.mjs";
 import { fsAt, walkSources } from "./headerReferenceTrees.mjs";
 
 /** The tree whose files must carry the header. */
-export const HEADER_TREE = "src";
+const HEADER_TREE = "src";
 /** Fewest words of prose (outside tag lines) a header may hold. */
 export const MIN_PROSE_WORDS = 5;
 
@@ -52,7 +52,7 @@ export function isHeaderSubject(rel, source) {
 }
 
 /** The leading block's text lines, markers stripped, or `null` when the file does not open with `/**`. */
-export function leadingBlock(source) {
+function leadingBlock(source) {
   if (!source.startsWith("/**")) return null;
   const close = source.indexOf("*/", 3);
   if (close === -1) return null;

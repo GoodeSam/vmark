@@ -47,7 +47,7 @@ import { PRODUCTION_TREES, auditDates, productionFiles, tokensIn } from "./prove
 import { commentRuns, isCommentedSource, lineAt } from "./sourceComments.mjs";
 
 /** The trees this rule reads: the provenance trees and the tooling. */
-export const CITATION_TREES = [...PRODUCTION_TREES, "scripts"];
+const CITATION_TREES = [...PRODUCTION_TREES, "scripts"];
 
 const MONTH = String.raw`(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)`;
 const MM = String.raw`(?:0[1-9]|1[0-2])`;

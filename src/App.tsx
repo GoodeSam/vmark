@@ -1,9 +1,6 @@
 /**
- * App — the root React component: routes each window to the main editor
- * layout, the settings page or the PDF export page, and composes the main
- * layout's shell, sidebar, editor area and overlays under a top-level error
- * boundary.
- *
+ * App — the root component: routes each window to the main editor layout, the
+ * settings page or the PDF export page, under a top-level error boundary.
  * @module App
  */
 

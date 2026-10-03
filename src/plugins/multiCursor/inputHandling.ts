@@ -1,13 +1,10 @@
 /**
- * Multi-cursor input handling for ProseMirror
- *
- * Handles typing, backspace, and delete operations across multiple cursors.
- * The three share one frame (editEachRange): edits are applied in reverse
- * document order by rangeEdits.ts, then the selection is rebuilt.
- *
+ * Multi-cursor input handling for ProseMirror — typing, backspace, and delete
+ * across multiple cursors. The three share one frame (editEachRange): edits
+ * are applied in reverse document order by rangeEdits.ts, then the selection
+ * is rebuilt.
  * @module plugins/multiCursor/inputHandling
  */
-
 import { Selection, SelectionRange } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import type { Node } from "@tiptap/pm/model";

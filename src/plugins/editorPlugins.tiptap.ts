@@ -7,7 +7,6 @@
  * - buildEditorKeymapBindings: Build the full keymap bindings record
  * - editorKeymapExtension: Tiptap Extension wrapping the keymap plugin
  * - expandedToggleMarkTiptap: Re-export for external consumers
- *
  * @coordinates-with plugins/shared/ — hostShortcuts (chords), hostPopups (Escape)
  * @coordinates-with editorPlugins/keymapUtils.ts (binding helpers)
  * @coordinates-with services/editor/runEditorAction.ts (executor for editor.* actions)

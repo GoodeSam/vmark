@@ -1,9 +1,6 @@
 /**
- * HTML to Markdown Conversion
- *
- * Uses Turndown library to convert HTML content (from clipboard)
- * to clean Markdown for pasting into the editor.
- *
+ * HTML to Markdown Conversion — uses Turndown to convert HTML content (from
+ * the clipboard) to clean Markdown for pasting into the editor.
  * @module utils/htmlToMarkdown
  */
 
