@@ -1,6 +1,6 @@
 /**
  * Purpose: bind the app's stores to the plugins' host seams — settings,
- * document identity, editor chrome, and notices.
+ * document identity, editor chrome, notices, and the link opener.
  *
  * Called once at startup. Plugins depend on `plugins/shared/hostSettings`,
  * which has working defaults and no store import, so they still run when
@@ -31,6 +31,8 @@ import { bindHostEditors } from "@/plugins/shared/hostEditors";
 import { bindHostViewModes } from "@/plugins/shared/hostViewModes";
 import { useImagePasteToastStore } from "@/stores/imagePasteToastStore";
 import { bindHostNotify } from "@/plugins/shared/hostNotify";
+import { bindHostLinks } from "@/plugins/shared/hostLinks";
+import { openLinkTarget } from "@/services/navigation/linkOpen";
 import { imeToast } from "@/services/ime/imeToast";
 import { useSourcePeekStore } from "@/stores/sourcePeekStore";
 import { bindSourcePeekStore } from "@/plugins/sourcePeekInline/peekStore";
@@ -159,6 +161,13 @@ export function bindPluginHostSettings(): void {
     error: (message) => {
       imeToast.error(message);
     },
+  });
+
+  // The opener the editor's own links use: a URL through the
+  // scheme-allowlisted OS opener, a file path in a tab. A `#fragment` never
+  // reaches here — the preview guard leaves it to the page.
+  bindHostLinks({
+    open: (href, sourcePath) => void openLinkTarget(href, sourcePath, null),
   });
 
   bindHostPopups({

@@ -5,7 +5,13 @@
  * @module services/assembly/bindHostSettings.test
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+
+vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl: vi.fn(() => Promise.resolve()) }));
+
 import { bindPluginHostSettings } from "./bindHostSettings";
+import { hostLinks, resetHostLinks } from "@/plugins/shared/hostLinks";
 import { hostSettings, resetHostSettings } from "@/plugins/shared/hostSettings";
 import {
   hostDocument,
@@ -360,6 +366,40 @@ describe("the notice binding", () => {
 
     expect(info.mock.calls).toEqual([["Image not found — pasted as text"]]);
     expect(error.mock.calls).toEqual([["Failed to insert image"]]);
+  });
+});
+
+describe("the link binding", () => {
+  // WI-RA24.1 — a link a plugin's preview hands over opens as the editor's
+  // own links do: a URL through the scheme-allowlisted OS opener, a file path
+  // in a tab, resolved against the document it was written in.
+  afterEach(() => {
+    resetHostLinks();
+    vi.mocked(openUrl).mockClear();
+  });
+
+  it("opens a URL through the OS opener", async () => {
+    bindPluginHostSettings();
+    hostLinks.open("https://example.com/图", "/docs/a.md");
+    await vi.waitFor(() => expect(openUrl).toHaveBeenCalledWith("https://example.com/图"));
+  });
+
+  it("opens a relative file link in a tab, resolved against the document", async () => {
+    bindPluginHostSettings();
+    const window = vi.mocked(getCurrentWebviewWindow);
+    const before = window.mock.results.length;
+
+    hostLinks.open("../笔记/第二章.md#小节", "/docs/草稿/a.md");
+
+    await vi.waitFor(() => {
+      const emitted = window.mock.results
+        .slice(before)
+        .flatMap((r) => (r.value as { emit: ReturnType<typeof vi.fn> }).emit.mock.calls);
+      expect(emitted).toEqual([
+        ["open-file", { path: "/docs/笔记/第二章.md", windowLabel: "main", fragment: "小节" }],
+      ]);
+    });
+    expect(openUrl).not.toHaveBeenCalled();
   });
 });
 
