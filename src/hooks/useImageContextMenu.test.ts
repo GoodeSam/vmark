@@ -361,7 +361,7 @@ describe("useImageContextMenu", () => {
       });
 
       expect(mockMessage).toHaveBeenCalledWith(
-        "Failed to reveal image in Finder.",
+        "Failed to reveal in Finder.",
         expect.objectContaining({ kind: "error" })
       );
       errorSpy.mockRestore();

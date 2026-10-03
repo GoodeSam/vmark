@@ -112,17 +112,18 @@ function untitledExtensionForFilePath(filePath: string | null): string {
 }
 
 
+/** Replace characters invalid on Windows/macOS/Linux (/ \ : * ? " < > |) and collapse whitespace. */
+function sanitizeFilename(name: string): string {
+  return name.replace(/[/\\:*?"<>|]/g, "-").replace(/\s+/g, " ").trim();
+}
+
 /**
- * Sanitize a title for use as a filename.
- * Removes/replaces characters that are invalid in filenames.
+ * Sanitize a title for use as a filename. A title with nothing usable in it
+ * falls back to the translated untitled name new tabs get (common:untitled),
+ * sanitized the same way.
  */
 export function toSafeFilename(title: string): string {
-  // Replace characters invalid on Windows/macOS/Linux
-  // Invalid: / \ : * ? " < > |
-  return title
-    .replace(/[/\\:*?"<>|]/g, "-")
-    .replace(/\s+/g, " ")
-    .trim() || "Untitled";
+  return sanitizeFilename(title) || sanitizeFilename(i18n.t("common:untitled"));
 }
 
 /**

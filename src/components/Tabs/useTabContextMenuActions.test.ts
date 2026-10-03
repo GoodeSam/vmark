@@ -345,11 +345,11 @@ describe("useTabContextMenuActions", () => {
     expect(findItem(items, "closeRight")?.disabled).toBe(true);
   });
 
-  it("disables closeAllUnpinned and closeAll when all tabs are pinned", () => {
+  it("disables closeAllUnpinned but keeps closeAll enabled when all tabs are pinned", () => {
     const tabs = [makeTab({ id: "tab-1", isPinned: true }), makeTab({ id: "tab-2", isPinned: true })];
     const { items } = renderActions({ tab: tabs[0], tabs });
     expect(findItem(items, "closeAllUnpinned")?.disabled).toBe(true);
-    expect(findItem(items, "closeAll")?.disabled).toBe(true);
+    expect(findItem(items, "closeAll")?.disabled).toBeFalsy();
   });
 
   // ── Conditional items ────────────────────────────────────────────
@@ -456,16 +456,6 @@ describe("useTabContextMenuActions", () => {
       expect(mocks.closeTabsWithDirtyCheck).toHaveBeenCalledWith("main", ["tab-1", "tab-3"]);
     });
 
-    it("handleCloseAll closes every unpinned tab and leaves pinned ones open", async () => {
-      const tabs = [
-        makeTab({ id: "tab-1", isPinned: true }),
-        makeTab({ id: "tab-2" }),
-      ];
-      const { items } = renderActions({ tab: tabs[0], tabs });
-      await findItem(items, "closeAll")!.action();
-      expect(mocks.closeTabsWithDirtyCheck).toHaveBeenCalledWith("main", ["tab-2"]);
-    });
-
     it("handlePin calls togglePin and onClose", () => {
       const onClose = vi.fn();
       const { items } = renderActions({ onClose });
@@ -523,7 +513,7 @@ describe("useTabContextMenuActions", () => {
       mocks.revealItemInDir.mockRejectedValueOnce(new Error("fail"));
       const { items } = renderActions();
       await findItem(items, "reveal")!.action();
-      expect(mocks.toast.error).toHaveBeenCalledWith("Failed to reveal file in file manager.");
+      expect(mocks.toast.error).toHaveBeenCalledWith("Failed to reveal in Finder.");
     });
 
     it("handleRevealInFileManager is a no-op when filePath is null", async () => {

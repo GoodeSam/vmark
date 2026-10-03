@@ -1496,6 +1496,7 @@
       "src/utils/errorMessage.ts",
       "src/utils/binary.ts",
       "src/utils/pathUtils.ts",
+      "src/utils/revealFailedKey.ts",
       "src/utils/paths",
       "src/utils/appName.ts",
       "src/utils/dateUtils.ts",

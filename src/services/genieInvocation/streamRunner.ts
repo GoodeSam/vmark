@@ -14,6 +14,10 @@
  *     auto-apply to a suggestion scoped to the ORIGINATING tab.
  *   - Suggestion payloads for both paths come from one builder
  *     (buildSuggestionParams) so they cannot drift.
+ *   - The listener is released as soon as its request stops being the active
+ *     one (cancel, supersession), through a store subscription. The handler
+ *     ignores frames for an inactive request, so no frame could release it,
+ *     and it stayed registered until the hook's own cancel or unmount.
  *   - Where a finished result may LAND is `applyGenieResult.ts` (split for the
  *     file-size gate); this module owns the stream, that one owns the writes.
  *
@@ -38,15 +42,16 @@ import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { errorMessage } from "@/utils/errorMessage";
 import type { ExtractionResult } from "./extraction";
 import { editorForTab, handleStreamDone } from "./applyGenieResult";
-import {
-  failInvocation,
-  releaseListener,
-  type ListenerRef,
-  type RunContext,
-} from "./streamRunnerContext";
+import { failInvocation, releaseListener, type ListenerRef, type RunContext } from "./streamRunnerContext";
 
-/** Build the `ai:response` handler; accumulates chunks for this request only. */
-function createChunkHandler(ctx: RunContext): (event: { payload: AiResponseChunk }) => void {
+/**
+ * Build the `ai:response` handler; accumulates chunks for this request only.
+ * `release` tears down THIS request's listener, never the shared ref's.
+ */
+function createChunkHandler(
+  ctx: RunContext,
+  release: () => void,
+): (event: { payload: AiResponseChunk }) => void {
   let accumulated = "";
   return (event) => {
     const chunk = event.payload;
@@ -61,7 +66,7 @@ function createChunkHandler(ctx: RunContext): (event: { payload: AiResponseChunk
 
     if (chunk.error) {
       failInvocation(chunk.error, ctx.requestId, ctx.retry);
-      releaseListener(ctx.listenerRef);
+      release();
       return;
     }
 
@@ -82,11 +87,11 @@ function createChunkHandler(ctx: RunContext): (event: { payload: AiResponseChunk
       useGeniePickerStore.getState().appendResponse(text);
       if (chunk.done) {
         handleStreamDone(ctx, accumulated);
-        releaseListener(ctx.listenerRef);
+        release();
       }
     } catch (error) {
       failInvocation(errorMessage(error), ctx.requestId, ctx.retry);
-      releaseListener(ctx.listenerRef);
+      release();
     }
   };
 }
@@ -180,19 +185,28 @@ export async function runGenieStream(options: RunGenieStreamOptions): Promise<bo
   // hook and with every later run, so releasing it by reference tore down
   // whatever listener happened to be in it — including a newer request's.
   let own: UnlistenFn | null = null;
+  let unsubscribe: (() => void) | null = null;
   const releaseOwn = () => {
-    if (!own) return;
-    if (listenerRef.current === own) listenerRef.current = null;
-    own();
+    unsubscribe?.();
+    unsubscribe = null;
+    const unlisten = own;
     own = null;
+    // Gone from the shared ref means the hook's cancel or unmount already
+    // unlistened it; a second unlisten is a second IPC that can reject.
+    // A newer run only takes the ref after this request stopped being
+    // active, which released this listener first.
+    if (unlisten && listenerRef.current === unlisten) releaseListener(listenerRef);
   };
 
   try {
     // Listener registration sits INSIDE the try: if listen() rejects, the
     // invocation must fail loudly (error state + lock release) instead of
     // sticking in processing/running forever.
-    own = await listen<AiResponseChunk>("ai:response", createChunkHandler(ctx));
+    own = await listen<AiResponseChunk>("ai:response", createChunkHandler(ctx, releaseOwn));
     listenerRef.current = own;
+    unsubscribe = useAiInvocationStore.subscribe((state) => {
+      if (state.requestId !== requestId) releaseOwn();
+    });
 
     // The `listen()` round-trip is another window in which Cancel can land, and
     // the cancel it issues names a request id Rust has not seen yet — so it is

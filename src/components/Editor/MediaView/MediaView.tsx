@@ -26,6 +26,7 @@ import { useTranslation } from "react-i18next";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { FileQuestion } from "lucide-react";
 import { getMediaType } from "@/utils/mediaPathDetection";
+import { revealInFileManagerKey } from "@/utils/pathUtils";
 import { mediaViewError } from "@/utils/debug";
 import { useMediaAsset } from "./useMediaAsset";
 import "./MediaView.css";
@@ -90,7 +91,7 @@ export function MediaView({ path, reloadKey = 0 }: MediaViewProps) {
             className="vm-btn"
             onClick={reveal}
           >
-            {t("media.revealInFinder")}
+            {t(revealInFileManagerKey())}
           </button>
         </div>
       </div>

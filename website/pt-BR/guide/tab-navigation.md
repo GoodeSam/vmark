@@ -453,7 +453,7 @@ Clique com o botão direito em uma aba para abrir seu menu. As teclas de seta, H
 | Fechar outras | Fecha todas as outras abas não fixadas. | Existe outra aba não fixada |
 | Fechar guias à direita | Fecha as abas não fixadas à sua direita. | Existe alguma |
 | Fechar guias não fixadas | Fecha todas as abas não fixadas, inclusive esta. | Existe uma aba não fixada |
-| Fechar todas | Fecha todas as abas, exceto as fixadas, que continuam abertas até você desafixá-las. | Existe uma aba não fixada |
+| Fechar todas | Fecha todas as abas, inclusive as fixadas. Se alguma aba fixada for ser fechada, primeiro pede confirmação e informa quantas são; cancelar não fecha nada. | Sempre |
 
 Os fechamentos em massa atuam sobre as abas do workspace atual e as fecham uma de cada vez. Cada aba com alterações não salvas pergunta antes, e cancelar qualquer uma dessas perguntas interrompe o restante.
 
@@ -462,7 +462,7 @@ Os fechamentos em massa atuam sobre as abas do workspace atual e as fecham uma d
 Fixe uma aba pelo menu de contexto para mantê-la à mão:
 
 - Ela vai para o grupo de abas fixadas à esquerda da faixa, mostra um ícone de alfinete e perde o botão de fechar. Abas não podem ser arrastadas pela fronteira entre abas fixadas e não fixadas (*"As abas fixadas permanecem à esquerda. Soltura bloqueada."*), e uma aba fixada não pode ser arrastada para fora da sua janela.
-- Ela não pode ser fechada por nenhum meio — `Mod + W`, clique do meio, **Fechar** ou um fechamento em massa — até que você a desafixe; tentar mostra *"Desafixe antes de fechar"*.
+- Ela não pode ser fechada por nenhum meio — `Mod + W`, clique do meio, **Fechar** ou um fechamento em massa — até que você a desafixe; tentar mostra *"Desafixe antes de fechar"*. Dois fechamentos deliberados são a exceção: **Fechar todas** também fecha as abas fixadas depois que você confirma, e fechar um espaço de trabalho pela barra fecha as abas fixadas dele junto com as demais.
 - Fechar uma janela que contém abas fixadas pede confirmação — *"Esta janela tem N abas fixadas. Fechar mesmo assim?"* — a menos que uma caixa de diálogo de salvamento já tenha sido exibida.
 - A fixação sobrevive a mover a aba para outra janela ou workspace e a uma reinicialização de atualização, mas não a sair do VMark: as abas reabertas na próxima inicialização ficam desafixadas.
 

@@ -451,7 +451,7 @@ Faites un clic droit sur un onglet pour ouvrir son menu. Les touches fléchées,
 | Fermer les autres | Ferme tous les autres onglets non épinglés. | Un autre onglet non épinglé existe |
 | Fermer les onglets à droite | Ferme les onglets non épinglés situés à sa droite. | Il en existe un |
 | Fermer les onglets non épinglés | Ferme tous les onglets non épinglés, celui-ci compris. | Un onglet non épinglé existe |
-| Tout fermer | Ferme tous les onglets sauf les onglets épinglés, qui restent ouverts tant que vous ne les désépinglez pas. | Un onglet non épinglé existe |
+| Tout fermer | Ferme tous les onglets, y compris les onglets épinglés. Si un onglet épinglé doit être fermé, une confirmation indiquant leur nombre est d'abord demandée ; l'annuler ne ferme rien. | Toujours |
 
 Les fermetures groupées agissent sur les onglets de l'espace de travail actuel et les ferment un par un. Chaque onglet ayant des modifications non enregistrées demande d'abord, et annuler l'une de ces demandes arrête les suivantes.
 
@@ -460,7 +460,7 @@ Les fermetures groupées agissent sur les onglets de l'espace de travail actuel 
 Épinglez un onglet depuis son menu contextuel pour le garder à portée de main :
 
 - Il rejoint le groupe épinglé à gauche de la barre, affiche une icône d'épingle et perd son bouton de fermeture. Les onglets ne peuvent pas être glissés au-delà de la frontière entre onglets épinglés et non épinglés (*« Les onglets épinglés restent à gauche. Dépose bloquée. »*), et un onglet épinglé ne peut pas être glissé hors de sa fenêtre.
-- Il ne peut être fermé par aucun moyen — `Mod + W`, clic du milieu, **Fermer** ou une fermeture groupée — tant que vous ne l'avez pas désépinglé ; toute tentative affiche *« Détacher l'onglet avant de fermer »*.
+- Il ne peut être fermé par aucun moyen — `Mod + W`, clic du milieu, **Fermer** ou une fermeture groupée — tant que vous ne l'avez pas désépinglé ; toute tentative affiche *« Détacher l'onglet avant de fermer »*. Deux fermetures délibérées font exception : **Tout fermer** ferme aussi les onglets épinglés une fois que vous avez confirmé, et fermer un espace de travail depuis la barre ferme ses onglets épinglés avec les autres.
 - Fermer une fenêtre contenant des onglets épinglés demande une confirmation — *« Cette fenêtre a N onglets épinglés. Fermer quand même ? »* — sauf si une boîte de dialogue d'enregistrement a déjà été affichée.
 - Un épinglage survit au déplacement de l'onglet vers une autre fenêtre ou un autre espace de travail et à un redémarrage de mise à jour, mais pas à la fermeture de VMark : les onglets rouverts au lancement suivant ne sont pas épinglés.
 
