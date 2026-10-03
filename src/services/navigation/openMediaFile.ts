@@ -63,6 +63,17 @@ export function replaceTabWithMediaFile(tabId: string, path: string): void {
   useRecentFilesStore.getState().addFile(path);
 }
 
+/**
+ * Open `path` as a new path-only media tab, or activate the tab `createTab`
+ * deduplicates onto.
+ *
+ * Rollback: when a step after `createTab` throws (the caller's `onTabCreated`,
+ * document init, the ownership claim, the recent-files record), the tab this
+ * call created is removed with `detachTab` and the error is rethrown, so no
+ * half-initialised media tab is left behind. `detachTab`, not `closeTab`: the
+ * user never had the tab, so it must not enter the reopen history. A tab
+ * `createTab` deduplicated onto belongs to another opener and is never removed.
+ */
 export function openMediaFileInNewTab(
   windowLabel: string,
   path: string,
@@ -73,12 +84,17 @@ export function openMediaFileInNewTab(
   const isExistingTab =
     useTabStore.getState().getTabsByWindow(windowLabel).length === tabCountBefore;
 
-  options?.onTabCreated?.(tabId, isExistingTab);
+  try {
+    options?.onTabCreated?.(tabId, isExistingTab);
 
-  // createTab deduped to an existing tab — just activate, don't re-init.
-  if (isExistingTab) return;
+    // createTab deduped to an existing tab — just activate, don't re-init.
+    if (isExistingTab) return;
 
-  useDocumentStore.getState().initDocument(tabId, "", path);
-  applyFileOwnershipAfterOpen(tabId, path);
-  useRecentFilesStore.getState().addFile(path);
+    useDocumentStore.getState().initDocument(tabId, "", path);
+    applyFileOwnershipAfterOpen(tabId, path);
+    useRecentFilesStore.getState().addFile(path);
+  } catch (error) {
+    if (!isExistingTab) useTabStore.getState().detachTab(windowLabel, tabId);
+    throw error;
+  }
 }

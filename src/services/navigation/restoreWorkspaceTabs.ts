@@ -20,7 +20,8 @@
  *
  * Rollback: a tab this loop created whose initialisation then fails (text
  * ingest, or the ownership claim on either branch) is removed with
- * `detachTab`, not `closeTab`. It was never the user's tab, so it must not
+ * `detachTab`, not `closeTab` — by this loop for text, by
+ * `openMediaFileInNewTab` itself for media. It was never the user's tab, so it must not
  * enter the reopen history, and a tab `createTab` deduplicated onto belongs to
  * another opener and is never removed.
  *
@@ -68,20 +69,20 @@ function rollBackCreatedTab(windowLabel: string, tabId: string): void {
 
 /**
  * Restore one binary media path as a path-only tab. Returns whether a tab was
- * created. A tab `createTab` deduplicated onto is another opener's: it is
- * neither counted nor rolled back.
+ * created. A tab `createTab` deduplicated onto is another opener's and is not
+ * counted. A failed open has already rolled back its own tab
+ * (`openMediaFileInNewTab` detaches what it created), so this only reports it.
  */
 function restoreMediaTab(windowLabel: string, filePath: string): boolean {
-  let createdTabId: string | null = null;
+  let created = false;
   try {
     openMediaFileInNewTab(windowLabel, filePath, {
-      onTabCreated: (tabId, isExistingTab) => {
-        if (!isExistingTab) createdTabId = tabId;
+      onTabCreated: (_tabId, isExistingTab) => {
+        created = !isExistingTab;
       },
     });
-    return createdTabId !== null;
+    return created;
   } catch (error) {
-    if (createdTabId !== null) rollBackCreatedTab(windowLabel, createdTabId);
     workspaceWarn(`Could not restore media tab: ${filePath}`, error);
     return false;
   }
