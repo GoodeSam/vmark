@@ -61,7 +61,7 @@ export function WordCountPopover({
   hasSelection,
 }: WordCountPopoverProps): React.ReactElement {
   // Opens UPWARD out of the bottom bar and into the browser rect, where the native
-  // view would paint straight over it. Freeze while shown (WI-SOC.1).
+  // view would paint straight over it. Freeze while shown.
   useBrowserOccluder(true, "word-count-popover");
   const { t } = useTranslation("statusbar");
 

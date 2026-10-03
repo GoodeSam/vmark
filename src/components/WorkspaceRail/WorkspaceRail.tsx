@@ -55,7 +55,7 @@ export function WorkspaceRail({ windowLabel }: { windowLabel: string }) {
     position: WorkspaceRailMenuPosition;
     /** The entry that was right-clicked — where focus returns on dismiss.
      *  Captured per OPENING: the menu component is reused across openings, so
-     *  it cannot capture this itself (audit R3 #655). */
+     *  it cannot capture this itself. */
     invoker: HTMLElement | null;
   } | null>(null);
 
@@ -160,7 +160,7 @@ export function WorkspaceRail({ windowLabel }: { windowLabel: string }) {
                   void handleMoveWorkspace(windowLabel, instanceId, t);
                 }}
                 onClick={() =>
-                  // WI-3R: the FULL context switch (stash outgoing, restore
+                  // The FULL context switch (stash outgoing, restore
                   // incoming tabs/panes, sidebar re-root) — not a raw flip.
                   switchWorkspaceInstance(windowLabel, instanceId)
                 }

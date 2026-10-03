@@ -14,7 +14,7 @@ interface PromptHistoryDropdownProps {
   onSelect(index: number): void;
   onClose(): void;
   /** Forget every recorded prompt — the store's `clearHistory`, which had no
-   *  surface until this footer (WI-FL3.5). */
+   *  surface until this footer. */
   clearHistory(): void;
 }
 

@@ -132,7 +132,7 @@ interface MetricsCacheOptions {
   /** Test hook: invoked once per kernel computation (i.e. per cache miss). */
   onSegmentComputed?: (segment: string) => void;
   /**
-   * The format's plain-text projection (WI-4.4).
+   * The format's plain-text projection.
    *
    * Defaults to `stripMarkdown`. When a format supplies a DIFFERENT projection
    * the segment cache is bypassed, because the segment splitting and

@@ -107,7 +107,7 @@ export function useTabContextMenuActions({
   }, [onClose, tab.id]);
 
   const handleMoveToNewWindow = useCallback(async () => {
-    // Body extracted to services/tabs/moveTabToNewWindow.ts in WI-DSPL1.5:
+    // Body extracted to services/tabs/moveTabToNewWindow.ts:
     // this file sat exactly on its 300-line-limit baseline (349), so the
     // "Open to the Side" item had nowhere to go. Detaching a tab is a
     // multi-step transfer with its own rollback — a service, not a callback.
@@ -187,7 +187,7 @@ export function useTabContextMenuActions({
       label: tab.isPinned ? i18n.t("tabMenu.unpin") : i18n.t("tabMenu.pin"),
       action: handlePin,
     },
-    // Omitted entirely for a browser tab (WI-DSPL1.5): panes hold documents, so
+    // Omitted entirely for a browser tab: panes hold documents, so
     // a permanently-disabled row on every browser tab is noise, not affordance.
     ...(tab.kind === "document"
       ? [

@@ -141,7 +141,7 @@ export function GeniePicker() {
               onCompositionStart={ime.onCompositionStart}
               onCompositionEnd={ime.onCompositionEnd}
               rows={1}
-              role={/* #620: response mode renders no listbox to control */ isInputMode ? "combobox" : undefined}
+              role={/* response mode renders no listbox to control */ isInputMode ? "combobox" : undefined}
               aria-expanded={isInputMode ? flatList.length > 0 || promptHistory.isDropdownOpen : undefined}
               aria-controls={isInputMode ? "genie-picker-list" : undefined}
               aria-activedescendant={isInputMode && flatList.length > 0 && selectedIndex >= 0 ? `genie-item-${selectedIndex}` : undefined}
@@ -173,7 +173,7 @@ export function GeniePicker() {
 
                 {/* No match — freeform hint. Gated on the TRIMMED query, the
                     same value submission uses: a whitespace-only prompt used to
-                    show an actionable hint whose Enter did nothing (#621). */}
+                    show an actionable hint whose Enter did nothing. */}
                 {!loading && flatList.length === 0 && query !== "" && (
                   <div className="genie-picker-no-match">
                     {t("picker.noMatch")}{" "}

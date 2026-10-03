@@ -2,7 +2,7 @@
  * StatusBarAiIndicator
  *
  * Purpose: the AI status trio (running / error / success) in the status bar's
- * right cluster. Extracted from StatusBarRight.tsx when the WI-UA11 grouping
+ * right cluster. Extracted from StatusBarRight.tsx when the role-grouping
  * work approached that file's 300-line ceiling.
  *
  * Key decisions:

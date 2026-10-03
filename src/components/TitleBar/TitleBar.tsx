@@ -225,7 +225,7 @@ function DocumentTitleBar() {
             title={isMissing ? t("fileDeleted") : undefined}
           >
             {isDirty && (
-              // WI-UA9: a styled dot, not a text bullet — the bullet was below
+              // A styled dot, not a text bullet — the bullet was below
               // noticing threshold and read aloud as punctuation noise.
               <span className="dirty-indicator">
                 <span className="sr-only">{t("tab.unsavedChanges")}</span>
