@@ -161,5 +161,5 @@ VMark는 세 가지 유형의 미디어 경로를 지원합니다:
 
 - 미디어 경로에는 URI 스킴(`javascript:`, `file:` 또는 사용자 정의 스킴)을 넣을 수 없습니다. 그런 소스는 로드되지 않고 거부됩니다
 - 파일이 아니라 디렉터리를 가리키는 경로는 거부됩니다
-- 동영상 임베드 iframe은 허용된 도메인으로 제한됩니다: `youtube.com`, `youtube-nocookie.com`, `player.vimeo.com`, `player.bilibili.com`
+- 동영상 임베드는 세 호스트에서만 로드됩니다: `www.youtube-nocookie.com`(YouTube의 개인정보 보호 강화 플레이어), `player.vimeo.com`, `player.bilibili.com`. YouTube 링크나 `youtube.com`으로 작성된 iframe은 개인정보 보호 강화 호스트를 통해 임베드됩니다. VMark의 콘텐츠 보안 정책은 이 호스트들의 프레임만 허용하며 다른 사이트의 프레임은 로드하지 않습니다
 - 다른 iframe 소스는 새니타이저에 의해 제거됩니다

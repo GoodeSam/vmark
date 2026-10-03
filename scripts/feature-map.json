@@ -1296,6 +1296,7 @@
         "src/services/windowClose",
         "src-tauri/src/quit.rs",
         "src-tauri/src/quit_broadcast.rs",
+        "src-tauri/src/quit_exit_request.rs",
         "src/hooks/useConfirmQuitSync.ts",
         "src-tauri/src/quit.test.rs",
         "src-tauri/src/quit_broadcast.test.rs",
