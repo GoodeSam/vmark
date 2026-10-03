@@ -10,39 +10,21 @@
 // no normalized path is "inside" the unsaved root, and every local image of an
 // unsaved document becomes the missing-image placeholder.
 //
-// That guarantee rests on two details nobody wrote down, so this file pins it.
-// `normalize` below is a line-for-line port of tauri 2's
-// `crates/tauri/src/path/plugin.rs` (`normalize_path_no_absolute` + `normalize`)
-// for a "/"-separated platform; the port was compiled and run against
-// std::path to confirm "/" → "//" and "//etc/passwd" → "/etc/passwd".
+// That guarantee rested on two details nobody wrote down. The unsaved root is
+// now an explicit no-root value, refused before any path arithmetic
+// (WI-RA22.4), and this file keeps pinning the outcome. `tauriNormalize` is a
+// line-for-line port of tauri 2's normalize (see its header).
 import { describe, expect, it, vi } from "vitest";
+import { tauriNormalize } from "./__tests__/tauriNormalizePort";
 
-/** tauri 2 `normalize`, ported (POSIX separator). */
-function tauriNormalize(path: string): string {
-  let ret = path.startsWith("/") ? "/" : "";
-  for (const part of path.split("/")) {
-    if (part === "" || part === ".") continue;
-    if (part === "..") {
-      // PathBuf::pop: drop the last component; a bare root stays a root.
-      const cut = ret.lastIndexOf("/");
-      ret = ret === "/" ? "/" : cut > 0 ? ret.slice(0, cut) : ret.startsWith("/") ? "/" : "";
-      continue;
-    }
-    if (ret !== "" && !ret.endsWith("/")) ret += "/";
-    ret += part;
-  }
-  if (ret === "" && path === "..") return "..";
-  if (ret === "" && (path === "" || path === ".")) return ".";
-  // The upstream condition is always true for an input ending in a separator.
-  if (path.endsWith("/")) ret += "/";
-  return ret;
-}
-
-vi.mock("@tauri-apps/api/path", () => ({
-  normalize: (path: string) => Promise.resolve(tauriNormalize(path)),
-  join: (...parts: string[]) => Promise.resolve(tauriNormalize(parts.join("/"))),
-  dirname: (path: string) => Promise.resolve(path.split("/").slice(0, -1).join("/") || "/"),
-}));
+vi.mock("@tauri-apps/api/path", async () => {
+  const port = await import("./__tests__/tauriNormalizePort");
+  return {
+    normalize: (path: string) => Promise.resolve(port.tauriNormalize(path)),
+    join: (...parts: string[]) => Promise.resolve(port.tauriJoin(...parts)),
+    dirname: (path: string) => Promise.resolve(port.tauriDirname(path)),
+  };
+});
 
 import { getDocumentBaseDir, getExportContainmentRoot, resolveRelativePath } from "./resourcePaths";
 
