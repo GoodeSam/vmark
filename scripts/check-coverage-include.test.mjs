@@ -11,7 +11,7 @@
 // run passing means the include fixed it rather than that the fixture is blind.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { spawnSync } from "node:child_process";
-import { globSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync, existsSync } from "node:fs";
+import { globSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,6 +21,16 @@ const VITEST_BIN = path.join(REPO, "node_modules", "vitest", "vitest.mjs");
 const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/;
 
 const appConfig = (await import("../vitest.config.ts")).default;
+
+/**
+ * Repo files matching `pattern` — files only. A glob also matches directories,
+ * and vitest's browser mode writes failure screenshots into a gitignored
+ * `__screenshots__/<test file name>/` directory, so a checkout that has run a
+ * failing WebKit test holds a directory named like a `.tsx` file.
+ */
+function repoFiles(pattern) {
+  return globSync(pattern, { cwd: REPO }).filter((file) => statSync(path.join(REPO, file)).isFile());
+}
 const coverage = appConfig.test.coverage;
 
 describe("app coverage config", () => {
@@ -29,8 +39,8 @@ describe("app coverage config", () => {
   });
 
   it("reaches every production source file under src/", () => {
-    const included = new Set(globSync(coverage.include, { cwd: REPO }));
-    const production = globSync("src/**/*.{ts,tsx}", { cwd: REPO }).filter(
+    const included = new Set(repoFiles(coverage.include));
+    const production = repoFiles("src/**/*.{ts,tsx}").filter(
       (file) => !TEST_FILE.test(file) && !file.endsWith(".d.ts"),
     );
     expect(production.length).toBeGreaterThan(1000);
@@ -44,10 +54,10 @@ describe("app coverage config", () => {
   // coverage cannot see them. A JavaScript MODULE imported for real would run
   // here and escape the floors unseen, so that shape fails this test.
   it("leaves only ?raw assets outside it — no JavaScript module escapes measurement", () => {
-    const scripts = globSync("src/**/*.{js,jsx,mjs,cjs,mts,cts}", { cwd: REPO }).filter(
+    const scripts = repoFiles("src/**/*.{js,jsx,mjs,cjs,mts,cts}").filter(
       (file) => !TEST_FILE.test(file),
     );
-    const sources = globSync("src/**/*.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", { cwd: REPO });
+    const sources = repoFiles("src/**/*.{ts,tsx,js,jsx,mjs,cjs,mts,cts}");
     const specifiers = sources.flatMap((file) =>
       [...readFileSync(path.join(REPO, file), "utf8").matchAll(
         /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)["']([^"']+)["']/g,
