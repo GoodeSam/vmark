@@ -137,3 +137,4 @@ mod progress_case;
 mod render_one;
 mod scenarios;
 mod verify;
+mod window_check;
