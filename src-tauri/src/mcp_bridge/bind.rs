@@ -6,7 +6,7 @@
 //! from this return value, the `mcp-port` file and the status, never from a
 //! setting. `server.test.rs` pins it (`the_bridge_binds_an_os_assigned_loopback_port`).
 //!
-//! Typed from the start (#164): a bind failure is an `io` `CommandError`, and
+//! Typed from the start: a bind failure is an `io` `CommandError`, and
 //! it travels to `mcp_bridge_start`'s caller as one — no prose is re-wrapped
 //! at the command boundary.
 //!

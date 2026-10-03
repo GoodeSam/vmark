@@ -1,4 +1,4 @@
-//! Pre-authentication policy for MCP bridge WebSocket connections (WI-9).
+//! Pre-authentication policy for MCP bridge WebSocket connections.
 //!
 //! Everything an *unauthenticated* peer can reach lives in this one module so
 //! the surface is auditable in a single read: which HTTP `Origin`s may
@@ -103,7 +103,7 @@ pub(super) const READ_BUFFER_BYTES: usize = 16 * 1024;
 /// left 32 pre-auth peers × 16 MiB ≥ 512 MiB of retainable memory bought with
 /// no credential at all. An auth frame is a few hundred bytes, so this
 /// application-layer cap costs honest clients nothing and disconnects the
-/// peer on the first over-cap frame (audit round 1, finding 5).
+/// peer on the first over-cap frame.
 pub(super) const MAX_PREAUTH_MESSAGE_BYTES: usize = 64 * 1024;
 // Compile-time bounds: strictly under both transport caps (at or above
 // either, this control would be dead code the transport already enforced),
@@ -201,7 +201,7 @@ pub(super) enum AuthOutcome {
 /// binary frames are rejected outright — the protocol is JSON text only, and
 /// an unauthenticated peer should not be able to stream bytes at us.
 ///
-/// Two credentials, two jobs (audit 20260728 §2.1):
+/// Two credentials, two jobs:
 ///
 /// * `token` — the shared bridge token from the port file. This alone decides
 ///   **access**; nothing else authenticates a peer, and that has not changed.

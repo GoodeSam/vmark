@@ -4,12 +4,12 @@
 //! creation.
 //!
 //! Every command is generic over the runtime (like `close_window` always
-//! was), so `commands.test.rs` drives the real commands on a mock app (#249):
+//! was), so `commands.test.rs` drives the real commands on a mock app:
 //! a refused path opens nothing and extends no scope, an accepted one opens a
 //! `doc-N` window whose URL carries the file, a batch carries every file.
 //!
 //! What validation JUDGED is the only value that flows on — never the raw
-//! string (#250). Tauri's `push_pattern` inserts the pattern as given AND its
+//! string. Tauri's `push_pattern` inserts the pattern as given AND its
 //! canonical form resolved AT GRANT TIME (`tauri/src/scope/fs.rs`,
 //! `canonicalize_parent`), while `is_allowed` canonicalizes each REQUEST before
 //! matching. Granting the raw name therefore put whatever the link pointed at
@@ -34,7 +34,7 @@ use super::document_windows::{
 use super::path_validation::{validate_openable_path, validate_workspace_root};
 
 /// Validate every frontend-supplied path, then extend the fs read scope with
-/// the CANONICAL target each validation judged (#250). Returns those targets,
+/// the CANONICAL target each validation judged. Returns those targets,
 /// and they are what the caller passes to the window — the raw strings go no
 /// further than this function.
 ///
@@ -56,7 +56,7 @@ fn validate_then_grant<R: tauri::Runtime>(
     }
     between();
     for canonical in &judged {
-        // Strict here, best-effort elsewhere (#481): this function exists to
+        // Strict here, best-effort elsewhere: this function exists to
         // make these files readable in a window that does not exist yet, so a
         // grant that did not take is a window that would be refused every
         // read — reported now, with nothing opened, rather than as `forbidden

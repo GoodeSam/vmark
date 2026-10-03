@@ -6,16 +6,16 @@
 //! Live wiring: `commands` + `slidev_commands` (registered in `lib.rs`) drive
 //! the lifecycle; `spawn` spawns the Node runtime with piped stdio → `log`;
 //! `drain` turns its pipes into log lines;
-//! `supervisor` watches it (`monitor_child` → `content-server:exited`,
-//! WI-1.2); every teardown goes through `cleanup` (#123), and a child it
-//! could not stop or reap stays owned by the manager (#122); `http` +
+//! `supervisor` watches it (`monitor_child` → `content-server:exited`);
+//! every teardown goes through `cleanup`, and a child it
+//! could not stop or reap stays owned by the manager; `http` +
 //! `slidev_commands` talk to the running server through the one
-//! authenticated loopback client in `client` (#129).
+//! authenticated loopback client in `client`.
 //! `runtime` probes what a start would find without starting anything
-//! (`content_server_runtime` + the one startup log line, WI-FL1.1 — settled at
-//! quit so a missing line is explained, #126), and
+//! (`content_server_runtime` + the one startup log line — settled at
+//! quit so a missing line is explained), and
 //! `bundle_manifest` holds the single constant that joins `spawn::resolve_cli`
-//! to `tauri.conf.json`'s `bundle.resources` (WI-FL0.8) — `None` today, because
+//! to `tauri.conf.json`'s `bundle.resources` — `None` today, because
 //! no release build ships the content server.
 
 pub mod bundle_manifest;
@@ -35,7 +35,7 @@ mod supervisor;
 pub use manager::{ChildState, ContentServerManager};
 
 /// Kill all managed content-server children and remove their port files,
-/// after settling the startup probe (#126) so the log explains a missing
+/// after settling the startup probe so the log explains a missing
 /// runtime line before it goes quiet.
 ///
 /// Must be called explicitly on the quit path (`quit::finalize_quit` and the

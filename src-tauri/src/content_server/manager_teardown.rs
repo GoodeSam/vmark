@@ -2,10 +2,10 @@
 //!
 //! Split from `manager.rs` at the file-size gate. Same rule as there: the
 //! registry lock is held only to decide; every kill + reap runs after it is
-//! released (#121).
+//! released.
 //!
 //! A child a teardown could not stop — or could not reap, short of the OS
-//! proving it gone — is NOT forgotten (#122). Its record is gone — the
+//! proving it gone — is NOT forgotten. Its record is gone — the
 //! registry must not claim a server it can no longer talk to — but the
 //! handle stays here as an orphan, and `shutdown_all` tries it once more at
 //! quit, so the log names what outlived the app. A retry cannot succeed
@@ -22,12 +22,12 @@ use super::ContentServerManager;
 use crate::content_server::cleanup::{CleanupOutcome, Detached};
 
 impl ContentServerManager {
-    /// Keep ownership of a child a teardown could not stop or reap (#122),
+    /// Keep ownership of a child a teardown could not stop or reap,
     /// for one more attempt at quit; the report is returned untouched for the
     /// caller to surface. An outcome with no orphan passes straight through.
     ///
-    /// The decision is made UNDER the lock that `shutdown_all` drains behind
-    /// (#294, #301): a teardown racing application exit used to push its
+    /// The decision is made UNDER the lock that `shutdown_all` drains behind:
+    /// a teardown racing application exit used to push its
     /// orphan into a vector quit had already emptied, and nothing ever looked
     /// at that handle again — the process outlived the app, which is the one
     /// outcome this whole path exists to prevent. Once quit has drained, the

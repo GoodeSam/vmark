@@ -81,7 +81,7 @@ pub(crate) fn handle_document_window_close_event(
         // Settings and other non-document windows close normally
     }
 
-    // The window is actually gone: tear down any embedded browser it owned (WI-S0.4).
+    // The window is actually gone: tear down any embedded browser it owned.
     //
     // BrowserSurface normally sends `browser_destroy` from a React unmount cleanup, but
     // that cleanup runs in the very webview being destroyed — the IPC races its own

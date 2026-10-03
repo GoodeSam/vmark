@@ -3,7 +3,7 @@
 //! Split from `manager.rs` at the file-size gate. Same rule as there: the
 //! registry lock is held only to decide; a record removed because its child
 //! exited, or because it stopped answering `try_wait`, is cleaned up after
-//! the lock is released (#121).
+//! the lock is released.
 //!
 //! @coordinates-with manager.rs — the registry these methods read
 //! @coordinates-with supervisor.rs — `monitor_child` is the caller

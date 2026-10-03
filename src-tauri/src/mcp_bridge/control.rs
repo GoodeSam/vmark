@@ -14,12 +14,12 @@
 //!
 //! The bridge's running flag, bound port and start generation live in
 //! `McpBridgeState::lifecycle()` (`mcp_bridge/lifecycle.rs`), reached from the
-//! managed state like everything else the bridge mutates (WI-20; audit
+//! managed state like everything else the bridge mutates (audit
 //! 20260907 #177). A start and a stop hold its serialization lock end to end,
-//! so a stop can no longer run between a start's bind and its bookkeeping
-//! (#179), and publishing the bound port cannot fail once the listener is up
-//! (#180). The status the frontend sees is a projection of one
-//! `BridgePhase` (#178): `running` is true only with a port, and the window
+//! so a stop can no longer run between a start's bind and its bookkeeping,
+//! and publishing the bound port cannot fail once the listener is up.
+//! The status the frontend sees is a projection of one
+//! `BridgePhase`: `running` is true only with a port, and the window
 //! between a start's claim and its bind is `starting`, not a "running"
 //! bridge with no port.
 
@@ -32,7 +32,7 @@ use tauri::{command, AppHandle, Emitter, Manager, State};
 /// `running` is true only while a listener is up, so it always comes with a
 /// port; `starting` names the window between a start's claim and its bind,
 /// which used to be reported as `running: true, port: None` — two things
-/// that cannot both hold (#178). The webview's interface reads `running` and
+/// that cannot both hold. The webview's interface reads `running` and
 /// `port` and may ignore `starting`; the pair it reads is now consistent.
 #[derive(Clone, Serialize, Deserialize)]
 pub struct McpServerStatus {
@@ -74,7 +74,7 @@ pub async fn mcp_bridge_start(app: AppHandle) -> Result<McpServerStatus, Command
     // reports the phase the first one reached — its port, never a number
     // nothing listens on.
     //
-    // The claim is an RAII guard (#392): every way out of this function that
+    // The claim is an RAII guard: every way out of this function that
     // is not `commit` releases it — the `?`, a panic in `start_bridge`, the
     // command future being dropped. The hand-rolled `abort_start()` covered
     // only the `Err` arm, so a panic left the phase at `Starting` for the life
@@ -95,7 +95,7 @@ pub async fn mcp_bridge_start(app: AppHandle) -> Result<McpServerStatus, Command
 
 /// Claim the start, or report the phase the bridge is ALREADY in.
 ///
-/// The branch, as a value, so it is pinned without a runtime (#396):
+/// The branch, as a value, so it is pinned without a runtime:
 /// `mcp_bridge_start` takes a concrete `AppHandle` — `mcp_bridge::start_bridge`
 /// does — so the command itself cannot be driven on a mock app, and this is
 /// the decision that happens before it. `Err` carries a phase, never an
@@ -105,12 +105,12 @@ fn claim_or_current(lifecycle: &BridgeLifecycle) -> Result<StartClaim<'_>, Bridg
 }
 
 /// What the accept loop runs when it ends: the SAME teardown a stop performs
-/// — but only while this loop is still the current generation (audit
-/// 20260612), so a stale loop dying late cannot clobber a newer start's state
+/// — but only while this loop is still the current generation,
+/// so a stale loop dying late cannot clobber a newer start's state
 /// or delete its port file.
 ///
 /// It used to clear the lifecycle and delete the port file and stop there
-/// (audit #369/#393). That is enough for the EXPECTED exit — a stop has
+/// (audit #393). That is enough for the EXPECTED exit — a stop has
 /// already drained everything, and this handler finds a stale generation and
 /// does nothing — but the unexpected one is why the loop reports its exit at
 /// all: persistent accept failures, or (since the exit hook became a drop
@@ -152,7 +152,7 @@ fn announce_started(app: &AppHandle, port: u16) {
 }
 
 /// Stop the MCP bridge WebSocket server. Infallible today — its only
-/// fallible step was the local-sidecar lock (#175) — but typed (#181) like
+/// fallible step was the local-sidecar lock — but typed like
 /// every migrated command, so a failure added later reaches the frontend as
 /// a `CommandError`, not as prose.
 #[command]
@@ -164,12 +164,12 @@ pub async fn mcp_bridge_stop<R: tauri::Runtime>(
     Ok(BridgePhase::Stopped.into())
 }
 
-/// The one teardown sequence (#182/#183), shared by the command and by the
+/// The one teardown sequence, shared by the command and by the
 /// app-exit `cleanup`. Generic over the runtime so `control.test.rs` can
-/// drive it on a mock app (#396), the same reason `stop_bridge` is. Behind the same serialization a start holds, so a
+/// drive it on a mock app, the same reason `stop_bridge` is. Behind the same serialization a start holds, so a
 /// start mid-bind finishes and is then stopped rather than leaking; then
 /// supersede any in-flight loop — its `on_exit` sees a stale generation and
-/// cannot clobber state a later start writes (audit 20260612) — mark the
+/// cannot clobber state a later start writes — mark the
 /// bridge stopped, and tear it down.
 async fn shutdown<R: tauri::Runtime>(app: &AppHandle<R>) {
     let bridge = app.state::<McpBridgeState>();
@@ -187,7 +187,7 @@ pub fn mcp_server_status(
     Ok(bridge.lifecycle().snapshot().into())
 }
 
-/// Get the number of connected MCP clients. Infallible, typed (#188).
+/// Get the number of connected MCP clients. Infallible, typed.
 #[command]
 pub async fn mcp_bridge_client_count(
     bridge: State<'_, McpBridgeState>,
@@ -196,7 +196,7 @@ pub async fn mcp_bridge_client_count(
 }
 
 /// Get list of connected MCP clients with their identities. Infallible,
-/// typed (#189).
+/// typed.
 #[command]
 pub async fn mcp_bridge_connected_clients(
     bridge: State<'_, McpBridgeState>,
