@@ -330,6 +330,12 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 - **WI-RA24.11 — CJK pairs never span a paragraph break.**
 - **WI-RA24.12 — workflow shell scripts pass actionlint.**
 
+#### Phase RA25 — maintainer decisions of 2026-10-03
+- **WI-RA25.1 — YouTube, Vimeo and Bilibili embeds work in release builds.**
+- **WI-RA25.2 — Save All and Quit saves every window.**
+
+Also decided 2026-10-03, no work item: multi-cursor has no cap; files that are not UTF-8 and carry no BOM keep opening (no refusal); Retry acts on the current selection; Close All closes pinned tabs behind a confirmation (WI-RA20.1); no-provider message (WI-RA20.7).
+
 ### Wave 4 (cross-cutting, strictly serial, after everything else merged)
 
 Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), RA12B, RA17F, RA17E, RA17G, then the DoD script and the final gate pass. Ownership for wave 3 and 4 lanes is in each lane brief.
