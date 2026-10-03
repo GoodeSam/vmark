@@ -51,12 +51,12 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-import { comments, isCommentedSource, lineAt } from "./sourceComments.mjs";
+import { commentRuns, isCommentedSource, lineAt } from "./sourceComments.mjs";
 
 const posix = path.posix;
 
 /** Production source trees, repo-relative. */
-const PRODUCTION_TREES = [
+export const PRODUCTION_TREES = [
   "src",
   "src-tauri/src",
   "server/mcp/src",
@@ -81,8 +81,8 @@ export function isTestPath(rel) {
   );
 }
 
-/** Production files under `root`, repo-relative and sorted. */
-export function productionFiles(root, trees = PRODUCTION_TREES) {
+/** Production files under `root` that `accept` (by default: a language `comments` reads), repo-relative and sorted. */
+export function productionFiles(root, trees = PRODUCTION_TREES, accept = isCommentedSource) {
   const out = [];
   const walk = (rel) => {
     for (const name of readdirSync(path.join(root, rel)).sort()) {
@@ -90,7 +90,7 @@ export function productionFiles(root, trees = PRODUCTION_TREES) {
       const child = posix.join(rel, name);
       const stat = statSync(path.join(root, child), { throwIfNoEntry: false });
       if (stat?.isDirectory()) walk(child);
-      else if (stat?.isFile() && isCommentedSource(child) && !isTestPath(child)) out.push(child);
+      else if (stat?.isFile() && accept(child) && !isTestPath(child)) out.push(child);
     }
   };
   for (const tree of trees) if (existsSync(path.join(root, tree))) walk(tree);
@@ -113,15 +113,15 @@ const AUDIT_RE = new RegExp(
   "gi",
 );
 
-/** Provenance tokens in one comment's text: `{ kind, token, index, date? }`. */
+/** Provenance tokens in one comment's text: `{ kind, token, index, end, date? }` — `end` closes the raw match. */
 export function tokensIn(text) {
   const out = [];
-  for (const m of text.matchAll(WI_RE)) out.push({ kind: "wi", token: m[0], index: m.index });
+  for (const m of text.matchAll(WI_RE)) out.push({ kind: "wi", token: m[0], index: m.index, end: m.index + m[0].length });
   for (const m of text.matchAll(AUDIT_RE)) {
     const token = m[0].trim().replace(/\s*\r?\n[ \t]*(?:\/\/[/!]?|\*)?\s*/g, " ");
     const date = new RegExp(DATE).exec(m.groups.tail)?.[0];
     const kind = !date && /^(?:[\s,/!*]|#\d+)*#\d+(?:[\s,/!*]|#\d+)*$/.test(m.groups.tail) ? "issue" : "audit";
-    out.push({ kind, token, index: m.index, date: date ? date.replace(/-/g, "").slice(0, 8) : null });
+    out.push({ kind, token, index: m.index, end: m.index + m[0].length, date: date ? date.replace(/-/g, "").slice(0, 8) : null });
   }
   return out.sort((a, b) => a.index - b.index);
 }
@@ -139,7 +139,7 @@ function readPlans(root) {
 }
 
 /** Dates (`YYYYMMDD`) that have a tracked audit record. */
-function auditDates(root) {
+export function auditDates(root) {
   const dates = new Set();
   for (const dir of AUDIT_DIRS) {
     if (!existsSync(path.join(root, dir))) continue;
@@ -182,7 +182,7 @@ function unresolvedReason(tok, ctx) {
 /** Every token in `source`'s comments, each with `line` and `reason` (null = resolves). */
 function scanSource(source, file, ctx) {
   const found = [];
-  const all = comments(source, file);
+  const all = commentRuns(source, file);
   const commentText = all.map((c) => c.text).join("\n");
   for (const c of all) {
     for (const tok of tokensIn(c.text)) {

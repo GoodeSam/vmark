@@ -14,15 +14,21 @@
  * Offline and deterministic: the verdict depends on the checkout alone (tracked
  * plans under `.claude/tdd-guardian/` and `.claude/adr/plans/`, audit records
  * under `.cc-suite/audits/` and `.claude/tdd-guardian/`), never on the network
- * or on how much history was cloned. Issue numbers are not checked. There is
- * no baseline: the tree carries zero findings.
+ * or on how much history was cloned. Issue numbers are not checked.
+ *
+ * Two citations a clone can never follow are refused outright, over the same
+ * trees plus `scripts/` (rules in `scripts/lib/commentCitations.mjs`): a
+ * calendar date, which says when instead of what was observed, and a path to a
+ * document under the gitignored `dev-docs/`. There is no baseline: the tree
+ * carries zero findings of any kind.
  *
  * Usage: node scripts/check-provenance-ids.mjs [--report] [--root=<dir>]
- *   exit 0  every WI and audit token in a production comment resolves
- *   exit 1  at least one does not (each is listed with its reason)
+ *   exit 0  every WI and audit token resolves, and no comment carries a date or a dev-docs document path
+ *   exit 1  at least one finding (each is listed with its reason)
  *   exit 64 bad invocation
  *
  * @coordinates-with scripts/lib/provenanceIds.mjs — the token grammar and resolution rules
+ * @coordinates-with scripts/lib/commentCitations.mjs — the date and dev-docs rules
  * @coordinates-with scripts/lib/sourceComments.mjs — reads every comment of a file
  * @coordinates-with scripts/check-provenance-ids.test.mjs — the self-test
  * @coordinates-with .claude/rules/22-comment-maintenance.md — the rule this enforces
@@ -31,6 +37,7 @@
 import { statSync } from "node:fs";
 import path from "node:path";
 
+import { scanCitations } from "./lib/commentCitations.mjs";
 import { isMainModule } from "./lib/isMainModule.mjs";
 import { scanTree } from "./lib/provenanceIds.mjs";
 
@@ -67,8 +74,10 @@ function main() {
     process.exit(64);
   }
   let tokens;
+  let citations;
   try {
     tokens = scanTree(opts.root);
+    citations = scanCitations(opts.root);
   } catch (error) {
     console.error(`❌ Cannot scan production comments under ${opts.root}: ${error.message}`);
     process.exit(1);
@@ -77,19 +86,34 @@ function main() {
   const findings = checked.filter((t) => t.reason);
   if (opts.report) {
     for (const t of tokens) console.log(`${t.reason ? "DANGLING" : "resolves"}  ${t.kind.padEnd(5)}  ${t.file}:${t.line}  ${t.token}${t.reason ? ` — ${t.reason}` : ""}`);
+    for (const c of citations) console.log(`REFUSED   ${c.kind.padEnd(8)}  ${c.file}:${c.line}  ${c.token}`);
   }
   const files = new Set(checked.map((t) => t.file)).size;
-  if (findings.length === 0) {
-    console.log(`✅ Provenance ids: ${checked.length} WI/audit token(s) in ${files} production file(s), all resolve.`);
+  if (findings.length === 0 && citations.length === 0) {
+    console.log(
+      `✅ Provenance ids: ${checked.length} WI/audit token(s) in ${files} production file(s), all resolve; ` +
+        "no production comment carries a calendar date or a dev-docs/ document path.",
+    );
     return;
   }
-  console.error(`\n❌ ${findings.length} provenance id(s) in production comments do not resolve:\n`);
-  for (const f of findings) console.error(`   ${f.file}:${f.line}  ${f.token}\n       ${f.reason}`);
-  console.error(
-    "\n   State the behavioural reason in the comment and drop the id (rule 22). A WI id\n" +
-      "   may stay only when a tracked plan defines it; an audit citation only with the\n" +
-      "   date of a tracked audit record. Plans in dev-docs/ do not count: a clone cannot read them.\n",
-  );
+  if (findings.length > 0) {
+    console.error(`\n❌ ${findings.length} provenance id(s) in production comments do not resolve:\n`);
+    for (const f of findings) console.error(`   ${f.file}:${f.line}  ${f.token}\n       ${f.reason}`);
+    console.error(
+      "\n   State the behavioural reason in the comment and drop the id (rule 22). A WI id\n" +
+        "   may stay only when a tracked plan defines it; an audit citation only with the\n" +
+        "   date of a tracked audit record. Plans in dev-docs/ do not count: a clone cannot read them.\n",
+    );
+  }
+  if (citations.length > 0) {
+    console.error(`\n❌ ${citations.length} calendar date(s) or dev-docs/ path(s) in production comments:\n`);
+    for (const c of citations) console.error(`   ${c.file}:${c.line}  ${c.token}\n       ${c.reason}`);
+    console.error(
+      "\n   Keep the fact, drop the when (rule 22): \"measured on <date>: X\" becomes \"measured: X\".\n" +
+        "   A date inside a tracked path, or of a tracked audit record cited as `audit <date> #N`,\n" +
+        "   is an identifier and stays. Cite a tracked file, not dev-docs/, which no clone has.\n",
+    );
+  }
   process.exit(1);
 }
 

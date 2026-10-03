@@ -1,6 +1,6 @@
 /**
  * Every comment in a source file, with its offsets — TypeScript/JavaScript,
- * Rust and CSS.
+ * Rust, CSS and (line-wise) shell.
  *
  * Purpose: give a probe whose subject is comment PROSE (the provenance-id gate)
  * the full set of comments in a file: headers, block comments, and the trailing
@@ -15,13 +15,17 @@
  *     string or a `/\/\*\/` regex cannot open a comment. Rust goes through
  *     `rustSpans`, the one Rust tokenizer in `scripts/lib/` (nested block
  *     comments, raw strings, char literals vs lifetimes). CSS has only quoted
- *     strings and block comments, lexed here.
+ *     strings and block comments, lexed here. Shell gets whole-line `#`
+ *     comments outside heredocs (see `shellComments`); `isCommentedSource`
+ *     leaves it out, so a caller opts in to that coarser reading.
  *   - Offsets are UTF-16 code units, the unit both TypeScript and JavaScript
  *     string indexing use, so `source.slice(start, end)` is the comment.
  *
  * @coordinates-with scripts/lib/rustSource.mjs — the Rust tokenizer this reuses
  * @coordinates-with scripts/lib/provenanceIds.mjs — reads provenance tokens out of these comments
+ * @coordinates-with scripts/lib/commentCitations.mjs — reads dates and dev-docs paths out of them, shell included
  * @coordinates-with scripts/check-provenance-ids.test.mjs — drives each language here
+ * @coordinates-with scripts/check-comment-citations.test.mjs — drives the shell reader
  * @module scripts/lib/sourceComments
  */
 import ts from "typescript";
@@ -96,16 +100,65 @@ function* cssComments(source) {
   }
 }
 
-/** True for the file kinds `comments` can read. */
+/**
+ * Shell: whole-line `#` comments — not the shebang, not the body of a heredoc.
+ * A trailing `cmd # why` is not read: `#` is also `$#`, `${#x}` and quoted
+ * text, and telling those apart needs a shell parser, so shell comment prose
+ * belongs on its own line.
+ */
+function* shellComments(source) {
+  let offset = 0;
+  let heredoc = null;
+  let first = true;
+  for (const raw of source.split("\n")) {
+    const start = offset;
+    offset += raw.length + 1;
+    const line = raw.replace(/\r$/, "");
+    const isFirst = first;
+    first = false;
+    if (heredoc !== null) {
+      if (line.replace(/^\t*/, "") === heredoc) heredoc = null;
+      continue;
+    }
+    const text = line.trimStart();
+    if (text.startsWith("#")) {
+      if (!(isFirst && text.startsWith("#!"))) yield { start: start + line.length - text.length, end: start + line.length };
+      continue;
+    }
+    const open = /(?<!<)<<(?!<)-?\s*(['"]?)([A-Za-z_]\w*)\1/.exec(line);
+    if (open) heredoc = open[2];
+  }
+}
+
+/** True for the file kinds `comments` reads with a full tokenizer (shell is read line-wise, and only on request). */
 export const isCommentedSource = (file) => /\.(tsx?|mts|cts|m?js|cjs|jsx|rs|css)$/.test(file);
 
 /** Every comment in `source`: `{ start, end, text }`, in source order. */
 export function comments(source, file) {
   let spans;
-  if (file.endsWith(".rs")) spans = [...rustSpans(source)].filter((s) => s.kind === "comment");
+  if (file.endsWith(".sh")) spans = [...shellComments(source)];
+  else if (file.endsWith(".rs")) spans = [...rustSpans(source)].filter((s) => s.kind === "comment");
   else if (file.endsWith(".css")) spans = [...cssComments(source)];
   else spans = [...slashComments(tsLiteralsBlanked(source, file))];
   return spans.map(({ start, end }) => ({ start, end, text: source.slice(start, end) }));
+}
+
+/**
+ * `comments` merged into RUNS: comments on consecutive lines with nothing but
+ * indentation between them become one `{ start, end, text }`, `text` the
+ * source slice that spans them (markers included). Prose that wraps across
+ * `//` lines is one sentence to a reader; read comment by comment, a citation
+ * that wraps (`… (audit` / `// <date> #84)`) is two fragments, neither of
+ * which is a citation.
+ */
+export function commentRuns(source, file) {
+  const runs = [];
+  for (const c of comments(source, file)) {
+    const last = runs.at(-1);
+    if (last && /^[ \t]*\r?\n[ \t]*$/.test(source.slice(last.end, c.start))) last.end = c.end;
+    else runs.push({ start: c.start, end: c.end });
+  }
+  return runs.map(({ start, end }) => ({ start, end, text: source.slice(start, end) }));
 }
 
 /** 1-based line number of `offset` in `source`. */
