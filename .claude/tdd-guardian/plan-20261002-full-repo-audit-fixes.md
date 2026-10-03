@@ -313,6 +313,9 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 - **WI-RA22.6 — Source search keeps its place after a replace.**
 - **WI-RA22.7 — the unsupported-encoding detail is translated.**
 
+#### Phase RA23 — multi-cursor typing cost
+- **WI-RA23.1 — typing, Backspace and Delete at N cursors cost at most ~linear in N (measured N^2.30, 273 ms per keystroke at 500 cursors).**
+
 ### Wave 4 (cross-cutting, strictly serial, after everything else merged)
 
 Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), RA12B, RA17F, RA17E, RA17G, then the DoD script and the final gate pass. Ownership for wave 3 and 4 lanes is in each lane brief.
