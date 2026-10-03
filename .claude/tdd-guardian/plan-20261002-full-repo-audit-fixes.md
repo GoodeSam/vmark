@@ -347,6 +347,9 @@ Also decided 2026-10-03, no work item: multi-cursor has no cap; files that are n
 - **WI-RA26.7 — every tier has a liveness bound; no per-test performance timeouts; no wall-clock import waits.**
 - **WI-RA26.8 — the max-file-size description is true.**
 
+#### Phase RA27 — media tab rollback on open
+- **WI-RA27.1 — opening a media file rolls back its tab when a later step throws.**
+
 ### Wave 4 (cross-cutting, strictly serial, after everything else merged)
 
 Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), RA12B, RA17F, RA17E, RA17G, then the DoD script and the final gate pass. Ownership for wave 3 and 4 lanes is in each lane brief.
