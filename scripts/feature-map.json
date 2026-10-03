@@ -939,9 +939,7 @@
       "name": "MCP server & bridge",
       "paths": [
         "src/services/mcpBridge",
-        "src-tauri/src/mcp_server.rs",
         "src-tauri/src/mcp_bridge",
-        "src-tauri/src/mcp_bridge_path_guard.rs",
         "server/mcp/src",
         "src/hooks/useMcpBridge.ts",
         "src/hooks/useMcpServer.ts",
@@ -954,8 +952,7 @@
         "src/hooks/useMcpAutoStart.test.ts",
         "src/hooks/__tests__/useMcpClients.test.ts",
         "src/hooks/__tests__/useMcpHealthCheck.test.tsx",
-        "src/utils/mcpBridgePathPolicy.test.ts",
-        "src-tauri/src/mcp_server_health.rs"
+        "src/utils/mcpBridgePathPolicy.test.ts"
       ],
       "flag": null,
       "flagDefault": null,

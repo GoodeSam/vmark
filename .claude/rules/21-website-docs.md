@@ -69,7 +69,7 @@ Update website docs when:
 |------------------|--------------|
 | `src/stores/settingsStore/shortcuts.ts` | `website/guide/shortcuts.md` |
 | `src-tauri/src/menu/` | `website/guide/shortcuts.md` |
-| `src-tauri/src/mcp_bridge/`, `mcp_config/`, `mcp_server.rs` | `website/guide/mcp-tools.md` |
+| `src-tauri/src/mcp_bridge/`, `mcp_config/` | `website/guide/mcp-tools.md` |
 | Popup components | `website/guide/popups.md` |
 | Multi-cursor hooks | `website/guide/multi-cursor.md` |
 | `src/components/Tabs/`, `src/services/tabs/` | `website/guide/tab-navigation.md` |

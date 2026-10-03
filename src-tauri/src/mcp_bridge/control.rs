@@ -28,12 +28,6 @@ use crate::mcp_bridge::{self, BridgeLifecycle, BridgePhase, McpBridgeState, Star
 use serde::{Deserialize, Serialize};
 use tauri::{command, AppHandle, Emitter, Manager, State};
 
-/// The sidecar `--health-check` probe, split out at the file-size limit: it
-/// spawns a child and drains its pipes, which shares nothing with the bridge
-/// lifecycle above beyond living behind the same Settings panel.
-#[path = "mcp_server_health.rs"]
-pub(crate) mod health;
-
 /// MCP server status for the frontend: a projection of [`BridgePhase`].
 /// `running` is true only while a listener is up, so it always comes with a
 /// port; `starting` names the window between a start's claim and its bind,
@@ -171,7 +165,7 @@ pub async fn mcp_bridge_stop<R: tauri::Runtime>(
 }
 
 /// The one teardown sequence (#182/#183), shared by the command and by the
-/// app-exit `cleanup`. Generic over the runtime so `mcp_server.test.rs` can
+/// app-exit `cleanup`. Generic over the runtime so `control.test.rs` can
 /// drive it on a mock app (#396), the same reason `stop_bridge` is. Behind the same serialization a start holds, so a
 /// start mid-bind finishes and is then stopped rather than leaking; then
 /// supersede any in-flight loop — its `on_exit` sees a stale generation and
@@ -219,5 +213,5 @@ pub fn cleanup<R: tauri::Runtime>(app: &AppHandle<R>) {
 }
 
 #[cfg(test)]
-#[path = "mcp_server.test.rs"]
+#[path = "control.test.rs"]
 mod tests;

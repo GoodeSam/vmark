@@ -11,7 +11,7 @@
 //! at the command boundary.
 //!
 //! @coordinates-with server.rs — `start_bridge` consumes the listener
-//! @coordinates-with ../mcp_server.rs — `mcp_bridge_start` reports the bound port
+//! @coordinates-with control.rs — `mcp_bridge_start` reports the bound port
 
 use crate::command_error::{CommandError, ErrorCode};
 use crate::localized_error;

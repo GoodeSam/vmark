@@ -166,7 +166,7 @@ describe("checkBridgePath", () => {
   // are bound to the Rust mcp_bridge_check_path params (file_path, allowed_roots)
   // by Tauri's camelCase→snake_case convention. Renaming either side silently
   // breaks the bridge at runtime — nothing else catches it. This pins the JS
-  // half; see src-tauri/src/mcp_bridge_path_guard.rs module header for the Rust
+  // half; see src-tauri/src/mcp_bridge/path_guard.rs module header for the Rust
   // half. The runtime camelCase↔snake_case binding itself is E2E-only.
   it("pins the mcp_bridge_check_path invoke contract (command + arg keys)", async () => {
     openDoc("/Users/me/docs/a.md");

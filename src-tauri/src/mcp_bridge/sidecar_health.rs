@@ -1,14 +1,14 @@
-//! The MCP sidecar's `--health-check` probe (split from `mcp_server.rs` at the
-//! file-size limit).
+//! The MCP sidecar's `--health-check` probe (split from the bridge lifecycle
+//! commands in `control.rs` at the file-size limit).
 //!
 //! It spawns the sidecar binary, drains its pipes and parses the one JSON line
 //! it prints. That shares nothing with the bridge lifecycle it used to sit
 //! beside — no listener, no generation, no managed state — beyond both being
 //! shown in Settings → Integrations.
 //!
-//! @coordinates-with mcp_server.rs — the bridge lifecycle it was split from
+//! @coordinates-with control.rs — the bridge lifecycle it was split from
 //! @coordinates-with src/hooks/useMcpHealthCheck.ts — the caller
-//! @module mcp_server::health
+//! @module mcp_bridge::sidecar_health
 
 use crate::command_error::CommandError;
 use serde::{Deserialize, Serialize};

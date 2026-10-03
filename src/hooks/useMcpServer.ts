@@ -21,7 +21,7 @@
  *     snapshot that raced an event is older than what the event wrote and is
  *     dropped (#382).
  *   - The frontend CANNOT order an event against a command response, and does
- *     not need to (#382, round 3). Two facts about `mcp_server.rs` carry it:
+ *     not need to (#382, round 3). Two facts about `mcp_bridge/control.rs` carry it:
  *     every bridge transition emits (`announce_started` on the last line of
  *     `mcp_bridge_start`; `mcp_bridge_stop` emits before its `Ok`), and both
  *     emits go out BEFORE their command returns, on one ordered channel. So
@@ -221,7 +221,7 @@ export function useMcpServer(): UseMcpServerResult {
   useEffect(() => {
     let disposed = false;
 
-    // mcp_server.rs emits the bound port with `mcp-server:started`; adopt it so
+    // mcp_bridge/control.rs emits the bound port with `mcp-server:started`; adopt it so
     // a bridge started elsewhere (auto-start, another window) reports its port
     // without waiting for the next refresh(). `mcp-server:stopped` carries
     // nothing, and a stopped bridge has no port (the interface says null).

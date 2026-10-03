@@ -1,7 +1,7 @@
 //! Tauri commands for the MCP bridge.
 //!
 //! Provides the `mcp_bridge_respond` command and query helpers
-//! used by the frontend and `mcp_server` module.
+//! used by the frontend and the `control` module.
 
 use super::managed::McpBridgeState;
 use super::types::{ConnectedClientInfo, McpResponse, McpResponsePayload};

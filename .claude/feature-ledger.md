@@ -70,7 +70,7 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 8) UX conformance is a handwritten assertion: `src/lib/browser/__tests__/uxPolicyLedger.ts` states per surface whether the native delegates conform, and its test checks inventory and reasons only — nothing executes `nav_delegate_macos.rs` / `dialogs_macos.rs` against it.
 - (area 9) The direct picker path sends document text unfenced (`fillTemplate` in `src/services/genieInvocation/extraction.ts`); `<<<DOCUMENT-DATA-…>>>` fencing applies to workflow genie steps only (`src-tauri/src/workflow/untrusted.rs`). `ai-genies.md` §"Untrusted content fencing" states this accurately; recorded as a boundary note, not a docs defect.
 - (area 10) `open_workspace` one-shot approvals are not bound to the authenticated bridge principal (Codex F-10 still owed): the handler uses the constant `ONE_SHOT_CLIENT_ID = "mcp-session"`, so any connected client can consume a grant another client asked for; multi-window targeting is also deferred (`src/services/mcpBridge/v2/workspaceOpenFolder.ts`).
-- (area 10) Accepted limitations kept visible: TOCTOU window between `mcp_bridge_check_path` and the fs call (`src-tauri/src/mcp_bridge_path_guard.rs`); a same-UID process can read the bridge token (`src-tauri/src/mcp_bridge/token_file.rs`); no server-side rate limit on the bridge (the token bucket is sidecar-side, `server/mcp/src/bridge/rateLimiter.ts`).
+- (area 10) Accepted limitations kept visible: TOCTOU window between `mcp_bridge_check_path` and the fs call (`src-tauri/src/mcp_bridge/path_guard.rs`); a same-UID process can read the bridge token (`src-tauri/src/mcp_bridge/token_file.rs`); no server-side rate limit on the bridge (the token bucket is sidecar-side, `server/mcp/src/bridge/rateLimiter.ts`).
 - (area 11) The Slidev export output path is unrestricted: `content_server_slidev_export` (`src-tauri/src/content_server/slidev_commands.rs`) forwards any `outputPath` the webview sends, and `POST /api/slidev/export` checks only that the extension matches the format (`server/content/src/server/createServer.ts`), so a webview caller can have a `.pdf`/`.png`/`.pptx` written to any path the user can write. The deck itself is contained to the workspace.
 - (area 12) Off Unix, `action/save-file` falls back to path-based calls with a stated check-then-write race (`src-tauri/src/workflow/commit.rs`, `src-tauri/src/workflow/ensure_dir.rs`); the dir-handle anchoring (`src-tauri/src/workflow/commit_dir.rs`, `src-tauri/src/workflow/dir_fd.rs`) is `#[cfg(unix)]` only, and no Windows test runs. Restore Files writes and deletes through the same anchoring and inherits the fallback (`src-tauri/src/workflow/snapshot_write.rs`): off Unix its deletion of run-created files is `symlink_metadata` + canonical-parent check, then `remove_file`, so a parent swapped for a junction in between is followed.
 - (area 14) `grant_asset_access` grants asset:// read of any file whose name and canonical target carry a media extension, anywhere on disk, to any webview JS caller; the fs scope is not extended, but which media file is not bounded (the module header states this) — `src-tauri/src/asset_access.rs`.
@@ -3113,7 +3113,7 @@ Genies are prompt files in `<appDataDir>/genies/`, listed by `src-tauri/src/geni
 
 Verified: `bf8b69ceb`
 
-Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven by `src-tauri/src/mcp_server.rs`) is a loopback WebSocket server inside VMark; the sidecar (`server/mcp/src/`, bin `vmark-mcp-server`) is spawned by each AI client and speaks MCP over stdio; the webview dispatcher (`src/services/mcpBridge/`) executes the requests Rust forwards. Coherence operations are answered in Rust and never reach the webview. The e2e harness under `e2e/` drives a debug build through a separate, debug-only automation bridge on `127.0.0.1:9323`.
+Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven by `src-tauri/src/mcp_bridge/control.rs`) is a loopback WebSocket server inside VMark; the sidecar (`server/mcp/src/`, bin `vmark-mcp-server`) is spawned by each AI client and speaks MCP over stdio; the webview dispatcher (`src/services/mcpBridge/`) executes the requests Rust forwards. Coherence operations are answered in Rust and never reach the webview. The e2e harness under `e2e/` drives a debug build through a separate, debug-only automation bridge on `127.0.0.1:9323`.
 
 ### MCP bridge WebSocket server (Rust)
 - id: mcp-bridge-server
@@ -3123,11 +3123,11 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - status: shipped-on
 - gate: `advanced.mcpServer.autoStart = true` (auto-start on launch); Settings toggle starts/stops on demand
 - surfaces: Settings → Integrations toggles (Enable MCP Server, Start on launch); status bar satellite indicator; automatic on launch
-- code: `src-tauri/src/mcp_server.rs`, `src-tauri/src/mcp_bridge/mod.rs`, `src-tauri/src/mcp_bridge/start.rs`, `src-tauri/src/mcp_bridge/lifecycle.rs`, `src-tauri/src/mcp_bridge/accept_loop.rs`, `src-tauri/src/mcp_bridge/server.rs`, `src-tauri/src/mcp_bridge/state.rs`, `src-tauri/src/mcp_bridge/managed.rs`, `src-tauri/src/mcp_bridge/wake_retry.rs`, `src/hooks/useMcpServer.ts`, `src/hooks/useMcpAutoStart.ts`
+- code: `src-tauri/src/mcp_bridge/control.rs`, `src-tauri/src/mcp_bridge/mod.rs`, `src-tauri/src/mcp_bridge/start.rs`, `src-tauri/src/mcp_bridge/lifecycle.rs`, `src-tauri/src/mcp_bridge/accept_loop.rs`, `src-tauri/src/mcp_bridge/server.rs`, `src-tauri/src/mcp_bridge/state.rs`, `src-tauri/src/mcp_bridge/managed.rs`, `src-tauri/src/mcp_bridge/wake_retry.rs`, `src/hooks/useMcpServer.ts`, `src/hooks/useMcpAutoStart.ts`
 - rust: `mcp_bridge_start`, `mcp_bridge_stop`, `mcp_server_status`, `mcp_bridge_client_count`, `mcp_bridge_connected_clients`, `mcp_bridge_respond`, `mcp_bridge_heartbeat`, `mcp_bridge_set_window_workspace`
 - docs: `website/guide/mcp-setup.md` §"Quick Setup", §"How It Works", §"Checking MCP Status"
-- tests: `src-tauri/src/mcp_server.test.rs`, `src-tauri/src/mcp_bridge/start.test.rs`, `src-tauri/src/mcp_bridge/lifecycle.test.rs`, `src-tauri/src/mcp_bridge/accept_loop.test.rs`, `src-tauri/src/mcp_bridge/server.test.rs`, `src-tauri/src/mcp_bridge/state.test.rs`, `src-tauri/src/mcp_bridge/state_lifecycle.test.rs`, `src-tauri/src/mcp_bridge/managed.test.rs`, `src/hooks/useMcpServer.test.ts`, `src/hooks/useMcpAutoStart.test.ts`
-- notes: There is no local sidecar and no port setting any more; `mcp_server.rs` states both. A destroyed window's workspace registration is now forgotten by the Rust `Destroyed` handler (`src-tauri/src/app_setup.rs`), not only by the frontend.
+- tests: `src-tauri/src/mcp_bridge/control.test.rs`, `src-tauri/src/mcp_bridge/start.test.rs`, `src-tauri/src/mcp_bridge/lifecycle.test.rs`, `src-tauri/src/mcp_bridge/accept_loop.test.rs`, `src-tauri/src/mcp_bridge/server.test.rs`, `src-tauri/src/mcp_bridge/state.test.rs`, `src-tauri/src/mcp_bridge/state_lifecycle.test.rs`, `src-tauri/src/mcp_bridge/managed.test.rs`, `src/hooks/useMcpServer.test.ts`, `src/hooks/useMcpAutoStart.test.ts`
+- notes: There is no local sidecar and no port setting any more; `mcp_bridge/control.rs` states both. A destroyed window's workspace registration is now forgotten by the Rust `Destroyed` handler (`src-tauri/src/app_setup.rs`), not only by the frontend.
 
 ### Bridge port file and shared auth token
 - id: mcp-port-file-auth
@@ -3193,10 +3193,10 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - status: shipped-on
 - gate: always on
 - surfaces: automatic (`INVALID_PATH` envelope on refusal)
-- code: `src/services/mcpBridge/bridgePathGuard.ts`, `src/utils/mcpBridgePathPolicy.ts`, `src-tauri/src/mcp_bridge_path_guard.rs`
+- code: `src/services/mcpBridge/bridgePathGuard.ts`, `src/utils/mcpBridgePathPolicy.ts`, `src-tauri/src/mcp_bridge/path_guard.rs`
 - rust: `mcp_bridge_check_path`
 - docs: `website/guide/mcp-tools.md` §"Errors" (`INVALID_PATH`); `website/guide/mcp-setup.md` §"Security Notes"; `website/guide/privacy.md`
-- tests: `src/services/mcpBridge/bridgePathGuard.test.ts`, `src/utils/mcpBridgePathPolicy.test.ts`, `src/services/mcpBridge/v2/__tests__/fsGuardInvariant.test.ts`, inline `#[test]`s in `src-tauri/src/mcp_bridge_path_guard.rs`
+- tests: `src/services/mcpBridge/bridgePathGuard.test.ts`, `src/utils/mcpBridgePathPolicy.test.ts`, `src/services/mcpBridge/v2/__tests__/fsGuardInvariant.test.ts`, inline `#[test]`s in `src-tauri/src/mcp_bridge/path_guard.rs`
 - notes: Known limitation (TOCTOU), documented in the Rust header — the check and the later `readTextFile`/`writeTextFile` are two calls; accepted for a local single-user editor. The `file_path`/`allowed_roots` ↔ `filePath`/`allowedRoots` binding is pinned only by the JS test. `open_workspace` deliberately bypasses this guard (it expands the boundary): it validates with `validate_workspace_dir` and asks Rust for access with `allow_workspace_access` instead.
 
 ### Delivery reliability: dedup, heartbeat, window routing
@@ -3222,7 +3222,7 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - gate: always on once an AI client spawns it
 - surfaces: CLI flags; MCP stdio; Settings → Integrations "Test Connection" / "Check sidecar"
 - code: `server/mcp/src/cli.ts`, `server/mcp/src/index.ts`, `server/mcp/src/server.ts`, `server/mcp/src/utils/healthCheck.ts`, `server/mcp/src/utils/shutdown.ts`, `server/mcp/scripts/build-sidecar.js`, `server/mcp/package.json`
-- rust: `mcp_sidecar_health` (`src-tauri/src/mcp_server_health.rs`, runs `--health-check` on the bundled sidecar); bundled as `externalBin` `binaries/vmark-mcp-server`
+- rust: `mcp_sidecar_health` (`src-tauri/src/mcp_bridge/sidecar_health.rs`, runs `--health-check` on the bundled sidecar); bundled as `externalBin` `binaries/vmark-mcp-server`
 - docs: `website/guide/mcp-setup.md` §"CLI flags (advanced)"
 - tests: `server/mcp/__tests__/unit/cli.test.ts`, `server/mcp/__tests__/unit/utils/healthCheck.test.ts`, `server/mcp/__tests__/unit/server.test.ts`, `server/mcp/__tests__/unit/utils/shutdown.test.ts`, `server/mcp/__tests__/integration/sdkBoundary.test.ts`, `server/mcp/__tests__/integration/sdkRoundTrip.test.ts`, `server/mcp/__tests__/buildSidecarCore.test.ts`
 - notes: Package `@vmark/mcp-server` 0.9.84; `VERSION` in `cli.ts` is a hand-maintained literal moved by the five-file bump. Built for `aarch64-apple-darwin`, `x86_64-apple-darwin`, `x86_64-pc-windows-msvc`, `x86_64-unknown-linux-gnu`. Tool counts in `index.ts` are derived from `TOOL_REGISTRY`, not hand-written.
@@ -3403,7 +3403,7 @@ Three processes meet here. The Rust bridge (`src-tauri/src/mcp_bridge/`, driven 
 - status: shipped-on
 - gate: always on
 - surfaces: Settings → Integrations; status bar
-- code: `src/hooks/useMcpHealthCheck.ts`, `src/hooks/useMcpClients.ts`, `src/pages/settings/IntegrationsSettings.tsx`, `src/components/StatusBar/StatusBarRight.tsx`, `src/components/StatusBar/StatusBar.tsx`, `src-tauri/src/mcp_server_health.rs`
+- code: `src/hooks/useMcpHealthCheck.ts`, `src/hooks/useMcpClients.ts`, `src/pages/settings/IntegrationsSettings.tsx`, `src/components/StatusBar/StatusBarRight.tsx`, `src/components/StatusBar/StatusBar.tsx`, `src-tauri/src/mcp_bridge/sidecar_health.rs`
 - rust: `mcp_sidecar_health`, `mcp_bridge_client_count`, `mcp_bridge_connected_clients`
 - docs: `website/guide/mcp-setup.md` §"Checking MCP Status"
 - tests: `src/hooks/__tests__/useMcpHealthCheck.test.tsx`, `src/hooks/__tests__/useMcpClients.test.ts`, `src/components/StatusBar/StatusBar.a11y.test.tsx`, `src/components/StatusBar/StatusBarRight.test.tsx`; no test renders `IntegrationsSettings.tsx`
