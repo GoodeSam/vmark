@@ -316,6 +316,20 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 #### Phase RA23 — multi-cursor typing cost
 - **WI-RA23.1 — typing, Backspace and Delete at N cursors cost at most ~linear in N (measured N^2.30, 273 ms per keystroke at 500 cursors).**
 
+#### Phase RA24 — the remaining follow-ups
+- **WI-RA24.1 — Source popup links open through the host opener.**
+- **WI-RA24.2 — Source search keeps its place after edits; counts match highlights.**
+- **WI-RA24.3 — PDF margin fields accept a transient empty value.**
+- **WI-RA24.4 — no English literals in export naming and tab-drag hints.**
+- **WI-RA24.5 — remaining stale docs and comments.**
+- **WI-RA24.6 — stale dependency known-violation removed.**
+- **WI-RA24.7 — property-test timeouts use the liveness bound; no wall-clock import waits.**
+- **WI-RA24.8 — gate gaps: hooks under file-size, file locks in lock policy, sleeps in fake-timer files, alias-mocked app modules.**
+- **WI-RA24.9 — every bundle budget near its measured size; lazy TOML parser.**
+- **WI-RA24.10 — word movement and fence scanning are linear.**
+- **WI-RA24.11 — CJK pairs never span a paragraph break.**
+- **WI-RA24.12 — workflow shell scripts pass actionlint.**
+
 ### Wave 4 (cross-cutting, strictly serial, after everything else merged)
 
 Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), RA12B, RA17F, RA17E, RA17G, then the DoD script and the final gate pass. Ownership for wave 3 and 4 lanes is in each lane brief.
