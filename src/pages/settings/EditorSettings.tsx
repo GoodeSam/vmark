@@ -145,7 +145,7 @@ export function EditorSettings() {
             onChange={(v) => updateGeneralSetting("tabSize", Number(v))}
           />
         </SettingRow>
-        {/* fix(#946) — open existing files in a new tab */}
+        {/* Open existing files in a new tab */}
         <SettingRow
           label={t("editor.openInNewTab.label")}
           description={t("editor.openInNewTab.description")}

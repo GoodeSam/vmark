@@ -4,7 +4,7 @@ import { sharedPrimitives, lightShadows, subtleLight, hoverLight } from "../toke
 /**
  * Sepia theme — warm beige background.
  *
- * WI-UI1.2: semantic/alert/media are AUTHORED per theme against sepia's own
+ * Semantic/alert/media are AUTHORED per theme against sepia's own
  * three backgrounds and the check-theme-contrast floors (the shared light
  * fragments were tuned for #ffffff).
  */

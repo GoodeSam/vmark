@@ -110,7 +110,7 @@ function DropOverlay() {
   const { t } = useTranslation();
   const isDragging = useUIStore((state) => state.isDraggingFiles);
   // The native browser view paints over all React DOM in its rect, so freeze every
-  // mounted browser tab while this overlay is up (WI-SOC.1).
+  // mounted browser tab while this overlay is up.
   useBrowserOccluder(isDragging, "file-drop");
   if (!isDragging) return null;
 

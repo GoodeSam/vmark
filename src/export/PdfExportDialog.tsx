@@ -217,7 +217,7 @@ export function PdfExportContent({
         setExportStage("");
       }
     } catch (error) {
-      // Two-line toast (WI-UI4.4): Paged.js/WKWebView details as the detail.
+      // Two-line toast: Paged.js/WKWebView details as the detail.
       // Raw error — errorDetail owns the normalization (commandErrorMessage).
       toast.errorDetail(tDialog("toast.pdfExportFailed"), error);
       setExporting(false);

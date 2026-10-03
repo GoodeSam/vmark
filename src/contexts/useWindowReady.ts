@@ -106,7 +106,7 @@ export function useWindowReady(): { isReady: boolean; markReady: (w: ReadyTarget
       // SYNCHRONOUS throw escapes `Promise.resolve(...)` entirely, and it
       // used to take the attribute publish below down with it — leaving a
       // fully-listening window advertising itself as never ready, which is a
-      // permanent hang for anything gating on it (audit finding #11).
+      // permanent hang for anything gating on it.
       void Promise.resolve(w.emit("ready", w.label)).catch((e) =>
         windowContextError("ready emit failed:", e));
     } catch (e) {
@@ -124,7 +124,7 @@ export function useWindowReady(): { isReady: boolean; markReady: (w: ReadyTarget
     // Idempotent by construction. The timer version overwrote `timerRef` and
     // left the previous timer ORPHANED — still scheduled, still firing,
     // emitting `ready` a second time into a webview cleanup believed it had
-    // disarmed (audit finding #12). `markReady` is reached from five call
+    // disarmed. `markReady` is reached from five call
     // sites including two error paths, so a second call is a real shape; the
     // latch below makes the whole announcement run at most once.
     if (announcingRef.current) return;

@@ -3,7 +3,7 @@
  *
  * One-click hand-off of VMark's MCP server to CC-Switch via a
  * `ccswitch://v1/import` deep link. Extracted from McpConfigInstaller so
- * that baselined file stays under its size limit (audit 20260612 gate).
+ * that baselined file stays under its size limit.
  */
 
 import { openUrl } from "@tauri-apps/plugin-opener";

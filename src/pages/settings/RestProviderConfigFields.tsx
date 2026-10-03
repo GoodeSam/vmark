@@ -18,7 +18,7 @@ import { ModelComboBox } from "./ModelComboBox";
 import { FieldInput } from "./components";
 import { clipboardWarn } from "@/utils/debug";
 
-// WI-UI2.4: the canonical icon square (icon-button-shared.css).
+// The canonical icon square (icon-button-shared.css).
 const iconBtnClass = "vm-icon-btn vm-icon-btn--sm";
 
 interface RestProviderConfigFieldsProps {
