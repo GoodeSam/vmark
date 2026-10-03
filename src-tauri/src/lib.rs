@@ -51,7 +51,6 @@ mod mcp_bridge_path_guard;
 mod mcp_config;
 mod mcp_server;
 mod menu;
-mod menu_events;
 mod pandoc;
 mod peer_text;
 mod pty;
@@ -191,7 +190,7 @@ pub fn run() {
         })
         .invoke_handler(crate::all_commands!())
         .setup(app_setup::setup_app)
-        .on_menu_event(menu_events::handle_menu_event)
+        .on_menu_event(menu::events::handle_menu_event)
         // CRITICAL: Only intercept close for document windows (main, doc-*)
         // Non-document windows (settings) should close normally
         .on_window_event(window_manager::handle_document_window_close_event);

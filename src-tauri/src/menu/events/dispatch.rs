@@ -1,12 +1,11 @@
 //! Menu event dispatch: id classification and per-action handlers.
 //!
 //! Purpose: Routes a clicked menu id to its handler. Split out of
-//! `menu_events.rs` (which keeps the readiness/queueing machinery); included
-//! via `#[path]` as a child module so it can use the parent's private
-//! emit/queue helpers.
+//! `menu/events.rs` (which keeps the readiness/queueing machinery); a child
+//! module of it so it can use the parent's private emit/queue helpers.
 //!
 //! Pipeline: `handle_menu_event` → `classify_menu_id` (pure) → small handler
-//! → emit/queue helper in `menu_events.rs`.
+//! → emit/queue helper in `menu/events.rs`.
 //!
 //! Key decisions:
 //!   - `classify_menu_id` and `decide_document_routing` are pure so the
@@ -283,5 +282,5 @@ fn emit_generic(app: &AppHandle, id: &str) {
 }
 
 #[cfg(test)]
-#[path = "menu_events_dispatch.test.rs"]
+#[path = "dispatch.test.rs"]
 mod tests;

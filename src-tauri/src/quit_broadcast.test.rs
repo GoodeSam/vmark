@@ -109,7 +109,7 @@ mod on_a_mock_app {
 
     use super::super::{request_quit_of, QUIT_REQUESTED_EVENT};
     use super::{cancel_quit, quit_state};
-    use crate::menu_events;
+    use crate::menu;
 
     fn mock_app() -> tauri::App<MockRuntime> {
         tauri::test::mock_builder()
@@ -153,12 +153,12 @@ mod on_a_mock_app {
         let app = mock_app();
         let requests = quit_requests(&app);
         let windows = [document_window(&app, "doc-70301")];
-        menu_events::mark_window_ready(app.handle(), "doc-70301");
+        menu::events::mark_window_ready(app.handle(), "doc-70301");
 
         request_quit_of(&windows).expect("emit");
 
         assert_eq!(received(&requests), vec!["\"doc-70301\""]);
-        menu_events::clear_window_ready("doc-70301");
+        menu::events::clear_window_ready("doc-70301");
     }
 
     #[test]
@@ -174,9 +174,9 @@ mod on_a_mock_app {
             "a request emitted before the frontend listens is a request lost"
         );
 
-        menu_events::mark_window_ready(app.handle(), "doc-70302");
+        menu::events::mark_window_ready(app.handle(), "doc-70302");
         assert_eq!(received(&requests), vec!["\"doc-70302\""]);
-        menu_events::clear_window_ready("doc-70302");
+        menu::events::clear_window_ready("doc-70302");
     }
 
     #[test]
@@ -188,14 +188,14 @@ mod on_a_mock_app {
 
         request_quit_of(&windows).expect("first ask");
         request_quit_of(&windows).expect("the retry");
-        menu_events::mark_window_ready(app.handle(), "doc-70303");
+        menu::events::mark_window_ready(app.handle(), "doc-70303");
 
         assert_eq!(
             received(&requests).len(),
             1,
             "one request, however often asked"
         );
-        menu_events::clear_window_ready("doc-70303");
+        menu::events::clear_window_ready("doc-70303");
     }
 
     #[test]
@@ -208,13 +208,13 @@ mod on_a_mock_app {
 
         // The user cancelled a save prompt in another window.
         cancel_quit();
-        menu_events::mark_window_ready(app.handle(), "doc-70304");
+        menu::events::mark_window_ready(app.handle(), "doc-70304");
 
         assert!(
             received(&requests).is_empty(),
             "a window that finishes starting after the quit was called off must not be closed by it"
         );
-        menu_events::clear_window_ready("doc-70304");
+        menu::events::clear_window_ready("doc-70304");
     }
 
     #[test]
@@ -226,14 +226,14 @@ mod on_a_mock_app {
             document_window(&app, "doc-70305"),
             document_window(&app, "doc-70306"),
         ];
-        menu_events::mark_window_ready(app.handle(), "doc-70305");
+        menu::events::mark_window_ready(app.handle(), "doc-70305");
 
         request_quit_of(&windows).expect("emit");
         assert_eq!(received(&requests), vec!["\"doc-70305\""]);
 
-        menu_events::mark_window_ready(app.handle(), "doc-70306");
+        menu::events::mark_window_ready(app.handle(), "doc-70306");
         assert_eq!(received(&requests), vec!["\"doc-70305\"", "\"doc-70306\""]);
-        menu_events::clear_window_ready("doc-70305");
-        menu_events::clear_window_ready("doc-70306");
+        menu::events::clear_window_ready("doc-70305");
+        menu::events::clear_window_ready("doc-70306");
     }
 }

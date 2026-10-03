@@ -1,4 +1,4 @@
-//! Tests for `menu_events_dispatch.rs` — pure decision logic of the menu
+//! Tests for `menu/events/dispatch.rs` — pure decision logic of the menu
 //! event dispatcher: id classification, document-window routing decisions,
 //! and event-payload construction. Behavior that needs a live `AppHandle`
 //! (actual emits, window creation) is exercised via the app, not here.

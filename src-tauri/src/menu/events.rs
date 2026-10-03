@@ -4,18 +4,18 @@
 //! listener readiness to seed Finder hot-open target selection.
 //!
 //! Pipeline: User clicks menu item → `handle_menu_event` (in
-//! `menu_events_dispatch.rs`) → emits `menu:{id}` to focused window.
+//! `events/dispatch.rs`) → emits `menu:{id}` to focused window.
 //!
 //! This file owns the window-readiness/queueing machinery and the event
 //! constructors; id classification and per-action handlers live in the
 //! `dispatch` child module, window lookups in the `windows` child module
-//! (both included via `#[path]` for the file-size ratchet).
+//! (both under `menu/events/`, split out for the file-size ratchet).
 //!
 //! Key decisions:
 //!   - Window readiness tracking prevents events from being lost during cold start.
 //!     Events are queued until the frontend signals "ready", then flushed atomically.
 //!   - Quit and Settings are handled entirely in Rust (no frontend round-trip needed).
-//!   - Recent files/workspaces/genies resolve paths from snapshot Mutexes in `menu.rs`
+//!   - Recent files/workspaces/genies resolve paths from snapshot Mutexes in `menu/mod.rs`
 //!     to avoid TOCTOU races if the store changes between menu build and click.
 //!   - "close" events include the target window label so the frontend can filter correctly.
 //!   - The readiness queue is shared with quit (`deliver_when_ready`): a window
@@ -30,9 +30,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
 
-#[path = "menu_events_dispatch.rs"]
 mod dispatch;
-#[path = "menu_events_windows.rs"]
 mod windows;
 
 pub use dispatch::handle_menu_event;
@@ -271,5 +269,5 @@ fn create_window_and_queue(app: &AppHandle, event: PendingMenuEvent) {
 }
 
 #[cfg(test)]
-#[path = "menu_events.test.rs"]
+#[path = "events.test.rs"]
 mod tests;

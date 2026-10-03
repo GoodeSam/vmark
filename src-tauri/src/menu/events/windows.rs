@@ -2,7 +2,7 @@
 //!
 //! Purpose: shared queries over `app.webview_windows()` used by
 //! `handle_menu_event` to pick the emit target. Extracted from
-//! `menu_events.rs` verbatim (file-size ratchet); included via `#[path]`.
+//! `menu/events.rs` verbatim (file-size ratchet); a child module of it.
 //!
 //! All "document window" checks delegate to `quit::is_document_window_label`
 //! (`main` or `doc-*`) so the dispatcher agrees with the rest of the backend
@@ -53,5 +53,5 @@ pub(super) fn get_any_document_window(app: &AppHandle) -> Option<tauri::WebviewW
 }
 
 #[cfg(test)]
-#[path = "menu_events_windows.test.rs"]
+#[path = "windows.test.rs"]
 mod tests;

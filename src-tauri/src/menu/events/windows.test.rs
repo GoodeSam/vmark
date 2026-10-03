@@ -1,4 +1,4 @@
-//! Tests for `menu_events_windows.rs` — document-window predicate.
+//! Tests for `menu/events/windows.rs` — document-window predicate.
 //!
 //! The dispatcher's "does a document window exist?" check must use the same
 //! definition of "document window" as the rest of the backend

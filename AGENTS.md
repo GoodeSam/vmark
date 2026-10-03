@@ -83,7 +83,7 @@ Each script's header explains its rules and exemption markers.
 - Rust → webview: `emit()` → `listen()`. Webview → Rust: `invoke()`.
 - Three-tier source layout (ADR-013; decision records live in `.claude/adr/`, and `pnpm lint:adr-refs` resolves every cited id): `src/utils/` is leaf-pure (no stores, no `@tauri-apps/*`); `src/services/` (domain folders) may use utils, stores, Tauri; `src/hooks/` are React adapters over services.
 - `src/shell/AppShell.tsx` is pure layout. Surfaces are mounted by editing App.tsx's `<AppShell>`; `pnpm lint:shell-slots` holds the identity list.
-- Menus: `menu_events.rs` emits `menu:{id}` generically; `menu/localized.rs` `create_localized_menu` is the single builder (labels in `src-tauri/locales/en.yml`). Every menu item needs a real SF Symbol in `macos_menu.rs` `MENU_ICONS`.
+- Menus: `menu/events.rs` emits `menu:{id}` generically; `menu/localized.rs` `create_localized_menu` is the single builder (labels in `src-tauri/locales/en.yml`). Every menu item needs a real SF Symbol in `macos_menu.rs` `MENU_ICONS`.
 - Shortcuts: see `.claude/rules/41-keyboard-shortcuts.md`.
 - Settings store uses plain `.subscribe()` with manual prev-value tracking, not `subscribeWithSelector`.
 - Tauri plugin: add to `Cargo.toml`, register `.plugin()` in `src-tauri/src/app_plugins.rs`, add permission to `src-tauri/capabilities/default.json`.

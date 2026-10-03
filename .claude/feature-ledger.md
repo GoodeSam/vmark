@@ -159,7 +159,7 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 8) Every browser e2e journey declares `platforms: ["darwin"]` (e.g. `e2e/journeys/22-browser-tab-lifecycle.mjs`), while the only CI journey runner, `.github/workflows/tier0-e2e.yml`, is `ubuntu-latest` — no browser journey runs in CI, and 16 of the 25 `src-tauri/src/browser/*_macos.rs` modules (surface, nav registry, eval, screenshot, user-input monitor, store) carry no unit test.
 - (area 8) `debug_submenu_item_ids` (`src-tauri/src/menu/conditional_items.rs`) has no caller anywhere in the repository, yet `src-tauri/src/menu/conditional_items.test.rs` says the hide/show tree manipulation "is verified from outside the process" through it — nothing verifies the live hide/restore of `new-browser-tab`.
 - (area 8) `src/services/browser/oneShotMints.ts` and `src/stores/tabStoreBrowserWorkspace.ts` have no sibling test.
-- (area 9) Genie menu invocation from a non-main window is untested and likely wrong: `handle_genie_item` emits `menu:invoke-genie` via `window.emit` (all targets) with the focused label in the payload (`src-tauri/src/menu_events_dispatch.rs`), but the only listener runs in the main window and ignores the label (`src/hooks/useGenieShortcuts.ts`), so the main window's editor handles it. Inferred from code, not reproduced.
+- (area 9) Genie menu invocation from a non-main window is untested and likely wrong: `handle_genie_item` emits `menu:invoke-genie` via `window.emit` (all targets) with the focused label in the payload (`src-tauri/src/menu/events/dispatch.rs`), but the only listener runs in the main window and ignores the label (`src/hooks/useGenieShortcuts.ts`), so the main window's editor handles it. Inferred from code, not reproduced.
 - (area 9) Request construction for `test_api_key`, `list_models` and `validate_model` is untested; `src-tauri/src/ai_provider/rest_api.rs` tests cover only `require_endpoint`. `src/services/genieInvocation/applyGenieResult.ts` has no dedicated test (covered via `streamRunner.test.ts`). `src-tauri/src/secure_store.test.rs` uses the keyring mock only.
 - (area 10) No test renders `src/pages/settings/IntegrationsSettings.tsx` (MCP toggles, listening address, 5 s client poll, health-check button, auto-approve toggle).
 - (area 10) The weekly Tier-0 workflow runs nine Linux journeys only; the macOS browser journeys, journey 38 (HTML export to disk), journey 39 (Knowledge Base runtime / Developer Mode gate) and the smoke harness run nowhere in CI (`.github/workflows/tier0-e2e.yml`).
@@ -1735,7 +1735,7 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - status: shipped-on
 - gate: always on
 - surfaces: menu `new-window` (shortcut `newWindow` = Mod-Shift-N); File Explorer / Quick Open / Recent Files opens; Finder / CLI / drag-drop; dock icon (macOS)
-- code: `src-tauri/src/window_manager/mod.rs`, `src-tauri/src/window_manager/commands.rs`, `src-tauri/src/window_manager/document_windows.rs`, `src-tauri/src/window_manager/window_url.rs`, `src-tauri/src/window_manager/file_open_state.rs`, `src-tauri/src/window_manager/finder_open_delivery.rs`, `src-tauri/src/window_manager/path_validation.rs`, `src-tauri/src/window_manager/pdf_export_window.rs`, `src-tauri/src/menu_events_windows.rs`, `src-tauri/src/file_open.rs`, `src/services/navigation/finderOpenDispatch.ts`, `src/services/navigation/finderOpenBranches.ts`, `src/services/navigation/windowFocus.ts`
+- code: `src-tauri/src/window_manager/mod.rs`, `src-tauri/src/window_manager/commands.rs`, `src-tauri/src/window_manager/document_windows.rs`, `src-tauri/src/window_manager/window_url.rs`, `src-tauri/src/window_manager/file_open_state.rs`, `src-tauri/src/window_manager/finder_open_delivery.rs`, `src-tauri/src/window_manager/path_validation.rs`, `src-tauri/src/window_manager/pdf_export_window.rs`, `src-tauri/src/menu/events/windows.rs`, `src-tauri/src/file_open.rs`, `src/services/navigation/finderOpenDispatch.ts`, `src/services/navigation/finderOpenBranches.ts`, `src/services/navigation/windowFocus.ts`
 - rust: `open_file_in_new_window`, `open_workspace_in_new_window`, `open_workspace_with_files_in_new_window`, `close_window`, `open_pdf_export_window`; `file_open::open_finder_directory` → `workspace_grants::grant_chosen_root`; `tauri_plugin_window_state` in `src-tauri/src/app_plugins.rs`
 - docs: `website/guide/workspace-management.md` §"Multi-Window", §"Opening a file from outside the current workspace"
 - tests: Rust `src-tauri/src/window_manager/commands.test.rs`, `src-tauri/src/window_manager/document_windows.test.rs`, `src-tauri/src/window_manager/window_url.test.rs`, `src-tauri/src/window_manager/file_open_state.test.rs`, `src-tauri/src/window_manager/finder_open_delivery.test.rs`, `src-tauri/src/window_manager/path_validation.test.rs`, `src-tauri/src/window_manager/pdf_export_window.test.rs`, `src-tauri/src/window_manager/mod.test.rs`, `src-tauri/src/file_open.test.rs`; frontend `src/services/navigation/finderOpenBranch.test.ts`, `src/services/navigation/finderOpenBranches.test.ts`, `src/services/navigation/executeOpenDecision.test.ts`, `src/services/navigation/windowFocus.test.ts`; no dedicated test for `src/services/navigation/finderOpenDispatch.ts`
@@ -1861,10 +1861,10 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - status: shipped-on
 - gate: `general.confirmQuit = true`
 - surfaces: Mod-Q (app menu Quit → `MenuAction::Quit`); menu id `save-all-quit`; tray menu "Quit VMark" (Windows, close-to-tray on); settings pane Files & Images → Quit Behavior
-- code: `src-tauri/src/quit.rs`, `src-tauri/src/app_setup.rs`, `src-tauri/src/menu_events_dispatch.rs`, `src/hooks/useConfirmQuitSync.ts`, `src/components/StatusBar/useQuitFeedback.ts`, `src/services/files/fileSave.ts`
+- code: `src-tauri/src/quit.rs`, `src-tauri/src/app_setup.rs`, `src-tauri/src/menu/events/dispatch.rs`, `src/hooks/useConfirmQuitSync.ts`, `src/components/StatusBar/useQuitFeedback.ts`, `src/services/files/fileSave.ts`
 - rust: `quit::cancel_quit`, `quit::set_confirm_quit`, `window_manager::force_quit`; `quit::request_quit` / `quit::start_quit` are called from Rust only
 - docs: `website/guide/settings.md` §"Quit Behavior"; `website/guide/shortcuts.md` (Save All and Quit)
-- tests: `src-tauri/src/quit.test.rs`, `src-tauri/src/menu_events_dispatch.test.rs`, `src/hooks/useConfirmQuitSync.test.ts`, `src/components/StatusBar/useQuitFeedback.test.ts`
+- tests: `src-tauri/src/quit.test.rs`, `src-tauri/src/menu/events/dispatch.test.rs`, `src/hooks/useConfirmQuitSync.test.ts`, `src/components/StatusBar/useQuitFeedback.test.ts`
 - notes: `force_quit` calls `app.exit(0)` directly rather than `finalize_quit`; child processes are then cleaned up by the `ExitRequested` → `AllowExit` branch in `app_setup.rs`. Quit state lives in process-global statics, so `quit.rs` tests run serially under `TEST_LOCK`.
 
 ### External file-change detection and conflict resolution
@@ -2995,7 +2995,7 @@ Genies are prompt files in `<appDataDir>/genies/`, listed by `src-tauri/src/geni
 - rust: `run_ai_prompt`, `cancel_ai_prompt` (`src-tauri/src/ai_provider/cancel.rs`)
 - docs: `website/guide/ai-genies.md` §"Processing Feedback", §"Scope", §"Status Bar Indicator", §"Limitations"; `website/guide/settings.md` §"Integrations" (Auto-approve row)
 - tests: `src/hooks/__tests__/useGenieInvocation.test.ts`, `src/hooks/__tests__/useGenieInvocation.cancel.test.ts`, `src/hooks/__tests__/useGenieInvocation.dispatchGating.test.ts`, `src/hooks/__tests__/useGenieInvocation.workflowRace.test.ts`, `src/hooks/useGenieShortcuts.invokeGenie.test.ts`, `src/services/genieInvocation/streamRunner.test.ts`, `src/services/genieInvocation/extraction.test.ts`, `src/services/genieInvocation/providerValidation.test.ts`, `src/services/genieInvocation/cancelRequest.test.ts`, `src/stores/aiStore/invocation.test.ts`, `src/stores/__tests__/aiInvocationStore.test.ts`, `src-tauri/src/ai_provider/cancel.test.rs`; `applyGenieResult.ts` is covered only through `streamRunner.test.ts`
-- notes: the direct picker path does not fence document text — `fillTemplate` substitutes `{{content}}` literally; `<<<DOCUMENT-DATA-…>>>` fencing is applied only to workflow genie steps (`src-tauri/src/workflow/untrusted.rs`, `src-tauri/src/workflow/genie_step.rs`), which `ai-genies.md` now states. The `menu:invoke-genie` listener runs in the main window and ignores the window label in the payload, so a menu genie click while another document window is focused is handled by the main window's editor — inferred from code (`src-tauri/src/menu_events_dispatch.rs`, `src/hooks/useGenieShortcuts.ts`), unverified at runtime. The status bar's **Retry** after an error only dismisses it (`handleRetryAi` in `src/components/StatusBar/StatusBar.tsx`); `ai-genies.md` says so.
+- notes: the direct picker path does not fence document text — `fillTemplate` substitutes `{{content}}` literally; `<<<DOCUMENT-DATA-…>>>` fencing is applied only to workflow genie steps (`src-tauri/src/workflow/untrusted.rs`, `src-tauri/src/workflow/genie_step.rs`), which `ai-genies.md` now states. The `menu:invoke-genie` listener runs in the main window and ignores the window label in the payload, so a menu genie click while another document window is focused is handled by the main window's editor — inferred from code (`src-tauri/src/menu/events/dispatch.rs`, `src/hooks/useGenieShortcuts.ts`), unverified at runtime. The status bar's **Retry** after an error only dismisses it (`handleRetryAi` in `src/components/StatusBar/StatusBar.tsx`); `ai-genies.md` says so.
 
 ### Inline AI suggestions (accept/reject diff UI)
 - id: ai-suggestions
@@ -4149,8 +4149,8 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - status: shipped-on
 - gate: always on
 - surfaces: menu id `preferences` (App menu on macOS, File menu elsewhere, handled in Rust); shortcut `preferences` = `Mod-,`; command `app.preferences` (command palette); `openSettingsWindow(section)` callers in the status bar, update toast, formats nudge and genie provider switcher
-- code: `src/pages/Settings.tsx`, `src/pages/settings/panels.ts`, `src/pages/settings/SettingsNav.tsx`, `src/services/navigation/settingsWindow.ts`, `src/App.tsx`, `src/shell/shellChrome.ts`, `src-tauri/src/window_manager/settings_window.rs`, `src-tauri/src/menu_events_dispatch.rs`, `src-tauri/capabilities/settings.json`
-- rust: `window_manager::open_settings_window` (`#[tauri::command(async)]`, emits `settings:navigate`); `show_settings_window_section`; `menu_events_dispatch::handle_preferences`
+- code: `src/pages/Settings.tsx`, `src/pages/settings/panels.ts`, `src/pages/settings/SettingsNav.tsx`, `src/services/navigation/settingsWindow.ts`, `src/App.tsx`, `src/shell/shellChrome.ts`, `src-tauri/src/window_manager/settings_window.rs`, `src-tauri/src/menu/events/dispatch.rs`, `src-tauri/capabilities/settings.json`
+- rust: `window_manager::open_settings_window` (`#[tauri::command(async)]`, emits `settings:navigate`); `show_settings_window_section`; `menu::events::dispatch::handle_preferences`
 - docs: `website/guide/settings.md` (page intro)
 - tests: `src/pages/Settings.devSection.test.tsx` (drives `?section=` and the render-time fallback), `src/pages/settings/SettingsNav.test.tsx`, `src/pages/settings/SettingsSearch.test.tsx`, `src-tauri/src/window_manager/settings_window.test.rs` (URL encoding, second open focuses, lost build race reports success)
 - notes: creation is deliberately NOT mutex-guarded — the non-macOS branch calls `Menu::new`, which blocks on the main thread, so a lock held across it could deadlock against the menu's own Preferences handler (`settings_window.rs` header). The window's capability (`src-tauri/capabilities/settings.json`) calls itself "UI-only, no filesystem" but grants `store:default`; tauri-plugin-store 2.4.5 resolves a webview-supplied store path by joining it onto the app data dir, so an absolute path escapes it and `save` writes a JSON object there.
@@ -4600,7 +4600,7 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - code: `src-tauri/src/menu/dynamic.rs`, `src-tauri/src/menu/mod.rs`, `src-tauri/src/menu/commands.rs`, `src/stores/workspaceStoreHelpers.ts`, `src/hooks/useGenieShortcuts.ts`, `src/services/menu/rebuildNativeMenu.ts`
 - rust: `menu::update_recent_files`, `menu::update_recent_workspaces`, `menu::refresh_genies_menu`, `menu::hide_genies_menu`
 - docs: `website/guide/ai-genies.md`; `website/guide/workspace-management.md` (recent lists)
-- tests: `src-tauri/src/menu_events_dispatch.test.rs` (index parsing and classification of the dynamic ids); no Rust test for `src-tauri/src/menu/dynamic.rs`
+- tests: `src-tauri/src/menu/events/dispatch.test.rs` (index parsing and classification of the dynamic ids); no Rust test for `src-tauri/src/menu/dynamic.rs`
 - notes: `rebuild_menu` resets all three submenus, so `src/services/menu/rebuildNativeMenu.ts` re-invokes `refresh_genies_menu` and re-syncs both recent lists after every rebuild (see *menu-rebuild*).
 
 ### Menu → command dispatch
@@ -4611,11 +4611,11 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - status: shipped-on
 - gate: always on
 - surfaces: native menu / automatic
-- code: `src/hooks/useCommandBootstrap.ts`, `src/services/commands/menuListener.ts`, `src/services/commands/menuCommandsReady.ts`, `src/plugins/actions/menuMapping.ts`, `src-tauri/src/menu_events.rs`, `src-tauri/src/menu_events_dispatch.rs`
-- rust: `menu_events::handle_menu_event` (not a command)
+- code: `src/hooks/useCommandBootstrap.ts`, `src/services/commands/menuListener.ts`, `src/services/commands/menuCommandsReady.ts`, `src/plugins/actions/menuMapping.ts`, `src-tauri/src/menu/events.rs`, `src-tauri/src/menu/events/dispatch.rs`
+- rust: `menu::events::handle_menu_event` (not a command)
 - docs: none
-- tests: `src/services/commands/menuListener.test.ts`, `src/services/commands/menuListener.editorActions.test.tsx`, `src/services/commands/menuCommandsReady.test.ts`, `src/hooks/useCommandBootstrap.test.tsx`, `src/hooks/useCommandBootstrap.bindings.test.ts`, `src/hooks/menuRouting.test.ts`, `src-tauri/src/menu_events_dispatch.test.rs`
-- notes: the generic fallback (`emit_generic` in `src-tauri/src/menu_events_dispatch.rs`) targets the focused DOCUMENT window, else any document window — a Windows menu click can momentarily defocus the webview, and document events must never reach the Settings window. `close` carries the target label in its payload because `window.emit` broadcasts.
+- tests: `src/services/commands/menuListener.test.ts`, `src/services/commands/menuListener.editorActions.test.tsx`, `src/services/commands/menuCommandsReady.test.ts`, `src/hooks/useCommandBootstrap.test.tsx`, `src/hooks/useCommandBootstrap.bindings.test.ts`, `src/hooks/menuRouting.test.ts`, `src-tauri/src/menu/events/dispatch.test.rs`
+- notes: the generic fallback (`emit_generic` in `src-tauri/src/menu/events/dispatch.rs`) targets the focused DOCUMENT window, else any document window — a Windows menu click can momentarily defocus the webview, and document events must never reach the Settings window. `close` carries the target label in its payload because `window.emit` broadcasts.
 
 ### Context-menu keyboard navigation
 - id: menu-roving-focus
@@ -5505,7 +5505,7 @@ The Rust composition root is `src-tauri/src/lib.rs` (`run`, `manage_state`), wit
 - status: shipped-on, macos-only
 - gate: `#[cfg(target_os = "macos")]` module and menu item `install-cli`
 - surfaces: Help → "Shell Command: Install 'vmark' in PATH…"; the installed `vmark` command
-- code: `src-tauri/src/cli_install/mod.rs`, `src-tauri/src/cli_install/dialog.rs`, `src-tauri/src/menu/localized/window_help_menu.rs`, `src-tauri/src/menu_events_dispatch.rs`
+- code: `src-tauri/src/cli_install/mod.rs`, `src-tauri/src/cli_install/dialog.rs`, `src-tauri/src/menu/localized/window_help_menu.rs`, `src-tauri/src/menu/events/dispatch.rs`
 - rust: `cli_install::{cli_install, cli_uninstall, cli_install_status}`, `cli_install::dialog::run_install_toggle`
 - docs: `website/guide/workspace-management.md` §"Shell CLI Command"
 - tests: `src-tauri/src/cli_install/tests.rs` (14 tests)

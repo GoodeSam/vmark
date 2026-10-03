@@ -7,7 +7,7 @@
 //!
 //! The ids are a contract with the click handler: `recent-file-{n}`,
 //! `recent-workspace-{n}` and `genie-item-{n}` name index `n` of the snapshot
-//! stored when the menu was built (`menu_events_dispatch.rs`).
+//! stored when the menu was built (`events/dispatch.rs`).
 //!
 //! @coordinates-with dynamic.rs — builds the native items from these
 //! @module menu/dynamic_layout
