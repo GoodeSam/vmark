@@ -337,6 +337,16 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 
 Also decided 2026-10-03, no work item: multi-cursor has no cap; files that are not UTF-8 and carry no BOM keep opening (no refusal); Retry acts on the current selection; Close All closes pinned tabs behind a confirmation (WI-RA20.1); no-provider message (WI-RA20.7).
 
+#### Phase RA26 — ratchet regressions and the last leftovers
+- **WI-RA26.1 — the legacy command errors in moved files become CommandError; the ratchet holds against the start.**
+- **WI-RA26.2 — the round-trip losses added during this work are fixed, not recorded.**
+- **WI-RA26.3 — a failed workspace restore rolls back a media tab.**
+- **WI-RA26.4 — the version global survives unstubAllGlobals.**
+- **WI-RA26.5 — the remaining fence regexes are linear.**
+- **WI-RA26.6 — history names use the translated untitled name.**
+- **WI-RA26.7 — every tier has a liveness bound; no per-test performance timeouts; no wall-clock import waits.**
+- **WI-RA26.8 — the max-file-size description is true.**
+
 ### Wave 4 (cross-cutting, strictly serial, after everything else merged)
 
 Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), RA12B, RA17F, RA17E, RA17G, then the DoD script and the final gate pass. Ownership for wave 3 and 4 lanes is in each lane brief.
