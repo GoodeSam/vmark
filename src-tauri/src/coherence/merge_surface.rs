@@ -1,4 +1,4 @@
-//! Completed-merge surface (WI-3.7; design-3.md D3.3). The scan appends
+//! Completed-merge surface (design-3.md D3.3). The scan appends
 //! a `merge-completed` diagnostic per merge SHA (deduped); this reads the
 //! latest one for the breakdown's dismissible, pull-only banner. Nothing
 //! runs on its own — the read happens only when the UI pulls.

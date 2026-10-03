@@ -1,4 +1,4 @@
-//! Scan reconciliation (WI-1.6, ADR-C4 services tier). Spec §9.4: compare
+//! Scan reconciliation (ADR-C4 services tier). Spec §9.4: compare
 //! disk state against the index for known objects, synthesize honest
 //! history for what happened outside VMark (R9), classify git operations
 //! first (R18 — navigation NEVER mints revisions), surface duplicates as
@@ -85,7 +85,7 @@ fn scan_workspace_locked(
         ..Default::default()
     };
 
-    // Multi-writer sync (audit R11): segments written by other writers
+    // Multi-writer sync: segments written by other writers
     // (git pull, second installation) land mid-session; fold any
     // un-applied entries into the index before reconciling. Cheap count
     // guard; apply_entry is idempotent by entry id.
@@ -106,10 +106,10 @@ fn scan_workspace_locked(
     let registry = kernel.index().registry_state()?;
     let mut existing_diagnostics = existing_diagnostic_keys(&ledger_read.entries);
 
-    // D3.3 (WI-3.7): record a completed-merge diagnostic (deduped, pull-only).
+    // D3.3: record a completed-merge diagnostic (deduped, pull-only).
     super::merge_surface::record_completed_merge(kernel, &mut existing_diagnostics, &mut report)?;
 
-    // Durable quarantine diagnostics (spec §5.6, audit R10), deduped by
+    // Durable quarantine diagnostics (spec §5.6), deduped by
     // segment:line so repeated scans never spam history.
     for q in &ledger_read.quarantined {
         let key_path = format!("{}:{}", q.segment, q.line);
@@ -135,7 +135,7 @@ fn scan_workspace_locked(
 
     // Path -> present-on-disk map for absence checks: a registered path
     // that still exists is never absent, even when its identity block is
-    // missing, unreadable, oversized, or non-UTF-8 (audit R2/A14 — a
+    // missing, unreadable, oversized, or non-UTF-8 (a
     // diagnosed skip is still PRESENT).
     let mut present_paths: HashSet<&str> = files.iter().map(|file| file.rel.as_str()).collect();
     present_paths.extend(skipped_md.iter().map(String::as_str));
@@ -152,7 +152,7 @@ fn scan_workspace_locked(
         let rel_path = &file.rel;
         // Identity: from frontmatter, else fall back to the registry by
         // path (a known file whose frontmatter went missing/malformed is
-        // still that object — audit A21).
+        // still that object).
         let identity = match &file.facts.identity {
             Some(fi) => Some((fi.id, fi.schema.clone())),
             None => registry
@@ -236,7 +236,7 @@ fn scan_workspace_locked(
         // Git navigation restores KNOWN revisions without minting (R18);
         // everything else — including content matching an OLD revision
         // (A → B → A) — mints a new revision with the current heads as
-        // parents (spec §2.3; audit R5).
+        // parents (spec §2.3).
         if matches!(class, GitClass::Navigation { .. })
             && kernel
                 .index()

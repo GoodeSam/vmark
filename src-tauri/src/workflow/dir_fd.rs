@@ -5,7 +5,7 @@
 //! `openat`, `fstatat` and `renameat` all act on the directory this process
 //! opened, whatever its path resolves to by then. That is the whole technique
 //! behind `commit_dir.rs` (the write) and `ensure_dir.rs` (the missing
-//! parents) — #257.
+//! parents).
 //!
 //! Containment is proved the same way: `assert_within` climbs `..` from the
 //! descriptor to the workspace root's, comparing (device, inode). `..` is a
@@ -50,7 +50,7 @@ impl Dir {
     }
 
     /// Open the absolute, already-canonical `path` by walking it from `/`
-    /// one component at a time with `O_NOFOLLOW` (#74). A link found at any
+    /// one component at a time with `O_NOFOLLOW`. A link found at any
     /// component means the name was swapped after it was resolved — refused,
     /// never followed. So is a relative path, never re-read from `/`.
     pub(super) fn open_nofollow(path: &Path) -> Result<Self, String> {
@@ -151,8 +151,8 @@ impl Dir {
     /// the file `file` refers to?
     ///
     /// `Ok(false)` means the lookup SUCCEEDED and named something else — or
-    /// nothing at all. A stat that failed for any other reason is an error
-    /// (#534): every one of them used to collapse into `Ok(false)`, and the
+    /// nothing at all. A stat that failed for any other reason is an error:
+    /// every one of them used to collapse into `Ok(false)`, and the
     /// caller renders that as "<parent> resolves outside the workspace" — a
     /// containment refusal, which is the one thing an `EIO` or an `EACCES` is
     /// not, and the one message that sends a reader looking for an attack.
@@ -184,7 +184,7 @@ impl Dir {
 
     /// Is `name`, looked up in THIS directory without following a link, a
     /// regular file? `None` when nothing is there. A snapshot restore deletes
-    /// only a regular file the run made — never a link's target (#75).
+    /// only a regular file the run made — never a link's target.
     pub(super) fn is_regular_file(&self, name: &CString) -> Result<Option<bool>, String> {
         // SAFETY: `libc::stat` is a C struct of integers, for which all-zero
         // bytes are a valid value.
@@ -215,7 +215,7 @@ impl Dir {
         checked(rc).map_err(|e| format!("rename failed: {e}"))
     }
 
-    /// `unlinkat(self, name)`. Reports its own failure (#535): this is how a
+    /// `unlinkat(self, name)`. Reports its own failure: this is how a
     /// temp file holding the user's document is removed after a rename that
     /// did not happen, and discarding the result left that content on disk
     /// with nothing anywhere saying so. An entry that is already gone is the
@@ -267,9 +267,9 @@ impl Dir {
 }
 
 /// A syscall's return code as a `Result` — the ONE place `-1` becomes an
-/// `io::Error` (#533). Keeping it apart leaves each caller's policy —
+/// `io::Error`. Keeping it apart leaves each caller's policy —
 /// `mkdirat` forgiving `EEXIST` (its caller proves what is there with
-/// `open_child`), `fstatat` and `unlinkat` forgiving `ENOENT` (#534, #535),
+/// `open_child`), `fstatat` and `unlinkat` forgiving `ENOENT`,
 /// `renameat` forgiving nothing — as the only thing that differs between them.
 ///
 /// `errno` MUST be read immediately: any intervening call can overwrite it.

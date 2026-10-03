@@ -81,7 +81,7 @@ pub async fn coherence_status<R: tauri::Runtime>(
     .await
 }
 
-/// Read-time head lookup (audit T5) — see `head_pin.rs`. `content` is what the
+/// Read-time head lookup — see `head_pin.rs`. `content` is what the
 /// MCP client was served and `base_content` the saved content an unsaved buffer
 /// was edited from; the revision matching either is pinned.
 #[tauri::command]
@@ -95,7 +95,7 @@ pub async fn coherence_head<R: tauri::Runtime>(
     with_kernel(app, workspace_root, move |_state, kernel| {
         kernel.ensure_available().map_err(ledger_unavailable)?; // 8R-5: never serve a half-rebuilt index
                                                                 // An unknown path is NOT an error: `null` is the documented answer for "not
-                                                                // a known object" (audit T5), and turning it into `not-found` would make
+                                                                // a known object", and turning it into `not-found` would make
                                                                 // every read of an untracked file look like a failure.
         perform_head(kernel, &path, content.as_deref(), base_content.as_deref())
             .map_err(ledger_unavailable)

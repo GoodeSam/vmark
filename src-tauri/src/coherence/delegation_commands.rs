@@ -1,4 +1,4 @@
-//! Delegation IPC surface (WI-3.4; design-3.md D2.2 — in-app explicit
+//! Delegation IPC surface (design-3.md D2.2 — in-app explicit
 //! human acts only). List + grant/revoke; the confirmation dialog lives
 //! in the UI, this layer records the already-confirmed act.
 

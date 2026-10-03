@@ -1,4 +1,4 @@
-//! Expression parser for workflow parameter values (WI-2.3 / ADR-3).
+//! Expression parser for workflow parameter values (ADR-3).
 //!
 //! Resolves these forms inside `with:` parameter values:
 //!
@@ -35,7 +35,7 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
-/// Outputs map shape used by the runner (WI-2.3): step id → (field name → value).
+/// Outputs map shape used by the runner: step id → (field name → value).
 pub type WorkflowOutputs = HashMap<String, HashMap<String, String>>;
 
 /// Every in-text reference form, as one alternation: group 1 is the body of a
@@ -50,7 +50,7 @@ static BARE_ALIAS_RE: LazyLock<Regex> =
 
 /// The step id a bare whole-string `stepId.output` alias names — the ONE
 /// definition of that grammar, shared with `coherence_capture.rs`, which
-/// carried a looser copy (#512). `None` for anything `resolve` leaves alone.
+/// carried a looser copy. `None` for anything `resolve` leaves alone.
 pub(super) fn bare_alias_id(value: &str) -> Option<&str> {
     let caps = BARE_ALIAS_RE.captures(value.trim())?;
     Some(caps.get(1)?.as_str())

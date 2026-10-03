@@ -98,7 +98,7 @@ pub(super) fn walk_markdown(
             Ok(entries) => entries,
             Err(e) => {
                 // An unreadable directory means the walk is INCOMPLETE —
-                // deletion reconciliation must not run (audit R9).
+                // deletion reconciliation must not run.
                 report.complete = false;
                 super::scan::emit_diagnostic(
                     kernel,

@@ -67,7 +67,7 @@ impl SnapshotStore {
     fn put_raw(&self, hash: &ContentHash, bytes: &[u8]) -> Result<(), String> {
         let target = self.path_for(hash);
         if target.exists() {
-            // Verify before trusting (audit R20): a corrupt pre-existing
+            // Verify before trusting: a corrupt pre-existing
             // snapshot must not let capture succeed with a dangling
             // reference — repair it in place via the same tmp+rename.
             use sha2::{Digest, Sha256};

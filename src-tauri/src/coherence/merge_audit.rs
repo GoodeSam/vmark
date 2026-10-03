@@ -1,13 +1,13 @@
-//! Semantic-merge auditor mapping (Phase 5, WI-5.1; ADR-C7). Composes the SP4
+//! Semantic-merge auditor mapping (Phase 5; ADR-C7). Composes the SP4
 //! chain into one function: a completed merge's touched edges, derived
 //! deterministically from the merge SHA. No new algorithm — it wires the git
 //! diff, the registry inversion, and the index's `edges_affected_by` (ADR-P4).
 //!
 //! `merge SHA ─(git)▶ changed files ─(registry)▶ objects ─(index)▶ edges`
 //!
-//! The auditor then runs the **existing** checker over these edges (WI-5.2,
-//! reusing the Phase-1 `check_sweep` governance) and surfaces contradictions for
-//! human resolution (WI-5.3) — it **never** auto-reconciles (§14).
+//! The auditor then runs the **existing** checker over these edges
+//! (reusing the Phase-1 `check_sweep` governance) and surfaces contradictions for
+//! human resolution — it **never** auto-reconciles (§14).
 
 use super::blocking::with_kernel;
 use super::command_errors::ledger_unavailable;
@@ -64,7 +64,7 @@ pub struct MergeAffectedEdge {
 }
 
 /// The merge-affected edge set for the workspace's current HEAD (read-only,
-/// MCP-safe — R23). Empty when HEAD is not a completed merge. WI-5.2's actual
+/// MCP-safe — R23). Empty when HEAD is not a completed merge. The actual
 /// re-check runs the existing checker over these edges (reusing the Phase-1
 /// `check_sweep` governance); this command surfaces *which* edges a merge
 /// touched, for the human/checker to act on — it never auto-reconciles (§14).

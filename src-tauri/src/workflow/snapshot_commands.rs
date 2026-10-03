@@ -13,7 +13,7 @@
 //!     must still be able to put their files back.
 //!   - The id is the only argument. The root comes from the snapshot's own
 //!     record (`snapshot_restore.rs`), so a caller cannot redirect a restore.
-//!   - **A superseded snapshot is refused** (`conflict`, #108): once a later
+//!   - **A superseded snapshot is refused** (`conflict`): once a later
 //!     run has spawned, it may have written files this snapshot predates, and
 //!     restoring would undo that work. Checked under the claim, so the check
 //!     and the restore are one step — the panel's own re-check cannot be.

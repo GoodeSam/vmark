@@ -14,7 +14,7 @@ use std::collections::HashMap;
 /// Field-level docs below describe the on-the-wire YAML shape. Author-facing
 /// guidance — including the v1 expression grammar and template binding rules
 /// — lives in `website/guide/workflow-genies.md`.
-// A typo in a wire struct must FAIL, not be ignored (audit #519). `need:`
+// A typo in a wire struct must FAIL, not be ignored. `need:`
 // for `needs:` silently drops a dependency edge and reorders execution;
 // `approvals:` for `approval:` silently reverts a step to the workflow
 // default — and for an engine that spawns AI providers and writes files,
@@ -42,7 +42,7 @@ pub struct RawWorkflow {
     pub env: HashMap<String, String>,
     /// Workflow-level defaults applied to every step that doesn't override.
     /// Resolution order is step → genie metadata → workflow defaults →
-    /// hard-coded fallback (ADR-6 in `dev-docs/plans/20260418-genie-in-workflow.md`).
+    /// hard-coded fallback (ADR-6 in `.claude/adr/plans/20260418-genie-in-workflow.md`).
     #[serde(default)]
     pub defaults: RawDefaults,
     /// Ordered list of steps. The runner enforces a 50-step ceiling at
@@ -139,10 +139,10 @@ impl NeedsDef {
 
 /// Per-step (or workflow-default) execution limits.
 ///
-/// `timeout` and `max_tokens` are now actively enforced (post-WI-2.5 +
-/// audit-fix #4). `max_cost` is parsed for forward compatibility but
+/// `timeout` and `max_tokens` are now actively enforced.
+/// `max_cost` is parsed for forward compatibility but
 /// remains unenforced — see ADR-6 / D9 in
-/// `dev-docs/plans/20260418-genie-in-workflow.md` for the rationale.
+/// `.claude/adr/plans/20260418-genie-in-workflow.md` for the rationale.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RawLimits {
