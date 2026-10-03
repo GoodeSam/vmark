@@ -17,6 +17,7 @@
  * @module services/terminal/revealTerminalSession
  */
 import { useUIStore } from "@/stores/uiStore";
+import { useTerminalStore } from "@/stores/terminalStore";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { getVisibleTerminalSessions } from "./visibleTerminalSessions";
 import { createTerminalSessionInScope } from "./createTerminalSession";
@@ -39,10 +40,10 @@ function revealPanel(): void {
  * the session that receives the command is the session on screen.
  */
 export function reuseOrCreateTerminalSession(): string {
-  const store = useUIStore.getState();
+  const store = useTerminalStore.getState();
   const windowLabel = getCurrentWindowLabel();
   const visible = getVisibleTerminalSessions(windowLabel);
-  const activeId = store.terminal.activeSessionId;
+  const activeId = store.activeSessionId;
   const existing =
     activeId && visible.some((s) => s.id === activeId)
       ? activeId

@@ -5,11 +5,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   MAX_TERMINAL_SESSIONS,
   resetTerminalSessionStore,
-  useUIStore,
-} from "@/stores/uiStore";
+  useTerminalStore,
+} from "@/stores/terminalStore";
 
 function create(ownerInstanceId?: string) {
-  return useUIStore
+  return useTerminalStore
     .getState()
     .terminalCreateSession(ownerInstanceId ? { ownerInstanceId } : undefined);
 }
@@ -31,11 +31,9 @@ describe("terminalCreateSession — owner stamping (D-T1)", () => {
   });
 
   it("preserves lastActiveByScope across creations", () => {
-    useUIStore.setState((state) => ({
-      terminal: { ...state.terminal, lastActiveByScope: { "wsi-a": null } },
-    }));
+    useTerminalStore.setState({ lastActiveByScope: { "wsi-a": null } });
     create("wsi-a");
-    expect(useUIStore.getState().terminal.lastActiveByScope).toEqual({ "wsi-a": null });
+    expect(useTerminalStore.getState().lastActiveByScope).toEqual({ "wsi-a": null });
   });
 });
 
@@ -65,9 +63,9 @@ describe("terminalCreateSession — union cap (D-T5, creation-time gate only)", 
   it("cap is a creation gate, not a population invariant: rekey can exceed it and kills nothing", () => {
     for (let i = 0; i < 3; i++) create("wsi-a");
     for (let i = 0; i < 3; i++) create("wsi-old");
-    useUIStore.getState().terminalRekeyScope("wsi-old", "wsi-a");
+    useTerminalStore.getState().terminalRekeyScope("wsi-old", "wsi-a");
 
-    const sessions = useUIStore.getState().terminal.sessions;
+    const sessions = useTerminalStore.getState().sessions;
     expect(sessions).toHaveLength(6);
     expect(sessions.every((s) => s.workspaceInstanceId === "wsi-a")).toBe(true);
     // Over-cap population is representable; creation stays blocked.
@@ -92,7 +90,7 @@ describe("terminalCreateSession — union ordinals (D-T5)", () => {
     create("wsi-b");
     create();
     create("wsi-a");
-    const sessions = useUIStore.getState().terminal.sessions;
+    const sessions = useTerminalStore.getState().sessions;
     const visibleInA = sessions.filter(
       (s) => !s.workspaceInstanceId || s.workspaceInstanceId === "wsi-a",
     );
@@ -116,13 +114,13 @@ describe("terminalRemoveSession — visible-population fallback (WI-TS1.2)", () 
     const sa = create("wsi-a")!;
     const sb = create("wsi-b")!;
     const su = create()!;
-    useUIStore.getState().terminalSetActiveSession(sa.id);
+    useTerminalStore.getState().terminalSetActiveSession(sa.id);
 
     // A's visible population is {sa, su} — sb is another scope's session.
-    useUIStore.getState().terminalRemoveSession(sa.id, { visibleIds: [sa.id, su.id] });
+    useTerminalStore.getState().terminalRemoveSession(sa.id, { visibleIds: [sa.id, su.id] });
 
-    expect(useUIStore.getState().terminal.activeSessionId).toBe(su.id);
-    expect(useUIStore.getState().terminal.sessions.map((s) => s.id)).toEqual([
+    expect(useTerminalStore.getState().activeSessionId).toBe(su.id);
+    expect(useTerminalStore.getState().sessions.map((s) => s.id)).toEqual([
       sb.id,
       su.id,
     ]);
@@ -131,18 +129,18 @@ describe("terminalRemoveSession — visible-population fallback (WI-TS1.2)", () 
   it("without the hint, behaves exactly as before (last remaining)", () => {
     const s1 = create()!;
     const s2 = create()!;
-    useUIStore.getState().terminalSetActiveSession(s1.id);
-    useUIStore.getState().terminalRemoveSession(s1.id);
-    expect(useUIStore.getState().terminal.activeSessionId).toBe(s2.id);
+    useTerminalStore.getState().terminalSetActiveSession(s1.id);
+    useTerminalStore.getState().terminalRemoveSession(s1.id);
+    expect(useTerminalStore.getState().activeSessionId).toBe(s2.id);
   });
 
   it("falls back to null when nothing visible remains", () => {
     const sa = create("wsi-a")!;
     const sb = create("wsi-b")!;
-    useUIStore.getState().terminalSetActiveSession(sa.id);
-    useUIStore.getState().terminalRemoveSession(sa.id, { visibleIds: [sa.id] });
-    expect(useUIStore.getState().terminal.activeSessionId).toBeNull();
-    expect(useUIStore.getState().terminal.sessions.map((s) => s.id)).toEqual([sb.id]);
+    useTerminalStore.getState().terminalSetActiveSession(sa.id);
+    useTerminalStore.getState().terminalRemoveSession(sa.id, { visibleIds: [sa.id] });
+    expect(useTerminalStore.getState().activeSessionId).toBeNull();
+    expect(useTerminalStore.getState().sessions.map((s) => s.id)).toEqual([sb.id]);
   });
 });
 
@@ -150,18 +148,18 @@ describe("terminalRemoveSession — fallback activation clears activity (R3-1)",
   it("the fallback session's pending activity dot clears on activation (D-T11)", () => {
     const s1 = create()!;
     const s2 = create()!; // active
-    expect(useUIStore.getState().terminal.activeSessionId).toBe(s2.id);
+    expect(useTerminalStore.getState().activeSessionId).toBe(s2.id);
     // s1 is NOT active, so it can carry an activity dot.
-    useUIStore.getState().terminalMarkActivity(s1.id);
+    useTerminalStore.getState().terminalMarkActivity(s1.id);
     expect(
-      useUIStore.getState().terminal.sessions.find((s) => s.id === s1.id)?.hasActivity,
+      useTerminalStore.getState().sessions.find((s) => s.id === s1.id)?.hasActivity,
     ).toBe(true);
 
-    useUIStore.getState().terminalRemoveSession(s2.id);
+    useTerminalStore.getState().terminalRemoveSession(s2.id);
 
     // s1 became the visible active session — a stale dot on the session the
     // user is now LOOKING AT is the exact state D-T11 forbids.
-    const terminal = useUIStore.getState().terminal;
+    const terminal = useTerminalStore.getState();
     expect(terminal.activeSessionId).toBe(s1.id);
     expect(terminal.sessions.find((s) => s.id === s1.id)?.hasActivity).toBe(false);
   });
@@ -169,7 +167,7 @@ describe("terminalRemoveSession — fallback activation clears activity (R3-1)",
   it("removing a NON-active session leaves the active session untouched", () => {
     const s1 = create()!;
     const s2 = create()!; // active
-    useUIStore.getState().terminalRemoveSession(s1.id);
-    expect(useUIStore.getState().terminal.activeSessionId).toBe(s2.id);
+    useTerminalStore.getState().terminalRemoveSession(s1.id);
+    expect(useTerminalStore.getState().activeSessionId).toBe(s2.id);
   });
 });

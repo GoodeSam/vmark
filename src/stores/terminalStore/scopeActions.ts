@@ -1,9 +1,9 @@
 /**
- * uiStore `terminal` slice — scope-transition actions (WI-TS1.2, the kernel).
+ * terminalStore scope-transition actions (WI-TS1.2, the kernel).
  *
  * Purpose: the actions the rail coordinator and the instance lifecycle call
  * to move terminal sessions between per-workspace-instance scopes. Split from
- * terminalSlice.ts to keep both files under the size gate.
+ * sessionActions.ts to keep both files under the size gate.
  *
  * Key decisions (plan 20260831-terminal-per-instance-sessions):
  *   - D-T3: a scope switch NEVER removes sessions from the store — hiding is
@@ -13,21 +13,21 @@
  *   - D-T11: every action that activates a session clears its hasActivity,
  *     the same rule terminalSetActiveSession applies.
  *   - Invariant 7: the owner-exact filters here are action-internal — the
- *     exported COUNT vocabulary lives in terminalScopeSelectors.ts.
+ *     exported COUNT vocabulary lives in scopeSelectors.ts.
  *
- * @coordinates-with terminalSlice.ts — base session actions
+ * @coordinates-with sessionActions.ts — base session actions
  * @coordinates-with services/workspaces/switchWorkspaceInstance.ts — caller
- * @module stores/uiStore/terminalScopeActions
+ * @module stores/terminalStore/scopeActions
  */
 import type {
+  TerminalGet,
   TerminalScopeActions,
   TerminalSession,
-  TerminalSlice,
-  UIGet,
-  UISet,
+  TerminalSet,
+  TerminalState,
 } from "./types";
-import { isSessionVisibleInScope } from "./terminalScopeSelectors";
-import { smallestUnusedOrdinal, withActiveSession } from "./terminalSlice";
+import { isSessionVisibleInScope } from "./scopeSelectors";
+import { smallestUnusedOrdinal, withActiveSession } from "./sessionActions";
 
 /** The scope's visible population: window-scoped ∪ scope-stamped. */
 function visibleIn(sessions: TerminalSession[], scopeId: string): TerminalSession[] {
@@ -63,52 +63,47 @@ function renumberIntoScope(
 }
 
 /** Remembered-live ?? first-visible ?? null (WI-TS1.2 activation rule). */
-function activationFor(terminal: TerminalSlice, scopeId: string): string | null {
+function activationFor(terminal: TerminalState, scopeId: string): string | null {
   const visible = visibleIn(terminal.sessions, scopeId);
   const remembered = terminal.lastActiveByScope[scopeId];
   if (remembered && visible.some((s) => s.id === remembered)) return remembered;
   return visible[0]?.id ?? null;
 }
 
-// Activation goes through the slice's ONE transition, withActiveSession
+// Activation goes through the store's ONE transition, withActiveSession
 // (audit R2-6) — a restored session never keeps a stale activity dot, by the
 // same rule terminalSetActiveSession applies.
 
-export function createTerminalScopeActions(set: UISet, get: UIGet): TerminalScopeActions {
+export function createTerminalScopeActions(
+  set: TerminalSet,
+  get: TerminalGet,
+): TerminalScopeActions {
   return {
     terminalAdoptUnscopedSessions: (instanceId) => {
       const movedIds = new Set(
         get()
-          .terminal.sessions.filter((s) => !s.workspaceInstanceId)
+          .sessions.filter((s) => !s.workspaceInstanceId)
           .map((s) => s.id),
       );
       // Idempotent: nothing window-scoped, nothing to do (no store wake).
       if (movedIds.size === 0) return;
       set((s) => {
-        const stamped = s.terminal.sessions.map((session) =>
+        const stamped = s.sessions.map((session) =>
           movedIds.has(session.id)
             ? { ...session, workspaceInstanceId: instanceId }
             : session,
         );
-        return {
-          terminal: {
-            ...s.terminal,
-            sessions: renumberIntoScope(stamped, movedIds, instanceId),
-          },
-        };
+        return { sessions: renumberIntoScope(stamped, movedIds, instanceId) };
       });
     },
 
     terminalSwitchScope: (outgoingId, incomingId) => {
       set((s) => {
         const lastActiveByScope = outgoingId
-          ? {
-              ...s.terminal.lastActiveByScope,
-              [outgoingId]: s.terminal.activeSessionId,
-            }
-          : s.terminal.lastActiveByScope;
-        const next = { ...s.terminal, lastActiveByScope };
-        return { terminal: withActiveSession(next, activationFor(next, incomingId)) };
+          ? { ...s.lastActiveByScope, [outgoingId]: s.activeSessionId }
+          : s.lastActiveByScope;
+        const next = { ...s, lastActiveByScope };
+        return withActiveSession(next, activationFor(next, incomingId));
       });
     },
 
@@ -116,9 +111,7 @@ export function createTerminalScopeActions(set: UISet, get: UIGet): TerminalScop
       // Distinct from terminalSwitchScope(null, id) only in intent today, but
       // kept separate because hydrate is CONVERGENT (D-T12): calling it twice,
       // or after a user switch already adopted, re-derives the same state.
-      set((s) => ({
-        terminal: withActiveSession(s.terminal, activationFor(s.terminal, instanceId)),
-      }));
+      set((s) => withActiveSession(s, activationFor(s, instanceId)));
     },
 
     terminalRealignActive: (visibleIds) => {
@@ -127,40 +120,34 @@ export function createTerminalScopeActions(set: UISet, get: UIGet): TerminalScop
       // active session — a stale hidden active over an empty tab bar blocked
       // auto-create. Keep the current active if still visible; otherwise the
       // first visible session, else null. Idempotent by construction.
-      const { activeSessionId } = get().terminal;
+      const { activeSessionId } = get();
       if (activeSessionId && visibleIds.includes(activeSessionId)) return;
       const next = visibleIds[0] ?? null;
       if (next === activeSessionId) return;
-      set((s) => ({ terminal: withActiveSession(s.terminal, next) }));
+      set((s) => withActiveSession(s, next));
     },
 
     terminalRemoveScopeSessions: (instanceId) => {
       set((s) => {
-        const sessions = s.terminal.sessions.filter(
+        const sessions = s.sessions.filter(
           (session) => session.workspaceInstanceId !== instanceId,
         );
         if (
-          sessions.length === s.terminal.sessions.length &&
-          !(instanceId in s.terminal.lastActiveByScope)
+          sessions.length === s.sessions.length &&
+          !(instanceId in s.lastActiveByScope)
         ) {
           return s;
         }
-        const { [instanceId]: _dropped, ...lastActiveByScope } =
-          s.terminal.lastActiveByScope;
+        const { [instanceId]: _dropped, ...lastActiveByScope } = s.lastActiveByScope;
         return {
-          terminal: {
-            ...s.terminal,
-            sessions,
-            // The reconcile disposes removed sessions' xterm+PTY (D-T3's
-            // removal path — correct here). Never leave active pointing at a
-            // removed id; the caller realigns via terminalHydrateScope.
-            activeSessionId: sessions.some(
-              (session) => session.id === s.terminal.activeSessionId,
-            )
-              ? s.terminal.activeSessionId
-              : null,
-            lastActiveByScope,
-          },
+          sessions,
+          // The reconcile disposes removed sessions' xterm+PTY (D-T3's
+          // removal path — correct here). Never leave active pointing at a
+          // removed id; the caller realigns via terminalHydrateScope.
+          activeSessionId: sessions.some((session) => session.id === s.activeSessionId)
+            ? s.activeSessionId
+            : null,
+          lastActiveByScope,
         };
       });
     },
@@ -168,11 +155,11 @@ export function createTerminalScopeActions(set: UISet, get: UIGet): TerminalScop
     terminalRekeyScope: (oldId, newId) => {
       set((s) => {
         const movedIds = new Set(
-          s.terminal.sessions
+          s.sessions
             .filter((session) => session.workspaceInstanceId === oldId)
             .map((session) => session.id),
         );
-        const stamped = s.terminal.sessions.map((session) =>
+        const stamped = s.sessions.map((session) =>
           movedIds.has(session.id)
             ? { ...session, workspaceInstanceId: newId }
             : session,
@@ -180,8 +167,8 @@ export function createTerminalScopeActions(set: UISet, get: UIGet): TerminalScop
         const sessions =
           movedIds.size > 0
             ? renumberIntoScope(stamped, movedIds, newId)
-            : s.terminal.sessions;
-        const { [oldId]: oldSlot, ...rest } = s.terminal.lastActiveByScope;
+            : s.sessions;
+        const { [oldId]: oldSlot, ...rest } = s.lastActiveByScope;
         // Target-wins merge — mirrors workspaceInstanceUiStore.rekeyInstanceUiState.
         const lastActiveByScope =
           newId in rest
@@ -189,7 +176,7 @@ export function createTerminalScopeActions(set: UISet, get: UIGet): TerminalScop
             : oldSlot !== undefined
               ? { ...rest, [newId]: oldSlot }
               : rest;
-        return { terminal: { ...s.terminal, sessions, lastActiveByScope } };
+        return { sessions, lastActiveByScope };
       });
     },
   };

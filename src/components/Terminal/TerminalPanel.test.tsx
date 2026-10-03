@@ -95,7 +95,8 @@ vi.mock("@tauri-apps/plugin-clipboard-manager", () => ({
 
 import { TerminalPanel } from "./TerminalPanel";
 import { TERMINAL_SURFACE_SELECTOR } from "@/utils/terminalSurface";
-import { resetTerminalSessionStore, useUIStore } from "@/stores/uiStore";
+import { useUIStore } from "@/stores/uiStore";
+import { resetTerminalSessionStore, useTerminalStore } from "@/stores/terminalStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useWorkspaceInstancesStore } from "@/stores/workspaceInstancesStore";
 import {
@@ -125,7 +126,7 @@ beforeEach(() => {
 describe("TerminalPanel — resetDisplay wiring (#856)", () => {
   it("passes the active terminal's resetDisplay to the context menu, which repaints on click", () => {
     showPanel();
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     const { container } = render(<TerminalPanel />);
 
     // Trigger context menu via right-click on the terminal container
@@ -144,10 +145,10 @@ describe("TerminalPanel — resetDisplay wiring (#856)", () => {
     // active.
     xterm.failOpen = true;
     showPanel();
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
 
     const { container } = render(<TerminalPanel />);
-    expect(useUIStore.getState().terminal.activeSessionId).toBeNull();
+    expect(useTerminalStore.getState().activeSessionId).toBeNull();
 
     const termContainer = container.querySelector(".terminal-container");
     fireEvent.contextMenu(termContainer!, { clientX: 10, clientY: 10 });
@@ -159,18 +160,18 @@ describe("TerminalPanel — resetDisplay wiring (#856)", () => {
 describe("TerminalPanel — closing the last VISIBLE session (WI-TS3.3)", () => {
   it("hides the panel when the last visible session closes", () => {
     useUIStore.setState({ terminalVisible: true });
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     render(<TerminalPanel />);
 
     fireEvent.click(closeButton());
 
-    expect(useUIStore.getState().terminal.sessions).toHaveLength(0);
+    expect(useTerminalStore.getState().sessions).toHaveLength(0);
     expect(useUIStore.getState().terminalVisible).toBe(false);
   });
 
   it("never TOGGLES an already-hidden panel back to visible (the journey-35 resurrect)", () => {
     useUIStore.setState({ terminalVisible: true });
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     render(<TerminalPanel />);
     // Automation teardown: the panel goes hidden, the session outlives it.
     act(() => {
@@ -179,7 +180,7 @@ describe("TerminalPanel — closing the last VISIBLE session (WI-TS3.3)", () => 
 
     fireEvent.click(closeButton());
 
-    expect(useUIStore.getState().terminal.sessions).toHaveLength(0);
+    expect(useTerminalStore.getState().sessions).toHaveLength(0);
     // The old blind toggle flipped this back to true — and the panel's
     // auto-create then spawned a shell nobody asked for.
     expect(useUIStore.getState().terminalVisible).toBe(false);
@@ -223,35 +224,35 @@ describe("TerminalPanel — rail-mode toggle realigns and auto-creates (R2-15)",
     addWorkspace("wsi-a", "/repo-a");
     addWorkspace("wsi-b", "/repo-b");
     useWorkspaceInstancesStore.getState().activateWorkspaceInstance("main", "wsi-a");
-    const sA = useUIStore.getState().terminalCreateSession({ ownerInstanceId: "wsi-a" })!;
-    const sB = useUIStore.getState().terminalCreateSession({ ownerInstanceId: "wsi-b" })!;
-    useUIStore.getState().terminalSetActiveSession(sB.id);
+    const sA = useTerminalStore.getState().terminalCreateSession({ ownerInstanceId: "wsi-a" })!;
+    const sB = useTerminalStore.getState().terminalCreateSession({ ownerInstanceId: "wsi-b" })!;
+    useTerminalStore.getState().terminalSetActiveSession(sB.id);
     useUIStore.setState({ terminalVisible: true });
     render(<TerminalPanel />);
     // Rail off: sB is visible (stamps inert) and legitimately active.
-    expect(useUIStore.getState().terminal.activeSessionId).toBe(sB.id);
+    expect(useTerminalStore.getState().activeSessionId).toBe(sB.id);
 
     act(() => setRail(true)); // sB hides — wsi-a is the active scope
 
     // Before R2-15 nothing re-ran: the hidden sB stayed "active" over a tab
     // bar that no longer shows it.
-    expect(useUIStore.getState().terminal.activeSessionId).toBe(sA.id);
+    expect(useTerminalStore.getState().activeSessionId).toBe(sA.id);
     // No phantom session: the visible population was non-empty.
-    expect(useUIStore.getState().terminal.sessions).toHaveLength(2);
+    expect(useTerminalStore.getState().sessions).toHaveLength(2);
   });
 
   it("toggling the rail ON over an EMPTY visible scope auto-creates its first session", () => {
     addWorkspace("wsi-a", "/repo-a");
     addWorkspace("wsi-b", "/repo-b");
     useWorkspaceInstancesStore.getState().activateWorkspaceInstance("main", "wsi-a");
-    const sB = useUIStore.getState().terminalCreateSession({ ownerInstanceId: "wsi-b" })!;
+    const sB = useTerminalStore.getState().terminalCreateSession({ ownerInstanceId: "wsi-b" })!;
     useUIStore.setState({ terminalVisible: true });
     render(<TerminalPanel />);
-    expect(useUIStore.getState().terminal.activeSessionId).toBe(sB.id);
+    expect(useTerminalStore.getState().activeSessionId).toBe(sB.id);
 
     act(() => setRail(true)); // wsi-a's visible population is empty
 
-    const terminal = useUIStore.getState().terminal;
+    const terminal = useTerminalStore.getState();
     const created = terminal.sessions.find((s) => s.workspaceInstanceId === "wsi-a");
     expect(created).toBeDefined();
     expect(terminal.activeSessionId).toBe(created?.id);

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { createWorkspaceInstance, generateUUID } from "@/utils/workspaceIdentity";
 import { notifyInstanceRekeyed } from "@/stores/instanceRekeyBus";
-import { useUIStore } from "@/stores/uiStore";
+import { useTerminalStore } from "@/stores/terminalStore";
 import { useWorkspaceInstanceUiStore } from "@/stores/workspaceInstanceUiStore";
 import { useWorkspacePaneLayoutsStore } from "@/stores/workspacePaneLayoutsStore";
 import {
@@ -222,7 +222,7 @@ export const useWorkspaceInstancesStore = create<WorkspaceInstancesState>()((set
       // WI-TS2.3 (D-T6): terminal sessions follow the identity re-key too —
       // merge semantics (re-stamp, ordinal renumber, memory target-wins)
       // live in terminalRekeyScope.
-      useUIStore.getState().terminalRekeyScope(rekeyedFrom, instanceId);
+      useTerminalStore.getState().terminalRekeyScope(rekeyedFrom, instanceId);
       // Closed-tab reopen history follows via the bus (audit 20260831 #9 —
       // tabStoreClosedScopes imports this store, so a direct call back would
       // be an import cycle).

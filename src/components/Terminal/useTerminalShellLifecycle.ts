@@ -34,7 +34,7 @@
  * @module components/Terminal/useTerminalShellLifecycle
  */
 import { useCallback } from "react";
-import { useUIStore } from "@/stores/uiStore";
+import { useTerminalStore } from "@/stores/terminalStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { initialState } from "@/stores/settingsStore/defaults";
 import { errorMessage } from "@/utils/errorMessage";
@@ -58,9 +58,9 @@ function resetForNewSession(entry: SessionEntry, statusLine: string): Promise<vo
 
 /** The OSC 0/2 tab title belonged to the dead program: fall back to the label. */
 function dropProgramTitle(sessionId: string): void {
-  const ui = useUIStore.getState();
-  const hasTitle = ui.terminal.sessions.some((s) => s.id === sessionId && s.programTitle);
-  if (hasTitle) ui.terminalSetProgramTitle(sessionId, "");
+  const store = useTerminalStore.getState();
+  const hasTitle = store.sessions.some((s) => s.id === sessionId && s.programTitle);
+  if (hasTitle) store.terminalSetProgramTitle(sessionId, "");
 }
 
 export interface TerminalShellLifecycle {
@@ -93,14 +93,14 @@ export function useTerminalShellLifecycle(
       // everything else. PEEKED, not consumed: it is cleared only once the
       // spawn succeeds, so a failed first spawn can still be retried in the
       // directory the user actually asked for.
-      const requestedCwd = useUIStore.getState().terminalPeekRequestedCwd(sessionId);
+      const requestedCwd = useTerminalStore.getState().terminalPeekRequestedCwd(sessionId);
       // D-T9 (WI-TS4.1): cwd AND the env's workspace root come from the ONE
       // spawn-context contract — request > same-scope sibling OSC-7 cwd >
       // owner scope > active-scope/file fallback — resolved ONCE before the
       // await, so a rail switch mid-spawn cannot retarget either.
-      const storeSession = useUIStore
+      const storeSession = useTerminalStore
         .getState()
-        .terminal.sessions.find((s) => s.id === sessionId);
+        .sessions.find((s) => s.id === sessionId);
       const context = resolveTerminalSpawnContext(
         getCurrentWindowLabel(),
         storeSession,
@@ -169,10 +169,10 @@ export function useTerminalShellLifecycle(
         currentEntry.ptyRefForKeys.current = pty;
         currentEntry.spawnedCwd = cwd;
         currentEntry.shellSpawning = false;
-        useUIStore.getState().terminalMarkSessionAlive(sessionId);
+        useTerminalStore.getState().terminalMarkSessionAlive(sessionId);
         // The requested directory has now been honored — release it so a later
         // restart resolves normally instead of re-anchoring to a stale request.
-        if (requestedCwd) useUIStore.getState().terminalClearRequestedCwd(sessionId);
+        if (requestedCwd) useTerminalStore.getState().terminalClearRequestedCwd(sessionId);
 
         // If the workspace changed WHILE spawning, cd to the new root — but
         // NOT when the user explicitly asked for a directory (WI-4.2), and
@@ -200,7 +200,7 @@ export function useTerminalShellLifecycle(
           e.instance.term.write(failedToStartLine(errorMessage(err)));
           e.instance.term.write(pressAnyKeyToRetryLine());
           e.shellExited = true;
-          useUIStore.getState().terminalMarkSessionDead(sessionId);
+          useTerminalStore.getState().terminalMarkSessionDead(sessionId);
         }
       }
     },
@@ -208,7 +208,7 @@ export function useTerminalShellLifecycle(
   );
 
   const restartActiveSession = useCallback(() => {
-    const activeId = useUIStore.getState().terminal.activeSessionId;
+    const activeId = useTerminalStore.getState().activeSessionId;
     if (!activeId) return;
     const entry = sessionsRef.current.get(activeId);
     if (!entry || entry.disposed) return;

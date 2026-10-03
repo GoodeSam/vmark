@@ -32,7 +32,7 @@ vi.mock("@/services/persistence/workspaceStorage", () => ({
 }));
 
 import { useTerminalSessions } from "./useTerminalSessions";
-import { resetTerminalSessionStore, useUIStore } from "@/stores/uiStore";
+import { resetTerminalSessionStore, useTerminalStore } from "@/stores/terminalStore";
 
 describe("useTerminalSessions — instance construction failure (audit #38)", () => {
   beforeEach(() => {
@@ -46,14 +46,14 @@ describe("useTerminalSessions — instance construction failure (audit #38)", ()
     renderHook(() => useTerminalSessions(containerRef));
 
     act(() => {
-      useUIStore.getState().terminalCreateSession();
+      useTerminalStore.getState().terminalCreateSession();
     });
 
     // The old behavior: session survives with no instance — a permanently
     // blank, unrecoverable tab.
     expect(xterm.opens).toBe(1);
-    expect(useUIStore.getState().terminal.sessions).toHaveLength(0);
-    expect(useUIStore.getState().terminal.activeSessionId).toBeNull();
+    expect(useTerminalStore.getState().sessions).toHaveLength(0);
+    expect(useTerminalStore.getState().activeSessionId).toBeNull();
     // The half-built terminal was rolled back, not leaked, and its container
     // left the DOM.
     expect(xterm.disposes).toBe(1);

@@ -21,7 +21,7 @@
  *     hygiene `terminalSetProgramTitle` applies to program-supplied titles.
  *
  * @coordinates-with TerminalTabBar.tsx — sole caller
- * @coordinates-with stores/uiStore/terminalSlice.ts — terminalRenameSession sets isUserRenamed
+ * @coordinates-with stores/terminalStore/sessionActions.ts — terminalRenameSession sets isUserRenamed
  * @module components/Terminal/TerminalTabRename
  */
 import { useCallback, useRef, useState } from "react";

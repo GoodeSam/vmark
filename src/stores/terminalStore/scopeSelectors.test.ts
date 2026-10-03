@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   selectVisibleSessionCount,
   selectVisibleTerminalSessions,
-} from "./terminalScopeSelectors";
+} from "./scopeSelectors";
 import type { TerminalSession } from "./types";
 
 const mk = (id: string, workspaceInstanceId?: string): TerminalSession => ({

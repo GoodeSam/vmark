@@ -60,7 +60,7 @@ vi.mock("@tauri-apps/api/webviewWindow", () => ({
   }),
 }));
 
-// Mock useUIStore (includes merged search/contentSearch/terminal slices for T09 consolidation)
+// Mock useUIStore (includes merged search/contentSearch slices for T09 consolidation)
 vi.mock("@/stores/uiStore", () => {
   const state = {
     content: "",
@@ -96,10 +96,6 @@ vi.mock("@/stores/uiStore", () => {
       error: null,
       totalMatches: 0,
       totalFiles: 0,
-    },
-    terminal: {
-      sessions: [],
-      activeSessionId: null,
     },
     searchSetMatches: vi.fn(),
   };
