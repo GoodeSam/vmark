@@ -23,10 +23,10 @@ import { ShortcutsSettings } from "./ShortcutsSettings";
 import { useShortcutsStore } from "@/stores/settingsStore";
 
 const KEYS = [
-  "shortcuts.importErrorInvalidFormat",
-  "shortcuts.importErrorInvalidKey",
-  "shortcuts.importErrorUnknownShortcut",
-  "shortcuts.importErrorParse",
+  "shortcuts.importError.invalidFormat",
+  "shortcuts.importError.invalidKey",
+  "shortcuts.importError.unknownShortcut",
+  "shortcuts.importError.parse",
 ];
 
 async function importFile(container: HTMLElement, text: string): Promise<void> {
@@ -61,8 +61,8 @@ describe("shortcut import errors are translated at the display site", () => {
     await importFile(container, JSON.stringify({ customBindings: { bold: 42, noSuchShortcut: "Mod-k" } }));
 
     expect(await descriptionLines()).toEqual([
-      "⟦settings:shortcuts.importErrorInvalidKey|bold⟧",
-      "⟦settings:shortcuts.importErrorUnknownShortcut|noSuchShortcut⟧",
+      "⟦settings:shortcuts.importError.invalidKey|bold⟧",
+      "⟦settings:shortcuts.importError.unknownShortcut|noSuchShortcut⟧",
     ]);
   });
 
@@ -70,7 +70,7 @@ describe("shortcut import errors are translated at the display site", () => {
     const { container } = render(<ShortcutsSettings />);
     await importFile(container, JSON.stringify({ something: "else" }));
 
-    expect(await descriptionLines()).toEqual(["⟦settings:shortcuts.importErrorInvalidFormat⟧"]);
+    expect(await descriptionLines()).toEqual(["⟦settings:shortcuts.importError.invalidFormat⟧"]);
   });
 
   it("renders a file that is not JSON from its key, with the parser's detail", async () => {
@@ -78,7 +78,7 @@ describe("shortcut import errors are translated at the display site", () => {
     await importFile(container, "{ not json");
 
     const [line] = await descriptionLines();
-    expect(line).toMatch(/^⟦settings:shortcuts\.importErrorParse\|.+⟧$/);
+    expect(line).toMatch(/^⟦settings:shortcuts\.importError\.parse\|.+⟧$/);
   });
 
   it("has every message translated, with its placeholder, in every locale", () => {
