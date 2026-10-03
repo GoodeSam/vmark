@@ -329,6 +329,7 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 - **WI-RA24.10 — word movement and fence scanning are linear.**
 - **WI-RA24.11 — CJK pairs never span a paragraph break.**
 - **WI-RA24.12 — workflow shell scripts pass actionlint.**
+- **WI-RA24.13 — dead code and never-failing assertions left by the save-all change.**
 
 #### Phase RA25 — maintainer decisions of 2026-10-03
 - **WI-RA25.1 — YouTube, Vimeo and Bilibili embeds work in release builds.**
