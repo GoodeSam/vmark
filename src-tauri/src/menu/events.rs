@@ -42,6 +42,9 @@ struct PendingMenuEvent {
     /// For simple events, payload is just the window label
     /// For recent-file events, payload includes the file path
     recent_file_path: Option<String>,
+    /// A payload emitted as it is, in place of the two forms above: what
+    /// [`deliver_when_ready`] was handed. `None` for every menu event.
+    payload: Option<serde_json::Value>,
 }
 
 /// Global state for window readiness tracking
@@ -148,7 +151,9 @@ fn check_ready_or_queue(label: &str, event: PendingMenuEvent) -> bool {
 /// makes the dropped event visible without producing a crash.
 fn emit_event<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>, event: &PendingMenuEvent) {
     let label = window.label();
-    let result = if let Some(ref path) = event.recent_file_path {
+    let result = if let Some(ref payload) = event.payload {
+        window.emit(&event.event_name, payload)
+    } else if let Some(ref path) = event.recent_file_path {
         window.emit(&event.event_name, (path.as_str(), label))
     } else {
         window.emit(&event.event_name, label)
@@ -195,29 +200,40 @@ pub(crate) enum Delivery {
     Deferred,
 }
 
-/// Deliver a label-payload event to `window`: now if its frontend is
+/// Deliver `payload` as `event_name` to `window`: now if its frontend is
 /// listening, when it signals `ready` otherwise.
 ///
 /// Unlike a menu event, the caller needs the outcome — a failed emit is
 /// returned rather than logged — and asking twice must not deliver twice, so
-/// an event already waiting for this window is not queued again.
-pub(crate) fn deliver_when_ready<R: tauri::Runtime>(
+/// an event already waiting for this window is not queued again. It takes the
+/// newer payload instead: a quit asked again can ask for more (save
+/// everything rather than ask), and the window must get what is asked now.
+pub(crate) fn deliver_when_ready<R: tauri::Runtime, P: serde::Serialize>(
     window: &tauri::WebviewWindow<R>,
     event_name: &str,
+    payload: &P,
 ) -> tauri::Result<Delivery> {
+    let payload = serde_json::to_value(payload)?;
     let label = window.label();
     {
         let mut state = get_state();
         let s = state.get_or_insert_with(WindowReadyState::new);
         if !s.ready_windows.contains(label) {
             let waiting = s.pending_events.entry(label.to_string()).or_default();
-            if !waiting.iter().any(|event| event.event_name == event_name) {
-                waiting.push(make_menu_event(event_name));
+            match waiting
+                .iter_mut()
+                .find(|event| event.event_name == event_name)
+            {
+                Some(event) => event.payload = Some(payload),
+                None => waiting.push(PendingMenuEvent {
+                    payload: Some(payload),
+                    ..make_menu_event(event_name)
+                }),
             }
             return Ok(Delivery::Deferred);
         }
     }
-    window.emit(event_name, label)?;
+    window.emit(event_name, payload)?;
     Ok(Delivery::Emitted)
 }
 
@@ -236,6 +252,7 @@ fn make_menu_event(event_name: &str) -> PendingMenuEvent {
     PendingMenuEvent {
         event_name: event_name.to_string(),
         recent_file_path: None,
+        payload: None,
     }
 }
 
@@ -244,6 +261,7 @@ fn make_recent_file_event(path: &str) -> PendingMenuEvent {
     PendingMenuEvent {
         event_name: "menu:open-recent-file".to_string(),
         recent_file_path: Some(path.to_string()),
+        payload: None,
     }
 }
 
@@ -252,6 +270,7 @@ fn make_recent_workspace_event(path: &str) -> PendingMenuEvent {
     PendingMenuEvent {
         event_name: "menu:open-recent-workspace".to_string(),
         recent_file_path: Some(path.to_string()),
+        payload: None,
     }
 }
 

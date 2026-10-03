@@ -138,7 +138,10 @@ pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
         // unsaved-changes prompts. request_quit applies the confirm-quit gate
         // internally before starting coordinated quit.
         MenuAction::Quit => quit::request_quit(app),
-        MenuAction::SaveAllQuit => handle_save_all_quit(app),
+        // Every document window saves its own documents (each window's stores
+        // are its own), so the quit coordinator asks them all; with no
+        // document window the quit simply finishes.
+        MenuAction::SaveAllQuit => quit::start_save_all_quit(app),
         MenuAction::RecentFile(index) => handle_recent_file(app, index),
         MenuAction::RecentWorkspace(index) => handle_recent_workspace(app, index),
         MenuAction::GenieItem(index) => handle_genie_item(app, id, index),
@@ -153,20 +156,6 @@ pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
             route_to_document_window(app, make_menu_event(&format!("menu:{id}")))
         }
         MenuAction::Generic => emit_generic(app, id),
-    }
-}
-
-/// Save All and Quit (Alt+Shift+Cmd+Q): emit to a document window so the
-/// frontend can run save-all logic; with no document windows there is nothing
-/// to save — just quit.
-fn handle_save_all_quit(app: &AppHandle) {
-    let event = make_menu_event("menu:save-all-quit");
-    if let Some(focused) = get_focused_document_window(app) {
-        emit_or_queue_atomic(&focused, event);
-    } else if let Some(window) = get_any_document_window(app) {
-        emit_or_queue_atomic(&window, event);
-    } else {
-        crate::window_manager::force_quit(app.clone());
     }
 }
 
@@ -194,6 +183,7 @@ fn handle_genie_item(app: &AppHandle, id: &str, index: usize) {
         let event = PendingMenuEvent {
             event_name: "menu:invoke-genie".to_string(),
             recent_file_path: Some(path),
+            payload: None,
         };
         if let Some(focused) = get_focused_document_window(app) {
             emit_event(&focused, &event);

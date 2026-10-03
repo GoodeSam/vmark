@@ -7,8 +7,15 @@
 //! document window to quit (`quit_broadcast.rs`: now if it is listening, when
 //! it is ready otherwise) → windows close one by one →
 //! `handle_window_destroyed` → when all targets gone → `finalize_quit` → `app.exit(0)`.
+//! Save All and Quit (menu, or `save_all_and_quit` from the palette) →
+//! `start_save_all_quit` → the same pipeline, with every window told to save
+//! everything instead of asking.
 //!
 //! Key decisions:
+//!   - Save All and Quit is a MODE of this quit, not a frontend save followed
+//!     by an exit: each window's stores are its own, so only each window can
+//!     save its documents. A window that cannot save answers `cancel_quit` and
+//!     stays open, so the app never quits over a failed save.
 //!   - EXIT_ALLOWED is only set to true immediately before `app.exit(0)` to prevent
 //!     premature exit during the coordinated quit flow.
 //!   - The confirm-quit gate uses wall-clock timing (Instant) so it works even when
@@ -33,7 +40,13 @@ use crate::mcp_bridge;
 
 #[path = "quit_broadcast.rs"]
 mod broadcast;
-use broadcast::{abort_quit_on_emit_failure, claim_quit_attempt, QuitAttempt};
+use broadcast::{abort_quit_on_emit_failure, claim_quit_attempt, QuitAttempt, QuitMode};
+
+#[path = "quit_exit_request.rs"]
+mod exit_request;
+pub use exit_request::{
+    decide_exit_request_action, keep_alive_without_document_windows, ExitRequestAction,
+};
 
 static QUIT_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
@@ -55,40 +68,6 @@ static QUIT_TARGETS: LazyLock<Mutex<HashSet<String>>> =
 /// Return `true` if the label identifies a document window (`main` or `doc-*`).
 pub fn is_document_window_label(label: &str) -> bool {
     label == "main" || label.starts_with("doc-")
-}
-
-#[derive(Debug, PartialEq)]
-pub enum ExitRequestAction {
-    AllowExit,
-    PreventAndStartQuit,
-    PreventAndKeepAlive,
-}
-
-/// Decide how to handle Tauri's process-level exit request.
-///
-/// macOS keeps the app alive when the last window closes so the Dock icon can
-/// reopen a document window. Linux/Windows should exit when no document windows
-/// remain, matching normal desktop and CLI-launched app behavior.
-pub fn decide_exit_request_action(
-    exit_allowed: bool,
-    has_document_windows: bool,
-    keep_alive_without_documents: bool,
-) -> ExitRequestAction {
-    if exit_allowed {
-        return ExitRequestAction::AllowExit;
-    }
-    if has_document_windows {
-        return ExitRequestAction::PreventAndStartQuit;
-    }
-    if keep_alive_without_documents {
-        ExitRequestAction::PreventAndKeepAlive
-    } else {
-        ExitRequestAction::AllowExit
-    }
-}
-
-pub fn keep_alive_without_document_windows() -> bool {
-    cfg!(target_os = "macos")
 }
 
 /// Return `true` when the app is ready to terminate (set just before `app.exit(0)`).
@@ -210,15 +189,39 @@ fn finalize_quit(app: &AppHandle) {
     app.exit(0);
 }
 
-/// Start coordinated quit: request close of all document windows. A request
-/// arriving while a quit is under way is a duplicate, until that quit has gone
-/// unfinished long enough to be asked again (`quit_broadcast.rs`).
+/// Start coordinated quit: request close of all document windows, each of
+/// which asks about its unsaved documents.
 pub fn start_quit(app: &AppHandle) {
-    match claim_quit_attempt(Instant::now()) {
+    start_quit_in(app, QuitMode::Prompt);
+}
+
+/// Save All and Quit: the coordinated quit in which every document window
+/// saves its unsaved documents without asking, then closes. A window that
+/// cannot save cancels the quit and stays open. No confirm gate: the command
+/// is its own confirmation.
+pub fn start_save_all_quit(app: &AppHandle) {
+    start_quit_in(app, QuitMode::SaveAll);
+}
+
+/// Save All and Quit from the frontend (the command palette); the menu item
+/// starts it in Rust.
+#[tauri::command]
+pub fn save_all_and_quit(app: AppHandle) {
+    start_save_all_quit(&app);
+}
+
+/// Request close of all document windows in `mode`. A request arriving while
+/// a quit is under way is a duplicate, until that quit has gone unfinished
+/// long enough to be asked again (`quit_broadcast.rs`).
+fn start_quit_in(app: &AppHandle, mode: QuitMode) {
+    let mode = match claim_quit_attempt(Instant::now(), mode) {
         QuitAttempt::AlreadyRunning => return,
-        QuitAttempt::Retry => log::warn!("[quit] quit has not finished — asking again"),
-        QuitAttempt::Fresh => {}
-    }
+        QuitAttempt::Retry(mode) => {
+            log::warn!("[quit] a quit is under way — asking every window again ({mode:?})");
+            mode
+        }
+        QuitAttempt::Fresh(mode) => mode,
+    };
     set_exit_allowed(false);
 
     // A window parked in the tray (#1419) is about to be asked to run its save
@@ -252,7 +255,7 @@ pub fn start_quit(app: &AppHandle) {
     // audit 20260612).
     set_quit_targets(targets);
 
-    if let Err((label, e)) = broadcast::request_quit_of(&document_windows) {
+    if let Err((label, e)) = broadcast::request_quit_of(&document_windows, mode) {
         abort_quit_on_emit_failure(&label, e);
     }
 }

@@ -1,5 +1,8 @@
 //! WI-RA7.3 — the quit request honours window readiness, and a quit that
 //! stalls stops swallowing retries.
+//! WI-RA25.2 — Save All and Quit is a mode of the same quit: every window is
+//! told to save everything, a booting window is told so when it is ready, and
+//! a request for more than the running quit asks is never swallowed.
 //!
 //! The defect: Cmd+N then Cmd+Q during boot emitted `app:quit-requested` to a
 //! window whose listeners were not registered yet. The request went nowhere,
@@ -24,7 +27,10 @@ fn quit_state() -> std::sync::MutexGuard<'static, ()> {
 #[test]
 fn the_first_request_starts_the_quit() {
     let _lock = quit_state();
-    assert_eq!(claim_quit_attempt(Instant::now()), QuitAttempt::Fresh);
+    assert_eq!(
+        claim_quit_attempt(Instant::now(), QuitMode::Prompt),
+        QuitAttempt::Fresh(QuitMode::Prompt)
+    );
     assert!(is_quit_in_progress());
     cancel_quit();
 }
@@ -33,11 +39,20 @@ fn the_first_request_starts_the_quit() {
 fn a_repeat_inside_the_retry_window_is_a_duplicate() {
     let _lock = quit_state();
     let start = Instant::now();
-    assert_eq!(claim_quit_attempt(start), QuitAttempt::Fresh);
+    assert_eq!(
+        claim_quit_attempt(start, QuitMode::Prompt),
+        QuitAttempt::Fresh(QuitMode::Prompt)
+    );
 
-    assert_eq!(claim_quit_attempt(start), QuitAttempt::AlreadyRunning);
+    assert_eq!(
+        claim_quit_attempt(start, QuitMode::Prompt),
+        QuitAttempt::AlreadyRunning
+    );
     let just_inside = start + QUIT_RETRY_AFTER - Duration::from_millis(1);
-    assert_eq!(claim_quit_attempt(just_inside), QuitAttempt::AlreadyRunning);
+    assert_eq!(
+        claim_quit_attempt(just_inside, QuitMode::Prompt),
+        QuitAttempt::AlreadyRunning
+    );
     cancel_quit();
 }
 
@@ -45,12 +60,15 @@ fn a_repeat_inside_the_retry_window_is_a_duplicate() {
 fn a_quit_still_unfinished_after_the_retry_window_is_asked_again() {
     let _lock = quit_state();
     let start = Instant::now();
-    assert_eq!(claim_quit_attempt(start), QuitAttempt::Fresh);
+    assert_eq!(
+        claim_quit_attempt(start, QuitMode::Prompt),
+        QuitAttempt::Fresh(QuitMode::Prompt)
+    );
 
     let stalled = start + QUIT_RETRY_AFTER;
     assert_eq!(
-        claim_quit_attempt(stalled),
-        QuitAttempt::Retry,
+        claim_quit_attempt(stalled, QuitMode::Prompt),
+        QuitAttempt::Retry(QuitMode::Prompt),
         "a stalled quit must not swallow the user's next Cmd+Q"
     );
     assert!(is_quit_in_progress(), "the quit is still the same quit");
@@ -58,12 +76,12 @@ fn a_quit_still_unfinished_after_the_retry_window_is_asked_again() {
     // The retry restarts the clock: an immediate repeat is a duplicate again,
     // and a later one is honoured again.
     assert_eq!(
-        claim_quit_attempt(stalled + Duration::from_secs(1)),
+        claim_quit_attempt(stalled + Duration::from_secs(1), QuitMode::Prompt),
         QuitAttempt::AlreadyRunning
     );
     assert_eq!(
-        claim_quit_attempt(stalled + QUIT_RETRY_AFTER * 3),
-        QuitAttempt::Retry
+        claim_quit_attempt(stalled + QUIT_RETRY_AFTER * 3, QuitMode::Prompt),
+        QuitAttempt::Retry(QuitMode::Prompt)
     );
     cancel_quit();
 }
@@ -74,9 +92,12 @@ fn a_request_stamped_before_the_quit_started_is_a_duplicate_not_a_panic() {
     // the start it is compared with.
     let _lock = quit_state();
     let start = Instant::now() + Duration::from_secs(5);
-    assert_eq!(claim_quit_attempt(start), QuitAttempt::Fresh);
     assert_eq!(
-        claim_quit_attempt(start - Duration::from_secs(5)),
+        claim_quit_attempt(start, QuitMode::Prompt),
+        QuitAttempt::Fresh(QuitMode::Prompt)
+    );
+    assert_eq!(
+        claim_quit_attempt(start - Duration::from_secs(5), QuitMode::Prompt),
         QuitAttempt::AlreadyRunning
     );
     cancel_quit();
@@ -86,12 +107,94 @@ fn a_request_stamped_before_the_quit_started_is_a_duplicate_not_a_panic() {
 fn a_cancelled_quit_leaves_the_next_request_fresh() {
     let _lock = quit_state();
     let start = Instant::now();
-    assert_eq!(claim_quit_attempt(start), QuitAttempt::Fresh);
+    assert_eq!(
+        claim_quit_attempt(start, QuitMode::Prompt),
+        QuitAttempt::Fresh(QuitMode::Prompt)
+    );
 
     cancel_quit();
 
     assert!(!is_quit_in_progress());
-    assert_eq!(claim_quit_attempt(start), QuitAttempt::Fresh);
+    assert_eq!(
+        claim_quit_attempt(start, QuitMode::Prompt),
+        QuitAttempt::Fresh(QuitMode::Prompt)
+    );
+    cancel_quit();
+}
+
+// -- Save All and Quit: the save-everything mode ---------------------------------
+
+#[test]
+fn save_all_and_quit_starts_a_quit_that_saves_everything() {
+    let _lock = quit_state();
+    assert_eq!(
+        claim_quit_attempt(Instant::now(), QuitMode::SaveAll),
+        QuitAttempt::Fresh(QuitMode::SaveAll)
+    );
+    assert!(is_quit_in_progress());
+    cancel_quit();
+}
+
+#[test]
+fn save_all_while_a_quit_is_asking_is_not_a_duplicate() {
+    // Cmd+Q, then Save All and Quit a moment later: the second asks for more
+    // than the first, and swallowing it would leave windows prompting.
+    let _lock = quit_state();
+    let start = Instant::now();
+    assert_eq!(
+        claim_quit_attempt(start, QuitMode::Prompt),
+        QuitAttempt::Fresh(QuitMode::Prompt)
+    );
+
+    let moment_later = start + Duration::from_millis(500);
+    assert_eq!(
+        claim_quit_attempt(moment_later, QuitMode::SaveAll),
+        QuitAttempt::Retry(QuitMode::SaveAll),
+        "every remaining window is asked again, to save everything"
+    );
+    assert!(is_quit_in_progress(), "the quit is still the same quit");
+    // Now the quit saves everything; a repeat of either request is a duplicate.
+    assert_eq!(
+        claim_quit_attempt(moment_later, QuitMode::SaveAll),
+        QuitAttempt::AlreadyRunning
+    );
+    assert_eq!(
+        claim_quit_attempt(moment_later, QuitMode::Prompt),
+        QuitAttempt::AlreadyRunning
+    );
+    cancel_quit();
+}
+
+#[test]
+fn a_quit_that_saves_everything_is_never_downgraded_to_asking() {
+    let _lock = quit_state();
+    let start = Instant::now();
+    assert_eq!(
+        claim_quit_attempt(start, QuitMode::SaveAll),
+        QuitAttempt::Fresh(QuitMode::SaveAll)
+    );
+    assert_eq!(
+        claim_quit_attempt(start, QuitMode::Prompt),
+        QuitAttempt::AlreadyRunning
+    );
+    assert_eq!(
+        claim_quit_attempt(start + QUIT_RETRY_AFTER, QuitMode::Prompt),
+        QuitAttempt::Retry(QuitMode::SaveAll),
+        "a stalled save-all quit asked again by Cmd+Q still saves everything"
+    );
+    cancel_quit();
+}
+
+#[test]
+fn a_cancelled_save_all_quit_leaves_the_next_quit_asking() {
+    let _lock = quit_state();
+    let start = Instant::now();
+    claim_quit_attempt(start, QuitMode::SaveAll);
+    cancel_quit();
+    assert_eq!(
+        claim_quit_attempt(start, QuitMode::Prompt),
+        QuitAttempt::Fresh(QuitMode::Prompt)
+    );
     cancel_quit();
 }
 
@@ -104,10 +207,11 @@ fn a_cancelled_quit_leaves_the_next_request_fresh() {
 mod on_a_mock_app {
     use std::sync::{Arc, Mutex};
 
+    use serde_json::{json, Value};
     use tauri::test::MockRuntime;
     use tauri::{Listener, WebviewWindow};
 
-    use super::super::{request_quit_of, QUIT_REQUESTED_EVENT};
+    use super::super::{request_quit_of, QuitMode, QUIT_REQUESTED_EVENT};
     use super::{cancel_quit, quit_state};
     use crate::menu;
 
@@ -143,8 +247,96 @@ mod on_a_mock_app {
         seen
     }
 
-    fn received(requests: &Arc<Mutex<Vec<String>>>) -> Vec<String> {
-        requests.lock().expect("capture").clone()
+    fn received(requests: &Arc<Mutex<Vec<String>>>) -> Vec<Value> {
+        requests
+            .lock()
+            .expect("capture")
+            .iter()
+            .map(|payload| serde_json::from_str(payload).expect("a quit request is JSON"))
+            .collect()
+    }
+
+    /// The request a window gets in a quit that asks about each document. It
+    /// names the window: an emit reaches every window, and each answers only
+    /// its own.
+    fn asking(label: &str) -> Value {
+        json!({ "label": label, "saveAll": false })
+    }
+
+    /// The request a window gets in Save All and Quit.
+    fn saving_all(label: &str) -> Value {
+        json!({ "label": label, "saveAll": true })
+    }
+
+    #[test]
+    fn save_all_and_quit_tells_every_window_to_save_everything() {
+        let _lock = quit_state();
+        let app = mock_app();
+        let requests = quit_requests(&app);
+        let windows = [
+            document_window(&app, "doc-70311"),
+            document_window(&app, "doc-70312"),
+        ];
+        menu::events::mark_window_ready(app.handle(), "doc-70311");
+        menu::events::mark_window_ready(app.handle(), "doc-70312");
+
+        request_quit_of(&windows, QuitMode::SaveAll).expect("emit");
+
+        assert_eq!(
+            received(&requests),
+            vec![saving_all("doc-70311"), saving_all("doc-70312")],
+            "every window saves, not only the one the command was chosen in"
+        );
+        menu::events::clear_window_ready("doc-70311");
+        menu::events::clear_window_ready("doc-70312");
+    }
+
+    #[test]
+    fn a_window_still_starting_is_told_to_save_everything_when_it_is_ready() {
+        let _lock = quit_state();
+        let app = mock_app();
+        let requests = quit_requests(&app);
+        let windows = [document_window(&app, "doc-70313")];
+
+        request_quit_of(&windows, QuitMode::SaveAll).expect("deferred");
+        assert!(received(&requests).is_empty());
+
+        menu::events::mark_window_ready(app.handle(), "doc-70313");
+        assert_eq!(received(&requests), vec![saving_all("doc-70313")]);
+        menu::events::clear_window_ready("doc-70313");
+    }
+
+    #[test]
+    fn a_window_still_starting_asked_again_to_save_everything_gets_that_request_once() {
+        // Cmd+Q reached a booting window, then Save All and Quit escalated the
+        // quit before it finished starting: it must save, and be asked once.
+        let _lock = quit_state();
+        let app = mock_app();
+        let requests = quit_requests(&app);
+        let windows = [document_window(&app, "doc-70314")];
+
+        request_quit_of(&windows, QuitMode::Prompt).expect("first ask");
+        request_quit_of(&windows, QuitMode::SaveAll).expect("the escalation");
+        menu::events::mark_window_ready(app.handle(), "doc-70314");
+
+        assert_eq!(received(&requests), vec![saving_all("doc-70314")]);
+        menu::events::clear_window_ready("doc-70314");
+    }
+
+    #[test]
+    fn a_cancelled_save_all_quit_withdraws_its_request_from_a_window_still_starting() {
+        let _lock = quit_state();
+        let app = mock_app();
+        let requests = quit_requests(&app);
+        let windows = [document_window(&app, "doc-70315")];
+        request_quit_of(&windows, QuitMode::SaveAll).expect("deferred");
+
+        // A save failed in another window, which cancelled the quit.
+        cancel_quit();
+        menu::events::mark_window_ready(app.handle(), "doc-70315");
+
+        assert!(received(&requests).is_empty());
+        menu::events::clear_window_ready("doc-70315");
     }
 
     #[test]
@@ -155,9 +347,9 @@ mod on_a_mock_app {
         let windows = [document_window(&app, "doc-70301")];
         menu::events::mark_window_ready(app.handle(), "doc-70301");
 
-        request_quit_of(&windows).expect("emit");
+        request_quit_of(&windows, QuitMode::Prompt).expect("emit");
 
-        assert_eq!(received(&requests), vec!["\"doc-70301\""]);
+        assert_eq!(received(&requests), vec![asking("doc-70301")]);
         menu::events::clear_window_ready("doc-70301");
     }
 
@@ -168,14 +360,14 @@ mod on_a_mock_app {
         let requests = quit_requests(&app);
         let windows = [document_window(&app, "doc-70302")];
 
-        request_quit_of(&windows).expect("a deferred request is not a failure");
+        request_quit_of(&windows, QuitMode::Prompt).expect("a deferred request is not a failure");
         assert!(
             received(&requests).is_empty(),
             "a request emitted before the frontend listens is a request lost"
         );
 
         menu::events::mark_window_ready(app.handle(), "doc-70302");
-        assert_eq!(received(&requests), vec!["\"doc-70302\""]);
+        assert_eq!(received(&requests), vec![asking("doc-70302")]);
         menu::events::clear_window_ready("doc-70302");
     }
 
@@ -186,8 +378,8 @@ mod on_a_mock_app {
         let requests = quit_requests(&app);
         let windows = [document_window(&app, "doc-70303")];
 
-        request_quit_of(&windows).expect("first ask");
-        request_quit_of(&windows).expect("the retry");
+        request_quit_of(&windows, QuitMode::Prompt).expect("first ask");
+        request_quit_of(&windows, QuitMode::Prompt).expect("the retry");
         menu::events::mark_window_ready(app.handle(), "doc-70303");
 
         assert_eq!(
@@ -204,7 +396,7 @@ mod on_a_mock_app {
         let app = mock_app();
         let requests = quit_requests(&app);
         let windows = [document_window(&app, "doc-70304")];
-        request_quit_of(&windows).expect("deferred");
+        request_quit_of(&windows, QuitMode::Prompt).expect("deferred");
 
         // The user cancelled a save prompt in another window.
         cancel_quit();
@@ -228,11 +420,14 @@ mod on_a_mock_app {
         ];
         menu::events::mark_window_ready(app.handle(), "doc-70305");
 
-        request_quit_of(&windows).expect("emit");
-        assert_eq!(received(&requests), vec!["\"doc-70305\""]);
+        request_quit_of(&windows, QuitMode::Prompt).expect("emit");
+        assert_eq!(received(&requests), vec![asking("doc-70305")]);
 
         menu::events::mark_window_ready(app.handle(), "doc-70306");
-        assert_eq!(received(&requests), vec!["\"doc-70305\"", "\"doc-70306\""]);
+        assert_eq!(
+            received(&requests),
+            vec![asking("doc-70305"), asking("doc-70306")]
+        );
         menu::events::clear_window_ready("doc-70305");
         menu::events::clear_window_ready("doc-70306");
     }
