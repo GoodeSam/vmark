@@ -107,7 +107,7 @@ export function useTiptapContentSync({
     const timer = window.setTimeout(sync, delay);
     return () => window.clearTimeout(timer);
   // Refs are stable identities; deps intentionally match the original inline effect.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on content and editor; everything else is a ref or read at sync time
   }, [content, editor]);
 
   // Handle visibility transitions: hidden → visible
@@ -134,6 +134,6 @@ export function useTiptapContentSync({
         activeTabId,
       );
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts to the hidden-to-visible transition only; everything else is a ref or read when it runs
   }, [hidden]);
 }

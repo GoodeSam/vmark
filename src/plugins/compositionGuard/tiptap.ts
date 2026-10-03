@@ -304,7 +304,7 @@ export const compositionGuardExtension = Extension.create({
                   // Heading was split but filterTransaction didn't prevent it
                   // (shouldn't happen, but defensive fallback)
                   splitDetected = false;
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- domObserver is ProseMirror-internal and absent from EditorView's public types
                   (view as any).domObserver?.flush?.();
                   const { state } = view;
                   const splitPos = anchor.at(state.doc);

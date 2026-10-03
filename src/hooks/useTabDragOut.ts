@@ -114,7 +114,7 @@ export function useTabDragOut({ tabBarRef, onDragOut, onReorder, onDragMove }: U
   const onReorderRef = useRef(onReorder);
   const onDragMoveRef = useRef(onDragMove);
   const stableBarRef = useRef(tabBarRef);
-  /* eslint-disable react-hooks/refs */
+  /* eslint-disable react-hooks/refs -- latest-value refs read by document pointer listeners mid-drag must be fresh before any event fires */
   onDragOutRef.current = onDragOut;
   onReorderRef.current = onReorder;
   onDragMoveRef.current = onDragMove;

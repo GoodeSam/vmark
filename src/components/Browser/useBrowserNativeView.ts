@@ -85,7 +85,7 @@ export function useBrowserNativeView(
       markSurfaceUnmounted(tabId);
     };
     // `url` is the initial navigation target only; navigation is explicit after.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- url and automationMode are creation-time inputs; the view is created once per tab and navigated explicitly after
   }, [tabId]);
 
   // Keep the native view aligned under the reserved rect — on resize AND on reflow.

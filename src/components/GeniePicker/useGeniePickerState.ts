@@ -57,10 +57,10 @@ export function useGeniePickerState(
     setFreeformConfirmed(false);
     setShowProviderSwitcher(false);
     promptHistory.reset();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- promptHistory is a fresh object each render; its reset() is what is called, and listing the object would make resetInput unstable
   }, []);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
+  /* eslint-disable react-hooks/set-state-in-effect -- open-transition resets bundled with closing Quick Open and loading genies */
   useEffect(() => {
     if (!isOpen) return;
     useQuickOpenStore.getState().close();
@@ -92,7 +92,7 @@ export function useGeniePickerState(
   // Sync prompt-history cycling back to filter so the textarea updates. Loop-safe:
   // typing sets displayValue === filter via changeFilter, so the guard is true
   // only when cycling produces a new value.
-  /* eslint-disable react-hooks/set-state-in-effect */
+  /* eslint-disable react-hooks/set-state-in-effect -- copies a cycled history prompt into the filter; guarded so typing never loops */
   useEffect(() => {
     if (flatList.length === 0 && promptHistory.displayValue !== filter) {
       setFilter(promptHistory.displayValue);

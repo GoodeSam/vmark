@@ -49,7 +49,7 @@ export function PdfExportPage() {
 
   // Load HTML from temp file on mount. Legitimate setState-in-effect: reads URL
   // params and an async temp file — I/O on mount, not derivable during render (#1063).
-  /* eslint-disable react-hooks/set-state-in-effect */
+  /* eslint-disable react-hooks/set-state-in-effect -- loads the HTML from URL params and an async temp-file read on mount */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const htmlPath = params.get("htmlPath");

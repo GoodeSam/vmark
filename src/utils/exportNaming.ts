@@ -15,7 +15,7 @@ import { truncateToLength } from "./truncateText";
  * - macOS/Linux: / and null
  * We sanitize for all platforms to ensure portability.
  */
-// eslint-disable-next-line no-control-regex
+// eslint-disable-next-line no-control-regex -- C0 controls are invalid in file names on every platform; matching them is the purpose
 const INVALID_FILENAME_CHARS = /[/\\:*?"<>|\u0000-\u001f]/g;
 
 /**
@@ -115,12 +115,12 @@ export function sanitizeFileName(
 
   let result = name
     // Remove null bytes completely (they're never valid)
-    // eslint-disable-next-line no-control-regex
+    // eslint-disable-next-line no-control-regex -- NUL is matched on purpose: it is never valid in a file name
     .replace(/\u0000/g, "")
     // Convert tabs and newlines to spaces (they're whitespace, not invalid)
     .replace(/[\t\r\n]/g, " ")
     // Remove other control characters
-    // eslint-disable-next-line no-control-regex
+    // eslint-disable-next-line no-control-regex -- the remaining C0 controls and DEL are matched on purpose to strip them
     .replace(/[\u0001-\u001f\u007f]/g, "")
     // Replace invalid filesystem characters with dash
     .replace(INVALID_FILENAME_CHARS, "-")

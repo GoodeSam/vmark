@@ -51,7 +51,7 @@ export function useSourcePaneFocus(
 ): MutableRefObject<boolean> {
   const isFocusedPane = useIsFocusedPane(windowLabel);
   const ref = useRef(true);
-  /* eslint-disable-next-line react-hooks/refs */
+  /* eslint-disable-next-line react-hooks/refs -- render-synced so editor callbacks read the current focused-pane flag before effects flush */
   ref.current = isFocusedPane;
   const { tabId: ownTabId, cursorContext = true } = options;
 

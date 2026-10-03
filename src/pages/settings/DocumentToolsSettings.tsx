@@ -68,7 +68,7 @@ export function DocumentToolsSettings() {
   useEffect(() => {
     // Legitimate: detect() runs an async tool probe that sets detection state —
     // I/O on mount, not derivable during render (#1063).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- an async tool probe on mount sets the detection state
     void detect(false);
     return () => { mountedRef.current = false; };
   }, [detect]);

@@ -231,7 +231,7 @@ export function useFileTree(
       // named the closed workspace, which is what the return below gates on.
       // Legitimate: clears the tree as part of an async load + fs-watcher setup
       // keyed on rootPath, not derivable during render (#1063).
-      /* eslint-disable react-hooks/set-state-in-effect */
+      /* eslint-disable react-hooks/set-state-in-effect -- resets tree state when the workspace closes, the other half of invalidating the in-flight listing */
       setTree([]);
       setTreeRoot(null);
       setIsLoading(false);

@@ -144,7 +144,7 @@ export function CommandPalette() {
   // eslint can't see through the getters, so it reads `language` as unused here.
   const ranked: RankedCommand[] = useMemo(
     () => (isOpen ? searchCommands(query, resolveCommandContext(windowLabel)) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- language is a real dependency the rule cannot see: command titles are lazy i18n getters
     [isOpen, query, windowLabel, language],
   );
 
@@ -184,7 +184,7 @@ export function CommandPalette() {
   // Reset and focus on open; restore previous focus on close (a11y). Legitimate
   // setState-in-effect: bound to the open/close transition and bundled with focus
   // capture/restore + RAF focus, not derivable during render (#1063).
-  /* eslint-disable react-hooks/set-state-in-effect */
+  /* eslint-disable react-hooks/set-state-in-effect -- open/close transition resets bundled with focus capture/restore and RAF focus */
   useEffect(() => {
     if (isOpen) {
       previousFocusRef.current = document.activeElement;

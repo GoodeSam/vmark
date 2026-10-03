@@ -31,7 +31,7 @@ export function setupWebLinks(term: Terminal): void {
   /** Open a URI iff its scheme is allowlisted, via the cached opener plugin. */
   const openSafeUri = (uri: string): void => {
     // Reject control chars (terminal output can smuggle them) before parsing.
-    // eslint-disable-next-line no-control-regex
+    // eslint-disable-next-line no-control-regex -- terminal output can smuggle control characters into a URI; detecting them is the check
     if (/[\u0000-\u001f\u007f]/.test(uri)) {
       terminalLog("Blocked URL with control characters");
       return;

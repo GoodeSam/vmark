@@ -52,7 +52,7 @@ export function useTabStripOverflow(ref: RefObject<HTMLElement | null>): Overflo
   // this hook exists to catch. No update chain is possible either — `setState`
   // returns the SAME object when the value is unchanged (React bails out), and
   // once a real change re-renders, the node-identity guard early-returns.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- no dependency array on purpose: only a per-render check notices ref.current going from null to a node
   useEffect(() => {
     const node = ref.current;
     if (node === observedRef.current) return;

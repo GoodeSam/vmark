@@ -108,7 +108,7 @@ export function TiptapEditorInner({ hidden = false, readOnly = false, preview = 
   const contentRef = useRef(content);
   const editorRef = useRef<TiptapEditor | null>(null);
   // Latest-value refs synced during render: a deferred init parse (setTimeout) + the unmount-flush read these and need the latest committed value before effects run (#1063).
-  /* eslint-disable react-hooks/refs */
+  /* eslint-disable react-hooks/refs -- latest-value refs read by the deferred init parse and the unmount flush before effects run */
   cursorInfoRef.current = cursorInfo;
   preserveLineBreaksRef.current = preserveLineBreaks;
   hardBreakStyleOnSaveRef.current = hardBreakStyleOnSave;
@@ -122,7 +122,7 @@ export function TiptapEditorInner({ hidden = false, readOnly = false, preview = 
     // tabId is captured at mount time — editor remounts per tab. The lint
     // toggle is handled LIVE inside the lint extension (settings-store
     // subscription), so it is deliberately not a dependency here.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- built once per mount (the editor remounts per tab); the lint toggle is applied live inside the extension
     []
   );
 
@@ -146,7 +146,7 @@ export function TiptapEditorInner({ hidden = false, readOnly = false, preview = 
   });
   // Synced during render so the unmount-flush cleanup below sees the latest flusher
   // even if a passive effect hasn't run yet (#755).
-  // eslint-disable-next-line react-hooks/refs
+  // eslint-disable-next-line react-hooks/refs -- the unmount-flush cleanup must see the latest flusher even before a passive effect runs
   flushToStoreRef.current = flushToStore;
 
   const flushCursorInfo = useCallback(() => {
@@ -298,7 +298,7 @@ export function TiptapEditorInner({ hidden = false, readOnly = false, preview = 
   // Keep editorRef aligned with the live editor for the unmount-flush cleanup.
   // Synced during render (not an effect) so it is set even if a passive effect
   // hasn't run, and so it survives the reverse-order cleanup race (#755).
-  // eslint-disable-next-line react-hooks/refs
+  // eslint-disable-next-line react-hooks/refs -- editorRef must track the live editor for the unmount flush despite reverse-order cleanup
   editorRef.current = editor ?? null;
 
   // Settings → editor sync (invisibles, CJK spacing, read-only) — extracted
