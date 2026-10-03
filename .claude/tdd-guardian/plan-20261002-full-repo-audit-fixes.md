@@ -350,6 +350,12 @@ Also decided 2026-10-03, no work item: multi-cursor has no cap; files that are n
 #### Phase RA27 — media tab rollback on open
 - **WI-RA27.1 — opening a media file rolls back its tab when a later step throws.**
 
+#### Phase RA28 — the phase gate and the last comment leftovers
+- **WI-RA28.1 — `scripts/check-repo-audit-phase.sh` checks every phase mechanically, self-tested.**
+- **WI-RA28.2 — hook comments carry no dates or dev-docs paths, gated.**
+- **WI-RA28.3 — the coupling gate's error names a document a clone can open.**
+- **WI-RA28.4 — scripts carry no dangling audit ids, gated.**
+
 ### Wave 4 (cross-cutting, strictly serial, after everything else merged)
 
 Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), RA12B, RA17F, RA17E, RA17G, then the DoD script and the final gate pass. Ownership for wave 3 and 4 lanes is in each lane brief.
