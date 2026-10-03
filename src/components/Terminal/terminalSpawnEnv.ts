@@ -6,7 +6,7 @@
  * shell-integration config. Extracted to keep spawnPty.ts focused on the spawn
  * lifecycle.
  *
- * Integration contributes ENV AND ARGS, not env alone (WI-3.3): zsh is hooked
+ * Integration contributes ENV AND ARGS, not env alone: zsh is hooked
  * through ZDOTDIR, but bash has no environment hook that applies to
  * interactive shells and must be spawned as `bash --rcfile <path>`.
  *
@@ -50,7 +50,7 @@ export async function resolveLoginShellPath(): Promise<string> {
  *     allowlists (Claude Code's `/terminal-setup`, etc.) recognize the host as
  *     a CSI-u-capable terminal. WezTerm has the lowest side-effect risk of the
  *     four recognized values. See
- *     dev-docs/decisions/ADR-006-terminal-program-identity.md. Do NOT change
+ *     .claude/adr/ADR-006-terminal-program-identity.md. Do NOT change
  *     this to "vmark" — third-party tools fall through to a degraded "unknown
  *     terminal" path. terminalKeyHandler.ts keeps the impersonation honest by
  *     translating Shift+Enter into the CSI-u sequence real WezTerm sends.
@@ -105,7 +105,7 @@ export interface ShellSpawnConfig {
   args: string[];
 }
 
-/** The Rust `ShellIntegration` payload (WI-3.3). */
+/** The Rust `ShellIntegration` payload. */
 interface ShellIntegrationPayload {
   env?: Record<string, string>;
   args?: string[];
@@ -113,7 +113,7 @@ interface ShellIntegrationPayload {
 
 /**
  * Build the env AND args for a specific shell, applying shell-integration
- * config to a FRESH copy of the base env (WI-3.1, extended by WI-3.3).
+ * config to a FRESH copy of the base env.
  *
  * The config is shell-specific: zsh gets a `ZDOTDIR` pointing at its rc, bash
  * gets `--rcfile <path>` because it has no environment hook that applies to

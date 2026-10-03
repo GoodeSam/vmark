@@ -3,13 +3,16 @@
  *
  * Popup view for editing footnotes in Source mode (CodeMirror 6).
  * Shows label, textarea for content, goto/save/delete buttons.
+ *
+ * @module plugins/sourceFootnotePopup/SourceFootnotePopupView
  */
 
 import type { EditorView } from "@codemirror/view";
 import i18n from "@/i18n";
-import { SourcePopupView, type StoreApi } from "@/plugins/sourcePopup";
+import { SourcePopupView, type StoreApi } from "@/plugins/shared/SourcePopupView";
 import type { FootnotePopupState } from "@/plugins/shared/popupPorts";
 import { buildPopupIconButton, popupIcons } from "@/utils/popupComponents";
+import { isImeKeyEvent } from "@/utils/imeGuard";
 import {
   saveFootnoteContent,
   gotoFootnoteTarget,
@@ -144,6 +147,8 @@ export class SourceFootnotePopupView extends SourcePopupView<FootnotePopupState>
   }
 
   private handleTextareaKeydown(e: KeyboardEvent): void {
+    // The Enter that confirms an IME candidate is not a save.
+    if (isImeKeyEvent(e)) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       this.handleSave();

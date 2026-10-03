@@ -158,10 +158,6 @@ vi.mock("@/services/persistence/workspaceStorage", () => ({
   getCurrentWindowLabel: () => "main",
 }));
 
-vi.mock("./fileLinkProvider", () => ({
-  createFileLinkProvider: vi.fn(() => ({ provideLinks: vi.fn() })),
-}));
-
 vi.mock("./terminalKeyHandler", () => ({
   createTerminalKeyHandler: vi.fn(() => () => true),
 }));

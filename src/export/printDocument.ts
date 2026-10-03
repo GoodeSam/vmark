@@ -46,7 +46,7 @@ import { contentHasMath } from "./fontEmbedder";
  *
  * The sanitize step is here because this is the one function every non-folder
  * export path goes through — print, native PDF and copy-as-HTML — and all
- * three shipped raw ProseMirror markup (audit R2, #690/#703): separators,
+ * three shipped raw ProseMirror markup: separators,
  * trailing breaks, hidden `.html-preview-*` placeholders, `contenteditable`.
  * The folder export has always sanitized; nothing else did. It runs BEFORE
  * resolution so a hidden placeholder's image is not fetched, and not warned
@@ -109,7 +109,7 @@ export async function buildPrintHtml(bodyHtml: string): Promise<string> {
   // the single largest thing this document can contain — and every print paid
   // for it, including the overwhelming majority with no math in them. The
   // folder export already decides this the same way (`includeKaTeX: hasMath`);
-  // `contentHasMath` is that predicate, not a second one (audit round 3, #694).
+  // `contentHasMath` is that predicate, not a second one.
   const katexCSS = contentHasMath(printableBody) ? getKatexCSS() : "";
   return `<!DOCTYPE html>
 <html lang="en">
