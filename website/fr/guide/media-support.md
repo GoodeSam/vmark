@@ -163,5 +163,5 @@ espaces réservés cassés.)
 
 - Un chemin de média ne peut pas porter de schéma d'URI (`javascript:`, `file:` ou un schéma personnalisé) ; de telles sources sont refusées au lieu d'être chargées
 - Un chemin qui désigne un répertoire plutôt qu'un fichier est refusé
-- Les iframes d'embeds vidéo sont restreints aux domaines autorisés : `youtube.com`, `youtube-nocookie.com`, `player.vimeo.com` et `player.bilibili.com`
+- Les embeds vidéo ne se chargent que depuis trois hôtes : `www.youtube-nocookie.com` (le lecteur à confidentialité renforcée de YouTube), `player.vimeo.com` et `player.bilibili.com`. Un lien YouTube, ou un iframe écrit avec `youtube.com`, est intégré via l'hôte à confidentialité renforcée. La politique de sécurité du contenu de VMark autorise le chargement de cadres depuis ces hôtes et depuis aucun autre site
 - Les autres sources iframe sont supprimées par le désinfectant

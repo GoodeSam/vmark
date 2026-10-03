@@ -730,13 +730,6 @@ describe("sanitizeMediaHtml", () => {
       expect(result).toContain("youtube-nocookie.com");
     });
 
-    it("allows YouTube iframe with youtube.com domain", () => {
-      const input = '<iframe src="https://www.youtube.com/embed/abc123" width="560" height="315"></iframe>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).toContain("<iframe");
-      expect(result).toContain("youtube.com");
-    });
-
     it("allows Vimeo iframe", () => {
       const input = '<iframe src="https://player.vimeo.com/video/123456789" width="560" height="315"></iframe>';
       const result = sanitizeMediaHtml(input);
@@ -891,13 +884,7 @@ describe("sanitize — isSafeStyleValue angle bracket via sanitizeStyleAttribute
 });
 
 describe("sanitizeMediaHtml — iframe edge cases", () => {
-  it("allows YouTube iframe without www prefix", () => {
-    const input = '<iframe src="https://youtube.com/embed/abc"></iframe>';
-    const result = sanitizeMediaHtml(input);
-    expect(result).toContain("<iframe");
-    expect(result).toContain("youtube.com");
-  });
-
+  // Which embed hosts an iframe may name: sanitizeMediaEmbedOrigins.test.ts.
   it("strips iframes with no src attribute", () => {
     const input = '<iframe></iframe>';
     const result = sanitizeMediaHtml(input);

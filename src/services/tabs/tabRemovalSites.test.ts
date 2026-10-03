@@ -28,7 +28,8 @@ import { useTabStore, tabFilePath } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { startTabStateCleanup } from "@/services/windowClose/tabCleanup";
 import { handleWorkspaceClose } from "@/services/mcpBridge/v2/workspace";
-import { handleSaveAllQuit, moveTabToNewWorkspaceWindow } from "@/services/files/fileSave";
+import { moveTabToNewWorkspaceWindow } from "@/services/files/fileSave";
+import { runSaveAllQuitFlow } from "@/services/files/saveAllQuit";
 import { openFileInNewTabCore } from "@/services/navigation/fileOpen";
 import { createNewTabForFile } from "@/services/navigation/finderOpenBranches";
 import { loadFileIntoTab } from "@/services/navigation/loadFileIntoTab";
@@ -84,15 +85,16 @@ function failAfterNextDocumentWrite(): void {
 }
 
 let stopCleanup: () => void;
-let quits = 0;
+/** How often the window closed itself (the end of its part in a quit). */
+let closes = 0;
 const replies: Array<{ success: boolean; data?: unknown }> = [];
 
 beforeEach(() => {
   resetTier0();
-  quits = 0;
+  closes = 0;
   replies.length = 0;
-  statefulFs.stubCommand("force_quit", () => {
-    quits += 1;
+  statefulFs.stubCommand("close_window", () => {
+    closes += 1;
   });
   statefulFs.stubCommand("mcp_bridge_respond", (args) => {
     replies.push(args.payload as { success: boolean; data?: unknown });
@@ -123,12 +125,12 @@ describe("MCP workspace.close", () => {
     editDoc(tabId, DISCARDED);
     await handleWorkspaceClose("req-1", { tabId, force: true });
 
-    await handleSaveAllQuit(WINDOW);
+    await runSaveAllQuitFlow(WINDOW, () => {});
 
     // The file, not the call: those edits were discarded, so disk is untouched.
     expect(statefulFs.read(DOC)).toBe(ORIGINAL);
     expect(statefulFs.writesTo(DOC)).toEqual([]);
-    expect(quits).toBe(1);
+    expect(closes).toBe(1);
   });
 });
 

@@ -77,6 +77,7 @@ macro_rules! all_commands {
             window_manager::close_window,
             window_manager::force_quit,
             quit::cancel_quit,
+            quit::save_all_and_quit,
             quit::set_confirm_quit,
             watcher::start_watching,
             watcher::stop_watching,

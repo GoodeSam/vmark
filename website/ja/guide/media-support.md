@@ -163,5 +163,5 @@ VMark は 3 種類のメディアパスをサポートします。
 
 - メディアパスに URI スキーム（`javascript:`、`file:`、または独自のスキーム）を含めることはできません。そのようなソースは読み込まれず、拒否されます
 - ファイルではなくディレクトリを指すパスは拒否されます
-- 動画埋め込み iframe は許可されたドメインに制限されます：`youtube.com`、`youtube-nocookie.com`、`player.vimeo.com`、`player.bilibili.com`
+- 動画の埋め込みは 3 つのホストからのみ読み込まれます：`www.youtube-nocookie.com`（YouTube のプライバシー強化プレーヤー）、`player.vimeo.com`、`player.bilibili.com`。YouTube のリンクや `youtube.com` で書かれた iframe は、プライバシー強化ホスト経由で埋め込まれます。VMark のコンテンツセキュリティポリシーは、これらのホストからのフレームのみを許可し、それ以外のサイトからは読み込みません
 - 他の iframe ソースはサニタイザーによって除去されます

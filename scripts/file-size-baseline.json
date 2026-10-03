@@ -129,7 +129,7 @@
     "src/utils/markdownPipeline/mdastBlockConverters.test.ts": 2130,
     "src/utils/markdownPipeline/parser.test.ts": 1438,
     "src/utils/markdownPipeline/pmBlockConverters.test.ts": 1301,
-    "src/utils/sanitize.test.ts": 1079
+    "src/utils/sanitize.test.ts": 1066
   },
   "testLimit": 800
 }

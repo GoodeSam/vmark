@@ -25,7 +25,7 @@ mode: "full-plan"
 | # | Decision | Outcome | Owner |
 |---|---|---|---|
 | D1 | Where the ADRs live. The audit suggests `docs/adr/`, but `docs/` is gitignored (`.gitignore`), so that path cannot ship. | Tracked `.claude/adr/ADR-NNN-*.md`, reconstructed from the enforcing code and git history, each stating its evidence. Citations in AGENTS.md, CONTRIBUTING, rule 31, `server/mcp/README.md` and the feature ledger point there. A gate resolves every `ADR-N` token in tracked files to a file. | made here |
-| D2 | `SECURITY.md` commitments (supported versions, response expectation) are the maintainer's to promise. | Written with the least binding accurate wording: latest release only, private reporting link, best-effort acknowledgement by a single maintainer. Flagged for confirmation in the final report. | maintainer confirms wording |
+| D2 | `SECURITY.md` commitments (supported versions, response expectation) are the maintainer's to promise. | Written with the least binding accurate wording: latest release only, private reporting link, best-effort acknowledgement by a single maintainer. Flagged for confirmation in the final report. | maintainer: Codex review 2026-10-03 (thread `01a100be-c422-7b11-a787-0bd0040d1cf1`); 9 wording findings applied; Rust translations reviewed, no change |
 | D3 | SVG `<style>` containment: shadow root per preview vs selector scoping. | **Selector scoping** (WI-RA8.2). A shadow root breaks three things the previews depend on: print and HTML/PDF export serialize the editor with `innerHTML`, which drops shadow content (the serializing API needs Safari 18, above the macOS 13.4 floor); app CSS styles the SVG on purpose (`mermaid-fallback.css`, sizing, the foreignObject line-height fix); pan/zoom and the link guard reach the SVG through the light DOM. The selector parser concern is met by not parsing selectors as text: the engine parses the sheet (a constructed stylesheet), each selector S is re-emitted as `:is([data-vmark-svg-scope="K"], [data-vmark-svg-scope="K"] *):is(S)`, and the output is re-parsed and rejected unless every selector has that shape. Keyframes are renamed per scope, page-wide at-rules dropped. Preview containers also get `contain: paint`: WebKit hit-tests an absolutely positioned element in a foreignObject against the whole window otherwise. | lane RA8 |
 | D4 | `image-size` advisory: override to `>=2.0.3` or keep the acceptance with a corrected reason. | Try the override, run `test:content-server`; fall back to rewriting the reason only if pptxgenjs breaks. | lane RA16 |
 | D5 | `src/services/mcpBridge/v2/` naming (no v1 ever existed). The audit says "keep or rename". | Keep. A rename touches ~60 files and every import for zero behaviour change; the directory header says what "v2" means. | made here |
@@ -329,6 +329,13 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 - **WI-RA24.10 — word movement and fence scanning are linear.**
 - **WI-RA24.11 — CJK pairs never span a paragraph break.**
 - **WI-RA24.12 — workflow shell scripts pass actionlint.**
+- **WI-RA24.13 — dead code and never-failing assertions left by the save-all change.**
+
+#### Phase RA25 — maintainer decisions of 2026-10-03
+- **WI-RA25.1 — YouTube, Vimeo and Bilibili embeds work in release builds.**
+- **WI-RA25.2 — Save All and Quit saves every window.**
+
+Also decided 2026-10-03, no work item: multi-cursor has no cap; files that are not UTF-8 and carry no BOM keep opening (no refusal); Retry acts on the current selection; Close All closes pinned tabs behind a confirmation (WI-RA20.1); no-provider message (WI-RA20.7).
 
 ### Wave 4 (cross-cutting, strictly serial, after everything else merged)
 

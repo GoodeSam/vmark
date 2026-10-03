@@ -1,9 +1,18 @@
 //! # Quit, attempt by attempt
 //!
 //! Purpose: decide whether a quit request starts (or restarts) the coordinated
-//! quit, and ask each document window to run its close flow.
+//! quit, and ask each document window to run its close flow — asking about
+//! its unsaved documents, or saving them all (Save All and Quit).
 //!
 //! Key decisions:
+//!   - The mode rides in the request: `{ label, saveAll }`. An emit reaches
+//!     every window, so the label says which one it is for; `saveAll` says
+//!     whether that window saves everything instead of asking.
+//!   - A quit's mode only ever rises. Save All and Quit while a quit is asking
+//!     is not a duplicate: every remaining window is asked again, to save,
+//!     and a request still queued for a booting window is upgraded in place.
+//!     A later plain request never turns a save-everything quit back into one
+//!     that asks.
 //!   - A window that has not signalled `ready` has no listener for
 //!     `app:quit-requested` yet. Emitting to it loses the request: the window
 //!     stays a quit target forever and the quit never finishes. The request is
@@ -30,6 +39,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
+use serde::Serialize;
 use tauri::{Runtime, WebviewWindow};
 
 use crate::menu;
@@ -46,39 +56,80 @@ pub(super) const QUIT_REQUESTED_EVENT: &str = "app:quit-requested";
 /// nothing happen and quits again is answered.
 pub(super) const QUIT_RETRY_AFTER: Duration = Duration::from_secs(10);
 
-/// When the quit in progress was last started. Lives beside `QUIT_IN_PROGRESS`
-/// (a static because `cancel_quit` and `is_quit_in_progress` are reached with
-/// no app handle), and is only ever written together with it.
-static QUIT_STARTED_AT: Mutex<Option<Instant>> = Mutex::new(None);
+/// How a coordinated quit asks each document window to close.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum QuitMode {
+    /// Each window runs its close flow, which asks about every unsaved
+    /// document (Cmd+Q, the tray, the OS).
+    Prompt,
+    /// Each window saves its unsaved documents without asking — Save As still
+    /// asks where an untitled one goes — and then closes (Save All and Quit).
+    SaveAll,
+}
+
+/// The `app:quit-requested` payload. An emit reaches every window, so it
+/// names the one it is for; `saveAll` is the mode the window closes in.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct QuitRequest<'a> {
+    label: &'a str,
+    save_all: bool,
+}
+
+/// The quit in progress: when it was last (re)started, and how it asks.
+#[derive(Clone, Copy)]
+struct Attempt {
+    started_at: Instant,
+    mode: QuitMode,
+}
+
+/// The quit in progress. Lives beside `QUIT_IN_PROGRESS` (a static because
+/// `cancel_quit` and `is_quit_in_progress` are reached with no app handle),
+/// and is only ever written together with it.
+static QUIT_ATTEMPT: Mutex<Option<Attempt>> = Mutex::new(None);
 
 /// What a quit request amounts to, given the quit already under way (if any).
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum QuitAttempt {
-    /// No quit was in progress; this request starts one.
-    Fresh,
+    /// No quit was in progress; this request starts one, in this mode.
+    Fresh(QuitMode),
     /// A quit has been in progress for [`QUIT_RETRY_AFTER`] or longer; this
-    /// request asks every remaining window again.
-    Retry,
+    /// request asks every remaining window again, in this mode.
+    Retry(QuitMode),
     /// A quit started moments ago; this request is a duplicate of it.
     AlreadyRunning,
 }
 
-/// Claim the quit for a request arriving at `now`.
-pub(super) fn claim_quit_attempt(now: Instant) -> QuitAttempt {
-    let mut started = QUIT_STARTED_AT.lock().unwrap_or_else(|p| p.into_inner());
+/// Claim the quit for a request in `mode` arriving at `now`.
+pub(super) fn claim_quit_attempt(now: Instant, mode: QuitMode) -> QuitAttempt {
+    let mut attempt = QUIT_ATTEMPT.lock().unwrap_or_else(|p| p.into_inner());
     if !super::QUIT_IN_PROGRESS.swap(true, Ordering::SeqCst) {
-        *started = Some(now);
-        return QuitAttempt::Fresh;
+        *attempt = Some(Attempt {
+            started_at: now,
+            mode,
+        });
+        return QuitAttempt::Fresh(mode);
     }
-    match *started {
+    match *attempt {
         // `saturating`: the two instants are taken on different threads, and
-        // one a hair older than the start is a duplicate, not a panic.
-        Some(at) if now.saturating_duration_since(at) < QUIT_RETRY_AFTER => {
+        // one a hair older than the start is a duplicate, not a panic. A
+        // request for MORE than the running quit asks (Save All and Quit
+        // during Cmd+Q) is never a duplicate.
+        Some(running)
+            if mode <= running.mode
+                && now.saturating_duration_since(running.started_at) < QUIT_RETRY_AFTER =>
+        {
             QuitAttempt::AlreadyRunning
         }
-        _ => {
-            *started = Some(now);
-            QuitAttempt::Retry
+        running => {
+            // Never less than the running quit asks: a window told to save
+            // everything is not then told to ask instead.
+            let mode = running.map_or(mode, |running| running.mode.max(mode));
+            *attempt = Some(Attempt {
+                started_at: now,
+                mode,
+            });
+            QuitAttempt::Retry(mode)
         }
     }
 }
@@ -87,18 +138,23 @@ pub(super) fn claim_quit_attempt(now: Instant) -> QuitAttempt {
 /// from every window it was still waiting for: a window that finishes
 /// starting after the quit was called off must not be closed by it.
 pub(super) fn forget_quit_attempt() {
-    *QUIT_STARTED_AT.lock().unwrap_or_else(|p| p.into_inner()) = None;
+    *QUIT_ATTEMPT.lock().unwrap_or_else(|p| p.into_inner()) = None;
     menu::events::withdraw_deferred(QUIT_REQUESTED_EVENT);
 }
 
-/// Ask each document window to run its close flow: now if its frontend is
+/// Ask each document window to close in `mode`: now if its frontend is
 /// listening, when it signals `ready` otherwise. On a failed emit, returns
 /// the label it failed for; the caller cancels the quit.
 pub(super) fn request_quit_of<R: Runtime>(
     windows: &[(String, WebviewWindow<R>)],
+    mode: QuitMode,
 ) -> Result<(), (String, tauri::Error)> {
     for (label, window) in windows {
-        match menu::events::deliver_when_ready(window, QUIT_REQUESTED_EVENT) {
+        let request = QuitRequest {
+            label,
+            save_all: mode == QuitMode::SaveAll,
+        };
+        match menu::events::deliver_when_ready(window, QUIT_REQUESTED_EVENT, &request) {
             Ok(Delivery::Emitted) => {}
             Ok(Delivery::Deferred) => log::info!(
                 "[quit] {label:?} is still starting; it will be asked to quit when it is ready"

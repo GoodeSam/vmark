@@ -163,5 +163,5 @@ marcadores de posición rotos.)
 
 - Una ruta multimedia no puede llevar un esquema de URI (`javascript:`, `file:` o uno personalizado); esas fuentes se rechazan en lugar de cargarse
 - Una ruta que nombra un directorio en lugar de un archivo se rechaza
-- Los iframes de embeds de vídeo están restringidos a dominios permitidos: `youtube.com`, `youtube-nocookie.com`, `player.vimeo.com` y `player.bilibili.com`
+- Los embeds de vídeo se cargan solo desde tres hosts: `www.youtube-nocookie.com` (el reproductor de privacidad mejorada de YouTube), `player.vimeo.com` y `player.bilibili.com`. Un enlace de YouTube, o un iframe escrito con `youtube.com`, se inserta a través del host de privacidad mejorada. La política de seguridad de contenido de VMark permite cargar marcos desde estos hosts y desde ningún otro sitio
 - Otras fuentes de iframe son eliminadas por el saneador

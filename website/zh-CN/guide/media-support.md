@@ -161,5 +161,5 @@ VMark 支持三种媒体路径类型：
 
 - 媒体路径不能带有 URI 协议（`javascript:`、`file:` 或自定义协议）；这类来源会被拒绝，而不会被加载
 - 指向目录而非文件的路径会被拒绝
-- 视频嵌入 iframe 限制为允许的域名：`youtube.com`、`youtube-nocookie.com`、`player.vimeo.com` 和 `player.bilibili.com`
+- 视频嵌入只从三个主机加载：`www.youtube-nocookie.com`（YouTube 的隐私增强播放器）、`player.vimeo.com` 和 `player.bilibili.com`。YouTube 链接，或用 `youtube.com` 写的 iframe，都会通过隐私增强主机嵌入。VMark 的内容安全策略只允许从这些主机加载框架，不允许任何其他网站
 - 其他 iframe 来源会被净化器过滤掉

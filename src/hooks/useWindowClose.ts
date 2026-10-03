@@ -9,6 +9,11 @@
  *   this hook → runWindowCloseFlow (prompts, revalidation, cleanup, persist,
  *   native close) → allow close or cancel
  *
+ * Pipeline (quit): Rust `app:quit-requested` `{ label, saveAll }` → this hook
+ *   → runWindowCloseFlow, or runSaveAllQuitFlow for Save All and Quit (save
+ *   every document without the prompts, then the same close) → a window that
+ *   stays open answers `cancel_quit`
+ *
  * Pipeline (menu close): Cmd+W menu accelerator → menu:close event →
  *   closeTabWithDirtyCheck (active tab). When the window is already empty
  *   (Welcome screen), Cmd+W closes the window itself via handleCloseRequest.
@@ -32,6 +37,8 @@
  *     one has already unregistered what it registered.
  *
  * @coordinates-with windowCloseFlow.ts — the close transaction itself
+ * @coordinates-with services/files/saveAllQuit.ts — the Save All and Quit answer to a quit request
+ * @coordinates-with src-tauri/src/quit_broadcast.rs — sends the quit request and its mode
  * @coordinates-with services/windowClose/closeListenersReady.ts — the barrier this hook signals
  * @coordinates-with services/tabs/tabOperations.ts — closeTabWithDirtyCheck for menu:close
  * @module hooks/useWindowClose
@@ -45,6 +52,7 @@ import { useWindowLabel } from "../contexts/WindowContext";
 import { useTabStore } from "../stores/tabStore";
 import { closeTabWithDirtyCheck } from "@/services/tabs/tabOperations";
 import { runWindowCloseFlow } from "@/services/windowClose/windowCloseFlow";
+import { runSaveAllQuitFlow } from "@/services/files/saveAllQuit";
 import { signalCloseListenersMounted } from "@/services/windowClose/closeListenersReady";
 import { safeUnlisten } from "@/utils/safeUnlisten";
 import { windowCloseLog, windowCloseWarn, windowCloseError } from "@/utils/debug";
@@ -91,12 +99,27 @@ const closeLog = (label: string, ...args: unknown[]) => {
  */
 const STALL_RETRY_AFTER_MS = 5 * 60 * 1000;
 
+/** What Rust sends with `app:quit-requested`: the window it is for (an emit
+ *  reaches every window), and whether it saves everything instead of asking. */
+interface QuitRequest {
+  label: string;
+  saveAll: boolean;
+}
+
+/** The request, or `null` for a payload of any other shape. */
+function readQuitRequest(payload: unknown): QuitRequest | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  const { label, saveAll } = payload as Record<string, unknown>;
+  return typeof label === "string" && typeof saveAll === "boolean" ? { label, saveAll } : null;
+}
+
 /**
  * Handle window and tab close events with save confirmation.
  * Listens to:
  * - menu:close (Cmd+W) — closes the active tab (not the window)
  * - window:close-requested (traffic light) — closes the entire window
- * - app:quit-requested (Cmd+Q) — closes window as part of app quit
+ * - app:quit-requested (Cmd+Q) — closes window as part of app quit; with
+ *   `saveAll` (Save All and Quit) it saves every document first, unprompted
  */
 export function useWindowClose() {
   const windowLabel = useWindowLabel();
@@ -108,8 +131,10 @@ export function useWindowClose() {
    *  exactly once per attempt, however many quit events joined it. */
   const answeredQuitForRef = useRef<Promise<boolean> | null>(null);
 
-  const handleCloseRequest = useCallback((): Promise<boolean> => {
-    closeLog(windowLabel, "handleCloseRequest called");
+  /** Close the window — saving every document first when `saveAll` (Save All
+   *  and Quit) — or join the close already running, whichever way it began. */
+  const handleCloseRequest = useCallback((saveAll = false): Promise<boolean> => {
+    closeLog(windowLabel, saveAll ? "handleCloseRequest called (save all)" : "handleCloseRequest called");
     // A close is already running — JOIN it. Returning a fake `false` (the old
     // boolean guard) told the caller nothing; quit handlers especially need
     // the real outcome to know whether to send cancel_quit.
@@ -134,7 +159,8 @@ export function useWindowClose() {
       closeLog(windowLabel, `in-flight close stalled for ${age}ms — starting a fresh attempt`);
     }
 
-    const run = runWindowCloseFlow(windowLabel, closeLog)
+    const flow = saveAll ? runSaveAllQuitFlow : runWindowCloseFlow;
+    const run = flow(windowLabel, closeLog)
       .catch((error) => {
         windowCloseError("Failed to close window:", error);
         return false;
@@ -200,14 +226,21 @@ export function useWindowClose() {
         })
       );
 
-      // app:quit-requested (Cmd+Q). Joins any in-flight close via the shared
-      // promise, and — decisively — answers Rust either way: without the
-      // cancel_quit on failure, a cancelled close left quit_in_progress set
-      // and Cmd+Q dead for the rest of the session (WI-1).
+      // app:quit-requested (Cmd+Q, Save All and Quit). Joins any in-flight
+      // close via the shared promise, and — decisively — answers Rust either
+      // way: without the cancel_quit on failure, a cancelled close left
+      // quit_in_progress set and Cmd+Q dead for the rest of the session (WI-1).
       await track(
-        currentWindow.listen<string>("app:quit-requested", voidAsync(async (event) => {
-          if (event.payload !== windowLabel) return;
-          const run = handleCloseRequest();
+        currentWindow.listen<unknown>("app:quit-requested", voidAsync(async (event) => {
+          const request = readQuitRequest(event.payload);
+          if (!request) {
+            // Rust and this listener disagree on the payload: answering for a
+            // window it may not name would be a guess.
+            windowCloseError("app:quit-requested with an unreadable payload:", event.payload);
+            return;
+          }
+          if (request.label !== windowLabel) return;
+          const run = handleCloseRequest(request.saveAll);
           const closed = await run;
           // Answer Rust exactly once per close ATTEMPT: several quit events
           // can join one close, and each would otherwise send its own

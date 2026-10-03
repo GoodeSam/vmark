@@ -19,14 +19,19 @@
 //!     origin plus what the app itself frames — the same set the CSP's
 //!     `frame-src` names — and nothing a document could choose. A test pins
 //!     the two together: widening `frame-src` fails until this agrees.
+//!   - The outside origins the app frames (the video embeds) are READ from the
+//!     CSP's `frame-src`, every `https:` source in it, rather than listed
+//!     here: the CSP is what a release build enforces, so the guard and the
+//!     CSP cannot disagree about them. The frontend's embed builder declares
+//!     the same origins, and a frontend test holds `frame-src` to them.
 //!   - `asset:` is NOT allowed, although it is the app's own protocol. It
 //!     serves any granted local file, images and media load from it as
 //!     subresources (never a navigation), and an HTML file lying next to a
 //!     hostile document would otherwise open full-frame in the app's window.
 //!   - A dev build is wider, because it enforces no CSP at all (the page comes
 //!     from the dev server, which sends none): the Knowledge Base frame on its
-//!     loopback port and the video embeds load there today, and denying them
-//!     would break features only a dev build can show.
+//!     loopback port loads there today, and denying it would break a feature
+//!     only a dev build can show.
 //!   - The PDF renderer's throwaway windows are not governed. They hold no
 //!     capability, show no app UI, and exist to load one staged file; their
 //!     own one-shot navigation logic is the policy there.
@@ -36,10 +41,16 @@
 //! @coordinates-with app_plugins.rs — registers the plugin
 //! @coordinates-with trusted_html/protocol.rs — the trusted-preview scheme
 //! @coordinates-with pdf_export/renderer — the ungoverned render windows
+//! @coordinates-with src-tauri/tauri.conf.json — `frame-src` names the outside origins framed
+//! @coordinates-with src/utils/videoProviderRegistry.ts — the embed origins the frontend builds
 //! @module window_manager/navigation_guard
 
+use std::sync::OnceLock;
+
 use tauri::plugin::{Builder as PluginBuilder, TauriPlugin};
+use tauri::utils::config::{Csp, SecurityConfig};
 use tauri::{Manager, Runtime, Url};
+use url::Origin;
 
 use crate::peer_text::peer_text;
 use crate::trusted_html::protocol::SCHEME as TRUSTED_SCHEME;
@@ -52,17 +63,7 @@ const PROTOCOL_HOST: &str = "localhost";
 /// modules; a test holds the two spellings together.
 const RENDER_WINDOW_LABEL_PREFIX: &str = "pdf-render-";
 
-/// The video providers the editor embeds, each also reachable under `www.`.
-/// The frontend's allow-list (`VIDEO_EMBED_DOMAIN_RE`) is the source of truth;
-/// a test holds this copy to it.
-const DEV_EMBED_DOMAINS: [&str; 4] = [
-    "youtube.com",
-    "youtube-nocookie.com",
-    "player.vimeo.com",
-    "player.bilibili.com",
-];
-
-/// What this build's own pages are served from.
+/// What this build's own pages are served from, and what they frame.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct AppOrigins<'a> {
     /// The dev server, in a dev build; `None` in a release build.
@@ -70,6 +71,39 @@ pub(crate) struct AppOrigins<'a> {
     /// Whether custom protocols are reached over `http://<scheme>.localhost`
     /// (Windows, Android) rather than `<scheme>://localhost`.
     pub http_custom_protocols: bool,
+    /// The outside origins the app frames: [`framed_origins`] of the CSP.
+    pub framed: &'a [Origin],
+}
+
+/// The sources a CSP lists for `directive`, in order; none when the CSP does
+/// not name it.
+fn csp_directive_sources<'c>(csp: &'c str, directive: &str) -> Vec<&'c str> {
+    csp.split(';')
+        .map(str::split_whitespace)
+        .find_map(|mut parts| (parts.next() == Some(directive)).then(|| parts.collect()))
+        .unwrap_or_default()
+}
+
+/// The outside origins a CSP lets the app frame: every `https:` source of
+/// its `frame-src`. The other sources there are the app's own frames, which
+/// [`navigation_allowed`] recognizes in each platform's form.
+fn framed_origins(csp: &str) -> Vec<Origin> {
+    csp_directive_sources(csp, "frame-src")
+        .into_iter()
+        .filter(|source| source.starts_with("https://"))
+        .filter_map(|source| Url::parse(source).ok())
+        .map(|source| source.origin())
+        .collect()
+}
+
+/// The CSP a build injects: the dev policy in a dev build when one is set,
+/// the release policy otherwise — the choice Tauri itself makes.
+fn effective_csp(security: &SecurityConfig, dev: bool) -> Option<&Csp> {
+    if dev {
+        security.dev_csp.as_ref().or(security.csp.as_ref())
+    } else {
+        security.csp.as_ref()
+    }
 }
 
 /// `about:blank` and `about:srcdoc`: what an empty or `srcdoc` frame loads.
@@ -109,16 +143,9 @@ fn is_trusted_preview_frame(url: &Url, http_custom_protocols: bool) -> bool {
 }
 
 /// What only a dev build frames: the Knowledge Base content server on a
-/// loopback port, and the video embeds.
+/// loopback port.
 fn is_dev_only_frame(url: &Url) -> bool {
-    let Some(host) = url.host_str() else {
-        return false;
-    };
-    match url.scheme() {
-        "http" if host == "127.0.0.1" => true,
-        "http" | "https" => DEV_EMBED_DOMAINS.contains(&host.strip_prefix("www.").unwrap_or(host)),
-        _ => false,
-    }
+    url.scheme() == "http" && url.host_str() == Some("127.0.0.1")
 }
 
 /// Whether an app webview may navigate to `url`.
@@ -131,6 +158,11 @@ pub(crate) fn navigation_allowed(url: &Url, origins: AppOrigins<'_>) -> bool {
         return false;
     }
     if is_trusted_preview_frame(url, origins.http_custom_protocols) {
+        return true;
+    }
+    // An origin compares scheme, host and port: a provider's other hosts,
+    // plain http and another port are all different origins.
+    if origins.framed.contains(&url.origin()) {
         return true;
     }
     match origins.dev_url {
@@ -146,16 +178,25 @@ fn governs(label: &str) -> bool {
 
 /// The plugin that applies [`navigation_allowed`] to every app webview.
 pub(crate) fn plugin<R: Runtime>() -> TauriPlugin<R> {
+    // Read once: the config, and so the CSP, is fixed for the process.
+    let framed = OnceLock::<Vec<Origin>>::new();
     PluginBuilder::new("vmark-navigation-guard")
-        .on_navigation(|webview, url| {
+        .on_navigation(move |webview, url| {
             let label = webview.label();
             if !governs(label) {
                 return true;
             }
             let config = webview.app_handle().config();
+            let dev = tauri::is_dev();
+            let framed = framed.get_or_init(|| {
+                effective_csp(&config.app.security, dev)
+                    .map(|csp| framed_origins(&csp.to_string()))
+                    .unwrap_or_default()
+            });
             let origins = AppOrigins {
-                dev_url: config.build.dev_url.as_ref().filter(|_| tauri::is_dev()),
+                dev_url: config.build.dev_url.as_ref().filter(|_| dev),
                 http_custom_protocols: cfg!(any(windows, target_os = "android")),
+                framed,
             };
             let allowed = navigation_allowed(url, origins);
             if !allowed {
