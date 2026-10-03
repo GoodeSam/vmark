@@ -17,7 +17,7 @@
  * production renderer.
  */
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentType } from "react";
 import type { PreviewRendererProps } from "../types";
@@ -85,9 +85,29 @@ describe("GHA workflow schema renderer — chunk failure is local and retryable"
   });
 
   it("the registered renderer loads the real workflow chunk", async () => {
-    const { container } = renderPreview(yamlFormat.schemaRenderers?.["gha-workflow"]);
-    await screen.findByText((_, el) => el?.getAttribute("data-schema") === "gha-workflow");
-    expect(screen.queryByRole("alert")).toBeNull();
-    expect(container.querySelector('[data-schema="gha-workflow"]')).not.toBeNull();
+    // jsdom has no ResizeObserver, and the workbench's flow canvas measures
+    // with one: without it the canvas throws on mount and the boundary shows
+    // the failure surface. That happens AFTER the first paint, so checking
+    // for the alert at once raced the error and passed or failed by load.
+    const scope = globalThis as { ResizeObserver?: unknown };
+    const before = scope.ResizeObserver;
+    scope.ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+    try {
+      const { container } = renderPreview(yamlFormat.schemaRenderers?.["gha-workflow"]);
+      // The canvas mounted, and its effects (where the measuring starts) ran.
+      await waitFor(() => expect(container.querySelector(".react-flow__renderer")).not.toBeNull());
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(container.querySelector('[data-schema="gha-workflow"]')).not.toBeNull();
+    } finally {
+      if (before === undefined) delete scope.ResizeObserver;
+      else scope.ResizeObserver = before;
+    }
   });
 });
