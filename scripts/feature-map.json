@@ -151,7 +151,7 @@
         "src/hooks/useSourceEditorSearch.ts",
         "src/utils/sourceEditorSearch.ts",
         "src/services/search/seedFindFromSelection.ts",
-        "src/utils/debouncedSearchCount.ts"
+        "src/services/search/sourceSearchCounter.ts"
       ],
       "flag": "markdown.enableRegexSearch",
       "flagDefault": true,

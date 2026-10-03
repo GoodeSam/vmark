@@ -217,9 +217,11 @@ vi.mock("@/plugins/sourceContextDetection/cursorContext", () => ({
   computeSourceCursorContext: vi.fn(() => ({})),
 }));
 
-const mockCountMatches = vi.fn(() => 0);
-vi.mock("@/utils/sourceEditorSearch", () => ({
-  countMatches: (...args: unknown[]) => mockCountMatches(...args),
+const mockScheduleRecount = vi.fn();
+const mockCancelRecount = vi.fn();
+vi.mock("@/services/search/sourceSearchCounter", () => ({
+  sourceSearchPlace: "sourceSearchPlace",
+  createSourceSearchRecount: () => ({ schedule: mockScheduleRecount, cancel: mockCancelRecount }),
 }));
 
 vi.mock("@/services/assembly/sourceEditorExtensions", () => ({
@@ -404,8 +406,9 @@ describe("SourceEditor", () => {
         expect.objectContaining({
           initialWordWrap: true,
           initialShowLineNumbers: false,
-          // The cursor snapshot's fence index rides with the update listener.
-          updateListener: [capturedUpdateListener, "fenceIndex"],
+          // The cursor snapshot's fence index and the find counter's match
+          // tracking ride with the update listener.
+          updateListener: [capturedUpdateListener, "fenceIndex", "sourceSearchPlace"],
         })
       );
     });
@@ -624,142 +627,30 @@ describe("SourceEditor", () => {
       expect(mockGetCursorInfo).not.toHaveBeenCalled();
     });
 
-    describe("search match updates on doc change", () => {
-      it("updates match count when search is open and query exists", () => {
-        setSearchStoreState({
-          ...searchStateHolder.current,
-          isOpen: true,
-          query: "Hello",
-          currentIndex: 0,
-        });
-        mockCountMatches.mockReturnValue(1);
+    describe("search recount on doc change", () => {
+      // The recount itself — CodeMirror's count, the current match's place —
+      // runs against a real editor in SourceEditor.search.test.tsx. These pin
+      // only that this component asks for one, for its own view.
+      const edit = { docChanged: true, selectionSet: false, state: makeUpdateState("# Hi!"), view: mockEditorViewInstance };
 
+      it("schedules a recount of this view on a doc change, and none on a selection change", () => {
         render(<SourceEditor />);
-
-        capturedUpdateListener!({
-          docChanged: true,
-          selectionSet: false,
-          state: makeUpdateState("# Hello World"),
-          view: mockEditorViewInstance,
-        });
-
-        vi.advanceTimersByTime(300);
-
-        expect(mockCountMatches).toHaveBeenCalledWith(
-          "# Hello World",
-          "Hello",
-          false,
-          false,
-          false
-        );
-        expect(mockSetMatches).toHaveBeenCalledWith(1, 0);
+        capturedUpdateListener!({ ...edit, docChanged: false, selectionSet: true });
+        expect(mockScheduleRecount).not.toHaveBeenCalled();
+        capturedUpdateListener!(edit);
+        expect(mockScheduleRecount.mock.calls).toEqual([[mockEditorViewInstance]]);
       });
 
-      it("resets index to -1 when no matches found", () => {
-        setSearchStoreState({
-          ...searchStateHolder.current,
-          isOpen: true,
-          query: "missing",
-          currentIndex: 2,
-        });
-        mockCountMatches.mockReturnValue(0);
-
-        render(<SourceEditor />);
-
-        capturedUpdateListener!({
-          docChanged: true,
-          selectionSet: false,
-          state: makeUpdateState("# Hello"),
-          view: mockEditorViewInstance,
-        });
-
-        vi.advanceTimersByTime(300);
-
-        expect(mockSetMatches).toHaveBeenCalledWith(0, -1);
+      it("schedules nothing while hidden", () => {
+        render(<SourceEditor hidden />);
+        capturedUpdateListener!(edit);
+        expect(mockScheduleRecount).not.toHaveBeenCalled();
       });
 
-      it("resets index to 0 when current index exceeds match count", () => {
-        setSearchStoreState({
-          ...searchStateHolder.current,
-          isOpen: true,
-          query: "H",
-          currentIndex: 5,
-        });
-        mockCountMatches.mockReturnValue(2);
-
-        render(<SourceEditor />);
-
-        capturedUpdateListener!({
-          docChanged: true,
-          selectionSet: false,
-          state: makeUpdateState("# HH"),
-          view: mockEditorViewInstance,
-        });
-
-        vi.advanceTimersByTime(300);
-
-        expect(mockSetMatches).toHaveBeenCalledWith(2, 0);
-      });
-
-      it("resets index to 0 when current index is negative and matches exist", () => {
-        setSearchStoreState({
-          ...searchStateHolder.current,
-          isOpen: true,
-          query: "H",
-          currentIndex: -1,
-        });
-        mockCountMatches.mockReturnValue(3);
-
-        render(<SourceEditor />);
-
-        capturedUpdateListener!({
-          docChanged: true,
-          selectionSet: false,
-          state: makeUpdateState("# HHH"),
-          view: mockEditorViewInstance,
-        });
-
-        vi.advanceTimersByTime(300);
-
-        expect(mockSetMatches).toHaveBeenCalledWith(3, 0);
-      });
-
-      it("does not update matches when search is not open", () => {
-        setSearchStoreState({
-          ...searchStateHolder.current,
-          isOpen: false,
-          query: "Hello",
-        });
-
-        render(<SourceEditor />);
-
-        capturedUpdateListener!({
-          docChanged: true,
-          selectionSet: false,
-          state: makeUpdateState("# Hello"),
-          view: mockEditorViewInstance,
-        });
-
-        expect(mockCountMatches).not.toHaveBeenCalled();
-      });
-
-      it("does not update matches when query is empty", () => {
-        setSearchStoreState({
-          ...searchStateHolder.current,
-          isOpen: true,
-          query: "",
-        });
-
-        render(<SourceEditor />);
-
-        capturedUpdateListener!({
-          docChanged: true,
-          selectionSet: false,
-          state: makeUpdateState("# Hello"),
-          view: mockEditorViewInstance,
-        });
-
-        expect(mockCountMatches).not.toHaveBeenCalled();
+      it("drops a pending recount when the editor unmounts", () => {
+        const { unmount } = render(<SourceEditor />);
+        unmount();
+        expect(mockCancelRecount).toHaveBeenCalledTimes(1);
       });
     });
   });

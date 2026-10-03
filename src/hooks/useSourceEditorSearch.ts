@@ -12,9 +12,13 @@
  *     the inserted text whenever the replacement contained the query.
  *   - That counter move is not navigation: the subscriber ignores it, or it
  *     would run Next/Previous and pull the selection off the match.
+ *   - Every count is CodeMirror's own (services/search/sourceSearchCounter.ts),
+ *     made with the same query the editor searches with, so the counter
+ *     describes exactly the matches Next and Previous step through.
  *
  * @coordinates-with stores/uiStore/searchSlice.ts — reads query, caseSensitive, regex flags
- * @coordinates-with sourceEditorSearch.ts — countMatches utility
+ * @coordinates-with utils/sourceEditorSearch.ts — the one query construction
+ * @coordinates-with services/search/sourceSearchCounter.ts — counts and publishes
  * @coordinates-with plugins/search/matchSelection.ts — the shared resume rule (indexAtOrAfter)
  * @module hooks/useSourceEditorSearch
  */
@@ -32,60 +36,22 @@ import {
 import { indexAtOrAfter } from "@/plugins/search/matchSelection";
 import { useUIStore } from "@/stores/uiStore";
 import { runOrQueueCodeMirrorAction } from "@/utils/imeGuard";
-import { countMatches } from "@/utils/sourceEditorSearch";
+import { buildSourceSearchQuery, type SourceSearchParams } from "@/utils/sourceEditorSearch";
+import { publishSourceMatches } from "@/services/search/sourceSearchCounter";
 
-interface SearchState {
-  query: string;
-  replaceText: string;
-  caseSensitive: boolean;
-  wholeWord: boolean;
-  useRegex: boolean;
-  matchCount: number;
-  currentIndex: number;
-}
+/** The search-slice fields this hook reads. */
+type SearchState = SourceSearchParams & { matchCount: number; currentIndex: number };
 
 /**
- * Build a CodeMirror SearchQuery from store state.
- * Always includes replace text to avoid stale values during replace operations.
- */
-function buildSearchQuery(state: SearchState): SearchQuery {
-  return new SearchQuery({
-    search: state.query,
-    replace: state.replaceText,
-    caseSensitive: state.caseSensitive,
-    wholeWord: state.wholeWord,
-    regexp: state.useRegex,
-  });
-}
-
-/** How many matches the counter reports for `state` in the document. */
-function countDocMatches(view: EditorView, state: SearchState): number {
-  if (!state.query) return 0;
-  return countMatches(
-    view.state.doc.toString(),
-    state.query,
-    state.caseSensitive,
-    state.wholeWord,
-    state.useRegex
-  );
-}
-
-/**
- * Recompute match count from document and update search store, keeping the
- * current index when it is still in range.
+ * Recount, keeping the current index while it is still in range, else the
+ * first match. A query or option change has already reset the index, so
+ * after one this starts at the first match.
  */
 function recomputeMatches(view: EditorView, state: SearchState): void {
-  const matchCount = countDocMatches(view, state);
-  let newIndex: number;
-  if (matchCount === 0) {
-    newIndex = -1;
-  } else if (state.currentIndex < 0 || state.currentIndex >= matchCount) {
-    newIndex = 0;
-  } else {
-    newIndex = state.currentIndex;
-  }
-
-  useUIStore.getState().searchSetMatches(matchCount, newIndex);
+  publishSourceMatches(view, state, (matches) => {
+    if (matches.length === 0) return -1;
+    return state.currentIndex >= 0 && state.currentIndex < matches.length ? state.currentIndex : 0;
+  });
 }
 
 /**
@@ -103,20 +69,10 @@ function replaceResumeAnchor(before: EditorState, after: EditorState): number {
  * Recount after a Replace and point the counter at the first match starting
  * at or after `anchor`, wrapping to the first — the rule WYSIWYG search
  * applies (plugins/search/matchSelection.ts), and where CodeMirror's
- * `replaceNext` puts the selection. Positions come from CodeMirror's own
- * cursor, the engine that selected the match.
+ * `replaceNext` puts the selection.
  */
 function recomputeAfterReplace(view: EditorView, state: SearchState, anchor: number): void {
-  const matchCount = countDocMatches(view, state);
-  if (matchCount === 0) {
-    useUIStore.getState().searchSetMatches(0, -1);
-    return;
-  }
-  const matches: Array<{ from: number; to: number }> = [];
-  const cursor = buildSearchQuery(state).getCursor(view.state);
-  for (let next = cursor.next(); !next.done; next = cursor.next()) matches.push(next.value);
-  const index = indexAtOrAfter(matches, anchor);
-  useUIStore.getState().searchSetMatches(matchCount, index >= 0 && index < matchCount ? index : 0);
+  publishSourceMatches(view, state, (matches) => indexAtOrAfter(matches, anchor));
 }
 
 /**
@@ -140,7 +96,7 @@ export function useSourceEditorSearch(
       const state = useUIStore.getState().search;
       if (state.isOpen && state.query) {
         recomputeMatches(view, state);
-        const query = buildSearchQuery(state);
+        const query = buildSourceSearchQuery(state);
         runOrQueueCodeMirrorAction(view, () => {
           view.dispatch({ effects: setSearchQuery.of(query) });
         });
@@ -190,7 +146,7 @@ export function useSourceEditorSearch(
         state.useRegex !== prevState.useRegex
       ) {
         if (state.query) {
-          const query = buildSearchQuery(state);
+          const query = buildSourceSearchQuery(state);
           runOrQueueCodeMirrorAction(view, () => {
             view.dispatch({ effects: setSearchQuery.of(query) });
           });
@@ -227,7 +183,7 @@ export function useSourceEditorSearch(
 
       // Handle replace text changes - always include in query to keep it fresh
       if (state.replaceText !== prevState.replaceText && state.isOpen && state.query) {
-        const query = buildSearchQuery(state);
+        const query = buildSourceSearchQuery(state);
         runOrQueueCodeMirrorAction(view, () => {
           view.dispatch({ effects: setSearchQuery.of(query) });
         });

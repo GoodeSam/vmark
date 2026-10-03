@@ -16,7 +16,7 @@
     "src-tauri/src/workflow/condition.rs": 335,
     "src-tauri/src/workflow/genie_step.rs": 686,
     "src-tauri/src/workflow/step_config.rs": 425,
-    "src/components/Editor/SourceEditor.tsx": 339,
+    "src/components/Editor/SourceEditor.tsx": 315,
     "src/components/Editor/TiptapEditor.tsx": 395,
     "src/components/Editor/WorkflowEditor/DiagnosticsBanner.tsx": 315,
     "src/components/Editor/WorkflowEditor/JobForm.tsx": 302,
@@ -63,7 +63,7 @@
   "limit": 300,
   "testFiles": {
     "src-tauri/src/mcp_config/config_io.test.rs": 832,
-    "src/components/Editor/SourceEditor.test.tsx": 935,
+    "src/components/Editor/SourceEditor.test.tsx": 826,
     "src/components/Editor/UniversalToolbar/GroupDropdown.test.tsx": 1041,
     "src/components/Editor/UniversalToolbar/UniversalToolbar.test.tsx": 1636,
     "src/components/Editor/UniversalToolbar/useToolbarKeyboard.test.ts": 1047,
