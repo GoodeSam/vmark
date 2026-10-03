@@ -26,8 +26,12 @@ import {
   handleMultiCursorInput,
 } from "../inputHandling";
 import { handleMultiCursorHorizontal } from "../horizontalMovement";
+import { selectAllOccurrences, selectNextOccurrence, skipOccurrence } from "../commands";
+import { findNextUnusedOccurrence } from "../commandHelpers";
 import { handleMultiCursorEnter } from "../enterHandling";
-import { handleMultiCursorCut, handleMultiCursorPaste } from "../clipboard";
+import { getMultiCursorClipboardText, handleMultiCursorCut, handleMultiCursorPaste } from "../clipboard";
+import { addCursorAtPosition } from "../altClick";
+import { createMultiCursorDecorations } from "../decorations";
 
 const SMALL = 50;
 const LARGE = 500;
@@ -63,6 +67,23 @@ function spaced(count: number, width: number): Array<[number, number]> {
 
 const cursorsAcross = (count: number) => stateWith("0".repeat(PARAGRAPH_LENGTH), spaced(count, 0));
 const selectionsAcross = (count: number) => stateWith("0".repeat(PARAGRAPH_LENGTH), spaced(count, 1));
+
+/** The paragraph with `count` occurrences of "ab" (positions 1 + i·step .. 3 + i·step) in filler. */
+function occurrenceText(count: number): string {
+  const step = Math.floor(PARAGRAPH_LENGTH / count);
+  const chars = Array.from({ length: PARAGRAPH_LENGTH }, () => "x");
+  for (let i = 0; i < count; i++) chars.splice(i * step, 2, "a", "b");
+  return chars.join("");
+}
+
+/**
+ * All `count` occurrences selected but the second-to-last, the last one
+ * primary: the next unused occurrence is found only after wrapping past
+ * every selected one — the longest search Cmd+D and skip can make.
+ */
+const occurrencesSelected = (count: number) =>
+  stateWith(occurrenceText(count), spaced(count, 2).filter((_, i) => i !== count - 2));
+
 /** Cursors and one-character selections, alternating. */
 const mixedAcross = (count: number) =>
   stateWith(
@@ -70,17 +91,21 @@ const mixedAcross = (count: number) =>
     spaced(count, 1).map(([from, to], i) => [from, i % 2 ? to : from]),
   );
 
+/** The growth exponent of `work` from SMALL to LARGE cursors. */
+function exponentOfWork(build: (count: number) => EditorState, work: (state: EditorState) => void): number {
+  return growthExponent(measureGrowth(work, build(SMALL), build(LARGE)), SMALL, LARGE);
+}
+
 /** The growth exponent of `operation` from SMALL to LARGE cursors, applying its transaction. */
 function exponentOf(
   build: (count: number) => EditorState,
   operation: (state: EditorState) => Transaction | null,
 ): number {
-  const run = (state: EditorState) => {
+  return exponentOfWork(build, (state) => {
     const tr = operation(state);
     if (!tr) throw new Error("the operation declined: nothing was measured");
     state.apply(tr);
-  };
-  return growthExponent(measureGrowth(run, build(SMALL), build(LARGE)), SMALL, LARGE);
+  });
 }
 
 describe("multi-cursor cost grows at most linearly with the cursor count", () => {
@@ -130,6 +155,52 @@ describe("multi-cursor cost grows at most linearly with the cursor count", () =>
     );
   });
 
+  it("selecting all occurrences of the word under the cursor", () => {
+    const wordAtStart = (count: number) => {
+      const doc = stateWith(occurrenceText(count), [[1, 1]]).doc;
+      return EditorState.create({ doc, schema, selection: TextSelection.create(doc, 1, 3) });
+    };
+    expect(exponentOf(wordAtStart, selectAllOccurrences)).toBeLessThan(MAX_EXPONENT);
+  });
+
+  it("selecting the next occurrence after wrapping past every selected one", () => {
+    expect(exponentOf(occurrencesSelected, selectNextOccurrence)).toBeLessThan(MAX_EXPONENT);
+  });
+
+  it("skipping to the next occurrence after wrapping past every selected one", () => {
+    expect(exponentOf(occurrencesSelected, skipOccurrence)).toBeLessThan(MAX_EXPONENT);
+  });
+
+  // The search itself, without the selection rebuilt around it.
+  it("finding the next unused occurrence among N selected ones", () => {
+    const search = (count: number) => {
+      const state = occurrencesSelected(count);
+      const occurrences = spaced(count, 2).map(([from, to]) => ({ from, to }));
+      const last = occurrences[count - 1];
+      return { occurrences, last, ranges: state.selection.ranges };
+    };
+    const growth = measureGrowth(
+      ({ occurrences, last, ranges }: ReturnType<typeof search>) => {
+        if (!findNextUnusedOccurrence(occurrences, last.to, last.from, ranges)) throw new Error("none found");
+      },
+      search(SMALL),
+      search(LARGE),
+    );
+    expect(growthExponent(growth, SMALL, LARGE)).toBeLessThan(MAX_EXPONENT);
+  });
+
+  it("adding one more cursor with Alt+Click", () => {
+    expect(exponentOf(cursorsAcross, (s) => addCursorAtPosition(s, 2))).toBeLessThan(MAX_EXPONENT);
+  });
+
+  it("drawing every cursor", () => {
+    expect(exponentOfWork(cursorsAcross, createMultiCursorDecorations)).toBeLessThan(MAX_EXPONENT);
+  });
+
+  it("copying every selection", () => {
+    expect(exponentOfWork(selectionsAcross, getMultiCursorClipboardText)).toBeLessThan(MAX_EXPONENT);
+  });
+
   // Enter is the one operation whose floor is ProseMirror's, not linear: each
   // split adds a block, and every later split step copies and re-validates
   // the parent's whole child list, and resolving a position scans it. N
@@ -140,7 +211,7 @@ describe("multi-cursor cost grows at most linearly with the cursor count", () =>
   // loop's by at most the noise of two measurements, so anything it adds
   // must grow more slowly than ProseMirror's own work.
   it("Enter at cursors and selections grows no faster than ProseMirror's own splits", () => {
-    const floor = growthExponent(measureGrowth(bareSplits, mixedAcross(SMALL), mixedAcross(LARGE)), SMALL, LARGE);
+    const floor = exponentOfWork(mixedAcross, bareSplits);
     expect(exponentOf(mixedAcross, handleMultiCursorEnter)).toBeLessThan(floor + 0.15);
   });
 });
