@@ -150,9 +150,14 @@ describe("checkBridgePath", () => {
     expect(invokeMock).not.toHaveBeenCalled();
   });
 
-  it("returns a denial when the Rust symlink/canonical guard rejects", async () => {
+  // WI-RA26.1 — the Rust guard rejects with a typed CommandError object; its
+  // message is the reason, never "[object Object]".
+  it("returns a denial carrying the message when the Rust symlink/canonical guard rejects", async () => {
     openDoc("/Users/me/docs/a.md");
-    invokeMock.mockRejectedValueOnce("Path is outside the workspace and open documents");
+    invokeMock.mockRejectedValueOnce({
+      code: "permission-denied",
+      message: "Path is outside the workspace and open documents",
+    });
 
     const decision = await checkBridgePath("/Users/me/docs/link/secret.md");
 
@@ -160,6 +165,15 @@ describe("checkBridgePath", () => {
       allowed: false,
       reason: "Path is outside the workspace and open documents",
     });
+  });
+
+  it("returns a denial when the invoke itself fails", async () => {
+    openDoc("/Users/me/docs/a.md");
+    invokeMock.mockRejectedValueOnce(new Error("IPC channel closed"));
+
+    const decision = await checkBridgePath("/Users/me/docs/b.md");
+
+    expect(decision).toEqual({ allowed: false, reason: "IPC channel closed" });
   });
 
   // Contract pin: the invoke command name and arg KEYS (filePath, allowedRoots)

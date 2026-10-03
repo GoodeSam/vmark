@@ -225,5 +225,5 @@ describe("content-visibility idle re-add near the end of a large document (real 
       Math.max(...drift.map(Math.abs)),
       `top block drift per painted frame (px): ${[...new Set(drift)].join(", ")}`,
     ).toBeLessThanOrEqual(1);
-  }, 30_000);
+  });
 });

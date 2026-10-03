@@ -16,11 +16,6 @@ configureTestingLibrary({ asyncUtilTimeout: ASYNC_IMPORT_WAIT.timeout });
 // `*.a11y.test.tsx` suites now `import "@/test/axeMatchers"` themselves, which
 // extends `expect` at import time just as this did. See that file.
 
-// Provide the build-time __VMARK_VERSION__ define for tests. Production
-// gets it from vite.config.ts's `define`; vitest does not run the
-// frontend Vite config, so we stub a stable test value here.
-vi.stubGlobal("__VMARK_VERSION__", "0.0.0-test");
-
 // NOTE: deliberately NO global ResizeObserver shim. Defining it makes
 // mermaid/markmap render code proceed past the ResizeObserver check and then
 // hit the *next* missing jsdom API (SVGElement.getBBox), throwing async errors

@@ -35,14 +35,15 @@
 
 import { mkdir, exists, writeTextFile, remove } from "@tauri-apps/plugin-fs";
 import { join } from "@tauri-apps/api/path";
+import i18n from "@/i18n";
 import { historyLog, historyError } from "@/utils/debug";
 import {
   type Snapshot,
   type HistoryIndex,
   type HistorySettings,
+  createHistoryIndex,
   generatePreview,
   getByteSize,
-  getDocumentName,
   hashPath,
 } from "@/utils/historyTypes";
 import { serializeHistory } from "./historyQueue";
@@ -84,18 +85,9 @@ async function createSnapshotStep(
     }
 
     // Get or create index
-    let index = await readHistoryIndex(documentPath);
-    if (!index) {
-      index = {
-        documentPath,
-        documentName: getDocumentName(documentPath),
-        pathHash: hash,
-        status: "active",
-        deletedAt: null,
-        snapshots: [],
-        settings,
-      };
-    }
+    const index =
+      (await readHistoryIndex(documentPath)) ??
+      createHistoryIndex(documentPath, hash, settings, i18n.t("common:untitled"));
 
     const timestamp = Date.now();
 

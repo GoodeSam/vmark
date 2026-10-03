@@ -511,7 +511,7 @@ describe("sanitizeSvg", () => {
     // Liveness, not performance: "terminates" is what the test timeout asserts.
     // The `elapsed < 5000` line that used to be here measured the MACHINE — it
     // failed at 5150ms under concurrent load with sanitizeSvg unchanged.
-    it("handles extremely large SVG without hanging", { timeout: 15_000 }, () => {
+    it("handles extremely large SVG without hanging", () => {
       // Generate a large SVG with many elements (10,000 rects)
       const rects = Array.from({ length: 10_000 }, (_, i) =>
         `<rect x="${i}" y="0" width="1" height="1"/>`,

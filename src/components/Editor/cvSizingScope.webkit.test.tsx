@@ -276,7 +276,7 @@ describe("content-visibility sizing scope (real engine, production editor)", () 
     expect(census(editor), "right after a keystroke").toEqual({ ...none, blocks: editor.view.dom.children.length });
     await passTheIdleWindow();
     expect(census(editor), "after the idle window").toEqual({ ...none, blocks: editor.view.dom.children.length });
-  }, 30_000);
+  });
 
   it("keeps every block sized on Windows with a large document — at mount, through the edit-time strip and after the re-add", async () => {
     pinPlatform("Win32");
@@ -290,7 +290,7 @@ describe("content-visibility sizing scope (real engine, production editor)", () 
 
     await untilSkippableAgain(editor);
     expect(census(editor), "after the idle re-add").toEqual({ blocks: count(), sized: count(), skippable: count() });
-  }, 30_000);
+  });
 
   // A re-render that changes the container's other classes (code-block line
   // numbers) must neither bring content-visibility back in the middle of an
@@ -309,7 +309,7 @@ describe("content-visibility sizing scope (real engine, production editor)", () 
 
     await untilSkippableAgain(editor);
     expect(census(editor), "after the idle re-add").toEqual({ blocks: count(), sized: count(), skippable: count() });
-  }, 30_000);
+  });
 
   // A reload or external change sets preventUpdate and never reaches onUpdate,
   // and a split preview never handles onUpdate at all: the crossing has to be
@@ -332,7 +332,6 @@ describe("content-visibility sizing scope (real engine, production editor)", () 
       expect(census(editor), "after the idle window").toEqual({ blocks: count, sized: count, skippable: count });
       expect(Math.abs(editor.view.dom.getBoundingClientRect().height - laidOut), "document height change (px)").toBeLessThanOrEqual(1);
     },
-    30_000,
   );
 
   it.each([{ preview: false }, { preview: true }])(
@@ -347,7 +346,6 @@ describe("content-visibility sizing scope (real engine, production editor)", () 
       await passTheIdleWindow();
       expect(census(editor)).toEqual({ blocks: editor.view.dom.children.length, sized: 0, skippable: 0 });
     },
-    30_000,
   );
 
   // Near the threshold the serialized markdown and the ProseMirror document
@@ -375,7 +373,7 @@ describe("content-visibility sizing scope (real engine, production editor)", () 
 
     const count = editor.view.dom.children.length;
     expect(census(editor), "after the edit's idle window").toEqual({ blocks: count, sized: count, skippable: count });
-  }, 30_000);
+  });
 
   // keepBothEditorsAlive: Source-mode typing reaches a hidden WYSIWYG editor's
   // store, but its document is synced only when it is shown — and a hidden
@@ -398,7 +396,7 @@ describe("content-visibility sizing scope (real engine, production editor)", () 
     await untilSkippableAgain(editor);
     expect(census(editor), "after the idle window").toEqual({ blocks: count, sized: count, skippable: count });
     expect(Math.abs(editor.view.dom.getBoundingClientRect().height - laidOut), "document height change (px)").toBeLessThanOrEqual(1);
-  }, 30_000);
+  });
 
   // The content can change between mount and onCreate's deferred parse,
   // which then loads the latest content. The parse is not an edit, and no
@@ -425,7 +423,7 @@ describe("content-visibility sizing scope (real engine, production editor)", () 
 
     await untilSkippableAgain(editor);
     expect(census(editor), "after the idle window").toEqual({ blocks: count, sized: count, skippable: count });
-  }, 30_000);
+  });
 
   // A load's own transaction is not the final document: plugins append to it
   // (the footnote plugin deletes a definition whose reference is gone), and
@@ -442,7 +440,7 @@ describe("content-visibility sizing scope (real engine, production editor)", () 
     expect(editor.state.doc.content.size, "premise: the orphaned definition was removed").toBeLessThan(CV_IDLE_CHAR_THRESHOLD);
     await passTheIdleWindow();
     expect(census(editor)).toEqual({ blocks: editor.view.dom.children.length, sized: 0, skippable: 0 });
-  }, 30_000);
+  });
 
   // An edit that takes the document past the threshold starts the idle
   // window; hiding the editor before one frame has rendered its blocks with
@@ -465,5 +463,5 @@ describe("content-visibility sizing scope (real engine, production editor)", () 
     await untilSkippableAgain(editor);
     expect(census(editor), "after the idle window").toEqual({ blocks: count, sized: count, skippable: count });
     expect(Math.abs(editor.view.dom.getBoundingClientRect().height - laidOut), "document height change (px)").toBeLessThanOrEqual(1);
-  }, 30_000);
+  });
 });

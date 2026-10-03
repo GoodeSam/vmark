@@ -51,7 +51,7 @@
     "src/plugins/toolbarActions/enableRules.ts": 319,
     "src/plugins/toolbarActions/sourceAdapterLinks.ts": 370,
     "src/plugins/toolbarActions/sourceImageActions.ts": 328,
-    "src/services/history/historyOperations.ts": 333,
+    "src/services/history/historyOperations.ts": 325,
     "src/stores/aiStore/provider.ts": 324,
     "src/stores/aiStore/suggestion.ts": 336,
     "src/stores/mcpStore.ts": 321,

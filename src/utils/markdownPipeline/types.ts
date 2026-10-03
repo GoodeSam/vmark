@@ -138,4 +138,9 @@ declare module "mdast" {
     underline: Underline;
     wikiLink: WikiLink;
   }
+
+  interface ListItemData {
+    /** The source had no blank line before this item of a loose list (listItemGapJoin.ts). */
+    tightBefore?: boolean;
+  }
 }

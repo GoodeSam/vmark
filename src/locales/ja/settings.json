@@ -312,7 +312,7 @@
   "files.mergeWindow.1m": "1分",
   "files.mergeWindow.2m": "2分",
   "files.maxFileSize.label": "履歴の最大ファイルサイズ",
-  "files.maxFileSize.description": "これより大きいファイルは履歴スナップショットをスキップする",
+  "files.maxFileSize.description": "これより大きいファイルは自動保存による履歴スナップショットをスキップする（手動保存、MCP による保存、バージョンを復元する前の安全用コピーは常に残る）",
   "files.maxFileSize.256kb": "256 KB",
   "files.maxFileSize.512kb": "512 KB",
   "files.maxFileSize.1mb": "1 MB",

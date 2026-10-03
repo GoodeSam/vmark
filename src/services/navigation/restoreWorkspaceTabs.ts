@@ -18,6 +18,12 @@
  * read/create/ingest and skipped it, so a workspace reopened in a second
  * window could hold a second WRITABLE copy of a file.
  *
+ * Rollback: a tab this loop created whose initialisation then fails (text
+ * ingest, or the ownership claim on either branch) is removed with
+ * `detachTab`, not `closeTab`. It was never the user's tab, so it must not
+ * enter the reopen history, and a tab `createTab` deduplicated onto belongs to
+ * another opener and is never removed.
+ *
  * @module services/navigation/restoreWorkspaceTabs
  */
 
@@ -27,7 +33,7 @@ import { useDocumentStore } from "@/stores/documentStore";
 import { usePaneStore } from "@/stores/paneStore";
 import { loadSplitLayout } from "@/services/persistence/splitLayoutPersistence";
 import { findExistingTabForPath } from "@/services/tabs/findExistingTabForPath";
-import { tryOpenMediaFile } from "@/services/navigation/openMediaFile";
+import { isBinaryMediaPath, openMediaFileInNewTab } from "@/services/navigation/openMediaFile";
 import { getReplaceableTab } from "@/services/tabs/replaceableTab";
 import { applyFileOwnershipAfterOpen } from "@/services/workspaces/fileOwnership";
 import { workspaceWarn } from "@/utils/debug";
@@ -49,6 +55,36 @@ function stillReplaceable(windowLabel: string, tabId: string): boolean {
   const tab = (useTabStore.getState().tabs[windowLabel] ?? []).find((t) => t.id === tabId);
   if (!tab || tab.kind !== "document" || tabFilePath(tab) !== null) return false;
   return !(useDocumentStore.getState().documents[tabId]?.isDirty ?? false);
+}
+
+/**
+ * Remove a tab this loop created and could not finish initialising. Not
+ * `closeTab`: that is the user's close and files the tab under "recently
+ * closed", offering to reopen a file whose restore just failed.
+ */
+function rollBackCreatedTab(windowLabel: string, tabId: string): void {
+  useTabStore.getState().detachTab(windowLabel, tabId);
+}
+
+/**
+ * Restore one binary media path as a path-only tab. Returns whether a tab was
+ * created. A tab `createTab` deduplicated onto is another opener's: it is
+ * neither counted nor rolled back.
+ */
+function restoreMediaTab(windowLabel: string, filePath: string): boolean {
+  let createdTabId: string | null = null;
+  try {
+    openMediaFileInNewTab(windowLabel, filePath, {
+      onTabCreated: (tabId, isExistingTab) => {
+        if (!isExistingTab) createdTabId = tabId;
+      },
+    });
+    return createdTabId !== null;
+  } catch (error) {
+    if (createdTabId !== null) rollBackCreatedTab(windowLabel, createdTabId);
+    workspaceWarn(`Could not restore media tab: ${filePath}`, error);
+    return false;
+  }
 }
 
 /** A restorable path is a non-empty string — everything else is skipped. */
@@ -75,12 +111,7 @@ async function restoreOnePath(windowLabel: string, filePath: string): Promise<bo
   // a throw from media routing, document init or the ownership claim rejected
   // `restoreOnePath` — and with it the whole loop, abandoning every sibling
   // path after it. One unrestorable file must cost one tab, not the session.
-  try {
-    if (tryOpenMediaFile(windowLabel, filePath)) return true;
-  } catch (error) {
-    workspaceWarn(`Could not restore media tab: ${filePath}`, error);
-    return false;
-  }
+  if (isBinaryMediaPath(filePath)) return restoreMediaTab(windowLabel, filePath);
 
   let content: string;
   try {
@@ -127,7 +158,7 @@ async function restoreOnePath(windowLabel: string, filePath: string): Promise<bo
     // ownership claim). Roll the tab back rather than leave an orphan with no
     // document, and surface the actual error instead of hiding it as "file
     // moved".
-    useTabStore.getState().closeTab(windowLabel, tabId);
+    rollBackCreatedTab(windowLabel, tabId);
     workspaceWarn(`Failed to initialise restored tab: ${filePath}`, error);
     return false;
   }

@@ -399,5 +399,5 @@ describe("this repository", () => {
       readVendored: npmCollectInputs(REPO, packages, vendored).readVendored,
     });
     expect(embedded.errors).toEqual([]);
-  }, 60_000);
+  });
 });

@@ -29,15 +29,17 @@
  *     HTML that follows a hard break is retyped so upstream does not swallow
  *     the break's line ending (serializerBreakBeforeHtml.ts). The tree passed
  *     in is not changed
- *   - join re-emits captured blank-line runs (blankLinesJoin, ADR-1a), and
+ *   - join re-emits captured blank-line runs (blankLinesJoin, ADR-1a),
  *     keeps a list that cannot interrupt a paragraph off its last line
- *     (listInterruptJoin, CommonMark §5.2)
+ *     (listInterruptJoin, CommonMark §5.2), and writes a loose list's item
+ *     gaps as the source had them (listItemGapJoin)
  *
  * @coordinates-with parser.ts — plugins must match between parser and serializer
  * @coordinates-with adapter.ts — wraps this with error handling
  * @coordinates-with serializerHandlers.ts — custom image/link to-markdown handlers
  * @coordinates-with serializerAttention.ts — emphasis/strong/delete handlers
  * @coordinates-with listInterruptJoin.ts — blank line before a non-interrupting list
+ * @coordinates-with listItemGapJoin.ts — the authored gaps between loose list items
  * @coordinates-with serializerText.ts — text line endings that would make a blank line
  * @coordinates-with serializerBreak.ts — the `break` handler, one per hard-break style
  * @coordinates-with serializerBreakBeforeHtml.ts — the line ending between a break and inline HTML
@@ -57,6 +59,7 @@ import type { Root } from "mdast";
 import { remarkCustomInline, remarkDetailsBlock, remarkWikiLinks, tocToMarkdown } from "./plugins";
 import { handleHtml, handleImage, handleLink, blankLinesJoin } from "./serializerHandlers";
 import { listInterruptJoin } from "./listInterruptJoin";
+import { listItemGapJoin } from "./listItemGapJoin";
 import type { MarkdownPipelineOptions } from "./types";
 import { parseMarkdownToMdast } from "./parser";
 import { applyCosmeticPass } from "./serializerCosmetics";
@@ -119,7 +122,8 @@ function buildSerializer(hardBreak: HardBreakSpelling) {
       } as Record<string, unknown>,
       // Joins are consulted last-first: listInterruptJoin can raise a captured
       // blank-line run (ADR-1a) that CommonMark would read as paragraph text.
-      join: [blankLinesJoin, listInterruptJoin],
+      // listItemGapJoin answers only between two items of a loose list.
+      join: [blankLinesJoin, listInterruptJoin, listItemGapJoin],
     } as Parameters<typeof remarkStringify>[0])
     .use(remarkGfm, {
       singleTilde: false, // Match parser config

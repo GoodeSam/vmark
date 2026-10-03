@@ -71,5 +71,5 @@ describe("scrollToSettled under content-visibility (real engine)", () => {
 
     // Within a pixel: correction stops once less than 1px remains.
     expect(Math.max(...offsets), `offsets from the top: ${offsets.join(", ")}px`).toBeLessThanOrEqual(1);
-  }, 30_000);
+  });
 });

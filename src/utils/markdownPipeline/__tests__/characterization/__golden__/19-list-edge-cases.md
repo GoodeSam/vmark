@@ -7,7 +7,6 @@
 2. Ordered second
 
 - [ ] Unchecked task
-
 - [x] Checked task
 
 - Outer item

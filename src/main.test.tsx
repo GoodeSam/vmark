@@ -11,7 +11,7 @@
 // main.bootFailure.test.tsx for that reason.
 import { describe, expect, it, vi } from "vitest";
 import type { ReactElement, ReactNode } from "react";
-import { SURFACE_IMPORT_TEST_TIMEOUT_MS, SURFACE_IMPORT_WAIT } from "@/test/waitBudget";
+import { SURFACE_IMPORT_WAIT } from "@/test/waitBudget";
 
 const entry = vi.hoisted(() => ({
   rendered: [] as ReactNode[],
@@ -50,5 +50,5 @@ describe("main entry", () => {
     const { default: App } = await import("./App");
     expect(innermostType(entry.rendered[0])).toBe(App);
     expect(entry.appError).not.toHaveBeenCalled();
-  }, SURFACE_IMPORT_TEST_TIMEOUT_MS);
+  });
 });

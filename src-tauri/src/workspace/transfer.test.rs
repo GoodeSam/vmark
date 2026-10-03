@@ -432,3 +432,33 @@ mod caller_identity {
         reset_transfer_state();
     }
 }
+
+// -- WI-RA26.1: the transfer commands reject with a typed CommandError --------
+//
+// Their failures (the target window cannot be built, the ack cannot be
+// emitted to the source) are unreachable under the mock runtime, so this pins
+// the type the IPC layer serializes: a `CommandError` reaches the webview as
+// `{ code, message }`, which `workspaceWindowActions.ts` can branch on, where a
+// `String` would arrive as bare prose.
+
+#[cfg(not(target_os = "windows"))]
+#[test]
+fn the_ack_command_answers_with_the_typed_error() {
+    let _lock = acquire_test_lock();
+    reset_transfer_state();
+    let app = mock_app();
+    let target = mock_window(&app, "doc-1");
+
+    let answer: Result<(), crate::command_error::CommandError> = ack_workspace_transfer(
+        target,
+        app.handle().clone(),
+        WorkspaceTransferAck {
+            request_id: "req-unknown".to_string(),
+            target_window_label: "doc-1".to_string(),
+            workspace_instance_id: "wsi-unknown".to_string(),
+        },
+    );
+
+    assert!(answer.is_ok(), "an ack for no pending transfer is a no-op");
+    reset_transfer_state();
+}

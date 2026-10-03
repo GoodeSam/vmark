@@ -103,12 +103,3 @@ export function insertText(doc: Node, at: number, len: number): Insertion | null
   mapping.appendMap(step.getMap());
   return { doc: result.doc, mapping };
 }
-
-/**
- * These properties run hundreds of generated cases each and are CPU-bound.
- * Vitest's 5s default is wall-clock, so under full worker parallelism on a
- * loaded machine contention alone can trip it on a green tree — the same false
- * signal the markdown round-trip properties hit (2026-07-28). A real regression
- * fails on an assertion in milliseconds, so a generous ceiling hides nothing.
- */
-export const PROPERTY_TIMEOUT_MS = 30_000;

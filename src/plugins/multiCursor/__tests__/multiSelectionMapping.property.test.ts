@@ -30,7 +30,6 @@ import {
   insertText,
   makeDoc,
   rangesArb,
-  PROPERTY_TIMEOUT_MS,
 } from "./multiSelectionArbitraries";
 
 describe("MultiSelection — mapping invariants (property-based)", () => {
@@ -66,7 +65,7 @@ describe("MultiSelection — mapping invariants (property-based)", () => {
       ),
       { numRuns: 300 },
     );
-  }, PROPERTY_TIMEOUT_MS);
+  });
 
   it("map() keeps a collapsed cursor collapsed when text is inserted elsewhere (#526)", () => {
     fc.assert(
@@ -97,7 +96,7 @@ describe("MultiSelection — mapping invariants (property-based)", () => {
       ),
       { numRuns: 300 },
     );
-  }, PROPERTY_TIMEOUT_MS);
+  });
 
   it("keeps the backward array aligned with ranges through map() (#311)", () => {
     fc.assert(
@@ -121,7 +120,7 @@ describe("MultiSelection — mapping invariants (property-based)", () => {
       ),
       { numRuns: 300 },
     );
-  }, PROPERTY_TIMEOUT_MS);
+  });
 
   it("map() merges overlapping ranges that construction left alone", () => {
     const doc = makeDoc(1, 10);

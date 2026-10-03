@@ -5,15 +5,10 @@
  */
 
 import type { Plugin } from "unified";
-import type { Root, Parent } from "mdast";
+import type { Content, Parent, Root, Text } from "mdast";
 import type { InlineMath } from "mdast-util-math";
 import { createCodeFenceTracker } from "./opaqueRegions";
 
-/**
- * Plugin to validate inline math and convert invalid ones back to text.
- * Invalid inline math: content with leading or trailing whitespace.
- * This prevents `$100 and $200` from being parsed as math.
- */
 /**
  * Maximum mdast nesting depth the pipeline accepts before flattening.
  *
@@ -66,6 +61,16 @@ function textOf(node: Parent): string {
   return out;
 }
 
+/**
+ * Plugin to validate inline math and convert invalid ones back to text.
+ * Invalid inline math: content with leading or trailing whitespace.
+ * This prevents `$100 and $200` from being parsed as math.
+ *
+ * The restored text merges with its text neighbours, so the tree is the one a
+ * text parse would have produced: one text node, not three siblings. Split
+ * siblings made a paragraph read back from its own serialization (one text
+ * node) differ from the first read of the same text.
+ */
 export const remarkValidateMath: Plugin<[], Root> = function () {
   return (tree: Root) => {
     visitAndFixMath(tree);
@@ -86,6 +91,9 @@ function visitAndFixMath(root: Root | Parent): void {
     // Type-safe children array using unknown to avoid strict type conflicts
     const newChildren: unknown[] = [];
     let modified = false;
+    // True while the last entry of newChildren holds restored math text, so a
+    // following text sibling joins it. Ordinary text siblings are left alone.
+    let tailIsRestored = false;
 
     for (const child of node.children) {
       if (child.type === "inlineMath") {
@@ -95,14 +103,25 @@ function visitAndFixMath(root: Root | Parent): void {
         // Reject math with leading/trailing whitespace
         if (/^\s/.test(value) || /\s$/.test(value)) {
           // Convert back to text with dollar delimiters
-          newChildren.push({
-            type: "text",
-            value: `$${value}$`,
-          });
+          const restored: Text = { type: "text", value: `$${value}$`, position: child.position };
+          const tail = newChildren[newChildren.length - 1] as Content | undefined;
+          if (tail?.type === "text") {
+            newChildren[newChildren.length - 1] = joinText(tail, restored);
+          } else {
+            newChildren.push(restored);
+          }
+          tailIsRestored = true;
           modified = true;
           continue;
         }
       }
+
+      if (tailIsRestored && child.type === "text") {
+        newChildren[newChildren.length - 1] = joinText(newChildren[newChildren.length - 1] as Text, child);
+        tailIsRestored = false;
+        continue;
+      }
+      tailIsRestored = false;
 
       if ("children" in child && Array.isArray((child as Parent).children)) {
         stack.push(child as Parent);
@@ -115,6 +134,18 @@ function visitAndFixMath(root: Root | Parent): void {
       (node as { children: unknown[] }).children = newChildren;
     }
   }
+}
+
+/**
+ * One text node holding `left` then `right`, spanning both in the source when
+ * both carry a position. A missing position is dropped rather than guessed.
+ */
+function joinText(left: Text, right: Text): Text {
+  const joined: Text = { type: "text", value: left.value + right.value };
+  if (left.position && right.position) {
+    joined.position = { start: left.position.start, end: right.position.end };
+  }
+  return joined;
 }
 
 /**

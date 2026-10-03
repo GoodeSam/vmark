@@ -135,6 +135,20 @@ export function maxWorkers(): number {
 export const LIVENESS_TIMEOUT_MS = 300_000;
 
 /**
+ * Build-time constants the app reads, defined for every tier that runs `src/`
+ * the way `vite.config.ts` defines them for the build.
+ *
+ * A config `define` cannot be undone by a test. The version used to come from
+ * `vi.stubGlobal` in `src/test/setup.ts`, and every `vi.unstubAllGlobals()`
+ * (35 files call it) removed it for the rest of that file, so a module that
+ * reads it at import time threw a ReferenceError. Pinned by
+ * `src/test/versionDefine.test.ts`.
+ */
+export const TEST_DEFINES = {
+  __VMARK_VERSION__: JSON.stringify("0.0.0-test"),
+} as const;
+
+/**
  * The file extensions every tier's include/exclude patterns must agree on.
  *
  * Shared because they drifted: the app tier's `include` accepted eight

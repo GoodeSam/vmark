@@ -67,7 +67,7 @@ describe("inline span scanners match the expressions they replace", () => {
       }),
       { numRuns: 3000 },
     );
-  }, 60_000);
+  });
 
   it.each(SCANNERS)("%s, on the empty string", (_name, scan) => {
     expect(scan("")).toEqual([]);

@@ -312,7 +312,7 @@
   "files.mergeWindow.1m": "1분",
   "files.mergeWindow.2m": "2분",
   "files.maxFileSize.label": "기록의 최대 파일 크기",
-  "files.maxFileSize.description": "이 크기보다 큰 파일의 기록 스냅샷을 건너뜁니다",
+  "files.maxFileSize.description": "이 크기보다 큰 파일은 자동 저장의 기록 스냅샷을 건너뜁니다(수동 저장, MCP 저장, 버전을 복원하기 전의 안전용 사본은 항상 남음)",
   "files.maxFileSize.256kb": "256 KB",
   "files.maxFileSize.512kb": "512 KB",
   "files.maxFileSize.1mb": "1 MB",

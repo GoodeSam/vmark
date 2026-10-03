@@ -81,10 +81,33 @@ export function generatePreview(content: string): string {
 }
 
 /**
- * Get the document name from a path
+ * The document name stored in a history index: the path's file name, or
+ * `untitledName` when the path has none. The caller supplies the translated
+ * "Untitled" — this module is leaf-pure and cannot reach i18n.
  */
-export function getDocumentName(documentPath: string): string {
-  return getFileName(documentPath) || "Untitled";
+export function getDocumentName(documentPath: string, untitledName: string): string {
+  return getFileName(documentPath) || untitledName;
+}
+
+/**
+ * A new, empty, active history index for `documentPath`. `untitledName` is the
+ * caller's translated "Untitled", stored when the path has no file name.
+ */
+export function createHistoryIndex(
+  documentPath: string,
+  pathHash: string,
+  settings: HistorySettings,
+  untitledName: string
+): HistoryIndex {
+  return {
+    documentPath,
+    documentName: getDocumentName(documentPath, untitledName),
+    pathHash,
+    status: "active",
+    deletedAt: null,
+    snapshots: [],
+    settings,
+  };
 }
 
 /**

@@ -2,6 +2,7 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import {
   LIVENESS_TIMEOUT_MS,
+  TEST_DEFINES,
   maxWorkers,
   pinTestClockEnvironment,
   sourceAliases,
@@ -63,6 +64,8 @@ pinTestClockEnvironment();
  */
 export default defineConfig({
   plugins: [react()],
+  // The build-time constants the app reads (see TEST_DEFINES).
+  define: TEST_DEFINES,
   test: {
     globals: true,
     environment: "jsdom",
