@@ -307,7 +307,7 @@ errors:
   workflow.restoreWhileRunning: "워크플로가 실행 중입니다. 파일을 복원하기 전에 완료될 때까지 기다리거나 취소하세요."
   workflow.restoreSuperseded: "이 스냅샷 이후 다른 워크플로가 실행되어, 복원하면 그 변경 사항이 취소될 수 있습니다. 아무것도 복원하지 않았습니다."
 
-  # === 저장 경로 (file_write.rs, WI-14 CommandError) ===
+  # === 저장 경로 (files/write.rs, WI-14 CommandError) ===
   save.parentMissing: "이 파일이 있던 폴더가 더 이상 존재하지 않습니다: %{dir}"
   save.noParentDirectory: "파일 경로에 상위 폴더가 없습니다"
   save.symlinkLoop: "이 파일의 별칭이 순환하고 있어 실제 파일을 찾을 수 없습니다"
@@ -418,7 +418,7 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "키체인 접근이 거부되었습니다. 키체인 안내 창에서 VMark를 허용하거나 ‘키체인 접근’에서 접근 권한을 부여한 뒤 다시 시도하세요."
 
-  # === 워크스페이스 접근 권한 (workspace_grants/commands.rs, WI-LX1.1) ===
+  # === 워크스페이스 접근 권한 (workspace/grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "VMark에 “%{path}”에 대한 접근 권한이 없습니다. 파일 → 워크스페이스 열기...에서 폴더를 선택해 허용하세요."
   workspaceAccess.pickerBusy: "폴더 선택 대화상자가 이미 열려 있습니다"
   workspaceAccess.checkBusy: "VMark가 아직 해당 폴더에 대한 접근을 확인하고 있습니다. 잠시 후 다시 시도하세요"

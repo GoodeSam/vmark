@@ -307,7 +307,7 @@ errors:
   workflow.restoreWhileRunning: "Ein Workflow läuft gerade. Warten Sie, bis er fertig ist, oder brechen Sie ihn ab, bevor Sie Dateien wiederherstellen."
   workflow.restoreSuperseded: "Seit dieser Momentaufnahme lief ein weiterer Workflow; eine Wiederherstellung könnte dessen Änderungen rückgängig machen. Es wurde nichts wiederhergestellt."
 
-  # === Speicherpfad (file_write.rs, WI-14 CommandError) ===
+  # === Speicherpfad (files/write.rs, WI-14 CommandError) ===
   save.parentMissing: "Der Ordner dieser Datei existiert nicht mehr: %{dir}"
   save.noParentDirectory: "Der Dateipfad hat keinen übergeordneten Ordner"
   save.symlinkLoop: "Der Alias dieser Datei verweist im Kreis, daher wurde die eigentliche Datei nicht gefunden"
@@ -418,7 +418,7 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "Der Zugriff auf den Schlüsselbund wurde verweigert. Erlauben Sie VMark in der Schlüsselbund-Abfrage oder gewähren Sie den Zugriff in der Schlüsselbundverwaltung, und versuchen Sie es erneut."
 
-  # === Arbeitsbereich-Freigaben (workspace_grants/commands.rs, WI-LX1.1) ===
+  # === Arbeitsbereich-Freigaben (workspace/grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "VMark hat keinen Zugriff auf „%{path}“. Wählen Sie den Ordner über Datei → Arbeitsbereich öffnen..., um ihn freizugeben."
   workspaceAccess.pickerBusy: "Ein Ordnerdialog ist bereits geöffnet"
   workspaceAccess.checkBusy: "VMark prüft den Zugriff auf diesen Ordner noch. Versuche es gleich noch einmal"

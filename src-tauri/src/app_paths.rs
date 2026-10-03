@@ -78,10 +78,10 @@ fn get_legacy_dir() -> Option<PathBuf> {
 /// by a sync of the parent directory (Unix; see `atomic_persist`).
 ///
 /// Thin wrapper over `atomic_replace::atomic_replace` — the shared core also
-/// backs `file_write::atomic_write_file_sync`; only the error strings here
+/// backs `files::write::atomic_write_file_sync`; only the error strings here
 /// are caller-specific.
 ///
-/// NOTE: A separate async variant exists in `file_write.rs` as a Tauri
+/// NOTE: A separate async variant exists in `files/write.rs` as a Tauri
 /// command for frontend invocations. They are intentionally separate — this
 /// one is sync for internal Rust callers (workspace config, MCP port file).
 pub fn atomic_write_file(path: &Path, contents: &[u8]) -> Result<(), String> {

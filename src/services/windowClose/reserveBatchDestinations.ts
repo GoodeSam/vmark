@@ -24,7 +24,7 @@
  * window, and this is the batch that runs while the app is quitting.
  *
  * @coordinates-with closeSaveBatch.ts — the only caller
- * @coordinates-with src-tauri/src/file_write.rs — create_file_exclusive
+ * @coordinates-with src-tauri/src/files/write.rs — create_file_exclusive
  * @module services/windowClose/reserveBatchDestinations
  */
 

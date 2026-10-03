@@ -1,5 +1,5 @@
 //! CLI-install menu action: toggles the `/usr/local/bin/vmark` shell command
-//! and shows a localized result dialog. Extracted from `menu_events` so that
+//! and shows a localized result dialog. Extracted from `menu::events` so that
 //! grab-bag dispatcher stays under its size baseline (audit 20260612).
 
 use futures_util::FutureExt;

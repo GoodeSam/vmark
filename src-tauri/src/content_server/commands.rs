@@ -50,7 +50,7 @@ impl ServerHandle {
     }
 }
 
-/// Stable per-workspace key (sha256 prefix), matching workspace.rs conventions.
+/// Stable per-workspace key (sha256 prefix), matching workspace/mod.rs conventions.
 fn workspace_key(root: &str) -> String {
     let digest = Sha256::digest(root.as_bytes());
     digest.iter().take(8).map(|b| format!("{b:02x}")).collect()

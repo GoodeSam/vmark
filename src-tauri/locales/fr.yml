@@ -307,7 +307,7 @@ errors:
   workflow.restoreWhileRunning: "Un flux de travail est en cours. Attendez qu’il se termine ou annulez-le avant de restaurer des fichiers."
   workflow.restoreSuperseded: "Un autre flux de travail s’est exécuté depuis cet instantané ; le restaurer pourrait annuler ses modifications. Rien n’a été restauré."
 
-  # === Chemin d'enregistrement (file_write.rs, WI-14 CommandError) ===
+  # === Chemin d'enregistrement (files/write.rs, WI-14 CommandError) ===
   save.parentMissing: "Le dossier de ce fichier n'existe plus : %{dir}"
   save.noParentDirectory: "Le chemin du fichier n'a pas de dossier parent"
   save.symlinkLoop: "L'alias de ce fichier pointe en boucle, le fichier réel est donc introuvable"
@@ -418,7 +418,7 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "L’accès au trousseau a été refusé. Autorisez VMark dans l’invite du trousseau ou accordez-lui l’accès dans Trousseaux d’accès, puis réessayez."
 
-  # === Autorisations des espaces de travail (workspace_grants/commands.rs, WI-LX1.1) ===
+  # === Autorisations des espaces de travail (workspace/grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "VMark n’a pas accès à « %{path} ». Choisissez le dossier avec Fichier → Ouvrir un espace de travail... pour l’autoriser."
   workspaceAccess.pickerBusy: "Une boîte de dialogue de dossier est déjà ouverte"
   workspaceAccess.checkBusy: "VMark vérifie encore l’accès à ce dossier. Réessayez dans un instant"

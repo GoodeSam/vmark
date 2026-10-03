@@ -5,7 +5,7 @@
 //! other document window can reject the broadcast.
 //!
 //! Reached from macOS `RunEvent::Opened` and from the Windows/Linux
-//! single-instance callback, both via `file_open::route_file_opens` — so this
+//! single-instance callback, both via `files::open::route_file_opens` — so this
 //! module is NOT macOS-only, whatever the `[Finder]` log prefixes suggest.
 
 use serde::Serialize;

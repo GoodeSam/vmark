@@ -144,7 +144,7 @@ fn the_machine_id_does_not_contain_the_raw_hostname() {
 /// session can read a folder before its grant is in is ORDER — the main window
 /// exists already but cannot load or invoke until setup returns — so the order
 /// is pinned against the source, as `workflow/guards.test.rs` pins its gate.
-/// What `restore_at_launch` itself does is tested in `workspace_grants`.
+/// What `restore_at_launch` itself does is tested in `workspace::grants`.
 #[test]
 fn setup_restores_workspace_grants_before_anything_else_starts() {
     // A Windows checkout has CRLF line endings; the searches below assume LF.
@@ -156,7 +156,7 @@ fn setup_restores_workspace_grants_before_anything_else_starts() {
     let body = &body[..body.find("\n}\n").expect("setup_app ends")];
 
     let restore = body
-        .find("workspace_grants::restore_at_launch(")
+        .find("workspace::grants::restore_at_launch(")
         .expect("setup restores the recorded workspace grants");
     assert_eq!(
         body.matches("restore_at_launch(").count(),

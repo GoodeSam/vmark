@@ -11,7 +11,7 @@
 //!     the frontend: its webview dies without running its own teardown. That
 //!     covers its file watcher, its PTY sessions and its MCP bridge workspace
 //!     registration.
-//!   - Recorded workspace grants (`workspace_grants`) are re-issued during
+//!   - Recorded workspace grants (`workspace::grants`) are re-issued during
 //!     setup. Tauri has already BUILT the configured `main` window by then, but
 //!     its page load and every IPC request are served on the main thread setup
 //!     is running on, so nothing can read before the grants are in. The wait is
@@ -24,7 +24,7 @@ use sha2::{Digest, Sha256};
 use tauri::{Listener, Manager};
 
 use crate::peer_text::peer_message;
-use crate::{menu, menu_events, pty, quit, tab_transfer, window_status, workspace_transfer};
+use crate::{menu, pty, quit, tab_transfer, window_status, workspace};
 
 /// Compute a stable, anonymous machine identifier hash.
 ///
@@ -57,7 +57,7 @@ pub(crate) fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::
     // WI-LX1.1: re-grant the workspace roots the user chose in earlier
     // sessions. FIRST, and on this thread: the main window exists already, but
     // it cannot load or invoke anything until setup returns (bounded wait).
-    crate::workspace_grants::restore_at_launch(app.handle());
+    crate::workspace::grants::restore_at_launch(app.handle());
 
     // Coherence layer: per-installation writer identity (spec §2.2) +
     // per-workspace kernel registry. A writer-id load failure falls back
@@ -132,13 +132,13 @@ pub(crate) fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::
     crate::single_instance::warn_if_unguarded();
 
     // Listen for "ready" events from frontend windows
-    // This is used by menu_events to know when it's safe to emit events
+    // This is used by menu::events to know when it's safe to emit events
     // The payload contains the window label as a string
     let app_handle = app.handle().clone();
     app.listen("ready", move |event| {
         if let Some(label) = crate::window_manager::ready_window_label(event.payload()) {
-            menu_events::mark_window_ready(&app_handle, &label);
-            crate::file_open::record_ready_document_window(&app_handle, &label);
+            menu::events::mark_window_ready(&app_handle, &label);
+            crate::files::open::record_ready_document_window(&app_handle, &label);
         }
     });
 
@@ -193,11 +193,11 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
             event: tauri::WindowEvent::Destroyed,
             ..
         } => {
-            crate::file_open::remove_document_window(app, &label);
+            crate::files::open::remove_document_window(app, &label);
             quit::handle_window_destroyed(app, &label);
-            menu_events::clear_window_ready(&label);
+            menu::events::clear_window_ready(&label);
             tab_transfer::clear_unclaimed_transfer(&label);
-            workspace_transfer::clear_unclaimed_transfer(&label);
+            workspace::transfer::clear_unclaimed_transfer(&label);
             window_status::prune(app, &label);
             // Drop the window's filesystem watcher. The frontend's own
             // `stop_watching` invoke runs in the dying webview and can race
@@ -221,19 +221,19 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
             label,
             event: tauri::WindowEvent::Focused(focused),
             ..
-        } => crate::file_open::record_document_window_focus(
+        } => crate::files::open::record_document_window_focus(
             app,
             &label,
             focused,
-            menu_events::is_window_ready(&label),
+            menu::events::is_window_ready(&label),
         ),
         #[cfg(target_os = "macos")]
         tauri::RunEvent::Reopen {
             has_visible_windows,
             ..
-        } => crate::file_open::handle_reopen(app, has_visible_windows),
+        } => crate::files::open::handle_reopen(app, has_visible_windows),
         #[cfg(target_os = "macos")]
-        tauri::RunEvent::Opened { urls } => crate::file_open::handle_finder_opened(app, urls),
+        tauri::RunEvent::Opened { urls } => crate::files::open::handle_finder_opened(app, urls),
         _ => {}
     }
 }

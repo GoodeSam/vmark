@@ -217,7 +217,7 @@ fn declined_ack_carries_no_data() {
 // register" order became a real gap: the target invokes `claim_tab_transfer`
 // on mount, and a claim landing in the gap opens an EMPTY window with the
 // user's tab nowhere. The payload is now registered first, exactly as
-// `workspace_transfer.rs` documents for the same reason.
+// `workspace/transfer.rs` documents for the same reason.
 
 // tauri::test::MockRuntime crashes the test binary at startup on
 // windows-latest (STATUS_ENTRYPOINT_NOT_FOUND). The `test` feature of tauri is

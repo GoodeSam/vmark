@@ -197,7 +197,7 @@ export const REGISTRY = [
       "A registered Tauri command with zero callers since #1357 replaced the " +
       "per-directory listing with the one-call list_directory_tree. Registered " +
       "IPC surface with no caller is attack surface that nothing tests; the " +
-      "hidden-detection rule it carried lives on as file_tree::compute_is_hidden.",
+      "hidden-detection rule it carried lives on as files::tree::compute_is_hidden.",
   },
   {
     kind: "symbol",

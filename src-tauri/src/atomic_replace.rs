@@ -2,13 +2,13 @@
 //!
 //! Purpose: the single temp-file + fsync + durable-rename implementation shared by
 //! `app_paths::atomic_write_file` (sync, internal callers: workspace config,
-//! MCP port file) and `file_write::atomic_write_file_sync` (frontend save
+//! MCP port file) and `files::write::atomic_write_file_sync` (frontend save
 //! path). The two previously carried near-duplicate copies that drifted
 //! (Windows persist fallback, permission preservation) and needed the same
 //! permissions fix twice (Codex audit 20260718).
 //!
 //! `resolve_link_target` lives here too, but is deliberately NOT called by
-//! this core: following a symlink is a DOCUMENT-save policy (`file_write`),
+//! this core: following a symlink is a DOCUMENT-save policy (`files::write`),
 //! and applying it to app-private writes would let a planted link redirect
 //! them.
 //!

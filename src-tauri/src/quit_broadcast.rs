@@ -23,7 +23,7 @@
 //!     it can claim, and that trade is the user's to make.
 //!
 //! @coordinates-with quit.rs — owns the quit flags and the target set
-//! @coordinates-with menu_events.rs — the readiness queue
+//! @coordinates-with menu/events.rs — the readiness queue
 //! @module quit::broadcast
 
 use std::sync::atomic::Ordering;
@@ -32,7 +32,8 @@ use std::time::{Duration, Instant};
 
 use tauri::{Runtime, WebviewWindow};
 
-use crate::menu_events::{self, Delivery};
+use crate::menu;
+use crate::menu::events::Delivery;
 
 /// The event a document window's frontend answers by running its close flow.
 pub(super) const QUIT_REQUESTED_EVENT: &str = "app:quit-requested";
@@ -87,7 +88,7 @@ pub(super) fn claim_quit_attempt(now: Instant) -> QuitAttempt {
 /// starting after the quit was called off must not be closed by it.
 pub(super) fn forget_quit_attempt() {
     *QUIT_STARTED_AT.lock().unwrap_or_else(|p| p.into_inner()) = None;
-    menu_events::withdraw_deferred(QUIT_REQUESTED_EVENT);
+    menu::events::withdraw_deferred(QUIT_REQUESTED_EVENT);
 }
 
 /// Ask each document window to run its close flow: now if its frontend is
@@ -97,7 +98,7 @@ pub(super) fn request_quit_of<R: Runtime>(
     windows: &[(String, WebviewWindow<R>)],
 ) -> Result<(), (String, tauri::Error)> {
     for (label, window) in windows {
-        match menu_events::deliver_when_ready(window, QUIT_REQUESTED_EVENT) {
+        match menu::events::deliver_when_ready(window, QUIT_REQUESTED_EVENT) {
             Ok(Delivery::Emitted) => {}
             Ok(Delivery::Deferred) => log::info!(
                 "[quit] {label:?} is still starting; it will be asked to quit when it is ready"

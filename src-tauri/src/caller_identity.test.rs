@@ -5,7 +5,7 @@
 //
 // (`close_window` is pinned in `window_manager/commands.test.rs`,
 // `live_docs_response`/`collect_live_document_refs` in `live_docs.test.rs` and
-// `cancel_workspace_transfer` in `workspace_transfer.test.rs`, beside the state
+// `cancel_workspace_transfer` in `workspace/transfer.test.rs`, beside the state
 // they read.)
 
 use crate::hot_exit::session::{UiState, WindowState};

@@ -41,7 +41,7 @@
  * @coordinates-with stores/workspaceApprovalStore.ts — the one-shot store
  * @coordinates-with services/workspaces/openWorkspaceByPath.ts — the shared open sequence
  * @coordinates-with services/workspaces/workspaceAccess.ts — Rust access check + picker
- * @coordinates-with src-tauri/src/workspace_validation.rs — validate_workspace_dir command
+ * @coordinates-with src-tauri/src/workspace/validation.rs — validate_workspace_dir command
  * @coordinates-with tabGuard.ts — structuredError
  * @coordinates-with readOperationArgs.ts — the one payload parse
  * @module services/mcpBridge/v2/workspaceOpenFolder

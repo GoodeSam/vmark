@@ -1,7 +1,7 @@
 //! Tests for `atomic_replace.rs` — the shared atomic-replacement core.
 //!
 //! Caller-facing behavior (exact error strings, validation, sentinel
-//! prefixes) stays pinned by the `app_paths` and `file_write` test suites;
+//! prefixes) stays pinned by the `app_paths` and `files::write` test suites;
 //! these tests pin the core's own contract.
 
 use super::*;

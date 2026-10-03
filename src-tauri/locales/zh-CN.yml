@@ -307,7 +307,7 @@ errors:
   workflow.restoreWhileRunning: "有工作流正在运行。请等待其完成或取消后再恢复文件。"
   workflow.restoreSuperseded: "此快照之后又运行了其他工作流，恢复它可能会撤销该运行的更改。未恢复任何内容。"
 
-  # === 保存路径（file_write.rs，WI-14 CommandError）===
+  # === 保存路径（files/write.rs，WI-14 CommandError）===
   save.parentMissing: "该文件所在的文件夹已不存在：%{dir}"
   save.noParentDirectory: "文件路径没有上级文件夹"
   save.symlinkLoop: "此文件的替身指向形成循环，因此找不到真正的文件"
@@ -418,7 +418,7 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "钥匙串访问被拒绝。请在钥匙串提示中允许 VMark，或在“钥匙串访问”中授予访问权限，然后重试。"
 
-  # === 工作区访问授权 (workspace_grants/commands.rs, WI-LX1.1) ===
+  # === 工作区访问授权 (workspace/grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "VMark 尚未获得访问“%{path}”的权限。请通过 文件 → 打开工作区... 选择该文件夹以授予权限。"
   workspaceAccess.pickerBusy: "已有一个文件夹对话框处于打开状态"
   workspaceAccess.checkBusy: "VMark 仍在检查对该文件夹的访问权限，请稍后再试"

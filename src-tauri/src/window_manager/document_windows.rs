@@ -6,7 +6,7 @@
 //!     they "start hidden and are shown after the frontend emits `ready`",
 //!     preventing flash-of-unstyled-content — no builder here calls
 //!     `.visible(false)`, `tauri.conf.json` sets no `visible` key (so Tauri's
-//!     default `true` applies), and `menu_events::mark_window_ready` flushes
+//!     default `true` applies), and `menu::events::mark_window_ready` flushes
 //!     queued menu events without ever calling `.show()`. The lifecycle was
 //!     never implemented; the claim is removed rather than left to mislead.
 //!     Implementing it is a real option, but it must come with a failure path —

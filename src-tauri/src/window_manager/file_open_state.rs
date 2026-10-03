@@ -100,7 +100,7 @@ pub fn queue_pending_file_opens(
 /// `get_pending_file_opens` settles the owner and drains the queue
 /// between an emit-side check and its queue insertion — which could otherwise
 /// drop or double-deliver a Finder open. Mirrors the single-lock discipline of
-/// `menu_events::check_ready_or_queue`.
+/// `menu::events::check_ready_or_queue`.
 pub struct FileOpenState {
     pub owner: QueueOwner,
     pub pending: Vec<PendingFileOpen>,

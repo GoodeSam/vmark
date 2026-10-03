@@ -5,7 +5,7 @@
 //! Key decisions:
 //!   - `lib.rs` stays a declarative composition root: setup steps and
 //!     app-level event dispatch live in `app_setup`, Finder/CLI file-open
-//!     queueing and fs-scope extension in `file_open`, the extension gate in
+//!     queueing and fs-scope extension in `files::open`, the extension gate in
 //!     `supported_files`, terminal shell resolution in `shell_env`, and the
 //!     temp-HTML export writer in `temp_html`.
 //!   - AI provider API keys persist in the OS keychain (`secure_store`),
@@ -33,12 +33,7 @@ pub mod command_error; // WI-14 crate-wide typed command error ({code, message, 
 mod content_search;
 mod content_server;
 mod external_editor;
-mod file_create;
-mod file_open;
-mod file_ops;
-mod file_tree;
-mod file_tree_walk;
-mod file_write;
+mod files;
 mod fs_scope;
 pub mod genies;
 mod gha_workflow;
@@ -47,11 +42,8 @@ mod link_target;
 mod live_docs;
 mod lock_policy;
 mod mcp_bridge;
-mod mcp_bridge_path_guard;
 mod mcp_config;
-mod mcp_server;
 mod menu;
-mod menu_events;
 mod pandoc;
 mod peer_text;
 mod pty;
@@ -76,9 +68,6 @@ mod webview_edit;
 mod window_manager;
 pub mod workflow;
 mod workspace;
-mod workspace_grants; // WI-LX1.1 Rust-owned workspace grants (picker, Finder, recorded roots)
-mod workspace_transfer;
-mod workspace_validation;
 
 #[cfg(target_os = "macos")]
 mod app_nap;
@@ -98,7 +87,7 @@ mod text_substitution;
 mod window_status;
 
 // Crate-wide re-exports: existing `crate::` call sites (post lib.rs split).
-pub use file_open::PendingFileOpen;
+pub use files::open::PendingFileOpen;
 pub(crate) use fs_scope::allow_fs_read;
 pub(crate) use supported_files::is_openable_supported;
 // macOS-gated: sole consumer (quarantine sweep) is macOS-only, so an unconditional re-export is an unused-import error on Linux/Windows CI (guarded by lib.test.rs).
@@ -157,7 +146,7 @@ fn manage_state<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         .manage(close_to_tray::CloseToTrayState::default())
         // WI-LX1.1: the workspace roots the user chose. Loaded from app data
         // and re-granted in `setup_app`; picks made before that are merged.
-        .manage(workspace_grants::WorkspaceGrants::default())
+        .manage(workspace::grants::WorkspaceGrants::default())
         // Serializes terminal-transcript CLI hook configuration writes.
         .manage(terminal_transcript::TranscriptConfigState::default())
 }
@@ -191,7 +180,7 @@ pub fn run() {
         })
         .invoke_handler(crate::all_commands!())
         .setup(app_setup::setup_app)
-        .on_menu_event(menu_events::handle_menu_event)
+        .on_menu_event(menu::events::handle_menu_event)
         // CRITICAL: Only intercept close for document windows (main, doc-*)
         // Non-document windows (settings) should close normally
         .on_window_event(window_manager::handle_document_window_close_event);

@@ -19,7 +19,7 @@
 //!     symptom in #1330 was a window that showed their workspace tree and then
 //!     lost it. `AGENTS.md` records the same hazard from the other direction:
 //!     splitting the dev build's identifier was needed for exactly this reason.
-//!   - Forwarding argv routes the open through `file_open::route_file_opens`,
+//!   - Forwarding argv routes the open through `files::open::route_file_opens`,
 //!     the SAME path macOS takes, rather than a second copy of the policy.
 //!   - A launch carrying no openable file still surfaces a window. Swallowing
 //!     it would make double-clicking the app icon look broken once a VMark is
@@ -55,7 +55,7 @@
 //! The Windows backend has no such dependency (a named mutex plus
 //! `WM_COPYDATA`), which is where #1330 was actually reported.
 //!
-//! @coordinates-with file_open.rs — `route_file_opens`, the shared destination
+//! @coordinates-with files/open.rs — `route_file_opens`, the shared destination
 //! @coordinates-with session_bus.rs — the Linux gate's rules and probes
 //! @coordinates-with app_setup.rs — handles the FIRST launch's argv, logs the skipped guard
 //! @coordinates-with lib.rs — registers the plugin only when `session_bus_present()`
@@ -67,7 +67,7 @@
 
 use tauri::{Manager, Runtime};
 
-use crate::{file_open, quit, supported_files, window_manager};
+use crate::{files, quit, supported_files, window_manager};
 
 /// Linux: is there a session bus for the plugin to connect to? The rules
 /// live in `session_bus.rs`.
@@ -118,7 +118,7 @@ pub(crate) fn warn_if_unguarded() {
 pub(crate) fn handle_second_launch(app: &tauri::AppHandle, argv: Vec<String>) {
     let app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        second_launch_with(&app, argv, file_open::route_file_opens);
+        second_launch_with(&app, argv, files::open::route_file_opens);
     });
 }
 

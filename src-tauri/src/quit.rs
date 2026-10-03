@@ -29,7 +29,7 @@ use std::sync::{
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::mcp_server;
+use crate::mcp_bridge;
 
 #[path = "quit_broadcast.rs"]
 mod broadcast;
@@ -197,7 +197,7 @@ pub fn request_quit(app: &AppHandle) {
 /// for the sequence — called from `finalize_quit` and from app_setup.rs's
 /// `ExitRequested` → `AllowExit` branch so the two paths cannot drift.
 pub(crate) fn shutdown_child_process_subsystems(app: &AppHandle) {
-    mcp_server::cleanup(app);
+    mcp_bridge::control::cleanup(app);
     crate::content_server::cleanup(app);
     crate::pty::kill_all(app);
 }

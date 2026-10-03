@@ -46,7 +46,7 @@
  *
  * @coordinates-with FileExplorer.tsx — consumes the tree data and refresh callback
  * @coordinates-with components/Sidebar/FileExplorer/rescanScheduler.ts — decides when a scan runs
- * @coordinates-with src-tauri/src/file_tree_walk.rs — the one-call listing this invokes
+ * @coordinates-with src-tauri/src/files/tree_walk.rs — the one-call listing this invokes
  * @coordinates-with components/Sidebar/FileExplorer/treeListingPaths.ts — rebuilds node paths from the compact listing
  * @coordinates-with services/workspaceEvents/subscribeWorkspaceEvents.ts — the shared, scoped fs-event source it subscribes to
  * @module components/Sidebar/FileExplorer/useFileTree

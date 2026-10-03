@@ -307,7 +307,7 @@ errors:
   workflow.restoreWhileRunning: "Hay un flujo de trabajo en ejecución. Espere a que termine o cancélelo antes de restaurar archivos."
   workflow.restoreSuperseded: "Otro flujo de trabajo se ejecutó después de esta instantánea, así que restaurarla podría deshacer sus cambios. No se restauró nada."
 
-  # === Ruta de guardado (file_write.rs, WI-14 CommandError) ===
+  # === Ruta de guardado (files/write.rs, WI-14 CommandError) ===
   save.parentMissing: "La carpeta de este archivo ya no existe: %{dir}"
   save.noParentDirectory: "La ruta del archivo no tiene carpeta contenedora"
   save.symlinkLoop: "El alias de este archivo apunta en círculo, así que no se encontró el archivo real"
@@ -418,7 +418,7 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "Se denegó el acceso al llavero. Permite VMark en el aviso del llavero o concédele acceso en Acceso a Llaveros y vuelve a intentarlo."
 
-  # === Permisos de espacios de trabajo (workspace_grants/commands.rs, WI-LX1.1) ===
+  # === Permisos de espacios de trabajo (workspace/grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "VMark no tiene acceso a «%{path}». Elige la carpeta con Archivo → Abrir espacio de trabajo... para permitirlo."
   workspaceAccess.pickerBusy: "Ya hay un diálogo de carpetas abierto"
   workspaceAccess.checkBusy: "VMark aún está comprobando el acceso a esa carpeta. Inténtalo de nuevo en un momento"

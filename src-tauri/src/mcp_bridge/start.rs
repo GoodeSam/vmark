@@ -31,7 +31,7 @@
 //!     but the loop is a separate task: it can accept one more socket AFTER
 //!     the connection-generation bump, and that socket captures the bumped
 //!     generation, passes the registration re-check, and joins a bridge the
-//!     user has already stopped. `mcp_server::shutdown` marks the phase before
+//!     user has already stopped. `mcp_bridge::control::shutdown` marks the phase before
 //!     it signals, so reading the phase here closes the window without having
 //!     to await the loop. `Starting` is deliberately admitted — the phase only
 //!     becomes `Running` once `mcp_bridge_start` returns, and the port file is
@@ -45,7 +45,7 @@
 //!     each whole operation (#179) — and `start.test.rs` drives the pair.
 //!
 //! @coordinates-with server.rs — `stop_bridge`, the other half
-//! @coordinates-with mcp_server.rs — the commands that drive both
+//! @coordinates-with control.rs — the commands that drive both
 //! @module mcp_bridge::start
 
 use super::accept_loop::accept_loop;

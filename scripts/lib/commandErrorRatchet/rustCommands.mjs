@@ -21,7 +21,7 @@ import { rustCode } from "../rustSource.mjs";
 
 const SCAN_ROOT = ["src-tauri", "src"];
 /** `#[tauri::command` OR the imported `#[command` (`use tauri::command;` —
- *  17 sites in this crate, e.g. mcp_server.rs, genies/commands.rs), tolerating
+ *  17 sites in this crate, e.g. mcp_bridge/control.rs, genies/commands.rs), tolerating
  *  the whitespace rustfmt would never write but the language allows. The IPC
  *  contract gate matches both forms for the same reason; matching only the
  *  qualified one left three legacy `Result<_, String>` commands invisible to

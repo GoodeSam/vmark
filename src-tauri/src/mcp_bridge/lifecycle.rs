@@ -19,7 +19,7 @@
 //! start has taken over, so a dying old loop cannot clobber the new bridge's
 //! state or delete its port file.
 //!
-//! @coordinates-with mcp_server.rs — the commands that drive it
+//! @coordinates-with control.rs — the commands that drive it
 //! @coordinates-with managed.rs — where the app holds it
 //! @module mcp_bridge::lifecycle
 

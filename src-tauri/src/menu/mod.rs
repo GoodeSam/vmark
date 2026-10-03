@@ -31,7 +31,7 @@
 //!   - Platform differences (App menu, Print, Settings/Exit placement) are
 //!     cfg-gated tails appended to shared item lists, not duplicated menus.
 //!
-//! @coordinates-with `menu_events.rs` (dispatches click events to frontend)
+//! @coordinates-with `events.rs` (dispatches click events to frontend)
 //! @coordinates-with `macos_menu.rs` (applies SF Symbol icons and workarounds)
 //! @coordinates-with `lib.rs` (registers Tauri commands) / `app_setup.rs` (builds initial menu)
 //! @coordinates-with `locales/en.yml` (English locale strings)
@@ -39,6 +39,7 @@
 pub mod accelerators;
 mod commands;
 mod dynamic;
+pub(crate) mod events;
 pub mod localized;
 pub mod menu_state;
 

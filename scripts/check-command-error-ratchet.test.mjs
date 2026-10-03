@@ -372,7 +372,7 @@ describe("the real repository tree", () => {
     const baseline = JSON.parse(
       readFileSync(path.join(REPO, "scripts", "command-error-baseline.json"), "utf8"),
     );
-    expect(baseline.files["src-tauri/src/file_write.rs"]).toBeUndefined();
+    expect(baseline.files["src-tauri/src/files/write.rs"]).toBeUndefined();
     expect(baseline.files["src-tauri/src/browser/ai_commands.rs"]).toBeUndefined();
     expect(Object.keys(baseline.files).length).toBeGreaterThan(0);
   });

@@ -4,7 +4,7 @@
 //! Called by Tauri commands when the frontend notifies of list changes.
 //!
 //! @coordinates-with `mod.rs` (snapshot Mutexes and submenu ID constants)
-//! @coordinates-with `menu_events.rs` (resolves snapshot paths on click)
+//! @coordinates-with `events.rs` (resolves snapshot paths on click)
 //! @coordinates-with `dynamic_layout.rs` (the ids, labels and grouping built here)
 
 use std::collections::HashMap;

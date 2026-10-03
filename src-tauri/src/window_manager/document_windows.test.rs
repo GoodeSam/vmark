@@ -62,7 +62,7 @@ fn a_label_spells_the_counter_value_it_was_allocated_from() {
 /// This used to assert `n2 == n1 + 1`, which is not a property of
 /// `WINDOW_COUNTER`: it is a process-global `AtomicU32`, and five other sites
 /// in this same test binary allocate from it (`tab_transfer.test.rs` twice,
-/// the sibling test below, plus `hot_exit`/`workspace_transfer` paths reached
+/// the sibling test below, plus `hot_exit`/`workspace::transfer` paths reached
 /// from tests). Two allocations are adjacent only when nothing else allocates
 /// in between, which no test can arrange and none should have to — observed
 /// failing on 2026-09-09 with `left: 13, right: 12`, one interleaved

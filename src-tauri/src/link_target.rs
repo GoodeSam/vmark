@@ -6,7 +6,7 @@
 //! cannot be redirected by a planted link.
 //!
 //! @coordinates-with atomic_replace.rs — the replacement core, which re-exports this
-//! @coordinates-with file_write.rs — resolves a document before saving it
+//! @coordinates-with files/write.rs — resolves a document before saving it
 //! @coordinates-with terminal_transcript/config.rs — resolves a CLI settings file before rewriting it
 
 use std::fs;

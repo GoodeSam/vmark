@@ -17,7 +17,7 @@
  *   integrity.ts — post-format structural integrity verification
  *
  * @coordinates-with settingsStore.ts — CJKFormattingSettings controls which rules are active
- * @coordinates-with menu_events.rs — "format-cjk" menu item triggers formatMarkdown
+ * @coordinates-with src-tauri/src/menu/events.rs — "format-cjk" menu item triggers formatMarkdown
  * @module lib/cjkFormatter
  */
 

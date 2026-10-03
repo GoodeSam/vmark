@@ -35,7 +35,7 @@
 //!     markdown-only so newly-supported formats reach the same Finder
 //!     "Open With" guarantee.
 //!
-//! @coordinates-with workspace_grants/mod.rs — the workspace roots the user granted
+//! @coordinates-with workspace/grants/mod.rs — the workspace roots the user granted
 //! @coordinates-with services/macos/macQuarantineNotice.ts — the only caller
 
 #[cfg(target_os = "macos")]
@@ -147,7 +147,7 @@ pub fn strip_workspace_quarantine(root: &Path) -> StripStats {
 fn webview_can_read<R: tauri::Runtime>(app: &tauri::AppHandle<R>, folder: &Path) -> bool {
     use tauri::Manager;
     let granted = folder.to_str().is_some_and(|canonical| {
-        app.try_state::<crate::workspace_grants::WorkspaceGrants>()
+        app.try_state::<crate::workspace::grants::WorkspaceGrants>()
             .is_some_and(|grants| grants.covers(canonical))
     });
     granted || app.asset_protocol_scope().is_allowed(folder)

@@ -17,7 +17,7 @@
  *   - A payload without the prefix or the separator is a contract break and
  *     throws, which the explorer reports as a failed listing.
  *
- * @coordinates-with src-tauri/src/file_tree_walk.rs — produces the wire form
+ * @coordinates-with src-tauri/src/files/tree_walk.rs — produces the wire form
  * @coordinates-with useFileTree.ts — sole caller
  * @module components/Sidebar/FileExplorer/treeListingPaths
  */

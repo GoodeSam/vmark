@@ -308,7 +308,7 @@ errors:
   workflow.restoreWhileRunning: "A workflow is running. Wait for it to finish, or cancel it, before restoring files."
   workflow.restoreSuperseded: "Another workflow has run since this snapshot was taken, so restoring it could undo that run's changes. Nothing was restored."
 
-  # === Save path (file_write.rs, WI-14 CommandError) ===
+  # === Save path (files/write.rs, WI-14 CommandError) ===
   save.parentMissing: "The folder for this file no longer exists: %{dir}"
   save.noParentDirectory: "The file path has no containing folder"
   save.symlinkLoop: "This file's alias points in a circle, so the real file could not be found"
@@ -419,7 +419,7 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "Keychain access was denied. Allow VMark in the keychain prompt, or grant it access in Keychain Access, then try again."
 
-  # === Workspace grants (workspace_grants/commands.rs, WI-LX1.1) ===
+  # === Workspace grants (workspace/grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "VMark has not been given access to “%{path}”. Choose the folder with File → Open Workspace… to allow it."
   workspaceAccess.pickerBusy: "A folder dialog is already open"
   workspaceAccess.checkBusy: "VMark is still checking access to that folder. Try again in a moment"
