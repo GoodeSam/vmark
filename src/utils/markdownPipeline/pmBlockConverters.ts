@@ -19,6 +19,8 @@
  *   - A list item is written spread when it holds more than one non-list block,
  *     or a block after a nested list: written tight, that block would join the
  *     nested list's last item on re-parse
+ *   - A list item's `tightBefore` attribute travels as `data.tightBefore`, where
+ *     listItemGapJoin.ts reads it
  *
  * @coordinates-with mdastBlockConverters.ts — reverse direction (MDAST → PM)
  * @coordinates-with pmInlineConverters.ts — handles inline content within blocks
@@ -185,6 +187,9 @@ export function convertListItem(context: PmToMdastContext, node: PMNode): ListIt
   const checked = node.attrs.checked;
   if (checked === true || checked === false) {
     listItem.checked = checked;
+  }
+  if (node.attrs.tightBefore === true) {
+    listItem.data = { tightBefore: true };
   }
 
   return listItem;

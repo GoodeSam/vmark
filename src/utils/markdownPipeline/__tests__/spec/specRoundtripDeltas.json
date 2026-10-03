@@ -41,26 +41,6 @@
       "reason": "Item looseness: a list item does not record its own tight/loose spread, so the serializer infers it from the item's blocks — an item holding two blocks with no blank line between them is written loose, and a single paragraph followed by a nested list is written tight. List-level looseness is kept (the list's `spread` attribute). Honest, pinned data loss; the rendered list items keep their content."
     },
     {
-      "exampleId": "cm-316",
-      "path": "root.children[0]",
-      "kind": "attribute",
-      "detail": "spread",
-      "inputValue": false,
-      "outputValue": true,
-      "verdict": "model-limit",
-      "reason": "Item looseness: a list item does not record its own tight/loose spread, so the serializer infers it from the item's blocks — an item holding two blocks with no blank line between them is written loose, and a single paragraph followed by a nested list is written tight. List-level looseness is kept (the list's `spread` attribute). Honest, pinned data loss; the rendered list items keep their content."
-    },
-    {
-      "exampleId": "cm-317",
-      "path": "root.children[0]",
-      "kind": "attribute",
-      "detail": "spread",
-      "inputValue": false,
-      "outputValue": true,
-      "verdict": "model-limit",
-      "reason": "Item looseness: a list item does not record its own tight/loose spread, so the serializer infers it from the item's blocks — an item holding two blocks with no blank line between them is written loose, and a single paragraph followed by a nested list is written tight. List-level looseness is kept (the list's `spread` attribute). Honest, pinned data loss; the rendered list items keep their content."
-    },
-    {
       "exampleId": "cm-320",
       "path": "root.children[0]",
       "kind": "attribute",
@@ -2743,26 +2723,6 @@
     {
       "exampleId": "cm-300",
       "path": "root.children[0].children[1]",
-      "kind": "attribute",
-      "detail": "spread",
-      "inputValue": false,
-      "outputValue": true,
-      "verdict": "model-limit",
-      "reason": "Item looseness: a list item does not record its own tight/loose spread, so the serializer infers it from the item's blocks — an item holding two blocks with no blank line between them is written loose, and a single paragraph followed by a nested list is written tight. List-level looseness is kept (the list's `spread` attribute). Honest, pinned data loss; the rendered list items keep their content."
-    },
-    {
-      "exampleId": "cm-316",
-      "path": "root.children[0]",
-      "kind": "attribute",
-      "detail": "spread",
-      "inputValue": false,
-      "outputValue": true,
-      "verdict": "model-limit",
-      "reason": "Item looseness: a list item does not record its own tight/loose spread, so the serializer infers it from the item's blocks — an item holding two blocks with no blank line between them is written loose, and a single paragraph followed by a nested list is written tight. List-level looseness is kept (the list's `spread` attribute). Honest, pinned data loss; the rendered list items keep their content."
-    },
-    {
-      "exampleId": "cm-317",
-      "path": "root.children[0]",
       "kind": "attribute",
       "detail": "spread",
       "inputValue": false,
