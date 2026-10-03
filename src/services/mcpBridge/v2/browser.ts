@@ -21,6 +21,7 @@ import { wrapHandler } from "./wrapHandler";
 import { buildSnapshotScript } from "@/lib/browser/agent/actScript";
 import { urlForAgent } from "@/lib/browser/url";
 import { runReadClass, parseEvalResult } from "./browserReadClass";
+import { readOperationArgsChecked } from "./readOperationArgs";
 export {
   handleBrowserNavigate,
   handleBrowserOpen,
@@ -67,7 +68,7 @@ function snapshotData(parsed: unknown): Record<string, unknown> {
  */
 export async function handleBrowserRead(id: string, args: Record<string, unknown>): Promise<void> {
   return wrapHandler(id, () =>
-    runReadClass<string>(id, args, {
+    runReadClass<string>(id, readOperationArgsChecked("vmark.browser.read", args), {
       invoke: (tab) =>
         invoke<string>("browser_eval", {
           tabId: tab.tabId,

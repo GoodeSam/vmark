@@ -4,7 +4,7 @@
  * Security-critical tests for XSS prevention.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   sanitizeHtmlPreview,
   sanitizeMediaHtml,
@@ -946,84 +946,56 @@ describe("sanitize — isSafeStyleValue url() and expression() via allowed prope
   });
 });
 
-describe("sanitize — filterAllowedStyles no-DOM branch (line 170)", () => {
-  // Simulate a server-side / no-DOM environment by temporarily replacing document.
-  // When typeof document === "undefined", filterAllowedStyles falls back to a
-  // regex-based strip of all style attributes.
+/**
+ * Run `fn` as if in a worker or on a server: no document, and no DOMParser to
+ * parse markup inertly. The re-parsing filters then fall back to stripping.
+ */
+function withoutDom<T>(fn: () => T): T {
+  vi.stubGlobal("document", undefined);
+  vi.stubGlobal("DOMParser", undefined);
+  try {
+    return fn();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+}
 
-  it("strips style attributes via regex when document is not available", () => {
-    const saved = global.document;
-    try {
-      // @ts-expect-error intentionally removing document to test the no-DOM path
-      delete global.document;
-      const input = '<span style="color: red;">Text</span>';
-      const result = sanitizeHtmlPreview(input, { allowStyles: true });
-      // In no-DOM mode the regex strips style attrs entirely
-      expect(result).not.toContain("style=");
-      expect(result).toContain("Text");
-    } finally {
-      global.document = saved;
-    }
+describe("sanitize — the preview style filter with no DOM", () => {
+  it("strips style attributes via regex", () => {
+    const input = '<span style="color: red;">Text</span>';
+    const result = withoutDom(() => sanitizeHtmlPreview(input, { allowStyles: true }));
+    expect(result).not.toContain("style=");
+    expect(result).toContain("Text");
   });
 
-  it("handles multiple style attributes in no-DOM mode", () => {
-    const saved = global.document;
-    try {
-      // @ts-expect-error intentionally removing document to test the no-DOM path
-      delete global.document;
-      const input = '<span style="color: red; font-weight: bold;">A</span><em style="font-style: italic;">B</em>';
-      const result = sanitizeHtmlPreview(input, { allowStyles: true });
-      expect(result).not.toContain("style=");
-      expect(result).toContain("A");
-      expect(result).toContain("B");
-    } finally {
-      global.document = saved;
-    }
+  it("handles multiple style attributes", () => {
+    const input = '<span style="color: red; font-weight: bold;">A</span><em style="font-style: italic;">B</em>';
+    const result = withoutDom(() => sanitizeHtmlPreview(input, { allowStyles: true }));
+    expect(result).not.toContain("style=");
+    expect(result).toContain("A");
+    expect(result).toContain("B");
   });
 });
 
-describe("sanitize — stripNonWhitelistedIframes no-DOM branch (line 267)", () => {
-  // Same technique: remove global.document so the no-DOM regex path is taken.
-
-  it("strips paired iframes via regex when document is not available", () => {
-    const saved = global.document;
-    try {
-      // @ts-expect-error intentionally removing document to test the no-DOM path
-      delete global.document;
-      const input = '<iframe src="https://evil.com/page">inner</iframe>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).not.toContain("<iframe");
-      expect(result).not.toContain("evil.com");
-    } finally {
-      global.document = saved;
-    }
+describe("sanitize — the media iframe filter with no DOM", () => {
+  it("strips paired iframes via regex", () => {
+    const input = '<iframe src="https://evil.com/page">inner</iframe>';
+    const result = withoutDom(() => sanitizeMediaHtml(input));
+    expect(result).not.toContain("<iframe");
+    expect(result).not.toContain("evil.com");
   });
 
-  it("strips self-closing iframes via regex when document is not available", () => {
-    const saved = global.document;
-    try {
-      // @ts-expect-error intentionally removing document to test the no-DOM path
-      delete global.document;
-      const input = '<iframe src="https://evil.com/page" />';
-      const result = sanitizeMediaHtml(input);
-      expect(result).not.toContain("<iframe");
-    } finally {
-      global.document = saved;
-    }
+  it("strips self-closing iframes via regex", () => {
+    const input = '<iframe src="https://evil.com/page" />';
+    const result = withoutDom(() => sanitizeMediaHtml(input));
+    expect(result).not.toContain("<iframe");
   });
 
-  it("strips even whitelisted iframes via regex when document is not available (safety over permissiveness)", () => {
-    const saved = global.document;
-    try {
-      // @ts-expect-error intentionally removing document to test the no-DOM path
-      delete global.document;
-      // In no-DOM mode ALL iframes are removed — can't verify src safely
-      const input = '<iframe src="https://www.youtube.com/embed/abc"></iframe>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).not.toContain("<iframe");
-    } finally {
-      global.document = saved;
-    }
+  it("strips even whitelisted iframes via regex (safety over permissiveness)", () => {
+    // With no DOM, ALL iframes are removed — the src cannot be verified safely.
+    const input = '<iframe src="https://www.youtube.com/embed/abc"></iframe>';
+    const result = withoutDom(() => sanitizeMediaHtml(input));
+    expect(result).not.toContain("<iframe");
   });
 });
 

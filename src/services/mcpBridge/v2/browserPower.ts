@@ -30,8 +30,9 @@ import { readStyleOps } from "./browserStyleOps";
 import { requireHumanAttachment, parseEvalResult } from "./browserReadClass";
 
 export { handleBrowserQuery } from "./browserQuery";
-import { readOperationArgs } from "./readOperationArgs";
+import { readOperationArgsChecked } from "./readOperationArgs";
 import { unwrapExecuteJsResult, wrapExecuteJsScript } from "./browserExecuteJs";
+import { truncateToLength } from "@/utils/truncateText";
 
 /**
  * The shared tail of both write-class tools: attachment gate → approval →
@@ -74,16 +75,17 @@ export async function handleBrowserStyle(id: string, args: Record<string, unknow
   return wrapHandler(id, async () => {
     // Gate + tab first; payload validation and the attachment gate come AFTER
     // (the ordering rule in the header).
-    const tab = await resolveBrowserTarget(id, args);
+    const read = readOperationArgsChecked("vmark.browser.style", args);
+    const tab = await resolveBrowserTarget(id, read);
     if (!tab) return;
-    const wire = readOperationArgs("vmark.browser.style", args);
+    const wire = read.wire;
     const ref = typeof wire.ref === "string" && wire.ref.trim() ? wire.ref : undefined;
     const selector = typeof wire.selector === "string" && wire.selector.trim() ? wire.selector : undefined;
     if (ref && selector) {
       await respond({ id, success: false, error: "style takes {ref} OR {selector}, not both" });
       return;
     }
-    const parsed = readStyleOps(args);
+    const parsed = readStyleOps(read);
     if ("error" in parsed) {
       await respond({ id, success: false, error: parsed.error });
       return;
@@ -131,9 +133,10 @@ export async function handleBrowserStyle(id: string, args: Record<string, unknow
  *  wrapper is deterministic, so an approved script still cannot be swapped. */
 export async function handleBrowserExecuteJs(id: string, args: Record<string, unknown>): Promise<void> {
   return wrapHandler(id, async () => {
-    const tab = await resolveBrowserTarget(id, args);
+    const read = readOperationArgsChecked("vmark.browser.execute_js", args);
+    const tab = await resolveBrowserTarget(id, read);
     if (!tab) return;
-    const wire = readOperationArgs("vmark.browser.execute_js", args);
+    const wire = read.wire;
     const script = typeof wire.script === "string" && wire.script.trim() ? wire.script : "";
     if (!script) {
       await respond({ id, success: false, error: "execute_js requires a non-empty 'script' string" });
@@ -153,7 +156,7 @@ export async function handleBrowserExecuteJs(id: string, args: Record<string, un
     // so an approved script cannot be swapped for another on the retry. `eval` is
     // never grantable, so this is always per-call. (Security review P5, High #1.)
     // The result is page-derived and UNTRUSTED — never auto-feed it into a later act.
-    await runWriteOp(id, tab, "eval", wrapped, { script: script.slice(0, 2000) }, (raw) => {
+    await runWriteOp(id, tab, "eval", wrapped, { script: truncateToLength(script, 2000) }, (raw) => {
       const outcome = unwrapExecuteJsResult(raw);
       if (!outcome.ok) throw new Error(`script threw: ${outcome.error}`);
       return { result: outcome.value, untrusted: true };

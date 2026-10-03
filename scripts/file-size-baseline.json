@@ -4,7 +4,7 @@
   "_note_embedded_browser_20260712": "WI-1.1: workspace.rs baseline ratcheted 632->385 by splitting its test module out to workspace.test.rs (a pure move; *.test.rs is excluded from the size count, so it is not baselined). WI-1.2: the Phase-0 spike_embed.rs probe was retired (recipe preserved in git cd162e02) and its baseline entry removed; lib.rs ratcheted 308->301 as those spike registrations left it, then grows ~1 line per registered browser command (WI-1.2/2.1/1.4 surface + driver + freeze/thaw = 310; WI-1.7 back/forward history = 312; WI-1.7 stop = 313; WI-1.7 confirm-dialog respond = 314). lib.rs is the app composition root (a command registry); this is registration growth, not logic bloat. surface.rs's macOS impl was split to surface_macos.rs (#[path]) to keep both under the 300 limit; the nav/UI delegate (WI-1.7/1.8) is a further #[path] split (nav_delegate_macos.rs); the run-loop pump/drive_load helpers split to driver_loop_macos.rs so surface_macos.rs stays under 300 as native rows are added.",
   "_note_mcp_sidecar_20260728": "WI-7 (MCP audit remediation): scripts/check-file-size.mjs ROOTS gained server/mcp/src, which the gate had never scanned (audit 20260728 \u00a74). Four entries froze the sidecar files that already exceeded 300 at their PRE-CHANGE sizes. Three have since ratcheted: server.ts left the baseline entirely (302 -> 160, after the eight unused arg extractors and the resource registry went), cli.ts 322 -> 317 (the dead resource-registration loop, minus the VERSION/capabilities comments that replaced it), and bridge/websocket.ts left it too (831 -> 299) when the audit's named seams were extracted into siblings \u2014 websocketConfig, connection, authHandshake, reconnect, pendingRequests, requestQueue, rateLimiter, wsProtocol \u2014 a pure refactor with the test file untouched. cli.ts then left the baseline too (317 -> 269) when detectClientIdentity moved to the new utils/clientIdentity.ts alongside the per-client credential reader \u2014 the extraction this note had already named. No sidecar file is baselined now. Never raise.",
   "files": {
-    "server/content/src/server/createServer.ts": 384,
+    "server/content/src/server/createServer.ts": 367,
     "src-tauri/src/ai_provider/sink.rs": 304,
     "src-tauri/src/browser/origin_guard.rs": 303,
     "src-tauri/src/genies/parsing.rs": 396,
@@ -17,7 +17,7 @@
     "src-tauri/src/workflow/genie_step.rs": 686,
     "src-tauri/src/workflow/step_config.rs": 425,
     "src/components/Editor/SourceEditor.tsx": 339,
-    "src/components/Editor/TiptapEditor.tsx": 396,
+    "src/components/Editor/TiptapEditor.tsx": 395,
     "src/components/Editor/WorkflowEditor/DiagnosticsBanner.tsx": 315,
     "src/components/Editor/WorkflowEditor/JobForm.tsx": 302,
     "src/components/Editor/WorkflowEditor/TriggerForm.tsx": 356,
@@ -36,7 +36,7 @@
     "src/pages/settings/IntegrationsSettings.tsx": 386,
     "src/pages/settings/LanguageSettings.tsx": 352,
     "src/plugins/codemirror/sourceSelectOccurrence.ts": 339,
-    "src/plugins/codemirror/sourceTableContextMenu.ts": 321,
+    "src/plugins/codemirror/sourceTableContextMenu.ts": 319,
     "src/plugins/codemirror/structuralCharProtection.ts": 315,
     "src/plugins/codemirror/tableTabNav.ts": 385,
     "src/plugins/compositionGuard/tiptap.ts": 377,
@@ -86,7 +86,7 @@
     "src/hooks/useUpdateChecker.test.ts": 914,
     "src/lib/cjkFormatter/rules.test.ts": 1863,
     "src/pages/settings/components.test.tsx": 984,
-    "src/plugins/aiSuggestion/__tests__/tiptap.test.ts": 1759,
+    "src/plugins/aiSuggestion/__tests__/tiptap.test.ts": 1754,
     "src/plugins/autoPair/__tests__/handlersExtra.test.ts": 868,
     "src/plugins/codeBlockLineNumbers/__tests__/CodeBlockNodeView.test.ts": 953,
     "src/plugins/codeBlockLineNumbers/tiptap.test.ts": 1616,
@@ -101,7 +101,7 @@
     "src/plugins/latex/__tests__/MathInlineNodeView.test.ts": 1194,
     "src/plugins/linkCreatePopup/__tests__/LinkCreatePopupView.test.ts": 1071,
     "src/plugins/linkPopup/tiptap.test.ts": 838,
-    "src/plugins/markdownCopy/tiptap.test.ts": 1074,
+    "src/plugins/markdownCopy/tiptap.test.ts": 847,
     "src/plugins/mediaHandler/__tests__/mediaHandler.test.ts": 949,
     "src/plugins/mediaPopup/MediaPopupView.test.ts": 1454,
     "src/plugins/mediaPopup/__tests__/MediaPopupView.test.ts": 1384,
@@ -130,7 +130,7 @@
     "src/utils/markdownPipeline/mdastBlockConverters.test.ts": 2130,
     "src/utils/markdownPipeline/parser.test.ts": 1438,
     "src/utils/markdownPipeline/pmBlockConverters.test.ts": 1301,
-    "src/utils/sanitize.test.ts": 1107
+    "src/utils/sanitize.test.ts": 1079
   },
   "testLimit": 800
 }

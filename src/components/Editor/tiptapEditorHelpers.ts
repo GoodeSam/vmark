@@ -2,56 +2,30 @@
  * TiptapEditor module helpers
  *
  * Purpose: pure, editor-instance-level helpers extracted from TiptapEditor.tsx —
- * history-free content replacement, adaptive debounce sizing, the spellcheck
- * size cutoff, the viewport-preserving cv-idle toggle (#823, #1340) with the
- * `.cv-enabled` sizing marker that outlives it (#1472, #1473) and the
- * platform gate that keeps both off macOS (usesContentVisibility), and
- * external markdown→editor sync. No React state; safe to call from effects
- * and callbacks.
+ * adaptive debounce sizing, the spellcheck size cutoff, the viewport-preserving
+ * cv-idle toggle (#823, #1340) with the `.cv-enabled` sizing marker that
+ * outlives it (#1472, #1473) and the platform gate that keeps both off macOS
+ * (usesContentVisibility). No React state; safe to call from effects and
+ * callbacks. Content loads live in `tiptapContentLoad.ts`.
  *
  * @coordinates-with utils/platform.ts — isMacPlatform for the content-visibility gate
  * @coordinates-with TiptapEditor.tsx — consumer; behavior documented there
  * @coordinates-with useContentVisibilityMode.ts — applies the cv classes outside edits
- * @coordinates-with services/editor/unparseableDocument.ts — a refused sync lands in Source mode
  * @module components/Editor/tiptapEditorHelpers
  */
 import type { MutableRefObject } from "react";
 import type { Editor as TiptapEditor } from "@tiptap/core";
-import type { Node as PMNode } from "@tiptap/pm/model";
 import type { EditorProps } from "@tiptap/pm/view";
-import { parseMarkdown } from "@/utils/markdownPipeline";
 import { getTiptapEditorView } from "@/services/editor/tiptapView";
 import { handleTableScrollToSelection } from "@/plugins/tableScroll/scrollGuard";
 import { setCvIdlePreservingViewport } from "./cvIdleViewportLock";
 import { isMacPlatform } from "@/utils/platform";
-import { reportUnparseableDocument } from "@/services/editor/unparseableDocument";
 
 /**
  * Delay before enabling cursor tracking after editor creation.
  * Prevents spurious cursor sync during initial render/focus.
  */
 export const CURSOR_TRACKING_DELAY_MS = 200;
-
-/**
- * Set editor content without adding to undo history.
- * Tiptap's setContent in v3.x does NOT exclude from history by default,
- * so we use a direct ProseMirror transaction with addToHistory: false.
- */
-export function setContentWithoutHistory(editor: TiptapEditor, doc: PMNode): void {
-  const view = getTiptapEditorView(editor);
-  if (!view) {
-    // Fallback to standard setContent if view not available
-    editor.commands.setContent(doc, { emitUpdate: false });
-    return;
-  }
-
-  const { state } = view;
-  const tr = state.tr
-    .replaceWith(0, state.doc.content.size, doc.content)
-    .setMeta("addToHistory", false)
-    .setMeta("preventUpdate", true); // Don't emit update event
-  view.dispatch(tr);
-}
 
 /**
  * Calculate adaptive debounce delay based on document size.
@@ -268,33 +242,5 @@ function setContentVisibility(
       const idleContainer = containerRef.current;
       if (idleContainer) setCvIdlePreservingViewport(idleContainer, true);
     }, 500);
-  }
-}
-
-/**
- * Parse markdown and sync it into the editor without touching undo history.
- * Updates lastExternalContent tracking ref on success.
- * Returns true if content was synced, false if already current or on error.
- *
- * A document that cannot be parsed is reported for `tabId` (#1407): the editor
- * keeps its old content, and an edit there would overwrite the new text on
- * the next flush, so it goes to Source mode with a message instead.
- */
-export function syncMarkdownToEditor(
-  editor: TiptapEditor,
-  markdown: string,
-  lastExternalContent: MutableRefObject<string>,
-  preserveLineBreaks: boolean,
-  tabId: string | undefined,
-): boolean {
-  if (markdown === lastExternalContent.current) return false;
-  try {
-    const doc = parseMarkdown(editor.schema, markdown, { preserveLineBreaks });
-    setContentWithoutHistory(editor, doc);
-    lastExternalContent.current = markdown;
-    return true;
-  } catch (error) {
-    reportUnparseableDocument(tabId, error);
-    return false;
   }
 }

@@ -43,8 +43,9 @@ export const FIDELITY_LEDGER: Record<string, LedgerEntry[]> = {
         "CommonMark takes an ordered list's start from its FIRST item and ignores every later ordinal; a blank line between items of one type makes a loose list, not a second list. The authored `7.` after `1. 2. 3.` is item four, so emitting `4.` is spec-correct. Fingerprint confirms no meaning change.",
     },
     {
-      rule: "blankLineCollapse",
-      reason: "Blank-line preservation is opt-in; runs between list blocks collapse.",
+      rule: "looseListRespaced",
+      reason:
+        "The blank line between `3.` and `7.` makes the whole ordered list loose (CommonMark), and a loose list is written with a blank line between every item. The rendered list is unchanged: it was loose before and after.",
     },
   ],
   "03-code.md": [
@@ -97,7 +98,11 @@ export const FIDELITY_LEDGER: Record<string, LedgerEntry[]> = {
     { rule: "blankLineCollapse", reason: "Blank lines inside nested <details> collapse; preservation is opt-in." },
   ],
   "19-list-edge-cases.md": [
-    { rule: "blankLineCollapse", reason: "Blank-line preservation is opt-in." },
+    {
+      rule: "looseListRespaced",
+      reason:
+        "The blank line before `- Outer item` makes the task list and the outer list one loose list (CommonMark); a loose list is written with a blank line between every item.",
+    },
   ],
   "21-alerts-rich.md": [
     { rule: "alertQuoteContinuation", reason: "Canonical `>` continuation spelling inside rich alerts." },

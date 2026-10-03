@@ -1,5 +1,7 @@
 // WI-RA8.5 — in a real engine, converting clipboard HTML loads nothing and
 // runs nothing.
+// WI-RA18.5 — nor does the preview sanitizer's style filter, which re-parses
+// DOMPurify's output.
 /**
  * jsdom never loads an image, so only a real engine can show the effect: an
  * `<img>` the parser creates in the PAGE's document starts loading at once,
@@ -9,6 +11,7 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { htmlToMarkdown } from "./htmlToMarkdown";
+import { sanitizeHtmlPreview } from "./sanitize";
 
 declare global {
   interface Window {
@@ -50,5 +53,45 @@ describe("clipboard HTML and the network, real engine", () => {
     // The images are still converted — they were parsed, just not loaded.
     expect(markdown).toContain("![](about:ra85-plain)");
     expect(markdown).toContain("![](about:ra85-bold)");
+  });
+});
+
+// DOMPurify strips `onerror`, so a sanitized image cannot report its own load.
+// The engine's Resource Timing record does: every fetch of a same-origin URL,
+// failed or not, leaves an entry under that URL.
+let probeCount = 0;
+const probeUrl = (name: string): string =>
+  new URL(`/ra18-probe-${name}-${(probeCount += 1)}.png`, location.href).href;
+const fetched = (url: string): boolean => performance.getEntriesByName(url).length > 0;
+
+/** Resolve once an image requested after every earlier one has finished. */
+function laterFetchSettled(): Promise<void> {
+  return new Promise((resolve) => {
+    const control = new Image();
+    control.onload = () => resolve();
+    control.onerror = () => resolve();
+    control.src = probeUrl("settle");
+  });
+}
+
+describe("the preview sanitizer and the network, real engine", () => {
+  it("control: a page-document parse of the same markup fetches the image", async () => {
+    const url = probeUrl("page");
+    const detached = document.createElement("div");
+    detached.innerHTML = `<span style="color: red">x</span><img src="${url}">`;
+    await laterFetchSettled();
+    expect(fetched(url)).toBe(true);
+  });
+
+  it("sanitizeHtmlPreview with styles fetches nothing", async () => {
+    const url = probeUrl("preview");
+    const html = sanitizeHtmlPreview(`<span style="color: red; position: fixed">x</span><img src="${url}">`, {
+      allowStyles: true,
+    });
+    await laterFetchSettled();
+    expect(fetched(url)).toBe(false);
+    // The image was kept and the styles filtered — parsed, just not loaded.
+    expect(html).toContain(`src="${url}"`);
+    expect(html).toContain('style="color: red"');
   });
 });

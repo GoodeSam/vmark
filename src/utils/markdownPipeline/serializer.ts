@@ -22,7 +22,10 @@
  *     It is never applied to the finished string, where a hard break cannot be
  *     told from math, HTML or a literal backslash that ends a line
  *   - Before stringifying, a hard break that ends its block is dropped —
- *     markdown cannot write one (serializerBlockFinalBreak.ts) — and inline
+ *     markdown cannot write one (serializerBlockFinalBreak.ts) — a heading
+ *     whose only line endings are inside inline code or math has them
+ *     flattened, so its form does not flip between saves
+ *     (serializerHeadingForm.ts) — and inline
  *     HTML that follows a hard break is retyped so upstream does not swallow
  *     the break's line ending (serializerBreakBeforeHtml.ts). The tree passed
  *     in is not changed
@@ -39,6 +42,7 @@
  * @coordinates-with serializerBreak.ts — the `break` handler, one per hard-break style
  * @coordinates-with serializerBreakBeforeHtml.ts — the line ending between a break and inline HTML
  * @coordinates-with serializerBlockFinalBreak.ts — a break that ends its block
+ * @coordinates-with serializerHeadingForm.ts — a heading whose only line endings are in spans
  * @module utils/markdownPipeline/serializer
  */
 
@@ -63,6 +67,7 @@ import {
   keepLineEndingsBeforeHtml,
 } from "./serializerBreakBeforeHtml";
 import { dropBlockFinalBreaks } from "./serializerBlockFinalBreak";
+import { flattenHeadingSpanLineEndings } from "./serializerHeadingForm";
 
 /**
  * Build the unified processor configured for VMark markdown serialization.
@@ -160,7 +165,9 @@ export function serializeMdastToMarkdown(
   options: MarkdownPipelineOptions = {}
 ): string {
   const processor = getSerializer(options.hardBreakStyle ?? "backslash");
-  let result = processor.stringify(keepLineEndingsBeforeHtml(dropBlockFinalBreaks(mdast)));
+  let result = processor.stringify(
+    keepLineEndingsBeforeHtml(flattenHeadingSpanLineEndings(dropBlockFinalBreaks(mdast))),
+  );
   // No split-surrogate repair pass: attention neighbours are encoded as whole
   // code points when they are encoded (serializerAttention.ts and the
   // mdast-util-to-markdown patch), which a string repair afterwards could not

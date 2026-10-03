@@ -140,5 +140,4 @@ export interface DocumentStore {
   // Selectors
   /** Readonly for the reason on `documents` above. */
   getDocument: (tabId: string) => Readonly<DocumentState> | undefined;
-  getAllDirtyDocuments: () => string[]; // Returns tabIds
 }

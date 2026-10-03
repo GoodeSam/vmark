@@ -65,11 +65,10 @@ import {
   applySpellcheckForDocSize,
   buildTiptapEditorProps,
   CURSOR_TRACKING_DELAY_MS,
-  setContentWithoutHistory,
   spellcheckAttrForDocSize,
   suppressCvIdleDuringEdit,
-  syncMarkdownToEditor,
 } from "./tiptapEditorHelpers";
+import { setContentWithoutHistory, syncMarkdownToEditor } from "./tiptapContentLoad";
 
 interface TiptapEditorInnerProps {
   hidden?: boolean;
@@ -205,7 +204,7 @@ export function TiptapEditorInner({ hidden = false, readOnly = false, preview = 
             preserveLineBreaks: preserveLineBreaksRef.current,
           });
           // Use helper to avoid polluting undo history with initial content load
-          setContentWithoutHistory(editor, doc);
+          setContentWithoutHistory(editor, doc, () => lastExternalContent.current === contentSnapshot);
           lastExternalContent.current = contentSnapshot;
           editorInitialized.current = true;
 

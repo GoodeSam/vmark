@@ -580,34 +580,6 @@ describe("documentStore", () => {
     });
   });
 
-  describe("getAllDirtyDocuments", () => {
-    it("returns all tab IDs with dirty documents", () => {
-      const { initDocument, setEditorContent, getAllDirtyDocuments } = useDocumentStore.getState();
-
-      initDocument("tab-1", "Content 1");
-      initDocument("tab-2", "Content 2");
-      initDocument("tab-3", "Content 3");
-
-      setEditorContent("tab-1", "Modified 1");
-      setEditorContent("tab-3", "Modified 3");
-
-      const dirtyTabs = getAllDirtyDocuments();
-      expect(dirtyTabs).toHaveLength(2);
-      expect(dirtyTabs).toContain("tab-1");
-      expect(dirtyTabs).toContain("tab-3");
-      expect(dirtyTabs).not.toContain("tab-2");
-    });
-
-    it("returns empty array when no documents are dirty", () => {
-      const { initDocument, getAllDirtyDocuments } = useDocumentStore.getState();
-
-      initDocument("tab-1");
-      initDocument("tab-2");
-
-      expect(getAllDirtyDocuments()).toHaveLength(0);
-    });
-  });
-
   describe("multiple windows", () => {
     it("maintains separate state for each window", () => {
       const { initDocument, setEditorContent, getDocument } = useDocumentStore.getState();

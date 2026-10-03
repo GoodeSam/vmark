@@ -25,19 +25,8 @@
  */
 import "@/styles/index.css";
 import "@/components/Editor/editor.css";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { userEvent } from "vitest/browser";
-
-// tiptapEditorHelpers reports a refused parse through i18n, the document
-// store and a toast. None of that is exercised here (the markdown always
-// parses), and loading it cost ~80s of module evaluation on the main thread
-// this tier's files share — enough to time out the terminal keyboard tests
-// running beside this file (measured). A call would be a bug: fail loudly.
-vi.mock("@/services/editor/unparseableDocument", () => ({
-  reportUnparseableDocument: () => {
-    throw new Error("unexpected unparseable document in the cv regression test");
-  },
-}));
 import { Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import { createTiptapExtensions } from "@/services/assembly/createTiptapExtensions";

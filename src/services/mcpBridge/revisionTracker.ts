@@ -21,7 +21,7 @@
  * @coordinates-with stores/documentStore/revision.ts — stores current revision ID
  * @coordinates-with stores/documentStore/document.ts — bumps the revision when a tab's content changes
  * @coordinates-with components/Editor/TiptapEditor.tsx — calls initializeRevisionTracking on editor creation
- * @coordinates-with components/Editor/tiptapEditorHelpers.ts — marks the editor's content loads `preventUpdate`
+ * @coordinates-with components/Editor/tiptapContentLoad.ts — marks the editor's content loads `preventUpdate`
  * @module services/mcpBridge/revisionTracker
  */
 

@@ -28,7 +28,7 @@
 import { urlForAgent } from "@/lib/browser/url";
 import type { WaitCondition } from "@/lib/browser/agent/actScript";
 import { resolveBrowserTab, validateTimeout, type BrowserTarget } from "./browserHelpers";
-import { readOperationArgs } from "./readOperationArgs";
+import type { CheckedOperationArgs } from "./readOperationArgs";
 
 const POLL_INTERVAL_MS = 200;
 /** The answer a poll that outlives the request deadline is replaced with. */
@@ -46,9 +46,11 @@ interface WaitRequest {
 
 export type WaitRequestParse = { ok: true; request: WaitRequest } | { ok: false; error: string };
 
-/** Parse exactly one condition from the args, or null if zero or more than one. */
-function readCondition(args: Record<string, unknown>): WaitMode | null {
-  const wire = readOperationArgs("vmark.browser.wait_for", args);
+/** The checked payload read of a `wait_for` request. */
+type WaitForRead = CheckedOperationArgs<"vmark.browser.wait_for">;
+
+/** Parse exactly one condition from the payload, or null if zero or more than one. */
+function readCondition(wire: WaitForRead["wire"]): WaitMode | null {
   const ref = typeof wire.ref === "string" && wire.ref.trim() ? wire.ref : undefined;
   const role = typeof wire.role === "string" && wire.role.trim() ? wire.role : undefined;
   const name = typeof wire.name === "string" ? wire.name : undefined;
@@ -71,11 +73,13 @@ function readCondition(args: Record<string, unknown>): WaitMode | null {
  * budget), exactly one condition, and — for `urlContains` — a needle that can
  * match the REDACTED url at all (query and fragment are stripped so a redirect-set
  * token cannot be probed, audit A-06; a `?` or `#` in the needle can never match).
+ * A malformed `timeoutMs` is refused, never read as absent (which would wait the
+ * default).
  */
-export function readWaitRequest(args: Record<string, unknown>): WaitRequestParse {
-  const timeoutMs = validateTimeout(args.timeoutMs);
+export function readWaitRequest(read: WaitForRead): WaitRequestParse {
+  const timeoutMs = read.malformed.has("timeoutMs") ? null : validateTimeout(read.wire.timeoutMs);
   if (timeoutMs === null) return { ok: false, error: "INVALID_TIMEOUT" };
-  const mode = readCondition(args);
+  const mode = readCondition(read.wire);
   if (!mode) {
     return { ok: false, error: "wait_for needs exactly one of: ref, role (+optional name), text, or urlContains" };
   }

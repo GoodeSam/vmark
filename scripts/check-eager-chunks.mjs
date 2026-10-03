@@ -152,8 +152,13 @@ export function findLazyOnlyViolations(names, reachable, patterns = LAZY_ONLY_CH
  * cold-start popupComponents chunk into the lazy markdownSurface chunk). The
  * measured closure went 3,246,541 → 3,223,808 bytes; the headroom ratio over
  * the measurement is unchanged (1.0497).
+ *
+ * Lowered 3,384,010 → 3,310,399 bytes when classic zod left the App chunk
+ * (the hot-exit schemas use `zod/mini`) and the JSON tree view left the entry
+ * chunk for a lazy one. The measured closure went 3,223,808 → 3,153,662
+ * bytes; same ratio again.
  */
-export const MAX_EAGER_BYTES = 3_384_010;
+export const MAX_EAGER_BYTES = 3_310_399;
 
 /** A failure message when `closureBytes` exceeds `max`, else null. */
 export function eagerBudgetViolation(closureBytes, max = MAX_EAGER_BYTES) {

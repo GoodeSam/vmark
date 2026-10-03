@@ -48,11 +48,6 @@ vi.mock("@/stores/footnotePopupStore", () => ({
   },
 }));
 
-vi.mock("@/utils/imeGuard", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/utils/imeGuard")>()),
-  isImeKeyEvent: () => false,
-}));
-
 vi.mock("@/plugins/shared/popupHostDom", () => ({
   getPopupHostForDom: () => null,
   toHostCoordsForDom: (_host: HTMLElement, pos: { top: number; left: number }) => pos,
@@ -370,6 +365,23 @@ describe("SourceFootnotePopupView", () => {
 
       expect(docText(view)).toBe("See note[^1] here.\n\n[^1]: Test content");
       expect(mockClosePopup).toHaveBeenCalled();
+    });
+
+    // WI-RA18.2 — the Enter that confirms an IME composition (CJK input) picks
+    // a candidate; it must not also save and close the popup.
+    it.each([
+      ["isComposing", { isComposing: true }],
+      ["keyCode 229", { keyCode: 229 }],
+    ])("does not save on the Enter that confirms an IME composition (%s)", (_label, ime) => {
+      const field = document.querySelector(".source-footnote-popup-textarea") as HTMLTextAreaElement;
+      field.focus();
+
+      const event = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true, ...ime });
+      field.dispatchEvent(event);
+
+      expect(docText(view)).toBe(DOC);
+      expect(mockClosePopup).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
     });
 
     it("allows newline with Shift+Enter", () => {

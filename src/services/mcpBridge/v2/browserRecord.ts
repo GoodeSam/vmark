@@ -37,6 +37,8 @@ import { browserWarn } from "@/utils/debug";
 import type { BrowserTarget } from "./browserHelpers";
 import { resolveBrowserTarget } from "./browserAccess";
 import { authorizeOperation } from "./browserApprovalFlow";
+import { truncateToLength } from "@/utils/truncateText";
+import { readOperationArgsChecked } from "./readOperationArgs";
 
 const RECORD_OP = "record";
 const MAX_SITE = 64;
@@ -46,9 +48,10 @@ const MAX_SITE = 64;
 const recorderService = () => import("@/services/workflow/recorderSession");
 
 /** A site id is a single-line front-matter scalar; keep it bounded and non-empty. */
-function normalizeSite(raw: unknown): string {
-  const s = typeof raw === "string" ? raw.trim().replace(/[\r\n]+/g, " ") : "";
-  return s ? s.slice(0, MAX_SITE) : "recording";
+function normalizeSite(raw: string | undefined): string {
+  const s = raw === undefined ? "" : raw.trim().replace(/[\r\n]+/g, " ");
+  // Cut on a character boundary: a lone surrogate is not a string Rust accepts.
+  return s ? truncateToLength(s, MAX_SITE) : "recording";
 }
 
 /** The real host operations for a session: re-arm and drain are read-class evals. */
@@ -172,9 +175,10 @@ async function stopRecording(id: string, tab: BrowserTarget): Promise<void> {
 /** `vmark.browser.workflow_record` — start or stop a workflow recording. */
 export async function handleBrowserWorkflowRecord(id: string, args: Record<string, unknown>): Promise<void> {
   return wrapHandler(id, async () => {
-    const tab = await resolveBrowserTarget(id, args);
+    const read = readOperationArgsChecked("vmark.browser.workflow_record", args);
+    const tab = await resolveBrowserTarget(id, read);
     if (!tab) return;
-    const recordOp = args.recordOp;
+    const recordOp = read.wire.recordOp;
     if (recordOp !== "start" && recordOp !== "stop") {
       await respond({ id, success: false, error: "workflow_record requires recordOp 'start' or 'stop'" });
       return;
@@ -184,7 +188,7 @@ export async function handleBrowserWorkflowRecord(id: string, args: Record<strin
       return;
     }
     if (recordOp === "start") {
-      await startRecording(id, tab, normalizeSite(args.site));
+      await startRecording(id, tab, normalizeSite(read.wire.site));
       return;
     }
     await stopRecording(id, tab);

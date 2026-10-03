@@ -14,7 +14,11 @@ import { truncateToLength } from "./truncateText";
 export interface Snapshot {
   id: string; // Timestamp + random suffix (e.g. "1700000000000-a1b2c3")
   timestamp: number;
-  type: "manual" | "auto" | "revert";
+  /**
+   * Who made it: a manual save, an autosave, a revert, or an AI client saving
+   * through the MCP bridge. Only `auto` snapshots are merged or size-skipped.
+   */
+  type: "manual" | "auto" | "revert" | "mcp";
   size: number;
   preview: string;
 }

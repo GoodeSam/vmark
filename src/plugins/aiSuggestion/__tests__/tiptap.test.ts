@@ -32,11 +32,6 @@ vi.mock("@/plugins/shared/markdownPasteSlice", () => ({
   }),
 }));
 
-// Mock markdownCopy
-vi.mock("@/plugins/markdownCopy/tiptap", () => ({
-  cleanMarkdownForClipboard: vi.fn((text) => text),
-}));
-
 // The suggestion registry is the plugin's PORT — passed as an option, not
 // mocked at the module boundary.
 const mockAiState = {

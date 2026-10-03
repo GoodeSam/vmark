@@ -56,10 +56,6 @@ vi.mock("@/stores/mediaPopupStore", () => ({
   },
 }));
 
-vi.mock("@/utils/imeGuard", () => ({
-  isImeKeyEvent: () => false,
-}));
-
 vi.mock("@/plugins/shared/popupHostDom", () => ({
   getPopupHostForDom: () => null,
   toHostCoordsForDom: (_host: HTMLElement, pos: { top: number; left: number }) => pos,
@@ -302,6 +298,23 @@ describe("SourceImagePopupView", () => {
 
       expect(saveImageChanges).toHaveBeenCalled();
       expect(mockClosePopup).toHaveBeenCalled();
+    });
+
+    // WI-RA18.2 — the Enter that confirms an IME composition (CJK input) picks
+    // a candidate; it must not also save and close the popup.
+    it.each([
+      ["isComposing", { isComposing: true }],
+      ["keyCode 229", { keyCode: 229 }],
+    ])("does not save on the Enter that confirms an IME composition (%s)", (_label, ime) => {
+      const field = document.querySelector(".source-image-popup-alt") as HTMLInputElement;
+      field.focus();
+
+      const event = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true, ...ime });
+      field.dispatchEvent(event);
+
+      expect(saveImageChanges).not.toHaveBeenCalled();
+      expect(mockClosePopup).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
     });
 
     it("closes on Escape", () => {

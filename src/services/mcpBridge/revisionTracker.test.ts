@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { initializeRevisionTracking } from "./revisionTracker";
-import { setContentWithoutHistory } from "@/components/Editor/tiptapEditorHelpers";
+import { setContentWithoutHistory } from "@/components/Editor/tiptapContentLoad";
 import { useRevisionStore } from "@/stores/documentStore";
 
 const TAB = "tab-track";

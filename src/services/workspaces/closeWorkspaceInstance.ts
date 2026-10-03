@@ -67,8 +67,7 @@ export interface CloseWorkspaceInstanceOptions {
    *
    * INJECTED rather than imported: `services/` must not import from `hooks/`
    * (ADR-013 tiering, enforced by `pnpm lint:deps`). The caller is a component,
-   * which may import both tiers — the same shape
-   * `moveWorkspaceInstanceToNewWindow` uses for `cleanupTab`.
+   * which may import both tiers.
    */
   closeTabs: (windowLabel: string, tabIds: string[]) => Promise<boolean>;
 }

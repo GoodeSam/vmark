@@ -98,6 +98,11 @@ export interface AuthGuard {
   mintNonce: (now?: number) => string;
   /** True if the request carries the correct `Authorization: Bearer <bootstrap>`. */
   checkBearer: (c: import("hono").Context) => boolean;
+  /**
+   * The token a page served to this request writes into its subresource
+   * URLs, or null when the request's cookie authenticated it.
+   */
+  urlTokenFor: (c: import("hono").Context) => string | null;
   readonly sessionToken: string;
   /** The cookie name this instance reads and sets. */
   readonly cookieName: string;
@@ -233,6 +238,16 @@ export function createAuthGuard(options: AuthOptions): AuthGuard {
     return c.redirect(withSessionToken(dest, sessionToken), 302);
   };
 
+  /**
+   * The token a page served to this request writes into its own URLs —
+   * stylesheet, script, images — or null when the request's cookie
+   * authenticated it, so the subresources it loads send the cookie too.
+   * The same rule as the `/__auth` redirect: the token goes into a URL only
+   * for a client that has shown the cookie does not work for it.
+   */
+  const urlTokenFor = (c: import("hono").Context): string | null =>
+    hasSessionCookie(c) ? null : sessionToken;
+
   const checkBearer = (c: import("hono").Context): boolean => {
     const provided = bearer(c);
     return provided != null && safeEqual(provided, options.bootstrapToken);
@@ -245,6 +260,7 @@ export function createAuthGuard(options: AuthOptions): AuthGuard {
     pendingProbes: () => probes.size,
     mintNonce,
     checkBearer,
+    urlTokenFor,
     sessionToken,
     cookieName,
   };

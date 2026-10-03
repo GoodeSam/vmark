@@ -25,13 +25,14 @@ import { closeBrowserTabById } from "@/services/browser/browserTabLifecycle";
 import { wrapHandler } from "./wrapHandler";
 import { readTabIdArg, resolveBrowserTab } from "./browserHelpers";
 import { browserGate } from "./browserAccess";
+import { readOperationArgsChecked } from "./readOperationArgs";
 
 const TAB_TEARDOWN_FAILED = "TAB_TEARDOWN_FAILED";
 
 export async function handleBrowserClose(id: string, args: Record<string, unknown>): Promise<void> {
   return wrapHandler(id, async () => {
     if (!(await browserGate(id))) return;
-    const tabIdArg = readTabIdArg(args);
+    const tabIdArg = readTabIdArg(readOperationArgsChecked("vmark.browser.close", args));
     if (tabIdArg === null || tabIdArg === undefined) {
       await respond({ id, success: false, error: "close requires a non-empty tabId" });
       return;

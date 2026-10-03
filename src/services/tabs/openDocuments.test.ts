@@ -90,7 +90,7 @@ describe("openDirtyTabIds", () => {
     leaveOrphan("ghost", "saved", "/w/ghost.md");
     useDocumentStore.getState().setEditorContent("ghost", "edited, then discarded");
 
-    expect(useDocumentStore.getState().getAllDirtyDocuments()).toEqual(["ghost"]);
+    expect(useDocumentStore.getState().documents.ghost?.isDirty).toBe(true);
     expect(openDirtyTabIds()).toEqual([]);
   });
 });

@@ -22,7 +22,6 @@
  */
 
 import { readDocumentText } from "@/services/files/readDocumentText";
-import { z } from "zod";
 import { useTabStore, tabFilePath } from "@/stores/tabStore";
 import { useDocumentStore } from "@/stores/documentStore";
 import { usePaneStore } from "@/stores/paneStore";
@@ -52,8 +51,9 @@ function stillReplaceable(windowLabel: string, tabId: string): boolean {
   return !(useDocumentStore.getState().documents[tabId]?.isDirty ?? false);
 }
 
-/** WI-3: a restorable path is a non-empty string — everything else is skipped. */
-const restorablePathSchema = z.string().min(1);
+/** A restorable path is a non-empty string — everything else is skipped. */
+const isRestorablePath = (value: unknown): value is string =>
+  typeof value === "string" && value.length > 0;
 
 /**
  * Restore ONE path. Returns whether a tab was created.
@@ -174,12 +174,11 @@ export async function restoreWorkspaceTabs(
 
   let created = 0;
   for (const rawPath of paths) {
-    const parsed = restorablePathSchema.safeParse(rawPath);
-    if (!parsed.success) {
+    if (!isRestorablePath(rawPath)) {
       workspaceWarn("Skipping non-restorable session tab path:", rawPath);
       continue;
     }
-    const filePath = parsed.data;
+    const filePath = rawPath;
     // Dedup guard: skip files already open in this window (e.g. hot-exit restore).
     if (findExistingTabForPath(windowLabel, filePath)) continue;
 

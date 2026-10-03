@@ -12,8 +12,10 @@
  *     broken backend does not spam a toast on every keystroke's autosave.
  *   - Awaited by `saveToPath`, deliberately: close flows need best-effort
  *     completion before the window goes.
- *   - The history index knows two save kinds, manual and auto. An MCP write
- *     is filed as manual so it is never merged away or size-skipped.
+ *   - An MCP write is filed as its own kind, `mcp`, so history shows which
+ *     versions an AI client wrote. Only `auto` snapshots are merged into their
+ *     predecessor or skipped above the size limit, so an `mcp` snapshot is
+ *     kept exactly as a manual one is.
  *
  * @coordinates-with services/persistence/saveToPath.ts — the caller
  * @coordinates-with services/history/historyOperations.ts — createSnapshot
@@ -52,13 +54,12 @@ export async function recordHistorySnapshot(
 ): Promise<void> {
   const { general } = useSettingsStore.getState();
   if (!general.historyEnabled) return;
-  // An MCP write is recorded like a manual save. An "auto" snapshot is merged
-  // into its predecessor inside the merge window and skipped above the size
-  // limit; either would drop the version a user most wants back after an AI
-  // client rewrote the file.
-  const snapshotType = saveType === "auto" ? "auto" : "manual";
+  // Each save kind is its own snapshot kind. An "auto" snapshot is merged into
+  // its predecessor inside the merge window and skipped above the size limit;
+  // an "mcp" one is not, so the version a user most wants back after an AI
+  // client rewrote the file is always kept.
   try {
-    await createSnapshot(path, output, snapshotType, buildHistorySettings(general));
+    await createSnapshot(path, output, saveType, buildHistorySettings(general));
   } catch (historyError) {
     historyWarn("Failed to create snapshot:", historyError);
     if (!snapshotWarningShown) {

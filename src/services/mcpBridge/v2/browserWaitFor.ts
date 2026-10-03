@@ -40,6 +40,7 @@ import { buildWaitConditionScript } from "@/lib/browser/agent/actScript";
 import { hasOnceAttachment, invokeAttached, resolveBrowserTarget } from "./browserAccess";
 import { requireHumanAttachment } from "./browserReadClass";
 import { pollScript, pollUrl, readWaitRequest, type PollContext, type WaitOutcome } from "./browserWaitForPoll";
+import { readOperationArgsChecked } from "./readOperationArgs";
 
 /** The response for a wait that ended — a guard that aborted has answered already. */
 async function respondOutcome(id: string, outcome: WaitOutcome): Promise<void> {
@@ -65,9 +66,10 @@ async function respondOutcome(id: string, outcome: WaitOutcome): Promise<void> {
 /** `vmark.browser.wait_for` — poll until a condition holds or the timeout elapses. */
 export async function handleBrowserWaitFor(id: string, args: Record<string, unknown>): Promise<void> {
   return wrapHandler(id, async () => {
-    const initial = await resolveBrowserTarget(id, args);
+    const read = readOperationArgsChecked("vmark.browser.wait_for", args);
+    const initial = await resolveBrowserTarget(id, read);
     if (!initial) return;
-    const parsed = readWaitRequest(args);
+    const parsed = readWaitRequest(read);
     if (!parsed.ok) {
       await respond({ id, success: false, error: parsed.error });
       return;

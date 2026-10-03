@@ -13,6 +13,7 @@ import type { WikiLinkPopupState } from "@/plugins/shared/popupPorts";
 import { hostDocument } from "@/plugins/shared/hostDocument";
 import { sourceActionError } from "@/utils/debug";
 import { buildPopupIconButton, popupIcons } from "@/utils/popupComponents";
+import { isImeKeyEvent } from "@/utils/imeGuard";
 import { IMAGE_EXTENSIONS } from "@/utils/mediaExtensions";
 import { pathToWikiTarget } from "@/plugins/wikiLinkPopup/wikiLinkPaths";
 import {
@@ -109,6 +110,8 @@ export class SourceWikiLinkPopupView extends SourcePopupView<WikiLinkPopupState>
   }
 
   private handleInputKeydown(e: KeyboardEvent): void {
+    // The Enter that confirms an IME candidate is not a save.
+    if (isImeKeyEvent(e)) return;
     if (e.key === "Enter") {
       e.preventDefault();
       this.handleSave();

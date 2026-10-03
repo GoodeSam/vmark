@@ -88,7 +88,9 @@ export function isLocalAssetUrl(url: string): boolean {
 
 /**
  * The `/asset/` URL for an image written as `url` inside the note at
- * `noteRelPath`, carrying the session token.
+ * `noteRelPath`, carrying the session token when the page needs one
+ * (`sessionToken` null: the page was served on the cookie, which the image
+ * request sends too).
  *
  * The token is embedded SERVER-SIDE rather than added by `kb.js`, because the
  * browser starts fetching images while the HTML is still parsing — long before
@@ -98,7 +100,7 @@ export function isLocalAssetUrl(url: string): boolean {
 export function assetHref(
   noteRelPath: string,
   url: string,
-  sessionToken: string
+  sessionToken: string | null
 ): string {
   const noteDir = path.posix.dirname(noteRelPath);
   // Split the author's own query/fragment off before resolving.
@@ -121,7 +123,11 @@ export function assetHref(
     // the two from disagreeing about what a URL means.
     .replace(/^(?:\.\.\/)+/, "");
   const encoded = resolved.split("/").map(encodeURIComponent).join("/");
-  return `/asset/${encoded}?s=${encodeURIComponent(sessionToken)}${suffix}`;
+  if (sessionToken === null) return `/asset/${encoded}${suffix}`;
+  // The author's own query joins the token; written after it as a second `?`
+  // it was read as part of the token, and the image was refused.
+  const token = `?s=${encodeURIComponent(sessionToken)}`;
+  return `/asset/${encoded}${token}${suffix.startsWith("?") ? `&${suffix.slice(1)}` : suffix}`;
 }
 
 /**

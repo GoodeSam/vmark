@@ -6,15 +6,15 @@
 // (actively maintained, prior CVEs all fixed in 1.6.1).
 // Tree preview via the same react-json-view-lite component used by
 // the JSON adapter — TOML parses to a plain object, so the renderer
-// is shared.
+// is shared (LazyJsonTree, loaded on first use). smol-toml stays a
+// static import: the validator and the schema detectors run it
+// synchronously, during render and in the source pane's linter.
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Extension } from "@codemirror/state";
-import { JsonView } from "react-json-view-lite";
-import "react-json-view-lite/dist/index.css";
 import { parse as parseToml } from "smol-toml";
-import { jsonViewStyles } from "./jsonViewStyles";
+import { LazyJsonTree } from "./LazyJsonTree";
 import {
   CargoTomlSchemaRenderer,
   cargoTomlSchemaDetector,
@@ -23,7 +23,6 @@ import {
   PyprojectTomlSchemaRenderer,
   pyprojectTomlSchemaDetector,
 } from "./pyprojectToml";
-import { useIsDarkTheme } from "@/hooks/useIsDarkTheme";
 import { registerFormat } from "../registry";
 import "./json-tree.css";
 import type {
@@ -66,7 +65,6 @@ export const tomlValidator: Validator = (content) => {
 
 function TomlTreePreview({ content, diagnostics }: PreviewRendererProps) {
   const { t } = useTranslation("editor");
-  const isDark = useIsDarkTheme();
   const parsed = useMemo(() => {
     try {
       return parseToml(content);
@@ -94,7 +92,7 @@ function TomlTreePreview({ content, diagnostics }: PreviewRendererProps) {
 
   return (
     <div className="json-tree-preview" data-format="toml">
-      <JsonView data={parsed} style={jsonViewStyles(isDark)} />
+      <LazyJsonTree data={parsed} />
     </div>
   );
 }
