@@ -112,7 +112,9 @@ fn a_different_stamp_is_a_miss() {
     longer.len += 1;
     assert!(cache.unchanged("笔记/a.md", &longer).is_none());
     let mut touched = stamp.clone();
-    touched.modified += Duration::from_nanos(1);
+    // One microsecond, not one nanosecond: Windows `SystemTime` counts 100 ns
+    // units, so adding 1 ns rounds away and the stamps compare equal there.
+    touched.modified += Duration::from_micros(1);
     assert!(cache.unchanged("笔记/a.md", &touched).is_none());
     assert!(cache.unchanged("笔记/other.md", &stamp).is_none());
     assert!(cache.unchanged("笔记/a.md", &stamp).is_some());
