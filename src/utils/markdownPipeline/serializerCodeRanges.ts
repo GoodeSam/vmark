@@ -8,7 +8,13 @@
  * range list.
  *
  * Key decisions:
- *   - These ranges are a regex approximation of code, and are safe ONLY as a
+ *   - Fences come from the one-pass scanner (fencedCodeBlocks.ts), which costs
+ *     linear time on any input and closes a fence only on a run at least as
+ *     long as its opener's. A pairing pattern was quadratic on a document of
+ *     openers that never close. Only CLOSED fences are ranges: the serializer
+ *     always closes the fences it writes, so an unclosed opener line sits in
+ *     raw HTML or math, and its text must stay a candidate.
+ *   - These ranges are an approximation of code, and are safe ONLY as a
  *     candidate filter: the cosmetic pass accepts its edits solely when the
  *     result re-parses to the same tree, so a range this misses costs a
  *     rejected edit, never a changed document. Nothing may apply an edit on
@@ -20,8 +26,11 @@
  * Split out of `serializerCosmetics.ts` to keep it within its size budget.
  *
  * @coordinates-with serializerCosmetics.ts — skips escapes inside code
+ * @coordinates-with fencedCodeBlocks.ts — the fence scan
  * @module utils/markdownPipeline/serializerCodeRanges
  */
+
+import { findFencedCodeBlocks } from "./fencedCodeBlocks";
 
 /**
  * Build sorted, merged character ranges for fenced code blocks and inline
@@ -30,10 +39,8 @@
  */
 export function buildCodeRanges(markdown: string): Array<[number, number]> {
   const raw: Array<[number, number]> = [];
-  const fenceRe = /^(`{3,}|~{3,}).*\n([\s\S]*?\n)\1\s*$/gm;
-  let fm: RegExpExecArray | null;
-  while ((fm = fenceRe.exec(markdown))) {
-    raw.push([fm.index, fm.index + fm[0].length]);
+  for (const fence of findFencedCodeBlocks(markdown)) {
+    if (fence.closed) raw.push([fence.start, fence.end]);
   }
   // Only treat unescaped backticks as code-span boundaries. Without this,
   // serialized plain text such as `[\`LICENSE\`]\(./LICENSE).` would falsely
