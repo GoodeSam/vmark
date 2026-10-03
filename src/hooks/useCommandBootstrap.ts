@@ -60,13 +60,11 @@ const MISC_BINDINGS: MenuCommandBinding[] = [
   { menuEvent: "menu:save", commandId: "file.save" },
   { menuEvent: "menu:save-as", commandId: "file.saveAs" },
   { menuEvent: "menu:move-to", commandId: "file.moveTo" },
-  { menuEvent: "menu:save-all-quit", commandId: "file.saveAllQuit" },
   { menuEvent: "menu:quick-open", commandId: "app.quickOpen" },
   { menuEvent: "menu:new-browser-tab", commandId: "browser.newTab" },
   { menuEvent: "menu:reopen-closed-tab", commandId: "tab.reopenClosed" },
   // macOS Window menu (WI-FL3.10): this id used to be emitted to nothing.
   { menuEvent: "menu:bring-all-to-front", commandId: "window.bringAllToFront" },
-  { menuEvent: "menu:preferences", commandId: "app.preferences" },
   { menuEvent: "menu:clear-history", commandId: "history.clearAll" },
   { menuEvent: "menu:clear-workspace-history", commandId: "history.clearWorkspace" },
   { menuEvent: "menu:cleanup-images", commandId: "image.cleanupOrphans" },
