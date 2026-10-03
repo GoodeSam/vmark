@@ -32,7 +32,7 @@
  *     one (audit 2026-09-03 #15).
  *
  * @coordinates-with BrowserChrome.tsx — parent placement wrapper
- * @coordinates-with services/browser/lease.ts — the AI-hold indicator source
+ * @coordinates-with stores/browserLeaseStore.ts — the AI-hold indicator source
  * @coordinates-with services/navigation/activateTabInFocusedPane — pane-aware activation
  * @module components/Browser/BrowserPageTabs
  */
