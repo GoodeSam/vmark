@@ -67,8 +67,7 @@ export function useGeniePickerState(
     void Promise.resolve(useGeniesStore.getState().loadGenies()).catch((e) => geniesWarn("Failed to load genies:", e));
     resetInput();
     setActiveScope(filterScope);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, filterScope]);
+  }, [isOpen, filterScope, resetInput]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const query = genieQuery(filter);
