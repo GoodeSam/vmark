@@ -50,7 +50,7 @@ export function registerSessionTool(server: VMarkMcpServer): void {
       // a tab's field set is versioned by the app, and a rejected payload would
       // turn a successful call into an SDK output-validation error.
       //
-      // Round-2 audit finding 10 (tighten to per-action envelopes) does not
+      // Tightening the schema to per-action envelopes does not
       // apply here — `get_state` is the tool's only action, so the schema is
       // already action-specific. What stays loose is the ARRAY ELEMENT, and
       // deliberately: `windows[].tabs[]` gains fields with app releases (browser

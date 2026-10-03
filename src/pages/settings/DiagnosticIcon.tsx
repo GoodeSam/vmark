@@ -1,7 +1,7 @@
 /**
  * Diagnostic status icon for the MCP config installer. Extracted from
- * McpConfigInstaller to keep that file under its size baseline (audit
- * 20260612 gate).
+ * McpConfigInstaller to keep that file under its size baseline
+ * (the file-size gate).
  */
 
 export type DiagnosticStatus =

@@ -18,7 +18,7 @@
 //! That destroy found `DELEGATES` populated and `WEBVIEWS` empty, so it had nothing to
 //! unobserve through, skipped the unobserve, and dropped the delegate anyway — leaving a
 //! KVO observer dangling on a webview that was about to go live. The next URL change would
-//! message a freed object. (Audit verification round 2, finding 11.)
+//! message a freed object.
 
 use crate::browser::native_failure::NativeSurfaceError;
 use tauri::AppHandle;

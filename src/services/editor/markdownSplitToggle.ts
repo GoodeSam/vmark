@@ -2,7 +2,7 @@
  * toggleMarkdownSplitWithCheckpoint — flip the markdown split view, snapshotting
  * current state first so undo can bridge the editor swap (the split remounts the
  * editing surface, just like the source-mode toggle does). Markdown-only view
- * change — no forced-source / doc-mode semantics apply (Codex audit findings 8/9).
+ * change — no forced-source / doc-mode semantics apply.
  *
  * @coordinates-with stores/uiStore — markdownSplitView toggle
  * @coordinates-with stores/documentStore — unified history checkpoint

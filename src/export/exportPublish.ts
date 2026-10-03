@@ -202,8 +202,8 @@ async function rollback(
  * CONTENTS and needs no delete access at all.
  *
  * Deliberately NOT remove-then-rename, which is the obvious fallback and is
- * wrong: this repository removed precisely that as a data-loss defect (audit
- * 20260906, B1) because it takes the target away first, so a second failure
+ * wrong: this repository removed precisely that as a data-loss defect
+ * because it takes the target away first, so a second failure
  * leaves nothing behind. `copyFile` leaves the backup whole whether it
  * succeeds or fails, so the caller always has a file to name.
  */
