@@ -59,7 +59,7 @@ Owns: `src/utils/linebreaks.ts`, `src/utils/markdownPipeline/**`, `src/plugins/m
 - **WI-RA2.2 — backslash style: paragraph-final and literal trailing backslashes survive.** Audit §3 High TS #5 (`foo\`, `C:\dir\\`).
 - **WI-RA2.3 — round-trip losses.** Audit §3 Medium TS #4: paragraph-final hard break, code-fence `meta`, loose vs tight lists, `<summary>` marks, image alt escaping, the stray-backtick escape scope, `'` → `&#39;` in inline-HTML merge. One test per loss, each seen RED.
 - **WI-RA2.4 — one `serializeSlice` for copy and source peek; `docFromSlice` in `src/utils/markdownPipeline/`.** Audit §1 Medium #1, §3 Medium TS #5. Copy keeps load-bearing escapes and fence contents.
-- **WI-RA2.5 — remove the stale cast at `pmInlineConverters.ts:201`.** Audit §1 Low.
+- **WI-RA2.5 — remove the stale cast at `pmInlineConverters.ts:201`.** Audit §1 Low. [no-test: type-only: a stale cast removed; typecheck is the check]
 
 #### Phase RA3 — CJK formatter (TS)
 Owns: `src/lib/cjkFormatter/**`, `src/lib/ghaWorkflow/cron/**`.
@@ -113,20 +113,20 @@ Owns: `scripts/check-npm-audit*`, `scripts/check-new-deps*`, `scripts/check-scri
 - **WI-RA13A.2 — parity covers every script a `ci.yml` `run:` names.** Audit §7 High #2.
 - **WI-RA13A.3 — timer-isolation gate resolves `__tests__/` and multi-dot names and flags real sleeps ≥ 100 ms.** Audit §7 Medium #2. The violations it then reports are fixed in RA14, not baselined.
 - **WI-RA13A.4 — self-tests for the eight untested gates; empty `gate-tests-baseline.json`.** Audit §7 Low.
-- **WI-RA13A.5 — delete the orphaned phase scripts (each verified: its plan is gone and nothing references it; `check-gha-phase.sh` stays, rule 60 names it as the template), `scripts/lib/dod-assertions.sh` if unreferenced, and the seven zero-reference one-shots.** Audit §1.
-- **WI-RA13A.6 — `.jscpd.json` and `knip.json` cruft.** Audit §1 Low.
+- **WI-RA13A.5 — delete the orphaned phase scripts (each verified: its plan is gone and nothing references it; `check-gha-phase.sh` stays, rule 60 names it as the template), `scripts/lib/dod-assertions.sh` if unreferenced, and the seven zero-reference one-shots.** Audit §1. [no-test: deletion of unreferenced scripts; each verified unreferenced before deleting]
+- **WI-RA13A.6 — `.jscpd.json` and `knip.json` cruft.** Audit §1 Low. [no-test: config: keys the tools reject or report unneeded]
 
 #### Phase RA15a — Compliance and repository docs
 Owns: root `*.md`, `.github/ISSUE_TEMPLATE/**`, `.claude/README.md`, `.claude/adr/**`, `.claude/rules/*.md`, `server/mcp/README.md`, `e2e/README.md`, `AGENTS.md`, `scripts/check-mcp-docs*`, a new ADR-reference gate.
 
-- **WI-RA15A.1 — `SECURITY.md`, issue-template contact link, links from README and the privacy page.** Audit §4 High. (D2)
-- **WI-RA15A.3 — CONTRIBUTING leads with the issues-only policy.** Audit §4 Medium.
-- **WI-RA15A.4 — pnpm range and MSRV are stated and pinned** (`rust-toolchain.toml` or `rust-version`). Audit §4 Low.
+- **WI-RA15A.1 — `SECURITY.md`, issue-template contact link, links from README and the privacy page.** Audit §4 High. (D2) [no-test: docs]
+- **WI-RA15A.3 — CONTRIBUTING leads with the issues-only policy.** Audit §4 Medium. [no-test: docs]
+- **WI-RA15A.4 — pnpm range and MSRV are stated and pinned** (`rust-toolchain.toml` or `rust-version`). Audit §4 Low. [no-test: docs and a manifest field; cargo check and clippy's incompatible_msrv lint hold it]
 - **WI-RA15A.5 — ADRs exist where a clone can read them, and a gate resolves every citation.** Audit §9 High. (D1)
 - **WI-RA15A.7 — `server/mcp/README.md` matches the code and is joined by `lint:mcp-docs`.** Audit §9 Medium.
-- **WI-RA15A.8 — dangling doc references:** `e2e/README.md`, AGENTS.md e2e guide and `mod.test.rs`. Audit §9.
-- **WI-RA15A.9 — `.claude/README.md` describes the tooling that exists.** Audit §9 Medium.
-- **WI-RA15A.11 — prerequisites and env vars documented:** `tokei`, `zsh`, `gh`, the `VMARK_*` variables, the sidecar build step. Audit §9.
+- **WI-RA15A.8 — dangling doc references:** `e2e/README.md`, AGENTS.md e2e guide and `mod.test.rs`. Audit §9. [no-test: docs]
+- **WI-RA15A.9 — `.claude/README.md` describes the tooling that exists.** Audit §9 Medium. [no-test: docs]
+- **WI-RA15A.11 — prerequisites and env vars documented:** `tokei`, `zsh`, `gh`, the `VMARK_*` variables, the sidecar build step. Audit §9. [no-test: docs]
 
 ### Wave 2
 
@@ -156,7 +156,7 @@ Owns: `src/plugins/shared/WysiwygPopupView.ts`, `mathPopup/**`, `codemirror/smar
 - **WI-RA9A.2 — one image-paste resolver; Source pastes show the same toasts.** Audit §1 High #2.
 - **WI-RA9A.3 — delete the dead link shortcut handlers.** Audit §1 High #3.
 - **WI-RA9A.6 — one footnote cleanup algorithm with a `keepLabels` parameter.** Audit §1 Medium.
-- **WI-RA9A.7 — multi-cursor Input/Backspace/Delete share one prologue/epilogue.** Audit §1 Medium.
+- **WI-RA9A.7 — multi-cursor Input/Backspace/Delete share one prologue/epilogue.** Audit §1 Medium. [no-test: behaviour-preserving refactor; the 564 existing multiCursor tests, including the property tests, are the contract]
 - **WI-RA9A.8 — one `resolveSrc`.** Audit §1 Medium.
 - **WI-RA9A.10 — a sibling-drift assertion** for the popup base pair (the audit's "maintain these standards" #1).
 
@@ -167,7 +167,7 @@ Owns: the five context-menu files, `components/Tabs/useMenuPosition.ts`, `Worksp
 - **WI-RA9B.5 — `useDocumentDrag` shared by sidebar and terminal resize; no listener leak; no whole-layout re-render per mousemove.** Audit §1 High #5, §6 Low.
 - **WI-RA9B.9 — exported reader footnote navigation targets what the exporter emits; the file is linted and tested as code.** Audit §1 Medium.
 - **WI-RA9B.11 — `useTabDragOut` removes its document listeners on unmount.** Audit §3 Low.
-- **WI-RA9B.12 — stale casts in `mermaidPanZoom.ts` and `TerminalTabBar.tsx`.** Audit §1 Low.
+- **WI-RA9B.12 — stale casts in `mermaidPanZoom.ts` and `TerminalTabBar.tsx`.** Audit §1 Low. [no-test: type-only: stale casts removed; typecheck is the check]
 
 #### Phase RA10a — Editor correctness (TS)
 Owns: `services/files/applyModifyPolicy.ts`, `plugins/compositionGuard/**`, `hotExit/restoreListeners.ts`, `utils/exportNaming.ts`, `utils/historyTypes.ts`, `history/historyOperations.ts`, `components/Sidebar/HistoryView.tsx`, `stores/settingsStore/clamp.ts`.
@@ -191,7 +191,7 @@ Owns: `components/Editor/SourceEditor.tsx`, `utils/cursorSync/**`, `usePreviewMo
 - **WI-RA10B.8 — `aiSuggestion` decorations are keyed/mapped.** Audit §6 Low.
 - **WI-RA10B.9 — genies load in one IPC.** Audit §6 Low.
 - **WI-RA10B.10 — startup: App chunk preloaded, secure storage not awaited before import; bundle headroom restored without raising a budget.** Audit §6 Low.
-- **WI-RA10B.15 — one `findNearestIndexOf`.** Audit §1 Medium.
+- **WI-RA10B.15 — one `findNearestIndexOf`.** Audit §1 Medium. [no-test: behaviour-preserving refactor; the existing cursorSync tests are the contract]
 
 #### Phase RA11 — Rust I/O and performance
 Owns: `src-tauri/src/watcher.rs`, `atomic_replace.rs`, `app_paths.rs`, `content_search.rs`, `coherence/**`, `file_tree_walk.rs`, `workspace.rs`, `shell_env.rs`, `src/hooks/useWindowFileWatcher.ts`, `src/services/coherence/scanOnChange.ts`.
@@ -207,17 +207,17 @@ Owns: `src-tauri/src/watcher.rs`, `atomic_replace.rs`, `app_paths.rs`, `content_
 #### Phase RA12a — Rust cleanup
 Owns: `src-tauri/src/content_server/**`, `Cargo.toml`, `pdf_export/page_spec.rs`, `rest_api.rs`, `browser/*_macos.rs`, `workflow/dir_fd.rs` (comments only), legacy-migration modules.
 
-- **WI-RA12A.1 — delete the dormant content-server upgrade path and `ed25519-dalek`.** Audit §1 Medium.
-- **WI-RA12A.2 — stale comments:** `block2`, `page_spec.rs`. Audit §1 Low.
+- **WI-RA12A.1 — delete the dormant content-server upgrade path and `ed25519-dalek`.** Audit §1 Medium. [no-test: deletion of code with no non-test caller and its dependency; cargo machete and the suite are the check]
+- **WI-RA12A.2 — stale comments:** `block2`, `page_spec.rs`. Audit §1 Low. [no-test: comments only]
 - **WI-RA12A.3 — one `ProviderEndpoint::resolve` in `rest_api.rs`.** Audit §5.
 - **WI-RA12A.4 — every `unsafe` block carries a `// SAFETY:` comment; `nav_delegate_macos.rs` checks the class before the cast; clippy's `undocumented_unsafe_blocks` holds it.** Audit §2 Low.
 - **WI-RA12A.7 — stale workflow completion-event comments.**
-- **WI-RA12A.5 — legacy migration shims carry a version-based removal condition** (Rust and TS; comments carry no calendar dates, rule 22). Audit §1 Low.
+- **WI-RA12A.5 — legacy migration shims carry a version-based removal condition** (Rust and TS; comments carry no calendar dates, rule 22). Audit §1 Low. [no-test: comments only]
 
 #### Phase RA16 — Dependencies and CI
 Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseline.json`, `.github/workflows/**`, a cargo-audit acceptance file.
 
-- **WI-RA16.1 — `image-size` advisory resolved.** Audit §8 Medium. (D4)
+- **WI-RA16.1 — `image-size` advisory resolved.** Audit §8 Medium. (D4) [no-test: config: a dependency override; check-npm-audit.mjs and test:content-server are the check]
 - **WI-RA16.2 — `minimumReleaseAge`; third-party actions pinned by SHA.** Audit §2 Low, §8 Low.
 - **WI-RA16.3 — cargo-audit warnings carry tracked acceptance notes, enforced two-way.** Audit §8 Low.
 - **WI-RA16.4 — Rust coverage has a liveness marker and a ratcheting floor.** Audit §7 Medium #1.
@@ -328,7 +328,7 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 - **WI-RA24.9 — every bundle budget near its measured size; lazy TOML parser.**
 - **WI-RA24.10 — word movement and fence scanning are linear.**
 - **WI-RA24.11 — CJK pairs never span a paragraph break.**
-- **WI-RA24.12 — workflow shell scripts pass actionlint.**
+- **WI-RA24.12 — workflow shell scripts pass actionlint.** [no-test: config: workflow shell fixes; actionlint reports 0 errors]
 - **WI-RA24.13 — dead code and never-failing assertions left by the save-all change.**
 
 #### Phase RA25 — maintainer decisions of 2026-10-03
@@ -345,7 +345,7 @@ Also decided 2026-10-03, no work item: multi-cursor has no cap; files that are n
 - **WI-RA26.5 — the remaining fence regexes are linear.**
 - **WI-RA26.6 — history names use the translated untitled name.**
 - **WI-RA26.7 — every tier has a liveness bound; no per-test performance timeouts; no wall-clock import waits.**
-- **WI-RA26.8 — the max-file-size description is true.**
+- **WI-RA26.8 — the max-file-size description is true.** [no-test: copy: a locale string; lint:i18n holds it]
 
 #### Phase RA27 — media tab rollback on open
 - **WI-RA27.1 — opening a media file rolls back its tab when a later step throws.**
@@ -366,7 +366,7 @@ Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), R
 - **WI-RA17G.8 — one header grammar, gated.** Audit §9 Low.
 - **WI-RA17G.9 — no calendar dates in production comments, gated.**
 - **WI-RA17G.10 — no untracked dev-docs paths in production comments, gated.**
-- **WI-RA17G.11 — the comment gates are documented in rule 22 and AGENTS.md.**
+- **WI-RA17G.11 — the comment gates are documented in rule 22 and AGENTS.md.** [no-test: docs]
 - **WI-RA14D.1 — `coverage.include` covers `src/**`; the 14 executable files with no test get tests; a fixture test pins the include.** Audit §7 High #1. (D8)
 
 ## Findings with no work item, and why

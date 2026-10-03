@@ -56,7 +56,7 @@ Rust files carry `//!` module docs. Files with a `Purpose:` line or `//!` docs a
 
 ## Citations in Comments (enforced: `pnpm lint:provenance-ids`)
 
-A comment says why the code is the way it is, and the reason must be readable from a fresh clone at any later time. In production comments under `src/`, `src-tauri/src/`, `server/`, `e2e/` and (dates and `dev-docs/` only) `scripts/`:
+A comment says why the code is the way it is, and the reason must be readable from a fresh clone at any later time. In production comments under `src/`, `src-tauri/src/`, `server/`, `e2e/`, `scripts/` and `.claude/hooks/`:
 
 - **No calendar dates.** Keep the fact, drop the when: "measured on <date>: X" becomes "measured: X". A date inside a path or a file name (`.claude/adr/plans/<date>-name.md`) is an identifier and stays, as does an `audit <YYYYMMDD> #N` citation whose record is tracked.
 - **No `dev-docs/` document paths.** `dev-docs/` is gitignored, so no clone has the file. Cite a tracked file (`.claude/adr/`, `.claude/tdd-guardian/`) or state the reason in the comment. A path the file's own code reads or writes is its subject and is fine.

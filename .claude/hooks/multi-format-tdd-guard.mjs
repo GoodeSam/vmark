@@ -188,7 +188,7 @@ if (inFrontendScope) {
     "  Per .claude/rules/10-tdd.md, RED comes before GREEN.",
     "  Write the failing test first, then this hook will allow the source edit.",
     "",
-    "  Scope: multi-format rebrand (dev-docs/plans/20260506-multi-format-rebrand.md).",
+    "  Scope: multi-format rebrand (.claude/adr/plans/20260506-multi-format-rebrand.md).",
     "",
   ].join("\n");
   process.stderr.write(msg);
@@ -232,7 +232,7 @@ if (inRustScope) {
     "  Add an inline `#[cfg(test)] mod tests { ... }` OR a sibling `<name>.test.rs`",
     "  with a failing test before modifying production code in this file.",
     "",
-    "  Scope: multi-format rebrand (dev-docs/plans/20260506-multi-format-rebrand.md).",
+    "  Scope: multi-format rebrand (.claude/adr/plans/20260506-multi-format-rebrand.md).",
     "  Note: this guard uses whole-file scope — once the file has any test block,",
     "  individual edits are allowed.",
     "",
