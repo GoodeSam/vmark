@@ -1,3 +1,8 @@
+/**
+ * setup — global setup for the app test tier: jest-dom, the localStorage shim, and i18n/Tauri/xterm mocks.
+ * @module test/setup
+ */
+
 import "@testing-library/jest-dom";
 import { configure as configureTestingLibrary } from "@testing-library/react";
 import { vi } from "vitest";

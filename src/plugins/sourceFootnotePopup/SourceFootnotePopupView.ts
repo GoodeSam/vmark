@@ -3,6 +3,8 @@
  *
  * Popup view for editing footnotes in Source mode (CodeMirror 6).
  * Shows label, textarea for content, goto/save/delete buttons.
+ *
+ * @module plugins/sourceFootnotePopup/SourceFootnotePopupView
  */
 
 import type { EditorView } from "@codemirror/view";

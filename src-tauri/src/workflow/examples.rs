@@ -175,7 +175,7 @@ fn referenced_genies_are_v0_and_use_content_alias() {
 
 #[test]
 fn sample_action_steps_supply_every_parameter_the_executor_requires() {
-    // 2026-09-07: the shipped sample passed `content:` to action/save-file, whose
+    // Regression: the shipped sample passed `content:` to action/save-file, whose
     // executor demands `input`, so the sample's last step failed at run time
     // while every structural test here stayed green. Structure is not a run.
     let workflow: RawWorkflow = serde_yaml_ng::from_str(SAMPLE_WORKFLOW).unwrap();

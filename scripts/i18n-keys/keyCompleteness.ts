@@ -134,7 +134,7 @@ export function checkJsonLocales(): boolean {
 
     // i18next v4+ resolves plurals via _one/_other; legacy v3 suffixes
     // (_plural, _0) are silently dead — t() falls back to the singular
-    // base key for every count (audit 20260612 H16).
+    // base key for every count.
     const legacy = keys.filter((k) => /_(plural|0)$/.test(k));
     if (legacy.length > 0) {
       console.error(
@@ -190,7 +190,7 @@ export function checkJsonLocales(): boolean {
       const result = compareKeys(targetPath, sourceKeys, targetKeys, phIssues);
       printResult(result);
       // Placeholder mismatches used to fail the run WITHOUT printing — a
-      // silent failure (found live on 2026-08-29 when a title-case fixer
+      // silent failure (found live when a title-case fixer
       // capitalized inside an interpolation and nothing said why the run was
       // red). Loud, always.
       if (phIssues.length > 0) {

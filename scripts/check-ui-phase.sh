@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # DoD checker for the UI-consistency plan (WI-UI0.5).
-# Plan: dev-docs/plans/20260829-ui-consistency.md
+# Origin: the UI-consistency plan (maintainer-local; no tracked copy)
 #
 # Usage: bash scripts/check-ui-phase.sh <phase-number>
 #

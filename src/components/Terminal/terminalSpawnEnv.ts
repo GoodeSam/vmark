@@ -50,7 +50,7 @@ export async function resolveLoginShellPath(): Promise<string> {
  *     allowlists (Claude Code's `/terminal-setup`, etc.) recognize the host as
  *     a CSI-u-capable terminal. WezTerm has the lowest side-effect risk of the
  *     four recognized values. See
- *     dev-docs/decisions/ADR-006-terminal-program-identity.md. Do NOT change
+ *     .claude/adr/ADR-006-terminal-program-identity.md. Do NOT change
  *     this to "vmark" — third-party tools fall through to a degraded "unknown
  *     terminal" path. terminalKeyHandler.ts keeps the impersonation honest by
  *     translating Shift+Enter into the CSI-u sequence real WezTerm sends.

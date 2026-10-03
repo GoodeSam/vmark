@@ -1,17 +1,21 @@
-// Format registry bootstrap.
-//
-// Single side-effect entry point that registers every adapter at app
-// start. Markdown, plain text, and YAML/YML are ALWAYS registered
-// (markdown is the core product; YAML shipped on by default in the
-// previous release with the GHA workflow viewer — reverting that
-// breaks the contract). Every other adapter is gated by a per-category
-// toggle in `settings.formats.*`.
-//
-// Default behavior with no toggles argument: register everything.
-// Production main.tsx passes the user's settings explicitly so
-// upgraders see a calm experience (only md/txt/yaml on first launch).
-// Tests typically need every format and call `bootstrapFormats()` (no
-// args) for the all-on shape.
+/**
+ * Format registry bootstrap.
+ *
+ * Single side-effect entry point that registers every adapter at app
+ * start. Markdown, plain text, and YAML/YML are ALWAYS registered
+ * (markdown is the core product; YAML shipped on by default in the
+ * previous release with the GHA workflow viewer — reverting that
+ * breaks the contract). Every other adapter is gated by a per-category
+ * toggle in `settings.formats.*`.
+ *
+ * Default behavior with no toggles argument: register everything.
+ * Production main.tsx passes the user's settings explicitly so
+ * upgraders see a calm experience (only md/txt/yaml on first launch).
+ * Tests typically need every format and call `bootstrapFormats()` (no
+ * args) for the all-on shape.
+ *
+ * @module lib/formats/registryBootstrap
+ */
 
 import { registerMarkdownFormat } from "./adapters/markdown";
 import { registerTxtFormat } from "./adapters/txt";

@@ -17,7 +17,7 @@
  *     inconclusive → stop and ask. A write that *reports* success while its
  *     postcondition says it did not land contradicts itself → stop and ask.
  *   - (The tier-escalation ladder and the genie-loop bounds that used to live
- *     here were removed in the 2026-09-03 audit-fix round: neither had a
+ *     here were removed in an audit-fix round: neither had a
  *     production consumer.)
  *   - **Writes never auto-escalate** to a higher (more autonomous) tier — an
  *     escalation is a new, human-approved operation, not an automatic fallback.

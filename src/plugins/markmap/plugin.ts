@@ -10,6 +10,8 @@
  * - WYSIWYG preview: mount a live Markmap instance for interactivity
  * - Export: serialize the SVG element to string, then convert to PNG
  * - No @panzoom/panzoom needed — Markmap has its own pan/zoom
+ *
+ * @module plugins/markmap/plugin
  */
 
 import type { Transformer } from "markmap-lib";

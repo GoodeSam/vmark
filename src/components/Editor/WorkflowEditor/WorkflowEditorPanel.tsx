@@ -30,7 +30,7 @@
  *   `SelectionForm`, the derivation `stepSelection.ts`, and the focus
  *   restoration `useStepFocusRestore`.
  *
- * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired) §6
+ * Origin: GitHub Actions workflow viewer plan (retired) §6
  *   Phase 7.
  *
  * @coordinates-with src/stores/workflowStore.ts — selection + patch queue

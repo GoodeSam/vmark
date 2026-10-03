@@ -2,6 +2,8 @@
  * Advanced Settings Section
  *
  * Developer and system configuration.
+ *
+ * @module pages/settings/AdvancedSettings
  */
 
 import { useTranslation } from "react-i18next";

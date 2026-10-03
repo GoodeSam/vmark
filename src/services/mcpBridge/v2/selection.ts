@@ -3,7 +3,7 @@
  *   user's current editor selection without paying the full-doc round-trip
  *   that `document.{read, write}` requires on large files.
  *
- *   Restored after the May 2026 pruning. See ADR-7 in
+ *   Restored after the MCP pruning. See ADR-7 in
  *   `.claude/adr/plans/20260504-mcp-pruning.md` for the cost analysis that
  *   motivated re-adding it.
  *

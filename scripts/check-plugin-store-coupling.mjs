@@ -8,8 +8,7 @@
  * It is therefore the binding constraint on ADR-015's goal, not cross-plugin
  * imports.
  *
- * Why this gate exists: the 2026-07-25 goal audit
- * (`dev-docs/deep-researches/20260725-extension-goal-progress-audit.md`)
+ * Why this gate exists: a maintainer review of the extension goal's progress
  * measured the whole extension re-architecture as a delta and found
  *
  *   cross-plugin imports  339 → 264  (−22%, and `plugin-isolation` gates it)

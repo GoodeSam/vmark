@@ -1,4 +1,8 @@
-/** Browser approval store — standing grants and page-scoped ephemeral approvals (R5/R7a). */
+/**
+ * Browser approval store — standing grants and page-scoped ephemeral approvals (R5/R7a).
+ *
+ * @module stores/browserApprovalStore
+ */
 
 import { create } from "zustand";
 import { performHumanTabAttach, consumeOnceAttachment } from "@/services/browser/humanTabAttach";

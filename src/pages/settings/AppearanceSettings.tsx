@@ -4,6 +4,8 @@
  * Theme and window configuration. The theme group offers manual selection,
  * or — with follow-system-appearance on (#1125) — a paired light/dark theme
  * that auto-switches with the OS.
+ *
+ * @module pages/settings/AppearanceSettings
  */
 
 import { useTranslation } from "react-i18next";
@@ -24,7 +26,7 @@ import { isMacPlatform, usesOverlayTitleBar } from "@/utils/platform";
  *  flat fill would sit at 1.00:1). The swatch is a MINI WINDOW, so its
  *  radius is the popup/window family (--radius-lg), and `selected` is a
  *  LIFT — the theme-adaptive popup shadow — not a box around the page
- *  (maintainer direction 2026-09-02). */
+ *  (maintainer direction). */
 function ThemeSwatchRow({
   selected,
   onSelect,
@@ -33,7 +35,7 @@ function ThemeSwatchRow({
   selected: ThemeId;
   onSelect: (id: ThemeId) => void;
   /** Paired rows (#1125) offer only THEIR mode — both rows listing all six
-   *  read as an inexplicable duplicate (maintainer, 2026-09-02). Absent in
+   *  read as an inexplicable duplicate (maintainer). Absent in
    *  manual mode, where one mixed row shows everything. */
   mode?: "light" | "dark";
 }) {

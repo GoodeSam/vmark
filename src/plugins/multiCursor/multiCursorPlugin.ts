@@ -5,7 +5,10 @@
  * - Tracking when MultiSelection is active
  * - Providing decorations for secondary cursors
  * - Handling input distribution across multiple cursors
+ *
+ * @module plugins/multiCursor/multiCursorPlugin
  */
+
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";

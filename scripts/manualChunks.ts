@@ -79,7 +79,7 @@ export function manualChunks(id: string): string | undefined {
   // modulepreload list. Pin it to vendor-react, which is always
   // eagerly loaded anyway.
   //
-  // MEASURED 2026-08-03 (WI-13): this pin no longer takes effect. The id
+  // MEASURED (WI-13): this pin no longer takes effect. The id
   // reaching here IS "\0vite/preload-helper.js" and this branch DOES return
   // "vendor-react", but vite 8 / rolldown emits the helper into
   // `vendor-codemirror-languages-*` regardless, and `vendor-react-*` imports
@@ -99,7 +99,7 @@ export function manualChunks(id: string): string | undefined {
     id.includes("/src/export/exportOverrides") ||
     id.includes("/src/export/katexFontEmbed") ||
     // The ?raw CSS strings and ?inline KaTeX fonts ARE the blob; only
-    // export code imports .css?raw / .woff2?inline (checked 2026-07),
+    // export code imports .css?raw / .woff2?inline (checked),
     // so this can't drag app CSS or fonts in.
     id.includes(".css?raw") ||
     id.includes(".woff2?inline")
@@ -124,7 +124,7 @@ export function manualChunks(id: string): string | undefined {
   // sourceLanguage.ts's `await import()`. Pinning them here made ~1 MB of
   // grammars (legacy-modes alone is 448 kB) cold-start cost in every window:
   // +29 MB WebContent footprint to evaluate the chunk in WebKit, against
-  // +13 MB for the core alone (measured 2026-09-22). Left unassigned, each
+  // +13 MB for the core alone (measured). Left unassigned, each
   // chunks by its import site and imports the core one way, so no cycle can
   // form. An unknown future package lands here too — lazy is the safe default.
   if (pkgName.startsWith("@codemirror/") || pkgName.startsWith("@lezer/")) return undefined;
@@ -140,7 +140,7 @@ export function manualChunks(id: string): string | undefined {
   // stays off the cold-start path — it sat in the entry chunk of every window
   // while the adapters imported it statically.
   if (pkgName === "smol-toml") return "vendor-toml";
-  // `@dagrejs/dagre` (maintained fork; audit 20260612) is used only by workflow
+  // `@dagrejs/dagre` (maintained fork) is used only by workflow
   // layout (lib/workflow/layout.ts) which
   // is reached lazily through WorkflowSidePanel. Mermaid uses its own bundled
   // fork (`dagre-d3-es`), so isolating plain `dagre` is safe and removes ~150 KB
@@ -176,7 +176,6 @@ export function manualChunks(id: string): string | undefined {
   // KaTeX stays in main bundle to preserve CSS cascade order.
   // Separate chunk would load before index.css, causing Tailwind's
   // preflight (border:0) to override KaTeX's border-style settings.
-  // See: dev-docs/css-dev-prod-differences.md
   if (
     pkgName === "html2pdf.js" ||
     pkgName === "html2canvas" ||

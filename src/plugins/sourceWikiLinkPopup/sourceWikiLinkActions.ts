@@ -3,6 +3,8 @@
  *
  * Actions for wiki link editing in Source mode (CodeMirror 6).
  * Handles save, open, copy, and remove operations.
+ *
+ * @module plugins/sourceWikiLinkPopup/sourceWikiLinkActions
  */
 
 import type { EditorView } from "@codemirror/view";

@@ -8,6 +8,8 @@
  * id. Only the latest request is allowed to mutate state, so a slow earlier
  * detection can never overwrite a newer result or clear `detecting` while a
  * fresher refresh is still in flight.
+ *
+ * @module pages/settings/DocumentToolsSettings
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";

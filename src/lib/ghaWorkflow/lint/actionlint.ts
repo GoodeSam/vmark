@@ -1,19 +1,23 @@
-// Frontend wrapper around the Rust gha_lint Tauri command.
-//
-// Calls the optional actionlint binary via Rust. Three outcomes are
-// possible (mirroring the Rust LintResult enum):
-//
-//   - binary_missing → return empty diagnostics + binaryAvailable: false.
-//     The frontend hides the actionlint diagnostics layer silently.
-//   - ok            → forward diagnostics under GHA-ACTIONLINT-<kind>.
-//   - failed        → return empty diagnostics + error message; UI may
-//     show a one-time toast but other linters keep working.
-//
-// Only the YAML crosses the boundary. Which actionlint binary runs, and the
-// PATH it runs with, are decided in Rust from the login-shell PATH (macOS GUI
-// launches inherit a minimal PATH that misses /opt/homebrew/bin). The webview
-// used to send that PATH itself, which let page content choose the program
-// the backend executes.
+/**
+ * Frontend wrapper around the Rust gha_lint Tauri command.
+ *
+ * Calls the optional actionlint binary via Rust. Three outcomes are
+ * possible (mirroring the Rust LintResult enum):
+ *
+ *   - binary_missing → return empty diagnostics + binaryAvailable: false.
+ *     The frontend hides the actionlint diagnostics layer silently.
+ *   - ok            → forward diagnostics under GHA-ACTIONLINT-<kind>.
+ *   - failed        → return empty diagnostics + error message; UI may
+ *     show a one-time toast but other linters keep working.
+ *
+ * Only the YAML crosses the boundary. Which actionlint binary runs, and the
+ * PATH it runs with, are decided in Rust from the login-shell PATH (macOS GUI
+ * launches inherit a minimal PATH that misses /opt/homebrew/bin). The webview
+ * used to send that PATH itself, which let page content choose the program
+ * the backend executes.
+ *
+ * @module lib/ghaWorkflow/lint/actionlint
+ */
 
 import { invoke } from "@tauri-apps/api/core";
 import type { Diagnostic, DiagnosticCode } from "../types";

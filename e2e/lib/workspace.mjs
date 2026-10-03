@@ -309,7 +309,7 @@ export async function openWorkspaceViaMcp(client, folderPath, { windowLabel = "m
  * left the rail; with the rail off, the persisted root changed (to null, or to
  * a promoted successor's root).
  *
- * With the rail on this is the product's rail-aware close since 2026-09-07:
+ * With the rail on this is the product's rail-aware close:
  * `workspace.close` removes the ACTIVE railed instance through
  * `closeWorkspaceInstance` and promotes a successor (it used to only null the
  * workspace store, leaving a rootless instance active — see

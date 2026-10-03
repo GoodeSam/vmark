@@ -64,8 +64,8 @@ export function BrowserPageTabs({ pages, activePageId, windowLabel }: BrowserPag
   const createPage = () => {
     // `createBrowserPage` activates the page it creates: it writes `activeTabId`
     // and `lastActiveBrowserPageId` and announces ONCE on the activation bus —
-    // the seam paneStore and the MRU listen on. Activating it again here (audit
-    // 2026-09-03 #162) re-wrote the same two fields and announced the same
+    // the seam paneStore and the MRU listen on. Activating it again here (found
+    // by an audit) re-wrote the same two fields and announced the same
     // activation a second time, and converged nothing: panes hold documents only,
     // so a browser activation never touches the split. Pinned in
     // BrowserPageTabs.test.tsx, "new-page activation in a split view".

@@ -1,8 +1,7 @@
 /**
- * Source Popup Plugin Factory
- *
- * Factory function for creating CodeMirror 6 plugins that manage popup views.
- * Handles plugin lifecycle, view creation/destruction, and click detection.
+ * Source Popup Plugin Factory — creates CodeMirror 6 plugins that manage popup
+ * views: plugin lifecycle, view creation/destruction, and click detection.
+ * @module plugins/shared/createSourcePopupPlugin
  */
 
 import { ViewPlugin, type EditorView, type ViewUpdate } from "@codemirror/view";

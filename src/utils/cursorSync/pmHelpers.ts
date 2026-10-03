@@ -2,7 +2,10 @@
  * Shared cursor sync helpers.
  * The source-line lookups serve the ProseMirror side; `findColumnInLine` is
  * the one column matcher, used for the WYSIWYG and the CodeMirror restore alike.
+ *
+ * @module utils/cursorSync/pmHelpers
  */
+
 import type { Node as PMNode, ResolvedPos } from "@tiptap/pm/model";
 import type { CursorInfo } from "@/types/cursorSync";
 

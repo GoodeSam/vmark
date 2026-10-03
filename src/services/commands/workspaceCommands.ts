@@ -17,12 +17,13 @@
  * and ACTIVE with no root — the status-bar tab strip is scoped to the active
  * instance, so it had nothing to show and unmounted, and every new untitled
  * tab was claimed into the inactive "Loose Files", invisible until the user
- * happened to click that rail entry. Observed live 2026-09-07.
+ * happened to click that rail entry. Observed live.
  *
  * @coordinates-with services/workspaces/closeWorkspaceInstance.ts — the rail-on close
  * @coordinates-with components/WorkspaceRail/workspaceRailHandlers.ts — the rail's own Close, same path
  * @coordinates-with services/workspaces/openWorkspaceByPath.ts — the shared open sequence and its guard key
  * @coordinates-with services/workspaces/workspaceAccess.ts — the Rust folder picker (grants + records the pick)
+ * @module services/commands/workspaceCommands
  */
 
 import { registerCommands } from "./CommandBus";

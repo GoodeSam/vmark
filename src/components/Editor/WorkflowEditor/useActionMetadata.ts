@@ -8,7 +8,7 @@
  *   uses at all (run-step). The form skips its metadata UI in that
  *   case — there is nothing to fetch.
  *
- * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired)
+ * Origin: GitHub Actions workflow viewer plan (retired)
  *   §6 Phase 9 — tooltip preview consumer.
  *
  * Key decisions:

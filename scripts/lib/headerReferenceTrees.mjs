@@ -31,7 +31,7 @@ export const TREES = [
 // `.sh` is NOT scanned, and that is a KNOWN GAP, not an oversight (audit R2
 // #169): the DoD checkers and `lib/dod-assertions.sh` do carry `# Plan:` and
 // `# @coordinates-with` headers. Adding `.sh` here (with the `#`-comment
-// branch in headerComments.mjs, which exists) was measured on 2026-09-08 and
+// branch in headerComments.mjs, which exists) was measured and
 // immediately reports TWELVE `# Plan: dev-docs/plans/*.md` headers whose plan
 // file is no longer in this tree. Every one is MAINTAINER-LOCAL: `dev-docs/`
 // is gitignored, so CI (where it is absent) skips them and only a maintainer

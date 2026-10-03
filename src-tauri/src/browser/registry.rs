@@ -22,10 +22,10 @@
 //!
 //! An **AI tab** records the request that reserved it (`registry_ai.rs`): a
 //! `browser_ai_create` retry naming an existing id is honoured only as that same
-//! request — same window, mode, url and profile — and refused otherwise (audit
-//! 20260903 round 3, #3). The same-document transition (`registry_same_document.rs`)
-//! and the paired snapshot-and-begin (`registry_navigation.rs`) are the other two
-//! places where a decision and its write share one guard on purpose.
+//! request — same window, mode, url and profile — and refused otherwise. The
+//! same-document transition (`registry_same_document.rs`) and the paired
+//! snapshot-and-begin (`registry_navigation.rs`) are the other two places where a
+//! decision and its write share one guard on purpose.
 //!
 //! Lifecycle state machine:
 //! ```text
@@ -40,7 +40,7 @@
 //! the view on unmount, so an inactive page's entry here is simply `Destroyed`
 //! and a fresh entry is created on reactivation. (A `Hibernated` variant used
 //! to sit in this enum awaiting a hibernation-cap store; that store was
-//! judged fiction and deleted — review finding E4, 2026-08-03.)
+//! judged fiction and deleted — review finding E4.)
 //!
 //! `Navigating` is entered by `didCommitNavigation` alone, so it is reachable
 //! from every state that owns a webview which can commit a load: `Creating` (the
@@ -49,8 +49,8 @@
 //! idle on whatever it was showing, which is `Live`; the committed URL stays
 //! cleared, so the driver is granted nothing on a page that never loaded.
 //!
-//! A window that is being torn down is remembered in `closed_windows` (audit
-//! 20260903, journey 37): `create_with_mode` and `reserve_ai_tab` refuse a tab under
+//! A window that is being torn down is remembered in `closed_windows`:
+//! `create_with_mode` and `reserve_ai_tab` refuse a tab under
 //! that label with `BrowserError::WindowClosed`, so a view registered around a
 //! teardown cannot outlive its window.
 

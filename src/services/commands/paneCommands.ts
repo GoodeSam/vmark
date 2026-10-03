@@ -2,6 +2,8 @@
  * Pane commands — the split-editor command set (#1081), split out of
  * viewCommands.ts for the file-size gate. Registered by
  * `registerViewCommands()`, so callers and tests keep a single entry point.
+ *
+ * @module services/commands/paneCommands
  */
 
 import { registerCommands, type CommandDefinition } from "./CommandBus";

@@ -1,3 +1,11 @@
+/**
+ * workspaceWindowActions.testUtils — shared mocks and store fixtures for the
+ * workspace window action tests: Tauri invoke and listen mocks, rail mode,
+ * workspace instances, tabs and transfer acknowledgements.
+ *
+ * @module services/workspaces/workspaceWindowActions.testUtils
+ */
+
 import { vi } from "vitest";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
 import { useSettingsStore } from "@/stores/settingsStore";

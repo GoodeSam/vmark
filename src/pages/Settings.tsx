@@ -4,6 +4,8 @@
  * Main settings window with navigation sidebar.
  * Sections sorted alphabetically. Each section's panel loads when it is first
  * shown (settings/SettingsContent.tsx), so the window paints with one.
+ *
+ * @module pages/Settings
  */
 
 import { useState, useEffect, type CSSProperties } from "react";

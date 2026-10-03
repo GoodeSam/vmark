@@ -4,6 +4,8 @@
  * CodeMirror 6 plugin for editing links in Source mode.
  * Click on a link opens the edit popup. Cmd+Click opens the link — a heading,
  * a file in a tab, or a URL in the browser — through the shared `openLinkTarget`.
+ *
+ * @module plugins/sourceLinkPopup/sourceLinkPopupPlugin
  */
 
 import { type Extension } from "@codemirror/state";

@@ -7,7 +7,10 @@
  *
  * Note: SelectionRange uses $from/$to, while Selection uses $anchor/$head.
  * We use $from/$to throughout since that's what SelectionRange provides.
+ *
+ * @module plugins/shared/MultiSelection
  */
+
 import { Selection, SelectionRange } from "@tiptap/pm/state";
 import type { SelectionBookmark } from "@tiptap/pm/state";
 import type { Node } from "@tiptap/pm/model";

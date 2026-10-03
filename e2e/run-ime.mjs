@@ -238,7 +238,7 @@ async function main() {
        * `Control` keydown.
        *
        * This lane cannot exercise that, because **System Events injection
-       * produces no modifier key event at all**. Measured 2026-09-17 against
+       * produces no modifier key event at all**. Measured against
        * real Safari + the real macOS SCIM IME: `key down control` held for a
        * full second logged ZERO DOM events, and so did `key down shift`;
        * `key code 50 using {control down}` surfaced `ctrl: true` only on the

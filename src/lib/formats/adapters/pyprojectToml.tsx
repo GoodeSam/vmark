@@ -1,16 +1,20 @@
-// pyproject.toml schema detector + dependency-tree renderer.
-//
-// TOML adapter wires this. Filename match wins (ADR-5 path-first);
-// content fallback covers either PEP 621 ([project]) or Poetry
-// ([tool.poetry]) shapes.
-//
-// Two flavors handled:
-//   1. PEP 621 — `[project]` table with `dependencies = [ ... ]`
-//      array of PEP 508 strings. `[project.optional-dependencies]`
-//      sub-table groups extras.
-//   2. Poetry — `[tool.poetry.dependencies]` map of name → spec.
-//      Dev deps in either `[tool.poetry.dev-dependencies]` (legacy)
-//      or `[tool.poetry.group.<name>.dependencies]` (modern).
+/**
+ * pyproject.toml schema detector + dependency-tree renderer for the TOML preview.
+ *
+ * TOML adapter wires this. Filename match wins (ADR-5 path-first);
+ * content fallback covers either PEP 621 ([project]) or Poetry
+ * ([tool.poetry]) shapes.
+ *
+ * Two flavors handled:
+ *   1. PEP 621 — `[project]` table with `dependencies = [ ... ]`
+ *      array of PEP 508 strings. `[project.optional-dependencies]`
+ *      sub-table groups extras.
+ *   2. Poetry — `[tool.poetry.dependencies]` map of name → spec.
+ *      Dev deps in either `[tool.poetry.dev-dependencies]` (legacy)
+ *      or `[tool.poetry.group.<name>.dependencies]` (modern).
+ *
+ * @module lib/formats/adapters/pyprojectToml
+ */
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";

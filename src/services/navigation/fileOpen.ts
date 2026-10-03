@@ -1,3 +1,10 @@
+/**
+ * fileOpen — the file-open pipeline: opening a file in a new tab, the Open
+ * dialog, opening by path, and the New command.
+ *
+ * @module services/navigation/fileOpen
+ */
+
 import { imeToast as toast } from "@/services/ime/imeToast";
 import i18n from "@/i18n";
 import { open } from "@tauri-apps/plugin-dialog";

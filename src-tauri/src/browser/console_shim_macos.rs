@@ -5,7 +5,7 @@
 //! on a hidden DOM element. The isolated-world driver reads that element
 //! (`consoleShim.ts` `buildConsoleReadScript`) — the DOM is shared across
 //! content worlds, so **no `WKScriptMessageHandler` is registered and the no-bridge
-//! invariant (R3) holds** (see `dev-docs/grills/browser-automation/phase7-console-design.md`).
+//! invariant (R3) holds**.
 //!
 //! **Every AI-owned posture, never a human's page** (audit 20260903 S-06): the shim
 //! used to be AiSandbox-only, so `browser_read console` on an `ai-shared` tab

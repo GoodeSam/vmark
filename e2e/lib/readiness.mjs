@@ -10,7 +10,7 @@
  * | `list_windows` | the window object exists | the window was created |
  * | `execute_js "1+1"` | the webview has a JS context | `index.html` parsed |
  *
- * None of those is what a journey needs. Run 32701401717 (2026-08-24) is the
+ * None of those is what a journey needs. Run 32701401717 is the
  * bill for the third one: `wait-ready` reported the app drivable at 07:30:35,
  * the app logged `Window 'main' is ready` at 07:30:41, and the first journey —
  * `multi-doc-save-integrity` — spent its whole 8s budget watching an EMPTY tab

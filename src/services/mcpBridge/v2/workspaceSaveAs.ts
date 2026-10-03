@@ -21,6 +21,7 @@
  * @coordinates-with bridgeSave.ts — the path guard and the save pipeline
  * @coordinates-with liveEditor.ts — flushes pending keystrokes into the buffer first
  * @coordinates-with services/persistence/applyPostSaveState.ts — re-points the document and tab
+ * @module services/mcpBridge/v2/workspaceSaveAs
  */
 
 import { exists } from "@tauri-apps/plugin-fs";

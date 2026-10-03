@@ -3,6 +3,8 @@
  *
  * CodeMirror 6 plugin for editing wiki links in Source mode.
  * Shows a popup when cursor is inside wiki link syntax ([[target]] or [[target|alias]]).
+ *
+ * @module plugins/sourceWikiLinkPopup/sourceWikiLinkPopupPlugin
  */
 
 import type { EditorView } from "@codemirror/view";

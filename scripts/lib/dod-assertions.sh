@@ -77,7 +77,7 @@ DOD_SYNTAX="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/dod-syntax.mjs"
 #
 # The transport is one request/reply stream with no request ids, so it is
 # correct only while ONE process talks to it. Four rules keep it that way, and
-# each is a way it used to return a wrong answer (audit 2026-09-28):
+# each is a way it used to return a wrong answer:
 #   - Only the shell that started the server (BASH_SUBSHELL 0) uses it.
 #     Subshells inherit the descriptors, and a pipeline stage or background job
 #     runs CONCURRENTLY with its parent — two callers on one stream consumed

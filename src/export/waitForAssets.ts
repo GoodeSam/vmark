@@ -3,6 +3,8 @@
  *
  * Ensures all async content (fonts, images, Math, Mermaid) has rendered
  * before proceeding with export or print.
+ *
+ * @module export/waitForAssets
  */
 
 import { checkImages, getStabilityStatus, type StabilityStatus } from "./assetReadiness";

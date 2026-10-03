@@ -32,7 +32,7 @@ pub struct ParsedCheck {
     /// What the model ACTUALLY said, when verdict discipline downgraded it to
     /// `unknown`. Preserved so the τ decision stays auditable and retunable.
     ///
-    /// Found by dogfooding (2026-07-20): 5 of 21 real checks came back `unknown`
+    /// Found by dogfooding: 5 of 21 real checks came back `unknown`
     /// with empty evidence, and the confidences split perfectly at τ — determinate
     /// 0.90–0.99, unknown 0.82–0.86, nothing in between. Every one was a τ
     /// downgrade, NOT a checker failure. The old `unknown()` constructor discarded
@@ -172,8 +172,8 @@ pub fn parse_check_response(raw: &str, tau: f64) -> ParsedCheck {
         return unknown(0.0);
     };
     // A confidence outside [0, 1] or non-finite is not a usable score;
-    // a model returning 2.0 must not earn a determinate verdict (audit
-    // C3). Treat it as no signal.
+    // a model returning 2.0 must not earn a determinate verdict. Treat it
+    // as no signal.
     let confidence = match v["confidence"].as_f64() {
         Some(c) if c.is_finite() && (0.0..=1.0).contains(&c) => c,
         _ => return unknown(0.0),

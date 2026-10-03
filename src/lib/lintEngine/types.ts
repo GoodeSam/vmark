@@ -2,6 +2,8 @@
  * Markdown Lint Engine — Type Definitions
  *
  * Purpose: Shared types for the lint engine, rules, and UI integration.
+ *
+ * @module lib/lintEngine/types
  */
 
 /**

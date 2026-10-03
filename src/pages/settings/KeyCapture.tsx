@@ -2,6 +2,8 @@
  * Key Capture Modal
  *
  * Modal overlay that captures keyboard input for shortcut customization.
+ *
+ * @module pages/settings/KeyCapture
  */
 
 import { useEffect, useCallback, useState } from "react";

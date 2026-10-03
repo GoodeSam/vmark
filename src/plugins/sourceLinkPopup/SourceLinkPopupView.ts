@@ -7,6 +7,8 @@
  * Focus follows `autoFocus`: a click-opened popup leaves the caret in the
  * markdown so typing and Ctrl+C/V keep editing the document (#1448); an
  * explicit edit (Cmd+K) focuses the URL field, including while it is open.
+ *
+ * @module plugins/sourceLinkPopup/SourceLinkPopupView
  */
 
 import type { EditorView } from "@codemirror/view";

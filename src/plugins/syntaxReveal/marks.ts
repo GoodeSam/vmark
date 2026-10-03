@@ -6,6 +6,8 @@
  * half that once lived beside them — syntax widgets rendered at mark
  * boundaries — was never registered as an extension and was deleted under the
  * feature-ledger plan; only these helpers were ever wired.
+ *
+ * @module plugins/syntaxReveal/marks
  */
 
 import type { Node, Mark, ResolvedPos } from "@tiptap/pm/model";

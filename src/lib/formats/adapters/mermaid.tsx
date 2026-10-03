@@ -1,21 +1,23 @@
-// Standalone Mermaid (.mmd) adapter.
-//
-// CodeMirror language pack: codemirror-lang-mermaid 0.5.0 (Phase 0
-// picked exact-pin; SUFFICIENT-FALLBACK verdict — stale upstream
-// but no CVEs, no functional risk for stable mermaid grammars).
-//
-// Validator: lightweight diagram-type pre-flight. Mermaid's own
-// parser (Langium) is heavyweight and async-only via the renderer.
-// We surface obvious "missing diagram type" failures synchronously
-// so the gutter is responsive on every keystroke; the renderer
-// supplies the deeper parse errors at render time.
-//
-// Preview: re-uses the existing renderMermaid() helper. The plan
-// (Background table) flagged renderMermaid as environment-coupled
-// (depends on document.documentElement.classList for theme +
-// getComputedStyle for fonts + transient DOM). The wrapper here
-// owns theme + font-size synchronization explicitly so the registry
-// dispatch can mount it for any tab without those couplings biting.
+/**
+ * Standalone Mermaid (.mmd) adapter — source editing, validation and diagram preview.
+ *
+ * CodeMirror language pack: codemirror-lang-mermaid 0.5.0 (exact-pinned;
+ * stale upstream but no CVEs, no functional risk for stable mermaid grammars).
+ *
+ * Validator: lightweight diagram-type pre-flight. Mermaid's own
+ * parser (Langium) is heavyweight and async-only via the renderer.
+ * We surface obvious "missing diagram type" failures synchronously
+ * so the gutter is responsive on every keystroke; the renderer
+ * supplies the deeper parse errors at render time.
+ *
+ * Preview: re-uses the existing renderMermaid() helper, which is
+ * environment-coupled (depends on document.documentElement.classList for theme +
+ * getComputedStyle for fonts + transient DOM). The wrapper here
+ * owns theme + font-size synchronization explicitly so the registry
+ * dispatch can mount it for any tab without those couplings biting.
+ *
+ * @module lib/formats/adapters/mermaid
+ */
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";

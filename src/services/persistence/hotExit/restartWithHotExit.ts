@@ -7,6 +7,8 @@
  * - Captured before restart
  * - Deleted ONLY after restore-complete event (not before!)
  * - Kept on failure for retry on next launch
+ *
+ * @module services/persistence/hotExit/restartWithHotExit
  */
 
 import { invoke } from '@tauri-apps/api/core';

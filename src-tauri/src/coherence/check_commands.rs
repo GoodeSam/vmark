@@ -21,7 +21,7 @@ use super::types::{Envelope, RevisionId};
 
 /// D5.3: τ default per spike S4 — tunable policy, recorded per result.
 ///
-/// Dogfooding (2026-07-20) showed why it must be TUNABLE, not just "tunable in
+/// Dogfooding showed why it must be TUNABLE, not just "tunable in
 /// principle": on 21 real checks the confidences split perfectly at this value —
 /// determinate 0.90–0.99, unknown 0.82–0.86, nothing between. All 5 `unknown`
 /// results were τ downgrades of answers the model had actually reached. A τ the
@@ -187,7 +187,7 @@ fn record_check_locked(
         "confidence": parsed.confidence,
         "context": prepared.context.to_string(),
         "claims_fingerprint": prepared.claims_fingerprint,
-        // Preserve a τ-downgraded determinate verdict (dogfood 2026-07-20). Without
+        // Preserve a τ-downgraded determinate verdict (found by dogfooding). Without
         // this the ledger records `unknown` and throws away a verdict already paid
         // for, so retuning τ later cannot recover it — you must re-run and re-pay.
         // Recording it keeps the τ decision auditable AND retunable offline.

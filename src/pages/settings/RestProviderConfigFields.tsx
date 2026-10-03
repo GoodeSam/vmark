@@ -5,6 +5,8 @@
  * `openai-compatible` provider additionally exposes an editable display name
  * so the provider list can read "DeepSeek" (or any vendor) instead of the
  * generic label.
+ *
+ * @module pages/settings/RestProviderConfigFields
  */
 
 import { useEffect, useRef, useState } from "react";

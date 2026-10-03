@@ -11,8 +11,8 @@ use super::session::SessionData;
 /// A session as it came off disk, paired with WHICH file served it.
 ///
 /// `recovered_from_backup` is true when `session.json` could not be parsed,
-/// migrated or validated and `session.prev.json` was substituted (audit
-/// 20260803 §11). The substitution used to be silent, and silence is the
+/// migrated or validated and `session.prev.json` was substituted.
+/// The substitution used to be silent, and silence is the
 /// problem: it happens UPSTREAM of the frontend's salvage boundary, so the
 /// payload arriving there is perfectly valid, nothing is quarantined, and a
 /// successful restore clears both files — destroying the corrupt main bytes.

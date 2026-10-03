@@ -1,26 +1,29 @@
-// Media render-core — shared, reusable surface for previewing a local
-// image / audio / video file.
-//
-// Purpose: Given an absolute file path, classify it, resolve it to a Tauri
-//   asset URL (convertFileSrc), and render the matching element. On load
-//   failure or an unknown extension, show a fallback panel with two
-//   external-open actions. This component is intentionally prop-only (no
-//   store reads) so the Quick Look overlay can reuse it directly.
-//
-// Public contract: <MediaView path={absolutePath} reloadKey={n?} />
-//
-// Key decisions:
-//   - This file is RENDER ONLY: three media branches, a loading slot, and the
-//     fallback panel. The asset-grant lifecycle, the per-attempt error keying
-//     and the cache-busting URL live in `useMediaAsset` — none of that is
-//     about rendering, and all of it is subtle.
-//   - `reloadKey` is optional and 0-defaulted, so the overlay entry points,
-//     which have no document to watch, produce byte-identical URLs to before.
-//
-// @coordinates-with useMediaAsset.ts — the grant lifecycle and the asset URL
-// @coordinates-with utils/mediaPathDetection.ts — getMediaType()
-// @coordinates-with components/Editor/MediaViewer/MediaViewer.tsx — supplies reloadKey from documentId
-// @module components/Editor/MediaView/MediaView
+/**
+ * Media render-core — shared, reusable surface for previewing a local
+ * image / audio / video file.
+ *
+ * Purpose: Given an absolute file path, classify it, resolve it to a Tauri
+ *   asset URL (convertFileSrc), and render the matching element. On load
+ *   failure or an unknown extension, show a fallback panel with two
+ *   external-open actions. This component is intentionally prop-only (no
+ *   store reads) so the Quick Look overlay can reuse it directly.
+ *
+ * Public contract: <MediaView path={absolutePath} reloadKey={n?} />
+ *
+ * Key decisions:
+ *   - This file is RENDER ONLY: three media branches, a loading slot, and the
+ *     fallback panel. The asset-grant lifecycle, the per-attempt error keying
+ *     and the cache-busting URL live in `useMediaAsset` — none of that is
+ *     about rendering, and all of it is subtle.
+ *   - `reloadKey` is optional and 0-defaulted, so the overlay entry points,
+ *     which have no document to watch, produce byte-identical URLs to before.
+ *
+ * @coordinates-with useMediaAsset.ts — the grant lifecycle and the asset URL
+ * @coordinates-with utils/mediaPathDetection.ts — getMediaType()
+ * @coordinates-with components/Editor/MediaViewer/MediaViewer.tsx — supplies reloadKey from documentId
+ *
+ * @module components/Editor/MediaView/MediaView
+ */
 
 import { useTranslation } from "react-i18next";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";

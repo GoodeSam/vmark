@@ -23,9 +23,10 @@
  *     directory probe is the race check-ui-phase.sh records). Absent, they
  *     are neither findings nor stale entries, so CI stays green.
  *   - A retired plan (its file deleted) is written `Origin: <title> plan
- *     (<date>, retired) <WI-…/§ as before>`, never `Plan:` with a dead path:
- *     `Origin:` is prose to this gate, so the WI ids stay for rule 60 §2 and
- *     nothing has to resolve.
+ *     (retired) <§ as before>`, never `Plan:` with a dead path: `Origin:` is
+ *     prose to this gate, so nothing has to resolve. It carries no date (rule
+ *     22, enforced by `lint:provenance-ids`); a plan with a tracked copy is
+ *     cited by that copy's path instead.
  *
  * @coordinates-with scripts/lib/headerComments.mjs — comment scanning and the tag grammar
  * @coordinates-with scripts/lib/headerReferenceTargets.mjs — resolves one target against the tree

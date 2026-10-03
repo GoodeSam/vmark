@@ -244,7 +244,7 @@ pub(super) fn configure_print_info(
 
     // WI-PDF1.4: the page size comes from the caller, not the system default.
     //
-    // Measured 2026-08-16: `@page { size }` is ignored ENTIRELY here — the
+    // Measured: `@page { size }` is ignored ENTIRELY here — the
     // same content at `size:A4` and `size:A5` produced the same page count AND
     // the same MediaBox, so it affects neither size nor layout. Every export
     // therefore came out at whatever size the machine happened to default to,

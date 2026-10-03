@@ -4,6 +4,8 @@
  * CodeMirror 6 plugin for editing footnotes in Source mode.
  * Shows a popup when cursor is inside a footnote reference [^label]
  * or footnote definition [^label]: content
+ *
+ * @module plugins/sourceFootnotePopup/sourceFootnotePopupPlugin
  */
 
 import type { EditorView } from "@codemirror/view";

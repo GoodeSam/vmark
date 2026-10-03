@@ -17,7 +17,7 @@
 
 export const ADVISORY_ACCEPTANCE_ENTRIES = [
   {
-    // Reviewed npm advisory acceptances (audit 20260906, C3). An addition
+    // Reviewed npm advisory acceptances. An addition
     // REPORTS rather than fails: a genuinely new advisory in a dev-only
     // dependency chain is an ordinary event, and the gate that matters —
     // `check-npm-audit.mjs` — already refuses an entry with no stated reason

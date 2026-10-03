@@ -5,6 +5,8 @@
  * in WYSIWYG mode. Uses @panzoom/panzoom on the SVG element directly
  * (CSS transforms), with noBind to coexist with double-click-to-edit.
  * Plain scroll passes through to the document.
+ *
+ * @module plugins/mermaid/mermaidPanZoom
  */
 
 import i18n from "@/i18n";

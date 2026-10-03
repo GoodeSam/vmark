@@ -126,7 +126,7 @@ export function themeTokensToColors(t: ThemeTokens): ThemeColors {
     alertWarning: t.color.alert.warning,
     alertCaution: t.color.alert.caution,
   };
-  // Audit fix (H2, 2026-05-25): codeText/mdChar live on ThemeTokens.color.legacy
+  // Audit fix: codeText/mdChar live on ThemeTokens.color.legacy
   // (dark themes state them; light themes share the static fragment).
   setIfStated(out, "codeText", t.color.legacy?.codeText);
   setIfStated(out, "mdChar", t.color.legacy?.mdChar);

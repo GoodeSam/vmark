@@ -6,6 +6,8 @@
  * lists also carry `spread` (a loose list: blank lines between its items) so
  * a document round-trips it; it is markdown-only, never rendered to HTML or
  * read from pasted HTML, and a new list starts tight.
+ *
+ * @module plugins/shared/sourceLineNodes
  */
 
 import { Heading } from "@tiptap/extension-heading";

@@ -1,5 +1,5 @@
-//! Coherence layer kernel (spec: dev-docs/specs/coherence-format-v0.md;
-//! plan: .claude/adr/plans/20260718-coherence-layer.md).
+//! Coherence layer kernel (format v0; plan:
+//! .claude/adr/plans/20260718-coherence-layer.md).
 //!
 //! Module boundaries per ADR-C4:
 //! - Pure kernel (no I/O): `types`, `canonical`, `dag`, `project`

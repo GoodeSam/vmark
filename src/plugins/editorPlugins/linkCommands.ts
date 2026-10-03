@@ -6,6 +6,7 @@
  *
  * @coordinates-with editorPlugins.tiptap.ts (keymap builder binds this)
  * @coordinates-with syntaxReveal/marks.ts (findMarkRange)
+ * @module plugins/editorPlugins/linkCommands
  */
 
 import type { EditorView } from "@tiptap/pm/view";

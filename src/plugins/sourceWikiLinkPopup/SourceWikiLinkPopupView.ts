@@ -3,6 +3,8 @@
  *
  * Popup view for editing wiki links in Source mode (CodeMirror 6).
  * Allows editing target, opening, copying, and removing wiki links.
+ *
+ * @module plugins/sourceWikiLinkPopup/SourceWikiLinkPopupView
  */
 
 import type { EditorView } from "@codemirror/view";

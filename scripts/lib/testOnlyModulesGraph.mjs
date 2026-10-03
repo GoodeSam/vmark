@@ -46,8 +46,8 @@ export function parseKnipFiles(jsonText) {
   // EVERY issue record must carry a `files` array. Accepting one without it
   // meant a reporter-schema change could drop findings while the rest of the
   // report kept the run looking valid — a partial measurement that reads as a
-  // clean tree (audit R2 #84). Measured against knip's real production output
-  // on 2026-09-08: 58 of 58 records carry it, so this refuses nothing that
+  // clean tree (audit R2 #84). Measured against knip's real production output:
+  // 58 of 58 records carry it, so this refuses nothing that
   // ships. The pre-knip-6 shape (a ROOT `files` array) is still accepted, and
   // then `issues` is not the carrier.
   const rootFiles = Array.isArray(parsed.files);

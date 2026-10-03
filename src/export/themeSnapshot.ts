@@ -3,6 +3,8 @@
  *
  * Captures computed CSS variables at export time to ensure
  * exported HTML matches the user's current theme exactly.
+ *
+ * @module export/themeSnapshot
  */
 
 /**

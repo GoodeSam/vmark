@@ -22,8 +22,8 @@ use crate::localized_error;
 ///
 /// Batch Save All used to build `folder/Untitled-1.md` and hand it straight to
 /// the ordinary overwrite writer, so choosing a folder that already contained
-/// that name silently replaced a document the user never opened (audit
-/// 20260906, F1). Checking existence first and then writing would only narrow
+/// that name silently replaced a document the user never opened.
+/// Checking existence first and then writing would only narrow
 /// the window, not close it: two windows saving concurrently, or anything else
 /// creating the file in between, still lose bytes. `create_new(true)` is
 /// `O_EXCL` / `CREATE_NEW`, so the claim and the test are one operation the

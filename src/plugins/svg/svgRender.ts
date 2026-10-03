@@ -11,6 +11,7 @@
  * result — the renderer wants a string or null, the validator wants a message.
  *
  * @coordinates-with lib/formats/adapters/svg.tsx — the validator consumer
+ * @module plugins/svg/svgRender
  */
 
 /** Why `parseSvg` rejected the content, or `null` when it is well-formed. */

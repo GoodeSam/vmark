@@ -9,6 +9,8 @@
  * rebuild, input wiring, validation, and save/cancel flow. This view only
  * supplies the Source mode commit strategy: inserting `[text](url)` markdown,
  * using the repo's angle-bracket convention for destinations with whitespace.
+ *
+ * @module plugins/sourceLinkCreatePopup/SourceLinkCreatePopupView
  */
 
 import type { EditorView } from "@codemirror/view";

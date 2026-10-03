@@ -8,6 +8,7 @@
  *
  * @module utils/lruCache
  */
+
 export class LruCache<K, V> extends Map<K, V> {
   private readonly maxSize: number;
 

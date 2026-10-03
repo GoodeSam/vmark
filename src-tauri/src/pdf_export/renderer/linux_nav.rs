@@ -99,12 +99,11 @@ pub(super) fn navigate_once<T: Send + 'static>(
                 return false; // not handled — nothing to suppress on a page we never wanted
             }
             failed_flag.set(true);
-            // The callback's other three arguments used to be discarded (audit
-            // 20260907 #411), so a missing staging file, a permission refusal
-            // and a decode failure all reached the user as one untraceable
-            // "document failed to load" with nothing in the log either. The
-            // GLib error carries the domain and code WebKitGTK classified it
-            // under, and the load stage says how far it got.
+            // The callback's other three arguments used to be discarded, so a missing
+            // staging file, a permission refusal and a decode failure all reached the user
+            // as one untraceable "document failed to load" with nothing in the log either.
+            // The GLib error carries the domain and code WebKitGTK classified it under, and
+            // the load stage says how far it got.
             //
             // The failing URI is deliberately NOT attached: it is always
             // VMark's own staging file, whose path the caller already holds, so

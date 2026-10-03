@@ -14,7 +14,7 @@
  *     reader thread sends `InvokeResponseBody::Raw(bytes)`, which the webview
  *     receives as an `ArrayBuffer` — NOT a JSON number array. This is ~3.66x
  *     less wire data and orders of magnitude less encode/decode CPU than the
- *     old `pty:data:` event path (see dev-docs/grills/terminal/). The Channel
+ *     old `pty:data:` event path. The Channel
  *     is point-to-point, so output is no longer broadcast to every window.
  *   - The data Channel's `onmessage` is wired BEFORE `pty_start` is invoked, so
  *     the reader cannot emit before we are listening — no data-loss race

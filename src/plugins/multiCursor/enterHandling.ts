@@ -4,7 +4,10 @@
  * Splits the parent node at each cursor position. Operates in
  * reverse document order to preserve position validity (rangeEdits.ts).
  * Ranges where canSplit returns false are skipped to avoid data loss.
+ *
+ * @module plugins/multiCursor/enterHandling
  */
+
 import { SelectionRange } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import { canSplit } from "@tiptap/pm/transform";

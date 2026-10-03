@@ -38,8 +38,8 @@ export function applySuggestionToTr(
   // content intact, duplicating it alongside the replacement (issue #805).
   // The marker is the explicit wholeDoc flag — `from === 0` is NOT a safe
   // sentinel, since a first-block suggestion legitimately starts at 0 and
-  // must NOT swallow the whole document (cross-model review, audit
-  // 20260612 remediation).
+  // must NOT swallow the whole document (cross-model review
+  // during an audit remediation).
   if (suggestion.wholeDoc) {
     suggestion = { ...suggestion, to: docSize };
   }

@@ -1,3 +1,9 @@
+/**
+ * night — design tokens for the Night theme, the dark theme.
+ *
+ * @module theme/themes/night
+ */
+
 import type { ThemeTokens } from "../tokens";
 import { sharedPrimitives, darkShadows, subtleDark, hoverDark } from "../tokens";
 

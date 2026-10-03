@@ -6,7 +6,10 @@
  * number in the markdown source. `blankLinesBefore` and the list item's
  * `tightBefore` record source spacing, so a document is written back the way
  * it was read.
+ *
+ * @module plugins/shared/sourceLineAttr
  */
+
 export const sourceLineAttr = {
   sourceLine: {
     default: null as number | null,

@@ -68,6 +68,7 @@ Each script's header explains its rules and exemption markers.
 - `lint:command-errors` — new Rust commands return `CommandError`; see `.claude/rules/50-codebase-conventions.md`.
 - `lint:store-coupling` — plugins must not import app stores/services/hooks/components; see `.claude/rules/00-engineering-principles.md`.
 - `lint:feature-map` — every production source file is owned by exactly one feature in `scripts/feature-map.json` (or its `infrastructure.paths`). A new module must be assigned in the same change. It also joins the tracked ledger `.claude/feature-ledger.md` to the map (every block names a feature, every cited path exists) — when a feature ships, moves or dies, edit its block in the same change. `pnpm gen:feature-ledger` regenerates the untracked `dev-docs/feature-metrics.md`.
+- `lint:file-headers`, `lint:provenance-ids` — every production `.ts`/`.tsx` under `src/` opens with its `/** … @module */` header; production comments carry no calendar date, no `dev-docs/` document path, and only WI/audit ids a tracked file resolves. See `.claude/rules/22-comment-maintenance.md`.
 - `lint:rust-deps` (`cargo machete`) runs in CI, not `check:all`.
 - Markdown parser hostile-input cost is linear: fast paths in `parser/fastPaths/`, `pnpm` patches in `patches/` (a Dependabot bump of micromark or mdast-util-to-markdown fails install until the patch is re-made — that is intended), and `pathologicalScaling.test.ts`.
 

@@ -163,9 +163,9 @@ export const initialState: SettingsState = {
     associations: {},
   },
   browser: {
-    // Embedded browser ships ON (maintainer decision, 2026-08-15), superseding
+    // Embedded browser ships ON (maintainer decision), superseding
     // the earlier default-off posture and the KEEP-DARK recommendation in
-    // .claude/rules/60-ai-governance.md §12, whose 2026-11-01 exit criterion
+    // .claude/rules/60-ai-governance.md §12, whose exit criterion
     // was resolved early in favour of shipping.
     //
     // Consequences a reader should know about, because they are not obvious:

@@ -3,7 +3,7 @@
 //! `tauri-plugin-mcp-bridge` 0.12 takes a BASE port and scans up to 100
 //! ports above it when the base is busy (`discovery::find_available_port`);
 //! there is no fail-closed option. The harness that drives it
-//! (`tauri_driver_session`, see `dev-docs/e2e-testing.md`) is pinned to
+//! (`tauri_driver_session`, see `e2e/README.md`) is pinned to
 //! 9323, so a scan that lands on 9324 does not fail — it leaves a bridge
 //! nobody can find, while the driver talks to whatever holds 9323.
 //!

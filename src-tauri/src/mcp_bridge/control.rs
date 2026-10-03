@@ -14,8 +14,8 @@
 //!
 //! The bridge's running flag, bound port and start generation live in
 //! `McpBridgeState::lifecycle()` (`mcp_bridge/lifecycle.rs`), reached from the
-//! managed state like everything else the bridge mutates (audit
-//! 20260907 #177). A start and a stop hold its serialization lock end to end,
+//! managed state like everything else the bridge mutates.
+//! A start and a stop hold its serialization lock end to end,
 //! so a stop can no longer run between a start's bind and its bookkeeping,
 //! and publishing the bound port cannot fail once the listener is up.
 //! The status the frontend sees is a projection of one

@@ -201,7 +201,7 @@ export const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
 
   // === Table ===
   // Note: the once-planned cycleEmphasis/cycleList/cycleHeading and
-  // tableColumn*/tableAlign* entries were removed (audit 2026-07): they had
+  // tableColumn*/tableAlign* entries were removed (found by an audit): they had
   // no consumer anywhere (no getShortcut() call, no menuId, no keymap), yet
   // their default bindings reserved keys and surfaced non-functional rows in
   // the Shortcuts settings UI. Re-add an entry only together with its

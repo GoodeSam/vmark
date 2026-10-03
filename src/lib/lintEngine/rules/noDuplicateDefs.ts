@@ -19,6 +19,8 @@
  * identifier, and `label` stays the string shown to the user. The reported
  * offset comes from `startOffset` — the shared answer to a position the parser
  * left without one.
+ *
+ * @module lib/lintEngine/rules/noDuplicateDefs
  */
 
 import { visit } from "unist-util-visit";

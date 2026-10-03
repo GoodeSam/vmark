@@ -3,6 +3,8 @@
  *
  * Actions for image editing in Source mode (CodeMirror 6).
  * Handles browse, copy, remove, and save operations.
+ *
+ * @module plugins/sourceImagePopup/sourceImageActions
  */
 
 import type { EditorView } from "@codemirror/view";

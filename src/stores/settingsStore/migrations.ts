@@ -1,3 +1,10 @@
+/**
+ * migrations — the one-way migrations run on the raw persisted settings before
+ * they are sanitized and merged, renaming or removing retired keys.
+ *
+ * @module stores/settingsStore/migrations
+ */
+
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }

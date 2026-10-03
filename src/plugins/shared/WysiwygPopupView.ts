@@ -6,6 +6,8 @@
  * keyboard navigation, click-outside handling, and positioning.
  *
  * Mirrors SourcePopupView for consistency across editor modes.
+ *
+ * @module plugins/shared/WysiwygPopupView
  */
 
 import type { AnchorRect } from "@/utils/popupPosition";

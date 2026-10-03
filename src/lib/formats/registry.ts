@@ -1,13 +1,17 @@
-// Format registry singleton.
-//
-// Plan reference: .claude/adr/plans/20260506-multi-format-rebrand.md
-// § Format registry contract.
-//
-// dispatchEditor(filePath) is the single source of truth for "what does
-// this tab do." Markdown is the default for null paths (untitled);
-// plain-text is the fallback for unknown extensions — REQUIRED for a pathed
-// file, never markdown. A registered config is frozen with its
-// extensions normalized in place, so the indexes cannot drift from it.
+/**
+ * Format registry singleton — maps a file path to the format config that handles it.
+ *
+ * Contract: .claude/adr/plans/20260506-multi-format-rebrand.md
+ * § Format registry contract.
+ *
+ * dispatchEditor(filePath) is the single source of truth for "what does
+ * this tab do." Markdown is the default for null paths (untitled);
+ * plain-text is the fallback for unknown extensions — REQUIRED for a pathed
+ * file, never markdown. A registered config is frozen with its
+ * extensions normalized in place, so the indexes cannot drift from it.
+ *
+ * @module lib/formats/registry
+ */
 
 import { formatLookupKeys, formatExtensionKey, associationKey } from "./formatPathKeys";
 import { freezeFormatConfig, validateFormatConfig } from "./formatValidation";

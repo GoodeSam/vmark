@@ -144,7 +144,7 @@ if (isMainModule(import.meta.url)) {
 
 
 
-  // ── Undefined CSS custom property check (audit 20260612 H14) ────────────
+  // ── Undefined CSS custom property check ────────────
   // A var(--x) with no definition anywhere and no fallback is
   // invalid-at-computed-value-time: the declaration silently becomes
   // auto/initial (this shipped a mispositioned, unpadded export control).

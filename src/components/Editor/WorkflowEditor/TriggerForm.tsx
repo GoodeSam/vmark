@@ -8,7 +8,7 @@
  *   easy to get wrong via single-line inputs and is better expressed
  *   in source.
  *
- * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired) §6
+ * Origin: GitHub Actions workflow viewer plan (retired) §6
  *   Phase 7 + Phase 9 finish.
  *
  * Edit mechanics: each editable list is a comma-separated input with

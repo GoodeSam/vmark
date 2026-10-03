@@ -82,7 +82,7 @@ export function registerDocumentTool(server: VMarkMcpServer): void {
           ),
       },
       // ONE schema serves read / write / transform, and every field stays
-      // optional. The 2026-07-28 round-2 audit asked for action-specific
+      // optional. An earlier audit asked for action-specific
       // envelopes instead; that was assessed and REJECTED, for three reasons
       // that compound:
       //

@@ -130,10 +130,10 @@ fn sync_directory(_dir: &Path) -> std::io::Result<()> {
 /// document. That is a moment's contention, not a failure of the write.
 ///
 /// The old code survived this by accident: its remove-then-retry got a second
-/// attempt, which usually landed in the gap. Deleting that fallback (audit
-/// 20260906, B1) removed the accident along with the data loss, and CI's
-/// Windows leg found it immediately — `app_paths::test_atomic_write_no_partial_content`
-/// races 200 writes against 200 reads of one file and hit os error 5.
+/// attempt, which usually landed in the gap. Deleting that fallback removed the
+/// accident along with the data loss, and CI's Windows leg found it immediately
+/// — `app_paths::test_atomic_write_no_partial_content` races 200 writes against
+/// 200 reads of one file and hit os error 5.
 ///
 /// So the retry comes back, on the ONE property that made the old one
 /// dangerous: this retries `persist` itself, which is atomic and replaces in

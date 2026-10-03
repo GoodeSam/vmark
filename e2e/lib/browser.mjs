@@ -168,7 +168,7 @@ export async function closeBrowserTabViaApp(client, tabId) {
 /**
  * Run `fn` with the embedded browser DISABLED, restoring the prior setting.
  *
- * The browser ships ON by default (maintainer decision 2026-08-15), so a journey
+ * The browser ships ON by default (maintainer decision), so a journey
  * that asserts the feature gate must create the OFF state itself and put things
  * back — exactly the discipline `withBrowserEnabled` applies in the other
  * direction. Disabling closes every browser tab and revokes every site permission

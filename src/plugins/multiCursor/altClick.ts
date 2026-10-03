@@ -2,7 +2,10 @@
  * Alt+Click cursor management for multi-cursor
  *
  * Handles adding and removing cursors via Alt+Click.
+ *
+ * @module plugins/multiCursor/altClick
  */
+
 import { Selection, TextSelection, SelectionRange } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import { MultiSelection } from "@/plugins/shared/MultiSelection";

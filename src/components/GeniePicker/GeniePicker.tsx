@@ -14,6 +14,8 @@
  * The component owns layout. Input state and the genie list live in
  * `useGeniePickerState`, actions and key handling in `useGeniePickerActions`,
  * and the focus hand-off in `useGeniePickerFocus`.
+ *
+ * @module components/GeniePicker/GeniePicker
  */
 
 import { useEffect, useRef } from "react";

@@ -3,6 +3,8 @@
  *
  * TypeScript definitions mirroring Rust structs in src-tauri/src/hot_exit/session.rs
  * These types define the complete application session state for save/restore.
+ *
+ * @module services/persistence/hotExit/types
  */
 
 export const SCHEMA_VERSION = 5;

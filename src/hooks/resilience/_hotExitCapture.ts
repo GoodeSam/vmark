@@ -3,6 +3,8 @@
  *
  * Listens for capture requests from Rust coordinator and responds with
  * current window state (tabs, documents, UI state).
+ *
+ * @module hooks/resilience/_hotExitCapture
  */
 
 import { useEffect } from 'react';

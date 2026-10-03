@@ -2,7 +2,7 @@
  * Argument guards for the two embedded-browser tools.
  *
  * Split out of `browser.ts` so the tool file stays dispatch-only, and so the
- * two guards the 2026-07-28 round-2 audit flagged can be unit-tested directly:
+ * two guards an earlier audit flagged can be unit-tested directly:
  *
  *   - The 64 KiB payload cap was enforced with `.length` and Zod's string
  *     `.max()`, both of which count UTF-16 CODE UNITS. A 30,000-character CJK
