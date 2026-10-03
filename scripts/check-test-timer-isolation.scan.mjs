@@ -46,6 +46,21 @@ function literalMs(node) {
   return Number.isFinite(value) ? value : null;
 }
 
+/**
+ * Whether the test itself waits on `node` here — `await node`, through any
+ * parentheses — rather than handing the promise on (a mock's delayed result,
+ * a value a helper returns), which fake timers advance like any other timer.
+ */
+function isAwaited(node) {
+  let child = node;
+  let parent = node.parent;
+  while (parent && ts.isParenthesizedExpression(parent)) {
+    child = parent;
+    parent = parent.parent;
+  }
+  return !!parent && ts.isAwaitExpression(parent) && parent.expression === child;
+}
+
 /** `setTimeout(...)` / `window.setTimeout(...)` / `globalThis.setTimeout(...)`. */
 function isSetTimeoutCall(node) {
   return ts.isCallExpression(node) && calleeName(node.expression) === "setTimeout";
@@ -186,9 +201,14 @@ function importedHelpers(sf, importedSleepHelper) {
  *   its duration; without it only helpers declared in the file count
  * @returns {{
  *   controlsClock: boolean,
+ *   fakesTimers: boolean,
  *   wallClockReads: { line: number, what: string }[],
- *   sleeps: { line: number, ms: number }[],
+ *   sleeps: { line: number, ms: number, awaited: boolean }[],
  * }}
+ *   `awaited` is true when the test awaits the sleep where it is written.
+ *   `controlsClock` is any control of the clock (fake timers, a mocked Date);
+ *   `fakesTimers` is `useFakeTimers()` alone — a mocked Date leaves the timers
+ *   real, so it does not stop a sleep from waiting on the wall clock.
  * @throws when the file does not parse — the caller reports that rather than
  *   treating an unreadable file as a clean one.
  */
@@ -200,12 +220,14 @@ export function scanTestClockUsage(source, fileName = "file.test.ts", { imported
     ...sleepHelpers(sf),
   ]);
   let controlsClock = false;
+  let fakesTimers = false;
   const wallClockReads = [];
   const sleeps = [];
 
   const visit = (node) => {
     if (ts.isCallExpression(node)) {
       const name = calleeName(node.expression);
+      if (name === "useFakeTimers") fakesTimers = true;
       if (name === "useFakeTimers" || name === "setSystemTime") controlsClock = true;
       if (name === "spyOn" && isDateIdentifier(node.arguments[0])) controlsClock = true;
 
@@ -219,7 +241,7 @@ export function scanTestClockUsage(source, fileName = "file.test.ts", { imported
 
       if (ts.isIdentifier(node.expression) && helpers.has(node.expression.text)) {
         const ms = literalMs(node.arguments[helpers.get(node.expression.text)]);
-        if (ms !== null) sleeps.push({ line: lineOf(sf, node), ms });
+        if (ms !== null) sleeps.push({ line: lineOf(sf, node), ms, awaited: isAwaited(node) });
       }
     }
 
@@ -228,12 +250,12 @@ export function scanTestClockUsage(source, fileName = "file.test.ts", { imported
         wallClockReads.push({ line: lineOf(sf, node), what: "new Date()" });
       }
       const ms = literalMs(sleepDelayOf(node));
-      if (ms !== null) sleeps.push({ line: lineOf(sf, node), ms });
+      if (ms !== null) sleeps.push({ line: lineOf(sf, node), ms, awaited: isAwaited(node) });
     }
 
     ts.forEachChild(node, visit);
   };
   visit(sf);
 
-  return { controlsClock, wallClockReads, sleeps };
+  return { controlsClock, fakesTimers, wallClockReads, sleeps };
 }

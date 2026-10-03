@@ -3,14 +3,16 @@
  * Runs the REAL `scripts/check-test-timer-isolation.mjs --root <fixture>`
  * against fixture trees.
  *
- * Four rules, each with an id the output and the switch use:
+ * Five rules, each with an id the output and the switch use:
  *   race-sibling     a test beside its subject (`x.test.ts`) can race the
  *                    subject's fire-and-forget timer;
  *   race-widened     the same race, where the test is found through a
  *                    `__tests__/` directory, a multi-dot name or `.spec.`;
  *   wall-clock-read  a test reads `Date.now()` / `new Date()` and never
  *                    controls the clock;
- *   real-sleep       a test sleeps on the wall clock for >= 100 ms.
+ *   real-sleep       a test sleeps on the wall clock for >= 100 ms;
+ *   fake-timer-sleep a test sleeps, for any duration, in a file that fakes
+ *                    timers.
  *
  * The SWITCH: a rule listed as report-only prints its count and every finding
  * but does not fail. It is two-way — a report-only rule with nothing left to
@@ -343,9 +345,12 @@ describe("real-sleep", () => {
     expect(run({ "src/s.test.ts": body }).status).toBe(0);
   });
 
-  it("a file with fake timers active is not sleeping on the wall clock", () => {
-    const body = 'import { it, vi } from "vitest";\nvi.useFakeTimers();\nit("x", async () => {\n  await new Promise((r) => setTimeout(r, 200));\n});\n';
-    expect(run({ "src/s.test.ts": body }).status).toBe(0);
+
+  it("a file that only mocks Date still sleeps on the real timers", () => {
+    const body = 'import { it, vi } from "vitest";\nvi.setSystemTime(0);\nit("x", async () => {\n  await new Promise((r) => setTimeout(r, 200));\n});\n';
+    const r = run({ "src/s.test.ts": body });
+    expect(r.status).toBe(1);
+    expect(r.out).toContain("real-sleep: 1 in 1 file(s)");
   });
 
   it("the real-timers marker with a reason opts the file out", () => {
@@ -374,6 +379,58 @@ describe("real-sleep", () => {
     expect(r.out).toContain("s.test.ts:4  300ms");
   });
 });
+
+// WI-RA24.8 — a sleep in a file that fakes timers is a mistake at ANY duration:
+// either it waits on fake timers that nothing advances, or it runs where the
+// file switched back to real ones and sleeps on the wall clock. Advance the
+// fake clock (`vi.advanceTimersByTimeAsync`) or await the condition instead.
+describe("fake-timer-sleep", () => {
+  const faked = (call, helper = "") =>
+    `import { it, vi } from "vitest";\n${helper}vi.useFakeTimers();\nit("x", async () => {\n  ${call}\n});\n`;
+
+  it.each([
+    ["a long sleep", "await new Promise((r) => setTimeout(r, 200));", ""],
+    ["a short sleep, under the real-sleep threshold", "await new Promise((r) => setTimeout(r, 10));", ""],
+    ["a zero-length sleep", "await new Promise((r) => setTimeout(r, 0));", ""],
+    ["a sleep through a helper", "await sleep(50);", "const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));\n"],
+  ])("flags %s, whatever its length", (_label, call, helper) => {
+    const r = run({ "src/s.test.ts": faked(call, helper) });
+    expect(r.status).toBe(1);
+    expect(r.out).toContain("fake-timer-sleep: 1 in 1 file(s)");
+    expect(r.out).toContain("  real-sleep: 0\n");
+  });
+
+  it("advancing the fake clock is not a sleep", () => {
+    const r = run({ "src/s.test.ts": faked("await vi.advanceTimersByTimeAsync(200);") });
+    expect(r.status).toBe(0);
+  });
+
+  it("a delayed promise handed on, not awaited where written, is not a sleep", () => {
+    // A mock's slow result: fake timers advance it like any other timer.
+    const call =
+      "const slow = vi.fn(() => new Promise((r) => setTimeout(r, 5000)));\n" +
+      "  const pending = slow();\n  await vi.advanceTimersByTimeAsync(5000);\n  await pending;";
+    expect(run({ "src/s.test.ts": faked(call) }).status).toBe(0);
+  });
+
+  it("a sleep awaited through parentheses is still a sleep", () => {
+    const r = run({ "src/s.test.ts": faked("await (new Promise((r) => setTimeout(r, 5)));") });
+    expect(r.out).toContain("fake-timer-sleep: 1 in 1 file(s)");
+  });
+
+  it("the real-timers marker with a reason opts the file out", () => {
+    const body =
+      "// timer-isolation: intentional real timers — measures the real debounce\n" +
+      faked("await new Promise((r) => setTimeout(r, 30));");
+    expect(run({ "src/s.test.ts": body }).status).toBe(0);
+  });
+
+  it("names the file, the line and the duration", () => {
+    const r = run({ "src/s.test.ts": faked("await new Promise((r) => setTimeout(r, 30));") });
+    expect(r.out).toContain("src/s.test.ts:4  30ms");
+  });
+});
+
 
 describe("the report-only switch", () => {
   const VIOLATING = {
@@ -439,16 +496,16 @@ describe("the report-only switch", () => {
 
   // The committed state of the switch. Flipping a rule to enforcing is a
   // one-line change in the gate AND a change here, so it is a reviewed diff.
-  it("PIN: no rule is report-only today — all four are enforced", async () => {
+  it("PIN: no rule is report-only today — all five are enforced", async () => {
     const { REPORT_ONLY_RULES, RULES } = await import("./check-test-timer-isolation.mjs");
-    expect(RULES).toEqual(["race-sibling", "race-widened", "wall-clock-read", "real-sleep"]);
+    expect(RULES).toEqual(["race-sibling", "race-widened", "wall-clock-read", "real-sleep", "fake-timer-sleep"]);
     expect(REPORT_ONLY_RULES).toEqual([]);
   });
 
   it("the repository itself has no finding under any rule", () => {
     const r = spawnSync(process.execPath, [SCRIPT, "--report-only", "none"], { encoding: "utf8" });
     expect(r.status, `${r.stdout}${r.stderr}`).toBe(0);
-    for (const rule of ["race-sibling", "race-widened", "wall-clock-read", "real-sleep"]) {
+    for (const rule of ["race-sibling", "race-widened", "wall-clock-read", "real-sleep", "fake-timer-sleep"]) {
       expect(r.stdout).toContain(`  ${rule}: 0\n`);
     }
   });
