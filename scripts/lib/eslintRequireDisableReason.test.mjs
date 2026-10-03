@@ -1,9 +1,10 @@
 // WI-RA17F.7 — an eslint-disable directive without a ` -- reason` is a lint error.
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { describe, it, expect } from "vitest";
 import { Linter, RuleTester } from "eslint";
 import { lacksReason, requireDisableReason } from "./eslintRequireDisableReason.mjs";
+import { gitIn, repoFiles } from "./featureMapInputs.mjs";
 
 const ROOT = join(import.meta.dirname, "..", "..");
 
@@ -91,12 +92,17 @@ function directiveComments(text) {
   return found;
 }
 
+/**
+ * The source files git sees under `dir` (tracked, or new and not ignored).
+ * Not a disk walk: gitignored scratch trees such as a Stryker sandbox are
+ * created and deleted by other tests while this one runs, and a walk read a
+ * file in one after it had gone (ENOENT). Ignored files are not ours anyway.
+ */
 function sourceFiles(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
-    const p = join(dir, e.name);
-    if (e.isDirectory()) return e.name === "node_modules" || e.name === "dist" ? [] : sourceFiles(p);
-    return /\.(?:[cm]?[jt]sx?)$/u.test(e.name) ? [p] : [];
-  });
+  const prefix = `${relative(ROOT, dir).split(sep).join("/")}/`;
+  return repoFiles(ROOT, gitIn(ROOT))
+    .filter((f) => f.startsWith(prefix) && /\.(?:[cm]?[jt]sx?)$/u.test(f))
+    .map((f) => join(ROOT, f));
 }
 
 /**

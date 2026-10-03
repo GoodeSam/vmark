@@ -194,6 +194,9 @@ describe("test tiers partition the test files on disk", () => {
   const INFRA_DIRS = new Set([
     "node_modules", "dist", "coverage", "target", "tmp", "reports", "worktrees",
     ".git", ".vitest-reports", ".vitest-attachments", ".playwright-mcp",
+    // Stryker's sandbox: a copy of a fixture that another test creates and
+    // deletes while this walk runs, so reading it races (ENOENT).
+    ".stryker-tmp",
   ]);
 
   /**
