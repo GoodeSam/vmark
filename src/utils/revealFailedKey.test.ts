@@ -5,9 +5,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import i18n from "@/i18n";
 import { revealInFileManagerKey } from "./pathUtils";
 import { revealFailedKey } from "./revealFailedKey";
+
+const localesDir = path.resolve(import.meta.dirname, "../locales");
+
+/** The English message for a `dialog:` key, read from the bundle: utils tests stay off the i18n runtime. */
+function english(key: string): string {
+  const bundle = JSON.parse(readFileSync(path.join(localesDir, "en", "dialog.json"), "utf8")) as Record<string, string>;
+  return bundle[key.replace(/^dialog:/, "")] ?? key;
+}
 
 function onPlatform(platform: string) {
   vi.stubGlobal("navigator", { platform });
@@ -24,12 +31,12 @@ describe("revealFailedKey", () => {
     ["Linux x86_64", "file manager"],
   ])("on %s names %s", (platform, manager) => {
     onPlatform(platform);
-    expect(i18n.t(revealFailedKey())).toContain(manager);
+    expect(english(revealFailedKey())).toContain(manager);
   });
 
   it.each(["Win32", "Linux x86_64", ""])("never says Finder on %j", (platform) => {
     onPlatform(platform);
-    expect(i18n.t(revealFailedKey())).not.toContain("Finder");
+    expect(english(revealFailedKey())).not.toContain("Finder");
   });
 
   it("follows the same platform rule as the reveal label", () => {
@@ -45,7 +52,6 @@ describe("revealFailedKey", () => {
   });
 
   it("has a translated message for every platform in every locale", () => {
-    const localesDir = path.resolve(import.meta.dirname, "../locales");
     const locales = readdirSync(localesDir).filter((name) => /^[a-z]{2}(-[A-Z]{2})?$/.test(name));
     expect(locales.length).toBeGreaterThanOrEqual(10);
     const keys = ["MacIntel", "Win32", "Linux"].map((platform) => {
