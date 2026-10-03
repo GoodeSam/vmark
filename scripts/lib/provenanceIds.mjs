@@ -59,7 +59,7 @@ import { commentRuns, isCommentedSource, lineAt } from "./sourceComments.mjs";
 const posix = path.posix;
 
 /** Production source trees, repo-relative. */
-export const PRODUCTION_TREES = [
+const PRODUCTION_TREES = [
   "src",
   "src-tauri/src",
   "server/mcp/src",
@@ -74,7 +74,7 @@ export const PRODUCTION_TREES = [
  * comment rules — their comments explain why a gate decides what it decides,
  * and a contributor whose change it blocks reads them from a clone.
  */
-export const TOOLING_TREES = ["scripts", ".claude/hooks"];
+const TOOLING_TREES = ["scripts", ".claude/hooks"];
 /** Every tree the comment rules read: production source and the tooling. */
 export const COMMENT_RULE_TREES = [...PRODUCTION_TREES, ...TOOLING_TREES];
 /** A file whose comments the rules read: the languages `comments` parses, plus shell scripts, read line-wise. */
