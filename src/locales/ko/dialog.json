@@ -59,6 +59,7 @@
   "toast.failedToSaveDocuments": "문서를 저장하지 못했습니다",
   "toast.fileMovedCantDeleteOriginal": "파일이 새 위치에 저장되었지만 원본 파일을 삭제할 수 없습니다",
   "toast.failedToOpenFile": "파일을 열지 못했습니다",
+  "toast.unsupportedEncodingDetail": "{{path}}은(는) {{encoding}}(으)로 인코딩되어 있습니다. VMark는 UTF-8 파일만 열 수 있습니다. 다른 편집기에서 UTF-8로 저장한 뒤 다시 여세요.",
   "toast.failedToOpen": "{{filename}}을(를) 열지 못했습니다",
   "toast.operationFailed": "작업을 완료할 수 없습니다",
   "toast.workflowEngineDisableFailed": "워크플로 엔진을 끄지 못했습니다. VMark를 다시 시작할 때까지 워크플로가 계속 실행될 수 있습니다. 확실히 하려면 VMark를 종료했다가 다시 여세요.",

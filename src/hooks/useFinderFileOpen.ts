@@ -6,6 +6,7 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { imeToast as toast } from "@/services/ime/imeToast";
 import i18n from "@/i18n";
+import { openFailureDetail } from "@/services/files/openFailureDetail";
 import { useWindowLabel } from "@/contexts/WindowContext";
 import { loadFileIntoTab } from "@/services/navigation/loadFileIntoTab";
 import { dispatchFinderOpen } from "@/services/navigation/finderOpenDispatch";
@@ -61,8 +62,8 @@ export function useFinderFileOpen(): void {
      */
     const toastOpenFailure = (error: unknown) => {
       // Two-line toast (WI-UI4.4): message first, the system error as detail.
-      // Raw error — errorDetail owns the normalization (commandErrorMessage).
-      toast.errorDetail(i18n.t("dialog:toast.failedToOpenFile"), error);
+      // A cause VMark diagnosed is translated; any other error goes through raw and errorDetail normalizes it.
+      toast.errorDetail(i18n.t("dialog:toast.failedToOpenFile"), openFailureDetail(error));
     };
 
     const branchCtx: FinderBranchContext = {

@@ -59,6 +59,7 @@
   "toast.failedToSaveDocuments": "Error al guardar documentos",
   "toast.fileMovedCantDeleteOriginal": "Archivo guardado en nueva ubicación, pero no se pudo eliminar el archivo original",
   "toast.failedToOpenFile": "Error al abrir el archivo",
+  "toast.unsupportedEncodingDetail": "{{path}} está codificado en {{encoding}}. VMark solo abre archivos UTF-8 — guárdalo como UTF-8 en otro editor y vuelve a abrirlo.",
   "toast.failedToOpen": "Error al abrir {{filename}}",
   "toast.operationFailed": "No se pudo completar la acción",
   "toast.workflowEngineDisableFailed": "No se pudo desactivar el motor de flujo de trabajo. Puede seguir ejecutando flujos de trabajo hasta que VMark se reinicie: cierra y vuelve a abrir VMark para asegurarte.",

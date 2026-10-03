@@ -59,6 +59,7 @@
   "toast.failedToSaveDocuments": "無法儲存文件",
   "toast.fileMovedCantDeleteOriginal": "檔案已儲存至新位置，但無法刪除原始檔案",
   "toast.failedToOpenFile": "無法開啟檔案",
+  "toast.unsupportedEncodingDetail": "{{path}} 的編碼是 {{encoding}}。VMark 只能開啟 UTF-8 檔案，請先在其他編輯器中另存為 UTF-8，再重新開啟。",
   "toast.failedToOpen": "無法開啟 {{filename}}",
   "toast.operationFailed": "無法完成此操作",
   "toast.workflowEngineDisableFailed": "無法關閉工作流程引擎。在 VMark 重新啟動之前，它可能仍會執行工作流程——請結束並重新開啟 VMark 以確保關閉。",
