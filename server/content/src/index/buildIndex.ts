@@ -1,9 +1,9 @@
 /**
- * Workspace index orchestrator (Phase 2, WI-2.4).
+ * Workspace index orchestrator (Phase 2).
  *
  * Composes walk → read → extract → resolve into a `WorkspaceIndex`: the doc
  * set, a bidirectional typed relationship graph, and a backlinks lookup.
- * Pure data — the HTTP layer (Phase 4) serves it; the watcher (WI-2.5) rebuilds
+ * Pure data — the HTTP layer (Phase 4) serves it; the watcher rebuilds
  * affected entries.
  *
  * @module index/buildIndex

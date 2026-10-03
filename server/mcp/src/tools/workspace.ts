@@ -78,7 +78,7 @@ export function registerWorkspaceTool(server: VMarkMcpServer): void {
         // bridge answers with internally; the tool renders it as an ERROR whose
         // text asks for approval (deliberately — Codex M11), so a client
         // branching on the documented field found nothing and had to parse
-        // prose it was never told to expect (audit R3 #241).
+        // prose it was never told to expect.
         '- open_workspace: Open a FOLDER as the active workspace (grants access to its file tree). Args: {folderPath}. NOTE: windowLabel is ignored here — the folder opens in the window the request arrives on, so the approval prompt and the open cannot land in different windows. REQUIRES USER APPROVAL: the first call FAILS with an error beginning "approval required to open workspace" and naming the folder; ask the user to approve it in VMark, then retry the SAME call to proceed. Do not retry before they have approved — a retry only re-raises the same request. A denied request keeps failing until re-approved.\n' +
         '- save: Save a tab to its existing path. Args: {tabId?}. Returns {filePath, revision}.\n' +
         '- save_as: Save a tab to a new path. Args: {tabId?, filePath}. Returns {revision}.\n' +
@@ -125,8 +125,7 @@ export function registerWorkspaceTool(server: VMarkMcpServer): void {
       // means "use the default", so `new` silently created a Markdown tab for a
       // caller who asked for something else. `VMarkMcpServer.callTool` runs no
       // schema validation, so the guard, not the enum, is what holds — the same
-      // rule `readOptionalRevision`/`readOptionalBoolean` already carry
-      // (audit R2 #226/#227, R3 #240).
+      // rule `readOptionalRevision`/`readOptionalBoolean` already carry.
       if (args.kind !== undefined && !(WORKSPACE_TAB_KINDS as readonly unknown[]).includes(args.kind)) {
         return VMarkMcpServer.errorResult(
           `kind must be one of ${WORKSPACE_TAB_KINDS.join(', ')} when provided (got ${JSON.stringify(args.kind)}) — omit it for the default`,

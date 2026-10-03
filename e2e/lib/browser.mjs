@@ -266,7 +266,7 @@ export async function waitForBrowserTabs(client, expected, timeoutMs = 8000) {
 }
 
 /**
- * Create a HUMAN browser tab through the app's own command dispatch (WI-4.0).
+ * Create a HUMAN browser tab through the app's own command dispatch.
  *
  * This goes through `executeCommand("browser.newTab")` — the exact function the
  * native menu route calls (`menuListener.ts`) — so a journey exercises the real

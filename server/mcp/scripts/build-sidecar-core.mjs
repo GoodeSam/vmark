@@ -1,5 +1,5 @@
 /**
- * Build core for the VMark MCP Server sidecar (WI-5, audit-followups
+ * Build core for the VMark MCP Server sidecar (audit-followups
  * 20260729). All logic lives here with injected exec/fs/log dependencies so
  * target resolution, stale-artifact replacement, sequential failure
  * aggregation, and cleanup are unit-testable without invoking real

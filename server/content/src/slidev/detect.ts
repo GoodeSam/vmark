@@ -1,5 +1,5 @@
 /**
- * Slidev deck detection (Phase 6, WI-6.1) — implements the plan's §3bis
+ * Slidev deck detection (Phase 6) — implements the plan's §3bis
  * detection spec. Avoids false positives on ordinary frontmatter notes.
  *
  * A `.md` is a deck when its headmatter (first YAML block) carries a

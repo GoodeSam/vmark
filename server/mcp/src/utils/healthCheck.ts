@@ -13,7 +13,7 @@
  * It sets `process.exitCode` rather than calling `process.exit()`: stdout is
  * ASYNCHRONOUS when it is a pipe, and every caller reads it through one — the
  * app's `useMcpHealthCheck.ts` JSON.parses the result — so exiting immediately
- * after a `console.log` can truncate the report (audit R3 #195).
+ * after a `console.log` can truncate the report.
  *
  * @coordinates-with src/cli.ts — the only caller
  * @coordinates-with src/index.ts — TOOL_REGISTRY, the surface this verifies
@@ -62,7 +62,7 @@ export async function runHealthCheck(
     // A count comparison passes on compensating errors — `browser` registering
     // zero and `document` registering two keeps the total right — and it says
     // nothing about NAMES, so a tool registered under the wrong one satisfied
-    // it too (audit R3 #197). The expectation comes from `TOOL_REGISTRY`, which
+    // it too. The expectation comes from `TOOL_REGISTRY`, which
     // is already the single source of truth `EXPECTED_TOOL_COUNT` derives from,
     // so this restates no contract; it reads the same one more precisely.
     const expected = TOOL_REGISTRY.map((t) => t.name as string);
