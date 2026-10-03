@@ -11,9 +11,21 @@
  *
  * Shared by `vi.mock` factories (which import it lazily) and by the test body
  * (which seeds and inspects it), so both see one state.
+ *
+ * Files are held as the text that was written; `vfs.read` shows exactly that.
+ * `readTextFile` returns what tauri-plugin-fs would: the text's UTF-8 bytes
+ * through `new TextDecoder("utf-8")`, which drops a leading BOM and turns a
+ * lone surrogate into U+FFFD (verified behaviour: src/test/statefulFsFake.ts).
  */
 
 const files = new Map<string, string>();
+
+const utf8 = new TextEncoder();
+
+/** The text tauri-plugin-fs `readTextFile` returns for a file holding `text`. */
+function asPluginReadsIt(text: string): string {
+  return new TextDecoder("utf-8").decode(utf8.encode(text));
+}
 const dirs = new Set<string>();
 
 interface PlannedFailure {
@@ -114,7 +126,7 @@ export const pluginFsMock = {
     if (failure) throw failure;
     const content = files.get(path);
     if (content === undefined) throw notFound(path);
-    return content;
+    return asPluginReadsIt(content);
   },
   async writeTextFile(path: string, content: string): Promise<void> {
     await yieldTurns();
