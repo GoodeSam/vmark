@@ -358,6 +358,9 @@ Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), R
 - **WI-RA17E.5 — provenance IDs resolve or are replaced by the behavioural reason; the gate checks them.** Audit §5 Medium.
 - **WI-RA17F.7 — every `eslint-disable` carries a reason; avoidable ones are removed; the `as unknown as` clusters go through typed helpers.** Audit §1 Low.
 - **WI-RA17G.8 — one header grammar, gated.** Audit §9 Low.
+- **WI-RA17G.9 — no calendar dates in production comments, gated.**
+- **WI-RA17G.10 — no untracked dev-docs paths in production comments, gated.**
+- **WI-RA17G.11 — the comment gates are documented in rule 22 and AGENTS.md.**
 - **WI-RA14D.1 — `coverage.include` covers `src/**`; the 14 executable files with no test get tests; a fixture test pins the include.** Audit §7 High #1. (D8)
 
 ## Findings with no work item, and why
