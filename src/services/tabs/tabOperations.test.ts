@@ -19,14 +19,9 @@ import { saveToPath } from "@/services/persistence/saveToPath";
 import { startTabStateCleanup } from "@/services/windowClose/tabCleanup";
 import type { OrphanCleanupResult, OrphanedImage } from "@/services/media/orphanAssetCleanup";
 
-vi.mock("@/services/persistence/saveToPath", () => ({
-  saveToPath: vi.fn(),
-}));
+vi.mock("@/services/persistence/saveToPath", () => ({ saveToPath: vi.fn() }));
 
-vi.mock("@/services/media/orphanAssetCleanup", () => ({
-  findOrphanedImages: vi.fn(),
-  deleteOrphanedImages: vi.fn(),
-}));
+vi.mock("@/services/media/orphanAssetCleanup", () => ({ findOrphanedImages: vi.fn(), deleteOrphanedImages: vi.fn() }));
 
 /**
  * Build a real OrphanCleanupResult. The old inline mocks returned a
@@ -63,6 +58,9 @@ function resetStores() {
 /** WI-1.4 dual snapshot: one string let the store assume disk held LF text. */
 const saveSnapshots = (c: string) => ({ editorSnapshot: c, diskSnapshot: c });
 
+/** Every Tauri command invoked, in order — `close_window` takes no arguments, so only its name shows a close. */
+const invokedCommands = () => vi.mocked(invoke).mock.calls.map(([command]) => command);
+
 describe("closeTabWithDirtyCheck", () => {
   beforeEach(() => {
     resetStores();
@@ -79,7 +77,7 @@ describe("closeTabWithDirtyCheck", () => {
     expect(message).not.toHaveBeenCalled();
     // Closing the last tab leaves the window open (empty-workspace window):
     // no window is destroyed, the tab list is empty, no active tab.
-    expect(invoke).not.toHaveBeenCalledWith("close_window", expect.anything());
+    expect(invokedCommands()).not.toContain("close_window");
     expect(useTabStore.getState().tabs[WINDOW_LABEL]).toEqual([]);
     expect(useTabStore.getState().activeTabId[WINDOW_LABEL]).toBeNull();
     expect(useDocumentStore.getState().getDocument(tabId)).toBeUndefined();
@@ -123,7 +121,7 @@ describe("closeTabWithDirtyCheck", () => {
     expect(result).toBe(true);
     expect(saveToPath).not.toHaveBeenCalled();
     // Window stays open after the last tab closes.
-    expect(invoke).not.toHaveBeenCalledWith("close_window", expect.anything());
+    expect(invokedCommands()).not.toContain("close_window");
     expect(useTabStore.getState().tabs[WINDOW_LABEL]).toEqual([]);
   });
 
@@ -138,7 +136,7 @@ describe("closeTabWithDirtyCheck", () => {
 
     expect(result).toBe(true);
     expect(saveToPath).not.toHaveBeenCalled();
-    expect(invoke).not.toHaveBeenCalledWith("close_window", expect.anything());
+    expect(invokedCommands()).not.toContain("close_window");
     expect(useTabStore.getState().tabs[WINDOW_LABEL]).toEqual([]);
   });
 
@@ -160,7 +158,7 @@ describe("closeTabWithDirtyCheck", () => {
 
     expect(result).toBe(true);
     expect(saveToPath).toHaveBeenCalledWith(tabId, "/tmp/dirty.md", "changed", "manual");
-    expect(invoke).not.toHaveBeenCalledWith("close_window", expect.anything());
+    expect(invokedCommands()).not.toContain("close_window");
     expect(useTabStore.getState().tabs[WINDOW_LABEL]).toEqual([]);
   });
 
@@ -220,7 +218,7 @@ describe("closeTabWithDirtyCheck", () => {
     const result = await closeTabWithDirtyCheck(WINDOW_LABEL, tabId1);
 
     expect(result).toBe(true);
-    expect(invoke).not.toHaveBeenCalledWith("close_window", expect.anything());
+    expect(invokedCommands()).not.toContain("close_window");
     // Other tab should still exist
     const tabs = useTabStore.getState().tabs[WINDOW_LABEL] ?? [];
     expect(tabs.length).toBe(1);
@@ -237,7 +235,7 @@ describe("closeTabWithDirtyCheck", () => {
     // No confirmation dialog, no window close — just an empty workspace window.
     expect(result).toBe(true);
     expect(message).not.toHaveBeenCalled();
-    expect(invoke).not.toHaveBeenCalledWith("close_window", expect.anything());
+    expect(invokedCommands()).not.toContain("close_window");
     expect(useTabStore.getState().tabs[WINDOW_LABEL]).toEqual([]);
 
     useWorkspaceStore.getState().closeWorkspace();
@@ -275,7 +273,7 @@ describe("closeTabWithDirtyCheck", () => {
     expect(useDocumentStore.getState().getDocument(tabId1)).toBeDefined();
     // No save prompt, no window close.
     expect(message).not.toHaveBeenCalled();
-    expect(invoke).not.toHaveBeenCalledWith("close_window", expect.anything());
+    expect(invokedCommands()).not.toContain("close_window");
   });
 
   it("refuses to close a pinned + dirty tab WITHOUT running the save prompt", async () => {

@@ -119,6 +119,9 @@ afterEach(() => {
 const configReads = () =>
   invoke.mock.calls.filter(([cmd]) => cmd === "read_workspace_config").map(([, args]) => args);
 
+/** Every Tauri command invoked, in order — `close_window` takes no arguments, so only its name shows a close. */
+const invokedCommands = () => invoke.mock.calls.map(([command]) => command);
+
 describe("finalizeInstanceRemoval — mode dispatch table (R2-10)", () => {
   it.each([
     { mode: "close", cleanupPerInstanceUi: true, uiSurvives: false },
@@ -153,7 +156,7 @@ describe("finalizeInstanceRemoval — mode dispatch table (R2-10)", () => {
     expect(ids.some((id) => instancesState().instances[id]?.kind === "placeholder")).toBe(
       true,
     );
-    expect(invoke).not.toHaveBeenCalledWith("close_window", expect.anything());
+    expect(invokedCommands()).not.toContain("close_window");
   });
 
   it("a non-main window emptied by the removal closes itself", async () => {
@@ -170,7 +173,7 @@ describe("finalizeInstanceRemoval — mode dispatch table (R2-10)", () => {
 
     await finalizeInstanceRemoval("doc-1", "wsi-b", { cleanupPerInstanceUi: true });
 
-    expect(invoke).not.toHaveBeenCalledWith("close_window", expect.anything());
+    expect(invokedCommands()).not.toContain("close_window");
   });
 
   it("removing the ACTIVE instance hydrates the promoted successor's full context", async () => {
