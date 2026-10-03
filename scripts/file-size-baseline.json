@@ -28,7 +28,6 @@
     "src/export/resourceResolver.ts": 351,
     "src/hooks/useTabDragOut.ts": 306,
     "src/hooks/useUpdateChecker.ts": 397,
-    "src/lib/cjkFormatter/quotePairing.ts": 369,
     "src/lib/ghaWorkflow/completion/expressionCompletion.ts": 422,
     "src/lib/ghaWorkflow/parser/jobs.ts": 321,
     "src/lib/ghaWorkflow/save/mutators.ts": 578,

@@ -86,7 +86,7 @@ Konvertiert vollbreite Buchstaben und Zahlen zu halbbreiter.
 
 ### 4. Klammernkonvertierung
 
-Konvertiert halbbreite Klammern zu vollbreiten, wenn sie CJK-Inhalt umschließen.
+Konvertiert halbbreite Klammern zu vollbreiten, wenn sie CJK-Inhalt umschließen. Beide Klammern müssen im selben Absatz stehen: über eine Leerzeile hinweg bleiben sie, wie sie getippt wurden.
 
 | Vorher | Nachher |
 |--------|---------|
@@ -315,7 +315,7 @@ VMark verwendet einen ausgeklügelten stapelbasierten Algorithmus zur Anführung
 3. **Apostroph-Erkennung**: Erkennt Kontraktionen (don't, it's) und bewahrt sie
 4. **Primzeichen-Erkennung**: Erkennt Maße (5'10") und bewahrt sie
 5. **CJK-Kontexterkennung**: Prüft, ob der zitierte Inhalt CJK-Zeichen enthält
-6. **Waisen-Bereinigung**: Behandelt ungematchte Anführungszeichen korrekt
+6. **Waisen-Bereinigung**: Behandelt ungematchte Anführungszeichen korrekt; ein am Absatzende noch offenes Anführungszeichen bleibt ungepaart, sodass Anführungszeichen nie über eine Leerzeile hinweg gepaart werden
 
 ### Beispiele
 

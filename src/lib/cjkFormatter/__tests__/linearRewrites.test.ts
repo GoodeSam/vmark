@@ -136,11 +136,19 @@ describe("normalizeEllipsis", () => {
 });
 
 describe("convertNestedCornerQuotes", () => {
-  const legacy = (text: string): string =>
+  // The expression it replaces, applied within each paragraph: a pair never
+  // spans a paragraph break (WI-RA24.11, paragraphPairing.test.ts). Split here
+  // independently of the helper under test.
+  const legacyInParagraph = (text: string): string =>
     text.replace(/「([^」]*)」/g, (_, content: string) => {
       const converted = content.replace(/\u{2018}([^\u{2019}]*)\u{2019}/gu, "『$1』");
       return `「${converted}」`;
     });
+  const legacy = (text: string): string =>
+    text
+      .split(/(\n[ \t>]*\r?\n)/)
+      .map((part, i) => (i % 2 === 0 ? legacyInParagraph(part) : part))
+      .join("");
 
   it("matches the expressions it replaces on generated input", () => {
     fc.assert(

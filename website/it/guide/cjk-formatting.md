@@ -88,7 +88,7 @@ Converte lettere e numeri a larghezza intera in mezza larghezza.
 
 ### 4. Conversione Parentesi
 
-Converte le parentesi a mezza larghezza in parentesi a larghezza intera quando circondano contenuto CJK.
+Converte le parentesi a mezza larghezza in parentesi a larghezza intera quando circondano contenuto CJK. Entrambe le parentesi devono trovarsi nello stesso paragrafo: separate da una riga vuota restano come sono state digitate.
 
 | Prima | Dopo |
 |-------|------|
@@ -317,7 +317,7 @@ VMark usa un sofisticato algoritmo basato su stack per l'abbinamento delle virgo
 3. **Rilevamento Apostrofi**: Riconosce le contrazioni (don't, it's) e le preserva
 4. **Rilevamento Apici**: Riconosce le misure (5'10") e le preserva
 5. **Rilevamento Contesto CJK**: Verifica se il contenuto citato coinvolge caratteri CJK
-6. **Pulizia Virgolette Solitarie**: Gestisce le virgolette senza corrispondenza con grazia
+6. **Pulizia Virgolette Solitarie**: Gestisce le virgolette senza corrispondenza con grazia; una virgoletta ancora aperta alla fine di un paragrafo resta senza coppia, quindi le virgolette non si accoppiano mai attraverso una riga vuota
 
 ### Esempi
 

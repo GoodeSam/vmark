@@ -3,11 +3,13 @@
  *
  * @coordinates-with quotePairing — stack-based contextual quote conversion
  * @coordinates-with quoteClassification — the quote characters
+ * @coordinates-with paragraphBreaks — quotes pair inside one paragraph
  * @module lib/cjkFormatter/rules/dashesQuotes
  */
 
 import type { QuoteStyle } from "@/stores/settingsStore";
 import { CURLY_SINGLE_CLOSE, CURLY_SINGLE_OPEN } from "../quoteClassification";
+import { perParagraph } from "../paragraphBreaks";
 import {
   CJK_LETTER_CLASS,
   CJK_CHARS_PATTERN,
@@ -168,8 +170,16 @@ const QUOTE_STYLES: Record<QuoteStyle, {
  * - "text" → "text" (or 「text」 or «text»)
  * - 'text' → 'text' (or 『text』 or ‹text›)
  * - Preserves apostrophes in contractions (don't, it's)
+ *
+ * Each paragraph is converted on its own: a pair never spans a paragraph
+ * break, and the open/close parity next to CJK restarts in each one.
  */
 export function convertStraightToSmartQuotes(text: string, style: QuoteStyle): string {
+  return perParagraph(text, (paragraph) => convertParagraphQuotes(paragraph, style));
+}
+
+/** `convertStraightToSmartQuotes` within one paragraph. */
+function convertParagraphQuotes(text: string, style: QuoteStyle): string {
   const quotes = QUOTE_STYLES[style];
   // Quote parity is tracked next to any CJK script, Korean included.
   const isCJKContext = (ch: string): boolean => isCJKLetter(ch) || isHangulLetter(ch);
@@ -230,27 +240,30 @@ export function convertStraightToSmartQuotes(text: string, style: QuoteStyle): s
 
 /**
  * Convert curly double quotes to CJK corner quotes when quoting CJK text.
- * "中文内容" → 「中文内容」
+ * "中文内容" → 「中文内容」. A pair never spans a paragraph break.
  */
 export function convertToCJKCornerQuotes(text: string): string {
   // Match "content" where content contains CJK
-  return text.replace(
+  return perParagraph(text, (paragraph) => paragraph.replace(
     new RegExp(`\u201c([^\u201d]*[${HAN_CLASS}][^\u201d]*)\u201d`, "gu"),
     "「$1」"
-  );
+  ));
 }
 
 /**
  * Convert nested single quotes to corner brackets inside corner quotes.
- * 「text 'nested' text」 → 「text『nested』text」
+ * 「text 'nested' text」 → 「text『nested』text」. Neither pair spans a
+ * paragraph break.
  */
 export function convertNestedCornerQuotes(text: string): string {
   // Only convert single quotes inside corner quotes
-  return replaceDelimited(
-    text,
-    "「",
-    "」",
-    (content) =>
-      `「${replaceDelimited(content, CURLY_SINGLE_OPEN, CURLY_SINGLE_CLOSE, (inner) => `『${inner}』`)}」`
+  return perParagraph(text, (paragraph) =>
+    replaceDelimited(
+      paragraph,
+      "「",
+      "」",
+      (content) =>
+        `「${replaceDelimited(content, CURLY_SINGLE_OPEN, CURLY_SINGLE_CLOSE, (inner) => `『${inner}』`)}」`
+    )
   );
 }

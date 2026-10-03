@@ -9,10 +9,12 @@
  * (WI-CJKF3.1); see `getLeftNeighbor` in ./shared.ts for why.
  *
  * @coordinates-with latinSpanScanner — technical subspan protection
+ * @coordinates-with paragraphBreaks — brackets pair inside one paragraph
  * @module lib/cjkFormatter/rules/fullwidth
  */
 
 import { scanLatinSpans, isInTechnicalSubspan, isCJKLetter } from "../latinSpanScanner";
+import { perParagraph } from "../paragraphBreaks";
 import {
   CJK_LETTER_CLASS,
   CJK_CLOSING_BRACKETS,
@@ -196,11 +198,13 @@ function normalizeFullwidthPunctuationOnce(text: string): string {
   return out.join("");
 }
 
-/** Convert half-width parentheses to full-width when content is CJK. */
+/**
+ * Convert half-width parentheses to full-width when content is CJK. A pair
+ * never spans a paragraph break.
+ */
 export function normalizeFullwidthParentheses(text: string): string {
-  return text.replace(
-    new RegExp(`\\(([${CJK_LETTER_CLASS}][^()]*)\\)`, "gu"),
-    "（$1）"
+  return perParagraph(text, (paragraph) =>
+    paragraph.replace(new RegExp(`\\(([${CJK_LETTER_CLASS}][^()]*)\\)`, "gu"), "（$1）")
   );
 }
 
@@ -216,13 +220,16 @@ export function normalizeFullwidthParentheses(text: string): string {
  * Backslash-escaped brackets inside a label (`[中文\]文](url)`) are label
  * content, not delimiters: the content pattern consumes `\x` pairs whole, so
  * an escaped `]` can never close the label and defeat the link lookarounds.
+ * A pair never spans a paragraph break.
  */
 export function normalizeFullwidthBrackets(text: string): string {
-  return text.replace(
-    new RegExp(
-      `(?<![\\]!])\\[([${CJK_LETTER_CLASS}](?:\\\\.|[^\\[\\]\\\\])*)\\](?![([:])`,
-      "gu"
-    ),
-    "【$1】"
+  return perParagraph(text, (paragraph) =>
+    paragraph.replace(
+      new RegExp(
+        `(?<![\\]!])\\[([${CJK_LETTER_CLASS}](?:\\\\.|[^\\[\\]\\\\])*)\\](?![([:])`,
+        "gu"
+      ),
+      "【$1】"
+    )
   );
 }
