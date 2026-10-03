@@ -304,6 +304,15 @@ Owns: `package.json` overrides, `pnpm-workspace.yaml`, `scripts/npm-audit-baseli
 - **WI-RA21.7 — PDF export failure states and accessible names.**
 - **WI-RA21.8 — an unsaved document has no export containment root.**
 
+#### Phase RA22 — the parts RA21 could not reach
+- **WI-RA22.1 — a cross-window settings reset reaches nullable and map-valued settings.**
+- **WI-RA22.2 — nullable settings are type-checked at load.**
+- **WI-RA22.3 — PDF margin inputs have accessible names.**
+- **WI-RA22.4 — unsaved documents have an explicit no-root containment; drive-root workspaces can embed images.**
+- **WI-RA22.5 — the remaining filesystem fakes decode like the real plugin.**
+- **WI-RA22.6 — Source search keeps its place after a replace.**
+- **WI-RA22.7 — the unsupported-encoding detail is translated.**
+
 ### Wave 4 (cross-cutting, strictly serial, after everything else merged)
 
 Order: RA14D (may move ahead into wave 3 once the behaviour lanes are merged), RA12B, RA17F, RA17E, RA17G, then the DoD script and the final gate pass. Ownership for wave 3 and 4 lanes is in each lane brief.
