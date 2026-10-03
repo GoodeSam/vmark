@@ -6,10 +6,14 @@
  * listener it mounts is the navigation guard on the content element, which
  * belongs to that element for as long as it exists: whatever is rendered into
  * it is the document's markup.
+ *
+ * @coordinates-with plugins/shared/hostLinks.ts — where a clicked link is opened
  */
 
 import i18n from "@/i18n";
 import { guardPreviewNavigation } from "@/utils/previewNavigation";
+import { hostLinks } from "@/plugins/shared/hostLinks";
+import { activeFilePathForCurrentWindow } from "@/plugins/shared/hostDocument";
 
 /** Build the preview popup container with header, content, error, and resize handles. */
 export function buildContainer(): HTMLElement {
@@ -59,9 +63,11 @@ export function buildContainer(): HTMLElement {
   const preview = document.createElement("div");
   preview.className = "mermaid-preview-content";
   // A link or a form in the rendered diagram must not navigate the app's
-  // page. No opener is bound here: this plugin has no route to the app's
-  // link opener, so the click is prevented and goes nowhere.
-  guardPreviewNavigation(preview);
+  // page. A clicked link opens through the host instead, resolved against the
+  // document the diagram was written in — the active document when clicked.
+  guardPreviewNavigation(preview, {
+    open: (href) => hostLinks.open(href, activeFilePathForCurrentWindow()),
+  });
 
   const error = document.createElement("div");
   error.className = "mermaid-preview-error";

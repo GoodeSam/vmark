@@ -13,7 +13,7 @@
 import { describe, it, expect } from "vitest";
 import { htmlToMarkdown } from "./htmlToMarkdown";
 import { filterStyleAttributes, KATEX_STYLE_PROPS } from "./styleSafety";
-import { sanitizeHtmlPreview, sanitizeMediaHtml } from "./sanitize";
+import { sanitizeHtmlPreview } from "./sanitize";
 import { pageMarkupWritesDuring } from "./__tests__/markupSinks";
 
 describe("htmlToMarkdown parses clipboard HTML away from the page", () => {
@@ -88,20 +88,3 @@ describe("sanitizeHtmlPreview's style filter parses away from the page", () => {
   });
 });
 
-describe("sanitizeMediaHtml's iframe filter parses away from the page", () => {
-  const html =
-    '<video src="https://beacon.test/v.mp4" poster="https://beacon.test/p.png"></video>' +
-    '<iframe src="https://evil.test/x"></iframe>' +
-    '<iframe src="https://www.youtube.com/embed/abc"></iframe>';
-
-  it("writes nothing into the page's document", () => {
-    expect(pageMarkupWritesDuring(() => sanitizeMediaHtml(html))).toEqual([]);
-  });
-
-  it("still drops the iframe that is not a video embed and keeps the one that is", () => {
-    const result = sanitizeMediaHtml(html);
-    expect(result).not.toContain("evil.test");
-    expect(result).toContain('src="https://www.youtube.com/embed/abc"');
-    expect(result).toContain('poster="https://beacon.test/p.png"');
-  });
-});

@@ -1,14 +1,15 @@
 /**
  * Selection tool — get/set the user's current editor selection.
  *
- * Restored after the May 2026 pruning to make targeted edits on large
+ * Restored after the MCP pruning to make targeted edits on large
  * documents economical. Without this, every AI edit pays the full-doc
  * cost of `document.read → reason → document.write` — input tokens for
  * the whole doc, output tokens for the whole doc, a long write window
  * that widens the stale-revision retry loop, and a faithfulness risk on
  * the bytes the AI didn't change.
  *
- * Origin: MCP pruning plan (2026-05-04, retired) ADR-7.
+ * Origin: the MCP pruning plan's ADR-7, recorded in
+ * `.claude/adr/plans/20260504-mcp-pruning.md`.
  */
 
 import { z } from 'zod';

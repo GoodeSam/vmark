@@ -4,7 +4,7 @@ VMark expone **nueve herramientas MCP compuestas** a los asistentes de IA: `sess
 
 Tres de las nueve — `session`, `browser_read` y `coherence` — declaran `readOnlyHint: true`, de modo que un cliente MCP puede aprobarlas automáticamente. Esa es la razón por la que `browser`/`browser_read` y `coherence`/`coherence_resolve` son herramientas separadas: las anotaciones son **por herramienta**, no por acción, así que una herramienta que combina una instantánea ARIA con `execute_js` tiene que advertir del peligro de `execute_js`. Dividir según la pregunta «¿esto modifica algo?» permite que cada mitad diga la verdad y mantiene visibles en la lista de herramientas las acciones genuinamente destructivas de la superficie.
 
-La superficie anterior de 12 herramientas / 76 acciones se podó porque las herramientas de formato dentro del documento (negrita, encabezados, tablas, etc.) duplican un trabajo que los agentes de IA ya hacen trivialmente mediante el viaje de ida y vuelta de Markdown. Se conservó `selection` (según el ADR-7 del plan de poda) porque el viaje de ida y vuelta del documento completo resulta poco económico en archivos grandes — cada edición paga el documento entero en tokens de entrada, el documento entero en tokens de salida (~5× el precio de entrada) y una ventana de escritura más larga que amplía el bucle de reintentos por revisión obsoleta. Consulta [el plan de poda de MCP](https://github.com/xiaolai/vmark/blob/main/dev-docs/plans/20260504-mcp-pruning.md) para la justificación completa.
+La superficie anterior de 12 herramientas / 76 acciones se podó porque las herramientas de formato dentro del documento (negrita, encabezados, tablas, etc.) duplican un trabajo que los agentes de IA ya hacen trivialmente mediante el viaje de ida y vuelta de Markdown. Se conservó `selection` (según el ADR-7 del plan de poda) porque el viaje de ida y vuelta del documento completo resulta poco económico en archivos grandes — cada edición paga el documento entero en tokens de entrada, el documento entero en tokens de salida (~5× el precio de entrada) y una ventana de escritura más larga que amplía el bucle de reintentos por revisión obsoleta. Consulta [el plan de poda de MCP](https://github.com/xiaolai/vmark/blob/main/.claude/adr/plans/20260504-mcp-pruning.md) para la justificación completa.
 
 ::: tip Flujo de trabajo recomendado
 1. Llama a `session.get_state` una vez para ver las ventanas abiertas, las pestañas y, por pestaña, `{filePath, dirty, revision, kind}`.
@@ -239,6 +239,8 @@ Reemplaza por completo el contenido del documento.
 
 De forma predeterminada la escritura se guarda: la respuesta lleva `saved: true`, o `saved: false` con `save_skipped` (`"untitled"` — la pestaña aún no tiene archivo, usa `save_as`; `"opt_out"` — pasaste `save: false`) o `save_error` (la escritura en disco falló). Cuando el destino es la pestaña WYSIWYG activa de un documento Markdown, el texto se carga en el editor en vivo (como un único paso que se puede deshacer), y lo que se guarda es la serialización del editor — el mismo Markdown, posiblemente normalizado, no necesariamente los caracteres exactos enviados. Las demás pestañas guardan el texto tal como se envió, con los finales de línea normalizados.
 
+Cada guardado que hace un cliente de IA — mediante `write`, `workspace.save` o `workspace.save_as` — se registra en el historial del documento como una instantánea `mcp` (marcada como *(mcp)* en la barra lateral de Historial), de modo que las versiones escritas por una IA se distinguen de las tuyas. Igual que un guardado manual, nunca se fusiona con un autoguardado vecino ni se omite por su tamaño.
+
 Si se proporciona `expected_revision` y el documento ha cambiado desde esa lectura, la respuesta es un sobre de error estructurado `STALE` con la revisión actual; vuelve a leer y reintenta.
 
 ```json
@@ -248,6 +250,8 @@ Si se proporciona `expected_revision` y el documento ha cambiado desde esa lectu
 // stale
 { "error": "STALE", "message": "Document has changed since the last read", "current_revision": "rev-currentNow" }
 ```
+
+Mientras el usuario compone texto con un método de entrada (IME) en el editor WYSIWYG que muestra la pestaña, la escritura se rechaza con `BUSY` y no cambia nada: el texto en composición pertenece al método de entrada hasta que se confirma. Reintenta en breve. En modo Fuente la escritura se acepta, y el editor la muestra en cuanto termina la composición.
 
 ### `transform`
 
@@ -261,7 +265,7 @@ Aplica una reescritura determinista. Actualmente admite transformaciones especí
 
 `cjk-format` aplica de extremo a extremo la configuración de formato CJK del usuario. `cjk-spacing` inserta un espacio único entre los caracteres CJK y los caracteres latinos o dígitos adyacentes. `cjk-punctuation` convierte la puntuación ASCII contigua a caracteres CJK a su forma de ancho completo.
 
-Devuelve `{revision}`.
+Devuelve `{revision}`. Igual que `write`, se rechaza con `BUSY`, sin cambiar nada, mientras el usuario compone con un método de entrada en el editor WYSIWYG que muestra la pestaña.
 
 ---
 
@@ -354,6 +358,8 @@ Reemplaza lo que el editor informe como la selección actual. **En modo WYSIWYG*
 Devuelve `{revision, replaced_chars}` en caso de éxito. `replaced_chars` es la longitud del texto que estaba seleccionado antes de la llamada — útil para que la IA confirme que editó lo que esperaba.
 
 `STALE` devuelve `{error: "STALE", message, current_revision}` exactamente como `document.write`. La revisión a nivel de documento detecta las pulsaciones de tecla entre `get` y `set`. El puro movimiento del cursor (sin una pulsación) no lo arbitra el servidor — si el usuario movió el cursor entre `get` y `set`, la edición se aplica en la nueva posición.
+
+`set` devuelve `BUSY`, sin cambiar nada, mientras el usuario compone texto con un método de entrada en el editor enfocado, ya sea en modo WYSIWYG o en modo Fuente; reintenta en breve. `get` nunca se rechaza por esto.
 
 ---
 
@@ -787,7 +793,7 @@ Aparecen dos formas de error:
 | `INVALID_TAB` | sobre | No se pudo resolver `tabId` |
 | `INVALID_PATH` | sobre | No se pudo leer un `filePath`, o está fuera del alcance del espacio de trabajo abierto / del documento |
 | `APPROVAL_REQUIRED` | sobre | `save_as` a una ubicación nueva mientras **Aprobar automáticamente guardados en una ubicación nueva y resultados de genios** está desactivado; o `open_workspace` espera la aprobación del usuario, o que elija la carpeta en el diálogo de carpetas de VMark |
-| `BUSY` | sobre | `open_workspace` no pudo continuar: hay otro diálogo de carpetas abierto o un cambio de espacio de trabajo en curso en esa ventana; la aprobación se conserva — reintenta |
+| `BUSY` | sobre | `open_workspace` no pudo continuar: hay otro diálogo de carpetas abierto o un cambio de espacio de trabajo en curso en esa ventana; la aprobación se conserva — reintenta. O bien `document.write`, `document.transform` o `selection.set` llegó mientras el usuario componía texto con un método de entrada; no se cambió nada — reintenta en breve |
 | `NOT_WORKFLOW` | sobre | Se invocó `workflow.*` en una pestaña que no es YAML de flujo de trabajo |
 | `READ_ONLY` | sobre | Se intentó una mutación en un documento de solo lectura |
 | `NO_EDITOR` | sobre | Se invocó `selection.*` pero la pestaña enfocada no tiene un editor activo |

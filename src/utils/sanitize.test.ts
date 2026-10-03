@@ -7,7 +7,6 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   sanitizeHtmlPreview,
-  sanitizeMediaHtml,
   sanitizeSvg,
   sanitizeKatex,
   escapeHtml,
@@ -663,95 +662,6 @@ describe("sanitizeKatex", () => {
   });
 });
 
-describe("sanitizeMediaHtml", () => {
-  describe("allowed media tags", () => {
-    it("allows video tag with src", () => {
-      const input = '<video src="clip.mp4" controls></video>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).toContain("<video");
-      expect(result).toContain('src="clip.mp4"');
-      expect(result).toContain("controls");
-    });
-
-    it("allows audio tag with src", () => {
-      const input = '<audio src="song.mp3" controls></audio>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).toContain("<audio");
-      expect(result).toContain('src="song.mp3"');
-    });
-
-    it("allows source tag inside video", () => {
-      const input = '<video controls><source src="clip.mp4" type="video/mp4"></video>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).toContain("<source");
-      expect(result).toContain('type="video/mp4"');
-    });
-
-    it("allows video attributes: poster, preload, loop, muted", () => {
-      const input = '<video src="clip.mp4" poster="thumb.jpg" preload="metadata" loop muted controls></video>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).toContain('poster="thumb.jpg"');
-      expect(result).toContain('preload="metadata"');
-    });
-
-    it("allows width and height on video", () => {
-      const input = '<video src="clip.mp4" width="640" height="360" controls></video>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).toContain('width="640"');
-      expect(result).toContain('height="360"');
-    });
-  });
-
-  describe("XSS prevention in media", () => {
-    it("strips script inside video", () => {
-      const input = '<video><script>alert(1)</script></video>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).not.toContain("<script");
-    });
-
-    it("strips onerror on video", () => {
-      const input = '<video src="x" onerror="alert(1)"></video>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).not.toContain("onerror");
-    });
-
-    it("strips javascript: in src", () => {
-      const input = '<video src="javascript:alert(1)"></video>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).not.toContain("javascript:");
-    });
-  });
-
-  describe("video provider iframe handling", () => {
-    it("allows YouTube iframe with nocookie domain", () => {
-      const input = '<iframe src="https://www.youtube-nocookie.com/embed/abc123" width="560" height="315"></iframe>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).toContain("<iframe");
-      expect(result).toContain("youtube-nocookie.com");
-    });
-
-    it("allows Vimeo iframe", () => {
-      const input = '<iframe src="https://player.vimeo.com/video/123456789" width="560" height="315"></iframe>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).toContain("<iframe");
-      expect(result).toContain("player.vimeo.com");
-    });
-
-    it("allows Bilibili iframe", () => {
-      const input = '<iframe src="https://player.bilibili.com/player.html?bvid=BV1xx411c7mD" width="560" height="350"></iframe>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).toContain("<iframe");
-      expect(result).toContain("player.bilibili.com");
-    });
-
-    it("strips non-whitelisted iframes", () => {
-      const input = '<iframe src="https://evil.com/page"></iframe>';
-      const result = sanitizeMediaHtml(input);
-      expect(result).not.toContain("evil.com");
-    });
-  });
-});
-
 describe("escapeHtml", () => {
   it("escapes ampersand", () => {
     expect(escapeHtml("Tom & Jerry")).toBe("Tom &amp; Jerry");
@@ -864,15 +774,6 @@ describe("sanitize — isSafeStyleValue angle brackets branch", () => {
   });
 });
 
-describe("sanitizeMediaHtml — no-DOM stripNonWhitelistedIframes branch", () => {
-  it("strips self-closing iframe forms when DOM is available", () => {
-    // In jsdom, the DOM path is taken, which exercises the DOM-based stripping
-    const input = '<iframe src="https://evil.com/page"></iframe>';
-    const result = sanitizeMediaHtml(input);
-    expect(result).not.toContain("evil.com");
-  });
-});
-
 describe("sanitize — isSafeStyleValue angle bracket via sanitizeStyleAttribute", () => {
   it("removes style declarations with embedded < angle bracket", () => {
     // Use an element with style that includes < to trigger line 215
@@ -880,22 +781,6 @@ describe("sanitize — isSafeStyleValue angle bracket via sanitizeStyleAttribute
     const result = sanitizeHtmlPreview(input, { allowStyles: true });
     // The background declaration with < should be removed, color: red should stay
     expect(result).toContain("Text");
-  });
-});
-
-describe("sanitizeMediaHtml — iframe edge cases", () => {
-  // Which embed hosts an iframe may name: sanitizeMediaEmbedOrigins.test.ts.
-  it("strips iframes with no src attribute", () => {
-    const input = '<iframe></iframe>';
-    const result = sanitizeMediaHtml(input);
-    // An iframe with no src has empty string which doesn't match whitelist
-    expect(result).not.toContain("<iframe");
-  });
-
-  it("returns HTML as-is when no iframes present", () => {
-    const input = '<video src="clip.mp4" controls></video>';
-    const result = sanitizeMediaHtml(input);
-    expect(result).toContain("<video");
   });
 });
 
@@ -961,28 +846,6 @@ describe("sanitize — the preview style filter with no DOM", () => {
     expect(result).not.toContain("style=");
     expect(result).toContain("A");
     expect(result).toContain("B");
-  });
-});
-
-describe("sanitize — the media iframe filter with no DOM", () => {
-  it("strips paired iframes via regex", () => {
-    const input = '<iframe src="https://evil.com/page">inner</iframe>';
-    const result = withoutDom(() => sanitizeMediaHtml(input));
-    expect(result).not.toContain("<iframe");
-    expect(result).not.toContain("evil.com");
-  });
-
-  it("strips self-closing iframes via regex", () => {
-    const input = '<iframe src="https://evil.com/page" />';
-    const result = withoutDom(() => sanitizeMediaHtml(input));
-    expect(result).not.toContain("<iframe");
-  });
-
-  it("strips even whitelisted iframes via regex (safety over permissiveness)", () => {
-    // With no DOM, ALL iframes are removed — the src cannot be verified safely.
-    const input = '<iframe src="https://www.youtube.com/embed/abc"></iframe>';
-    const result = withoutDom(() => sanitizeMediaHtml(input));
-    expect(result).not.toContain("<iframe");
   });
 });
 

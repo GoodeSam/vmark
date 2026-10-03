@@ -68,10 +68,12 @@ export function coverageEligible(srcFiles) {
 
 /**
  * Per-feature line coverage — only when EVERY eligible file is in the summary.
- * The summary lists just the files some test loaded (this repo sets no
- * coverage.include), so a feature with untested files is under-represented in
- * it, and averaging what IS there reports the tested fraction as the feature's
- * coverage. Partial → `pct: null`, with `seen/expected` so the cell can say so.
+ * vitest.config.ts sets `coverage.include` (`src/**` TS/TSX), so a full run
+ * lists a file no test loads at 0% instead of leaving it out. A summary can
+ * still lack files — one written before that include existed, or by a run
+ * under another coverage config — and averaging only what IS there would
+ * report the measured fraction as the feature's coverage. Partial →
+ * `pct: null`, with `seen/expected` so the cell can say so.
  */
 export function featureCoverage(covSummary, eligible, root) {
   const expected = eligible.length;

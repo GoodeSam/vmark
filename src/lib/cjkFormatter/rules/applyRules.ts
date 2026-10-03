@@ -11,7 +11,7 @@
 
 import type { CJKFormattingSettings, FormatOptions } from "../types";
 import { cjkFmtWarn } from "@/utils/debug";
-import { applyContextualQuotes } from "../quotePairing";
+import { applyContextualQuotes } from "../contextualQuotes";
 import { containsCJK } from "./shared";
 import { normalizeEllipsis, collapseNewlines } from "./universal";
 import {

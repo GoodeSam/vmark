@@ -2,7 +2,9 @@
  * Purpose: decide whether a relative mock (`vi.mock("./x")`, `vi.mock("../x")`)
  * replaces the app's own logic — the anti-pattern `.claude/rules/10-tdd.md`
  * names — or a module that wraps a real boundary, which is the sanctioned
- * thing to mock.
+ * thing to mock. An `@/` alias that names a module in the test's own
+ * directory (or the one its `__tests__/` folder sits in) is the same sibling
+ * spelled another way, and is judged the same.
  *
  * The boundary test is structural, not a hand list: a module is a boundary
  * wrapper when it imports `@tauri-apps/*` or a Node builtin itself (static
@@ -93,12 +95,30 @@ function isBoundaryModule(text, rel) {
   return importedSpecifiers(text, rel).some(isBoundarySpecifier);
 }
 
+/** The directory whose modules are a test's siblings: its own, or the one its `__tests__/` folder sits in. */
+function subjectDir(fileRel) {
+  const dir = path.posix.dirname(fileRel);
+  const at = dir.indexOf("/__tests__");
+  return at === -1 ? dir : dir.slice(0, at);
+}
+
+/** The relative spelling of an `@/` specifier naming a module in the test's subject directory, else null. */
+function aliasAsSibling(spec, fileRel) {
+  if (!spec.startsWith("@/")) return null;
+  const target = path.posix.normalize(path.posix.join("src", spec.slice(2)));
+  if (path.posix.dirname(target) !== subjectDir(fileRel)) return null;
+  const relative = path.posix.relative(path.posix.dirname(fileRel), target);
+  return relative.startsWith("../") ? relative : `./${relative}`;
+}
+
 /**
- * The sibling-logic mock triple for one relative mock, or null when it is not
- * one (not relative, not code, or a boundary wrapper). Store targets are the
- * caller's to exclude first — they have their own list.
+ * The sibling-logic mock triple for one relative (or sibling-naming `@/`)
+ * mock, or null when it is not one (not a sibling, not code, or a boundary
+ * wrapper). Store targets are the caller's to exclude first — they have their
+ * own list.
  */
-export function siblingLogicTarget(spec, fileRel, root) {
+export function siblingLogicTarget(rawSpec, fileRel, root) {
+  const spec = aliasAsSibling(rawSpec, fileRel) ?? rawSpec;
   if (!spec.startsWith("./") && !spec.startsWith("../")) return null;
   const resolved = resolveSiblingTarget(spec, fileRel, root);
   if (resolved.kind === "not-code") return null;

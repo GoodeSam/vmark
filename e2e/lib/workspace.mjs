@@ -3,7 +3,7 @@
  *
  * `open_workspace` is the one bridge tool with a HUMAN APPROVAL gate, and the
  * transport cannot hold a call open for input — so the real shipping flow is
- * fail-now → approve → AI-retry (src/hooks/mcpBridge/v2/workspaceOpenFolder.ts):
+ * fail-now → approve → AI-retry (src/services/mcpBridge/v2/workspaceOpenFolder.ts):
  *
  *   1. fire `vmark.workspace.open_workspace` → handler queues a prompt and
  *      answers `{needsApproval:true}`;
@@ -18,7 +18,8 @@
  * A failure AFTER the prompt appeared cleans up the shared app state it
  * touched: an open dialog is denied, and a grant minted by a successful
  * approve is REVOKED by consuming it through the approval store — reached via
- * the dev module graph (dev-docs/e2e-testing.md, the store-import trick).
+ * the dev module graph (e2e/README.md, "Arranging state: import the app's
+ * own stores").
  * That import can hand out a parallel store in an HMR-dirty session, so the
  * store is proven LIVE first: while the dialog is up, the live store holds the
  * pending prompt and a parallel one holds nothing. A store that cannot be

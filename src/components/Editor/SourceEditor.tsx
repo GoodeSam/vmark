@@ -19,6 +19,7 @@
  * @coordinates-with TiptapEditor.tsx — shares document content via documentStore
  * @coordinates-with sourceFocusRestore.ts — the shared focus/cursor/scroll restore step
  * @coordinates-with sourceCursorTracker.ts — per-frame cursor snapshot and selected text
+ * @coordinates-with services/search/sourceSearchCounter.ts — recounts find matches after edits
  * @coordinates-with stores/editorStore.ts — registers as the active source view
  * @module components/Editor/SourceEditor
  */
@@ -46,8 +47,7 @@ import { runOrQueueCodeMirrorAction } from "@/utils/imeGuard";
 import { computeSourceCursorContext } from "@/plugins/sourceContextDetection/cursorContext";
 import { useImageDragDrop } from "@/hooks/useImageDragDrop";
 import { useSourceOutlineSync } from "@/hooks/useSourceOutlineSync";
-import { countMatches } from "@/utils/sourceEditorSearch";
-import { createDebouncedSearchCounter } from "@/utils/debouncedSearchCount";
+import { createSourceSearchRecount, sourceSearchPlace } from "@/services/search/sourceSearchCounter";
 import {
   createSourceEditorExtensions,
   shortcutKeymapCompartment,
@@ -130,22 +130,8 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
     /* v8 ignore next -- @preserve guard: true branch fires only when container unmounts mid-init */
     if (!containerRef.current || viewRef.current) return; // Guard: effect deps=[] ensures single run
 
-    const searchCounter = createDebouncedSearchCounter(
-      (content, _query, _caseSensitive, _wholeWord, _useRegex) => {
-        // Re-read fresh state: search params may have changed during the debounce delay
-        const freshState = useUIStore.getState().search;
-        if (!freshState.isOpen || !freshState.query) return;
-        const matchCount = countMatches(content, freshState.query, freshState.caseSensitive, freshState.wholeWord, freshState.useRegex);
-        // Keep currentIndex valid: reset to 0 if out of bounds or -1
-        let newIndex = freshState.currentIndex;
-        if (matchCount === 0) {
-          newIndex = -1;
-        } else if (newIndex < 0 || newIndex >= matchCount) {
-          newIndex = 0;
-        }
-        useUIStore.getState().searchSetMatches(matchCount, newIndex);
-      }
-    );
+    // Recount after edits; the current match keeps its place by position.
+    const searchRecount = createSourceSearchRecount();
 
     const cursorTracker = createSourceCursorTracker({
       setCursorInfo: (info) => setCursorInfoRef.current(info),
@@ -164,17 +150,7 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
         requestAnimationFrame(() => {
           isInternalChange.current = false;
         });
-        // Update match count when document changes and search is open (debounced)
-        const searchState = useUIStore.getState().search;
-        if (searchState.isOpen && searchState.query) {
-          searchCounter.schedule(
-            newContent,
-            searchState.query,
-            searchState.caseSensitive,
-            searchState.wholeWord,
-            searchState.useRegex
-          );
-        }
+        searchRecount.schedule(update.view); // only while the find bar has a query
       }
       // Track cursor position (once per frame) and selected text for mode sync
       if (update.selectionSet || update.docChanged) cursorTracker.track(update);
@@ -205,7 +181,7 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
         initialShowLineNumbers,
         initialShowInvisibles,
         initialReadOnly: readOnly,
-        updateListener: [updateListener, sourceCursorExtension],
+        updateListener: [updateListener, sourceCursorExtension, sourceSearchPlace],
         tabId: mountTabId,
         lintEnabled: initialLintEnabled,
         filePath: mountFilePath,
@@ -254,7 +230,7 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
 
     return () => {
       if (focusTimeoutId !== null) clearTimeout(focusTimeoutId);
-      searchCounter.cancel();
+      searchRecount.cancel();
       unsubscribeShortcuts();
       stopScrollMemory();
       useEditorStore.getState().clearSourceViewIfMatch(view);

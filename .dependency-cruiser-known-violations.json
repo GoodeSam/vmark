@@ -1,23 +1,6 @@
 [
   {
     "type": "dependency",
-    "from": "src/plugins/aiSuggestion/widgets.ts",
-    "to": "src/plugins/markdownCopy/tiptap.ts",
-    "unresolvedTo": "@/plugins/markdownCopy/tiptap",
-    "dependencyTypes": [
-      "aliased",
-      "aliased-tsconfig",
-      "aliased-tsconfig-paths",
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "plugin-isolation"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/plugins/blockEscape/blockEscape.test.ts",
     "to": "src/plugins/blockquoteEscape/index.ts",
     "unresolvedTo": "@/plugins/blockquoteEscape",

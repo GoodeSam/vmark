@@ -247,7 +247,7 @@ The setting does not appear on macOS or Linux.
 | Maximum versions | Number of history snapshots to keep per document | 50 versions | 10, 25, 50, 100 |
 | Keep versions for | Maximum age of history snapshots before they are pruned | 7 days | 1 day, 7 days, 14 days, 30 days |
 | Merge window | Consecutive auto-saves within this window consolidate into a single snapshot, reducing storage noise | 30 seconds | Off, 10s, 30s, 1 min, 2 min |
-| Max file size for history | Skip taking history snapshots for files larger than this threshold | 512 KB | 256 KB, 512 KB, 1 MB, 5 MB, Unlimited |
+| Max file size for history | Skip autosave history snapshots for files larger than this threshold. Manual saves, MCP saves and the safety copy taken before restoring a version are always kept | 512 KB | 256 KB, 512 KB, 1 MB, 5 MB, Unlimited |
 
 ### Images
 

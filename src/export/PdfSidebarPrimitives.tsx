@@ -60,6 +60,13 @@ export function CollapsibleSection({
 
 export type MarginSide = "marginTop" | "marginRight" | "marginBottom" | "marginLeft";
 
+/** The range a page margin may take, in millimetres. */
+const MARGIN_MIN = 0;
+const MARGIN_MAX = 100;
+
+/** One decimal, matching the field's step. */
+const roundMargin = (mm: number) => Math.round(mm * 10) / 10;
+
 /**
  * One margin field.
  *
@@ -71,6 +78,13 @@ export type MarginSide = "marginTop" | "marginRight" | "marginBottom" | "marginL
  *
  * The rounding to one decimal matches `step` deliberately: A4's 25.4mm is an
  * inch, and letting it become 25 silently changes the page geometry.
+ *
+ * While the field is being edited it shows what was typed (`draft`), so it can
+ * be emptied on the way to a new number; a controlled input that ignored an
+ * empty value snapped back the moment it was cleared. A valid in-range number
+ * is applied as it is typed, so the preview follows. Leaving the field, or
+ * Enter, settles it: out-of-range is clamped, and empty or unreadable restores
+ * the last value.
  */
 function MarginInput({
   side, value, label, onChange,
@@ -80,20 +94,35 @@ function MarginInput({
   label: string;
   onChange: (side: MarginSide, value: number) => void;
 }) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  const settle = () => {
+    if (draft === null) return;
+    const typed = parseFloat(draft);
+    const next = Number.isNaN(typed) ? value : roundMargin(Math.min(MARGIN_MAX, Math.max(MARGIN_MIN, typed)));
+    if (next !== value) onChange(side, next);
+    setDraft(null);
+  };
+
   return (
     <input
       type="number"
       className="margin-layout-input"
       aria-label={label}
-      value={value}
-      min={0}
-      max={100}
+      value={draft ?? value}
+      min={MARGIN_MIN}
+      max={MARGIN_MAX}
       step={0.1}
       onChange={(e) => {
-        const v = parseFloat(e.target.value);
-        if (!Number.isNaN(v) && v >= 0 && v <= 100) {
-          onChange(side, Math.round(v * 10) / 10);
+        setDraft(e.target.value);
+        const typed = parseFloat(e.target.value);
+        if (!Number.isNaN(typed) && typed >= MARGIN_MIN && typed <= MARGIN_MAX) {
+          onChange(side, roundMargin(typed));
         }
+      }}
+      onBlur={settle}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") settle();
       }}
     />
   );

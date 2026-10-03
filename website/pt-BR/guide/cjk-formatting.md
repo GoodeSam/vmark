@@ -87,7 +87,7 @@ Converte letras e números de largura total para meia largura.
 
 ### 4. Conversão de Parênteses
 
-Converte parênteses de meia largura para largura total quando cercam conteúdo CJK.
+Converte parênteses de meia largura para largura total quando cercam conteúdo CJK. Os dois parênteses precisam estar no mesmo parágrafo: separados por uma linha em branco, ficam como foram digitados.
 
 | Antes | Depois |
 |-------|--------|
@@ -316,7 +316,7 @@ O VMark usa um algoritmo sofisticado baseado em pilha para emparelhamento de asp
 3. **Detecção de Apóstrofo**: Reconhece contrações (don't, it's) e as preserva
 4. **Detecção de Prima**: Reconhece medidas (5'10") e as preserva
 5. **Detecção de Contexto CJK**: Verifica se o conteúdo entre aspas envolve caracteres CJK
-6. **Limpeza de Órfãos**: Trata aspas sem par de forma elegante
+6. **Limpeza de Órfãos**: Trata aspas sem par de forma elegante; uma aspa ainda aberta no fim de um parágrafo fica sem par, então aspas nunca se emparelham através de uma linha em branco
 
 ### Exemplos
 

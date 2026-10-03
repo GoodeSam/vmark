@@ -6,7 +6,8 @@
  * The pruned MCP surface depends on these because the AI cannot
  * derive them from text round-trip alone.
  *
- * Origin: MCP pruning plan (2026-05-04, retired) WI-1.2.
+ * Origin: the MCP pruning plan, whose decisions are recorded in
+ * `.claude/adr/plans/20260504-mcp-pruning.md`.
  */
 
 import { z } from 'zod';

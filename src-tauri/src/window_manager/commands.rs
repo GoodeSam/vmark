@@ -1,6 +1,7 @@
-//! Tauri commands for opening files/workspaces in new windows, closing
-//! windows, and quitting. Frontend-supplied paths are validated by
-//! `path_validation` before any fs-scope extension or window creation.
+//! Tauri commands for opening files/workspaces in new windows and closing
+//! windows (quitting belongs to `crate::quit`). Frontend-supplied paths are
+//! validated by `path_validation` before any fs-scope extension or window
+//! creation.
 //!
 //! Every command is generic over the runtime (like `close_window` always
 //! was), so `commands.test.rs` drives the real commands on a mock app (#249):
@@ -142,12 +143,6 @@ pub fn close_window<R: tauri::Runtime>(
         .map_err(|e| CommandError::internal(e.to_string()));
     log::info!("[Tauri] window {label:?} destroy result: {result:?}");
     result
-}
-
-/// Force quit the entire application
-#[tauri::command]
-pub fn force_quit(app: AppHandle) {
-    app.exit(0);
 }
 
 #[cfg(test)]

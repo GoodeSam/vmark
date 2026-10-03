@@ -4,7 +4,7 @@ VMark 對 AI 助理開放**九個複合 MCP 工具**：`session`、`workspace`�
 
 這九個之中有三個——`session`、`browser_read` 與 `coherence`——宣告了 `readOnlyHint: true`，因此 MCP 用戶端可以自動核准它們。這正是 `browser`/`browser_read` 與 `coherence`/`coherence_resolve` 之所以要拆成不同工具的原因：標註是**以工具為單位**，而非以操作為單位，因此一個把 ARIA 快照與 `execute_js` 綁在一起的工具，就必須把 `execute_js` 的危險性一併宣告出來。沿著「這會不會改動任何東西？」來拆分，讓每一半都能說出實情，也讓這個介面中真正具破壞性的操作在工具清單裡保持醒目。
 
-先前的 12 工具 / 76 操作介面之所以被精簡，是因為文件內的格式化工具（粗體、標題、表格等）與 AI 代理透過 Markdown 來回轉換就能輕鬆完成的工作高度重複。`selection` 之所以保留（依精簡計畫的 ADR-7），是因為在大型檔案上整份文件來回轉換並不划算——每次編輯都要以輸入權杖付出整份文件的代價、以輸出權杖付出整份文件的代價（約為輸入價格的 5 倍），還要承受更長的寫入視窗，而這會擴大過期版本的重試迴圈。完整的取捨理由請參閱 [MCP 精簡計畫](https://github.com/xiaolai/vmark/blob/main/dev-docs/plans/20260504-mcp-pruning.md)。
+先前的 12 工具 / 76 操作介面之所以被精簡，是因為文件內的格式化工具（粗體、標題、表格等）與 AI 代理透過 Markdown 來回轉換就能輕鬆完成的工作高度重複。`selection` 之所以保留（依精簡計畫的 ADR-7），是因為在大型檔案上整份文件來回轉換並不划算——每次編輯都要以輸入權杖付出整份文件的代價、以輸出權杖付出整份文件的代價（約為輸入價格的 5 倍），還要承受更長的寫入視窗，而這會擴大過期版本的重試迴圈。完整的取捨理由請參閱 [MCP 精簡計畫](https://github.com/xiaolai/vmark/blob/main/.claude/adr/plans/20260504-mcp-pruning.md)。
 
 ::: tip 建議的工作流程
 1. 呼叫 `session.get_state` 一次，取得所有開啟的視窗、分頁，以及每個分頁的 `{filePath, dirty, revision, kind}`。
@@ -216,6 +216,8 @@ VMark 對 AI 助理開放**九個複合 MCP 工具**：`session`、`workspace`�
 
 預設情況下，寫入會被儲存：回應會帶有 `saved: true`，或是 `saved: false` 並附上 `save_skipped`（`"untitled"`——分頁還沒有檔案，請使用 `save_as`；`"opt_out"`——你傳入了 `save: false`）或 `save_error`（磁碟寫入失敗）。當目標是 Markdown 文件中使用中的 WYSIWYG 分頁時，文字會被載入即時編輯器（作為一個可復原的步驟），而儲存的是編輯器對它的序列化結果——同樣的 Markdown，可能經過正規化，不一定是送出的確切字元。其他分頁則照送出的文字儲存，並正規化行尾字元。
 
+AI 用戶端的每一次儲存——無論是透過 `write`、`workspace.save` 或 `workspace.save_as`——都會以 `mcp` 快照的形式記入文件的歷史記錄（在歷史記錄側邊欄中標示為 *(mcp)*），讓 AI 寫入的版本與你自己的版本有所區別。與手動儲存一樣，它絕不會併入相鄰的自動儲存，也不會因檔案大小而被略過。
+
 如果有提供 `expected_revision`，但文件自上次讀取後已變動，回應會是 `STALE` 結構化錯誤封包，並附上目前的 revision；此時請重新讀取後再嘗試。
 
 ```json
@@ -225,6 +227,8 @@ VMark 對 AI 助理開放**九個複合 MCP 工具**：`session`、`workspace`�
 // 過期
 { "error": "STALE", "message": "Document has changed since the last read", "current_revision": "rev-currentNow" }
 ```
+
+當使用者在顯示該分頁的 WYSIWYG 編輯器中以輸入法（IME）組字時，寫入會以 `BUSY` 被拒絕，且不做任何變更：組字中的文字在確認之前屬於輸入法。請稍後再試。在原始碼模式下，寫入會被接受，並在組字結束後顯示於編輯器中。
 
 ### `transform`
 
@@ -238,7 +242,7 @@ VMark 對 AI 助理開放**九個複合 MCP 工具**：`session`、`workspace`�
 
 `cjk-format` 會套用使用者目前的 CJK 排版設定，從頭執行一遍。`cjk-spacing` 會在 CJK 字元與相鄰的拉丁字母或數字之間補上單一空格。`cjk-punctuation` 會把緊鄰 CJK 字元的 ASCII 標點轉換成對應的全形形式。
 
-回傳 `{revision}`。
+回傳 `{revision}`。與 `write` 一樣，當使用者在顯示該分頁的 WYSIWYG 編輯器中以輸入法組字時，它會以 `BUSY` 被拒絕，不做任何變更。
 
 ---
 
@@ -331,6 +335,8 @@ VMark 對 AI 助理開放**九個複合 MCP 工具**：`session`、`workspace`�
 成功時回傳 `{revision, replaced_chars}`。`replaced_chars` 是呼叫之前被選取文字的長度——有助於 AI 確認它所編輯的正是預期的內容。
 
 `STALE` 會回傳 `{error: "STALE", message, current_revision}`，與 `document.write` 完全相同。文件層級的 revision 能攔截 `get` 與 `set` 之間的按鍵輸入。純粹的游標移動（沒有按鍵輸入）不由伺服器仲裁——如果使用者在 `get` 與 `set` 之間移動了游標，這次編輯就會落在新的位置。
+
+當使用者在取得焦點的編輯器中以輸入法組字時，不論是 WYSIWYG 模式還是原始碼模式，`set` 都會回傳 `BUSY`，不做任何變更；請稍後再試。`get` 絕不會因此被拒絕。
 
 ---
 
@@ -568,7 +574,7 @@ VMark 對 AI 助理開放**九個複合 MCP 工具**：`session`、`workspace`�
 | `INVALID_TAB` | 結構化封包 | 無法解析 `tabId` |
 | `INVALID_PATH` | 結構化封包 | 無法讀取某個 `filePath`，或它位於已開啟的工作區／文件範圍之外 |
 | `APPROVAL_REQUIRED` | 結構化封包 | 在**自動核准儲存至新位置與精靈結果**關閉時，`save_as` 至新位置；或 `open_workspace` 正在等待使用者核准，或等待使用者在 VMark 的資料夾選擇器中選擇該資料夾 |
-| `BUSY` | 結構化封包 | `open_workspace` 無法繼續：另一個資料夾對話框已開啟，或該視窗中正在切換工作區；核准仍保留——請重試 |
+| `BUSY` | 結構化封包 | `open_workspace` 無法繼續：另一個資料夾對話框已開啟，或該視窗中正在切換工作區；核准仍保留——請重試。或是 `document.write`、`document.transform` 或 `selection.set` 在使用者以輸入法組字時送達；未做任何變更——請稍後再試 |
 | `NOT_WORKFLOW` | 結構化封包 | 在非 yaml-workflow 分頁上呼叫 `workflow.*` |
 | `READ_ONLY` | 結構化封包 | 對唯讀文件嘗試進行變更操作 |
 | `NO_EDITOR` | 結構化封包 | 呼叫了 `selection.*`，但聚焦中的分頁沒有實際運作的編輯器 |

@@ -249,6 +249,15 @@ export interface FormatConfig {
   validator?: Validator;
 
   /**
+   * Subscribe to the moments `validator` (and `schemaDetector`) may answer
+   * differently for the SAME content — a validator whose parser loads on
+   * first use answers with no findings until the parser arrives. The source
+   * pane re-lints and the preview re-validates when the listener fires.
+   * Returns the unsubscribe. Omit for a validator that is ready from the start.
+   */
+  validatorUpdates?: (listener: () => void) => () => void;
+
+  /**
    * Rule ids whose findings are SHOWN as `info` once the user has trusted the
    * document (trust-aware severity, lib/formats/diagnosticPresentation.ts).
    * For findings that describe what a sandboxed preview refuses to run: a

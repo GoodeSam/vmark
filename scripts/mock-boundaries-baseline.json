@@ -1049,16 +1049,6 @@
       "target": "src/stores/workspaceStore"
     },
     {
-      "file": "src/services/navigation/finderOpenBranches.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/documentStore"
-    },
-    {
-      "file": "src/services/navigation/finderOpenBranches.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/tabStore"
-    },
-    {
       "file": "src/services/navigation/loadFileIntoTab.closeDuringRead.test.ts",
       "api": "vi.mock",
       "target": "src/stores/tabStore"

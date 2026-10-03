@@ -6,14 +6,15 @@
 // (actively maintained, prior CVEs all fixed in 1.6.1).
 // Tree preview via the same react-json-view-lite component used by
 // the JSON adapter — TOML parses to a plain object, so the renderer
-// is shared (LazyJsonTree, loaded on first use). smol-toml stays a
-// static import: the validator and the schema detectors run it
-// synchronously, during render and in the source pane's linter.
+// is shared (LazyJsonTree, loaded on first use). smol-toml itself loads
+// on first use too (tomlParser.ts): until it arrives the validator reports
+// nothing and the preview is empty, and `validatorUpdates` has the source
+// pane and the preview run again once it has.
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { Extension } from "@codemirror/state";
-import { parse as parseToml } from "smol-toml";
+import { onTomlParserLoaded, tomlParser, useTomlParser } from "./tomlParser";
 import { LazyJsonTree } from "./LazyJsonTree";
 import {
   CargoTomlSchemaRenderer,
@@ -42,6 +43,9 @@ interface TomlError extends Error {
 
 export const tomlValidator: Validator = (content) => {
   if (content.length === 0) return [];
+  // No findings until the parser has loaded; `validatorUpdates` re-runs us.
+  const parseToml = tomlParser();
+  if (!parseToml) return [];
   try {
     parseToml(content);
     return [];
@@ -65,14 +69,17 @@ export const tomlValidator: Validator = (content) => {
 
 function TomlTreePreview({ content, diagnostics }: PreviewRendererProps) {
   const { t } = useTranslation("editor");
+  const parseToml = useTomlParser();
   const parsed = useMemo(() => {
+    if (!parseToml) return undefined;
     try {
       return parseToml(content);
     } catch {
       return null;
     }
-  }, [content]);
+  }, [content, parseToml]);
 
+  if (parsed === undefined) return null; // the parser is still loading
   if (parsed === null) {
     return (
       <div className="json-tree-preview json-tree-preview--invalid">
@@ -110,6 +117,7 @@ export const tomlFormat: FormatConfig = {
     return StreamLanguage.define(toml);
   },
   validator: tomlValidator,
+  validatorUpdates: onTomlParserLoaded,
   genericPreview: TomlTreePreview,
   // Composed detector: try Cargo first (filename match wins), then
   // pyproject. Both detectors are pure and side-effect-free.

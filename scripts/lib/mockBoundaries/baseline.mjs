@@ -67,10 +67,11 @@ const STORE_ADVICE =
   "   in beforeEach) or an explicit store-factory seam with a recorded reason.\n" +
   "   The baseline ratchets DOWN only — never add an entry to pass.";
 const SIBLING_ADVICE =
-  "   A relative mock of a module that is the app's own logic tests a fake, not\n" +
-  "   the code. Import the real sibling. Mock a module only when it wraps a real\n" +
-  "   boundary (it imports @tauri-apps/* or a Node builtin itself) — or mock that\n" +
-  "   boundary directly. None are allowed, and there is no baseline to list one in.";
+  "   A mock of a sibling module that is the app's own logic (spelled relatively\n" +
+  "   or with @/) tests a fake, not the code. Import the real sibling. Mock a\n" +
+  "   module only when it wraps a real boundary (it imports @tauri-apps/* or a\n" +
+  "   Node builtin itself) — or mock that boundary directly. None are allowed,\n" +
+  "   and there is no baseline to list one in.";
 
 /** Print every sibling logic mock to stderr. Returns whether there were any. */
 export function reportSiblingMocks(siblings) {

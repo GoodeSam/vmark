@@ -37,6 +37,40 @@ const EAGER_CODEMIRROR_CORE: ReadonlySet<string> = new Set([
   "@lezer/javascript",
 ]);
 
+/** The primitives every Settings panel shares: buttons, inputs, layout, search context, tag input. */
+const SETTINGS_PRIMITIVES =
+  /\/src\/pages\/settings\/(?:components|buttons|inputs|layout|TagInput|SettingsSearchContext)\.tsx?$/;
+
+/** What `chunkFileNames` reads of an emitted chunk. */
+export interface ChunkNaming {
+  name: string;
+  moduleIds: readonly string[];
+}
+
+/**
+ * The emitted FILE name of a chunk. Renaming here never changes what a chunk
+ * holds — pinning a module in `manualChunks` does, by pulling its importers'
+ * shared dependencies along (pinning the Settings primitives there made a
+ * 22 kB chunk the entry, App and vendor-react all imported from).
+ *
+ *   - The Settings page emits as `SettingsPage-*`: its own name differs from
+ *     the i18n `settings-*` locale chunks only by case, and size-limit globs
+ *     match case-insensitively, so its budget swept them in.
+ *   - The chunk of shared Settings primitives emits as `settingsPrimitives-*`.
+ *     Rolldown names it after one of its modules (`components-*`), too
+ *     generic for a budget glob. Matched by content: every app module in it
+ *     is a primitive; a chunk that also holds anything else keeps its name,
+ *     and the budget then fails loudly on finding no file.
+ */
+export function chunkFileNames(chunk: ChunkNaming): string {
+  if (chunk.name === "Settings") return "assets/SettingsPage-[hash].js";
+  const appModules = chunk.moduleIds.filter((id) => id.includes("/src/"));
+  if (appModules.length > 0 && appModules.every((id) => SETTINGS_PRIMITIVES.test(id))) {
+    return "assets/settingsPrimitives-[hash].js";
+  }
+  return "assets/[name]-[hash].js";
+}
+
 export function manualChunks(id: string): string | undefined {
   // Vite's preload helper is a tiny runtime module. Left to Rollup it
   // gets co-located into whichever vendor chunk is convenient
@@ -101,6 +135,11 @@ export function manualChunks(id: string): string | undefined {
   // ~630 KB vendor-graph it pulls) on cold start — just to reach a ~20 KB
   // sanitizer. Isolating it keeps mermaid genuinely lazy.
   if (pkgName === "dompurify") return "vendor-dompurify";
+  // The TOML parser is imported on first use (lib/formats/adapters/
+  // tomlParser.ts). Naming it lets check-eager-chunks.mjs require that it
+  // stays off the cold-start path — it sat in the entry chunk of every window
+  // while the adapters imported it statically.
+  if (pkgName === "smol-toml") return "vendor-toml";
   // `@dagrejs/dagre` (maintained fork; audit 20260612) is used only by workflow
   // layout (lib/workflow/layout.ts) which
   // is reached lazily through WorkflowSidePanel. Mermaid uses its own bundled

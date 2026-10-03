@@ -87,7 +87,7 @@ Convierte letras y números de ancho completo a medio ancho.
 
 ### 4. Conversión de Paréntesis
 
-Convierte paréntesis de medio ancho a ancho completo cuando rodean contenido CJK.
+Convierte paréntesis de medio ancho a ancho completo cuando rodean contenido CJK. Ambos paréntesis deben estar en el mismo párrafo: separados por una línea en blanco, se quedan como se escribieron.
 
 | Antes | Después |
 |-------|---------|
@@ -316,7 +316,7 @@ VMark usa un sofisticado algoritmo basado en pila para el emparejamiento de comi
 3. **Detección de Apóstrofos**: Reconoce contracciones (don't, it's) y las conserva
 4. **Detección de Primos**: Reconoce medidas (5'10") y las conserva
 5. **Detección de Contexto CJK**: Comprueba si el contenido entre comillas involucra caracteres CJK
-6. **Limpieza de Huérfanos**: Gestiona correctamente las comillas sin pareja
+6. **Limpieza de Huérfanos**: Gestiona correctamente las comillas sin pareja; una comilla que sigue abierta al final de un párrafo queda sin pareja, así que las comillas nunca se emparejan a través de una línea en blanco
 
 ### Ejemplos
 

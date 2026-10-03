@@ -211,4 +211,25 @@ export const REGISTRY = [
       "quit::request_quit(app) — which stays, outside this glob — so a second entry " +
       "point would reopen the bypass.",
   },
+  {
+    kind: "symbol",
+    name: "force_quit",
+    glob: "src-tauri/src",
+    deletedBy: "WI-RA24.13 (.claude/tdd-guardian/plan-20261002-full-repo-audit-fixes.md)",
+    reason:
+      "A registered command that called app.exit(0) directly. Its one caller was " +
+      "Save All and Quit, which now runs as a mode of the coordinated quit " +
+      "(quit::save_all_and_quit). An exit that skips the coordinator skips the " +
+      "save-on-close flow and finalize_quit's child-process cleanup.",
+  },
+  {
+    kind: "symbol",
+    name: "sanitizeMediaHtml",
+    glob: "src",
+    deletedBy: "WI-RA24.13 (.claude/tdd-guardian/plan-20261002-full-repo-audit-fixes.md)",
+    reason:
+      "An iframe-admitting sanitizer with only test callers; video embeds are built " +
+      "by the video provider registry and never pass through it. A sanitizer nothing " +
+      "runs reads as a maintained security boundary while protecting nothing.",
+  },
 ];

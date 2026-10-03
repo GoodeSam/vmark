@@ -36,9 +36,12 @@ import fc from "fast-check";
 import { formatMarkdown } from "../formatter";
 import { DEFAULT_CJK_FORMATTING, type CJKFormattingSettings } from "../types";
 
-/** Same rationale as roundtrip.property.test.ts: CPU-bound properties on a
- *  loaded box need wall-clock headroom; real failures assert in milliseconds. */
-const PROPERTY_TEST_TIMEOUT_MS = 30_000;
+// These properties pass no timeout of their own: they run under the suite's
+// liveness bound (`LIVENESS_TIMEOUT_MS`, vitest.shared.ts), set from what is
+// unambiguously a hang. A per-test bound below it is a performance assertion
+// in disguise: CPU-bound properties overran 30 s and 120 s on a loaded box
+// while correct, and a real regression fails on an assertion, not by running
+// long.
 
 // ---- configs under test -----------------------------------------------------
 // The app default, plus the two widest deviations: every rule on (fullwidth
@@ -125,7 +128,7 @@ describe("cjkFormatter — idempotence properties", () => {
         }),
         { numRuns: 200 },
       );
-    }, PROPERTY_TEST_TIMEOUT_MS);
+    });
   }
 
   // WI-CJKF1.1 — was `formatSelection`, deleted. The selection path calls
@@ -141,7 +144,7 @@ describe("cjkFormatter — idempotence properties", () => {
       }),
       { numRuns: 200 },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 
   // ---- (4) determinism: same input, same output, every call ------------------
   it("formatMarkdown is deterministic across repeated calls", () => {
@@ -153,7 +156,7 @@ describe("cjkFormatter — idempotence properties", () => {
       }),
       { numRuns: 100 },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 });
 
 // ---- (2) boundary corpus ------------------------------------------------------
@@ -324,7 +327,7 @@ describe("cjkFormatter — line structure properties", () => {
         }),
         { numRuns: 300 },
       );
-    }, PROPERTY_TEST_TIMEOUT_MS);
+    });
 
     it(`formatMarkdown is idempotent over trigger-dense documents (${name})`, () => {
       fc.assert(
@@ -334,7 +337,7 @@ describe("cjkFormatter — line structure properties", () => {
         }),
         { numRuns: 300 },
       );
-    }, PROPERTY_TEST_TIMEOUT_MS);
+    });
   }
 
   // Stricter than the paragraph count, and true whenever newline collapsing —
@@ -350,5 +353,5 @@ describe("cjkFormatter — line structure properties", () => {
       }),
       { numRuns: 300 },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 });

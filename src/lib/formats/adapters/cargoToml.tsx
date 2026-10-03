@@ -10,7 +10,7 @@
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { parse as parseToml } from "smol-toml";
+import { useTomlParser, type TomlParse } from "./tomlParser";
 import type {
   PreviewRendererProps,
   SchemaDetector,
@@ -81,6 +81,7 @@ function parseDepTable(
 
 export function collectCargoDependencies(
   content: string,
+  parseToml: TomlParse,
 ): CargoDependencyResult {
   let parsed: unknown;
   try {
@@ -107,7 +108,12 @@ export function CargoTomlSchemaRenderer({
   diagnostics,
 }: PreviewRendererProps) {
   const { t } = useTranslation("editor");
-  const result = useMemo(() => collectCargoDependencies(content), [content]);
+  const parseToml = useTomlParser();
+  const result = useMemo(
+    () => (parseToml ? collectCargoDependencies(content, parseToml) : null),
+    [content, parseToml],
+  );
+  if (!result) return null; // the parser is still loading
   const totalDeps =
     result.runtime.length + result.dev.length + result.build.length;
 

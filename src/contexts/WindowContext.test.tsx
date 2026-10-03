@@ -664,12 +664,12 @@ describe("WindowContext", () => {
         </WindowProvider>,
       );
 
-      // Wait for listen() promises to resolve so unlisten refs are stored
+      // Wait for both listen() calls, then flush the microtask in which their
+      // .then() callbacks store unlisten/unlistenRemove.
       await waitFor(() => {
         expect(mockListen).toHaveBeenCalledTimes(2);
       });
-      // Flush microtasks so .then() callbacks assign unlisten/unlistenRemove
-      await new Promise((r) => setTimeout(r, 0));
+      await Promise.resolve();
 
       unmount();
 
@@ -841,20 +841,20 @@ describe("WindowContext", () => {
         expect(screen.getByTestId("child")).toBeInTheDocument();
       });
 
-      // Give time for the listen promise to reject
-      await new Promise((r) => setTimeout(r, 150));
-
-      expect(mockWindowContextError).toHaveBeenCalledWith(
-        expect.stringContaining("tab removal listener"),
-        expect.any(Error),
-      );
+      // The listen promise rejects asynchronously; wait for its .catch to log.
+      await waitFor(() => {
+        expect(mockWindowContextError).toHaveBeenCalledWith(
+          expect.stringContaining("tab removal listener"),
+          expect.any(Error),
+        );
+      });
 
       consoleSpy.mockRestore();
     });
   });
 
-  describe("removeTabFromWindow — close_window error path", () => {
-    it("logs warning when close_window invoke fails", async () => {
+  describe("closeWindowIfEmpty — close_window error path", () => {
+    it("logs warning when close_window invoke fails, and still acks the commit", async () => {
       mockWindowLabel = "doc-1";
       const { invoke } = await import("@tauri-apps/api/core");
       vi.mocked(invoke).mockImplementation((cmd: string) => {
@@ -865,31 +865,28 @@ describe("WindowContext", () => {
       // After removing a tab, getTabsByWindow returns empty -> triggers close_window
       mockGetTabsByWindow.mockReturnValue([]);
 
-      // Need to render and trigger removeTabFromWindow via the tab-removed event
       render(
         <WindowProvider>
           <div data-testid="child">content</div>
         </WindowProvider>,
       );
 
+      // A removal arrives as the commit phase of the tab:remove-by-id listener.
       await waitFor(() => {
-        expect(screen.getByTestId("child")).toBeInTheDocument();
+        expect(mockListen).toHaveBeenCalledWith("tab:remove-by-id", expect.any(Function));
       });
+      const removeCall = mockListen.mock.calls.find((call) => call[0] === "tab:remove-by-id");
+      removeCall![1]({ payload: { requestId: "req-1", tabId: "tab-1", phase: "commit" } });
 
-      // Find the tab-removed listener callback
-      const tabRemovedCall = mockListen.mock.calls.find(
-        (call: unknown[]) => call[0] === "tab-removed",
-      );
-      if (tabRemovedCall) {
-        const handler = tabRemovedCall[1] as (event: { payload: { windowLabel: string; tabId: string } }) => void;
-        await handler({ payload: { windowLabel: "doc-1", tabId: "tab-1" } });
-
-        // Give time for async operations
-        await new Promise((r) => setTimeout(r, 50));
-
-        const { windowCloseWarn } = await import("../utils/debug");
-        expect(windowCloseWarn).toHaveBeenCalled();
-      }
+      const { windowCloseWarn } = await import("../utils/debug");
+      await waitFor(() => {
+        expect(windowCloseWarn).toHaveBeenCalledWith("Failed to close window:", "close failed");
+      });
+      // A window that cannot close has still detached the tab and answered the source.
+      expect(mockDetachTab).toHaveBeenCalledWith("doc-1", "tab-1");
+      expect(mockEmit).toHaveBeenCalledWith("tab:remove-ack", {
+        requestId: "req-1", tabId: "tab-1", phase: "commit", accepted: true,
+      });
 
       vi.mocked(invoke).mockImplementation(() => Promise.resolve(null));
     });
@@ -972,9 +969,9 @@ describe("WindowContext", () => {
         held.cb({ payload: { requestId: "req-1", tabId: "stale-tab", phase: "commit" } });
       }
 
-      // removeTransferredTabData calls detachTab internally
-      // Since cancelled=true, it returns early so detachTab is not called
-      await new Promise((r) => setTimeout(r, 50));
+      // A live handler detaches synchronously on commit; cancelled=true returns
+      // first. Flush a microtask so a deferred detach would show here too.
+      await Promise.resolve();
       expect(mockDetachTab).not.toHaveBeenCalled();
     });
 
@@ -997,16 +994,15 @@ describe("WindowContext", () => {
         </WindowProvider>,
       );
 
-      await new Promise((r) => setTimeout(r, 30));
-
-      // Unmount before the tab:remove-by-id promise resolves
+      // Unmount once the listener is requested, before its promise resolves
+      await waitFor(() => {
+        expect(mockListen).toHaveBeenCalledWith("tab:remove-by-id", expect.any(Function));
+      });
       unmount();
 
       // Now resolve — the `if (cancelled) { fn(); }` branch fires
       resolveRemove(unlistenRemoveFn);
-      await new Promise((r) => setTimeout(r, 50));
-
-      expect(unlistenRemoveFn).toHaveBeenCalled();
+      await waitFor(() => expect(unlistenRemoveFn).toHaveBeenCalled());
     });
   });
 
@@ -1099,19 +1095,17 @@ describe("WindowContext", () => {
         </WindowProvider>,
       );
 
-      // Wait for initial render
-      await new Promise((r) => setTimeout(r, 50));
-
-      // Unmount BEFORE the listen promise resolves (cancelled = true)
+      // Unmount once the listener is requested, BEFORE its promise resolves (cancelled = true)
+      await waitFor(() => {
+        expect(mockListen).toHaveBeenCalledWith("tab:transfer", expect.any(Function));
+      });
       unmount();
 
       // Now resolve the listen promise - the cancelled branch should call fn() immediately
       resolveTransfer(unlistenFn);
 
-      await new Promise((r) => setTimeout(r, 50));
-
       // The unlisten function should have been called because cancelled was true
-      expect(unlistenFn).toHaveBeenCalled();
+      await waitFor(() => expect(unlistenFn).toHaveBeenCalled());
     });
   });
 
@@ -1132,24 +1126,22 @@ describe("WindowContext", () => {
         </WindowProvider>,
       );
 
-      await new Promise((r) => setTimeout(r, 100));
-
-      // Find and invoke the tab:remove-by-id handler
+      // Find and invoke the tab:remove-by-id handler once it is registered
+      await waitFor(() => {
+        expect(mockListen).toHaveBeenCalledWith("tab:remove-by-id", expect.any(Function));
+      });
       const removeCall = mockListen.mock.calls.find(
         (call: unknown[]) => call[0] === "tab:remove-by-id",
       );
-      if (removeCall) {
-        const removeHandler = removeCall![1];
-        removeHandler({ payload: { requestId: "req-1", tabId: "last-tab", phase: "commit" } });
+      removeCall![1]({ payload: { requestId: "req-1", tabId: "last-tab", phase: "commit" } });
 
-        await new Promise((r) => setTimeout(r, 100));
-
-        const { windowCloseWarn } = await import("../utils/debug");
+      const { windowCloseWarn } = await import("../utils/debug");
+      await waitFor(() => {
         expect(windowCloseWarn).toHaveBeenCalledWith(
           "Failed to close window:",
           expect.stringMatching(/cannot close|string/),
         );
-      }
+      });
 
       vi.mocked(invoke).mockImplementation(() => Promise.resolve(null));
     });

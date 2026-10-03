@@ -46,7 +46,12 @@ type Style = (typeof STYLES)[number];
 
 /** Fixed so a failure reproduces; fast-check prints the counterexample. */
 const SEED = 20261002;
-const PROPERTY_TEST_TIMEOUT_MS = 120_000;
+// These properties pass no timeout of their own: they run under the suite's
+// liveness bound (`LIVENESS_TIMEOUT_MS`, vitest.shared.ts), set from what is
+// unambiguously a hang. A per-test bound below it is a performance assertion
+// in disguise: CPU-bound properties overran 30 s and 120 s on a loaded box
+// while correct, and a real regression fails on an assertion, not by running
+// long.
 
 // ---- structured generator ---------------------------------------------------
 
@@ -243,7 +248,7 @@ describe("hard-break normalization — structured documents", () => {
     expect(withBackslashBreak).toBeGreaterThan(60);
     expect(withSpaceBreak).toBeGreaterThan(60);
     expect(withProtectedLookAlike).toBeGreaterThan(60);
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 
   it("never changes a byte of a protected construct, or the number of blocks", () => {
     fc.assert(
@@ -257,7 +262,7 @@ describe("hard-break normalization — structured documents", () => {
       }),
       { numRuns: 400, seed: SEED },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 
   it("never changes what the document means", () => {
     fc.assert(
@@ -267,7 +272,7 @@ describe("hard-break normalization — structured documents", () => {
       }),
       { numRuns: 300, seed: SEED },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 
   // Judged by the document's meaning, not by a copy of the normalizer's rules.
   it("in prose, leaves a break unconverted only when respelling it would change the document", () => {
@@ -281,7 +286,7 @@ describe("hard-break normalization — structured documents", () => {
       }),
       { numRuns: 300, seed: SEED },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 
   // Verification is all or nothing (hardBreakRespell.ts): one respelling the
   // rules do not foresee leaves the whole document as written. So with any
@@ -299,7 +304,7 @@ describe("hard-break normalization — structured documents", () => {
       }),
       { numRuns: 300, seed: SEED },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 
   it("is idempotent", () => {
     fc.assert(
@@ -309,7 +314,7 @@ describe("hard-break normalization — structured documents", () => {
       }),
       { numRuns: 300, seed: SEED },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 
   it("serialize∘parse is stable after one round, in either style", () => {
     fc.assert(
@@ -319,7 +324,7 @@ describe("hard-break normalization — structured documents", () => {
       }),
       { numRuns: 200, seed: SEED },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 });
 
 // ---- properties: messy documents --------------------------------------------
@@ -334,7 +339,7 @@ describe("hard-break normalization — messy documents", () => {
       }),
       { numRuns: 400, seed: SEED },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 });
 
 describe("hard-break style — messy documents", () => {
@@ -352,5 +357,5 @@ describe("hard-break style — messy documents", () => {
       }),
       { numRuns: 600, seed: SEED },
     );
-  }, PROPERTY_TEST_TIMEOUT_MS);
+  });
 });

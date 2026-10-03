@@ -246,7 +246,7 @@ A configuração não aparece no macOS nem no Linux.
 | Máximo de versões | Número de instantâneos de histórico a manter por documento | 50 versões | 10, 25, 50, 100 |
 | Manter versões por | Idade máxima dos instantâneos de histórico antes de serem removidos | 7 dias | 1 dia, 7 dias, 14 dias, 30 dias |
 | Janela de mesclagem | Salvamentos automáticos consecutivos dentro desta janela se consolidam em um único instantâneo, reduzindo o ruído de armazenamento | 30 segundos | Desligado, 10s, 30s, 1 min, 2 min |
-| Tamanho máximo de arquivo para histórico | Pular instantâneos de histórico para arquivos maiores que este limite | 512 KB | 256 KB, 512 KB, 1 MB, 5 MB, Ilimitado |
+| Tamanho máximo de arquivo para histórico | Pular instantâneos de histórico do salvamento automático para arquivos maiores que este limite. Salvamentos manuais, salvamentos via MCP e a cópia de segurança feita antes de restaurar uma versão são sempre mantidos | 512 KB | 256 KB, 512 KB, 1 MB, 5 MB, Ilimitado |
 
 ### Imagens
 

@@ -29,11 +29,6 @@ vi.mock("@/utils/imeGuard", () => ({
   isImeKeyEvent: vi.fn(() => false),
 }));
 
-vi.mock("@/plugins/shared/popupHostDom", () => ({
-  getPopupHostForDom: () => null,
-  toHostCoordsForDom: (_host: HTMLElement, pos: { top: number; left: number }) => pos,
-}));
-
 import { WysiwygPopupView } from "./WysiwygPopupView";
 import type { PopupStoreBase, StoreApi, EditorViewLike } from "./types";
 
@@ -416,31 +411,30 @@ describe("WysiwygPopupView", () => {
       expect(container.style.left).toBe("200px");
     });
 
-    it("uses absolute positioning and host coords when host is a non-body element", async () => {
-      const sourcePopup = await import("@/plugins/shared/popupHostDom");
+    it("uses absolute positioning and host coords when host is a non-body element", () => {
+      // The editor sits inside a real .editor-container that is offset in the
+      // viewport and scrolled. jsdom has no layout, so the host's rect and
+      // scroll offsets are set by hand.
       const hostEl = document.createElement("div");
-      hostEl.style.position = "relative";
+      hostEl.className = "editor-container";
       document.body.appendChild(hostEl);
-
-      vi.spyOn(sourcePopup, "getPopupHostForDom" as never).mockReturnValue(hostEl as never);
-      // toHostCoordsForDom transforms coords — our mock passes them through
-      vi.spyOn(sourcePopup, "toHostCoordsForDom" as never).mockReturnValue({ top: 50, left: 75 } as never);
-
-      popup.destroy();
-      storeApi = createMockStore();
-      popup = new TestPopupView(view, storeApi.store);
+      hostEl.appendChild(view.dom);
+      vi.spyOn(hostEl, "getBoundingClientRect").mockReturnValue({
+        top: 60, left: 150, right: 950, bottom: 660, width: 800, height: 600, x: 150, y: 60,
+        toJSON: () => ({}),
+      });
+      Object.defineProperty(hostEl, "scrollTop", { value: 10, configurable: true });
+      Object.defineProperty(hostEl, "scrollLeft", { value: 25, configurable: true });
 
       storeApi.emit({ isOpen: true, anchorRect });
 
       const container = hostEl.querySelector(".test-popup") as HTMLElement;
       expect(container).not.toBeNull();
       expect(container.style.position).toBe("absolute");
-      // Should use transformed coordinates from toHostCoordsForDom
+      // Viewport position (100, 200) from calculatePopupPosition, minus the
+      // host's viewport offset, plus its scroll: 100 - 60 + 10, 200 - 150 + 25.
       expect(container.style.top).toBe("50px");
       expect(container.style.left).toBe("75px");
-
-      vi.mocked(sourcePopup.getPopupHostForDom as never).mockRestore?.();
-      vi.mocked(sourcePopup.toHostCoordsForDom as never).mockRestore?.();
     });
   });
 
@@ -527,7 +521,7 @@ describe("WysiwygPopupView", () => {
 
   describe("Reshow hook (shouldReshow)", () => {
     class ReshowPopup extends TestPopupView {
-      protected shouldReshow(prev: TestState, state: TestState): boolean {
+      protected override shouldReshow(prev: TestState, state: TestState): boolean {
         return prev.text !== state.text;
       }
     }
@@ -672,7 +666,7 @@ describe("WysiwygPopupView", () => {
           return container;
         }
 
-        protected getPopupDimensions() {
+        protected override getPopupDimensions() {
           // Return object without gap or preferAbove to exercise the ?? fallbacks
           return { width: 300, height: 50 } as never;
         }

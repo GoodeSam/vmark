@@ -86,7 +86,7 @@ Convertit les lettres et chiffres pleine largeur en demi-largeur.
 
 ### 4. Conversion des crochets
 
-Convertit les crochets demi-largeur en pleine largeur lorsqu'ils entourent du contenu CJK.
+Convertit les crochets demi-largeur en pleine largeur lorsqu'ils entourent du contenu CJK. Les deux crochets doivent se trouver dans le même paragraphe : séparés par une ligne vide, ils restent tels qu'ils ont été saisis.
 
 | Avant | Après |
 |-------|-------|
@@ -315,7 +315,7 @@ VMark utilise un algorithme sophistiqué basé sur une pile pour l'appariement d
 3. **Détection des apostrophes** : Reconnaît les contractions (don't, it's) et les préserve
 4. **Détection des primes** : Reconnaît les mesures (5'10") et les préserve
 5. **Détection de contexte CJK** : Vérifie si le contenu entre guillemets contient des caractères CJK
-6. **Nettoyage des orphelins** : Gère gracieusement les guillemets non appariés
+6. **Nettoyage des orphelins** : Gère gracieusement les guillemets non appariés ; un guillemet encore ouvert à la fin d'un paragraphe reste non apparié, si bien que des guillemets ne s'apparient jamais par-dessus une ligne vide
 
 ### Exemples
 

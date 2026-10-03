@@ -29,7 +29,14 @@
  *   real-sleep       a test sleeps on the wall clock for >= 100 ms
  *                    (`await new Promise(r => setTimeout(r, N))`, or a sleep
  *                    helper declared in the file or imported from a shared
- *                    test utility) with no fake timers.
+ *                    test utility) with no fake timers. A mocked Date alone
+ *                    leaves the timers real, so it does not excuse a sleep.
+ *   fake-timer-sleep a test awaits a sleep, for ANY duration, in a file that
+ *                    fakes timers: either it waits on fake timers nothing
+ *                    advances, or it runs where the file switched back to real
+ *                    ones. Advance the fake clock or await the condition
+ *                    instead. A delayed promise handed on (a mock's slow
+ *                    result) is not a sleep there: fake timers advance it.
  *
  * An `await`ed or returned timer in the SUBJECT is deterministic — the
  * awaiting code decides when it resumes — and does not make it racy. A fully
@@ -50,7 +57,7 @@
  * finding, on every run — but do not fail. It exists so a rule can land before
  * the last of its findings is fixed. It is two-way: a report-only rule with no
  * findings left FAILS the run until its name is removed from the list, so the
- * switch cannot outlive its reason. The list is empty today — all four rules
+ * switch cannot outlive its reason. The list is empty today — all five rules
  * fail the run. `--report-only <a,b|none>` overrides the list for this gate's
  * own tests.
  *
@@ -67,7 +74,7 @@ import { isMainModule } from "./lib/isMainModule.mjs";
 import { scanTestClockUsage } from "./check-test-timer-isolation.scan.mjs";
 import { importedSleepHelpers } from "./lib/timerIsolationImports.mjs";
 
-export const RULES = ["race-sibling", "race-widened", "wall-clock-read", "real-sleep"];
+export const RULES = ["race-sibling", "race-widened", "wall-clock-read", "real-sleep", "fake-timer-sleep"];
 
 /**
  * Rules that report without failing. Empty: every rule is enforced. A new rule
@@ -177,9 +184,16 @@ export function scan(root) {
         findings["wall-clock-read"].push({ file: testFile, text: `${testFile}:${read.line}  ${read.what}` });
       }
     }
-    if (!usage.controlsClock && !realTimersIntended) {
-      for (const sleep of usage.sleeps.filter((s) => s.ms >= SLEEP_THRESHOLD_MS)) {
-        findings["real-sleep"].push({ file: testFile, text: `${testFile}:${sleep.line}  ${sleep.ms}ms` });
+    if (!realTimersIntended) {
+      // Under fake timers a delayed promise the test hands on (a mock's slow
+      // result) is advanced like any timer; only a sleep the test awaits
+      // where it is written waits on a clock nothing moves.
+      const sleeping = usage.fakesTimers
+        ? usage.sleeps.filter((s) => s.awaited)
+        : usage.sleeps.filter((s) => s.ms >= SLEEP_THRESHOLD_MS);
+      const rule = usage.fakesTimers ? "fake-timer-sleep" : "real-sleep";
+      for (const sleep of sleeping) {
+        findings[rule].push({ file: testFile, text: `${testFile}:${sleep.line}  ${sleep.ms}ms` });
       }
     }
 

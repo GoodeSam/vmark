@@ -250,7 +250,7 @@ L'impostazione non compare su macOS né su Linux.
 | Versioni massime | Numero di snapshot di cronologia da mantenere per documento | 50 versioni | 10, 25, 50, 100 |
 | Mantieni versioni per | Età massima degli snapshot di cronologia prima di essere eliminati | 7 giorni | 1 giorno, 7 giorni, 14 giorni, 30 giorni |
 | Finestra di unione | I salvataggi automatici consecutivi all'interno di questa finestra si consolidano in un unico snapshot, riducendo il rumore dello storage | 30 secondi | Off, 10s, 30s, 1 min, 2 min |
-| Dimensione massima file per la cronologia | Salta la creazione di snapshot di cronologia per i file più grandi di questa soglia | 512 KB | 256 KB, 512 KB, 1 MB, 5 MB, Illimitato |
+| Dimensione massima file per la cronologia | Salta gli snapshot di cronologia del salvataggio automatico per i file più grandi di questa soglia. I salvataggi manuali, i salvataggi MCP e la copia di sicurezza fatta prima di ripristinare una versione vengono sempre conservati | 512 KB | 256 KB, 512 KB, 1 MB, 5 MB, Illimitato |
 
 ### Immagini
 

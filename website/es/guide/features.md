@@ -220,7 +220,7 @@ Soporte integral de imágenes:
 - Pegar desde el portapapeles
 - Copia automática a la carpeta de recursos del proyecto
 - Doble clic para editar la ruta de origen y el texto alternativo — las dimensiones de la imagen se muestran en solo lectura
-- Clic derecho para Cambiar imagen, Eliminar imagen, Copiar ruta de imagen y Mostrar en Finder
+- Clic derecho para Cambiar imagen, Eliminar imagen, Copiar ruta de imagen y Mostrar en Finder (Mostrar en Explorador en Windows, Mostrar en gestor de archivos en Linux)
 - Alternar entre visualización en línea y en bloque
 
 ## Vídeo y Audio
@@ -500,7 +500,7 @@ Algunos comportamientos que funcionan sin ningún ajuste:
 
 - **La selección sigue visible cuando el editor pierde el foco.** Haz clic en el terminal, la barra lateral o un popup y el texto seleccionado conserva un resaltado más tenue, para que veas sobre qué actuará un comando o una herramienta de IA. El modo Fuente muestra todos los rangos de una selección multicursor.
 - **Escribir en el borde izquierdo de un código en línea escribe dentro de él.** Con el cursor justo antes de un fragmento de código en línea en el modo WYSIWYG — llegues como llegues —, el siguiente carácter se une al código en lugar de quedar fuera.
-- **Los métodos de entrada (IME) son seguros.** Mientras compones con un método de entrada chino, japonés o coreano, y durante 50 ms después de terminar la composición, los atajos del editor y las conversiones automáticas no se activan, así que pulsar Enter para aceptar un candidato no divide también el párrafo. Deshacer y rehacer siguen funcionando. Una sílaba coreana confirmada con Enter también inicia la línea nueva. Se elimina la romanización sobrante delante del texto confirmado, y un carácter confirmado en una celda de tabla vacía se queda tal como se escribió. Las notificaciones informativas esperan a que termine la composición; los errores y advertencias se muestran de inmediato. Una edición de IA o MCP espera en lugar de sobrescribir el texto que aún estás componiendo.
+- **Los métodos de entrada (IME) son seguros.** Mientras compones con un método de entrada chino, japonés o coreano, y durante 50 ms después de terminar la composición, los atajos del editor y las conversiones automáticas no se activan, así que pulsar Enter para aceptar un candidato no divide también el párrafo. Deshacer y rehacer siguen funcionando. Una sílaba coreana confirmada con Enter también inicia la línea nueva. Se elimina la romanización sobrante delante del texto confirmado, y un carácter confirmado en una celda de tabla vacía se queda tal como se escribió. Las notificaciones informativas esperan a que termine la composición; los errores y advertencias se muestran de inmediato. Una edición de un cliente de IA por MCP se rechaza (el cliente vuelve a intentarlo) o se retiene hasta que termina la composición, y un cambio del archivo en disco también espera, así que ninguno sobrescribe el texto que aún estás componiendo.
 - **Se respeta el movimiento reducido.** Cuando el ajuste de accesibilidad *reducir movimiento* de tu sistema operativo está activado, VMark desactiva sus animaciones y transiciones y se desplaza al instante en lugar de suavemente (incluido el modo máquina de escribir). No hay un ajuste aparte en VMark. El ajuste del sistema *reducir transparencia* desactiva igualmente el desenfoque de fondo.
 
 ## Vista y Enfoque

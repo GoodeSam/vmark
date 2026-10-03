@@ -219,7 +219,7 @@ Umfassende Bildunterstützung:
 - Aus Zwischenablage einfügen
 - Automatisch in den Projektasset-Ordner kopieren
 - Doppelklick zum Bearbeiten des Quellpfads und Alt-Texts — die Abmessungen des Bildes werden schreibgeschützt angezeigt
-- Rechtsklick für Bild ändern, Bild löschen, Pfad kopieren und Im Finder anzeigen
+- Rechtsklick für Bild ändern, Bild löschen, Pfad kopieren und Im Finder anzeigen (Im Explorer anzeigen unter Windows, Im Dateimanager anzeigen unter Linux)
 - Zwischen Inline- und Block-Anzeige wechseln
 
 ## Video & Audio
@@ -499,7 +499,7 @@ Einige Verhaltensweisen, die ohne jede Einstellung funktionieren:
 
 - **Die Auswahl bleibt sichtbar, wenn der Editor den Fokus verliert.** Klicken Sie ins Terminal, in die Seitenleiste oder in ein Popup, und der ausgewählte Text behält eine schwächere Hervorhebung, sodass Sie sehen, worauf ein Befehl oder ein KI-Tool wirken wird. Der Quellmodus zeigt jeden Bereich einer Mehrcursor-Auswahl.
 - **Tippen am linken Rand von Inline-Code landet darin.** Steht der Cursor im WYSIWYG-Modus direkt vor einem Inline-Code-Abschnitt — egal, wie Sie dorthin gelangt sind —, wird das nächste Zeichen Teil des Codes, statt außerhalb zu landen.
-- **Eingabemethoden (IME) sind sicher.** Während Sie mit einer chinesischen, japanischen oder koreanischen Eingabemethode komponieren, und für 50 ms nach dem Ende der Komposition, lösen Editor-Tastenkürzel und automatische Umwandlungen nicht aus, sodass das Drücken der Eingabetaste zum Übernehmen eines Kandidaten nicht zugleich den Absatz teilt. Rückgängig und Wiederholen funktionieren weiterhin. Eine mit der Eingabetaste bestätigte koreanische Silbe beginnt zugleich die neue Zeile. Übrig gebliebene Romanisierung vor übernommenem Text wird entfernt, und ein in eine leere Tabellenzelle übernommenes Zeichen bleibt so, wie es eingegeben wurde. Informations-Toasts warten, bis die Komposition endet; Fehler und Warnungen erscheinen sofort. Eine KI- oder MCP-Bearbeitung wartet, statt Text zu überschreiben, den Sie noch komponieren.
+- **Eingabemethoden (IME) sind sicher.** Während Sie mit einer chinesischen, japanischen oder koreanischen Eingabemethode komponieren, und für 50 ms nach dem Ende der Komposition, lösen Editor-Tastenkürzel und automatische Umwandlungen nicht aus, sodass das Drücken der Eingabetaste zum Übernehmen eines Kandidaten nicht zugleich den Absatz teilt. Rückgängig und Wiederholen funktionieren weiterhin. Eine mit der Eingabetaste bestätigte koreanische Silbe beginnt zugleich die neue Zeile. Übrig gebliebene Romanisierung vor übernommenem Text wird entfernt, und ein in eine leere Tabellenzelle übernommenes Zeichen bleibt so, wie es eingegeben wurde. Informations-Toasts warten, bis die Komposition endet; Fehler und Warnungen erscheinen sofort. Eine Bearbeitung eines KI-Clients über MCP wird abgelehnt (der Client versucht es erneut) oder bis zum Ende der Komposition zurückgehalten, und eine Änderung der Datei auf dem Datenträger wartet ebenfalls — so überschreibt keine von beiden Text, den Sie noch komponieren.
 - **Reduzierte Bewegung wird beachtet.** Ist die Bedienungshilfen-Einstellung *Bewegung reduzieren* Ihres Betriebssystems eingeschaltet, schaltet VMark seine Animationen und Übergänge aus und scrollt sofort statt weich (auch im Schreibmaschinenmodus). Eine eigene Einstellung in VMark gibt es nicht. Die Systemeinstellung *Transparenz reduzieren* schaltet ebenso die Hintergrundunschärfe aus.
 
 ## Ansicht & Fokus

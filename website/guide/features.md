@@ -220,7 +220,7 @@ Comprehensive image support:
 - Paste from clipboard
 - Auto-copy to project assets folder
 - Double-click to edit the source path and alt text — the image's dimensions are shown read-only
-- Right-click for Change Image, Delete Image, Copy Path and Reveal in Finder
+- Right-click for Change Image, Delete Image, Copy Path and Reveal in Finder (Show in Explorer on Windows, Show in File Manager on Linux)
 - Toggle between inline and block display
 
 ## Video & Audio
@@ -500,7 +500,7 @@ A few behaviours that work without any setting:
 
 - **The selection stays visible when the editor loses focus.** Click into the terminal, the sidebar or a popup and the selected text keeps a dimmer highlight, so you can see what a command or an AI tool will act on. Source mode shows every range of a multi-cursor selection.
 - **Typing at the left edge of inline code goes inside it.** With the cursor just before an inline code span in WYSIWYG mode — however you got there — the next character joins the code rather than landing outside it.
-- **Input methods (IME) are safe.** While you compose with a Chinese, Japanese or Korean input method, and for 50 ms after the composition ends, editor shortcuts and automatic conversions do not fire, so pressing Enter to accept a candidate does not also split the paragraph. Undo and redo still work. A Korean syllable confirmed with Enter also starts the new line. Leftover romanization in front of committed text is removed, and a character committed into an empty table cell stays as typed. Informational toasts wait until the composition ends; errors and warnings show at once. An AI or MCP edit waits rather than overwrite text you are still composing.
+- **Input methods (IME) are safe.** While you compose with a Chinese, Japanese or Korean input method, and for 50 ms after the composition ends, editor shortcuts and automatic conversions do not fire, so pressing Enter to accept a candidate does not also split the paragraph. Undo and redo still work. A Korean syllable confirmed with Enter also starts the new line. Leftover romanization in front of committed text is removed, and a character committed into an empty table cell stays as typed. Informational toasts wait until the composition ends; errors and warnings show at once. An edit from an AI client over MCP is refused (the client retries) or held until the composition ends, and a change to the file on disk waits too, so neither overwrites text you are still composing.
 - **Reduced motion is honoured.** When your operating system's *reduce motion* accessibility setting is on, VMark turns its animations and transitions off and scrolls instantly instead of smoothly (typewriter mode included). There is no separate setting in VMark. The system's *reduce transparency* setting likewise turns off background blur.
 
 ## View & Focus

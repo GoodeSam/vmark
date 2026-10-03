@@ -143,7 +143,7 @@ describe("useCommandBootstrap", () => {
     // Sanity-check the bundle: at minimum it must carry the misc + view
     // bindings (the largest two groups).
     expect(bindings).toEqual(expect.arrayContaining([
-      expect.objectContaining({ commandId: "app.preferences" }),
+      expect.objectContaining({ commandId: "app.quickOpen" }),
       expect.objectContaining({ commandId: "view.toggleSourceMode" }),
     ]));
   });

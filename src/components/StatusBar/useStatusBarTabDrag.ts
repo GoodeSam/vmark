@@ -220,14 +220,14 @@ export function useStatusBarTabDrag({ tabs, windowLabel, tabBarRef, onActivateTa
   const isDragOutBlocked = dragMode === "dragout" && windowLabel === "main" && tabs.length <= 1;
   const isDropInvalid = isReorderBlocked || isDragOutBlocked;
   const dragHint = isDragOutBlocked
-    ? "Cannot move the last tab in main window"
+    ? i18n.t("statusbar:tabDrag.lastTab")
     : dragTargetWindowLabel
-      ? `Drop to move to ${dragTargetWindowLabel}`
+      ? i18n.t("statusbar:tabDrag.moveToWindow", { window: dragTargetWindowLabel })
       : dragMode === "dragout"
-        ? "Drop to create a new window"
+        ? i18n.t("statusbar:tabDrag.newWindow")
         : isReorderBlocked
-          ? "Pinned zone is locked"
-          : "Reorder tab";
+          ? i18n.t("statusbar:tabDrag.pinnedZone")
+          : i18n.t("statusbar:tabDrag.reorder");
 
   useEffect(() => {
     let cancelled = false;

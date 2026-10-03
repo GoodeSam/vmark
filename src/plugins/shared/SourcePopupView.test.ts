@@ -28,13 +28,6 @@ vi.mock("@/utils/imeGuard", () => ({
   isImeKeyEvent: vi.fn((e: KeyboardEvent) => e.key === "Process"),
 }));
 
-vi.mock("@/plugins/shared/popupHostDom", () => ({
-  getPopupHostForDom: vi.fn(() => null),
-  toHostCoordsForDom: vi.fn(
-    (_host: unknown, pos: { top: number; left: number }) => pos
-  ),
-}));
-
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import {
   SourcePopupView,
@@ -42,7 +35,6 @@ import {
   type StoreApi,
 } from "./SourcePopupView";
 import type { EditorView } from "@codemirror/view";
-import { getPopupHostForDom, toHostCoordsForDom } from "@/plugins/shared/popupHostDom";
 import { handlePopupTabNavigation } from "@/utils/popupComponents";
 
 // ---------------------------------------------------------------------------
@@ -136,6 +128,22 @@ function createMockStore(): StoreApi<TestState> & {
     },
     mockClosePopup,
   };
+}
+
+/**
+ * Mount `view` inside a real `.editor-container` whose viewport offset is
+ * (top 40, left 80). jsdom has no layout, so the rect is set by hand.
+ */
+function mountInEditorContainer(view: EditorView): HTMLElement {
+  const host = document.createElement("div");
+  host.className = "editor-container";
+  host.appendChild(view.dom);
+  document.body.appendChild(host);
+  vi.spyOn(host, "getBoundingClientRect").mockReturnValue({
+    top: 40, left: 80, right: 880, bottom: 640, width: 800, height: 600, x: 80, y: 40,
+    toJSON: () => ({}),
+  });
+  return host;
 }
 
 const ANCHOR = { top: 100, left: 200, bottom: 120, right: 250 };
@@ -283,23 +291,20 @@ describe("SourcePopupView", () => {
   });
 
   it("updatePosition uses host-relative coords when host is not document.body", () => {
-    // Mock getPopupHostForDom to return a specific element (not document.body)
-    const hostEl = document.createElement("div");
-    document.body.appendChild(hostEl);
-    vi.mocked(getPopupHostForDom).mockReturnValueOnce(hostEl);
-    vi.mocked(toHostCoordsForDom).mockReturnValueOnce({ top: 10, left: 20 });
-
-    // Re-create popup to pick up new mock
-    popup.destroy();
-    popup = new TestPopupView(view, store);
+    const hostEl = mountInEditorContainer(view);
 
     store.trigger({ isOpen: true, anchorRect: ANCHOR, closePopup: store.mockClosePopup });
 
-    // Update position — now host !== document.body, should use toHostCoordsForDom
-    vi.mocked(toHostCoordsForDom).mockReturnValueOnce({ top: 15, left: 25 });
+    // Viewport (50, 100) from calculatePopupPosition, relative to the host at (40, 80)
+    const container = (popup as unknown as { container: HTMLElement }).container;
+    expect(container.style.top).toBe("10px");
+    expect(container.style.left).toBe("20px");
+
+    // The host scrolls; updatePosition re-derives the host coordinates
+    Object.defineProperty(hostEl, "scrollTop", { value: 5, configurable: true });
+    Object.defineProperty(hostEl, "scrollLeft", { value: 5, configurable: true });
     popup.callUpdatePosition({ top: 200, left: 300, bottom: 220, right: 350 });
 
-    const container = (popup as unknown as { container: HTMLElement }).container;
     expect(container.style.top).toBe("15px");
     expect(container.style.left).toBe("25px");
 
@@ -484,20 +489,26 @@ describe("SourcePopupView", () => {
   });
 
   it("show() uses absolute positioning when host is not document.body", () => {
-    const hostEl = document.createElement("div");
-    document.body.appendChild(hostEl);
-    vi.mocked(getPopupHostForDom).mockReturnValue(hostEl);
-    vi.mocked(toHostCoordsForDom).mockReturnValue({ top: 10, left: 20 });
+    const hostEl = mountInEditorContainer(view);
 
-    popup.destroy();
-    popup = new TestPopupView(view, store);
     store.trigger({ isOpen: true, anchorRect: ANCHOR, closePopup: store.mockClosePopup });
 
     const container = (popup as unknown as { container: HTMLElement }).container;
     expect(container.style.position).toBe("absolute");
+    expect(container.parentElement).toBe(hostEl);
 
     hostEl.remove();
-    vi.mocked(getPopupHostForDom).mockReturnValue(null);
+  });
+
+  it("show() mounts on document.body with fixed positioning when the editor DOM has no host", () => {
+    // createMockView leaves the editor DOM detached: no .editor-container, no parent
+    store.trigger({ isOpen: true, anchorRect: ANCHOR, closePopup: store.mockClosePopup });
+
+    const container = (popup as unknown as { container: HTMLElement }).container;
+    expect(container.style.position).toBe("fixed");
+    expect(container.parentElement).toBe(document.body);
+    expect(container.style.top).toBe("50px");
+    expect(container.style.left).toBe("100px");
   });
 
   it("scroll when popup is open calls closePopup", () => {

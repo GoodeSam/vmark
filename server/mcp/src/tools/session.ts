@@ -7,7 +7,8 @@
  * `get_state` action that returns every window, every tab, and per-tab
  * metadata (filePath, dirty, revision, kind).
  *
- * Origin: MCP pruning plan (2026-05-04, retired) ADR-6.
+ * Origin: the MCP pruning plan's ADR-6, recorded in
+ * `.claude/adr/plans/20260504-mcp-pruning.md`.
  */
 
 import { z } from 'zod';

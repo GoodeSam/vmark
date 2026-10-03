@@ -7,7 +7,8 @@
  * them. Exposed as one tool with two actions instead of seven separate
  * mutator tools.
  *
- * Origin: MCP pruning plan (2026-05-04, retired) ADR-5.
+ * Origin: the MCP pruning plan's ADR-5, recorded in
+ * `.claude/adr/plans/20260504-mcp-pruning.md`.
  */
 
 import { z } from 'zod';

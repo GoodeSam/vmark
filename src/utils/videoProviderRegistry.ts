@@ -18,14 +18,13 @@
  *     (imported/programmatic node attrs are untrusted input)
  *   - Each provider declares the ONE origin its embed URLs point at (the
  *     privacy-enhanced host for YouTube). `VIDEO_EMBED_ORIGINS` is the list of
- *     frames the app ever creates: the sanitizer allows exactly these, and the
- *     release CSP's `frame-src` must name exactly these (a test reads
- *     `tauri.conf.json` and fails when either side drifts)
+ *     frames the app ever creates, and the release CSP's `frame-src` must name
+ *     exactly these (a test reads `tauri.conf.json` and fails when either
+ *     side drifts)
  *
  * @coordinates-with youtubeUrlParser.ts — YouTube URL parsing
  * @coordinates-with vimeoUrlParser.ts — Vimeo URL parsing + privacy hashes
  * @coordinates-with plugins/videoEmbed/tiptap.ts — uses registry for paste + parseHTML
- * @coordinates-with utils/sanitize.ts — allows an iframe only at an embed origin
  * @coordinates-with src-tauri/tauri.conf.json — the CSP `frame-src` names the embed origins
  * @module utils/videoProviderRegistry
  */
@@ -190,17 +189,6 @@ const PROVIDER_LIST = Object.freeze(
 export const VIDEO_EMBED_ORIGINS: readonly string[] = Object.freeze(
   PROVIDER_LIST.map((provider) => PROVIDERS[provider].embedOrigin)
 );
-
-/**
- * Whether an iframe `src` loads from a video embed origin. Compared as a
- * parsed origin, so host case and an explicit default port do not matter and
- * a lookalike host, another scheme or port, or embedded credentials never pass.
- */
-export function isVideoEmbedSrc(src: string): boolean {
-  const res = parseHttpUrl(src);
-  if (!res || res.parsed.username || res.parsed.password) return false;
-  return VIDEO_EMBED_ORIGINS.includes(res.parsed.origin);
-}
 
 /**
  * Parse a URL and detect which video provider it belongs to.

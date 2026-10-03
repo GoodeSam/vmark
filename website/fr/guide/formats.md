@@ -80,7 +80,8 @@ Fonctionnement et ce à quoi s'attendre :
   décoder. Sur macOS, c'est large — HEIC, TIFF, `.mov`/H.264 et FLAC sont tous lus.
   Les formats que la webview ne sait pas décoder (par ex. `.mkv`, `.avi`, `.wmv`)
   s'ouvrent quand même, avec un panneau de repli proposant **Ouvrir avec l'application
-  par défaut** et **Afficher dans le Finder**.
+  par défaut** et **Afficher dans le Finder** (**Afficher dans l'Explorateur** sous
+  Windows, **Afficher dans le gestionnaire de fichiers** sous Linux).
 - **Lecture seule.** Les onglets de médias ne deviennent jamais modifiés et se ferment
   sans demande d'enregistrement.
 

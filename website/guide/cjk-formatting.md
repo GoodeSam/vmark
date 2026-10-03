@@ -86,7 +86,7 @@ Converts fullwidth letters and numbers to halfwidth.
 
 ### 4. Bracket Conversion
 
-Converts halfwidth brackets to fullwidth when surrounding CJK content.
+Converts halfwidth brackets to fullwidth when surrounding CJK content. Both brackets must be in the same paragraph: across a blank line they stay as typed.
 
 | Before | After |
 |--------|-------|
@@ -315,7 +315,7 @@ VMark uses a sophisticated stack-based algorithm for quote pairing:
 3. **Apostrophe Detection**: Recognizes contractions (don't, it's) and preserves them
 4. **Prime Detection**: Recognizes measurements (5'10") and preserves them
 5. **CJK Context Detection**: Checks if quoted content involves CJK characters
-6. **Orphan Cleanup**: Handles unmatched quotes gracefully
+6. **Orphan Cleanup**: Handles unmatched quotes gracefully; a quote still open at the end of a paragraph stays unpaired, so quotes never pair across a blank line
 
 ### Examples
 

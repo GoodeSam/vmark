@@ -150,10 +150,9 @@ function captureListenCallback(): ListenCallback {
     const activeRoot = mocks.activeScopeRoot();
     if (activeRoot && payload.rootPath !== activeRoot) return; // …and by the watched root
     listener(toSemantic(payload));
-    // One macrotask turn for the async routing; under fake timers that turn
-    // has to be advanced explicitly or it never comes.
-    if (vi.isFakeTimers()) await vi.advanceTimersByTimeAsync(0);
-    else await new Promise((resolve) => setTimeout(resolve, 0));
+    // One macrotask turn for the async routing, advanced on the fake clock
+    // every case runs under.
+    await vi.advanceTimersByTimeAsync(0);
   };
 }
 
@@ -255,6 +254,15 @@ describe("a queued conflict that went stale is not resolved", () => {
 // and write content the user had already superseded. The symptom is a document
 // that silently reverts to a version that was on disk moments ago.
 describe("batches are serialized, so an older read cannot land last", () => {
+  // On the fake clock like the rest of the file: the settle after each batch
+  // is advanced, not slept through.
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("leaves the NEWER content in the document when reads finish out of order", async () => {
     seedStores();
 
@@ -286,7 +294,7 @@ describe("batches are serialized, so an older read cannot land last", () => {
     releaseFirst("# first (older)");
     await first;
     await second;
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await vi.advanceTimersByTimeAsync(50);
 
     expect(useDocumentStore.getState().documents["tab-1"]?.content)
       .toBe("# second (newer)");
@@ -304,7 +312,7 @@ describe("batches are serialized, so an older read cannot land last", () => {
 
     await callback(event("/workspace/test.md"));
     await callback(event("/workspace/test.md"));
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await vi.advanceTimersByTimeAsync(50);
 
     expect(mocks.readTextFile).toHaveBeenCalledTimes(2);
   });

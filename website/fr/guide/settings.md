@@ -251,7 +251,7 @@ Le paramètre n'apparaît pas sur macOS ni sur Linux.
 | Versions maximum | Nombre d'instantanés d'historique à conserver par document | 50 versions | 10, 25, 50, 100 |
 | Conserver les versions pendant | Âge maximum des instantanés d'historique avant leur suppression | 7 jours | 1 jour, 7 jours, 14 jours, 30 jours |
 | Fenêtre de fusion | Les sauvegardes automatiques consécutives dans cette fenêtre se consolident en un seul instantané, réduisant le bruit de stockage | 30 secondes | Désactivé, 10s, 30s, 1 min, 2 min |
-| Taille max de fichier pour l'historique | Ne pas prendre d'instantanés d'historique pour les fichiers dépassant ce seuil | 512 Ko | 256 Ko, 512 Ko, 1 Mo, 5 Mo, Illimité |
+| Taille max de fichier pour l'historique | Ne pas prendre d'instantanés d'historique lors de l'enregistrement automatique pour les fichiers dépassant ce seuil. Les enregistrements manuels, les enregistrements MCP et la copie de sécurité prise avant de restaurer une version sont toujours conservés | 512 Ko | 256 Ko, 512 Ko, 1 Mo, 5 Mo, Illimité |
 
 ### Images
 

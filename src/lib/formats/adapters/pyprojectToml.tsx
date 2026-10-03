@@ -14,7 +14,7 @@
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { parse as parseToml } from "smol-toml";
+import { tomlParser, useTomlParser, type TomlParse } from "./tomlParser";
 import type {
   PreviewRendererProps,
   SchemaDetector,
@@ -42,6 +42,9 @@ export const pyprojectTomlSchemaDetector: SchemaDetector = (
   ) {
     return null;
   }
+  // Not until the parser has loaded: the preview asks again when it has.
+  const parseToml = tomlParser();
+  if (!parseToml) return null;
   try {
     parseToml(content);
   } catch {
@@ -94,6 +97,7 @@ function parsePoetryMap(table: unknown): PythonDependency[] {
 
 export function collectPyprojectDependencies(
   content: string,
+  parseToml: TomlParse,
 ): PyprojectResult {
   let parsed: unknown;
   try {
@@ -165,10 +169,12 @@ export function PyprojectTomlSchemaRenderer({
   diagnostics,
 }: PreviewRendererProps) {
   const { t } = useTranslation("editor");
+  const parseToml = useTomlParser();
   const result = useMemo(
-    () => collectPyprojectDependencies(content),
-    [content],
+    () => (parseToml ? collectPyprojectDependencies(content, parseToml) : null),
+    [content, parseToml],
   );
+  if (!result) return null; // the parser is still loading
   const total =
     result.runtime.length +
     result.poetryRuntime.length +

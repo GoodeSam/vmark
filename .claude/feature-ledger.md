@@ -59,7 +59,7 @@ A claim the inspector could not confirm is marked **unverified** in place rather
 
 ## Open findings
 
-Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 159 open.
+Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 154 open.
 
 ### Security boundaries (14)
 
@@ -127,11 +127,10 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 15) `PREDEFINED_ICONS` matches English muda titles only, so predefined menu items get no SF Symbol in the other nine locales (`src-tauri/src/macos_menu_icons.rs`).
 - (area 15) The close-to-tray icon has never run on a real Windows desktop; `src-tauri/src/close_to_tray/tray.rs` compiles only for Windows and has no unit test (decision logic is tested).
 
-### Settings that do more or less than their name (11)
+### Settings that do more or less than their name (10)
 
 - (area 3) Source-mode `Mod+D` / `Mod+Shift+L` are literal keys in `src/services/assembly/sourceEditorKeymap.ts`, not shortcut-store entries, so they cannot be rebound in Source mode (the in-block variant `selectAllOccurrencesInBlock` can).
 - (area 4) Content search's ".md" toggle is labelled "Markdown Files Only" (`src/components/ContentSearch/ContentSearchToggles.tsx`, default on) but restricts to every registered format flagged `contentSearchIndexed` — txt, yaml, and json/toml/mermaid/svg/html when their categories are on (`src/stores/uiStore/contentSearchSlice.ts`).
-- (area 5) Save All and Quit collects only DIRTY documents (`getAllDirtyDocuments` in `src/services/files/fileSave.ts`), while window close treats dirty OR divergent as needing resolution (`needsResolution` in `src/services/windowClose/windowCloseFlow.ts`); a divergent-but-clean document is not saved before a Save All and Quit.
 - (area 6) HTML export embeds only the Latin and mono font settings (`src/export/exportToHtmlFolder.ts` passes `latinFont` and `monoFont`); the CJK font setting is never embedded, and a `custom:<family>` font (#1429) or a curated family outside the Google Fonts map in `src/export/fontEmbedder.ts` silently falls back to the system stack.
 - (area 7) `terminal.osc52Clipboard` ("Remote Clipboard") controls writes only; reads are refused unconditionally (`src/components/Terminal/setupOsc52.ts`). Documented in both guide pages; recorded because the setting name suggests a two-way channel.
 - (area 9) Detect cannot find a CLI installed mid-session: `detect_ai_providers` returns `DETECTION_CACHE` for the process lifetime (`src-tauri/src/ai_provider/detection.rs`), while `website/guide/ai-providers.md` §"How CLI Detection Works" presents Detect as a fresh `$PATH` scan.
@@ -141,7 +140,7 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 14) The PDF export dialog seeds CJK letter spacing at `0.05em` regardless of `appearance.cjkLetterSpacing` (default off), while it seeds fonts from settings (`src/export/PdfExportDialog.tsx`).
 - (area 14) `advanced.customLinkProtocols` is unioned with the defaults on every hydration, so removing `obsidian` / `vscode` / `dict` / `x-dictionary` in Settings lasts only until restart (now stated in `website/guide/settings.md` §"Link Protocols", but the UI still offers the removal) — `src/stores/settingsStore.ts`.
 
-### Test gaps (33)
+### Test gaps (32)
 
 - (area 1) `src/services/media/closeCleanup.ts` has no test of its own (its callers mock it: `src/services/windowClose/windowCloseFlow.test.ts`). `src/components/Editor/MediaView/useMediaAsset.ts` (grant lifecycle, reload key) and `src/plugins/tableOfContents/TocNodeView.ts` have no dedicated tests. `src/plugins/safeBlockSplit/` has no test beside it (its pins are in `src/test/splitBlockSelection.test.ts`).
 - (area 2) `src/plugins/search/__tests__/search.test.ts` mocks `@/stores/searchStore`, a module that no longer exists (state moved to `src/stores/uiStore/searchSlice.ts`); the mock is dead, and `src/plugins/search/tiptap.test.ts` still names a test "view subscribes to searchStore".
@@ -167,9 +166,8 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 11) `src/components/BreakdownPanel/ProvenanceGroup.tsx` and `src/components/BreakdownPanel/DelegationsSection.tsx` have no component tests.
 - (area 12) `src/test/i18nNamespaces.ts` does not load the `workflow` namespace, so the run-panel and restore tests assert raw keys (`workflow:run.start`, `workflow:restore.button` in `src/components/Editor/WorkflowPanel/__tests__/WorkflowRunPanel.test.tsx`) and cannot catch a key missing from `src/locales/en/workflow.json`.
 - (area 12) No e2e journey exercises the engine (Run, Cancel, Restore Files), forms Save, or the fence snapshot; `e2e/journeys/13-workflow-split-pane.mjs` only checks that the GitHub Actions split pane mounts.
-- (area 13) No Rust tests for `src-tauri/src/menu/commands.rs` or `src-tauri/src/menu/dynamic.rs` (Genies and recent submenus).
+- (area 13) No Rust tests for `src-tauri/src/menu/commands.rs`. For `src-tauri/src/menu/dynamic.rs` (Genies and recent submenus) only the layout is pinned — item ids, labels, the Search Genies accelerator and the genie grouping, in `src-tauri/src/menu/dynamic_layout.test.rs`; building and inserting the native items has no test.
 - (area 13) `src/services/updates/updateFlows.ts` and `src/services/updates/updateSingleFlight.ts` have no dedicated tests (exercised only via `src/hooks/useUpdateOperations.test.ts`).
-- (area 13) `src/main.tsx` has no test; nothing pins the bootstrap order (secure storage before the `App` import, formats before stores).
 - (area 13) `src/pages/settings/WorkspaceSettingsGroup.tsx` (workspace-rail toggle row) has no dedicated test.
 - (area 13) The five window-status Tauri commands (`report_window_status`, `set_window_attention`, `clear_window_attention`, `get_window_statuses`, `focus_window`) have no tests; the `#[cfg(test)]` module in `src-tauri/src/window_status/mod.rs` covers only the registry helpers. `focus_window` still returns `Result<(), String>`.
 - (area 14) No e2e journey drives lint or link check (`e2e/journeys/`); `src/utils/appName.ts` has no test.
@@ -177,7 +175,7 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 14) The IME chord guard has no automated real-IME case: `e2e/run-ime.mjs` documents that System Events injection produces no modifier keydown, so the real-IME half is a manual checklist step in `src/test/editorComposition.webkit.test.ts`.
 - (area 15) No tests for `src-tauri/src/app_nap.rs`, `apply_linux_webkit_workarounds` (`src-tauri/src/main.rs`), the logging commands, or `handle_run_event`'s window-destroyed cleanup as a whole (`src-tauri/src/app_setup.rs`).
 
-### Stale comments and headers (61)
+### Stale comments and headers (59)
 
 - (area 1) `src/plugins/shared/mediaSecurity.ts` header argues that refusing `..` bought no containment because "the asset protocol scope is `**`"; `src-tauri/tauri.conf.json` now scopes it to the fs static roots plus runtime grants.
 - (area 1) `src-tauri/src/trusted_html/mod.rs` says a grant ends "in exactly two ways" (revoke or process exit) and that a destroyed webview leaves its grants resident until quit; `src-tauri/src/window_manager/window_events.rs` calls `TrustedHtmlState::revoke_window` on window destroy. `state.rs` and `commands.rs` both carry `@coordinates-with ../app_setup.rs` for that call, but `app_setup.rs` does not make it (the header-refs gate passes because the file exists).
@@ -194,7 +192,6 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 4) `src/stores/workspaceStore.ts` header, "Known limitations": "Config is stored in localStorage … not on disk". The config is written to `<appData>/workspaces/<hash>.json` by `src-tauri/src/workspace/mod.rs` through `src/services/workspaces/workspaceConfig.ts`, and `website/guide/workspace-management.md` §"Workspace Settings" says so.
 - (area 4) `src/hooks/useOutlineSync.ts` header pipeline names the Tauri event `outline:navigate`; nothing emits or listens for it — the event is `outline:scroll-to-heading` (`src/components/Sidebar/OutlineView.tsx`).
 - (area 4) `src/stores/fileLoadStore.test.ts` is named for a `fileLoadStore.ts` that does not exist; it tests `useFileLoadStore` from `src/stores/documentStore/fileLoad.ts` and its `describe` is titled "documentStore".
-- (area 5) `src-tauri/src/window_manager/mod.rs` module-map table omits `window_url`, `pdf_export_window`, `window_events` and `traffic_lights`, and lists `commands` as owning "quit commands" (only `force_quit` remains).
 - (area 5) `src/stores/tabStore.ts` header says tabs are restored "via workspaceStore.lastOpenTabs"; restore prefers the additive `sessionTabs` field (`src/services/persistence/sessionTabs.ts`).
 - (area 5) `src/services/workspaces/reopenClosedTab.ts` header calls reopen "the Cmd+Shift+T behavior"; `reopenClosedTab` ships unbound (`src/stores/settingsStore/shortcutDefinitions.ts`), Mod-Shift-T is `insertTable`.
 - (area 5) `src/stores/documentStore/document.ts` header says `setContent` "survives only as a deprecated test alias"; `src/stores/documentStore/storeContract.ts` and `externalWriterGate.test.ts` say it is gone, and it is.
@@ -210,7 +207,7 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 7) `src/components/Terminal/setupWebglRenderer.ts` carries a release-keyed exit condition: the renderer broadcast becomes redundant once a stable `@xterm/addon-webgl` includes upstream `0b1c0b5c`, and `patches/@xterm__addon-webgl@0.19.0.patch` must be re-evaluated on any addon bump (install fails until then). Correct today; listed so the upgrade is not missed.
 - (area 8) `src/stores/tabStoreBrowserWorkspace.ts` has no module header at all (no `Purpose:` / `@module`).
 - (area 9) `src-tauri/src/secure_store.rs` header pipeline names a frontend `secureSecrets.ts` that does not exist; the consumer is `src/services/secrets/apiKeySecrets.ts`.
-- (area 9) `src-tauri/src/menu/dynamic.rs` `refresh_genies_menu` doc says it scans "global and workspace genie directories" (only the global directory is scanned), and `hide_genies_menu` / the `src/hooks/useGenieShortcuts.ts` header speak of the genie feature being "toggled off" / "switched off" — no setting disables genies; the hook unmounts only with the main window (`src/hooks/lifecycle/MainWindowRunners.tsx`).
+- (area 9) The `src/hooks/useGenieShortcuts.ts` header says its cleanup runs for a feature the user "had just switched off", and its effect comment reads "On unmount (feature disabled)" — no setting disables genies; the hook unmounts only with the main window (`src/hooks/lifecycle/MainWindowRunners.tsx`).
 - (area 10) `src/stores/workspaceApprovalStore.ts` header says the one-shot is bound to "the authenticated client (Codex F-10)" — the handler does not do that — and its `@coordinates-with services/mcpBridge/v2/workspace.ts` names the wrong module (the handler is `workspaceOpenFolder.ts`).
 - (area 10) `src/stores/settingsTypes/system.ts` describes `autoApproveEdits` as "Auto-approve AI document edits without preview"; it gates only `save_as` to a new path and genie direct-apply (`src/services/mcpBridge/v2/workspaceSaveAs.ts`, `src/services/genieInvocation/applyGenieResult.ts`).
 - (area 10) `src/services/mcpBridge/handleRequest.ts` header says it routes to a "5-tool dispatcher"; `dispatchV2` also routes every `vmark.browser.*` operation (`src/services/mcpBridge/v2/dispatch.ts`).
@@ -220,7 +217,6 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 13) `src-tauri/src/menu/localized/file_menu.rs` `//!` header says non-macOS omits Print; the file adds `export-pdf` on every platform.
 - (area 13) `src/stores/settingsStore/shortcutDefinitions.ts` says `newBrowserTab` "is disabled until `browser.enabled` is on"; the item is hidden (`src-tauri/src/menu/conditional_items.rs`).
 - (area 13) `src-tauri/src/window_status/mod.rs` header says the panel is opened "under the Window menu"; it is in View.
-- (area 13) `src/main.tsx` `bootstrap()` carries an "ADR-011: register every plugin's manifest…" comment with no code under it.
 - (area 13) `src/components/FeatureErrorBoundary.tsx` header lists "Editor, Terminal, PDF export route" and omits the `/settings` route `src/App.tsx` also wraps.
 - (area 13) `src/hooks/useStatusToasts.ts` header says a stalled flow raises a toast "with a Reset action"; the action's label is Retry (`updateRetryAction` in `src/locales/en/statusbar.json`).
 - (area 13) `@coordinates-with` lines in `src/pages/settings/FontSettingRow.tsx` and `src/services/fonts/systemFonts.ts` point the custom-family validator at `src/utils/fontStacks.ts`; it lives in `src/utils/customFont.ts`.
@@ -629,7 +625,7 @@ Every WYSIWYG block plugin below is registered in `src/services/assembly/tiptapE
 
 Verified: `2675ad132`
 
-Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/assembly/tiptapExtensions.ts`) and ordered by `WYSIWYG_COMPOSITION_ORDER` (`src/services/assembly/compositionOrder.ts`); settings and stores reach plugins only through the `plugins/shared/host*` seams bound once in `src/main.tsx` (block *plugin-host-seams*). Source-mode popups and Source Peek are described in Area 3 (*source-popups*, *source-peek*); the footnote and math popups in Area 1 (*footnotes*, *math*); code-block line numbers in Area 1 (*code-blocks*).
+Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/assembly/tiptapExtensions.ts`) and ordered by `WYSIWYG_COMPOSITION_ORDER` (`src/services/assembly/compositionOrder.ts`); settings and stores reach plugins only through the `plugins/shared/host*` seams bound once in `src/bootstrap.tsx` (block *plugin-host-seams*). Source-mode popups and Source Peek are described in Area 3 (*source-popups*, *source-peek*); the footnote and math popups in Area 1 (*footnotes*, *math*); code-block line numbers in Area 1 (*code-blocks*).
 
 ### Inline mark input rules (CJK-aware bold/italic)
 - id: mark-input-rules
@@ -777,7 +773,7 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - summary: Not user-facing: narrow interfaces through which plugins read settings, document, shortcuts, search, view toggles and live views, and ask the host for chrome, without importing the app's stores.
 - capabilities: `hostSettings` (tab size, HTML allowlist, CJK formatting, paste mode, hard-break style); `hostDocument` (window label, active file path, content, dirty flag, format id); `hostPopups` (media popup, heading picker, editor context menu, image path, universal-toolbar dismiss — no-op defaults); `hostShortcuts` (`getShortcut` + `onChange`, default unbound); `hostSearch` (find-bar query/flags/index/replace text, match reporting; default closed bar); `hostViewModes` (`focusMode`, `typewriterMode`, `diagramPreview` + `onChange`, default off); `hostEditors` (live Source/WYSIWYG views and Source cursor context); `popupPorts` (state contracts for popups with Source twins); `pasteSettings` (paste vocabulary owned plugin-side)
 - status: shipped-on
-- gate: always on; bound once by `bindPluginHostSettings()` from `src/main.tsx`
+- gate: always on; bound once by `bindPluginHostSettings()` from `src/bootstrap.tsx`
 - surfaces: none
 - code: `src/plugins/shared/{hostSettings,hostDocument,hostPopups,hostShortcuts,hostSearch,hostViewModes,hostEditors,popupPorts,pasteSettings}.ts`; `src/services/assembly/bindHostSettings.ts`; `src/services/assembly/hostAdapters.ts`
 - rust: none
@@ -975,10 +971,10 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - status: shipped-on
 - gate: always on; regex toggle shown only when `markdown.enableRegexSearch = true`
 - surfaces: Edit menu ids `find-replace`, `find-next`, `find-prev`, `use-selection-find`; shortcut ids `findReplace` `Mod-f`, `findNext` `Mod-g`, `findPrevious` `Mod-Shift-g`, `useSelectionFind` `Mod-e`; bar rendered in the bottom lane by `BottomBar.tsx` (not on browser tabs); Settings → Markdown for the regex flag
-- code: `src/components/FindBar/FindBar.tsx`; `src/components/FindBar/FindBarControls.tsx`; `src/components/FindBar/useFindBarKeyboard.ts`; `src/components/FindBar/useFindBarFocus.ts`; `src/plugins/search/tiptap.ts`; `src/plugins/search/findMatches.ts`; `src/plugins/search/replaceActions.ts`; `src/plugins/search/queryDebounce.ts`; `src/hooks/useSearchCommands.ts`; `src/services/search/seedFindFromSelection.ts`; `src/services/editor/activeSelectionText.ts`; `src/hooks/useSourceEditorSearch.ts`; `src/utils/sourceEditorSearch.ts`; `src/utils/debouncedSearchCount.ts`; `src/stores/uiStore/searchSlice.ts`; `src/plugins/shared/hostSearch.ts`
+- code: `src/components/FindBar/FindBar.tsx`; `src/components/FindBar/FindBarControls.tsx`; `src/components/FindBar/useFindBarKeyboard.ts`; `src/components/FindBar/useFindBarFocus.ts`; `src/plugins/search/tiptap.ts`; `src/plugins/search/findMatches.ts`; `src/plugins/search/replaceActions.ts`; `src/plugins/search/queryDebounce.ts`; `src/hooks/useSearchCommands.ts`; `src/services/search/seedFindFromSelection.ts`; `src/services/editor/activeSelectionText.ts`; `src/hooks/useSourceEditorSearch.ts`; `src/utils/sourceEditorSearch.ts`; `src/services/search/sourceSearchCounter.ts`; `src/stores/uiStore/searchSlice.ts`; `src/plugins/shared/hostSearch.ts`
 - rust: menu items in `src-tauri/src/menu/localized/edit_menu.rs` (`CmdOrCtrl+F/G/Shift+G/E`); SF Symbols in `src-tauri/src/macos_menu_icons.rs`
 - docs: `website/guide/features.md` §"Search & Replace" (bar at the bottom of the window, find and replace fields always visible, `Tab` between them); `website/guide/shortcuts.md`
-- tests: `src/components/FindBar/{FindBar,FindBar.useSelectionForFind,FindBarControls,useFindBarFocus}.test.tsx`; `src/components/FindBar/preventSelectAllOnButtons.test.ts`; `src/components/FindBar/useFindBarFocus.eventName.test.ts`; `src/plugins/search/{findMatches,queryDebounce,tiptap}.test.ts`; `src/plugins/search/__tests__/{search,replaceStale}.test.ts`; `src/hooks/useSearchCommands.test.ts`; `src/hooks/useSourceEditorSearch.test.ts`; `src/utils/sourceEditorSearch.test.ts`; `src/utils/__tests__/debouncedSearchCount.test.ts`; `src/services/search/seedFindFromSelection.test.ts`; `src/services/editor/activeSelectionText.test.ts`; e2e `e2e/journeys/07-find-bar.mjs`
+- tests: `src/components/FindBar/{FindBar,FindBar.useSelectionForFind,FindBarControls,useFindBarFocus}.test.tsx`; `src/components/FindBar/preventSelectAllOnButtons.test.ts`; `src/components/FindBar/useFindBarFocus.eventName.test.ts`; `src/plugins/search/{findMatches,queryDebounce,tiptap}.test.ts`; `src/plugins/search/__tests__/{search,replaceStale}.test.ts`; `src/hooks/useSearchCommands.test.ts`; `src/hooks/useSourceEditorSearch.test.ts`; `src/utils/sourceEditorSearch.test.ts`; `src/services/search/sourceSearchCounter.test.ts`; `src/services/search/seedFindFromSelection.test.ts`; `src/services/editor/activeSelectionText.test.ts`; e2e `e2e/journeys/07-find-bar.mjs`
 - notes: Cross-block matches are unsupported by design (parity with Source, `findMatches.ts`); inline atoms become `￼` placeholders so a query cannot match across one. Doc-change rebuilds debounce 200 ms, query changes 150 ms; replace re-scans before writing. The `FindBar.tsx` header still says the bar appears at the top of the editor; it is in the bottom lane. `src/plugins/search/__tests__/search.test.ts` mocks `@/stores/searchStore`, which no longer exists. "Find in Files" is Area 4.
 
 ### Editor context menu
@@ -1201,14 +1197,14 @@ Every document tab resolves to a format through `src/lib/formats/registry.ts`; `
 - id: source-search
 - feature: Find & replace (in-document)
 - summary: The app's find bar drives CodeMirror's search extension in markdown Source mode — live match counting, next/previous, replace and replace-all, with case, whole-word and regex options.
-- capabilities: debounced match counting on document change; index clamping when the count shrinks; find next / previous; replace next / all; case-sensitive, whole-word and regex flags; open-find-bar / find-next / find-previous bound as non-mutating handlers
+- capabilities: match counting with CodeMirror's own search cursor (the engine Next/Previous/Replace use, so `^`/`$`, Whole Word in regex mode and a typed `\n` count as they match); debounced recount on document change that keeps the current match by position (the WYSIWYG rule); find next / previous; replace next / all; case-sensitive, whole-word and regex flags; open-find-bar / find-next / find-previous bound as non-mutating handlers
 - status: shipped-on
 - gate: always on; `search()` included with no CodeMirror panel and no `searchKeymap`
 - surfaces: FindBar (Mod+F)
-- code: `src/hooks/useSourceEditorSearch.ts`; `src/utils/sourceEditorSearch.ts`; `src/utils/debouncedSearchCount.ts`; `src/plugins/codemirror/sourceShortcutsHelpers.ts`
+- code: `src/hooks/useSourceEditorSearch.ts`; `src/utils/sourceEditorSearch.ts`; `src/services/search/sourceSearchCounter.ts`; `src/plugins/codemirror/sourceShortcutsHelpers.ts`
 - rust: none
 - docs: `website/guide/features.md` §"Search & Replace"
-- tests: `src/hooks/useSourceEditorSearch.test.ts`, `src/utils/sourceEditorSearch.test.ts`, `e2e/journeys/07-find-bar.mjs`
+- tests: `src/hooks/useSourceEditorSearch.test.ts`, `src/hooks/useSourceEditorSearch.replaceResume.test.ts`, `src/utils/sourceEditorSearch.test.ts`, `src/services/search/sourceSearchCounter.test.ts`, `src/components/Editor/SourceEditor.search.test.tsx`, `e2e/journeys/07-find-bar.mjs`
 - notes: The split-pane `SourcePane` ships CodeMirror's own `searchKeymap` instead (`src/components/Editor/SplitPaneEditor/sourcePaneExtensions.ts`), so find in a JSON/YAML/TOML tab is CodeMirror's panel, not the app find bar.
 
 ### Focus mode, typewriter mode, word wrap, line numbers, copy-on-select (Source)
@@ -1829,15 +1825,15 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - id: close-save-prompts
 - feature: Quit & save-all behavior
 - summary: Closing a tab or a window, or quitting, resolves unsaved documents first — a native Save/Discard/Cancel prompt per document or one aggregate prompt for several, with a single folder pick for multiple untitled files.
-- capabilities: single-doc and multi-doc prompts; divergent documents need resolution as well as dirty ones, and the prompt says the file changed on disk; Save As for untitled with a default-folder fallback; batch persist of every pathed document, then one Save As (single) or one folder picker (several) for untitled ones; collision-free destination reservation; Save All and Quit flushes every mounted editor, saves all dirty documents, then calls `force_quit` (cancel keeps the app open)
+- capabilities: single-doc and multi-doc prompts; divergent documents need resolution as well as dirty ones, and the prompt says the file changed on disk; Save As for untitled with a default-folder fallback; batch persist of every pathed document, then one Save As (single) or one folder picker (several) for untitled ones; collision-free destination reservation; Save All and Quit is a mode of the coordinated quit: every document window flushes its mounted editors, saves each dirty or divergent document without prompting (untitled ones still get one Save As or one folder picker), revalidates the dirty set, then closes through the normal close flow; a cancelled or failed save keeps that window open and cancels the quit
 - status: shipped-on
 - gate: always on
-- surfaces: menu id `save-all-quit` (`saveAllQuit` = Alt-Mod-Shift-Q; File menu, and the app menu on macOS) → `file.saveAllQuit`; window close button; Mod-W; Mod-Q
-- code: `src/services/windowClose/closeSave.ts`, `src/services/windowClose/closeSaveBatch.ts`, `src/services/windowClose/closeSaveShared.ts`, `src/services/windowClose/reserveBatchDestinations.ts`, `src/services/files/fileSave.ts`, `src/services/commands/fileCommands.ts`
-- rust: `create_file_exclusive`, `force_quit`
+- surfaces: menu id `save-all-quit` (`saveAllQuit` = Alt-Mod-Shift-Q; File menu, and the app menu on macOS), handled in Rust (`MenuAction::SaveAllQuit`); command palette `file.saveAllQuit` → `save_all_and_quit`; window close button; Mod-W; Mod-Q
+- code: `src/services/windowClose/closeSave.ts`, `src/services/windowClose/closeSaveBatch.ts`, `src/services/windowClose/closeSaveShared.ts`, `src/services/windowClose/reserveBatchDestinations.ts`, `src/services/files/fileSave.ts`, `src/services/files/saveAllQuit.ts`, `src/services/commands/fileCommands.ts`
+- rust: `create_file_exclusive`, `quit::save_all_and_quit`
 - docs: `website/guide/tab-navigation.md` §"Closing tabs and windows"; `website/guide/shortcuts.md` (Save All and Quit row); `website/guide/features.md` §"Session Recovery (Hot Exit)"
-- tests: `src/services/windowClose/closeSave.test.ts`, `src/services/windowClose/reserveBatchDestinations.test.ts`, `src/services/windowClose/windowCloseFlow.test.ts`, `src/services/files/fileSave.test.ts`; e2e `e2e/journeys/15-dirty-file-close-guard.mjs`, `e2e/journeys/14-multi-doc-save-integrity.mjs`
-- notes: Save All and Quit collects dirty documents only; a divergent-but-clean document is not saved before the quit. The `closeSave.ts` header names a `decideOnClose()` util that no longer exists.
+- tests: `src/services/windowClose/closeSave.test.ts`, `src/services/windowClose/reserveBatchDestinations.test.ts`, `src/services/windowClose/windowCloseFlow.test.ts`, `src/services/files/fileSave.test.ts`, `src/services/files/saveAllQuit.test.ts`, `src/hooks/useWindowClose.saveAllQuit.test.tsx`; e2e `e2e/journeys/15-dirty-file-close-guard.mjs`, `e2e/journeys/14-multi-doc-save-integrity.mjs`
+- notes: The `closeSave.ts` header names a `decideOnClose()` util that no longer exists.
 
 ### Window close flow
 - id: window-close
@@ -1857,15 +1853,15 @@ Document windows mount their lifecycle through `src/hooks/lifecycle/useWindowLif
 - id: quit
 - feature: Quit & save-all behavior
 - summary: Quitting closes every document window through its save flow, one at a time, and an optional gate requires pressing Cmd+Q twice.
-- capabilities: `request_quit` → confirm gate (2 s wall-clock window; `app:quit-first-press` shows status-bar feedback for 2 s) → `start_quit` emits `app:quit-requested` to each document window → windows close → `finalize_quit` kills the MCP sidecar, content servers and PTYs → `app.exit(0)`; non-document windows closed immediately; OS-level exit requests bypass the gate; a failed emit cancels the quit rather than hanging; `cancel_quit` clears all state including the first-press timestamp; tray-parked windows are restored before quit asks them to save (Windows); `EXIT_ALLOWED` set only immediately before exit; the setting is mirrored into a Rust `AtomicBool`; macOS keeps the app alive with no document windows, Windows/Linux exit
+- capabilities: `request_quit` → confirm gate (2 s wall-clock window; `app:quit-first-press` shows status-bar feedback for 2 s) → `start_quit` emits `app:quit-requested` to each document window → windows close → `finalize_quit` kills the MCP sidecar, content servers and PTYs → `app.exit(0)`; non-document windows closed immediately; OS-level exit requests bypass the gate; a failed emit cancels the quit rather than hanging; `cancel_quit` clears all state including the first-press timestamp; tray-parked windows are restored before quit asks them to save (Windows); `EXIT_ALLOWED` set only immediately before exit; the setting is mirrored into a Rust `AtomicBool`; macOS keeps the app alive with no document windows, Windows/Linux exit; Save All and Quit (`start_save_all_quit`, no confirm gate) runs the same pipeline with `saveAll: true` in `app:quit-requested`, and a window that cannot save answers `cancel_quit`
 - status: shipped-on
 - gate: `general.confirmQuit = true`
-- surfaces: Mod-Q (app menu Quit → `MenuAction::Quit`); menu id `save-all-quit`; tray menu "Quit VMark" (Windows, close-to-tray on); settings pane Files & Images → Quit Behavior
+- surfaces: Mod-Q (app menu Quit → `MenuAction::Quit`); menu id `save-all-quit` (`MenuAction::SaveAllQuit` → `quit::start_save_all_quit`); tray menu "Quit VMark" (Windows, close-to-tray on); settings pane Files & Images → Quit Behavior
 - code: `src-tauri/src/quit.rs`, `src-tauri/src/app_setup.rs`, `src-tauri/src/menu/events/dispatch.rs`, `src/hooks/useConfirmQuitSync.ts`, `src/components/StatusBar/useQuitFeedback.ts`, `src/services/files/fileSave.ts`
-- rust: `quit::cancel_quit`, `quit::set_confirm_quit`, `window_manager::force_quit`; `quit::request_quit` / `quit::start_quit` are called from Rust only
+- rust: `quit::cancel_quit`, `quit::set_confirm_quit`, `quit::save_all_and_quit`; `quit::request_quit` / `quit::start_quit` / `quit::start_save_all_quit` are called from Rust only
 - docs: `website/guide/settings.md` §"Quit Behavior"; `website/guide/shortcuts.md` (Save All and Quit)
-- tests: `src-tauri/src/quit.test.rs`, `src-tauri/src/menu/events/dispatch.test.rs`, `src/hooks/useConfirmQuitSync.test.ts`, `src/components/StatusBar/useQuitFeedback.test.ts`
-- notes: `force_quit` calls `app.exit(0)` directly rather than `finalize_quit`; child processes are then cleaned up by the `ExitRequested` → `AllowExit` branch in `app_setup.rs`. Quit state lives in process-global statics, so `quit.rs` tests run serially under `TEST_LOCK`.
+- tests: `src-tauri/src/quit.test.rs`, `src-tauri/src/quit_broadcast.test.rs`, `src-tauri/src/menu/events/dispatch.test.rs`, `src/hooks/useConfirmQuitSync.test.ts`, `src/components/StatusBar/useQuitFeedback.test.ts`
+- notes: Quit state lives in process-global statics, so `quit.rs` tests run serially under `TEST_LOCK`.
 
 ### External file-change detection and conflict resolution
 - id: external-change-handling
@@ -4586,7 +4582,7 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - code: `src/services/menu/rebuildNativeMenu.ts`, `src/services/menu/startupMenuSync.ts`, `src-tauri/src/menu/commands.rs`, `src-tauri/src/menu/dynamic.rs`
 - rust: `menu::rebuild_menu`, `menu::refresh_genies_menu`, `menu::update_recent_files`, `menu::update_recent_workspaces`, `menu::set_locale`
 - docs: none
-- tests: `src/services/menu/rebuildNativeMenu.test.ts`; no Rust tests for `commands.rs` or `dynamic.rs`
+- tests: `src/services/menu/rebuildNativeMenu.test.ts`; no Rust tests for `commands.rs`; for `dynamic.rs` only the submenu layout (`src-tauri/src/menu/dynamic_layout.test.rs`)
 - notes: `startupMenuSync` runs as a side-effect import from `src/main.tsx`.
 
 ### Dynamic menu items (recents, genies)
@@ -4597,10 +4593,10 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - status: shipped-on
 - gate: always on; the Genies submenu exists only while `src/hooks/useGenieShortcuts.ts` is mounted
 - surfaces: File → Open Recent, File → Open Recent Workspace, Edit → Genies
-- code: `src-tauri/src/menu/dynamic.rs`, `src-tauri/src/menu/mod.rs`, `src-tauri/src/menu/commands.rs`, `src/stores/workspaceStoreHelpers.ts`, `src/hooks/useGenieShortcuts.ts`, `src/services/menu/rebuildNativeMenu.ts`
+- code: `src-tauri/src/menu/dynamic.rs`, `src-tauri/src/menu/dynamic_layout.rs`, `src-tauri/src/menu/mod.rs`, `src-tauri/src/menu/commands.rs`, `src/stores/workspaceStoreHelpers.ts`, `src/hooks/useGenieShortcuts.ts`, `src/services/menu/rebuildNativeMenu.ts`
 - rust: `menu::update_recent_files`, `menu::update_recent_workspaces`, `menu::refresh_genies_menu`, `menu::hide_genies_menu`
 - docs: `website/guide/ai-genies.md`; `website/guide/workspace-management.md` (recent lists)
-- tests: `src-tauri/src/menu/events/dispatch.test.rs` (index parsing and classification of the dynamic ids); no Rust test for `src-tauri/src/menu/dynamic.rs`
+- tests: `src-tauri/src/menu/events/dispatch.test.rs` (index parsing and classification of the dynamic ids); `src-tauri/src/menu/dynamic_layout.test.rs` (the ids, labels, Search Genies accelerator and genie grouping `dynamic.rs` builds from); building and inserting the native items in `src-tauri/src/menu/dynamic.rs` has no test
 - notes: `rebuild_menu` resets all three submenus, so `src/services/menu/rebuildNativeMenu.ts` re-invokes `refresh_genies_menu` and re-syncs both recent lists after every rebuild (see *menu-rebuild*).
 
 ### Menu → command dispatch
@@ -4704,16 +4700,16 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 ### Frontend bootstrap
 - id: frontend-bootstrap
 - feature: App chrome (titlebar/statusbar/welcome)
-- summary: Not user-facing: a staged bootstrap in `src/main.tsx` runs before React mounts, so i18n, secure storage, format adapters, plugin host settings and the platform class are in place at first paint.
-- capabilities: side-effect imports of `./i18n` and `./services/menu/startupMenuSync` (the non-English startup menu rebuild); platform root class before first paint; `initSecureStorage(["vmark-ai-providers"])` awaited before `App` is dynamically imported (its Zustand persist hydrates at module evaluation); `setTabExistenceGuard` wiring documentStore to tabStore; `bindPluginHostSettings` (ADR-015 host-settings seam); `bootstrapFormats` honouring the user's `formats.*` opt-ins; global stylesheet order (index.css → shared `.vm-*` primitive sheets → KaTeX → KaTeX fixes); `StrictMode` + `BrowserRouter`; a bootstrap failure is logged through `appError`
+- summary: Not user-facing: a staged bootstrap runs before React mounts — `src/main.tsx` is the entry, `src/bootstrap.tsx` the startup sequence — so i18n, secure storage, format adapters, plugin host settings and the platform class are in place at first paint.
+- capabilities: side-effect imports of `./i18n` and `./services/menu/startupMenuSync` (the non-English startup menu rebuild); platform root class before first paint; `initSecureStorage(["vmark-ai-providers"])` started first and awaited before the App loader the entry passes in runs (its Zustand persist hydrates at module evaluation), the synchronous setup overlapping its IPCs; `setTabExistenceGuard` wiring documentStore to tabStore; `bindPluginHostSettings` (ADR-015 host-settings seam); `bootstrapFormats` honouring the user's `formats.*` opt-ins; global stylesheet order (index.css → shared `.vm-*` primitive sheets → KaTeX → KaTeX fixes); `StrictMode` + `BrowserRouter`; a bootstrap failure is logged through `appError`
 - status: shipped-on
 - gate: always on
 - surfaces: automatic
-- code: `src/main.tsx`
+- code: `src/main.tsx`, `src/bootstrap.tsx`
 - rust: none
 - docs: none
-- tests: none for `src/main.tsx` itself; individual wirings are mirrored by `src/utils/platform.test.ts` (root class) and `src/stores/documentStore.test.ts` (tab-existence guard)
-- notes: a comment "ADR-011: register every plugin's manifest with the central registry…" sits in `bootstrap()` with no code under it — the plugin registry it describes no longer exists. A bootstrap rejection is only logged; the window stays blank with no user-visible error (unverified whether any fallback UI exists outside `main.tsx`).
+- tests: `src/main.boot.test.tsx` (the setup runs while secure storage loads; formats and host settings are bound, and App is loaded only once the cache is filled), `src/main.test.tsx` (the entry renders the real App into `#root`), `src/main.bootFailure.test.tsx` (a failed bootstrap is logged through `appError` and renders nothing); `src/utils/platform.test.ts` (root class) and `src/stores/documentStore.test.ts` (tab-existence guard) mirror individual wirings
+- notes: A bootstrap rejection is only logged; the window stays blank with no user-visible error (unverified whether any fallback UI exists outside `main.tsx`).
 
 ### Quick Look preview overlay
 - id: quick-look
