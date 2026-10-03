@@ -41,6 +41,10 @@
       "module": "vite",
       "reason": "launch-editor UNC handling reachable only from Vite's dev-server error overlay in the website toolchain. Not shipped."
     },
+    "GHSA-vfj7-8cjw-p6xm": {
+      "module": "braces",
+      "reason": "No patched version exists (affected <=3.0.3, the latest; advisory lists <0.0.0). Shipped only via server__content>@slidev/cli (vite-plugin-static-copy>chokidar@3, fast-glob>micromatch), whose glob patterns are Slidev's own; the content server's watcher is chokidar@5, which has no braces. Other paths (globby, markdownlint-cli2) are dev tooling. Worst case is a stack-overflow crash of the local Slidev preview for a deck the user opened. Re-check when braces ships a fix or Slidev drops chokidar@3."
+    },
     "GHSA-w3rx-r6r6-pgpr": {
       "module": "image-size",
       "reason": "No patched version exists (advisory lists <0.0.0). Reached via server__content>@slidev/cli>pptxgenjs; the 20260906 MCP audit traced Slidev's PPTX path to Playwright-generated PNG buffers and found no executable image-size call in the installed pptxgenjs dist. Re-check when pptxgenjs bumps image-size."
