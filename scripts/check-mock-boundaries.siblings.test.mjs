@@ -1,5 +1,6 @@
 // WI-RA13B.8 — the mock-boundary gate sees same-feature sibling mocks.
 // WI-RA14A.2 — and allows none of them: there is no baseline to list one in.
+// WI-RA24.8 — including one spelled with the `@/` alias.
 /**
  * A relative `vi.mock("./x")` / `vi.mock("../x")` of a module that is the
  * app's own logic replaces real behaviour with a hand-written fake — the
@@ -181,10 +182,48 @@ describe("sibling mocks — sanctioned boundaries and non-code", () => {
     expect({ status, stderr }).toEqual({ status: 0, stderr: "" });
   });
 
-  it("ignores bare package and @/ alias specifiers (not same-feature siblings)", () => {
+  it("ignores bare package specifiers", () => {
+    const root = writeTree({
+      "src/feature/a.test.ts": `import { vi } from "vitest";\nvi.mock("katex");\n`,
+    });
+    expect(runGate(root, EMPTY).status).toBe(0);
+  });
+});
+
+// A sibling spelled with the `@/` alias is still a sibling: the relative
+// rule must not be dodged by writing the same module another way.
+describe("sibling mocks — spelled with the @/ alias", () => {
+  it("fails on an alias mock of a logic module in the test's own directory", () => {
     const root = writeTree({
       "src/feature/calc.ts": LOGIC,
-      "src/feature/a.test.ts": `import { vi } from "vitest";\nvi.mock("@/feature/calc");\nvi.mock("katex");\n`,
+      "src/feature/a.test.ts": `import { vi } from "vitest";\nvi.mock("@/feature/calc");\n`,
+    });
+    const { status, stderr } = runGate(root, EMPTY);
+    expect(status).toBe(1);
+    expect(stderr).toContain("src/feature/a.test.ts");
+    expect(stderr).toContain("src/feature/calc");
+  });
+
+  it("fails on an alias mock from __tests__/ of a module beside the directory", () => {
+    const root = writeTree({
+      "src/feature/calc.ts": LOGIC,
+      "src/feature/__tests__/a.test.ts": `import { vi } from "vitest";\nvi.doMock("@/feature/calc");\n`,
+    });
+    expect(runGate(root, EMPTY).status).toBe(1);
+  });
+
+  it("does not count an alias mock of a sibling that wraps a boundary", () => {
+    const root = writeTree({
+      "src/feature/io.ts": TAURI_WRAPPER,
+      "src/feature/a.test.ts": `import { vi } from "vitest";\nvi.mock("@/feature/io");\n`,
+    });
+    expect(runGate(root, EMPTY).status).toBe(0);
+  });
+
+  it("leaves an alias mock of a module in ANOTHER directory to the wider rule, not this one", () => {
+    const root = writeTree({
+      "src/other/calc.ts": LOGIC,
+      "src/feature/a.test.ts": `import { vi } from "vitest";\nvi.mock("@/other/calc");\n`,
     });
     expect(runGate(root, EMPTY).status).toBe(0);
   });

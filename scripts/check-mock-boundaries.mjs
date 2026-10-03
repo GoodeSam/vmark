@@ -33,7 +33,11 @@
  *
  * Second rule, same detection — same-feature SIBLING mocks. A relative
  * `vi.mock("./x")` / `vi.mock("../x")` of a module that is the app's own logic
- * tests a hand-written fake instead of the code (rule 10's anti-pattern). A
+ * tests a hand-written fake instead of the code (rule 10's anti-pattern), and
+ * so does `vi.mock("@/feature/x")` when `x` sits in the test's own directory
+ * or the one its `__tests__/` folder sits in — the alias is a spelling, not a
+ * boundary. An alias mock of a module in another directory is not this rule's
+ * concern. A
  * relative mock of a boundary wrapper — a module that itself imports
  * `@tauri-apps/*` or a Node builtin — is sanctioned and not counted; so are
  * non-code targets (CSS, raw assets). Zero are allowed and none can be
@@ -112,7 +116,8 @@ function walk(dir, rootLen, out) {
 
 /**
  * Scan a tree and return the sorted identity triples: `stores` (mocks of
- * src/stores/*) and `siblings` (relative mocks of the app's own logic).
+ * src/stores/*) and `siblings` (mocks of the app's own logic in the test's
+ * own directory, spelled relatively or with the `@/` alias).
  */
 export function scanTree(root) {
   const stores = [];

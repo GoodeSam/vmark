@@ -15,10 +15,6 @@ vi.mock("@/utils/platform", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/utils/platform")>()),
   usesOverlayTitleBar: () => false,
 }));
-vi.mock("@/shell", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/shell")>()),
-  EditorArea: () => null,
-}));
 vi.mock("@/components/Sidebar", () => ({ Sidebar: () => null }));
 vi.mock("@/components/WorkspaceRail", () => ({ WorkspaceRail: () => null }));
 vi.mock("@/components/BottomBar/BottomBar", () => ({ BottomBar: () => null }));

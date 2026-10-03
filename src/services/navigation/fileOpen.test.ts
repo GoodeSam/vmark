@@ -65,11 +65,6 @@ vi.mock("@/services/tabs/replaceableTab", () => ({
   isWindowEmpty: (windowLabel: string) => mockIsWindowEmpty(windowLabel),
 }));
 
-const mockCreateUntitledTab = vi.fn();
-vi.mock("@/services/navigation/newFile", () => ({
-  createUntitledTab: (...args: unknown[]) => mockCreateUntitledTab(...args),
-}));
-
 import {
   openFileInNewTabCore,
   openFileInNewTab,
@@ -347,18 +342,24 @@ describe("handleOpenFile", () => {
 
 describe("handleNew", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    useTabStore.getState().removeWindow(WINDOW);
+    useDocumentStore.setState({ documents: {} });
   });
 
   it("creates an untitled tab", () => {
     handleNew(WINDOW);
-    expect(mockCreateUntitledTab).toHaveBeenCalledWith(WINDOW);
+    const tabs = useTabStore.getState().getTabsByWindow(WINDOW);
+    expect(tabs).toEqual([expect.objectContaining({ kind: "document", filePath: null })]);
+    const doc = useDocumentStore.getState().getDocument(tabs[0].id);
+    expect(doc).toMatchObject({ content: "", filePath: null, isDirty: false });
   });
 
   it("can be called multiple times for multiple new tabs", () => {
     handleNew(WINDOW);
     handleNew(WINDOW);
-    expect(mockCreateUntitledTab).toHaveBeenCalledTimes(2);
+    const ids = useTabStore.getState().getTabsByWindow(WINDOW).map((t) => t.id);
+    expect(new Set(ids).size).toBe(2);
+    ids.forEach((id) => expect(useDocumentStore.getState().getDocument(id)?.content).toBe(""));
   });
 });
 
