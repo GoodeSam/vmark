@@ -8,8 +8,6 @@
 //! auth phase are in `frames.rs`; how a secret is compared is in
 //! `token_compare.rs`; who the accepted peer turns out to be is in
 //! `principal.rs`.
-//!
-//! Source for each control: `dev-docs/deep-researches/20260728-mcp-stack-audit.md` §2.2.
 
 use super::principal::BridgePrincipal;
 use super::token_compare::token_matches;

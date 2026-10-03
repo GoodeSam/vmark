@@ -112,8 +112,8 @@ pub(super) fn walk_markdown(
             }
         };
         for entry in entries {
-            // Entry errors surface and mark the walk incomplete (audit
-            // A14) — a skipped entry must never become a deletion.
+            // Entry errors surface and mark the walk incomplete — a
+            // skipped entry must never become a deletion.
             let Ok(entry) = entry else {
                 report.complete = false;
                 continue;

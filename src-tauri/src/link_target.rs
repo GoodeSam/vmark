@@ -34,8 +34,8 @@ pub(crate) enum LinkResolveError {
 ///
 /// Saving is a temp-file + rename, and a rename onto a symlink REPLACES the
 /// link with a regular file: the alias stops being an alias and the real
-/// document keeps its old bytes, while the save reports success (audit
-/// 20260906, B2). Resolving first means the replacement lands on the referent
+/// document keeps its old bytes, while the save reports success.
+/// Resolving first means the replacement lands on the referent
 /// and the link survives.
 ///
 /// Deliberately NOT applied to internal writes (`app_paths`, the MCP token

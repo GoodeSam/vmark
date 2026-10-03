@@ -1,6 +1,6 @@
 //! Policy checks for AI navigation URLs at the native seam: top-level candidates
-//! (`prepare_navigation_action`), subframe loads (`subframe_load_allowed`, audit
-//! 20260903 P-01) and the commit-time re-check (`ai_commit_allowed`).
+//! (`prepare_navigation_action`), subframe loads (`subframe_load_allowed`)
+//! and the commit-time re-check (`ai_commit_allowed`).
 //!
 //! The DECISIONS live in `nav_decision.rs`, platform-independent and table-tested;
 //! this file gathers each decision's facts under the registry guard

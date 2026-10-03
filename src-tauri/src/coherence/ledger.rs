@@ -29,8 +29,8 @@ const MAX_SEGMENT_BYTES: u64 = 8 * 1024 * 1024;
 /// it is a memory-safety backstop, not a format rule.
 ///
 /// (It formerly cited the group-commit `MAX_PREPARE_BYTES` prepare as the
-/// largest legal line. That subsystem was severed — see
-/// dev-docs/plans/20260806-coherence-runtime-landing.md — but the backstop is
+/// largest legal line. That subsystem was severed from the
+/// coherence runtime landing, but the backstop is
 /// independent of it and is deliberately unchanged: lowering a read cap because
 /// today's writers are smaller would weaken the hostile-input guarantee.)
 pub(super) const MAX_LINE_BYTES: usize = 16 * 1024 * 1024;

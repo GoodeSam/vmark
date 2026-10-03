@@ -22,7 +22,7 @@ use super::types::WriterId;
 pub struct CoherenceState {
     pub registry: KernelRegistry,
     pub writer: WriterId,
-    /// Guards against a CONCURRENT check sweep (found by dogfooding, 2026-07-20).
+    /// Guards against a CONCURRENT check sweep (found by dogfooding).
     /// The sweep deliberately drops the kernel lock across its provider calls, so
     /// two invocations both snapshot "not yet checked" and both spend on the SAME
     /// edges — observed as 9 check-results for 5 distinct edges, two runs offset

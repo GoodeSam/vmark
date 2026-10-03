@@ -123,8 +123,7 @@ pub fn run_actionlint(yaml: &str, path: &str) -> LintResult {
     if let Some(mut stdin) = child.stdin.take() {
         if let Err(e) = stdin.write_all(yaml.as_bytes()) {
             // Pipe closed early — actionlint likely panicked or aborted.
-            // Logging avoids the silent-hang debugging trail (Rust audit
-            // round 5 finding).
+            // Logging avoids the silent-hang debugging trail.
             log::warn!("actionlint stdin write failed: {}", e);
         }
     }

@@ -11,12 +11,11 @@
 //! bearing distinction is `approval-required` (raise a prompt, then retry)
 //! versus `permission-denied` (no approval can unblock it).
 //!
-//! The commands are COMPOSITION only. The refusal guards live in `ai_guards.rs`
-//! and the state transactions — reservation, ticketing, profile authorization,
-//! the native call with its compensation — in `ai_transactions.rs` (audit
-//! 20260903 round 3, #2), so each policy decision and each guard-holding step is
-//! unit-testable without a mock Tauri app, and the order they run in is the one
-//! thing left to read here.
+//! The commands are COMPOSITION only. The refusal guards live in `ai_guards.rs` and
+//! the state transactions — reservation, ticketing, profile authorization, the
+//! native call with its compensation — in `ai_transactions.rs`, so each policy
+//! decision and each guard-holding step is unit-testable without a mock Tauri app,
+//! and the order they run in is the one thing left to read here.
 
 use super::ai_guards::{
     ai_policy, authorize_shared_navigation, invalid_profile_name, lock_failure, parse_session_mode,

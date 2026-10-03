@@ -87,7 +87,7 @@ pub(super) fn is_fully_initialized(vmark: &Path) -> bool {
 }
 
 /// Are `.vmark/.gitignore`'s runtime-file rules complete? Separate from
-/// `is_fully_initialized` ON PURPOSE (found by dogfooding, 2026-07-20): folding
+/// `is_fully_initialized` ON PURPOSE (found by dogfooding): folding
 /// this into the initialized test made a real 119-entry workspace — whose
 /// `.gitignore` predated the `group.lock` rule — report `initialized: false`, so
 /// `perform_status` skipped the breakdown and showed `open_items: 0` while
