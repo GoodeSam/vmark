@@ -16,9 +16,8 @@
  *     the final selection itself, so the stand-in is never observed. Setting
  *     it clears stored marks, so they are put back for the first edit to use,
  *     exactly as a plain transaction offers them.
- *   - Ranges are edited in the order a stable sort by descending start gives
- *     — the order `sortRangesDescending` gives — so the steps are the ones a
- *     plain loop produces.
+ *   - Ranges are edited in the order a stable sort by descending start gives:
+ *     ranges that start together keep their input order.
  *   - Mapping goes through a `MappingIndex`, which skips the steps that cannot
  *     move a range instead of walking all of them for every range, and returns
  *     what `tr.mapping.map(pos)` returns.

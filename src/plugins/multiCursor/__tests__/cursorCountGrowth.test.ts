@@ -24,6 +24,8 @@ import {
   handleMultiCursorDelete,
   handleMultiCursorInput,
 } from "../inputHandling";
+import { handleMultiCursorEnter } from "../enterHandling";
+import { handleMultiCursorCut, handleMultiCursorPaste } from "../clipboard";
 
 const SMALL = 50;
 const LARGE = 500;
@@ -59,6 +61,12 @@ function spaced(count: number, width: number): Array<[number, number]> {
 
 const cursorsAcross = (count: number) => stateWith("0".repeat(PARAGRAPH_LENGTH), spaced(count, 0));
 const selectionsAcross = (count: number) => stateWith("0".repeat(PARAGRAPH_LENGTH), spaced(count, 1));
+/** Cursors and one-character selections, alternating. */
+const mixedAcross = (count: number) =>
+  stateWith(
+    "0".repeat(PARAGRAPH_LENGTH),
+    spaced(count, 1).map(([from, to], i) => [from, i % 2 ? to : from]),
+  );
 
 /** The growth exponent of `operation` from SMALL to LARGE cursors, applying its transaction. */
 function exponentOf(
@@ -85,4 +93,43 @@ describe("multi-cursor cost grows at most linearly with the cursor count", () =>
   it("Delete at every cursor", () => {
     expect(exponentOf(cursorsAcross, handleMultiCursorDelete)).toBeLessThan(MAX_EXPONENT);
   });
+
+  it("pasting at every cursor", () => {
+    expect(exponentOf(cursorsAcross, (s) => handleMultiCursorPaste(s, "XY"))).toBeLessThan(MAX_EXPONENT);
+  });
+
+  it("cutting every selection", () => {
+    expect(exponentOf(selectionsAcross, handleMultiCursorCut)).toBeLessThan(MAX_EXPONENT);
+  });
+
+  // Enter is the one operation whose floor is ProseMirror's, not linear: each
+  // split adds a block, and every later split step copies and re-validates
+  // the parent's whole child list, and resolving a position scans it. N
+  // splits in one paragraph therefore cost N² inside ProseMirror (profiled at
+  // 500 cursors: split steps 14.6 ms of 16.1 ms, resolving the new cursors
+  // 1.3 ms; the merging, mapping and selection rebuild together 0.2 ms). The
+  // handler is held to that floor: its exponent may exceed the bare split
+  // loop's by at most the noise of two measurements, so anything it adds
+  // must grow more slowly than ProseMirror's own work.
+  it("Enter at cursors and selections grows no faster than ProseMirror's own splits", () => {
+    const floor = growthExponent(measureGrowth(bareSplits, mixedAcross(SMALL), mixedAcross(LARGE)), SMALL, LARGE);
+    expect(exponentOf(mixedAcross, handleMultiCursorEnter)).toBeLessThan(floor + 0.15);
+  });
 });
+
+/**
+ * ProseMirror's own work for Enter at every range: the deletions and splits,
+ * from the end, then as many positions resolved in the result. No merging,
+ * mapping or selection.
+ */
+function bareSplits(state: EditorState): void {
+  const { ranges } = state.selection;
+  const tr = state.tr;
+  for (let i = ranges.length - 1; i >= 0; i--) {
+    const { $from, $to } = ranges[i];
+    if ($from.pos !== $to.pos) tr.delete($from.pos, $to.pos);
+    tr.split($from.pos);
+  }
+  const size = tr.doc.content.size;
+  for (let i = 0; i < ranges.length; i++) tr.doc.resolve(Math.floor(((i + 0.5) * size) / ranges.length));
+}

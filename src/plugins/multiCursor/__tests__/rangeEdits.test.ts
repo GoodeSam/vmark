@@ -14,7 +14,7 @@ import { EditorState, SelectionRange, TextSelection } from "@tiptap/pm/state";
 import type { Transaction } from "@tiptap/pm/state";
 import { canSplit } from "@tiptap/pm/transform";
 import { MultiSelection } from "@/plugins/shared/MultiSelection";
-import { normalizeRangesWithPrimary, sortRangesDescending } from "@/plugins/shared/rangeUtils";
+import { normalizeRangesWithPrimary } from "@/plugins/shared/rangeUtils";
 import { editRangesFromEnd } from "../rangeEdits";
 import type { RangeEdit } from "../rangeEdits";
 
@@ -95,10 +95,11 @@ function stateWith(doc: Node, ranges: SelectionRange[], storedMarks: readonly Ma
   });
 }
 
-/** The plain loop every handler used to run. */
+/** The plain loop every handler used to run: last range first, ties in input order. */
 function referenceEdits(state: EditorState, ranges: SelectionRange[], edit: RangeEdit): Transaction {
   let tr = state.tr;
-  for (const range of sortRangesDescending(ranges)) tr = edit(tr, range, ranges.indexOf(range));
+  const descending = [...ranges].sort((a, b) => b.$from.pos - a.$from.pos);
+  for (const range of descending) tr = edit(tr, range, ranges.indexOf(range));
   return tr;
 }
 
