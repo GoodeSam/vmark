@@ -1,6 +1,6 @@
 // WI-RA17F.7 — an eslint-disable directive without a ` -- reason` is a lint error.
 import { readFileSync, readdirSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 import { describe, it, expect } from "vitest";
 import { Linter, RuleTester } from "eslint";
 import { lacksReason, requireDisableReason } from "./eslintRequireDisableReason.mjs";
@@ -94,10 +94,18 @@ function directiveComments(text) {
 function sourceFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const p = join(dir, e.name);
-    if (e.isDirectory()) return sourceFiles(p);
+    if (e.isDirectory()) return e.name === "node_modules" || e.name === "dist" ? [] : sourceFiles(p);
     return /\.(?:[cm]?[jt]sx?)$/u.test(e.name) ? [p] : [];
   });
 }
+
+/**
+ * Every tree whose code is ours. The server packages lint under the root
+ * config; scripts and e2e are not linted, so this scan is their only check.
+ */
+const SCANNED = ["src", "server/content/src", "server/mcp/src", "server/mcp/__tests__", "scripts", "e2e"];
+/** This rule's own module and test quote directives as data. */
+const SELF = new Set(["scripts/lib/eslintRequireDisableReason.mjs", "scripts/lib/eslintRequireDisableReason.test.mjs"]);
 
 describe("the source tree", () => {
   it("finds directives the way the rule does (scanner self-check)", () => {
@@ -107,8 +115,10 @@ describe("the source tree", () => {
     expect(found.map((f) => [f.line, lacksReason(f.value)])).toEqual([[1, true], [2, false]]);
   });
 
-  it("has no eslint-disable directive under src/ without a reason", () => {
-    const files = sourceFiles(join(ROOT, "src"));
+  it("has no eslint-disable directive without a reason in any tree of ours", () => {
+    const files = SCANNED.flatMap((dir) => sourceFiles(join(ROOT, dir))).filter(
+      (file) => !SELF.has(relative(ROOT, file).split(sep).join("/")),
+    );
     expect(files.length).toBeGreaterThan(1000);
     const offenders = files.flatMap((file) =>
       directiveComments(readFileSync(file, "utf8"))

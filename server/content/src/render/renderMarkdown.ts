@@ -133,7 +133,7 @@ let purifier: ReturnType<typeof createDOMPurify> | null = null;
 function getPurifier(): ReturnType<typeof createDOMPurify> {
   if (purifier) return purifier;
   const window = new JSDOM("").window;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jsdom's DOMWindow does not structurally match DOMPurify's WindowLike, though it is DOMPurify's documented server-side window
   purifier = createDOMPurify(window as any);
   return purifier;
 }

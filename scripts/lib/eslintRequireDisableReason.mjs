@@ -17,8 +17,8 @@
  *
  * A blanket `eslint-disable` with no rule list suppresses every rule after
  * it, this one included, so the rule alone cannot see one. The companion test
- * therefore also scans `src/` with `lacksReason` directly, where no directive
- * can suppress the check.
+ * therefore also scans the source trees (src, the server packages, scripts,
+ * e2e) with `lacksReason` directly, where no directive can suppress the check.
  *
  * Written as a local rule because the community plugin that has it
  * (`eslint-comments/require-description`) is not a dependency, and this is
