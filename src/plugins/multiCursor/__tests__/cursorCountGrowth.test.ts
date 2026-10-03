@@ -15,7 +15,8 @@
 import { describe, it, expect } from "vitest";
 import { Schema } from "@tiptap/pm/model";
 import { EditorState, SelectionRange, TextSelection } from "@tiptap/pm/state";
-import type { Transaction } from "@tiptap/pm/state";
+import type { Command, Transaction } from "@tiptap/pm/state";
+import { history, redo, undo } from "@tiptap/pm/history";
 import { MultiSelection } from "@/plugins/shared/MultiSelection";
 import { measureGrowth, growthExponent } from "@/test/cpuClock";
 import { multiCursorPlugin } from "../multiCursorPlugin";
@@ -26,11 +27,11 @@ import {
   handleMultiCursorInput,
 } from "../inputHandling";
 import { handleMultiCursorHorizontal } from "../horizontalMovement";
-import { selectAllOccurrences, selectNextOccurrence, skipOccurrence } from "../commands";
+import { selectAllOccurrences, selectNextOccurrence, skipOccurrence, softUndoCursor } from "../commands";
 import { findNextUnusedOccurrence } from "../commandHelpers";
 import { handleMultiCursorEnter } from "../enterHandling";
 import { getMultiCursorClipboardText, handleMultiCursorCut, handleMultiCursorPaste } from "../clipboard";
-import { addCursorAtPosition } from "../altClick";
+import { addCursorAtPosition, removeCursorAtPosition } from "../altClick";
 import { createMultiCursorDecorations } from "../decorations";
 
 const SMALL = 50;
@@ -46,13 +47,13 @@ const schema = new Schema({
   },
 });
 
-/** One paragraph of `text` with the multi-cursor plugin and the given ranges selected. */
+/** One paragraph of `text` with the multi-cursor plugin (and history) and the given ranges selected. */
 function stateWith(text: string, ranges: ReadonlyArray<readonly [number, number]>): EditorState {
   const doc = schema.node("doc", null, [schema.node("paragraph", null, [schema.text(text)])]);
   const base = EditorState.create({
     doc,
     schema,
-    plugins: [multiCursorPlugin()],
+    plugins: [history(), multiCursorPlugin()],
     selection: TextSelection.atStart(doc),
   });
   const selected = ranges.map(([from, to]) => new SelectionRange(doc.resolve(from), doc.resolve(to)));
@@ -83,6 +84,40 @@ function occurrenceText(count: number): string {
  */
 const occurrencesSelected = (count: number) =>
   stateWith(occurrenceText(count), spaced(count, 2).filter((_, i) => i !== count - 2));
+
+/** The transaction `command` dispatches, or null. */
+function dispatched(state: EditorState, command: Command): Transaction | null {
+  let tr: Transaction | null = null;
+  command(state, (dispatchedTr) => {
+    tr = dispatchedTr;
+  });
+  return tr;
+}
+
+/** `state` after `tr`, failing loudly when the step that should produce it declined. */
+function after(state: EditorState, tr: Transaction | null, what: string): EditorState {
+  if (!tr) throw new Error(`${what} declined while building the fixture`);
+  return state.apply(tr);
+}
+
+/** "X" typed at every cursor: the state an undo starts from. */
+const typedAcross = (count: number) => {
+  const state = cursorsAcross(count);
+  return after(state, handleMultiCursorInput(state, "X"), "typing");
+};
+const undoneAcross = (count: number) => {
+  const state = typedAcross(count);
+  return after(state, dispatched(state, undo), "undo");
+};
+
+/** Every occurrence added one Cmd+D at a time: a full soft-undo history. */
+const occurrencesAdded = (count: number) => {
+  let state = stateWith(occurrenceText(count), [[1, 3]]);
+  for (let added = 1; added < count; added++) {
+    state = after(state, selectNextOccurrence(state), "select next occurrence");
+  }
+  return state;
+};
 
 /** Cursors and one-character selections, alternating. */
 const mixedAcross = (count: number) =>
@@ -191,6 +226,20 @@ describe("multi-cursor cost grows at most linearly with the cursor count", () =>
 
   it("adding one more cursor with Alt+Click", () => {
     expect(exponentOf(cursorsAcross, (s) => addCursorAtPosition(s, 2))).toBeLessThan(MAX_EXPONENT);
+  });
+
+  it("removing one cursor with Alt+Click", () => {
+    expect(exponentOf(cursorsAcross, (s) => removeCursorAtPosition(s, 1))).toBeLessThan(MAX_EXPONENT);
+  });
+
+  it("taking back the last added cursor (soft undo)", () => {
+    expect(exponentOf(occurrencesAdded, softUndoCursor)).toBeLessThan(MAX_EXPONENT);
+  });
+
+  // History restores every cursor through the selection's bookmark.
+  it("undoing and redoing typing at every cursor", () => {
+    expect(exponentOf(typedAcross, (s) => dispatched(s, undo))).toBeLessThan(MAX_EXPONENT);
+    expect(exponentOf(undoneAcross, (s) => dispatched(s, redo))).toBeLessThan(MAX_EXPONENT);
   });
 
   it("drawing every cursor", () => {
