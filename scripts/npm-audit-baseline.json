@@ -28,6 +28,10 @@
     "GHSA-v6wh-96g9-6wx3": {
       "module": "vite",
       "reason": "launch-editor UNC handling reachable only from Vite's dev-server error overlay in the website toolchain. Not shipped."
+    },
+    "GHSA-vfj7-8cjw-p6xm": {
+      "module": "braces",
+      "reason": "No patched version exists (advisory lists <0.0.0). Not in any production dependency path (pnpm why braces --prod is empty): reached only through chokidar/micromatch in build tooling, and through @slidev/cli in server/content, the Knowledge Base runtime that is developer-mode-only and not bundled in releases (rule 60 §12). The glob patterns those tools expand come from their own config, never from document content, so the deeply nested pattern the DoS needs cannot be supplied by a user file."
     }
   }
 }
