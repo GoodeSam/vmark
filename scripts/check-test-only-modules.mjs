@@ -12,8 +12,11 @@
  *
  * What it does: runs knip in PRODUCTION mode against scripts/knip-production.json,
  * whose entry and project patterns carry knip's `!` production marker. Roots are
- * src/main.tsx, scripts/*.{ts,mjs}, .claude/hooks/*.mjs and the two server
- * packages' cli/index, so the result is reachability from real roots, following
+ * src/main.tsx, eslint.config.js, scripts/*.{ts,mjs}, .claude/hooks/*.mjs and
+ * the two server packages' cli/index, so the result is reachability from real
+ * roots (eslint.config.js loads the local lint rules under scripts/lib; knip's
+ * eslint plugin is switched off there so the file is followed as a plain
+ * entry rather than claimed as a dev-only plugin config), following
  * static imports, dynamic import(), re-exports and the `@/` alias (knip resolves
  * tsconfig paths). Every file knip reports as unused is unreachable from every
  * root. Test-support modules (src/test/, __tests__/, *.testUtils.ts, src/bench/,

@@ -2,9 +2,18 @@ import js from "@eslint/js";
 import globals from "globals";
 import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
+import { requireDisableReason } from "./scripts/lib/eslintRequireDisableReason.mjs";
 
 export default tseslint.config(
   { ignores: ["dist", "src-tauri"] },
+  // Suppressions are claims that a rule is wrong at one site, so each must
+  // state why (`-- <reason>`) and must still be suppressing something.
+  {
+    files: ["**/*.{ts,tsx,js}"],
+    linterOptions: { reportUnusedDisableDirectives: "error" },
+    plugins: { vmark: { rules: { "require-disable-reason": requireDisableReason } } },
+    rules: { "vmark/require-disable-reason": "error" },
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
