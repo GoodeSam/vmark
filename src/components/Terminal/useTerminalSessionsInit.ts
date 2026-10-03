@@ -13,6 +13,7 @@
  * @coordinates-with useTerminalSessions.ts — sole caller
  * @coordinates-with terminalSessionReconcile.ts — pure id diff
  * @coordinates-with terminalSessionRegistry.ts — dispose helpers
+ * @coordinates-with stores/terminalStore.ts — the session store it subscribes to
  * @module components/Terminal/useTerminalSessionsInit
  */
 import { useEffect, useRef } from "react";
