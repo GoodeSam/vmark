@@ -142,4 +142,12 @@ describe("ci.yml's rust filter covers what the crate reads", () => {
     const dead = rustPatterns.filter((pattern) => !pattern.endsWith("/**") && !tracked.has(pattern));
     expect(dead, "these `rust` filter entries name no tracked file").toEqual([]);
   });
+
+  // WI-RA24.13 — the reverse direction. A frontend file is in this filter only
+  // because the crate reads it; once it stops, the entry runs the Rust tier on
+  // every edit to that file for nothing, and its comment misstates the crate.
+  it("names no frontend file the crate no longer reads", () => {
+    const stale = rustPatterns.filter((pattern) => pattern.startsWith("src/") && !inputs.has(pattern));
+    expect(stale, "the crate reads none of these; drop them from the `rust` filter").toEqual([]);
+  });
 });
