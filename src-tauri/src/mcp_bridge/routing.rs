@@ -23,19 +23,19 @@ use tokio::sync::mpsc::Sender;
 pub(super) async fn wake_webview<R: Runtime>(app: &AppHandle<R>, target_label: &str) {
     if let Some(window) = app.get_webview_window(target_label) {
         log::debug!(
-            "[MCP Bridge] Attempting to wake webview '{}' via Tauri eval API",
+            "[MCP Bridge] Attempting to wake webview {:?} via Tauri eval API",
             target_label
         );
         if let Err(e) = window.eval("void(0)") {
             log::debug!(
-                "[MCP Bridge] Failed to wake webview '{}': {} (continuing anyway)",
+                "[MCP Bridge] Failed to wake webview {:?}: {} (continuing anyway)",
                 target_label,
                 e
             );
         }
     } else {
         log::warn!(
-            "[MCP Bridge] Cannot wake webview — window '{}' not found",
+            "[MCP Bridge] Cannot wake webview — window {:?} not found",
             target_label
         );
     }
@@ -59,7 +59,9 @@ pub(super) async fn emit_to_window_or_reply<R: Runtime>(
     let outcome = match app.get_webview_window(target_label) {
         Some(window) => {
             log::debug!(
-                "[MCP Bridge] Emitting mcp-bridge:request to '{target_label}' for {request_type} (id: {request_id})"
+                "[MCP Bridge] Emitting mcp-bridge:request to {target_label:?} for {} (id: {})",
+                crate::peer_text::peer_text(request_type),
+                crate::peer_text::peer_text(request_id)
             );
             window
                 .emit("mcp-bridge:request", event)

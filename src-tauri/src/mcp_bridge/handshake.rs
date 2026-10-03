@@ -245,8 +245,8 @@ where
                 };
                 if msg.msg_type != "auth" {
                     log::warn!(
-                        "[MCP Bridge] Peer {peer} sent '{}' before auth — rejected",
-                        msg.msg_type
+                        "[MCP Bridge] Peer {peer} sent {} before auth — rejected",
+                        crate::peer_text::peer_text(&msg.msg_type)
                     );
                     return AuthOutcome::Rejected;
                 }

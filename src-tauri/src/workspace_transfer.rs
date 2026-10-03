@@ -7,65 +7,14 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::peer_text::peer_text;
 use crate::window_manager;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WorkspaceTransferTabData {
-    pub tab_id: String,
-    pub title: String,
-    pub file_path: Option<String>,
-    pub content: String,
-    pub saved_content: String,
-    pub is_dirty: bool,
-    pub read_only: bool,
-    pub is_pinned: bool,
-    pub format_id: String,
-    pub editing_enabled: Option<bool>,
-    pub active_schema_id: Option<String>,
-    /// Line convention the FILE has on disk. Canonical LF content cannot carry
-    /// it, so a transfer that omitted these rewrote a CRLF+BOM file to LF and
-    /// BOM-less on its first save in the destination window. `Option` because
-    /// payloads written by older builds have none — the receiver then falls
-    /// back to detection, which is what it did for every payload before.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub line_ending: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub hard_break_style: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub has_bom: Option<bool>,
-    /// RAW disk bytes, so external-change detection in the destination compares
-    /// against what is actually on disk rather than the canonical editor text.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub last_disk_content: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WorkspaceTransferData {
-    pub request_id: String,
-    pub operation: String,
-    pub source_window_label: String,
-    pub workspace_instance_id: String,
-    pub kind: String,
-    pub root_id: Option<String>,
-    pub root_path: Option<String>,
-    pub display_name: String,
-    pub active_tab_id: Option<String>,
-    pub tabs: Vec<WorkspaceTransferTabData>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WorkspaceTransferAck {
-    pub request_id: String,
-    pub target_window_label: String,
-    pub workspace_instance_id: String,
-}
+#[path = "workspace_transfer_payloads.rs"]
+mod payloads;
+pub use payloads::{WorkspaceTransferAck, WorkspaceTransferData};
 
 /// Routing data needed to validate and deliver a transfer ack.
 ///
@@ -99,11 +48,27 @@ fn ack_route_targets() -> std::sync::MutexGuard<'static, Option<HashMap<String, 
 
 /// `(async)` is required: a sync command creates the window on the main thread,
 /// which deadlocks WebView2 on Windows (#1301). See `window_manager/mod.rs`.
+///
+/// The source is the window that asks: `data.source_window_label` is
+/// overwritten with it. The ack is routed to the source, so a page that could
+/// name another window as its source could send that window an ack for a
+/// transfer it never started.
 #[tauri::command(async)]
 pub fn detach_workspace_to_new_window(
     app: AppHandle,
+    window: tauri::Window,
     data: WorkspaceTransferData,
 ) -> Result<String, String> {
+    let data = WorkspaceTransferData {
+        source_window_label: window.label().to_string(),
+        ..data
+    };
+    register_and_open(&app, data)
+}
+
+/// Register a transfer whose source is already the calling window, then open
+/// its target window.
+fn register_and_open(app: &AppHandle, data: WorkspaceTransferData) -> Result<String, String> {
     // Pre-allocate the target label and register the transfer + ack routes
     // BEFORE creating the window. A fast-loading target could otherwise invoke
     // `claim_workspace_transfer` before the registry is populated and silently
@@ -129,7 +94,7 @@ pub fn detach_workspace_to_new_window(
     // Create the window last. On build failure, roll back the routes we just
     // registered so no orphaned transfer/ack state lingers in the registries.
     if let Err(e) = window_manager::create_document_window_with_label_and_url(
-        &app,
+        app,
         &label,
         "/?workspaceTransfer=true".to_string(),
     ) {
@@ -232,9 +197,43 @@ pub fn ack_workspace_transfer<R: tauri::Runtime>(
 /// ack-route entries for the target window so a late `claim_workspace_transfer`
 /// returns nothing and cannot apply the payload while the source keeps its tabs
 /// — which would otherwise turn a failed move into a duplicate.
+///
+/// Only the transfer's SOURCE may cancel it. Any other window naming the target
+/// is ignored (and logged): it would otherwise be able to strand someone
+/// else's move, its target window opening empty.
 #[tauri::command]
-pub fn cancel_workspace_transfer(target_window_label: String) {
-    clear_unclaimed_transfer(&target_window_label);
+pub fn cancel_workspace_transfer<R: tauri::Runtime>(
+    window: tauri::Window<R>,
+    target_window_label: String,
+) {
+    match transfer_source(&target_window_label) {
+        Some(source) if source == window.label() => clear_unclaimed_transfer(&target_window_label),
+        Some(_) => log::warn!(
+            "[WorkspaceTransfer] {:?} tried to cancel a transfer it did not start (target {})",
+            window.label(),
+            peer_text(&target_window_label)
+        ),
+        // Nothing pending for that target: already claimed, acked or cancelled.
+        None => {}
+    }
+}
+
+/// The source window of the transfer pending for `target_label`, whether its
+/// payload is still unclaimed or only its ack is still awaited.
+fn transfer_source(target_label: &str) -> Option<String> {
+    if let Some(data) = transfer_registry()
+        .as_ref()
+        .and_then(|map| map.get(target_label))
+    {
+        return Some(data.source_window_label.clone());
+    }
+    let request_id = ack_route_targets()
+        .as_ref()
+        .and_then(|targets| targets.get(target_label).cloned())?;
+    ack_routes()
+        .as_ref()
+        .and_then(|routes| routes.get(&request_id))
+        .map(|route| route.source_window_label.clone())
 }
 
 pub fn clear_unclaimed_transfer(window_label: &str) {

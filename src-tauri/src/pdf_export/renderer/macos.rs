@@ -88,9 +88,10 @@ impl LoadDelegate {
     /// other. A failure that records nothing is a load that times out instead
     /// of reporting the error WebKit already handed us.
     fn record_failure(&self, stage: &str, error: &NSError) {
+        // WebKit's description of the failure can quote the document's URL.
         log::warn!(
             "[PDF] document navigation {stage}: {}",
-            error.localizedDescription()
+            crate::peer_text::peer_message(&error.localizedDescription().to_string())
         );
         self.ivars().outcome.set(Some(LoadOutcome::Failed));
     }

@@ -168,7 +168,7 @@ async fn fill_snapshot(
         let path = match super::sandbox::validate_path(&path_str, workspace_root) {
             Ok(p) => p,
             Err(e) => {
-                log::warn!("Skipping snapshot of '{}' — {}", path_str, e);
+                log::warn!("Skipping snapshot of {:?} — {}", path_str, e);
                 continue;
             }
         };
@@ -182,7 +182,7 @@ async fn fill_snapshot(
 
         // Use relative path from workspace root to preserve directory structure
         let Ok(relative) = path.strip_prefix(&canonical_root) else {
-            log::warn!("Skipping snapshot of '{}' — outside workspace", path_str);
+            log::warn!("Skipping snapshot of {:?} — outside workspace", path_str);
             continue;
         };
         let dest = snapshot_dir.join(relative);

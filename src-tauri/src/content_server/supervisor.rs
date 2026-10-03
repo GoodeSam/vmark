@@ -47,7 +47,7 @@ pub fn monitor_child(app: AppHandle, root: String, generation: u64) {
         // an unexpected exit will not reach the frontend. Say so loudly
         // rather than unwind the start that just succeeded (#331).
         log::error!(
-            "[content-server {root}] could not start the supervisor thread for generation {generation}: {e}"
+            "[content-server {root:?}] could not start the supervisor thread for generation {generation}: {e}"
         );
     }
 }
@@ -89,13 +89,13 @@ pub(super) fn report_exit<E: std::fmt::Display>(
     code: Option<i32>,
     emit: impl FnOnce(&str, ExitedEvent) -> Result<(), E>,
 ) {
-    log::warn!("[content-server {root}] exited unexpectedly (code {code:?})");
+    log::warn!("[content-server {root:?}] exited unexpectedly (code {code:?})");
     let event = ExitedEvent {
         workspace_root: root.to_string(),
         code,
     };
     if let Err(e) = emit(EXITED_EVENT, event) {
-        log::error!("[content-server {root}] could not emit {EXITED_EVENT}: {e}");
+        log::error!("[content-server {root:?}] could not emit {EXITED_EVENT}: {e}");
     }
 }
 

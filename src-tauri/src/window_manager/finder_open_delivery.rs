@@ -115,7 +115,7 @@ fn focus_and_emit<R: tauri::Runtime>(
 
     reveal_window(&window, target_label);
 
-    log::info!("[Finder] Emitting to window '{}'", target_label);
+    log::info!("[Finder] Emitting to window {:?}", target_label);
     let mut failed = Vec::new();
     for payload in payloads {
         let event = TargetedFileOpen {
@@ -156,7 +156,7 @@ where
     }
 
     log::info!(
-        "[Finder] retrying delivery after '{}' vanished using '{}'",
+        "[Finder] retrying delivery after {:?} vanished using {:?}",
         target_label,
         fallback_label
     );

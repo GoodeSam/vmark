@@ -244,7 +244,7 @@ pub(super) async fn prepare_run<R: Runtime>(
         Err(e) => {
             log::warn!(
                 "[workflow] app data directory unavailable ({e}); `genie/*` steps in \
-                 {execution_id} will refuse, action steps still run"
+                 {execution_id:?} will refuse, action steps still run"
             );
             None
         }

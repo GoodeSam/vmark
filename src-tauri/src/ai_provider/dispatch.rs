@@ -75,7 +75,7 @@ pub(super) async fn dispatch_to_provider(
         // authors aren't silently misled into thinking it's enforced (D8).
         if max_tokens.is_some() {
             log::warn!(
-                "max_tokens={:?} is not enforced for CLI provider '{}'; the genie step will run unconstrained",
+                "max_tokens={:?} is not enforced for CLI provider {:?}; the genie step will run unconstrained",
                 max_tokens, provider
             );
         }

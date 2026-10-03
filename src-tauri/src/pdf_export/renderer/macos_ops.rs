@@ -74,7 +74,7 @@ fn render_inner(
 
     let ov = create_offscreen_webview(mtm);
 
-    log::debug!("[PDF] loading file: {}", html_path);
+    log::debug!("[PDF] loading file: {:?}", html_path);
     load_html_and_wait(mtm, &ov.webview, html_path, read_access_dir)?;
 
     // The caller's bounded wait may have ended during the load (#227). A

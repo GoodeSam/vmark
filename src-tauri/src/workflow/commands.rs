@@ -187,7 +187,10 @@ pub async fn cancel_workflow(
 ) -> Result<(), CommandError> {
     match state.request_cancel(&execution_id) {
         CancelDecision::Cancel => {
-            log::info!("Workflow cancellation requested for {}", execution_id);
+            log::info!(
+                "Workflow cancellation requested for {}",
+                crate::peer_text::peer_text(&execution_id)
+            );
             Ok(())
         }
         CancelDecision::NotRunning => Err(localized_error!(

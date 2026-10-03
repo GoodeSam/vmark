@@ -77,7 +77,7 @@ pub async fn restore_workflow_snapshot(
     let dir = app_data_dir(&app)?;
     let report = restore_with_claim(&state, &dir, &snapshot_id).await?;
     log::info!(
-        "[workflow] restored snapshot {snapshot_id}: {} restored, {} deleted, {} skipped",
+        "[workflow] restored snapshot {snapshot_id:?}: {} restored, {} deleted, {} skipped",
         report.restored,
         report.deleted,
         report.skipped

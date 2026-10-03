@@ -47,19 +47,21 @@ pub(super) fn try_rename_legacy_hash(
     if !legacy_path.exists() {
         return HashMigrationOutcome::NoLegacyFile;
     }
+    // Not synced: a crash that undoes this rename leaves the legacy file where
+    // it was, and the next read migrates it again.
     match fs::rename(legacy_path, new_path) {
         Ok(()) => {
             log::info!(
-                "[workspace] migrated config to 16-byte hash: {} -> {}",
-                legacy_path.display(),
-                new_path.display()
+                "[workspace] migrated config to 16-byte hash: {:?} -> {:?}",
+                legacy_path,
+                new_path
             );
             HashMigrationOutcome::Renamed
         }
         Err(e) => {
             log::warn!(
-                "[workspace] failed to migrate legacy config {}: {}",
-                legacy_path.display(),
+                "[workspace] failed to migrate legacy config {:?}: {}",
+                legacy_path,
                 e
             );
             HashMigrationOutcome::RenameFailed

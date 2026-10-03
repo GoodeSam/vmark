@@ -193,7 +193,6 @@ export function useStatusBarTabDrag({ tabs, windowLabel, tabBarRef, onActivateTa
         if (!currentPoint) return;
 
         void invoke<string | null>("find_drop_target_window", {
-          sourceWindowLabel: windowLabel,
           screenX: currentPoint.screenX,
           screenY: currentPoint.screenY,
         }).then((targetWindowLabel) => {

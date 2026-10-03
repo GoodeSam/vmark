@@ -110,11 +110,16 @@ async fn run_cli_provider(
 
     let arg_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
     let std_cmd = build_command(effective_cmd, &arg_refs);
+    // The first lookup runs the user's login shell (bounded at five seconds)
+    // and is cached after; it is blocking work, so never on an async worker.
+    let path = tokio::task::spawn_blocking(login_shell_path)
+        .await
+        .map_err(|e| format!("PATH lookup task failed: {e}"))?;
     // Convert std::process::Command → tokio::process::Command so we can
     // kill the child from another task via child.kill().await.
     let mut tokio_cmd = TokioCommand::from(std_cmd);
     let mut child = tokio_cmd
-        .env("PATH", login_shell_path())
+        .env("PATH", path)
         .stdin(stdin_cfg)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

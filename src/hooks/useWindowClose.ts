@@ -25,8 +25,14 @@
  *     of leaking, and a rejected `listen()` is logged instead of becoming an
  *     unhandled rejection.
  *   - All ordering/revalidation decisions live in windowCloseFlow.ts.
+ *   - Once its listeners are registered the hook says so
+ *     (`closeListenersReady`): the window-ready handshake waits for that
+ *     before telling Rust the window can take a quit or close request, which
+ *     Rust sends once. Only a mount that is still live reports — a torn-down
+ *     one has already unregistered what it registered.
  *
  * @coordinates-with windowCloseFlow.ts — the close transaction itself
+ * @coordinates-with services/windowClose/closeListenersReady.ts — the barrier this hook signals
  * @coordinates-with services/tabs/tabOperations.ts — closeTabWithDirtyCheck for menu:close
  * @module hooks/useWindowClose
  */
@@ -39,6 +45,7 @@ import { useWindowLabel } from "../contexts/WindowContext";
 import { useTabStore } from "../stores/tabStore";
 import { closeTabWithDirtyCheck } from "@/services/tabs/tabOperations";
 import { runWindowCloseFlow } from "@/services/windowClose/windowCloseFlow";
+import { signalCloseListenersMounted } from "@/services/windowClose/closeListenersReady";
 import { safeUnlisten } from "@/utils/safeUnlisten";
 import { windowCloseLog, windowCloseWarn, windowCloseError } from "@/utils/debug";
 import { stringifyUnknown } from "@/utils/stringifyUnknown";
@@ -222,9 +229,17 @@ export function useWindowClose() {
       closeLog(windowLabel, "event listeners set up");
     };
 
-    setup().catch((error) => {
-      windowCloseError("window close listener setup failed:", error);
-    });
+    // The outcome goes to the ready handshake either way: a failed setup that
+    // said nothing would leave the handshake waiting out its whole budget.
+    setup().then(
+      () => {
+        if (!disposed) signalCloseListenersMounted(true);
+      },
+      (error) => {
+        windowCloseError("window close listener setup failed:", error);
+        if (!disposed) signalCloseListenersMounted(false);
+      },
+    );
 
     return () => {
       disposed = true;

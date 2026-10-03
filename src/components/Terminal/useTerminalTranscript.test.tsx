@@ -198,4 +198,34 @@ describe("useTerminalTranscript", () => {
     expect(held).toEqual(Array.from({ length: held.length }, (_, i) => `${total - held.length + i}:${body}`));
     unmount();
   });
+  // WI-RA7C.6 — a poll parses the records it brought, not everything held. The
+  // hook used to keep the raw tail and re-parse all of it on every delta, so a
+  // streaming CLI cost one parse per held record per second.
+  it("parses each record once, however many polls follow it", async () => {
+    const polls = 12;
+    answerWith(...Array.from({ length: polls }, (_, i) => delta((i + 1) * 40, record(`r${i}`, `text ${i}`), i === 0)));
+    const parse = vi.spyOn(JSON, "parse");
+    const { result, unmount } = renderHook(() => useTerminalTranscript("a", true));
+    await act(async () => {});
+    for (let i = 1; i < polls; i += 1) await tick();
+    const parsedRecords = parse.mock.calls.filter(([text]) => typeof text === "string" && text.includes('"assistant"')).length;
+    parse.mockRestore();
+    expect(texts(result.current.messages)).toEqual(Array.from({ length: polls }, (_, i) => `text ${i}`));
+    expect(parsedRecords).toBe(polls);
+    unmount();
+  });
+  it("keeps id-less records from different polls apart", async () => {
+    // Codex writes messages with no id; the line number stands in, and it has
+    // to count from the start of the transcript, not of each delta.
+    const anonymous = (text: string) =>
+      JSON.stringify({ type: "response_item", payload: { type: "message", role: "assistant", content: [{ type: "output_text", text }] } }) + "\n";
+    answerWith(delta(40, anonymous("Done"), true), delta(80, anonymous("Done")), delta(120, anonymous("Done")));
+    const { result, unmount } = renderHook(() => useTerminalTranscript("a", true));
+    await act(async () => {});
+    await tick();
+    await tick();
+    expect(texts(result.current.messages)).toEqual(["Done", "Done", "Done"]);
+    expect(new Set(result.current.messages.map(message => message.id)).size).toBe(3);
+    unmount();
+  });
 });

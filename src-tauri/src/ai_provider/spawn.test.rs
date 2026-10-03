@@ -170,7 +170,7 @@ fn which_command_prefers_absolute_path() {
 
 #[cfg(unix)]
 fn sh(script: &str) -> Command {
-    let mut c = Command::new("/bin/sh");
+    let mut c = crate::ai_provider::build_command("/bin/sh", &[]);
     c.args(["-c", script]);
     c
 }
@@ -200,7 +200,7 @@ fn capture_none_on_nonzero_exit() {
 #[test]
 fn capture_none_on_spawn_failure() {
     let out = capture_stdout_with_timeout(
-        Command::new("/no/such/binary/vmark-xyz"),
+        crate::ai_provider::build_command("/no/such/binary/vmark-xyz", &[]),
         std::time::Duration::from_secs(1),
         "test",
     );
@@ -256,5 +256,33 @@ fn parse_sentinel_ignores_end_marker_before_start() {
     assert_eq!(
         parse_sentinel("<E>noise<S>value<E>", "<S>", "<E>"),
         Some("value".to_string())
+    );
+}
+
+/// WI-RA7C.4 — every child process, in tests as in production, is built by
+/// `build_command` (or `which_command`). A bare `Command::new` skips the
+/// console-window flag on Windows and, more to the point, is the shape a
+/// future production call site gets copied from; the tests are where most of
+/// the bare ones lived.
+#[test]
+fn only_this_module_constructs_a_command() {
+    let constructor = regex::Regex::new(r"\bCommand::new\s*\(").expect("regex");
+    let files = crate::source_scan::all_files();
+    assert!(files.len() > 400, "only {} files were scanned", files.len());
+    let offenders: Vec<String> = files
+        .iter()
+        .filter(|(path, _)| path != "ai_provider/spawn.rs")
+        .flat_map(|(path, code)| {
+            constructor
+                .find_iter(code)
+                .map(|found| format!("{path}:{}", code[..found.start()].matches('\n').count() + 1))
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    assert!(
+        offenders.is_empty(),
+        "{} bare `Command::new` call(s) — use `ai_provider::build_command`:\n{}",
+        offenders.len(),
+        offenders.join("\n")
     );
 }

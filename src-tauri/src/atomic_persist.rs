@@ -15,10 +15,13 @@
 //!
 //! Publication is two steps, and both live here: the rename that swaps the
 //! new file in, and the sync of the parent directory that makes the rename
-//! survive a crash (see `persist_with_retry`).
+//! survive a crash (see `persist_with_retry`). A writer whose file is not a
+//! `NamedTempFile` — the PDF renderer's staging file — does its own rename and
+//! takes the second step from [`sync_parent_directory`].
 //!
 //! @coordinates-with atomic_replace.rs — the document writer
 //! @coordinates-with mcp_bridge/token_file.rs — the credential writer
+//! @coordinates-with pdf_export/renderer/staging.rs — syncs the output's directory
 //! @module atomic_persist
 
 use std::path::Path;
@@ -73,6 +76,18 @@ fn persist_durably(
     sync_dir: impl FnOnce(&Path) -> std::io::Result<()>,
 ) -> Result<(), AtomicReplaceError> {
     rename_with_retry(temp, target)?;
+    sync_parent_with(target, sync_dir);
+    Ok(())
+}
+
+/// Make a rename onto `target` durable: sync the directory that holds it.
+/// Best-effort for the reason `persist_with_retry` gives — the file IS in
+/// place by now — so a refusal is logged, not returned.
+pub(crate) fn sync_parent_directory(target: &Path) {
+    sync_parent_with(target, sync_directory);
+}
+
+fn sync_parent_with(target: &Path, sync_dir: impl FnOnce(&Path) -> std::io::Result<()>) {
     let parent = parent_directory(target);
     if let Err(e) = sync_dir(parent) {
         log::warn!(
@@ -82,7 +97,6 @@ fn persist_durably(
             e
         );
     }
-    Ok(())
 }
 
 /// The directory whose entry a rename of `target` changes. A bare file name

@@ -168,7 +168,10 @@ pub(super) fn finalize_session(mut session: SessionData) -> Result<Option<Sessio
     }
     let warnings = validate_and_repair(&mut session);
     for warning in &warnings {
-        log::warn!("[HotExit] Session repair: {}", warning);
+        log::warn!(
+            "[HotExit] Session repair: {}",
+            crate::peer_text::peer_message(warning)
+        );
     }
     Ok(Some(session))
 }

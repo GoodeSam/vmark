@@ -45,11 +45,10 @@ interface LiveDocRefsWire {
  * Ask every OTHER document window for its live image-reference keys.
  * Never throws; failure is `complete: false`.
  */
-export async function collectRemoteLiveRefs(windowLabel: string): Promise<ExternalRefKeys> {
+export async function collectRemoteLiveRefs(): Promise<ExternalRefKeys> {
   try {
-    const wire = await invoke<LiveDocRefsWire>("collect_live_document_refs", {
-      requestingLabel: windowLabel,
-    });
+    // Rust asks every document window except the one that asks: this one.
+    const wire = await invoke<LiveDocRefsWire>("collect_live_document_refs");
     if (!wire || typeof wire.complete !== "boolean" || !Array.isArray(wire.refs)) {
       return { complete: false, keys: new Set() };
     }

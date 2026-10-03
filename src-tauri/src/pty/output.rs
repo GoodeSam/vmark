@@ -18,10 +18,16 @@
 //!   - The master is NOT put in non-blocking mode. That flag lives on the open
 //!     file description the writer shares, and a large paste relies on the
 //!     write blocking until the foreground process reads.
+//!   - A read can be bounded (`read_within`): when nothing arrives for that
+//!     long it returns `None`, which is when the reader checks whether the
+//!     shell has exited. Output need not end when the shell does — anything
+//!     else holding the terminal keeps it open — so an idle terminal is the
+//!     one place an exit can otherwise go unnoticed.
 //!   - Elsewhere (Windows, ConPTY) the output pipe offers no such wait. A read
 //!     that is already blocked there still ends only when the console closes,
 //!     as before; the interrupt is a flag honoured before and after every
-//!     read and during the wait for the shell's exit.
+//!     read and during the wait for the shell's exit, and a bounded read is an
+//!     unbounded one.
 //!
 //! @coordinates-with pty/session.rs — creates the pair, owns the `Interrupter`
 //! @coordinates-with pty/reader.rs — drives the `OutputSource`
@@ -157,24 +163,59 @@ mod platform {
     }
 
     impl OutputSource {
-        /// Read the next chunk of output. An interrupt wins over pending
-        /// output: the session is going away and nobody will read it.
+        /// Read the next chunk of output, or `None` once `idle` passes with
+        /// nothing to read. An interrupt wins over pending output: the session
+        /// is going away and nobody will read it.
+        pub(in crate::pty) fn read_within(
+            &mut self,
+            buf: &mut [u8],
+            idle: Duration,
+        ) -> io::Result<Option<Chunk>> {
+            self.read_with(buf, Some(idle))
+        }
+
+        /// Read the next chunk of output, however long it takes.
+        #[cfg(test)]
         pub(in crate::pty) fn read(&mut self, buf: &mut [u8]) -> io::Result<Chunk> {
             loop {
+                if let Some(chunk) = self.read_with(buf, None)? {
+                    return Ok(chunk);
+                }
+            }
+        }
+
+        fn read_with(
+            &mut self,
+            buf: &mut [u8],
+            idle: Option<Duration>,
+        ) -> io::Result<Option<Chunk>> {
+            loop {
                 let ready =
-                    wait_readable(Some(self.master.as_raw_fd()), self.wake.as_raw_fd(), None)?;
+                    wait_readable(Some(self.master.as_raw_fd()), self.wake.as_raw_fd(), idle)?;
                 if ready.wake {
-                    return Ok(Chunk::Interrupted);
+                    return Ok(Some(Chunk::Interrupted));
                 }
                 if !ready.master {
+                    if idle.is_some() {
+                        return Ok(None);
+                    }
                     continue;
                 }
                 return match self.master.read(buf) {
-                    Ok(0) => Ok(Chunk::Eof),
-                    Ok(n) => Ok(Chunk::Data(n)),
+                    Ok(0) => Ok(Some(Chunk::Eof)),
+                    Ok(n) => Ok(Some(Chunk::Data(n))),
                     // Linux reports a fully closed slave side as EIO.
-                    Err(e) if e.raw_os_error() == Some(libc::EIO) => Ok(Chunk::Eof),
-                    Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                    Err(e) if e.raw_os_error() == Some(libc::EIO) => Ok(Some(Chunk::Eof)),
+                    // The master is non-blocking (`input.rs`), so a readiness
+                    // that is gone by the time of the read is "not yet".
+                    Err(e)
+                        if matches!(
+                            e.kind(),
+                            io::ErrorKind::Interrupted | io::ErrorKind::WouldBlock
+                        ) =>
+                    {
+                        continue
+                    }
                     Err(e) => Err(e),
                 };
             }
@@ -204,89 +245,8 @@ mod platform {
 // Compiled into Unix test builds too, so the logic Windows runs is exercised
 // on the platforms the tests run on.
 #[cfg(any(not(unix), test))]
-mod fallback {
-    use super::Chunk;
-    use std::io::{self, Read};
-    use std::sync::atomic::{AtomicBool, Ordering};
-    use std::sync::Arc;
-    use std::time::{Duration, Instant};
-
-    /// How often a bounded wait looks at the interrupt flag.
-    const FLAG_POLL: Duration = Duration::from_millis(10);
-
-    pub(in crate::pty) struct OutputSource {
-        reader: Box<dyn Read + Send>,
-        interrupted: Arc<AtomicBool>,
-    }
-
-    pub(in crate::pty) struct Interrupter {
-        interrupted: Arc<AtomicBool>,
-    }
-
-    #[cfg(not(unix))]
-    pub(super) fn channel(
-        master: &dyn super::MasterPty,
-    ) -> io::Result<(OutputSource, Interrupter)> {
-        let reader = master.try_clone_reader().map_err(io::Error::other)?;
-        Ok(from_reader(reader))
-    }
-
-    pub(super) fn from_reader(reader: Box<dyn Read + Send>) -> (OutputSource, Interrupter) {
-        let interrupted = Arc::new(AtomicBool::new(false));
-        (
-            OutputSource {
-                reader,
-                interrupted: interrupted.clone(),
-            },
-            Interrupter { interrupted },
-        )
-    }
-
-    impl OutputSource {
-        /// Read the next chunk of output. An interrupt wins over whatever a
-        /// read that was blocked when it arrived goes on to return.
-        pub(in crate::pty) fn read(&mut self, buf: &mut [u8]) -> io::Result<Chunk> {
-            loop {
-                if self.interrupted.load(Ordering::Acquire) {
-                    return Ok(Chunk::Interrupted);
-                }
-                let read = self.reader.read(buf);
-                if self.interrupted.load(Ordering::Acquire) {
-                    return Ok(Chunk::Interrupted);
-                }
-                return match read {
-                    Ok(0) => Ok(Chunk::Eof),
-                    Ok(n) => Ok(Chunk::Data(n)),
-                    Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
-                    Err(e) => Err(e),
-                };
-            }
-        }
-
-        /// Wait for `timeout`; true when the session interrupted the wait.
-        pub(in crate::pty) fn interrupted_within(&self, timeout: Duration) -> io::Result<bool> {
-            let deadline = Instant::now() + timeout;
-            loop {
-                if self.interrupted.load(Ordering::Acquire) {
-                    return Ok(true);
-                }
-                let left = deadline.saturating_duration_since(Instant::now());
-                if left.is_zero() {
-                    return Ok(false);
-                }
-                std::thread::sleep(left.min(FLAG_POLL));
-            }
-        }
-    }
-
-    impl Interrupter {
-        /// Make every later read and wait return `Interrupted`. Never blocks;
-        /// safe to call more than once.
-        pub(in crate::pty) fn interrupt(&self) {
-            self.interrupted.store(true, Ordering::Release);
-        }
-    }
-}
+#[path = "output_fallback.rs"]
+mod fallback;
 
 // Unix-only: the tests open real ptys.
 #[cfg(all(test, unix))]

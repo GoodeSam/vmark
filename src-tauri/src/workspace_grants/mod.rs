@@ -137,7 +137,7 @@ impl WorkspaceGrants {
         }
         if let Some(file) = state.file.as_deref() {
             if let Err(e) = persist(file, &state.list) {
-                log::error!("[workspace-grants] Could not save {}: {e}", file.display());
+                log::error!("[workspace-grants] Could not save {:?}: {e}", file);
             }
         }
     }
@@ -163,10 +163,7 @@ impl WorkspaceGrants {
             return;
         }
         if let Err(e) = persist(file, &state.list) {
-            log::error!(
-                "[workspace-grants] Could not create {}: {e}",
-                file.display()
-            );
+            log::error!("[workspace-grants] Could not create {:?}: {e}", file);
         }
     }
 
@@ -184,7 +181,7 @@ impl WorkspaceGrants {
         state.list.absorb(from_disk.clone());
         if state.list != from_disk {
             if let Err(e) = persist(&file, &state.list) {
-                log::error!("[workspace-grants] Could not save {}: {e}", file.display());
+                log::error!("[workspace-grants] Could not save {:?}: {e}", file);
             }
         }
         state.file = Some(file);
@@ -230,12 +227,12 @@ fn read_list(file: &Path) -> GrantList {
         .and_then(|f| f.take(MAX_FILE_BYTES as u64 + 1).read_to_end(&mut bytes));
     match read {
         Ok(_) => GrantList::parse(&bytes).unwrap_or_else(|e| {
-            log::warn!("[workspace-grants] Ignoring {}: {e}", file.display());
+            log::warn!("[workspace-grants] Ignoring {:?}: {e}", file);
             GrantList::default()
         }),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => GrantList::default(),
         Err(e) => {
-            log::warn!("[workspace-grants] Could not read {}: {e}", file.display());
+            log::warn!("[workspace-grants] Could not read {:?}: {e}", file);
             GrantList::default()
         }
     }

@@ -156,7 +156,7 @@ describe('Multi-Window Restore', () => {
 
       mockInvoke.mockResolvedValue(windowState);
 
-      const result = await invoke('hot_exit_get_window_state', { windowLabel: 'doc-0' });
+      const result = await invoke('hot_exit_get_window_state');
 
       expect(result).toEqual(windowState);
     });
@@ -174,24 +174,28 @@ describe('Multi-Window Restore', () => {
     it('should track all window completions before clearing session', async () => {
       // This tests that session file isn't cleared until all windows complete
       const completions: string[] = [];
+      // Rust marks the window a call comes FROM; the call carries no label.
+      let caller = '';
 
-      mockInvoke.mockImplementation(async (cmd: string, args?: unknown) => {
+      mockInvoke.mockImplementation(async (cmd: string) => {
         if (cmd === 'hot_exit_window_restore_complete') {
-          const { windowLabel } = args as { windowLabel: string };
-          completions.push(windowLabel);
+          completions.push(caller);
           return completions.length === 3; // All windows done
         }
         return null;
       });
 
       // Simulate completions from each window
-      await invoke('hot_exit_window_restore_complete', { windowLabel: 'main' });
+      caller = 'main';
+      await invoke('hot_exit_window_restore_complete');
       expect(completions).toEqual(['main']);
 
-      await invoke('hot_exit_window_restore_complete', { windowLabel: 'doc-0' });
+      caller = 'doc-0';
+      await invoke('hot_exit_window_restore_complete');
       expect(completions).toEqual(['main', 'doc-0']);
 
-      const allDone = await invoke('hot_exit_window_restore_complete', { windowLabel: 'doc-1' });
+      caller = 'doc-1';
+      const allDone = await invoke('hot_exit_window_restore_complete');
       expect(allDone).toBe(true);
     });
   });
@@ -213,11 +217,9 @@ describe('Secondary Window Startup', () => {
       tabs: [{ id: 'tab-1', file_path: '/test.md' }],
     });
 
-    const state = await invoke<{ window_label: string }>('hot_exit_get_window_state', { windowLabel: 'doc-0' });
+    const state = await invoke<{ window_label: string }>('hot_exit_get_window_state');
 
-    expect(mockInvoke).toHaveBeenCalledWith('hot_exit_get_window_state', {
-      windowLabel: 'doc-0',
-    });
+    expect(mockInvoke).toHaveBeenCalledWith('hot_exit_get_window_state');
     expect(state).toBeDefined();
     expect(state?.window_label).toBe('doc-0');
   });
@@ -226,7 +228,7 @@ describe('Secondary Window Startup', () => {
     // When a window starts normally (not from restore), no pending state
     mockInvoke.mockResolvedValue(null);
 
-    const state = await invoke('hot_exit_get_window_state', { windowLabel: 'doc-5' });
+    const state = await invoke('hot_exit_get_window_state');
 
     expect(state).toBeNull();
   });

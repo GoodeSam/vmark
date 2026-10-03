@@ -43,7 +43,7 @@ impl ContentServerManager {
                 Some(child)
             } else {
                 log::warn!(
-                    "[content-server {root}] keeping the handle of pid {pid} for another attempt at quit"
+                    "[content-server {root:?}] keeping the handle of pid {pid} for another attempt at quit"
                 );
                 state.orphans.push((root.to_string(), child));
                 None
@@ -51,7 +51,7 @@ impl ContentServerManager {
         };
         if let Some(child) = late {
             log::warn!(
-                "[content-server {root}] quit already drained the orphans; last attempt on pid {pid} now"
+                "[content-server {root:?}] quit already drained the orphans; last attempt on pid {pid} now"
             );
             // Its own failure is logged by `cleanup`; there is no queue left
             // to hand it to, so the report is the log's last word on it.

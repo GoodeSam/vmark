@@ -24,8 +24,10 @@
 //!     begins the reader thread. The frontend wires the output Channel's
 //!     `onmessage` and the `pty:exit:{pid}` listener before calling
 //!     `pty_start`, so no output or exit signal is lost (no data-loss race).
-//!   - Child exit is detected in the reader thread once the output ends; the
-//!     shell is reaped there and its code emitted as a `pty:exit:{pid}` event.
+//!   - Child exit is detected in the reader thread once the output ends, or
+//!     while the terminal is idle (something else can hold it open after the
+//!     shell is gone); the shell is reaped there and its code emitted as a
+//!     `pty:exit:{pid}` event.
 //!   - Sessions are removed from the map via `pty_close` (called by the
 //!     frontend after receiving the exit event) to prevent FD/memory leaks.
 //!     Each session records the window that spawned it, and that window's
@@ -38,9 +40,10 @@
 //!     life (`child.rs`).
 //!   - Writer and master use `std::sync::Mutex` (not tokio) because the
 //!     underlying operations are plain syscalls, not async I/O. Writes still
-//!     run inside `spawn_blocking`: `write_all` blocks when the PTY buffer is
-//!     full (e.g. a large paste into a non-reading foreground process), and a
-//!     blocked tokio worker would starve the runtime.
+//!     run inside `spawn_blocking`: a full PTY buffer (a large paste into a
+//!     non-reading foreground process) makes a write wait, and a waiting tokio
+//!     worker would starve the runtime. The wait is bounded and a stop ends it
+//!     (`input.rs`).
 //!
 //! Module layout: this file holds the seven short commands (`pty_spawn`,
 //! `pty_write`, `pty_resize`, `pty_kill`, `pty_close`, `pty_pause`,
@@ -60,6 +63,7 @@
 //! @module pty
 
 mod child;
+mod input;
 mod output;
 mod pause;
 pub mod reader;
@@ -74,7 +78,6 @@ use crate::command_error::CommandError;
 use portable_pty::PtySize;
 use session::get_session;
 use std::collections::BTreeMap;
-use std::io::Write;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use tauri::Manager;
@@ -171,9 +174,10 @@ fn integration_args<R: tauri::Runtime>(
 
 /// Write data to the PTY.
 ///
-/// The write runs on the blocking pool: a full PTY buffer makes `write_all`
-/// block until the foreground process reads, which would otherwise pin a
-/// tokio worker thread (and the writer mutex) for the duration.
+/// On the blocking pool, and bounded (`pty/input.rs`): a full terminal input
+/// queue waits for the foreground program to read, but a stop ends the wait
+/// and a program that takes nothing for `STALL_LIMIT` fails the write with
+/// `io`, saying how much went through.
 #[tauri::command]
 pub async fn pty_write(
     pid: u32,
@@ -184,12 +188,7 @@ pub async fn pty_write(
         .await
         .map_err(|_| session_gone(pid))?;
     tokio::task::spawn_blocking(move || {
-        let mut writer = session
-            .writer
-            .lock()
-            .map_err(|e| pty_internal("PTY writer lock poisoned", e))?;
-        writer.write_all(data.as_bytes()).map_err(pty_io)?;
-        writer.flush().map_err(pty_io)
+        input::write_input(&session, data.as_bytes(), input::STALL_LIMIT).map_err(pty_io)
     })
     .await
     .map_err(|e| pty_internal("PTY write task failed", e))?

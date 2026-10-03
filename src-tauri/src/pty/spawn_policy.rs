@@ -61,8 +61,8 @@ impl ShellSource<fn() -> Vec<String>> {
     /// The shells this machine offers, as the settings page sees them.
     pub(super) fn system() -> Self {
         Self {
-            default_shell: crate::shell_env::get_default_shell(),
-            listed: crate::shell_env::list_available_shells,
+            default_shell: crate::shell_env::default_shell(),
+            listed: crate::shell_env::available_shells,
         }
     }
 }

@@ -1,7 +1,8 @@
 /**
  * Window→workspace registration for MCP routing (WI-3.5 F5).
  *
- * Purpose: tell the Rust bridge which workspace THIS window has open, so
+ * Purpose: tell the Rust bridge which workspace THIS window has open (the
+ *   bridge records it for the window the call comes from), so
  * workspace-scoped MCP requests (`workspace_root`, `filePath`) route to
  * the owning window instead of only the focused one (session-3 finding
  * F5). Registers the current root on start and on every change; clears
@@ -15,24 +16,21 @@
  * @module services/mcpBridge/windowWorkspaceSync
  */
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { coherenceLog } from "@/utils/debug";
 
 /**
  * Start syncing this window's workspace root to the bridge; returns a
- * disposer that clears the registration. Injectable invoke/label/subscribe
+ * disposer that clears the registration. Injectable invoke/subscribe/root
  * for tests.
  */
 export function startWindowWorkspaceSync(
   deps: {
     invoke: typeof invoke;
-    windowLabel: string;
     subscribe: typeof useWorkspaceStore.subscribe;
     getRoot: () => string | null;
   } = {
     invoke,
-    windowLabel: getCurrentWebviewWindow().label,
     subscribe: useWorkspaceStore.subscribe,
     getRoot: () => useWorkspaceStore.getState().rootPath,
   }
@@ -54,10 +52,7 @@ export function startWindowWorkspaceSync(
     last = root;
     const mine = ++attempt;
     void deps
-      .invoke("mcp_bridge_set_window_workspace", {
-        windowLabel: deps.windowLabel,
-        workspaceRoot: root,
-      })
+      .invoke("mcp_bridge_set_window_workspace", { workspaceRoot: root })
       // A single settle handler (not `.then().catch()`) keeps rollback one
       // microtask away, so a retry after a failed registration is prompt.
       .then(
@@ -79,10 +74,7 @@ export function startWindowWorkspaceSync(
 
   const clear = () =>
     deps
-      .invoke("mcp_bridge_set_window_workspace", {
-        windowLabel: deps.windowLabel,
-        workspaceRoot: null,
-      })
+      .invoke("mcp_bridge_set_window_workspace", { workspaceRoot: null })
       .catch(() => {});
 
   register(deps.getRoot());

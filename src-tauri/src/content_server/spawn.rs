@@ -194,10 +194,21 @@ pub fn spawn_server(node: &str, args: &[&str], root: &str) -> std::io::Result<Ch
     let mut cmd = build_command(node, args);
     cmd.env("PATH", login_shell_path());
     let root = root.to_string();
-    spawn_supervised(cmd, move |stream, line| match stream {
-        Stream::Stderr => log::warn!("[content-server {root}] {line}"),
-        Stream::Stdout => log::info!("[content-server {root}] {line}"),
-    })
+    spawn_supervised(cmd, move |stream, line| log_child_line(&root, stream, line))
+}
+
+/// One line of the child's output, into the log — stderr as a warning.
+fn log_child_line(root: &str, stream: Stream, line: &str) {
+    match stream {
+        Stream::Stderr => log::warn!(
+            "[content-server {root:?}] {line}",
+            line = crate::peer_text::peer_message(line)
+        ),
+        Stream::Stdout => log::info!(
+            "[content-server {root:?}] {line}",
+            line = crate::peer_text::peer_message(line)
+        ),
+    }
 }
 
 /// `spawn_server` with the line sink injected: spawn `cmd` with both pipes

@@ -246,11 +246,11 @@ pub(super) fn terminate<C: Terminable>(root: &str, child: &mut C) -> Result<(), 
     };
     match reaped {
         Ok(status) => {
-            log::debug!("[content-server {root}] child reaped ({status})");
+            log::debug!("[content-server {root:?}] child reaped ({status})");
             Ok(())
         }
         Err(failure) => {
-            log::warn!("[content-server {root}] {failure}");
+            log::warn!("[content-server {root:?}] {failure}");
             Err(failure)
         }
     }
@@ -287,8 +287,8 @@ fn remove_port_file(root: &str, path: &Path) -> Result<(), String> {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(e) => {
             log::warn!(
-                "[content-server {root}] could not remove port file {}: {e}",
-                path.display()
+                "[content-server {root:?}] could not remove port file {:?}: {e}",
+                path
             );
             Err(format!("{}: {e}", path.display()))
         }

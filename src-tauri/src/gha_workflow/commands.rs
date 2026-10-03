@@ -23,8 +23,7 @@ use tauri::AppHandle;
 pub async fn gha_lint(yaml: String) -> Result<LintResult, CommandError> {
     // Run on the blocking pool so it doesn't starve tokio.
     tokio::task::spawn_blocking(move || {
-        let login_path = crate::ai_provider::login_shell_path();
-        run_actionlint(&yaml, Some(&login_path))
+        run_actionlint(&yaml, &crate::ai_provider::login_shell_path())
     })
     .await
     .map_err(|e| CommandError::internal(format!("Lint task join failed: {e}")))

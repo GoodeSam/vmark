@@ -187,7 +187,7 @@ describe("closeWorkspaceInstance", () => {
 
     await closeWorkspaceInstance("doc-2", "wsi-only", { closeTabs: closeTabsWithDirtyCheck });
 
-    expect(invoke).toHaveBeenCalledWith("close_window", { label: "doc-2" });
+    expect(invoke).toHaveBeenCalledWith("close_window");
   });
 
   it("leaves other windows alone when one still holds a workspace", async () => {

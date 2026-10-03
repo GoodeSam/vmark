@@ -224,7 +224,7 @@ pub(super) async fn read_folder(
         let entry_path = match tokio::fs::canonicalize(&raw_path).await {
             Ok(p) => p,
             Err(e) => {
-                log::warn!("Skipping unresolvable entry '{}': {}", name, e);
+                log::warn!("Skipping unresolvable entry {:?}: {}", name, e);
                 skipped.push(SkippedEntry {
                     label,
                     reason: format!("could not be resolved: {e}"),
@@ -233,7 +233,7 @@ pub(super) async fn read_folder(
             }
         };
         if !entry_path.starts_with(&canonical_root) {
-            log::warn!("Skipping '{}': resolves outside the workspace", name);
+            log::warn!("Skipping {:?}: resolves outside the workspace", name);
             skipped.push(SkippedEntry {
                 label,
                 reason: "resolves outside the workspace".to_string(),
@@ -249,7 +249,7 @@ pub(super) async fn read_folder(
             EntryRead::Bytes(bytes) => match String::from_utf8(bytes) {
                 Ok(text) => text,
                 Err(e) => {
-                    log::warn!("Skipping unreadable file '{}': {}", name, e);
+                    log::warn!("Skipping unreadable file {:?}: {}", name, e);
                     skipped.push(SkippedEntry {
                         label,
                         reason: "not valid UTF-8".to_string(),
@@ -258,7 +258,7 @@ pub(super) async fn read_folder(
                 }
             },
             EntryRead::Oversized => {
-                log::warn!("Skipping oversized file '{}'", name);
+                log::warn!("Skipping oversized file {:?}", name);
                 skipped.push(SkippedEntry {
                     label,
                     reason: format!("over the per-file limit ({MAX_FILE_SIZE_BYTES} bytes)"),
@@ -272,7 +272,7 @@ pub(super) async fn read_folder(
                 ));
             }
             EntryRead::Skipped(reason) => {
-                log::warn!("Skipping '{}': {}", name, reason);
+                log::warn!("Skipping {:?}: {}", name, reason);
                 skipped.push(SkippedEntry { label, reason });
                 continue;
             }

@@ -65,7 +65,7 @@ pub fn merge_partial_capture(
                 && !present_labels.contains(&prev_window.window_label)
             {
                 log::debug!(
-                    "[HotExit] Merging previous state for timed-out window '{}' ({:?}s old)",
+                    "[HotExit] Merging previous state for timed-out window {:?} ({:?}s old)",
                     prev_window.window_label,
                     prev_age_secs
                 );

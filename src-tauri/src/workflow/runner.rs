@@ -164,7 +164,7 @@ pub async fn run_workflow_sequential<R: Runtime>(
             status: final_status.to_string(),
         },
     );
-    log::info!("Workflow '{}' {}", workflow.name, final_status);
+    log::info!("Workflow {:?} {}", workflow.name, final_status);
 
     outcome.map(|()| execution_id.to_string())
 }
@@ -184,7 +184,7 @@ async fn run_steps<R: Runtime>(
         .collect();
     let mut state = RunState::default();
 
-    log::info!("Workflow '{}' starting: {} steps", name, step_count);
+    log::info!("Workflow {:?} starting: {} steps", name, step_count);
 
     for (i, rs) in steps.iter().enumerate() {
         let Some(ready) = step_preflight(ctx, &mut state, rs) else {
@@ -210,7 +210,7 @@ async fn run_steps<R: Runtime>(
         .await;
 
         log::info!(
-            "Workflow '{}': step {}/{} ({}) ({}ms)",
+            "Workflow {:?}: step {}/{} ({}) ({}ms)",
             name,
             i + 1,
             step_count,

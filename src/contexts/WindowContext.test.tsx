@@ -650,7 +650,7 @@ describe("WindowContext", () => {
       removeHandler({ payload: { requestId: "req-1", tabId: "last-tab", phase: "commit" } });
 
       await waitFor(() => {
-        expect(invoke).toHaveBeenCalledWith("close_window", { label: "doc-close" });
+        expect(invoke).toHaveBeenCalledWith("close_window");
       });
     });
 

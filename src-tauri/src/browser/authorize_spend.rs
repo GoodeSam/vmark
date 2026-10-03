@@ -69,13 +69,13 @@ pub(super) fn spend(
             // Origin only: the committed URL's query string routinely carries
             // session tokens, and a refusal log is not a place to persist them.
             log::warn!(
-                "[browser] REFUSED {operation} on {} (tab {tab_id}): not granted",
+                "[browser] REFUSED {operation:?} on {} (tab {tab_id:?}): not granted",
                 redact::redact(&decision.committed)
             );
             return Err(not_granted(operation));
         }
         log::info!(
-            "[browser] {operation} on {} (tab {tab_id}): one-shot consumed",
+            "[browser] {operation:?} on {} (tab {tab_id:?}): one-shot consumed",
             redact::redact(&decision.committed)
         );
     }

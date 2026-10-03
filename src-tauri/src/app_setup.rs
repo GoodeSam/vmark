@@ -204,7 +204,7 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
             // its teardown; window labels are never reused, so without this
             // each closed window would leak a recursive watcher (idempotent).
             if let Err(e) = crate::watcher::stop_watching(label.clone()) {
-                log::warn!("[Tauri] Failed to stop watcher for '{}': {}", label, e);
+                log::warn!("[Tauri] Failed to stop watcher for {:?}: {}", label, e);
             }
             // Same race for the window's terminals: its `pty_close` calls die
             // with the webview, so an idle shell would outlive the window.

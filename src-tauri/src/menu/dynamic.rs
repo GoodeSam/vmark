@@ -13,16 +13,14 @@ use tauri::menu::{Menu, MenuItem, MenuItemKind, PredefinedMenuItem, Submenu};
 use tauri::AppHandle;
 
 use super::{
-    GENIES_SNAPSHOT, GENIES_SUBMENU_ID, RECENT_FILES_SNAPSHOT, RECENT_FILES_SUBMENU_ID,
-    RECENT_WORKSPACES_SNAPSHOT, RECENT_WORKSPACES_SUBMENU_ID,
+    replace_snapshot, GENIES_SNAPSHOT, GENIES_SUBMENU_ID, RECENT_FILES_SNAPSHOT,
+    RECENT_FILES_SUBMENU_ID, RECENT_WORKSPACES_SNAPSHOT, RECENT_WORKSPACES_SUBMENU_ID,
 };
 
 /// Update the Open Recent submenu with the given list of file paths.
 pub fn update_recent_files_menu(app: &AppHandle, files: Vec<String>) -> tauri::Result<()> {
     // Store snapshot of files for lookup when menu items are clicked
-    if let Ok(mut snapshot) = RECENT_FILES_SNAPSHOT.lock() {
-        *snapshot = files.clone();
-    }
+    replace_snapshot(&RECENT_FILES_SNAPSHOT, files.clone());
 
     let Some(menu) = app.menu() else {
         return Ok(());
@@ -92,9 +90,7 @@ pub fn update_recent_workspaces_menu(
     app: &AppHandle,
     workspaces: Vec<String>,
 ) -> tauri::Result<()> {
-    if let Ok(mut snapshot) = RECENT_WORKSPACES_SNAPSHOT.lock() {
-        *snapshot = workspaces.clone();
-    }
+    replace_snapshot(&RECENT_WORKSPACES_SNAPSHOT, workspaces.clone());
 
     let Some(menu) = app.menu() else {
         return Ok(());
@@ -280,9 +276,7 @@ pub fn refresh_genies_menu(
     submenu.append(&open_folder).map_err(|e| e.to_string())?;
 
     // Update snapshot
-    if let Ok(mut s) = GENIES_SNAPSHOT.lock() {
-        *s = snapshot;
-    }
+    replace_snapshot(&GENIES_SNAPSHOT, snapshot);
 
     // Re-apply SF Symbol icons to cover newly added genie items
     #[cfg(target_os = "macos")]
@@ -318,9 +312,7 @@ pub fn hide_genies_menu(app: AppHandle) -> Result<(), String> {
     }
 
     // Clear stale snapshot so removed menu items can't resolve genie paths
-    if let Ok(mut s) = GENIES_SNAPSHOT.lock() {
-        s.clear();
-    }
+    replace_snapshot(&GENIES_SNAPSHOT, Vec::new());
 
     Ok(())
 }

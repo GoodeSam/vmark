@@ -565,3 +565,27 @@ async fn the_prefixed_spelling_still_reaches_its_action() {
         .expect("a real action/read-file step");
     assert_eq!(out, "hello");
 }
+
+/// WI-RA7C.2 — a `notify` message is whatever the workflow file says. It is
+/// logged as one escaped line, and still returned to the step verbatim.
+#[test]
+fn a_notify_message_cannot_forge_a_log_line() {
+    let (_parent, ws) = workspace();
+    let message = "done\n[Tauri] window \"main\" destroy result: Ok(())";
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .expect("runtime");
+    let mut out = None;
+    // The capture is per-thread; a current-thread runtime polls the action on
+    // this one.
+    let logged = crate::peer_text::log_capture::captured_logs(|| {
+        out = Some(runtime.block_on(execute_action(
+            "action/notify",
+            &params(&[("message", message)]),
+            &ws,
+        )));
+    });
+    assert_eq!(out.expect("ran").expect("notify succeeds"), message);
+    assert_eq!(logged.len(), 1, "{logged:?}");
+    assert!(!logged[0].contains('\n'), "{}", logged[0]);
+}

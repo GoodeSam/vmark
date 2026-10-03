@@ -94,8 +94,9 @@ async function finalizeWindowClose(
     return false;
   }
 
-  log(windowLabel, "invoking close_window with label:", windowLabel);
-  await invoke("close_window", { label: windowLabel });
+  // `close_window` closes the window that asks, which is this one.
+  log(windowLabel, "invoking close_window");
+  await invoke("close_window");
   log(windowLabel, "close_window returned");
   // On success the webview is being destroyed and may never reach this line —
   // which is fine: the teardown only matters if the window SURVIVES. Dropping

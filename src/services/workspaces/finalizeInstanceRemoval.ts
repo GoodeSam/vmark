@@ -70,7 +70,8 @@ export function finalizeInstanceRemoval(
   ) {
     // Don't drop the rejection — a failed close should surface in logs rather
     // than become an unhandled promise rejection.
-    void invoke("close_window", { label: windowLabel }).catch((error) => {
+    // Closes the window that asks — this one, the window the instance left.
+    void invoke("close_window").catch((error) => {
       workspaceError("Failed to close emptied window:", error);
     });
   }

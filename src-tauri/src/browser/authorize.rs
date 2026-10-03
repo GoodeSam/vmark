@@ -23,6 +23,7 @@
 //! @coordinates-with browser/commands_auth.rs — the command entry points
 
 use crate::browser::ai_guards::{ai_policy, lock_failure, require_browser_enabled};
+use crate::browser::locks;
 use crate::browser::one_shot::OneShotTarget;
 use crate::browser::refusals::stale_command;
 use crate::browser::registry::AutomationMode;
@@ -110,13 +111,13 @@ pub(crate) fn authorize_driver_op(
 /// run loop for up to ten seconds, during which the page can navigate, and a
 /// stale generation must not return pixels from a different origin (Audit, High).
 pub(crate) fn command_still_fresh(state: &BrowserSurface, tab_id: &str, generation: u64) -> bool {
-    let Ok(policy) = state.ai_policy.lock().map(|policy| *policy) else {
+    let Some(policy) = locks::ai_policy(state) else {
         return false;
     };
     if !policy.enabled {
         return false;
     }
-    let Ok(reg) = state.registry.lock() else {
+    let Some(reg) = locks::registry(state) else {
         return false;
     };
     fresh_under_guard(&reg, &policy, tab_id, generation)

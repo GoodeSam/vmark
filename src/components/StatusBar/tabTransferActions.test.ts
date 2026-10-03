@@ -375,7 +375,6 @@ describe("transferTabFromDragOut", () => {
     await transferTabFromDragOut(defaultOptions);
 
     expect(mockInvoke).toHaveBeenCalledWith("find_drop_target_window", {
-      sourceWindowLabel: "main",
       screenX: 100,
       screenY: 200,
     });
@@ -446,8 +445,8 @@ describe("transferTabFromDragOut", () => {
     const opts = { ...defaultOptions, windowLabel: "secondary" };
     await transferTabFromDragOut(opts);
 
-    // Should invoke close_window for the secondary window
-    expect(mockInvoke).toHaveBeenCalledWith("close_window", expect.objectContaining({ label: expect.any(String) }));
+    // Should close the secondary window — the one asking (Rust closes the caller)
+    expect(mockInvoke).toHaveBeenCalledWith("close_window");
   });
 
   it("does NOT auto-close main window even when no remaining tabs", async () => {

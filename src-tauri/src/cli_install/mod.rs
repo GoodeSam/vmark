@@ -122,7 +122,7 @@ fn status_at(target: &Path) -> CliStatus {
 /// from `script.rs`: compile-time constants, each wrapped in
 /// `shell_single_quote`. Never pass user-controlled input to this function.
 fn run_admin_shell(shell_cmd: &str) -> Result<(), CliInstallError> {
-    let output = std::process::Command::new("/usr/bin/osascript")
+    let output = crate::ai_provider::build_command("/usr/bin/osascript", &[])
         .arg("-e")
         .arg(apple_script(shell_cmd, true))
         .output()
@@ -201,8 +201,8 @@ fn verify_installed(
     }
 
     log::error!(
-        "[cli_install] {} is not the script that was installed; removing it",
-        target.display()
+        "[cli_install] {:?} is not the script that was installed; removing it",
+        target
     );
     let removed = std::fs::remove_file(target).is_ok()
         || target

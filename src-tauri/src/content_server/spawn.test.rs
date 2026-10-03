@@ -195,11 +195,11 @@ use std::time::Duration;
 /// A program that prints one line on each stream and exits 0.
 fn one_line_on_each_stream() -> Command {
     if cfg!(windows) {
-        let mut c = Command::new("cmd");
+        let mut c = crate::ai_provider::build_command("cmd", &[]);
         c.args(["/C", "echo out-line& echo err-line 1>&2"]);
         c
     } else {
-        let mut c = Command::new("sh");
+        let mut c = crate::ai_provider::build_command("sh", &[]);
         c.args(["-c", "echo out-line; echo err-line 1>&2"]);
         c
     }
@@ -254,7 +254,8 @@ fn spawn_supervised_takes_both_pipes_and_delivers_each_line_tagged_with_its_stre
 #[test]
 fn spawn_supervised_reports_a_missing_executable_and_spawns_nothing() {
     let dir = tempdir().unwrap();
-    let err = spawn_supervised(Command::new(dir.path().join("no-such-node")), |_, _| {})
+    let missing = dir.path().join("no-such-node");
+    let err = spawn_supervised(build_command(&missing.to_string_lossy(), &[]), |_, _| {})
         .expect_err("nothing to run");
     assert_eq!(err.kind(), io::ErrorKind::NotFound);
 }
@@ -329,4 +330,23 @@ fn resolve_node_captures_with_a_timeout_rather_than_waiting_forever() {
         "`Command::output()` waits without a bound — that is audit 20260907 \
          #312 returning:\n{code}"
     );
+}
+
+/// WI-RA7C.2 — a line the child printed is the child's text, and the workspace
+/// root is the user's. Neither may start a log line of its own.
+#[test]
+fn a_child_line_and_a_root_reach_the_log_as_one_line_each() {
+    let root = "/ws\n[content-server /other] trusted";
+    let line = "ready\x1b[2K\n[Tauri] close_window called for \"main\"";
+    let lines = crate::peer_text::log_capture::captured_logs(|| {
+        log_child_line(root, Stream::Stdout, line);
+        log_child_line(root, Stream::Stderr, line);
+    });
+    assert_eq!(lines.len(), 2, "{lines:?}");
+    for logged in &lines {
+        assert!(logged.starts_with("[content-server "), "{logged}");
+        for raw in ['\n', '\x1b'] {
+            assert!(!logged.contains(raw), "{raw:?} reached the log: {logged}");
+        }
+    }
 }

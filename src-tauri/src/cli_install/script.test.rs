@@ -9,13 +9,12 @@
 use super::*;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 const LAUNCHER: &str = "#!/bin/bash\n# launcher\nopen -b app.vmark \"$@\"\n";
 
 /// Run a command the way `do shell script` does, returning its exit status.
 fn sh(command: &str) -> i32 {
-    Command::new("/bin/sh")
+    crate::ai_provider::build_command("/bin/sh", &[])
         .arg("-c")
         .arg(command)
         .status()
@@ -110,7 +109,7 @@ fn shell_single_quote_round_trips_any_text_through_sh() {
         "中文 — 日本語 🙂",
         "",
     ] {
-        let output = Command::new("/bin/sh")
+        let output = crate::ai_provider::build_command("/bin/sh", &[])
             .arg("-c")
             .arg(format!("printf '%s' {}", shell_single_quote(text)))
             .output()
@@ -272,7 +271,7 @@ fn uninstall_removes_exactly_the_target() {
 /// Run `shell_cmd` through `osascript` exactly as the install does, minus the
 /// administrator prompt.
 fn osascript(shell_cmd: &str) -> std::process::Output {
-    Command::new("/usr/bin/osascript")
+    crate::ai_provider::build_command("/usr/bin/osascript", &[])
         .arg("-e")
         .arg(apple_script(shell_cmd, false))
         .output()

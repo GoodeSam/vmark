@@ -28,7 +28,6 @@
  * @module components/StatusBar/tabTransferActions
  */
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { imeToast as toast } from "@/services/ime/imeToast";
 import { useDocumentStore } from "@/stores/documentStore";
 import { useTabStore } from "@/stores/tabStore";
@@ -182,8 +181,8 @@ export async function transferTabFromDragOut({
   };
 
   try {
+    // Never this window: Rust excludes the window that asks.
     const targetWindowLabel = await invoke<string | null>("find_drop_target_window", {
-      sourceWindowLabel: windowLabel,
       screenX: point.screenX,
       screenY: point.screenY,
     });
@@ -219,8 +218,8 @@ export async function transferTabFromDragOut({
 
     const remaining = useTabStore.getState().getTabsByWindow(windowLabel);
     if (remaining.length === 0 && windowLabel !== "main") {
-      const win = getCurrentWebviewWindow();
-      invoke("close_window", { label: win.label }).catch((error: unknown) => {
+      // Closes the window that asks: this one.
+      invoke("close_window").catch((error: unknown) => {
         windowCloseWarn("Failed to close window:", commandErrorMessage(error));
       });
     }

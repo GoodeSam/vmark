@@ -34,7 +34,7 @@ pub(super) fn evict_existing(tab_id: &str) {
     super::WEBVIEWS.with(|m| {
         if let Some(old) = m.borrow_mut().remove(tab_id) {
             log::warn!(
-                "[browser] evicting a superseded webview for {tab_id} (create/destroy race)"
+                "[browser] evicting a superseded webview for {tab_id:?} (create/destroy race)"
             );
             detach(&old, tab_id);
             old.removeFromSuperview();
@@ -64,7 +64,7 @@ fn detach(webview: &objc2_web_kit::WKWebView, tab_id: &str) {
             // ever does, the delegate was dropped while still observing this webview and we
             // are one URL change away from messaging a freed object — say so.
             log::error!(
-                "[browser] {tab_id}: webview with no delegate — a KVO observer may be dangling"
+                "[browser] {tab_id:?}: webview with no delegate — a KVO observer may be dangling"
             );
         }
     });
