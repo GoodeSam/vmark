@@ -32,6 +32,10 @@ function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
+function selectStepIn(jobId: string, stepId: string): void {
+  useWorkflowStore.getState().selectStep(jobId, stepId);
+}
+
 export function useStepNavigation(
   jobId: string,
   prevStepId: string | null,
@@ -39,7 +43,7 @@ export function useStepNavigation(
 ) {
   const goToStep = (stepId: string | null): void => {
     if (!stepId) return;
-    useWorkflowStore.getState().selectStep(jobId, stepId);
+    selectStepIn(jobId, stepId);
   };
   const backToJob = (): void => {
     useWorkflowStore.getState().selectJob(jobId);
@@ -52,18 +56,17 @@ export function useStepNavigation(
       if (isEditableTarget(e.target)) return;
       if (e.key === "ArrowLeft" && prevStepId) {
         e.preventDefault();
-        goToStep(prevStepId);
+        selectStepIn(jobId, prevStepId);
       } else if (e.key === "ArrowRight" && nextStepId) {
         e.preventDefault();
-        goToStep(nextStepId);
+        selectStepIn(jobId, nextStepId);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // jobId is captured into goToStep via useWorkflowStore.getState();
-    // we only need to refresh the listener when prev/next change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prevStepId, nextStepId]);
+    // `jobId` is a real dependency: two jobs can share neighbouring step ids,
+    // so a job switch must re-target the listener even when prev/next match.
+  }, [jobId, prevStepId, nextStepId]);
 
   return { goToStep, backToJob };
 }
