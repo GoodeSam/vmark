@@ -86,5 +86,5 @@ describe("normalizeFullwidthPunctuation scales linearly", () => {
       `${c.name}: ${small.length} chars → ${cost.smallMs.toFixed(2)}ms, ${large.length} chars → ` +
         `${cost.largeMs.toFixed(2)}ms (exponent ${exponent.toFixed(2)} on the ${cost.clock} clock)`,
     ).toBeLessThan(MAX_EXPONENT);
-  }, 120_000);
+  });
 });

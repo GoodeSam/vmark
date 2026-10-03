@@ -32,7 +32,7 @@ describe("scanEmails", () => {
       }),
       { numRuns: 5000 },
     );
-  }, 60_000);
+  });
 
   it.each([
     ["a plain address", "user@example.com", [{ start: 0, end: 16 }]],
@@ -59,7 +59,7 @@ describe("scanDomains", () => {
       }),
       { numRuns: 5000 },
     );
-  }, 60_000);
+  });
 
   it.each([
     ["a plain domain", "example.com", [{ start: 0, end: 11 }]],

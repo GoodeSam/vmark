@@ -1171,7 +1171,7 @@ describe('WebSocketBridge', () => {
       expect(result.data).toBe('queued-response');
 
       await queueBridge.disconnect();
-    }, 10000);
+    });
 
     it('should drop the oldest queued request when the queue is full', async () => {
       // Overflow policy is drop-oldest (bounded memory, newest-wins): when the

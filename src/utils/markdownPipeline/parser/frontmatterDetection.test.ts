@@ -79,5 +79,5 @@ describe("frontmatter detection agrees with the frontmatter extension", () => {
       }),
       { numRuns: 1000, seed: 20261002 },
     );
-  }, 120_000);
+  });
 });

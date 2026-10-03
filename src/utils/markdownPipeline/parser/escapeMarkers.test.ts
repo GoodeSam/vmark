@@ -164,7 +164,7 @@ describe("escaped markers — generated documents", () => {
       }),
       { numRuns: 500, seed: 20261002 },
     );
-  }, 120_000);
+  });
 
   it("never write a placeholder to the file", () => {
     fc.assert(
@@ -173,5 +173,5 @@ describe("escaped markers — generated documents", () => {
       }),
       { numRuns: 300, seed: 20261002 },
     );
-  }, 120_000);
+  });
 });

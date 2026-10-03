@@ -116,5 +116,5 @@ describe("formatMarkdown scales linearly on hostile input", () => {
       `${c.name}: ${small.length} chars → ${cost.smallMs.toFixed(2)}ms, ${large.length} chars → ${cost.largeMs.toFixed(2)}ms ` +
         `(exponent ${exponent.toFixed(2)} on the ${cost.clock} clock; 1 is linear, 2 is quadratic)`,
     ).toBeLessThan(MAX_EXPONENT);
-  }, 300_000);
+  });
 });

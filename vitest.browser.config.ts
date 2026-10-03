@@ -1,6 +1,6 @@
 import { defineConfig } from "vitest/config";
 import { playwright } from "@vitest/browser-playwright";
-import { TEST_DEFINES, sourceAliases, suffixGlob } from "./vitest.shared.ts";
+import { LIVENESS_TIMEOUT_MS, TEST_DEFINES, sourceAliases, suffixGlob } from "./vitest.shared.ts";
 
 /**
  * Browser test tier — the terminal input gate path cannot be verified in jsdom
@@ -21,6 +21,11 @@ export default defineConfig({
     // suffix already means "tests for the embedded-browser FEATURE" and those
     // are ordinary jsdom tests.
     include: [suffixGlob("src", "webkit")],
+    // A liveness bound, as in every other tier (see `LIVENESS_TIMEOUT_MS`):
+    // this tier boots a real browser and transforms real modules, so vitest's
+    // 5000ms default measured how busy the machine was.
+    testTimeout: LIVENESS_TIMEOUT_MS,
+    hookTimeout: LIVENESS_TIMEOUT_MS,
     browser: {
       enabled: true,
       provider: playwright(),

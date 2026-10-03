@@ -8,7 +8,7 @@ import {
 } from "@/lib/formats";
 import { __resetRegistry } from "@/lib/formats/registry";
 import { useDocumentStore } from "@/stores/documentStore";
-import { SURFACE_IMPORT_WAIT, SURFACE_IMPORT_TEST_TIMEOUT_MS } from "@/test/waitBudget";
+import { SURFACE_IMPORT_WAIT } from "@/test/waitBudget";
 
 beforeEach(() => {
   __resetRegistry();
@@ -254,7 +254,7 @@ vi.mock("@/stores/settingsStore", () => {
  *  headroom, it is a coin flip once anything else is running.
  *
  *  The budget now lives in `src/test/waitBudget.ts` as one definition for the
- *  class, paired with the per-test timeout it has to sit inside. */
+ *  class; the tests run under the tier's liveness bound, which it sits below. */
 const SURFACE_LOAD_TIMEOUT_MS = SURFACE_IMPORT_WAIT.timeout;
 
 function renderWithProvider(ui: React.ReactElement) {
@@ -278,7 +278,7 @@ describe("Editor", () => {
       // under a loaded worker the default 1s is not enough to transform it.
       { timeout: SURFACE_LOAD_TIMEOUT_MS },
     );
-  }, SURFACE_IMPORT_TEST_TIMEOUT_MS);
+  });
 
   it("renders the editor content area", async () => {
     renderWithProvider(<Editor />);
@@ -289,7 +289,7 @@ describe("Editor", () => {
       },
       { timeout: SURFACE_LOAD_TIMEOUT_MS },
     );
-  }, SURFACE_IMPORT_TEST_TIMEOUT_MS);
+  });
 
   it("renders the Welcome screen when activeTabId points at a tab that no longer exists", () => {
     // A stale activeTabId (tab transfer, hot-exit restore, workspace switch) used
@@ -425,6 +425,6 @@ describe("Editor", () => {
         { timeout: SURFACE_LOAD_TIMEOUT_MS },
       );
       expect(screen.queryByTestId("split-pane-editor")).not.toBeInTheDocument();
-    }, SURFACE_IMPORT_TEST_TIMEOUT_MS);
+    });
   });
 });

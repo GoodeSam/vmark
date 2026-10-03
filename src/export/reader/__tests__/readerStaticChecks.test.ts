@@ -60,11 +60,11 @@ describe("the exported reader is type-checked", () => {
     expect(planted).not.toBe(source);
     const found = typeCheck(planted);
     expect(found.some((line) => line.includes("TS2322"))).toBe(true);
-  }, 60_000);
+  });
 
   it("has no type errors", () => {
     expect(typeCheck()).toEqual([]);
-  }, 60_000);
+  });
 });
 
 describe("the exported reader is linted", () => {

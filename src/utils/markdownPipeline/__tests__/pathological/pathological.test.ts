@@ -179,5 +179,5 @@ describe("pathological inputs (killable child process)", () => {
           "reparented to PID 1 and is now spinning on a core forever",
       ).toEqual([]);
     }
-  }, HANG_PROBE_WINDOW_MS + 30_000);
+  });
 });
