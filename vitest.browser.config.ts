@@ -1,6 +1,6 @@
 import { defineConfig } from "vitest/config";
 import { playwright } from "@vitest/browser-playwright";
-import { sourceAliases, suffixGlob } from "./vitest.shared.ts";
+import { TEST_DEFINES, sourceAliases, suffixGlob } from "./vitest.shared.ts";
 
 /**
  * Browser test tier — the terminal input gate path cannot be verified in jsdom
@@ -13,6 +13,8 @@ import { sourceAliases, suffixGlob } from "./vitest.shared.ts";
  * No `src/test/setup.ts` — that mock is exactly what this tier exists to avoid.
  */
 export default defineConfig({
+  // The build-time constants the app reads (see TEST_DEFINES).
+  define: TEST_DEFINES,
   test: {
     globals: true,
     // `*.webkit.test.ts` = real-WebKit tier. NOT `*.browser.test.ts` — that
