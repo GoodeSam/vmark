@@ -27,8 +27,10 @@ import { isMainModule } from "./lib/isMainModule.mjs";
 // audit named it (§4); `server/content/src` had the same blind spot until
 // the 2026-07-29 audit. Every workspace source tree must be listed —
 // including `scripts`: the gates obey the rule they enforce, and with no
-// baseline entries (each over-limit gate was split instead).
-export const ROOTS = ["src", "src-tauri/src", "server/mcp/src", "server/content/src", "scripts"];
+// baseline entries (each over-limit gate was split instead). `.claude/hooks`
+// holds the Claude Code hooks the repo runs on every edit — code under the
+// same rule, with no baseline entries either.
+export const ROOTS = ["src", "src-tauri/src", "server/mcp/src", "server/content/src", "scripts", ".claude/hooks"];
 // .js/.mjs are code too — src/export/reader/vmark-reader.js bypassed the
 // gate entirely while every .ts file ratcheted (audit 20260729).
 export const EXTS = [".ts", ".tsx", ".rs", ".js", ".jsx", ".mjs"];
