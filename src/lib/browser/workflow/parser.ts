@@ -1,6 +1,6 @@
 /**
  * Purpose: Parse a web-workflow markdown file into the typed `WebWorkflow` IR,
- * with precise line-numbered diagnostics (ADR-W1, WI-4.1). Any line ending
+ * with precise line-numbered diagnostics (ADR-W1). Any line ending
  * (CRLF/CR/LF) and a leading BOM are accepted (audit 2026-09-03 W-12).
  * Origin: Embedded browser sites and workflows plan (2026-07-12, retired)
  *

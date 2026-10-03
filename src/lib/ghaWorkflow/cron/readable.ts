@@ -21,7 +21,7 @@ export { CronParseError, parseCron } from "./parse";
 /**
  * Discriminated union for the time portion of a cron expression.
  * Callers translate each kind via i18n keys
- * `form.trigger.cron.<kind>` (Codex audit MED-5 fix — readable.ts
+ * `form.trigger.cron.<kind>` (readable.ts
  * was previously English-only with no path to localized output).
  */
 type CronTimePart =

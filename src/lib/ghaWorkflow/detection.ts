@@ -1,4 +1,4 @@
-// WI-1.4 — detection heuristic.
+// Detection heuristic.
 //
 // Plan ADR-5: combine path heuristic, shape heuristic, and explicit
 // info-string marker to decide whether a piece of YAML is a GitHub

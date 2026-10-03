@@ -36,7 +36,7 @@ export function lintMarkdown(source: string): LintDiagnostic[] {
   const mdast = processor.runSync(tree) as Root;
 
   // Split source + compute line offsets once, shared by every line-oriented
-  // rule (O6 / WI-2.5) instead of each rule re-splitting and recomputing.
+  // rule (O6) instead of each rule re-splitting and recomputing.
   const index = buildLineIndex(source);
 
   const diagnostics: LintDiagnostic[] = [];

@@ -79,7 +79,7 @@ export function detectTableBlocks(text: string, protectedRegions: Array<{ start:
   // allowed to be, the two blocks OVERLAPPED and `formatMarkdown` emitted the
   // overlap twice, silently duplicating the user's content. Reproduction:
   // header / delimiter / body / delimiter, where the trailing delimiter row
-  // claimed the body row above it as its header (WI-CJKF6.1 found this).
+  // claimed the body row above it as its header.
   let claimedThroughLine = -1;
   while (i < lines.length) {
     const line = lines[i];

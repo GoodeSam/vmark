@@ -1,8 +1,8 @@
-// WI-2.2 — TOML adapter.
+// TOML adapter.
 //
 // CodeMirror highlighting via @codemirror/legacy-modes/mode/toml (the
 // pack the project already pulls in via @codemirror/language-data).
-// Validation via smol-toml — Phase 0 WI-0.6 picked it over @iarna/toml
+// Validation via smol-toml — Phase 0 picked it over @iarna/toml
 // (actively maintained, prior CVEs all fixed in 1.6.1).
 // Tree preview via the same react-json-view-lite component used by
 // the JSON adapter — TOML parses to a plain object, so the renderer

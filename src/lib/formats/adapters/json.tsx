@@ -1,8 +1,8 @@
-// WI-2.1 — JSON / JSONL adapter.
+// JSON / JSONL adapter.
 //
 // Real CodeMirror language (@codemirror/lang-json), JSON.parse-based
 // validator that emits ValidationDiagnostic[], and a tree preview via
-// react-json-view-lite (Phase 0 WI-0.5 pick — only candidate with
+// react-json-view-lite (Phase 0 pick — only candidate with
 // documented keyboard nav + ARIA labelling), loaded when a preview first
 // shows it (LazyJsonTree).
 //

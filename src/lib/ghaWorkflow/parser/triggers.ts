@@ -1,4 +1,4 @@
-// WI-1.3 — trigger normalization.
+// Trigger normalization.
 //
 // Accepts the three GitHub Actions trigger shapes:
 //   on: push                          (single string)

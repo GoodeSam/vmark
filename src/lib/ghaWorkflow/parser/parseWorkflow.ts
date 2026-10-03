@@ -1,4 +1,4 @@
-// WI-1.2 — parser orchestrator.
+// Parser orchestrator.
 //
 // Wraps @actions/workflow-parser, dispatches to per-IR-slice subparsers,
 // and translates parser context errors + subparser diagnostics into our

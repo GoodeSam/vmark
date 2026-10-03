@@ -1,4 +1,4 @@
-// WI-5.2 — pyproject.toml schema detector + dependency-tree renderer.
+// pyproject.toml schema detector + dependency-tree renderer.
 //
 // TOML adapter wires this. Filename match wins (ADR-5 path-first);
 // content fallback covers either PEP 621 ([project]) or Poetry

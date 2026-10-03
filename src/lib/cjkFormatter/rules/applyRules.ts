@@ -76,7 +76,7 @@ export function applyRules(
     }
     prev = next;
   }
-  // Audit 20260804-F7: the cap used to be a SILENT truncation — a document
+  // The cap used to be a SILENT truncation — a document
   // that needed a ninth pass came back not-quite-normalized and the next
   // "Format CJK File" edited it again, which is precisely the non-idempotence
   // the fixed-point loop exists to prevent. The result is still returned (it

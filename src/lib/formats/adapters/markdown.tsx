@@ -1,10 +1,10 @@
-// WI-1A.3 — Markdown format adapter.
+// Markdown format adapter.
 //
 // Registers .md/.markdown/.mdown/.mkd/.mdx as kind="wysiwyg" pointing at
 // the markdown rendering surface (Tiptap WYSIWYG + CodeMirror source mode +
 // workflow side panels + heading picker).
 //
-// WI-13 — this module is METADATA ONLY. `bootstrapFormats()` evaluates it in
+// This module is METADATA ONLY. `bootstrapFormats()` evaluates it in
 // every window (Settings, PDF export) before `import("./App")`, so anything it
 // imports statically is cold-start cost for windows that never open an editor.
 // The surface lives in ./markdownSurface and the CodeMirror pack behind the

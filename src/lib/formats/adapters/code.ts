@@ -1,8 +1,8 @@
-// WI-4.1 — Code-viewer adapters.
+// Code-viewer adapters.
 //
 // Per ADR-3, code formats are READ-ONLY by default. The "Enable editing"
-// toggle (WI-4.3) promotes a tab to read-write; "Open in external
-// editor" (WI-4.4) deep-links to $EDITOR.
+// toggle promotes a tab to read-write; "Open in external
+// editor" deep-links to $EDITOR.
 //
 // Language packs:
 //   - TypeScript / TSX: @codemirror/lang-javascript with jsx + typescript flags

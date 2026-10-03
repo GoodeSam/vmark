@@ -1,4 +1,4 @@
-// WI-1.3 — ergonomic helpers over @actions/workflow-parser tokens.
+// Ergonomic helpers over @actions/workflow-parser tokens.
 //
 // The parser exposes TemplateToken, MappingToken, SequenceToken,
 // StringToken, etc. Walking workflow shapes via raw `.get(i).key.assertString`

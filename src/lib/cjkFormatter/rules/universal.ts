@@ -10,7 +10,7 @@ import { adjacentScript } from "./script";
 /**
  * Normalize ellipsis patterns, in the shape the surrounding script uses.
  *
- * There is no single correct output (WI-CJKF5.2):
+ * There is no single correct output:
  *
  * | | Chinese | Japanese | Korean | Latin |
  * |---|---|---|---|---|
@@ -41,7 +41,7 @@ export function normalizeEllipsis(text: string): string {
   // A space the author typed BEFORE the run is left alone, deliberately: this
   // rule only decides the run's own shape, and `中文 ...` is not attached to
   // 中文 by the same adjacency test everything else here uses. Deleting
-  // authored whitespace is the limit WI-CJKF3.3 also declines to cross.
+  // authored whitespace is the limit `fixQuoteSpacing` also declines to cross.
   text = text.replace(/\.\.\.(?!\.)([ \t]*)/g, (whole, gap: string, offset: number) => {
     const script = adjacentScript(text, offset, offset + whole.length);
     if (script === "han") return "……";

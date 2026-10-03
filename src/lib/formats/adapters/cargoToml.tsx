@@ -1,6 +1,6 @@
-// WI-2.5 — Cargo.toml schema detector + dependency-tree renderer.
+// Cargo.toml schema detector + dependency-tree renderer.
 //
-// Schema POC #2 (after WI-2.4 GHA workflows). Validates the
+// Schema POC #2 (after GHA workflows). Validates the
 // "schema-aware preview" differentiator: rendering the *right* view
 // for a known artifact instead of a generic JSON tree.
 //

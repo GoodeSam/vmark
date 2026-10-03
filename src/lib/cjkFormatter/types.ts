@@ -21,7 +21,7 @@
  * (`removeTrailingSpaces`, `collapseSpaces`) are wrong without that
  * distinction: they deleted the space before every inline code span, image,
  * wiki link, footnote reference, inline math span and HTML tag in the
- * document (WI-CJKF2.1). Both default to true, which is correct for a whole
+ * document. Both default to true, which is correct for a whole
  * document.
  */
 export interface FormatOptions {

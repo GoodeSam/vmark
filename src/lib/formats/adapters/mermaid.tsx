@@ -1,7 +1,7 @@
-// WI-3.1 — Standalone Mermaid (.mmd) adapter.
+// Standalone Mermaid (.mmd) adapter.
 //
 // CodeMirror language pack: codemirror-lang-mermaid 0.5.0 (Phase 0
-// WI-0.6 picked exact-pin; SUFFICIENT-FALLBACK verdict — stale upstream
+// picked exact-pin; SUFFICIENT-FALLBACK verdict — stale upstream
 // but no CVEs, no functional risk for stable mermaid grammars).
 //
 // Validator: lightweight diagram-type pre-flight. Mermaid's own

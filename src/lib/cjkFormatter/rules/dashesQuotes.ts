@@ -82,7 +82,7 @@ export function fixEmdashSpacing(text: string): string {
 /**
  * Fix spacing around quotation marks (generic).
  *
- * A CJK letter is in BOTH no-space sets (WI-CJKF3.3). `“ ”` are fullwidth in
+ * A CJK letter is in BOTH no-space sets. `“ ”` are fullwidth in
  * CJK context — GB/T 15834 and JLREQ both give them their own sidebearing, and
  * the W3C's *Spacing between scripts inline* makes the same point structurally:
  * the gap belongs to the glyph, not to a character in the content. Without

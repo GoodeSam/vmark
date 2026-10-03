@@ -1,10 +1,10 @@
-// WI-1.3 — permissions normalization.
+// Permissions normalization.
 //
 // GitHub Actions writes scope names in kebab-case (`pull-requests`,
 // `id-token`); the IR uses camelCase to match TypeScript convention.
 // String aliases (`read-all`, `write-all`, `none`) pass through verbatim.
 //
-// Codex audit HIGH-2 follow-up: the kebab↔camel map lives in a shared
+// The kebab↔camel map lives in a shared
 // module so the parser, the mutator, and the form all agree. Without
 // the shared map, the form's hand-rolled kebab-case keys diverged from
 // the IR's camelCase, dropping edits to `pull-requests` / `id-token`

@@ -1,4 +1,4 @@
-// WI-1.3 — jobs subparser.
+// Jobs subparser.
 //
 // Translates the `jobs:` mapping into JobIR[]. Step parsing is delegated
 // to ./steps.ts; matrix to ./matrix.ts; permissions to ./permissions.ts.

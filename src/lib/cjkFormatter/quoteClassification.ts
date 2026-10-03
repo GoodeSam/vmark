@@ -10,7 +10,7 @@
  *   - Curly glyphs carry their role (“/‘ open, ”/’ close): classifying them
  *     by whitespace context made the role flip between formatting passes when
  *     the pipeline's own spacing rules inserted a space next to the glyph
- *     (non-idempotence, WI-5)
+ *     (non-idempotence)
  *   - Corner brackets 「」『』 have fixed roles by nature (CORNER_QUOTE_ROLES)
  *   - Straight quotes are classified from context: whitespace/bracket
  *     neighbors, then the open-stack state, defaulting to open

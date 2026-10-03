@@ -10,7 +10,7 @@
  *     once the shell is running and REJECTS, with a readable `Error`, when the
  *     backend refuses or fails it — a caller's only way to fall back or tell
  *     the user.
- *   - Output flows over a binary `tauri::ipc::Channel` (WI-1.1, ADR-T1): the
+ *   - Output flows over a binary `tauri::ipc::Channel` (ADR-T1): the
  *     reader thread sends `InvokeResponseBody::Raw(bytes)`, which the webview
  *     receives as an `ArrayBuffer` — NOT a JSON number array. This is ~3.66x
  *     less wire data and orders of magnitude less encode/decode CPU than the
@@ -177,7 +177,7 @@ class VMarkPty implements IPty {
       }
 
       // Binary output Channel. Wiring onmessage before pty_start means the
-      // reader cannot send before we are listening — no data-loss race (WI-1.1).
+      // reader cannot send before we are listening — no data-loss race.
       const channel = new Channel<ArrayBuffer | Uint8Array | number[]>();
       channel.onmessage = (msg) => {
         this._onData.fire(toUint8Array(msg));
@@ -209,7 +209,7 @@ class VMarkPty implements IPty {
   }
 
   write(data: string): void {
-    // Destroy-guard (WI-1.3): once killed, drop writes — a dispose-time IME
+    // Destroy-guard: once killed, drop writes — a dispose-time IME
     // flush (or any late write) would otherwise reach a freed session. Checked
     // again in the continuation: kill() may land while `ready` is pending.
     if (this._destroyed) return;

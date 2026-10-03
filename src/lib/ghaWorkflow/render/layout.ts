@@ -1,4 +1,4 @@
-// WI-2.2 — dagre-based layout for the workflow DAG.
+// Dagre-based layout for the workflow DAG.
 //
 // Plan §6 Phase 2 + ADR-1. Pure transform: takes the nodes/edges from
 // toGraph() and reassigns each node's position based on a dagre

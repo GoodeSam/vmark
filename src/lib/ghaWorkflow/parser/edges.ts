@@ -1,4 +1,4 @@
-// WI-1.3 — edge derivation for the GHA workflow IR.
+// Edge derivation for the GHA workflow IR.
 //
 // Origin: GitHub Actions workflow viewer plan (2026-05-04, retired) §4.1
 //

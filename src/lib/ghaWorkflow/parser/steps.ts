@@ -1,4 +1,4 @@
-// WI-1.3 — step parsing extracted from jobs.ts to keep both ≤300 LOC.
+// Step parsing extracted from jobs.ts to keep both ≤300 LOC.
 
 import type { TemplateToken } from "@actions/workflow-parser/templates/tokens/template-token";
 import type { Diagnostic, StepIR } from "../types";
