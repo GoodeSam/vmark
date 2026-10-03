@@ -163,5 +163,5 @@ espaços reservados quebrados.)
 
 - Um caminho de mídia não pode conter um esquema de URI (`javascript:`, `file:` ou um personalizado); essas fontes são recusadas em vez de carregadas
 - Um caminho que aponta para um diretório em vez de um arquivo é recusado
-- Iframes de embeds de vídeo são restritos aos domínios permitidos: `youtube.com`, `youtube-nocookie.com`, `player.vimeo.com` e `player.bilibili.com`
+- Embeds de vídeo são carregados somente de três hosts: `www.youtube-nocookie.com` (o player com privacidade aprimorada do YouTube), `player.vimeo.com` e `player.bilibili.com`. Um link do YouTube, ou um iframe escrito com `youtube.com`, é incorporado pelo host com privacidade aprimorada. A política de segurança de conteúdo do VMark permite carregar frames desses hosts e de nenhum outro site
 - Outras fontes de iframe são removidas pelo sanitizador

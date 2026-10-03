@@ -161,5 +161,5 @@ VMark 支援三種媒體路徑類型：
 
 - 媒體路徑不得帶有 URI 配置（`javascript:`、`file:` 或自訂配置）；這類來源會被拒絕，而不會載入
 - 指向目錄而非檔案的路徑會被拒絕
-- 影片嵌入 iframe 限制於允許的網域：`youtube.com`、`youtube-nocookie.com`、`player.vimeo.com` 和 `player.bilibili.com`
+- 影片嵌入只從三個主機載入：`www.youtube-nocookie.com`（YouTube 的隱私強化播放器）、`player.vimeo.com` 和 `player.bilibili.com`。YouTube 連結，或用 `youtube.com` 寫的 iframe，都會透過隱私強化主機嵌入。VMark 的內容安全政策只允許從這些主機載入框架，不允許任何其他網站
 - 其他 iframe 來源會被清理程式移除

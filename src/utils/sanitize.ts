@@ -14,7 +14,9 @@
  *   - DOMPurify's output is re-parsed (style filter, iframe filter) only in an
  *     inert document: the page's own document would load what it parses
  *   - Video, audio, and source tags are allowed in sanitizeMediaHtml (separate function)
- *   - Iframe is allowed in sanitizeMediaHtml but restricted to whitelisted video domains via post-pass
+ *   - Iframe is allowed in sanitizeMediaHtml only at a video embed origin
+ *     (`VIDEO_EMBED_ORIGINS`, the provider registry's list — the same origins
+ *     the release CSP lets a frame load from), via a post-pass
  *   - escapeHtml is a simple entity escape for non-HTML text display
  *   - Preview allow-lists (strict/extended) + the always-on `DANGEROUS_TAGS`
  *     deny-list live in `utils/htmlAllowlists.ts`; `FORBID_TAGS` overrides
@@ -23,12 +25,14 @@
  * @coordinates-with htmlAllowlists.ts — preview allow/deny tag + attr lists
  * @coordinates-with mermaid/index.ts — uses sanitizeSvg for Mermaid diagram output
  * @coordinates-with codePreview/renderers/renderLatex.ts — uses sanitizeKatex for math rendering
+ * @coordinates-with videoProviderRegistry.ts — the embed origins an iframe may point at
  * @module utils/sanitize
  */
 
 import DOMPurify from "dompurify";
 export { sanitizeSvg } from "./svgSanitize";
 import { KATEX_STYLE_PROPS, filterStyleAttributes } from "./styleSafety";
+import { isVideoEmbedSrc } from "./videoProviderRegistry";
 import {
   type HtmlAllowlistLevel,
   PREVIEW_TAGS_INLINE_STRICT,
@@ -89,11 +93,12 @@ export function sanitizeHtmlPreview(html: string, options?: HtmlPreviewOptions):
  * Sanitize media HTML content (video, audio, video embed iframes).
  * Allows media-specific tags and attributes while preventing XSS.
  *
- * Video embed iframes are restricted to whitelisted domains (YouTube, Vimeo, Bilibili)
- * via a post-sanitize DOM pass that strips non-whitelisted iframes.
+ * Video embed iframes survive only at a video embed origin (YouTube's
+ * privacy-enhanced host, Vimeo's and Bilibili's players), via a post-sanitize
+ * DOM pass that strips every other iframe.
  */
 export function sanitizeMediaHtml(html: string): string {
-  // Sanitize with DOMPurify, then post-process to strip non-whitelisted video-provider iframes
+  // Sanitize with DOMPurify, then post-process to strip iframes outside the embed origins
   const result = DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
       "video",
@@ -119,16 +124,14 @@ export function sanitizeMediaHtml(html: string): string {
     ALLOW_DATA_ATTR: false,
   });
 
-  // Post-process: strip iframes with non-whitelisted src (case-insensitive check)
+  // Post-process: strip iframes whose src is not at an embed origin
   if (/<iframe\b/i.test(result)) {
-    return stripNonWhitelistedIframes(result);
+    return stripNonEmbedIframes(result);
   }
   return result;
 }
 
-const VIDEO_EMBED_DOMAIN_RE = /^https?:\/\/(www\.)?(youtube\.com|youtube-nocookie\.com|player\.vimeo\.com|player\.bilibili\.com)\//;
-
-function stripNonWhitelistedIframes(html: string): string {
+function stripNonEmbedIframes(html: string): string {
   if (typeof DOMParser === "undefined") {
     // No DOM — strip all iframes for safety (can't verify src)
     // Handles both paired (<iframe>...</iframe>) and self-closing (<iframe ... />) forms
@@ -142,8 +145,7 @@ function stripNonWhitelistedIframes(html: string): string {
   container.innerHTML = html;
   const iframes = container.querySelectorAll("iframe");
   for (const iframe of iframes) {
-    const src = iframe.getAttribute("src") ?? "";
-    if (!VIDEO_EMBED_DOMAIN_RE.test(src)) {
+    if (!isVideoEmbedSrc(iframe.getAttribute("src") ?? "")) {
       iframe.remove();
     }
   }

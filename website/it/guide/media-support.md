@@ -163,5 +163,5 @@ segnaposto non funzionanti.)
 
 - Un percorso media non può contenere uno schema URI (`javascript:`, `file:` o uno personalizzato); tali sorgenti vengono rifiutate invece di essere caricate
 - Un percorso che indica una directory anziché un file viene rifiutato
-- Gli iframe di embed video sono limitati ai domini consentiti: `youtube.com`, `youtube-nocookie.com`, `player.vimeo.com` e `player.bilibili.com`
+- Gli embed video vengono caricati solo da tre host: `www.youtube-nocookie.com` (il player di YouTube con privacy avanzata), `player.vimeo.com` e `player.bilibili.com`. Un link di YouTube, o un iframe scritto con `youtube.com`, viene incorporato tramite l'host con privacy avanzata. La content security policy di VMark consente di caricare frame da questi host e da nessun altro sito
 - Le altre sorgenti di iframe vengono rimosse dal sanitizer

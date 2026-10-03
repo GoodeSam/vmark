@@ -163,5 +163,5 @@ Platzhalter dargestellt.)
 
 - Ein Medienpfad darf kein URI-Schema tragen (`javascript:`, `file:` oder ein eigenes); solche Quellen werden abgelehnt statt geladen
 - Ein Pfad, der ein Verzeichnis statt einer Datei bezeichnet, wird abgelehnt
-- Video-Einbettungs-iFrames sind auf erlaubte Domains beschränkt: `youtube.com`, `youtube-nocookie.com`, `player.vimeo.com` und `player.bilibili.com`
+- Video-Einbettungen werden nur von drei Hosts geladen: `www.youtube-nocookie.com` (der datenschutzfreundliche Player von YouTube), `player.vimeo.com` und `player.bilibili.com`. Ein YouTube-Link oder ein iFrame mit `youtube.com` wird über den datenschutzfreundlichen Host eingebettet. Die Content Security Policy von VMark lässt Frames nur von diesen Hosts und von keiner anderen Website zu
 - Andere iFrame-Quellen werden vom Bereiniger entfernt
