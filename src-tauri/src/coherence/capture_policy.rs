@@ -94,7 +94,7 @@ pub fn capture_with_policy(
 
 /// The lock a policy may take. `Adopt` may create `.vmark/`; `TrackedOnly`
 /// takes the existing-only lock, which declines rather than create it — so a
-/// `.vmark/` deleted between `admits` and the lock is not recreated (#52).
+/// `.vmark/` deleted between `admits` and the lock is not recreated.
 fn locked<R>(
     kernel: &mut WorkspaceKernel,
     policy: CapturePolicy,

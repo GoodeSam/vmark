@@ -1,12 +1,12 @@
 /**
- * MCP v2 `vmark.browser.act` handler (WI-2.5 / WI-P2.2 / WI-P4.2).
+ * MCP v2 `vmark.browser.act` handler.
  *
- * Extracted from browser.ts (audit #9) so the act path — the most complex MCP
+ * Extracted from browser.ts so the act path — the most complex MCP
  * handler — lives in its own file. `act` performs `click` / `type` / `scroll` /
  * `key`, targeting either a precise `{ref}` (from a prior read; honored only on
  * the already-granted path) or ARIA `{role, name}` (through the approval flow).
  *
- * Shape (round 3, #38): the shared envelope resolves the tab
+ * Shape: the shared envelope resolves the tab
  * (`resolveBrowserTarget`), `parseActAction` turns the payload into one validated
  * action, the attachment gate runs, and the action is dispatched to one small
  * function per operation — each builds its script and hands it to the approval

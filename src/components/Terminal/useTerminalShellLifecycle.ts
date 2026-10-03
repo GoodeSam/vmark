@@ -89,7 +89,7 @@ export function useTerminalShellLifecycle(
       // session dead — the guard below ignores exits from a superseded gen.
       const gen = ++entry.spawnGen;
       const resetParsed = resetForNewSession(entry, statusLine);
-      // WI-4.2: an EXPLICIT request ("Open Terminal Here") outranks
+      // An EXPLICIT request ("Open Terminal Here") outranks
       // everything else. PEEKED, not consumed: it is cleared only once the
       // spawn succeeds, so a failed first spawn can still be retried in the
       // directory the user actually asked for.
@@ -115,7 +115,7 @@ export function useTerminalShellLifecycle(
       // workspace changed while we were spawning" from "this session simply
       // starts somewhere other than the workspace root". Comparing the root
       // against `cwd` conflated the two and immediately cd'd a sibling-
-      // inheriting terminal back to the root, undoing WI-2.2 (Codex audit).
+      // inheriting terminal back to the root, undoing the sibling-cwd inheritance (Codex audit).
       const rootBeforeSpawn = resolveTerminalWorkspaceRoot();
 
       // Spawn only once the reset is parsed: until then the dead program's
@@ -175,7 +175,7 @@ export function useTerminalShellLifecycle(
         if (requestedCwd) useTerminalStore.getState().terminalClearRequestedCwd(sessionId);
 
         // If the workspace changed WHILE spawning, cd to the new root — but
-        // NOT when the user explicitly asked for a directory (WI-4.2), and
+        // NOT when the user explicitly asked for a directory, and
         // NOT for a scope-stamped session (WI-TS2.1/D-T4 — its workspace
         // never changes under it; a rail switch hides it instead). That
         // catch-up `cd` would otherwise walk the shell straight back out of

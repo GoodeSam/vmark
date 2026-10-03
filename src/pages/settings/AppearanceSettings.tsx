@@ -17,7 +17,7 @@ import { selectableThemeIds } from "@/theme/themeAvailability";
 import { themes as themeCatalog } from "@/theme/themes";
 import { isMacPlatform, usesOverlayTitleBar } from "@/utils/platform";
 
-/** One row of theme swatches (WI-UI4.6): each swatch is a MINI PAGE from the
+/** One row of theme swatches: each swatch is a MINI PAGE from the
  *  typed catalog — an "Aa" specimen in the theme's ink on its paper, a
  *  hairline in its border and a 2px rule in its accent — so night/solarized
  *  stay legible on a night page (the specimen carries the identity where a
@@ -154,7 +154,7 @@ export function AppearanceSettings() {
           in the native title bar unconditionally, so there is nothing to choose
           (#1296) and the whole group is withheld rather than shown empty. (The
           "Auto-hide status bar" toggle that used to share this group was wired
-          to nothing and was removed — D8, WI-FL2.2.) */}
+          to nothing and was removed — D8.) */}
       {usesOverlayTitleBar() && (
         <SettingsGroup title={t("appearance.group.window")}>
           <SettingRow

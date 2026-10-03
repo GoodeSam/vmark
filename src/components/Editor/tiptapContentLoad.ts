@@ -78,7 +78,7 @@ export function setContentWithoutHistory(
  * A load that waits is dropped if, by the time it would run, the tracking ref
  * has moved on: a newer sync or the editor's own flush superseded it.
  *
- * A document that cannot be parsed is reported for `tabId` (#1407): the editor
+ * A document that cannot be parsed is reported for `tabId`: the editor
  * keeps its old content, and an edit there would overwrite the new text on
  * the next flush, so it goes to Source mode with a message instead.
  */

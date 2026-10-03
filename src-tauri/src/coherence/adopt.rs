@@ -1,5 +1,5 @@
 //! Object adoption, observed-external synthesis, and registry
-//! maintenance (WI-1.6, ADR-C4 services tier). Split from `capture.rs`
+//! maintenance (ADR-C4 services tier). Split from `capture.rs`
 //! for the file-size gate; `capture.rs` re-exports these, so callers
 //! import from `capture` unchanged.
 

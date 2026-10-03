@@ -27,7 +27,7 @@ static DETECTION_CACHE: Mutex<Option<Vec<CliProviderEntry>>> = Mutex::new(None);
 ///
 /// `async` + `spawn_blocking` so the subprocess (`which`/`where`) lookups run
 /// off the IPC thread instead of stalling it; the result is memoized for the
-/// process lifetime (O2 / WI-2.2).
+/// process lifetime.
 #[command]
 pub async fn detect_ai_providers() -> Vec<CliProviderEntry> {
     if let Some(cached) = DETECTION_CACHE
@@ -239,7 +239,7 @@ pub fn read_env_api_keys() -> HashMap<String, String> {
 }
 
 /// Pure core of `read_env_api_keys` over an injectable env getter — testable
-/// without mutating the process environment (WI-5.4, TQ5).
+/// without mutating the process environment.
 fn read_env_api_keys_with<F: Fn(&str) -> Option<String>>(get: F) -> HashMap<String, String> {
     let mapping: &[(&str, &[&str])] = &[
         ("anthropic", &["ANTHROPIC_API_KEY"]),

@@ -22,7 +22,7 @@ export const FILE_TREE_SCROLLER_CLASS = "file-explorer-scroller";
  * The row element's class, and the attribute carrying its node id.
  *
  * `FileNode.tsx` writes both and `useExplorerContextMenu.ts` reads both back —
- * as string literals, in two files, with nothing joining them (audit R3 #648).
+ * as string literals, in two files, with nothing joining them.
  * A row renamed on one side answers `null` on the other, and the context menu
  * silently degrades to the workspace-level one over a file.
  */

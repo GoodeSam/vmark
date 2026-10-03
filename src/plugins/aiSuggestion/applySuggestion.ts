@@ -94,7 +94,7 @@ function rangeTouched(mapping: Mapping, from: number, to: number): boolean {
 
 /**
  * Compute remapped suggestion ranges after a document-changing transaction
- * (audit H8 — stored from/to are absolute and must follow the document).
+ * (stored from/to are absolute and must follow the document).
  *
  * - Edits outside a suggestion's range shift it (content-tracking assoc).
  * - Edits that touch the range content dismiss the suggestion (`range: null`)

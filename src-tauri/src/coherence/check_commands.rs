@@ -1,4 +1,4 @@
-//! Semantic-check service (WI-2b.4; design-2a.md D5). Service tier
+//! Semantic-check service (design-2a.md D5). Service tier
 //! (ADR-C4): loads the edge's texts from the CAS, feeds the default
 //! context's claims (D4), calls the AI provider through the same atom
 //! genie steps use, and appends a D5.6-complete `check-result`. Pull

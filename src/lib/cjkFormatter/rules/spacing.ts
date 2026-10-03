@@ -139,7 +139,7 @@ export function fixCurrencySpacing(
 /**
  * Remove same-line spaces around slashes (preserves URLs and line breaks).
  *
- * Whitespace on the LEFT ONLY is left alone (WI-CJKF3.4). That shape is a path
+ * Whitespace on the LEFT ONLY is left alone. That shape is a path
  * or a root-anchored token — `路径 /usr/local/bin`, `see /etc/hosts` — never a
  * spaced separator, and collapsing it welded the path onto the preceding word.
  * Both-sides (`读 / 写`) and right-side-only (`读/ 写`) are separators and still
@@ -192,7 +192,7 @@ export function fixSlashSpacing(text: string): string {
  *
  * Two things this must NOT do:
  *
- * 1. **Collapse a hard break** (WI-CJKF3.2). A run of two or more spaces at
+ * 1. **Collapse a hard break**. A run of two or more spaces at
  *    end of line is markdown syntax. Collapsing it to one left
  *    `removeTrailingSpaces` — which would have PRESERVED a two-space run —
  *    looking at a single space, which it then deleted. So
@@ -203,7 +203,7 @@ export function fixSlashSpacing(text: string): string {
  *    ends there. (Asking it of every shorter prefix, each time skipping the
  *    rest of the run, gave the same answer at the square of the cost.)
  *
- * 2. **Mistake a segment-leading run for indentation** (WI-CJKF2.1). The
+ * 2. **Mistake a segment-leading run for indentation**. The
  *    `(\S)` prefix is how indentation is spared, but a segment that starts
  *    mid-line — because a protected region sits immediately to its left — has
  *    no `\S` to anchor against, so `` `code`   中文 `` kept all three spaces.

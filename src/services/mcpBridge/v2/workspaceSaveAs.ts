@@ -7,7 +7,7 @@
  * Key decision: `autoApproveEdits` authorises saving to a NEW location, never
  * destroying an existing one. The allowed roots include the parent directory
  * of every open document, so without that split an auto-approved save_as
- * could silently overwrite any sibling of any open file (audit 20260728 §1.5).
+ * could silently overwrite any sibling of any open file.
  *
  * Key decision: the write itself is the app's own save (`bridgeSave.ts`). The
  * save pipeline re-points the document and its tab at the new path, and only
@@ -85,7 +85,7 @@ export async function handleWorkspaceSaveAs(
       return;
     }
 
-    // WI-5: `autoApproveEdits` authorises saving to a NEW location — it does
+    // `autoApproveEdits` authorises saving to a NEW location — it does
     // not authorise destroying an existing one. The bridge's allowed roots
     // include the parent directory of every open document, so without this an
     // auto-approved save_as could silently overwrite any sibling of any open

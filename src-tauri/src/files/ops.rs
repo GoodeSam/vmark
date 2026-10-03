@@ -64,7 +64,7 @@ pub struct TrashFailure {
     pub error: String,
 }
 
-/// Move files to the SYSTEM TRASH instead of unlinking them (WI-12).
+/// Move files to the SYSTEM TRASH instead of unlinking them.
 ///
 /// Orphan-image cleanup deletes user files on inference — a scan concluding
 /// "nothing references this". Every wrong conclusion used to be irreversible;

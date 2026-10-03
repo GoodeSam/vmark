@@ -63,8 +63,7 @@ export function createContentServer(options: ContentServerOptions): ContentServe
   const csp = buildCsp(options.trusted ?? false);
   // Namespaced by workspace root: every workspace server shares the
   // `127.0.0.1` host and cookies are not port-scoped, so one shared cookie
-  // name meant opening a second workspace logged the first one out (audit
-  // 20260906, MCP-C05).
+  // name meant opening a second workspace logged the first one out.
   const auth = createAuthGuard({ bootstrapToken, cookieNamespace: root });
   const app = new Hono();
   const sseClients = new Set<(relPath?: string) => Promise<void>>();
@@ -146,7 +145,7 @@ export function createContentServer(options: ContentServerOptions): ContentServe
     }
     try {
       // Wire the request's abort signal so a disconnected caller cancels the
-      // export child instead of leaving it running until the timeout (WI-7.3).
+      // export child instead of leaving it running until the timeout.
       const out = await runSlidevExport(deck, body.format, body.output, {
         ...options.exportDeps,
         signal: options.exportDeps?.signal ?? c.req.raw.signal,
@@ -210,8 +209,7 @@ export function createContentServer(options: ContentServerOptions): ContentServe
   });
 
   // Local media, on its own route with its own narrow policy — see
-  // assetRoute.ts for why relaxing /note/'s index gate would be wrong
-  // (audit 20260906, MCP-C03).
+  // assetRoute.ts for why relaxing /note/'s index gate would be wrong.
   app.get("/asset/*", createAssetHandler({ root }));
 
   // Render a note.
@@ -230,7 +228,7 @@ export function createContentServer(options: ContentServerOptions): ContentServe
     // Only serve docs the walker admitted (markdown, non-hidden, not
     // .gitignore'd). Without this, path-containment alone would still expose
     // hidden/ignored/non-markdown files via a direct /note/ URL, defeating the
-    // walk policy (Codex audit; pairs with WI-2.1 .gitignore honoring).
+    // walk policy (Codex audit; pairs with the walker's .gitignore honoring).
     if (!getIndex().refs.has(fromRel)) return c.json({ error: "not found" }, 404);
     // The rendered page embeds asset URLs, which differ by whether this
     // request needs the token in them, so the cache holds each form apart.
@@ -262,8 +260,7 @@ export function createContentServer(options: ContentServerOptions): ContentServe
           : { href: `#${encodeURIComponent(target)}`, exists: false };
       },
       // Local media resolved against /note/ hits the markdown-only index gate
-      // and 404s; point it at the asset route instead (audit 20260906,
-      // MCP-C03).
+      // and 404s; point it at the asset route instead.
       resolveAssetUrl: (url) => assetHref(fromRel, url, urlToken),
     });
     // Store in the render cache (simple FIFO eviction at the cap).
@@ -278,7 +275,7 @@ export function createContentServer(options: ContentServerOptions): ContentServe
 
   app.get("/api/graph", (c) => c.json(getIndex().graph));
 
-  // Server-rendered relationship graph (WI-4.4 / M-4). A navigable, no-JS view
+  // Server-rendered relationship graph. A navigable, no-JS view
   // of every doc's outgoing edges + backlinks, built from the index. The
   // in-app panel renders the same data as an interactive force layout; this is
   // the browser-served, accessible counterpart.

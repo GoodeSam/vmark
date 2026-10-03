@@ -1,5 +1,5 @@
 // Media render-core — shared, reusable surface for previewing a local
-// image / audio / video file (WI-2).
+// image / audio / video file.
 //
 // Purpose: Given an absolute file path, classify it, resolve it to a Tauri
 //   asset URL (convertFileSrc), and render the matching element. On load
@@ -115,7 +115,7 @@ export function MediaView({ path, reloadKey = 0 }: MediaViewProps) {
           // Keyed by ATTEMPT, not by path: without it React reuses one DOM node
           // across a reload, and a late error for the previous `src` runs the
           // handler closed over the new attempt — failing a version that
-          // loaded fine (audit finding #10). Decoding is async, so a slow old
+          // loaded fine. Decoding is async, so a slow old
           // image erroring after a fast new one is ordinary.
           key={attempt}
           className={`media-view__${mediaType}`}

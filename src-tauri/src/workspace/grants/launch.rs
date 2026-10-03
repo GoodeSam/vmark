@@ -18,8 +18,8 @@
 //!     resolving at the deadline is granted whenever it resolves, and until
 //!     then a window cannot read it; a worker that panicked is a failure, not
 //!     "still running".
-//!   - A recorded root is re-granted only if it still resolves to ITSELF
-//!     (#250): Tauri also inserts the canonical form of a granted path, so
+//!   - A recorded root is re-granted only if it still resolves to ITSELF:
+//!     Tauri also inserts the canonical form of a granted path, so
 //!     re-granting a name that has since become a link would grant its target.
 //!
 //! @coordinates-with workspace/grants/mod.rs — the state, the list file

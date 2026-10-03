@@ -1,7 +1,7 @@
 /**
  * Runtime shape guard for the `read_workspace_config` IPC payload (T1/ADR-2).
  *
- * Extracted to a LEAF module (WI-13.3): both the open path
+ * Extracted to a LEAF module: both the open path
  * (`openWorkspaceWithConfig`) and the rail-switch refresh
  * (`syncLegacyWorkspaceContext`) validate the same boundary, and importing
  * the guard from the open path made the coordinator's import chain circular

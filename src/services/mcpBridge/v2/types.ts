@@ -1,7 +1,7 @@
 /**
  * Purpose: Shared types for the pruned 4-tool MCP surface.
  *
- *   See dev-docs/plans/20260504-mcp-pruning.md for the full ADR set.
+ *   See .claude/adr/plans/20260504-mcp-pruning.md for the full ADR set.
  *   These types are exposed as part of the MCP server's public schema —
  *   changes to shape are breaking and must bump the action version.
  *   `BrowserSessionTab` is the browser-tab record `sessionSerializers.ts`

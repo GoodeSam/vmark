@@ -1,4 +1,4 @@
-// WI-1A.9 — Plain text adapter (full Phase 1A pipeline smoke test).
+// Plain text adapter (full Phase 1A pipeline smoke test).
 //
 // Plain `.txt` is the simplest non-markdown format and the dispatcher
 // fallback for unknown extensions. No language pack, no validator, no

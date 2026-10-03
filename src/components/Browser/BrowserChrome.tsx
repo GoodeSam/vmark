@@ -61,7 +61,7 @@ export function BrowserChrome({
   const requested = requestedPageId ?? (view.browserWorkspaceActive ? view.activeBrowserPageId : null);
   const activePageId = view.browserPages.some((page) => page.id === requested) ? requested : null;
 
-  // WI-NB5.1: the chrome is the one place React can see human input (the page
+  // The chrome is the one place React can see human input (the page
   // itself is a native sibling view), so any interaction here while the AI
   // holds the lease is a human takeover. Subscribed, so the indicator appears
   // the moment a workflow run acquires the lease and vanishes on release.

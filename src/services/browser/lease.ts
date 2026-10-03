@@ -1,8 +1,8 @@
 /**
- * Browser automation lease — AI vs human arbitration (WI-1.9 / R11 / WI-NB5.1).
+ * Browser automation lease — AI vs human arbitration (R11).
  *
  * Purpose: a single lease per browser tab deciding who drives the page — the AI
- * (a multi-step workflow run) or the human. WIRED as of WI-NB5: the workflow
+ * (a multi-step workflow run) or the human. WIRED: the workflow
  * runner acquires/releases it around a run, browser-chrome interaction and the
  * native page-input signal (`browser://user-input`) reclaim it for the human,
  * tab close clears it via `tabRemovalBus`, and the tab chrome renders the
@@ -32,8 +32,8 @@
  *     the lease, so a late registration cannot re-install an operation a
  *     reclaim just cancelled.
  *
- * The state arithmetic lives in `leaseTransitions.ts` as pure functions (round 3,
- * #92); the state itself lives in `stores/browserLeaseStore.ts`, which holds data
+ * The state arithmetic lives in `leaseTransitions.ts` as pure functions;
+ * the state itself lives in `stores/browserLeaseStore.ts`, which holds data
  * only. This file owns SEQUENCING — record the new state first, run the canceller
  * after, outside any `set` — so it is the one writer of that store.
  *

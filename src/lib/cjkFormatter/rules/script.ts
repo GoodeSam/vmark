@@ -1,5 +1,5 @@
 /**
- * WI-CJKF5.1 — which script a construct sits in, decided from its ADJACENT
+ * Which script a construct sits in, decided from its ADJACENT
  * characters.
  *
  * Purpose: a few rules have no single correct output across CJK. The ellipsis
@@ -12,7 +12,7 @@
  * document-level detector would rewrite the `...` inside an English quotation
  * in a Chinese file. Reading the immediate neighbours is local, needs no
  * detection pass, and is the same principle `normalizeFullwidthPunctuation`
- * uses to decide punctuation width (WI-CJKF3.1).
+ * uses to decide punctuation width.
  *
  * @coordinates-with universal.ts — normalizeEllipsis, the only consumer today
  * @coordinates-with shared.ts — the one definition of a CJK letter

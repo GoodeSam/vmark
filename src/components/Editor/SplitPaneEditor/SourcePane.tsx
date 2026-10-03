@@ -1,4 +1,4 @@
-// WI-1A.4 — SourcePane.
+// SourcePane.
 //
 // CodeMirror-backed source editor for split-pane / viewer formats.
 // Phase 1A delivers raw CodeMirror with line numbers, undo, find,
@@ -39,7 +39,7 @@ export interface SourcePaneProps {
    *  SourcePane installs a callback that focuses the editor and moves the
    *  cursor to (line, column). Used by ValidationGutter row clicks. */
   onJumpHandleReady?: (jump: (line: number, column: number) => void) => void;
-  /** WI-4.3 — per-tab override. When true, the editor mounts in
+  /** Per-tab override. When true, the editor mounts in
    *  read-write mode regardless of formatConfig.adapters.readOnlyDefault. */
   editingEnabled?: boolean;
 }
@@ -84,7 +84,7 @@ export function SourcePane({
   // mount-effect dependency. Parent code commonly passes inline (non-
   // memoized) handlers — without this indirection every parent re-render
   // would tear down and rebuild the CodeMirror view, blowing away undo
-  // history and the user's selection. (Audit finding H3.)
+  // history and the user's selection.
   const onDiagnosticsRef = useRef(onDiagnostics);
   // Synced after commit (read only from the CodeMirror diagnostics callback). #1063
   useEffect(() => {
@@ -93,8 +93,8 @@ export function SourcePane({
 
   // Stable jump-to-position handle, safe to re-emit whenever the parent's
   // callback prop changes identity. Lives outside the mount effect so a
-  // late or swapped `onJumpHandleReady` still receives the handle (audit
-  // Round A H1). Reading `viewRef.current` defers binding until the view
+  // late or swapped `onJumpHandleReady` still receives the handle.
+  // Reading `viewRef.current` defers binding until the view
   // exists, so calls before mount no-op cleanly.
   const jumpTo = useCallback((line: number, column: number) => {
     const v = viewRef.current;
@@ -143,7 +143,7 @@ export function SourcePane({
     // (e.g. switching from json → txt). Without this, the preview pane's
     // "fix syntax errors" indicator would survive from the previous format
     // since the validator-backed linter is the only thing that calls
-    // `onDiagnostics`. (Audit finding H4.)
+    // `onDiagnostics`.
     if (!validator) onDiagnosticsRef.current?.([]);
 
     const persistOnUpdate = EditorView.updateListener.of((update) => {
@@ -154,7 +154,7 @@ export function SourcePane({
       useDocumentStore.getState().setEditorContent(tabId, next);
     });
 
-    // WI-2.4 — the validator-backed lint gutter and the rest of the base
+    // The validator-backed lint gutter and the rest of the base
     // extension list are assembled by the pure builder; the linter hoists
     // diagnostics via onDiagnostics so the preview pane can surface
     // "fix syntax errors at line:column". Reading the callback through the ref

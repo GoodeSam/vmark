@@ -120,13 +120,13 @@ pub(crate) fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::
     }
 
     // Record, once per launch, whether the Knowledge Base could start here:
-    // one `content_server runtime: node=… cli=…` log line (WI-FL1.1). A
+    // one `content_server runtime: node=… cli=…` log line. A
     // packaged build's log file is the only place this truth is observable
     // without a user opening the panel; release-smoke reads it from the staged
     // DMG. Detached and blocking-off-thread — setup never waits on `which`.
     crate::content_server::runtime::log_runtime_state(app.handle().clone());
 
-    // Linux without a session bus runs unguarded (WI-FL6.1); say so where a
+    // Linux without a session bus runs unguarded; say so where a
     // user reading the log will look, now that the log plugin exists.
     #[cfg(target_os = "linux")]
     crate::single_instance::warn_if_unguarded();

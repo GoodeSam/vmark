@@ -142,7 +142,7 @@ export async function bridgeReady() {
   // Resolved OUTSIDE the catch. A missing dev identifier is a configuration
   // error, not "the bridge is not up yet" — swallowing it made a misconfigured
   // dev profile silently SKIP coverage-required journeys, reporting the same
-  // green as a run that exercised them (audit finding #9). Only the absent
+  // green as a run that exercised them. Only the absent
   // port file below is an expected, suppressible condition.
   const path = portFilePath();
   try {

@@ -60,7 +60,7 @@ export function QuickOpen({ windowLabel }: QuickOpenProps) {
   const { t } = useTranslation("editor");
   const isOpen = useQuickOpenStore((s) => s.isOpen);
   // The native browser view paints over all React DOM in its rect, so freeze every
-  // mounted browser tab while this overlay is up (WI-SOC.1).
+  // mounted browser tab while this overlay is up.
   useBrowserOccluder(isOpen, "quick-open");
   const [filter, setFilter] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);

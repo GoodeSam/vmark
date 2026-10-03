@@ -159,8 +159,8 @@ fn pump(
     source: &mut impl PumpSource,
     send: &impl Fn(Vec<u8>) -> bool,
 ) -> PumpEnd {
-    // 64 KB buffer (WI-1.2): far fewer reads/sends per burst than the old
-    // 4 KB, which compounds with the binary Channel (WI-1.1).
+    // 64 KB buffer: far fewer reads/sends per burst than the old
+    // 4 KB, which compounds with the binary Channel.
     let mut buf = vec![0u8; 65536];
     loop {
         if session.shutdown.load(Ordering::Acquire) {
@@ -188,7 +188,7 @@ fn pump(
                 }
             }
             // A terminal that dies on a read error leaves a diagnostic
-            // (WI-4.3 / G8) instead of vanishing silently.
+            // instead of vanishing silently.
             Err(e) => {
                 log::warn!("[pty] reader {pid} read error ({:?}): {e}", e.kind());
                 return PumpEnd::Stopped;

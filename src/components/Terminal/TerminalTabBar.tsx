@@ -17,14 +17,14 @@
  *     was translated or renamed.
  *   - The tab shows the program-reported title (OSC 0/2 via onTitleChange)
  *     unless the user manually renamed the session — user intent wins (G4).
- *   - Double-click a tab to rename it (WI-4.1). Until then `isUserRenamed`
+ *   - Double-click a tab to rename it. Until then `isUserRenamed`
  *     had no writer outside tests, so the "user intent wins" branch above was
  *     unreachable in production (T5).
  *   - Dead sessions (process exited) get a visual indicator via CSS class.
  *   - Uses getState() pattern for session creation to avoid stale closures.
  *   - With transcript rendering on, the actions group also holds the
  *     rendered-transcript toggle: a chart icon, pressed (accent wash) while the
- *     transcript is open, with `aria-controls` naming the region (WI-TP3.3).
+ *     transcript is open, with `aria-controls` naming the region.
  *   - Every action button carries a stable `data-terminal-action`
  *     (`new`/`close`/`restart`/`swap`, and `transcript` when enabled). The E2E terminal journeys drive these to
  *     create and dispose their OWN session, so the values are an automation
@@ -127,7 +127,7 @@ export function TerminalTabBar({ onClose, onRestart, orientation = "vertical", p
     useTerminalStore.getState().terminalSetActiveSession(id);
   }, []);
 
-  // Which tab is being renamed, if any (WI-4.1).
+  // Which tab is being renamed, if any.
   const [renamingId, setRenamingId] = useState<string | null>(null);
   // A rename box must not survive its session leaving the VISIBLE set
   // (audit 20260831 #34): a rail switch mid-rename would otherwise resurrect
@@ -153,7 +153,7 @@ export function TerminalTabBar({ onClose, onRestart, orientation = "vertical", p
       <div className="terminal-tab-bar-tabs">
         {sessions.map((s) => {
           // Program title (OSC 0/2) shows unless the user manually renamed the
-          // session — explicit user intent wins over program output (G4/WI-3.2).
+          // session — explicit user intent wins over program output (G4).
           const name = s.isUserRenamed ? s.label : (s.programTitle || s.label);
           if (s.id === renamingId) {
             return (

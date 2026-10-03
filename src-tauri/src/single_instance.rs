@@ -36,12 +36,12 @@
 //!     describes; it is not a second mechanism to keep in sync.
 //!   - The routing and the surfacing are generic over the Tauri runtime and
 //!     take the forwarder as a parameter (`second_launch_with`), so
-//!     `single_instance.test.rs` drives them on a mock app (#246): a launch
+//!     `single_instance.test.rs` drives them on a mock app: a launch
 //!     with a file must forward exactly that file and open nothing, a bare
 //!     launch must reveal an existing window or build one.
 //!
 //! Linux runs the guard only when `DBUS_SESSION_BUS_ADDRESS` names an address
-//! the plugin's bus library can PARSE (WI-FL6.1). The plugin's Linux backend
+//! the plugin's bus library can PARSE. The plugin's Linux backend
 //! opens with `zbus::blocking::connection::Builder::session().unwrap()`, and
 //! that call is `Address::from_str` over the raw environment value — so a
 //! malformed address panics VMark at startup, before the log plugin exists to
@@ -74,7 +74,7 @@ use crate::{files, quit, supported_files, window_manager};
 #[cfg(target_os = "linux")]
 pub(crate) fn session_bus_present() -> bool {
     // One line on purpose: `scripts/check-feature-ledger-phase.sh 6` looks for
-    // this read here (WI-FL6.1), and rustfmt wraps the argument form.
+    // this read here, and rustfmt wraps the argument form.
     let address = std::env::var_os("DBUS_SESSION_BUS_ADDRESS");
     crate::session_bus::should_register_single_instance(address)
 }
@@ -102,7 +102,7 @@ pub(crate) fn warn_if_unguarded() {
 /// Handle a second launch: route any openable files in `argv` to this
 /// instance, and surface a window either way.
 ///
-/// Dispatched OFF the callback thread (audit #476). The plugin documents this
+/// Dispatched OFF the callback thread. The plugin documents this
 /// callback as running on the main event loop, and the decision it makes needs
 /// the filesystem: `openable_files_from_argv` STATS every argument
 /// (`is_openable_supported` → `is_file()`). A UNC path to an unreachable host,
@@ -122,7 +122,7 @@ pub(crate) fn handle_second_launch(app: &tauri::AppHandle, argv: Vec<String>) {
     });
 }
 
-/// The second-launch decision, with the forwarder injected (#246): a launch
+/// The second-launch decision, with the forwarder injected: a launch
 /// that carries openable files hands EXACTLY those files to `forward` and
 /// touches no window itself — `route_file_opens` focuses the window it
 /// delivers to — while a bare launch surfaces a window and forwards nothing.
@@ -158,7 +158,7 @@ pub(crate) fn openable_files_from_argv(argv: Vec<String>) -> Vec<String> {
 
 /// Bring an existing document window forward, or create one when none is left.
 ///
-/// Split into a SELECTION and an idempotent reveal (#477): the two answer
+/// Split into a SELECTION and an idempotent reveal: the two answer
 /// different questions, and the second one has to be total. A second launch
 /// that surfaces nothing looks to the user exactly like a launch that was
 /// ignored, which is the bug this whole module exists to prevent.
@@ -192,7 +192,7 @@ fn choose_target<R: Runtime>(app: &tauri::AppHandle<R>) -> Option<String> {
 }
 
 /// Reveal `label`; if it closed between the snapshot and this lookup, choose
-/// again and, failing that, build a window (#479).
+/// again and, failing that, build a window.
 ///
 /// The old code returned silently here. The window list is a snapshot taken
 /// under no lock, so the user closing the chosen window in that instant made
@@ -212,13 +212,13 @@ pub(crate) fn reveal_or_retry<R: Runtime>(app: &tauri::AppHandle<R>, label: &str
 }
 
 /// Build the main window — and, when another path built it first, surface
-/// THAT one (#478).
+/// THAT one.
 ///
 /// Every other window-creating path in the process can ask for `main` at the
 /// same moment, so finding it already there is a real outcome and not an
 /// error: the user asked for a window and there is one. Stopping there left
-/// the second launch with nothing on screen, which is the same failure #479
-/// describes one step further on. `ensure_main_window` makes the check and the
+/// the second launch with nothing on screen, which is the same failure the
+/// closed-window retry above handles one step further on. `ensure_main_window` makes the check and the
 /// build one step, so this path can neither build a second `main` beside
 /// another path's nor mistake theirs for a failure.
 pub(crate) fn create_and_reveal_main<R: Runtime>(app: &tauri::AppHandle<R>) {

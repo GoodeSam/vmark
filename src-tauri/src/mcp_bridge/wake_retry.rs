@@ -51,8 +51,7 @@ pub(super) async fn wake_retry_after_timeout<R: tauri::Runtime>(
     // resumes, the QUEUED original event may execute immediately and
     // its response must land in this channel rather than the
     // already-abandoned first oneshot — otherwise a successful wake
-    // recovery turns into a client timeout (cross-model review,
-    // audit 20260612 remediation).
+    // recovery turns into a client timeout (cross-model review).
     let (retry_tx, retry_rx) = oneshot::channel();
     {
         let mut guard = bridge.lock().await;

@@ -15,7 +15,7 @@ import { createCodeFenceTracker } from "./opaqueRegions";
  * The mdast→ProseMirror converters (and several serializer walks) are
  * mutually recursive; adversarial input can nest emphasis thousands of
  * levels deep and blow the call stack — a parser CRASH found by the
- * OSS-Fuzz corpus soak (WI-5.1). No legitimate document approaches 200
+ * OSS-Fuzz corpus soak. No legitimate document approaches 200
  * levels (ProseMirror marks cannot even represent nested same-type
  * emphasis), so beyond it the subtree flattens to its plain text: defined
  * degradation instead of a RangeError.
@@ -81,7 +81,7 @@ function visitAndFixMath(root: Root | Parent): void {
   // Iterative, NOT recursive: adversarial input can nest mdast thousands of
   // levels deep (emphasis-in-emphasis chains), and per-child recursion blew
   // the call stack — a parser CRASH on garbage input, found by the OSS-Fuzz
-  // corpus soak (WI-5.1). An explicit stack has no depth limit.
+  // corpus soak. An explicit stack has no depth limit.
   const stack: (Root | Parent)[] = [root];
   while (stack.length > 0) {
     const node = stack.pop()!;

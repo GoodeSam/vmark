@@ -29,8 +29,8 @@ export function getVisibleTerminalSessions(windowLabel: string): TerminalSession
 }
 
 /**
- * Realign the active session to the window's CURRENT visible population
- * (R2-15, audit round 2). A rail-MODE toggle changes what is visible with no
+ * Realign the active session to the window's CURRENT visible population.
+ * A rail-MODE toggle changes what is visible with no
  * scope switch, so no scope action fires — without this, a session hidden by
  * the toggle could stay "active" over an empty tab bar, and the emptiness
  * check in auto-create would see a population it cannot activate. Idempotent:

@@ -8,7 +8,7 @@
 //
 // Extensions come from the shared source of truth in utils/mediaExtensions.ts,
 // minus `svg` (which owns its own text/split-pane format). See
-// dev-docs/plans/20260703-media-viewer.md.
+// .claude/adr/plans/20260703-media-viewer.md.
 
 import {
   IMAGE_EXTENSIONS,

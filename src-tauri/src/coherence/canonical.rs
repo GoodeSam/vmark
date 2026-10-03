@@ -180,7 +180,7 @@ pub fn insert_identity(text: &str, id: &str, schema: Option<&str>) -> String {
         };
         // Merge into an EXISTING vmark mapping (it may carry unknown
         // children masking preserved) — a second mapping would shadow the
-        // identity from read_identity (audit R14). Existing `id:`/`schema:`
+        // identity from read_identity. Existing `id:`/`schema:`
         // children are REPLACED, not kept: they are kernel-namespace lines
         // (mask_identity strips them, so dropping them never moves the
         // content hash), and keeping one would leave a duplicate key —

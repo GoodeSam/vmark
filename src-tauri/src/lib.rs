@@ -25,11 +25,11 @@ mod atomic_replace;
 #[cfg(debug_assertions)]
 mod automation_port;
 mod bounded_read;
-mod browser; // WI-1.2 embedded-browser surface (pure lifecycle/identity core landed)
+mod browser; // embedded-browser surface (pure lifecycle/identity core landed)
 mod canonical_path;
 mod close_to_tray;
 pub mod coherence;
-pub mod command_error; // WI-14 crate-wide typed command error ({code, message, i18nKey?, detail?})
+pub mod command_error; // crate-wide typed command error ({code, message, i18nKey?, detail?})
 mod content_search;
 mod content_server;
 mod external_editor;
@@ -115,19 +115,19 @@ mod capabilities_test;
 /// Register every piece of backend state the app manages (rule 50 §10).
 ///
 /// Extracted from `run` so it can be composed onto a `mock_builder()` and
-/// ASSERTED (audit #357) — this is the part of startup that fails SILENTLY. A
+/// ASSERTED — this is the part of startup that fails SILENTLY. A
 /// command reads its state through `State<'_, T>`/`try_state::<T>()`, so a
 /// dropped `.manage()` neither fails to compile nor fails to start; it fails
-/// when a user clicks. `pdf_smoke` shipped exactly that (#250).
+/// when a user clicks. `pdf_smoke` shipped exactly that.
 fn manage_state<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
     builder
         // Fail-closed: `engine_enabled` starts false and the webview pushes the
-        // real value via `workflow_engine_policy` (WI-19).
+        // real value via `workflow_engine_policy`.
         .manage(workflow::state::WorkflowRunnerState::default())
-        // Audit #375: the streaming AI path's per-request cancel tokens, so
+        // The streaming AI path's per-request cancel tokens, so
         // the webview's Cancel reaches the provider, not just its listener.
         .manage(ai_provider::cancel::AiPromptCancelRegistry::default())
-        // WI-20: the MCP bridge's tables, shutdown signal, write lock and
+        // The MCP bridge's tables, shutdown signal, write lock and
         // liveness flag, and the hot-exit pending-restore map — both were
         // process-global statics.
         .manage(mcp_bridge::McpBridgeState::default())
@@ -135,7 +135,7 @@ fn manage_state<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         .manage(content_server::ContentServerManager::new())
         .manage(browser::surface::BrowserSurface::default())
         .manage(window_status::WindowStatusRegistry::default())
-        // One PDF export at a time (#198, #199): the output file and the
+        // One PDF export at a time: the output file and the
         // export dialog's progress stream each have exactly one producer.
         .manage(pdf_export::export_gate::ExportGate::default())
         // #1273: documents the user explicitly authorized to execute. Memory

@@ -26,17 +26,17 @@ export interface TerminalSession {
    */
   ordinal: number;
   isAlive: boolean;
-  /** A bell rang while this session was in the background (WI-4.3). Cleared
+  /** A bell rang while this session was in the background. Cleared
    *  when the session becomes active. Drives the tab activity indicator. */
   hasActivity?: boolean;
-  /** Program-reported title from xterm's onTitleChange (OSC 0/2) (G4/WI-3.2).
+  /** Program-reported title from xterm's onTitleChange (OSC 0/2) (G4).
    *  Shown on the tab unless the user manually renamed the session. */
   programTitle?: string;
   /** True once the user manually renamed the session — program titles then
-   *  no longer override the user-chosen label (G4/WI-3.2). */
+   *  no longer override the user-chosen label (G4). */
   isUserRenamed?: boolean;
   /** A directory the session was explicitly asked to start in ("Open Terminal
-   *  Here", WI-4.2). Consumed once by the spawn path, which must prefer it
+   *  Here"). Consumed once by the spawn path, which must prefer it
    *  over the sibling-cwd inheritance that otherwise wins. Cleared on spawn so
    *  a later restart does not silently re-anchor the shell. */
   requestedCwd?: string;
@@ -59,7 +59,7 @@ export interface TerminalState {
 }
 
 export interface TerminalActions {
-  /** Create a session. `requestedCwd` pins its starting directory (WI-4.2);
+  /** Create a session. `requestedCwd` pins its starting directory;
    *  without it the spawn path inherits a sibling's cwd or resolves the
    *  workspace/file default. `ownerInstanceId` stamps the session's owning
    *  workspace instance (WI-TS1.1) — callers resolve it via the ONE shared
@@ -82,7 +82,7 @@ export interface TerminalActions {
   terminalMarkActivity: (id: string) => void;
   terminalRenameSession: (id: string, label: string) => void;
   terminalSetProgramTitle: (id: string, title: string) => void;
-  /** The explicit start directory for a session, without consuming it (WI-4.2). */
+  /** The explicit start directory for a session, without consuming it. */
   terminalPeekRequestedCwd: (id: string) => string | undefined;
   /** Clear it — only after the spawn that used it actually succeeded, so a
    *  failed spawn can still be retried in the directory the user asked for. */

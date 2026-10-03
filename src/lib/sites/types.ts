@@ -6,12 +6,12 @@
  * A site plugin dispatches on ORIGIN (mirroring how the format registry dispatches
  * on extension). The manifest is the declarative, validated half; its `origins` are
  * the security boundary — the driver may only reach an origin a plugin declared
- * (R4). Registration is atomic with the plugin's reader (WI-NB4.2), so a
+ * (R4). Registration is atomic with the plugin's reader, so a
  * registered-but-unreadable site is unrepresentable.
  *
  * The vocabulary is `read`-only: `publish` was removed with `SitePublisher`
  * (WI-DP1.2, "a promise the compiler cannot keep") and its capability token
- * followed in WI-NB4.4 — an unbacked token invited manifests claiming a
+ * followed — an unbacked token invited manifests claiming a
  * capability nothing could deliver. `health.ts` went with it: its probe contract
  * (auth + fixture extraction) had no possible honest consumer without
  * credentialed site flows, and neither a listSites surface nor a status panel

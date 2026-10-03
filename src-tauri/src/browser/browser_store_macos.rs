@@ -1,5 +1,5 @@
-//! Main-thread-only WebKit data-store ownership for browser postures
-//! (WI-P6.1 / WI-NB10.2). The impure adapter over the pure `store_policy`
+//! Main-thread-only WebKit data-store ownership for browser postures.
+//! The impure adapter over the pure `store_policy`
 //! decision in `browser_store_policy.rs`: it maps each `StorePolicy` arm to an
 //! actual `WKWebsiteDataStore` and owns the caches, the 32-store cap, and the
 //! macOS-version read. Every branch a device could exercise is decided upstream
@@ -11,7 +11,7 @@
 //!   safe path for HttpOnly logins. Opening a named profile is user-approved per
 //!   call (`profile_open.rs`); this module only owns the stores.
 //! - **Human and AiShared** tabs get VMark's own **identified persistent** store
-//!   on macOS 14+ (WI-NB10.2 / D6v2), isolating browsed-page storage from the
+//!   on macOS 14+ (D6v2), isolating browsed-page storage from the
 //!   app's default store; on macOS ≤ 13 they keep the default store (isolation
 //!   goal not met — stated in `store_policy`). This costs existing Human-tab
 //!   logins a one-time migration.
@@ -20,7 +20,7 @@
 //! `tauri.conf.json` `minimumSystemVersion`). Below 14 a
 //! named profile gets a SEPARATE non-persistent store — isolated, just not
 //! persistent — NEVER the shared singleton (a pre-14 collapse into the singleton
-//! would break cross-profile isolation; sec review WI-P6.1 H2).
+//! would break cross-profile isolation).
 //!
 //! The human store's UUID is derived from a namespace (`vmark.browser.human`)
 //! that no AI-profile name can produce, so a sandbox profile literally named
@@ -41,7 +41,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 /// Cap on distinct named stores held at once — bounds an AI that opens `p1`, `p2`, …
-/// to grow persistent stores without limit (sec review WI-P6.1 Medium).
+/// to grow persistent stores without limit.
 const MAX_NAMED_STORES: usize = 32;
 
 thread_local! {
@@ -103,7 +103,7 @@ fn uuid_for_human() -> Option<Retained<NSUUID>> {
 /// Build (or reuse) a named profile's isolated store. `persistent` comes from the
 /// policy arm, not a re-read of the OS version. Enforces the 32-store cap and
 /// **fails closed** with `PROFILE_STORE_LIMIT` rather than sharing the sandbox
-/// store when the cap is exceeded (sec review WI-P6.1 H2).
+/// store when the cap is exceeded.
 fn named_store(
     name: &str,
     mtm: MainThreadMarker,
@@ -211,7 +211,7 @@ pub(super) fn configure(
 }
 
 /// Delete a named profile's persistent on-disk data and drop its cached store, so
-/// "Remove profile" actually revokes the login (sec review WI-P6.1 Removal). The
+/// "Remove profile" actually revokes the login. The
 /// deletion is **confirmed**: we pump the run loop until the completion handler fires
 /// and return an error on failure/timeout, so the UI never reports a profile gone
 /// while its login survives on disk. Below macOS 14 the per-profile store is

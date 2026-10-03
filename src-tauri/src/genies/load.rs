@@ -89,14 +89,14 @@ fn load_genies_bounded(global_dir: &Path, budget: usize) -> Vec<LoadedGenie> {
 }
 
 /// The scan behind the listing: bounded in depth and entry count by
-/// `scan_genies_dir` (#144), sorted by name.
+/// `scan_genies_dir`, sorted by name.
 fn list_genies_in(global_dir: &Path) -> Vec<GenieEntry> {
     let mut by_name: HashMap<String, GenieEntry> = HashMap::new();
     if global_dir.is_dir() {
         scan_genies_dir(global_dir, global_dir, "global", &mut by_name);
     }
     let mut entries: Vec<GenieEntry> = by_name.into_values().collect();
-    // Path breaks a name tie (#341): the display name is the file STEM, so
+    // Path breaks a name tie: the display name is the file STEM, so
     // `writing/summarize.md` and `code/summarize.md` sort equal — and the
     // remaining order was `HashMap` iteration order, which differs between
     // runs of the same process, let alone between machines.

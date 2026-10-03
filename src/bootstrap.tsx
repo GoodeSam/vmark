@@ -35,7 +35,7 @@ const SECURE_KEYS = ["vmark-ai-providers"];
 export type AppLoader = () => Promise<{ default: ComponentType }>;
 
 export async function bootstrap(loadApp: AppLoader): Promise<void> {
-  // WI-UA15: platform root class, before first paint — index.css keys the
+  // Platform root class, before first paint — index.css keys the
   // D7 cursor split off it (arrow on macOS, pointer elsewhere).
   document.documentElement.classList.add(platformRootClass());
 

@@ -1,5 +1,5 @@
 /**
- * Console capture (WI-P7.1 / WI-NB3.1) — Option C from the Phase 7 design review
+ * Console capture — Option C from the Phase 7 design review
  * (`dev-docs/grills/browser-automation/phase7-console-design.md`).
  *
  * A page-world shim overrides `console.*` — and captures uncaught errors and

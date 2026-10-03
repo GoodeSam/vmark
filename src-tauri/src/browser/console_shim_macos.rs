@@ -1,4 +1,4 @@
-//! Page-world console-capture shim injection (WI-P7.1 / WI-NB3.1, native half).
+//! Page-world console-capture shim injection (native half).
 //!
 //! Registers a **page-world** `WKUserScript` that overrides `console.*` — and
 //! captures uncaught errors / unhandled rejections — into a capped ring buffer
@@ -24,7 +24,7 @@ use crate::browser::registry::AutomationMode;
 use objc2::MainThreadMarker;
 use objc2_web_kit::WKWebViewConfiguration;
 
-/// The page-world shim — ONE canonical asset (WI-NB3.1). This includes the
+/// The page-world shim — ONE canonical asset. This includes the
 /// exact bytes `src/lib/browser/agent/consoleShim.test.ts` executes in jsdom,
 /// so the tested copy IS the shipped copy. Two hand-maintained duplicates used
 /// to exist with nothing checking they agreed (audit 019fe61c); editing the

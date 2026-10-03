@@ -1,4 +1,4 @@
-// WI-2.1 — IR → @xyflow/react graph adapter.
+// IR → @xyflow/react graph adapter.
 //
 // Plan §6 Phase 2. Pure function — no React, no DOM. The actual layout
 // step (assigning final x/y coordinates) lives in ./layout.ts and runs

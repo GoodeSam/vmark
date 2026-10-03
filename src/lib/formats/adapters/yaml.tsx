@@ -1,13 +1,13 @@
-// WI-2.3 — YAML adapter.
+// YAML adapter.
 //
 // Real CodeMirror language (@codemirror/lang-yaml — installed since
 // Phase 1A) + `yaml`-library validator. Tree preview shares the
 // react-json-view-lite component used by the JSON/TOML adapters
 // (LazyJsonTree, loaded on first use).
 //
-// WI-2.4 wires GHA-workflow schemaDetector into this adapter.
+// The GHA-workflow schemaDetector is wired into this adapter.
 //
-// WI-13 — yaml is in the ALWAYS-ON trio, so every static import here is cold
+// yaml is in the ALWAYS-ON trio, so every static import here is cold
 // start for every window, including the ones with no editor. The workbench +
 // workflow IR parser moved behind `React.lazy` (./yamlWorkflowRenderer), the
 // CodeMirror pack behind the `language`/`loadLanguage` thunks, and the GHA
@@ -45,7 +45,7 @@ interface YamlException extends Error {
   linePos?: Array<{ line: number; col: number }>;
 }
 
-/** The CodeMirror YAML pack, loaded on demand (WI-13). */
+/** The CodeMirror YAML pack, loaded on demand. */
 const loadYamlLanguage = async (): Promise<Extension> => {
   const { yaml } = await import("@codemirror/lang-yaml");
   return yaml();
@@ -76,7 +76,7 @@ export const yamlValidator: Validator = (content) => {
 };
 
 /**
- * WI-2.4 — GitHub Actions workflow schema detector.
+ * GitHub Actions workflow schema detector.
  *
  * ADR-5 precedence:
  *   1. Path detection wins. A file under `.github/workflows/` routes
@@ -107,10 +107,10 @@ export const yamlSchemaDetector: SchemaDetector = (path, content) => {
 };
 
 /**
- * WI-2.4 — GitHub Actions workflow schemaRenderer.
+ * GitHub Actions workflow schemaRenderer.
  *
  * The renderer itself (workflow IR parse + the workbench + its xyflow canvas)
- * lives in ./yamlWorkflowRenderer and is loaded on demand: WI-13 moved it out
+ * lives in ./yamlWorkflowRenderer and is loaded on demand: it moved out
  * because this adapter is always registered, so a static reference put the
  * whole workbench on every window's cold start.
  *
@@ -119,7 +119,7 @@ export const yamlSchemaDetector: SchemaDetector = (path, content) => {
  * lazy component would suspend — and REJECT — into whichever boundary happened
  * to be above it.
  *
- * Audit 20260804-F3: a bare `Suspense` over a module-level `React.lazy` let a
+ * A bare `Suspense` over a module-level `React.lazy` let a
  * rejected import escape to the editor-wide boundary, whose retry replayed the
  * cached rejection forever. `RetryableLazy` mounts a fresh lazy per attempt
  * behind a local boundary, so the failure stays in the pane and retry works.
@@ -169,7 +169,7 @@ const GhaWorkflowSchemaRenderer = ghaWorkflowRendererOver(loadGhaWorkflowRendere
  * never fetched for a user who has not turned the engine on; read reactively,
  * so flipping the setting swaps the pane without reopening the file.
  *
- * EXCEPT while this tab's run is live (audit 20260928 #124): switching the
+ * EXCEPT while this tab's run is live: switching the
  * engine off reaches the backend asynchronously, and a lost push leaves the
  * run going. The panel — and its Cancel — stays until the run ends, which is
  * also what the backend does on acknowledging the disable. The generic preview
@@ -251,16 +251,16 @@ export const yamlFormat: FormatConfig = {
   extensions: ["yaml", "yml"],
   kind: "split-pane",
   // One loader, two fields: `language` is what a WYSIWYG-kind host reads and
-  // `loadLanguage` what the split pane reads. Both are thunks since WI-13, so
+  // `loadLanguage` what the split pane reads. Both are thunks now, so
   // there is nothing left to duplicate — a second copy would just be a second
   // place to forget.
   language: loadYamlLanguage,
   loadLanguage: loadYamlLanguage,
   lint: (source: string) => lintYaml(source),
-  // GHA workflow editor behavior for the source pane. Dynamic imports
-  // (WI-13): these four CodeMirror extensions are a megabyte of
+  // GHA workflow editor behavior for the source pane. Dynamic imports:
+  // these four CodeMirror extensions are a megabyte of
   // source-editor machinery that only a mounted YAML source pane can use.
-  // They load INDIVIDUALLY and degrade individually (audit 20260804-F8) —
+  // They load INDIVIDUALLY and degrade individually —
   // see ./yamlWorkflowExtensions, which also owns the store binding the
   // plugins must not carry themselves (lint:store-coupling).
   loadExtraExtensions: loadWorkflowSourceExtensions,

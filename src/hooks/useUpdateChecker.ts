@@ -150,7 +150,7 @@ export function useUpdateChecker() {
 
   // Show toasts for MANUAL CHECK FEEDBACK only. The update LIFECYCLE
   // (available/ready/stalled/transfer failures) is owned by
-  // hooks/useStatusToasts since WI-UB3 — one owner per concern, so a state
+  // hooks/useStatusToasts — one owner per concern, so a state
   // change never raises two toasts. "error" toasts here only when the user
   // manually triggered the check — background-retry errors stay quiet so a
   // flapping network doesn't pop a notification every few seconds. The

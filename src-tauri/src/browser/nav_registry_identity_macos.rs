@@ -75,8 +75,8 @@ impl NavDelegate {
     }
 
     /// Does a delegate callback carrying `navigation` belong to the CURRENT
-    /// navigation? The rule is `nav_ring::decide` (audit round 2 #19, round 4 —
-    /// see its doc); this supplies the ring and the registry's word on the live
+    /// navigation? The rule is `nav_ring::decide` (see its
+    /// doc); this supplies the ring and the registry's word on the live
     /// ticket. Used by the redirect and commit callbacks so neither can mark or
     /// un-load the live navigation.
     pub(crate) fn callback_is_current(&self, navigation: Option<&WKNavigation>) -> bool {

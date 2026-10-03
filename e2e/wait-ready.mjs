@@ -97,7 +97,7 @@ async function attempt() {
     }
     // `windowLabel` is not optional here: without it `execute_js` runs in the
     // DEFAULT window, so `--window doc-1` verified that doc-1 exists and then
-    // reported main's readiness as doc-1's (audit finding #8). The label check
+    // reported main's readiness as doc-1's. The label check
     // above made that look deliberate.
     const reply = await client.send(
       "execute_js",

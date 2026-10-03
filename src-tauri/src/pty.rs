@@ -10,8 +10,8 @@
 //!   - Reader threads are plain `std::thread`, NOT `tokio::spawn_blocking`.
 //!     PTY reads are long-lived (lifetime of the shell), so they should not
 //!     consume the tokio blocking thread pool.
-//!   - Output transport is a `tauri::ipc::Channel<InvokeResponseBody>` (WI-1.1,
-//!     ADR-T1): the reader sends `InvokeResponseBody::Raw(bytes)`, delivered to
+//!   - Output transport is a `tauri::ipc::Channel<InvokeResponseBody>`
+//!     (ADR-T1): the reader sends `InvokeResponseBody::Raw(bytes)`, delivered to
 //!     the webview as a binary `ArrayBuffer` (not a JSON number array) and
 //!     point-to-point (no `app.emit` broadcast to every window).
 //!   - Pause/resume uses `Condvar` so a paused reader truly sleeps (zero CPU)

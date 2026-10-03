@@ -4,7 +4,7 @@
  *
  * Split out of `saveToPath.ts` for the size gate, along the seam that already
  * existed: the write is one concern, deciding whether its result still
- * describes the live document is another (audit 20260906, F3).
+ * describes the live document is another.
  *
  * @coordinates-with saveToPath.ts — the only caller
  * @coordinates-with saveTargetClaim.ts — per-document identity ordering
@@ -27,7 +27,7 @@ import type { NormalizedSaveContent } from "./normalizedSaveContent";
  * Whether a finished write may still update its document's path, tab path and
  * saved snapshots.
  *
- * Two ways to qualify, and BOTH are needed (audit 20260906, F3):
+ * Two ways to qualify, and BOTH are needed:
  *
  *   - **It is the newest save submitted for this document.** This is what lets
  *     a Save As re-point the document at all, and what makes the user's most
@@ -86,7 +86,7 @@ export function applyPostSaveState(
   clearPendingSaveAfterGrace(path, saveToken);
 
   // Everything below RE-POINTS the document. A completion may only do that
-  // while it still describes where the document lives (audit 20260906, F3).
+  // while it still describes where the document lives.
   if (!mayRepointDocument(tabId, path, claim)) return;
 
   useDocumentStore.getState().setFilePath(tabId, path);
@@ -102,7 +102,7 @@ export function applyPostSaveState(
 
   // Update tab path for title sync
   useTabStore.getState().updateTabPath(tabId, path);
-  // WI-13.4: Save As across a workspace boundary reassigns ownership; the
+  // Save As across a workspace boundary reassigns ownership; the
   // visible context follows when this is the active tab — unless an AI client
   // asked for the save, which reclassifies ownership but must never yank the
   // human's visible workspace.

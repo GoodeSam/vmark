@@ -298,7 +298,7 @@ fn metadata_from_flat(frontmatter_block: &str, name: String) -> GenieMetadata {
 
 #[cfg(test)]
 mod tests {
-    // WI-5.2 — genie frontmatter parser (TQ3 coverage gap).
+    // Genie frontmatter parser (TQ3 coverage gap).
     use super::*;
 
     #[test]

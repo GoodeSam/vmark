@@ -1,5 +1,5 @@
 /**
- * Ownership reassignment on deliberate navigation (WI-13.4, invariant 10).
+ * Ownership reassignment on deliberate navigation (invariant 10).
  *
  * Purpose: an open, Save As, rename or cross-root move gives a tab a file
  * path — its workspace ownership must follow ATOMICALLY (explicit claim moves
@@ -72,7 +72,7 @@ export function reassignTabOwnershipForPath(
   if (allowSwitch && isActiveTab && owner.workspaceInstanceId !== activeId) {
     const switched = switchWorkspaceInstance(windowLabel, owner.workspaceInstanceId).switched;
     // The reassigned tab stays the active one after the context follows.
-    // Pane-aware through setActiveTab itself (WI-2 seam, ADR-1): the incoming
+    // Pane-aware through setActiveTab itself (the activation seam, ADR-1): the incoming
     // context may have restored a split; the seam converges it.
     if (switched) {
       useTabStore.getState().setActiveTab(windowLabel, tabId);
@@ -80,10 +80,10 @@ export function reassignTabOwnershipForPath(
     return { workspaceSwitched: switched, workspaceInstanceId: owner.workspaceInstanceId };
   }
   if (!allowSwitch && isActiveTab && owner.workspaceInstanceId !== activeId && activeId) {
-    // Audit R2-F7: the ACTIVE tab now belongs to a hidden instance and the
+    // The ACTIVE tab now belongs to a hidden instance and the
     // caller (MCP, D10) forbids yanking. Leaving it active would point the
     // alias at a tab the projection hides — activate the current instance's
-    // best tab instead (pane-aware through the WI-2 seam).
+    // best tab instead (pane-aware through the activation seam).
     const activeInstance = useWorkspaceInstancesStore.getState().instances[activeId];
     if (activeInstance) {
       const liveTabs = useTabStore.getState().getTabsByWindow(windowLabel);
@@ -100,7 +100,7 @@ export function reassignTabOwnershipForPath(
 
 /**
  * Apply an EXTERNAL rename to a tab: re-point tab + document at the new path
- * (clearing the missing flag) and let ownership follow the path (WI-13.4).
+ * (clearing the missing flag) and let ownership follow the path.
  */
 export function applyExternalRename(
   windowLabel: string,

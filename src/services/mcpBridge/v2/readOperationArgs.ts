@@ -1,7 +1,7 @@
 /**
  * Purpose: ONE typed parse of an MCP wire payload, from the generated
  *   contract — replacing the per-field `typeof` chains each handler carried
- *   (WI-15). Every chain was a hand-written restatement of a contract that
+ *   Every chain was a hand-written restatement of a contract that
  *   lives elsewhere, which is how `args.clientId` survived: a read for a field
  *   the contract never declared, that no sender could ever populate, sitting
  *   behind a fallback that was the only branch that ever ran.

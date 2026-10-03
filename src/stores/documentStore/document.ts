@@ -60,7 +60,7 @@ export function setTabExistenceGuard(fn: ((tabId: string) => boolean) | null): v
 }
 
 /**
- * WI-1: invalidate the MCP revision whenever a tab's content actually changes.
+ * Invalidate the MCP revision whenever a tab's content actually changes.
  *
  * The single choke point every content writer passes through — wiring the bump
  * into the Tiptap listener alone left source mode, split panes, workflows,

@@ -62,7 +62,7 @@ pub fn hot_exit_restore(app: AppHandle, session: SessionData) -> Result<(), Comm
 }
 
 /// The inspect payload: every `SessionData` field, flattened, plus the
-/// provenance flag (audit 20260803 §11).
+/// provenance flag.
 ///
 /// Flattened rather than nested so the frontend's existing salvage pass reads
 /// the same object it always did; the schema passes unknown fields through, and
@@ -77,8 +77,8 @@ pub struct InspectedSession {
     session: SessionData,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     recovered_from_backup: bool,
-    /// The main file parsed only after per-item salvage DROPPED content
-    /// (audit 20260906, B5/B6). Same contract as `recovered_from_backup`: the
+    /// The main file parsed only after per-item salvage DROPPED content.
+    /// Same contract as `recovered_from_backup`: the
     /// original bytes are still on disk and must be quarantined before the
     /// restore path clears them. A lossy repair of the main file used to be
     /// reported as ordinary main data, so the evidence was deleted on success.

@@ -9,7 +9,7 @@
  *   case — there is nothing to fetch.
  *
  * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired)
- *   §6 Phase 9 / WI-6.2 — tooltip preview consumer.
+ *   §6 Phase 9 — tooltip preview consumer.
  *
  * Key decisions:
  *   - Cancellation via a mounted-flag, not AbortController, because the
@@ -39,7 +39,7 @@ import { WindowContext } from "@/contexts/WindowContext";
 /**
  * Derive (workflowFile, wsRoot) for resolving `./` action refs.
  *
- * Codex audit HIGH-5 final fix: strictly window-scoped via
+ * Strictly window-scoped via
  * `useWindowLabel()` from WindowContext. We read ONLY the active
  * tab of the current window — no global scan, no doc-length
  * heuristic. Multi-window safe by construction because the hook

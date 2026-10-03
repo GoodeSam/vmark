@@ -103,7 +103,7 @@ export async function collectSiblingReferences(
   await mapWithConcurrency([...onDisk, ...buffered], SIBLING_READ_CONCURRENCY, async (fullPath) => {
     // The subject document's authoritative content is the caller's argument;
     // the on-disk copy may be stale (unsaved edits) and would resurrect the
-    // very images the user just removed. Compared canonically (WI-8c).
+    // very images the user just removed. Compared canonically.
     if (canonicalPathKey(fullPath) === subjectKey) return;
 
     const known = knownContents.get(canonicalPathKey(fullPath));

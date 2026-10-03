@@ -1,4 +1,4 @@
-//! One canonical path, spelled the way the frontend can use it (#250).
+//! One canonical path, spelled the way the frontend can use it.
 //!
 //! `Path::canonicalize` is how this crate turns a name the webview supplied
 //! into the target it actually judged. Handing that target onward — rather

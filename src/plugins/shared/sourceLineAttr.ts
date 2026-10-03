@@ -48,7 +48,7 @@ export function withSourceLine<T extends ExtendableExtension>(extension: T): T {
  * this block in the source (captured during MDAST→PM conversion), or null to
  * inherit the serializer's default. Internal like sourceLine: set only
  * programmatically, never parsed from or rendered to the DOM. Drives
- * blank-line preservation (dev-docs/plans/20260721-blank-line-preservation.md).
+ * blank-line preservation (.claude/adr/plans/20260721-blank-line-preservation.md).
  */
 const blankLinesAttr = {
   blankLinesBefore: {

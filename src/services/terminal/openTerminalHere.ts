@@ -1,7 +1,7 @@
 /**
  * openTerminalHere
  *
- * Purpose: "Open Terminal Here" (F2/WI-4.2) — create a terminal session
+ * Purpose: "Open Terminal Here" (F2) — create a terminal session
  * anchored to a specific directory and reveal the panel. Lives in `services/`
  * rather than in the file-explorer component because both the explorer context
  * menu and (later) any other surface should be able to call it without a

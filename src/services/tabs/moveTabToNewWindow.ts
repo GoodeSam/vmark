@@ -1,7 +1,7 @@
 /**
  * Move a tab out into a new window (#1081 detach flow).
  *
- * Extracted from `useTabContextMenuActions` in WI-DSPL1.5: that file sat
+ * Extracted from `useTabContextMenuActions`: that file sat
  * exactly on its 300-line-limit baseline, and this is the largest self-
  * contained block in it. It is also genuinely a service rather than a
  * callback — a multi-step transfer with an undo path and a

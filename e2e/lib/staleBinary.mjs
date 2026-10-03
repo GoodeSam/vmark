@@ -19,7 +19,7 @@
  * 208286491 → 208383781), so the inode the process is running (its `txt`
  * mapping) stops matching the inode at the path the moment a rebuild lands. That
  * is stateless and catches a replacement that happened before the harness ever
- * looked — a per-pid record of the first-seen hash could not (round 5, #204: it
+ * looked — a per-pid record of the first-seen hash could not (it
  * was also keyed by a pid that the OS reuses). A binary cargo did not rebuild
  * keeps its inode and its bytes, and is left alone; a same-inode rewrite with
  * different bytes is not something this toolchain produces.

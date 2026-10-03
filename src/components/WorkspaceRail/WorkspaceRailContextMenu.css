@@ -3,7 +3,7 @@
  * Tokens only (rule 31); dark theme follows the tokens, no overrides needed.
  */
 
-/* Surface chrome comes from `.vm-menu` (overlay-shared.css, WI-UI3.1). */
+/* Surface chrome comes from `.vm-menu` (overlay-shared.css). */
 .workspace-rail-menu {
   padding: var(--space-1-5);
 }
@@ -27,7 +27,7 @@
   font-family: var(--font-ui);
   font-size: var(--font-size-base);
   text-align: left;
-  cursor: var(--cursor-interactive, default); /* D7, platform-scoped (WI-UA15) */
+  cursor: var(--cursor-interactive, default); /* D7, platform-scoped */
 }
 
 .workspace-rail-menu__item:hover {

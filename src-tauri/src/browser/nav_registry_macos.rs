@@ -1,4 +1,4 @@
-//! The nav delegate's bridge to the `Send` registry (WI-1.7 / WI-1.8). Split from
+//! The nav delegate's bridge to the `Send` registry. Split from
 //! nav_delegate_macos.rs to keep it under the file-size limit; a `#[path]`
 //! submodule of `nav_delegate`, adding inherent methods to `NavDelegate`.
 //!
@@ -39,7 +39,7 @@ mod identity;
 pub struct NavDelegateIvars {
     pub(super) tab_id: String,
     pub(super) app: AppHandle,
-    /// Did the CURRENT provisional navigation follow a server redirect (WI-S2.2)?
+    /// Did the CURRENT provisional navigation follow a server redirect?
     ///
     /// History folds a redirect chain into one entry — the user went to one place, even
     /// though every hop commits. Knowing that requires the real signal, not a timing
@@ -96,7 +96,7 @@ impl NavDelegate {
         let mode = locks::registry(&state).and_then(|reg| reg.automation_mode(&ivars.tab_id));
         if let Some(mode) = mode {
             if !ai_commit_allowed(&state, mode, &ivars.tab_id, url) {
-                // Committed page and authority go together, under one guard (#35).
+                // Committed page and authority go together, under one guard.
                 if let Some(mut reg) = locks::registry(&state) {
                     let _ = reg.clear_committed_url(&ivars.tab_id);
                     state.clear_tab_authority_in(&mut reg, &ivars.tab_id);
@@ -112,7 +112,7 @@ impl NavDelegate {
                 // the last one, so nothing stamped for the old page may stay fresh:
                 // the commit is refused and the tab's authority dropped, the same
                 // fail-closed shape as a disallowed destination. Substituting 0 used
-                // to commit anyway while every stale stamp remained valid (#28).
+                // to commit anyway while every stale stamp remained valid.
                 log::warn!(
                     "[browser] generation bump refused for {:?}: {e:?}; commit refused",
                     ivars.tab_id
@@ -138,7 +138,7 @@ impl NavDelegate {
     }
 
     /// A load STARTED: the committed page and the authority granted against it go
-    /// together, under ONE registry guard (#35) — a command that reads the registry
+    /// together, under ONE registry guard — a command that reads the registry
     /// in a gap between the two would see a page with no authority, or authority
     /// with no page.
     pub(super) fn revoke_for_new_load(&self) {

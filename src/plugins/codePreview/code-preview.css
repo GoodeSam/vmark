@@ -122,7 +122,7 @@
   gap: var(--space-1);
 }
 
-/* Header buttons are canonical `.vm-icon-btn--sm` (WI-UI2.3); only the copy
+/* Header buttons are canonical `.vm-icon-btn--sm`; only the copy
    feedback tints are local. */
 .code-block-edit--success {
   color: var(--success-color);

@@ -101,7 +101,7 @@ export function useExternalFileChanges(): void {
     useDocumentStore.getState().markMissing(targetTabId);
   }, []);
 
-  // Re-point a renamed tab + document; ownership follows the path (WI-13.4).
+  // Re-point a renamed tab + document; ownership follows the path.
   const applyRename = useCallback(
     (tabId: string, newPath: string) => applyExternalRename(windowLabel, tabId, newPath),
     [windowLabel],

@@ -553,7 +553,7 @@ async fn restore_timeout_body(state: &HotExitState, round: RestoreRound) {
 /// `tauri::async_runtime::spawn`, not `tokio::spawn`: restore runs from a
 /// synchronous Tauri command, which has no ambient tokio runtime. Cancellation
 /// only makes a superseded timeout a no-op at the END of its 60s sleep, so the
-/// handle goes to `set_restore_timeout`, which aborts it (audit 20260803 §9).
+/// handle goes to `set_restore_timeout`, which aborts it.
 fn spawn_restore_timeout(app: &AppHandle, round: RestoreRound) {
     let owned = app.clone();
     let handle = tauri::async_runtime::spawn(async move {

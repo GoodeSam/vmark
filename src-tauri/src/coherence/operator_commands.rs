@@ -1,4 +1,4 @@
-//! Forward-operator Tauri surface (Phase 3, WI-3.6). Three commands wiring the
+//! Forward-operator Tauri surface (Phase 3). Three commands wiring the
 //! tested operator layer: `propose` and `preview` are **read-only** (MCP-safe,
 //! R23); `accept` is the **human-only** mutation (D6 — delegated `operator.accept`
 //! is a separate deferred scope, never the `resolve` path).
@@ -146,7 +146,7 @@ pub async fn coherence_operator_accept<R: tauri::Runtime>(
         let preview_classes = structural_classes.into_iter().collect();
         let candidate = candidate.to_candidate();
         let now = now_rfc3339();
-        // #1 (R1): hold the workspace lock across the WHOLE accept — idem lookup,
+        // Hold the workspace lock across the WHOLE accept — idem lookup,
         // base-head revalidation, reproject, and append are one atomic critical
         // section, so no concurrent writer (another accept, a capture, a git
         // reconcile) can move the head between our validation and our append, which

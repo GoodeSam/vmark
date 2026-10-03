@@ -11,7 +11,8 @@
 //!     readable afterwards, is an error, and the caller records nothing. Tauri
 //!     escapes the path before compiling it as a glob, so the refusal is not
 //!     expected to fire; the reachable case is a forbidden pattern, which
-//!     outranks any allow (#481 is the same assertion for single files).
+//!     outranks any allow (`fs_scope::grant_fs_read` makes the same assertion
+//!     for single files).
 //!   - CONFIRMED. Tauri resolves the name again while granting and also allows
 //!     whatever it resolves to at that instant. A root swapped for a link
 //!     between the caller's check and the grant would hand over the link's

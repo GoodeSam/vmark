@@ -70,8 +70,8 @@ function activationFor(terminal: TerminalState, scopeId: string): string | null 
   return visible[0]?.id ?? null;
 }
 
-// Activation goes through the store's ONE transition, withActiveSession
-// (audit R2-6) — a restored session never keeps a stale activity dot, by the
+// Activation goes through the store's ONE transition, withActiveSession:
+// a restored session never keeps a stale activity dot, by the
 // same rule terminalSetActiveSession applies.
 
 export function createTerminalScopeActions(

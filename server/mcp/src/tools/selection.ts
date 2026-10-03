@@ -119,7 +119,7 @@ export function registerSelectionTool(server: VMarkMcpServer): void {
       const tabId = tab.value;
       // Refuse a supplied-but-invalid revision rather than dropping it to
       // `undefined`, which silently disables stale-write protection on the one
-      // action that REPLACES the user's selected text (audit R2 #231).
+      // action that REPLACES the user's selected text.
       const revision = readOptionalRevision(args.expected_revision);
       if (!revision.ok) return VMarkMcpServer.errorResult(revision.error);
       const expected_revision = revision.value;
@@ -153,7 +153,7 @@ export function registerSelectionTool(server: VMarkMcpServer): void {
       // The list comes from SELECTION_ACTIONS, the same constant the schema
       // enum and the tool registry read. Spelling it out here was contract
       // data written twice, so adding a third action would have left this
-      // message telling the caller the surface has two (audit R2 #233) —
+      // message telling the caller the surface has two —
       // exactly how `coherence.ts` already builds its refusal.
       return VMarkMcpServer.errorResult(
         `Invalid action: ${String(action)}. Expected: ${SELECTION_ACTIONS.join(', ')}`,

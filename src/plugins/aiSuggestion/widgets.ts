@@ -63,13 +63,13 @@ export function createGhostText(text: string, isFocused: boolean): HTMLSpanEleme
   return span;
 }
 /**
- * Coherence capture (WI-1.6): report an accepted suggestion to the kernel
+ * Coherence capture: report an accepted suggestion to the kernel
  * after the buffer settles. Dirty state is read BEFORE the apply — it
  * decides exact vs. inferred provenance (spec §8). Fire-and-forget.
  */
 export function captureAcceptedSuggestion(tabId: string, bufferWasDirty: boolean): void {
   // Called synchronously after dispatch: tiptap's onUpdate has already
-  // synced the store, and captureAiEdit snapshots at entry (audit T3) —
+  // synced the store, and captureAiEdit snapshots at entry —
   // a rapid second apply cannot change what this capture records.
   void captureAiEdit({
     tabId,

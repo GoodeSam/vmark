@@ -19,7 +19,7 @@
  *     shared by the whole directory.
  *   - Every open document's live buffer travels with the scan, so closing one
  *     tab cannot delete an image a sibling tab references but has not saved.
- *   - Deletion is decided by TWO scans and their intersection (WI-8b): the
+ *   - Deletion is decided by TWO scans and their intersection: the
  *     first scan does file IO, and an edit landing during it must not be
  *     judged by a stale snapshot. Files go to the system trash, not unlink.
  *   - Never rejects: a cleanup failure must not strand a window the user asked
@@ -102,7 +102,7 @@ export async function cleanupOrphansForClosingTabs(tabIds: string[]): Promise<vo
     }
   }
 
-  // WI-9: another window's unsaved buffer can be the sole reference to an
+  // Another window's unsaved buffer can be the sole reference to an
   // image in these folders. Incomplete evidence protects everything.
   const externalRefKeys = await collectRemoteLiveRefs();
 
@@ -119,7 +119,7 @@ export async function cleanupOrphansForClosingTabs(tabIds: string[]): Promise<vo
       });
       if (first.orphanedImages.length === 0) continue;
 
-      // WI-8b: re-snapshot the world and scan again, then remove only the
+      // Re-snapshot the world and scan again, then remove only the
       // INTERSECTION. The first scan does file IO; an edit landing during it
       // (a paste into a sibling tab) must not be judged by the stale snapshot.
       // The manual prompt already re-scans before deleting — the automatic
@@ -132,7 +132,7 @@ export async function cleanupOrphansForClosingTabs(tabIds: string[]): Promise<vo
       });
       const stillOrphaned = new Set(second.orphanedImages.map((img) => img.fullPath));
       const confirmed = first.orphanedImages.filter((img) => stillOrphaned.has(img.fullPath));
-      // WI-11: a document ANYWHERE in the workspace can reference this asset
+      // A document ANYWHERE in the workspace can reference this asset
       // by absolute or ../ path — documents the directory scan never reads.
       const cleared = await withoutWorkspaceReferenced(confirmed);
       if (cleared.length > 0) {

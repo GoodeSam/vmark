@@ -241,7 +241,7 @@ export class LinkPopupView extends WysiwygPopupView<LinkPopupState> {
     }
 
     if (kind === "external") {
-      // Scheme-allowlisted opener (audit 20260612).
+      // Scheme-allowlisted opener.
       openExternalLink(href).catch((error: unknown) => {
         linkPopupError("Failed to open link:", error);
       });

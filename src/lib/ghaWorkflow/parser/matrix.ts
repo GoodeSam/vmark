@@ -1,4 +1,4 @@
-// WI-1.3 — matrix parsing + expansion.
+// Matrix parsing + expansion.
 //
 // Plan §4.3 — deterministic Cartesian × include × exclude with a 256-cap.
 

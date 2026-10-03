@@ -4,13 +4,13 @@
  * The AI can open tabs but had no verb to close one, and the driver now caps
  * live AI-owned tabs (`MAX_AI_TABS` in `browser_ai_create`): without this an
  * agent that opened eight tabs was stuck. Closing an AI-owned tab is NEVER
- * approval-gated — stopping something is always allowed (the WI-19 lesson) — and
+ * approval-gated — stopping something is always allowed — and
  * a human tab is refused: the AI does not close what the user opened.
  *
  * Closing goes through the tab store so every subscriber of the removal bus
  * (native-view teardown, lease, recorder, pane layout) does its part exactly as
- * for a user-closed tab — and the response WAITS for that teardown (round 3,
- * #44): the bus subscriber destroys the native view fire-and-forget and swallows
+ * for a user-closed tab — and the response WAITS for that teardown:
+ * the bus subscriber destroys the native view fire-and-forget and swallows
  * a final failure, so this used to report `closed` while the WKWebView could
  * still be running. `closeBrowserTabById` joins the teardown and confirms it
  * with the driver; an unconfirmed teardown is `TAB_TEARDOWN_FAILED`, honest about

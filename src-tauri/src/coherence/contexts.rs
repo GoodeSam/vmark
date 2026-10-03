@@ -1,4 +1,4 @@
-//! Context manifests (WI-2b.1; spec §6 revision 1, design-2a.md D1).
+//! Context manifests (spec §6 revision 1, design-2a.md D1).
 //! Pure (ADR-C4 kernel tier): loads `.vmark/contexts/*.json`, validates
 //! the single-inheritance chain, and materializes the Phase 1
 //! `ContextView` — `effective_selection` is the overlay walk feeding
@@ -137,7 +137,7 @@ impl ContextSet {
         while let Some(cid) = cursor {
             // The implicit default is a valid terminal parent even with no
             // manifest — a child pointing `parent: nil` must resolve, not
-            // error as an unknown parent (audit B8).
+            // error as an unknown parent.
             if cid == DEFAULT_CONTEXT_ID && !self.manifests.contains_key(&cid) {
                 break;
             }
@@ -218,11 +218,11 @@ impl ContextSet {
 }
 
 /// A manifest name is safe to use as a filename stem: non-empty, only
-/// alphanumerics (Unicode-aware, so CJK names like `角色` round-trip —
-/// audit #2, matching the Unicode-aware create-time check) plus `._-`,
+/// alphanumerics (Unicode-aware, so CJK names like `角色` round-trip,
+/// matching the Unicode-aware create-time check) plus `._-`,
 /// and never a traversal component. Rejecting path separators keeps a
 /// hand-crafted manifest whose `name` is `../../ledger` from escaping
-/// `.vmark/contexts/` (audit B10) — defense in depth beyond create.
+/// `.vmark/contexts/` — defense in depth beyond create.
 fn safe_manifest_stem(name: &str) -> Result<&str, String> {
     if name.is_empty() || name == "." || name == ".." {
         return Err(format!("unsafe manifest name: {name:?}"));
@@ -240,10 +240,10 @@ fn safe_manifest_stem(name: &str) -> Result<&str, String> {
 /// the only mutable-in-place files under `.vmark/`).
 ///
 /// Through the crate's one atomic writer: the temp file is created `O_EXCL`
-/// with a random name, so a pre-planted symlink is never followed (audit #1)
+/// with a random name, so a pre-planted symlink is never followed
 /// and concurrent writers never collide; it is synced before the rename, the
 /// directory after it, and removed on any failure, so a failed write leaves no
-/// orphan temp behind (audit R3 #1).
+/// orphan temp behind.
 pub fn write_manifest(dir: &Path, m: &ContextManifest) -> Result<(), String> {
     let stem = safe_manifest_stem(&m.name)?;
     std::fs::create_dir_all(dir).map_err(|e| format!("contexts dir: {e}"))?;

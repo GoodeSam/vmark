@@ -1,5 +1,5 @@
 /**
- * Window→workspace registration for MCP routing (WI-3.5 F5).
+ * Window→workspace registration for MCP routing.
  *
  * Purpose: tell the Rust bridge which workspace THIS window has open (the
  *   bridge records it for the window the call comes from), so
@@ -37,18 +37,18 @@ export function startWindowWorkspaceSync(
 ): () => void {
   let last: string | null | undefined;
   // Monotonic per-attempt token so an OLDER failure can't roll back a NEWER
-  // registration (audit #7: register A, →B, →A again, then A's first invoke
+  // registration (e.g. register A, →B, →A again, then A's first invoke
   // fails — `last === root` would wrongly clear the still-valid third A).
   let attempt = 0;
   // Set once on teardown: no new registration fires, no post-teardown
   // rollback resurrects a retry, and a registration that lands late gets
-  // undone (audit #8).
+  // undone.
   let disposed = false;
 
   const register = (root: string | null) => {
     if (disposed || root === last) return; // torn down, or unchanged root
     // Advance optimistically so rapid duplicate changes dedupe without
-    // waiting on the round-trip (audit D7).
+    // waiting on the round-trip.
     last = root;
     const mine = ++attempt;
     void deps
@@ -58,14 +58,14 @@ export function startWindowWorkspaceSync(
       .then(
         () => {
           // Torn down while this was in flight: its success re-registered a
-          // now-closed window on the bridge — undo it (audit #8).
+          // now-closed window on the bridge — undo it.
           if (disposed) void clear();
         },
         (error) => {
           // Roll back only if this is still the latest attempt and we're
           // live, so a failed registration never durably suppresses the
-          // retry on the next change (audit D7) without clobbering a newer
-          // attempt (audit #7).
+          // retry on the next change without clobbering a newer
+          // attempt.
           if (!disposed && mine === attempt) last = undefined;
           coherenceLog("window-workspace registration failed:", error);
         },

@@ -1,4 +1,4 @@
-//! Shell integration setup (WI-3.1, extended by WI-3.3/3.4).
+//! Shell integration setup for zsh and bash.
 //!
 //! Purpose: Materializes the per-shell integration rc that emits OSC 133
 //! command-boundary marks + OSC 7 cwd, and returns what the frontend needs to
@@ -6,7 +6,7 @@
 //! arguments. zsh and bash are supported; other shells return `None` and the
 //! terminal spawns without integration (graceful degrade).
 //!
-//! Why the return type carries `args` (WI-3.3): zsh is hooked purely through
+//! Why the return type carries `args`: zsh is hooked purely through
 //! the environment (`ZDOTDIR`), but bash has no environment hook that applies
 //! to interactive shells — `BASH_ENV` is non-interactive-only — so it must be
 //! spawned as `bash --rcfile <path>`. Rather than special-casing bash in the
@@ -44,7 +44,7 @@ static TMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
 /// zsh integration rc, embedded at compile time.
 const ZSH_INTEGRATION: &str = include_str!("../resources/shell-integration/vmark.zsh");
-/// bash integration rc, embedded at compile time (WI-3.4).
+/// bash integration rc, embedded at compile time.
 const BASH_INTEGRATION: &str = include_str!("../resources/shell-integration/vmark.bash");
 
 /// What the frontend must apply when spawning an integrated shell.
@@ -227,9 +227,9 @@ fn build_integration(
             // rc; `USER_ZDOTDIR` carries the user's real ZDOTDIR (resolved
             // from a login shell — the GUI process env is minimal) so
             // `vmark.zsh` can source their config instead of falling back to
-            // `$HOME` (terminal gap G1, WI-1.2).
+            // `$HOME` (terminal gap G1).
             env: build_zsh_env(dir, user_zdotdir),
-            // zsh needs no args — this is what keeps WI-3.3 byte-identical
+            // zsh needs no args — this is what keeps zsh launches byte-identical
             // for existing users.
             args: Vec::new(),
         },
@@ -270,7 +270,7 @@ fn build_zsh_env(integration_dir: &Path, user_zdotdir: Option<String>) -> BTreeM
 /// the same filesystem). The per-call unique name (PID + monotonic counter)
 /// keeps two concurrent calls from clobbering each other's temp file before the
 /// rename — the final rc is always one writer's complete contents, never
-/// a torn mix (WI-4.6).
+/// a torn mix.
 ///
 /// Atomic, and deliberately NOT durable: nothing is synced. The rc is rewritten
 /// from the embedded script before every shell spawn, so whatever a crash left

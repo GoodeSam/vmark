@@ -2,7 +2,7 @@
  * TerminalTabRename
  *
  * Purpose: The inline rename text box that replaces a terminal tab while the
- * user is editing its name (WI-4.1). Extracted from TerminalTabBar so that
+ * user is editing its name. Extracted from TerminalTabBar so that
  * file keeps its single responsibility and stays under the size limit.
  *
  * Key decisions:

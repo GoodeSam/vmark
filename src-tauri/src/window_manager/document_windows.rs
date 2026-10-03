@@ -18,7 +18,7 @@
 //!     of opening an unscoped untitled doc.
 //!   - Every builder is generic over the Tauri runtime, so the creation
 //!     commands and the second-launch surfacing can be driven on
-//!     `tauri::test::MockRuntime` (#246, #249). Production callers pass the
+//!     `tauri::test::MockRuntime`. Production callers pass the
 //!     Wry handle and infer it.
 
 use super::window_url::build_window_url;
@@ -258,7 +258,7 @@ pub(crate) fn ensure_main_window<R: Runtime>(
 ///
 /// `resolve` returns what the recent entry RESOLVES to, or `None` when it is
 /// no longer a directory — so the value that travels on is the one that was
-/// judged, never the remembered name (#250, audit #490). The check used to be
+/// judged, never the remembered name. The check used to be
 /// a bare `is_dir()` predicate with the original string passed onward, which
 /// is the shape every other path gate here was fixed out of: a name is not a
 /// target, and a recent entry replaced by a symlink between the check and the

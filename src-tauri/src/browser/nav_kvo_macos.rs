@@ -182,7 +182,7 @@ impl NavDelegate {
                     // cannot stamp this view apart from the last one); finish the
                     // revocation under the registry guard, so nothing approved for
                     // the replaced view survives it and no reused id is caught in
-                    // between (#35).
+                    // between.
                     if let Some(mut reg) = locks::registry(&state) {
                         state.clear_tab_authority_in(&mut reg, &ivars.tab_id);
                     }
@@ -193,7 +193,7 @@ impl NavDelegate {
             None => return,
         };
         // R7a: the view the authority was granted against is gone — revoked under
-        // the registry guard, never in a gap after it (#35).
+        // the registry guard, never in a gap after it.
         if let Some(mut reg) = locks::registry(&state) {
             state.clear_tab_authority_in(&mut reg, &ivars.tab_id);
         }

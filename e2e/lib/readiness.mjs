@@ -66,7 +66,7 @@ export const READY_ATTRIBUTE = "data-vmark-window-ready";
  * DIAGNOSTIC ONLY — the attribute is what gates.
  *
  * That distinction is the whole point of this module and was violated by its
- * first version, which gated on `.app-shell` too (audit finding #3). A CSS
+ * first version, which gated on `.app-shell` too. A CSS
  * class is a proxy: rename it in a refactor and readiness becomes permanently
  * unreachable, against an app that is running perfectly. The attribute cannot
  * be true before the shell exists — `WindowProvider` renders `null` until it

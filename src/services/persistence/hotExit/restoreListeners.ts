@@ -4,7 +4,7 @@
  * Purpose: register the RESTORE_COMPLETE / RESTORE_FAILED listeners and hand
  *   back one promise for "how did the restore end", with a timeout.
  *
- * Split out of `restartWithHotExit.ts` (audit 20260804-F10) so that file stays
+ * Split out of `restartWithHotExit.ts` so that file stays
  * inside the ~300-line gate.
  *
  * Key decisions:

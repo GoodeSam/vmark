@@ -96,7 +96,7 @@ pub fn queue_pending_file_opens(
 ///
 /// Keeping the owner's state and the pending queue together lets the
 /// readiness *check* and the queue *insertion* happen in one critical
-/// section. That closes the TOCTOU (WI-0.8, C3) where
+/// section. That closes the TOCTOU where
 /// `get_pending_file_opens` settles the owner and drains the queue
 /// between an emit-side check and its queue insertion — which could otherwise
 /// drop or double-deliver a Finder open. Mirrors the single-lock discipline of

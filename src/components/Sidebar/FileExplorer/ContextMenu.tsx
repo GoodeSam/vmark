@@ -101,7 +101,7 @@ function buildFolderMenuItems(
     { id: "delete", label: labels.delete, icon: <Trash2 size={14} />, separator: true },
     { id: "copyPath", label: labels.copyPath, icon: <Copy size={14} /> },
     { id: "revealInFinder", label: labels.revealLabel, icon: <FolderOpen size={14} /> },
-    // Folders only (WI-4.2) — "here" has no meaning for a file, and offering
+    // Folders only — "here" has no meaning for a file, and offering
     // it on one would just open the parent, which is not what was clicked.
     {
       id: "openTerminalHere",
@@ -216,7 +216,7 @@ export function ContextMenu({ type, position, onAction, onClose }: ContextMenuPr
             className="context-menu-item"
             // The roving-focus hook already SKIPS disabled items; the
             // attribute is what stops a mouse click from firing the action
-            // anyway (WI-4.2 — "Open Terminal Here" at the session cap).
+            // anyway ("Open Terminal Here" at the session cap).
             disabled={item.disabled}
             aria-disabled={item.disabled}
             onClick={() => handleItemClick(item.id)}

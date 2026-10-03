@@ -5,7 +5,7 @@
  *
  * `/note/*` serves only paths the walker admitted, and the walker admits
  * markdown — so a local image resolved to `/note/picture.png` and returned 404
- * even with a valid session (audit 20260906, MCP-C03). Removing the index gate
+ * even with a valid session. Removing the index gate
  * would have been the wrong fix: that gate is what stops a direct `/note/` URL
  * reaching hidden, ignored or non-document files. Local media needs its own
  * route with its own, deliberately narrow, policy.

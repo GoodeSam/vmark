@@ -1,4 +1,4 @@
-// WI-3.2 — Standalone SVG (.svg) adapter.
+// Standalone SVG (.svg) adapter.
 //
 // CodeMirror language: @codemirror/lang-xml.
 // Validator: well-formedness check (must start with <svg or <?xml,
@@ -28,7 +28,7 @@ import type {
 export const svgValidator: Validator = (content) => {
   if (content.length === 0) return [];
 
-  // One parse, one notion of well-formed (WI-4.7). This file used to run its
+  // One parse, one notion of well-formed. This file used to run its
   // own DOMParser twice — once for the parsererror check and again for the root
   // element — alongside renderSvgBlock's third, with two independently
   // maintained definitions of "valid SVG".

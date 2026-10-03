@@ -21,7 +21,7 @@ export interface CloseSaveContext {
   filePath: string | null;
   content: string;
   /** DIVERGENT rather than dirty: the user kept local content after an
-   *  external edit (WI-2) — the prompt says the file changed on disk. */
+   *  external edit — the prompt says the file changed on disk. */
   divergent?: boolean;
 }
 
@@ -75,7 +75,7 @@ export function multiSaveButtons(): { saveAll: string; dontSave: string; cancel:
   };
 }
 
-// WI-1B.8 — derive Save dialog filters per-tab from the format registry.
+// Derive Save dialog filters per-tab from the format registry.
 // Untitled tabs default to markdown (the canonical "Save As" flow). Filter
 // NAMES resolve through i18n at dialog time: the adapter carries a key, not a
 // literal, so the name is not frozen in English at module-load time. The
@@ -128,7 +128,7 @@ export function toSafeFilename(title: string): string {
 
 /**
  * Ensure filename ends with the default extension for `filePath`'s format.
- * Untitled tabs default to markdown (.md). WI-1B.8 + WI-1B.9 — was
+ * Untitled tabs default to markdown (.md). This used to be
  * hardcoded ".md".
  */
 export function ensureFormatExtension(

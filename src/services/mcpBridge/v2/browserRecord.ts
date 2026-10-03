@@ -1,5 +1,5 @@
 /**
- * MCP v2 `vmark.browser.workflow_record` handler (WI-NB7.3) — the record surface.
+ * MCP v2 `vmark.browser.workflow_record` handler — the record surface.
  *
  * `recordOp: "start"` is CONSENT-GATED by the `record` operation (NEVER_GRANTABLE,
  * so a fresh per-call approval every time — recording the user's own actions is
@@ -86,7 +86,7 @@ function makeDeps(): RecorderDeps {
  * reservation is taken BEFORE the first await and released in `finally`, so a
  * start that fails at any stage — refused consent, a driver that will not arm, a
  * recorder that will not open the session — leaves neither a session nor a
- * reservation behind, and the next start runs the whole flow again (round 3, #65).
+ * reservation behind, and the next start runs the whole flow again.
  */
 const starting = new Set<string>();
 
@@ -115,7 +115,7 @@ async function startRecordingReserved(id: string, tab: BrowserTarget, site: stri
   // The shared approval machine: `record` is never grantable, so this prompts per
   // call, and the driver's mint is awaited before arming — the authoritative
   // `browser_eval` used to race the push and refuse a recording the user had just
-  // approved (audit A-04).
+  // approved.
   if ((await authorizeOperation(id, tab, { operation: RECORD_OP })) !== "authorized") return;
 
   try {

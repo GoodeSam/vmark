@@ -33,7 +33,7 @@ import { useRevisionStore } from "@/stores/documentStore";
  * Hook the editor to update revisions on document edits.
  * Should be called once when the editor is initialized.
  *
- * `tabId` scopes the revision to this editor's document (WI-0.10, C5). The
+ * `tabId` scopes the revision to this editor's document. The
  * editor remounts per tab, so the active tab at mount is this editor's tab.
  */
 export function initializeRevisionTracking(editor: Editor, tabId: string): void {

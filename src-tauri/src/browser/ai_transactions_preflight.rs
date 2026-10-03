@@ -18,7 +18,7 @@ use serde_json::json;
 /// literal (`blocked_destination`: `permission-denied`, `SSRF_BLOCKED`,
 /// `kind: ssrf-blocked`), plus the normalized host and why
 /// (`reason: resolves-private | unresolved`) — the MCP client already matches
-/// on that token, and a name and its literal are one policy (round 4, #7/#8).
+/// on that token, and a name and its literal are one policy.
 pub(crate) fn resolved_destination_refused(refused: &DestinationRefused) -> CommandError {
     let error = blocked_destination();
     let mut detail = error

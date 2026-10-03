@@ -92,7 +92,7 @@ export const useContentServerStore = create<ContentServerStore>((set) => ({
     }),
 
   // The previous run's `/__auth?t=<nonce>` link dies with its child, so a new
-  // start drops it here (audit #715). Left in place, the KB panel kept a URL
+  // start drops it here. Left in place, the KB panel kept a URL
   // naming the OLD port and a spent nonce as observable state right through
   // `setRunning`, until the fresh auth URL settled — and if that fetch failed
   // the panel would have loaded the dead link.

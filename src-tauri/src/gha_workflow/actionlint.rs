@@ -11,7 +11,7 @@
 //! did. The caller passes the login-shell PATH — a macOS GUI launch inherits a
 //! minimal one that holds neither.
 //!
-//! Plan ADR-7 + WI-5.4. Cross-platform per AGENTS.md: never use bare
+//! Plan ADR-7. Cross-platform per AGENTS.md: never use bare
 //! `Command::new`; route through the existing
 //! `ai_provider::spawn::build_command` pattern.
 //!

@@ -19,13 +19,13 @@
  *   (Welcome screen), Cmd+W closes the window itself via handleCloseRequest.
  *
  * Key decisions:
- *   - The active close is a SHARED PROMISE, not a boolean guard (WI-1).
+ *   - The active close is a SHARED PROMISE, not a boolean guard.
  *     Duplicate triggers join it and get the real outcome. Critically, an
  *     `app:quit-requested` arriving during an in-flight close now awaits that
  *     close and sends `cancel_quit` when it fails — the boolean guard returned
  *     early without ever answering Rust, leaving quit permanently stuck once
  *     the first close was cancelled.
- *   - Listener setup carries a disposed flag and a rejection handler (WI-8g):
+ *   - Listener setup carries a disposed flag and a rejection handler:
  *     a listener resolving after unmount is unregistered immediately instead
  *     of leaking, and a rejected `listen()` is logged instead of becoming an
  *     unhandled rejection.
@@ -123,7 +123,7 @@ function readQuitRequest(payload: unknown): QuitRequest | null {
  */
 export function useWindowClose() {
   const windowLabel = useWindowLabel();
-  /** The in-flight close, shared by every trigger (WI-1/WI-7 shape). */
+  /** The in-flight close, shared by every trigger. */
   const activeCloseRef = useRef<Promise<boolean> | null>(null);
   /** When that attempt started — the basis for the stall check below. */
   const activeCloseStartedAtRef = useRef<number>(0);
@@ -178,7 +178,7 @@ export function useWindowClose() {
 
   useEffect(() => {
     const currentWindow = getCurrentWebviewWindow();
-    // WI-8g: listeners resolving AFTER unmount are unregistered on the spot —
+    // Listeners resolving AFTER unmount are unregistered on the spot —
     // without this, React Strict Mode's first mount leaks its listeners for
     // the lifetime of the window.
     let disposed = false;
@@ -229,7 +229,7 @@ export function useWindowClose() {
       // app:quit-requested (Cmd+Q, Save All and Quit). Joins any in-flight
       // close via the shared promise, and — decisively — answers Rust either
       // way: without the cancel_quit on failure, a cancelled close left
-      // quit_in_progress set and Cmd+Q dead for the rest of the session (WI-1).
+      // quit_in_progress set and Cmd+Q dead for the rest of the session.
       await track(
         currentWindow.listen<unknown>("app:quit-requested", voidAsync(async (event) => {
           const request = readQuitRequest(event.payload);

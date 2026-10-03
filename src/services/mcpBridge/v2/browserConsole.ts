@@ -1,5 +1,5 @@
 /**
- * MCP v2 console tool (WI-P7.1): `console` — read the tab's captured `console.*`
+ * MCP v2 console tool: `console` — read the tab's captured `console.*`
  * output for debugging a page the AI is driving.
  *
  * READ-CLASS: it reads the shared DOM ring buffer (populated by the page-world

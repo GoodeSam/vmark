@@ -1,4 +1,4 @@
-// WI-5.1 — package.json schema detector + dependency-tree renderer.
+// package.json schema detector + dependency-tree renderer.
 //
 // JSON adapter wires this detector. Filename match wins (ADR-5
 // path-first); content fallback catches manifests with non-standard

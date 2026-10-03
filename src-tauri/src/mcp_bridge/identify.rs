@@ -4,9 +4,9 @@
 //! and in connect/disconnect logs, and it deliberately does not touch
 //! `ClientConnection::principal`: a client may send `identify` at any time and
 //! as often as it likes, and it used to be able to name itself into another
-//! client's delegations that way (audit 20260728 §2.1).
+//! client's delegations that way.
 //!
-//! Split out of `server.rs` (#376/#381), and tightened on the way (#375):
+//! Split out of `server.rs`, and tightened on the way:
 //!
 //!   - a payload that does not parse is LOGGED, not discarded in silence — it
 //!     is a client speaking a protocol this build does not, and the only way

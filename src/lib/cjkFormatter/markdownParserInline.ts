@@ -128,7 +128,7 @@ export function detectInlineSpanRegions(text: string, regions: ProtectedRegion[]
   // 11. Inline math: $...$ (but not $$, and not escaped \$).
   //
   //     The padding rule is micromark's, and it is the whole reason this is
-  //     not a naive `\$[^$\n]+\$` (WI-CJKF4.1): content may be padded with one
+  //     not a naive `\$[^$\n]+\$`: content may be padded with one
   //     space on BOTH sides, but one-sided padding is not math at all. Without
   //     it, `价格是 $100 和 $200 元` and `cost $5, tax $1` were "protected" —
   //     which skipped the CJK rules inside them AND made the space in front of

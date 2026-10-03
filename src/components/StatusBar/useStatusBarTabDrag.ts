@@ -117,7 +117,7 @@ export function useStatusBarTabDrag({ tabs, windowLabel, tabBarRef, onActivateTa
 
   const handleReorder = useCallback(
     (tabId: string, dropIdx: number) => {
-      const rawTabs = useTabStore.getState().tabs[windowLabel] ?? []; // WI-12.4
+      const rawTabs = useTabStore.getState().tabs[windowLabel] ?? []; // flat store order, hidden instances included
       const { plan, tab, fromFlat, toFlat } =
         planVisibleReorderToFlat(rawTabs, visibleWindowTabs(windowLabel), tabId, dropIdx);
       if (!tab) return;

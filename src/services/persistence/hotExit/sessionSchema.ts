@@ -1,5 +1,5 @@
 /**
- * Zod schemas for the hot-exit session read boundary (WI-3).
+ * Zod schemas for the hot-exit session read boundary.
  *
  * Purpose: structural validation of persisted session payloads BEFORE they
  * reach migration/restore. The payload crosses an IPC boundary (Rust reads the
@@ -96,7 +96,7 @@ export const sessionEnvelopeSchema = z.looseObject({
 export const workspaceStateSchema = z.union([z.looseObject({}), z.null()]);
 
 /**
- * Per-instance UI state (WI-9.4 opaque field). Mirrors the hydrate guard in
+ * Per-instance UI state (an opaque WindowState field). Mirrors the hydrate guard in
  * workspaceInstanceUiStore (`isValidInstanceUiState`) so the boundary is
  * exactly as strict as the store — plus passthrough for unknown fields.
  */

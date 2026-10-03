@@ -2,8 +2,8 @@
  * Viewport clamping for the workspace rail's context menu.
  *
  * Purpose: keep an anchored menu fully on screen, and KEEP it there. The
- * component recomputed the clamp only when the anchor point changed (audit R3
- * #654/#656), so a window resize under an open menu, or a menu that grew after
+ * component recomputed the clamp only when the anchor point changed,
+ * so a window resize under an open menu, or a menu that grew after
  * its translated labels laid out, left it hanging off the bottom or right edge
  * with no way to reach the items. Both inputs — the viewport and the menu's own
  * box — are now observed.

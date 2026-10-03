@@ -14,7 +14,7 @@
  * @coordinates-with plugins/detailsBlock.ts — parses <summary> text with inline formatting
  * @coordinates-with parser/escapeMarkers.ts — escaped custom markers, as in the document parse
  * @coordinates-with mdastToProseMirror.ts — consumers convert resulting MDAST to PM nodes
- * The processor comes from the shared `inline-summary` dialect (WI-3.1), so
+ * The processor comes from the shared `inline-summary` dialect, so
  * this parser cannot drift from the others on what `~x~` or `==x==` mean.
  *
  * @module utils/markdownPipeline/inlineParser
@@ -44,7 +44,7 @@ const NEEDS_PARSING = /[*_`~[\]=+^&\\<:@.]/;
 /**
  * The `inline-summary` dialect — the smallest that still has inline marks.
  * Built from the shared descriptors so it cannot drift from the others on
- * what `~x~` or `==x==` mean (WI-3.1). The plugin set is fixed, so it is
+ * what `~x~` or `==x==` mean. The plugin set is fixed, so it is
  * built once.
  */
 let summaryProcessor: ReturnType<typeof buildProcessorForMode> | undefined;

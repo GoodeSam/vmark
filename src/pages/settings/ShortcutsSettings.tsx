@@ -50,7 +50,7 @@ export function ShortcutsSettings() {
 
   // Every definition stays listed, including the ones with no effective key.
   // An unbound shortcut renders as "Unassigned" and is bound from here like any
-  // other (WI-FL3.13). The pane used to filter those rows out, so a definition
+  // other. The pane used to filter those rows out, so a definition
   // that ships unbound (or one the user had cleared) could never be given a key
   // again without a JSON import.
   const unassignedLabel = t("shortcuts.unassigned");

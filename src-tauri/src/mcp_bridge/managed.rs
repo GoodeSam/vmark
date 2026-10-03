@@ -1,4 +1,4 @@
-//! The MCP bridge's Tauri-managed state (WI-20).
+//! The MCP bridge's Tauri-managed state.
 //!
 //! Everything the bridge mutates at runtime lives on one struct that `lib.rs`
 //! hands to `.manage()`: the connection/pending tables, the server's shutdown
@@ -148,7 +148,7 @@ impl McpBridgeState {
     /// (`asserted_principal`) returned `identity.name` from the client's own
     /// `identify` message, so any token-holder could claim another client's
     /// grants and have the ratification receipt record that client as the
-    /// actor (audit 20260728 §2.1). See `principal.rs` for the mechanism and
+    /// actor. See `principal.rs` for the mechanism and
     /// its honest boundary.
     ///
     /// A client id with no live connection resolves to

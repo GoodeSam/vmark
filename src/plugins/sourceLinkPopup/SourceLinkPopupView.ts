@@ -37,7 +37,7 @@ export class SourceLinkPopupView extends SourcePopupView<LinkPopupState> {
 
   constructor(view: EditorView, store: StoreApi<LinkPopupState>) {
     super(view, store);
-    // shouldReshow port (WI-1 / D1, from WYSIWYG commit c89c1656): an open
+    // shouldReshow port (D1, from WYSIWYG commit c89c1656): an open
     // popup retargeted at a different link range must refresh its fields, or
     // the input keeps the previous link's URL while the store already points
     // at the new range — saving would write URL A over link B. The base
@@ -106,7 +106,7 @@ export class SourceLinkPopupView extends SourcePopupView<LinkPopupState> {
   }
 
   /** Apply store state to the input and bookmark-mode chrome. Shared by the
-   *  fresh-open path (onShow) and the retarget refresh (WI-1). */
+   *  fresh-open path (onShow) and the retarget refresh. */
   private applyState(state: LinkPopupState): void {
     this.isBookmark = state.href.startsWith("#");
 

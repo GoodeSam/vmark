@@ -37,7 +37,7 @@ interface GenieEntry {
   path: string;
   source: string;
   category: string | null;
-  /** WI-7.1: discriminator for picker dispatch. */
+  /** Discriminator for picker dispatch. */
   kind?: "markdown" | "workflow";
 }
 

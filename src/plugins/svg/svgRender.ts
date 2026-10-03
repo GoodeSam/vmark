@@ -4,7 +4,7 @@
  * Validates that a code block's content is well-formed SVG.
  * Unlike mermaid (DSL → SVG), the content IS the SVG — just validate it.
  *
- * `parseSvg` is the single parse implementation (WI-4.7). The `.svg` format
+ * `parseSvg` is the single parse implementation. The `.svg` format
  * adapter previously carried its own DOMParser + `parsererror` check, so the
  * same document was parsed twice with two independently maintained notions of
  * "well-formed". Both now call this; they differ only in how they PRESENT the

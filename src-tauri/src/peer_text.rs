@@ -5,7 +5,7 @@
 //! arguments and event payloads, a path handed over by Finder or argv.
 //! Interpolating one into a log with `{}` lets it carry NEWLINES — so its
 //! author can write log lines of their own, in VMark's own format, and a
-//! reader cannot tell them from the app's (#377). Nothing bounds them either,
+//! reader cannot tell them from the app's. Nothing bounds them either,
 //! so a megabyte value is a megabyte of log.
 //!
 //! Three answers, because the destinations want different things:

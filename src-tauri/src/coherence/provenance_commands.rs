@@ -1,4 +1,4 @@
-//! Provenance IPC surface + index queries (WI-3.1/3.2, split from
+//! Provenance IPC surface + index queries (split from
 //! `provenance.rs` for the file-size gate).
 
 use super::blocking::with_kernel;

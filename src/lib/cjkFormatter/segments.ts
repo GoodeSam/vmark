@@ -32,7 +32,7 @@ import type { ProtectedRegion } from "./types";
  * `使用 \`printf\` 函数` sat at the end of the segment `使用 ` and was deleted as
  * end-of-line trailing whitespace: a CJK/Latin spacer deleting CJK/Latin
  * spacing, on every inline code span, image, wiki link, footnote reference,
- * inline math span and HTML tag in the document (WI-CJKF2.1).
+ * inline math span and HTML tag in the document.
  */
 export interface TextSegment {
   start: number;

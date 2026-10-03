@@ -60,7 +60,7 @@ export function findProtectedRegions(
   // 1. Frontmatter (must be at start of document).
   //    Both delimiters: YAML `---` and TOML `+++`. TOML was missing, so a Hugo
   //    post's `title = "中文"` lost its straight quotes to smart-quote
-  //    conversion and stopped parsing (WI-CJKF2.3). The empty-block form
+  //    conversion and stopped parsing. The empty-block form
   //    (`+++\n+++`) is legal and has no body, hence the `*` alternative.
   const frontmatterMatch = text.match(
     /^(---|\+\+\+)\r?\n(?:[\s\S]*?\r?\n)?\1(?=\r?\n|$)/
@@ -90,7 +90,7 @@ export function findProtectedRegions(
   }
 
   // 2. Fenced code blocks (``` or ~~~), in one pass over the lines. An
-  //    unclosed fence claims the rest of the document (WI-CJKF2.2); see
+  //    unclosed fence claims the rest of the document; see
   //    fencedCode.ts for the closing rule.
   regions.push(...findFencedCodeRegions(text));
 

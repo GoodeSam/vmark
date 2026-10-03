@@ -31,7 +31,7 @@
 //!   - Best-effort: per-entry failures are logged and counted, never fatal.
 //!     The workspace open must succeed even if quarantine cannot be cleared.
 //!   - Registered-extension only: matches `SUPPORTED_EXTENSIONS` from the
-//!     format registry. Phase 1B (WI-1B.16) extended the scope from
+//!     format registry. Phase 1B extended the scope from
 //!     markdown-only so newly-supported formats reach the same Finder
 //!     "Open With" guarantee.
 //!

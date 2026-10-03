@@ -72,7 +72,7 @@ pub async fn connected_clients(bridge: &McpBridgeState) -> Vec<ConnectedClientIn
         .collect()
 }
 
-/// F5 (WI-3.5): register (or clear) the calling window's open-workspace root
+/// F5: register (or clear) the calling window's open-workspace root
 /// so the router can send workspace-scoped requests to the owning window. The
 /// frontend calls this on workspace open (Some) and close (None). The window
 /// is the caller, never a label: one window could otherwise claim another's

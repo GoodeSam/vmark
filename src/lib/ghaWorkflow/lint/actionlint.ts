@@ -1,4 +1,4 @@
-// WI-5.3 — frontend wrapper around the Rust gha_lint Tauri command.
+// Frontend wrapper around the Rust gha_lint Tauri command.
 //
 // Calls the optional actionlint binary via Rust. Three outcomes are
 // possible (mirroring the Rust LintResult enum):

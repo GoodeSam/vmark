@@ -2,7 +2,7 @@
  * revealTerminalSession
  *
  * Purpose: The one place that turns "I want a terminal session" into a live,
- * visible one. Both `openTerminalHere` (WI-4.2) and `runInTerminal` (WI-4.3)
+ * visible one. Both `openTerminalHere` and `runInTerminal`
  * need the same steps — pick or create a session, re-read the store, reveal
  * the panel — and had grown near-duplicate copies of them.
  *

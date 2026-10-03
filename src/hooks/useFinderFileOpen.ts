@@ -61,7 +61,7 @@ export function useFinderFileOpen(): void {
      * empty tab or a silent no-op.
      */
     const toastOpenFailure = (error: unknown) => {
-      // Two-line toast (WI-UI4.4): message first, the system error as detail.
+      // Two-line toast: message first, the system error as detail.
       // A cause VMark diagnosed is translated; any other error goes through raw and errorDetail normalizes it.
       toast.errorDetail(i18n.t("dialog:toast.failedToOpenFile"), openFailureDetail(error));
     };

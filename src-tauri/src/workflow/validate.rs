@@ -18,7 +18,7 @@ use crate::command_error::{CommandError, ErrorCode};
 use crate::localized_error;
 use std::path::PathBuf;
 
-/// Largest workflow document `run_workflow` will parse (#520). A workflow is
+/// Largest workflow document `run_workflow` will parse. A workflow is
 /// a few kilobytes of YAML; the same cap `read_genie` applies to the file a
 /// workflow genie is READ from, so the two halves of the same path agree.
 pub(super) const MAX_WORKFLOW_YAML_BYTES: u64 = crate::genies::commands::MAX_GENIE_BYTES;
@@ -37,7 +37,7 @@ pub(super) fn validate_document(
             "errors.workflow.emptyYaml"
         ));
     }
-    // Bounded BEFORE the parse (#520). Every other bound here — the 50 steps,
+    // Bounded BEFORE the parse. Every other bound here — the 50 steps,
     // the graph check — is read off a deserialized document, so the parser has
     // already run by the time any of them can refuse: a YAML alias bomb
     // (`a: &x [...]` referenced from itself repeatedly) expands during
@@ -53,7 +53,7 @@ pub(super) fn validate_document(
     }
 
     // Canonical, so a relative or symlinked root reaches the sandbox as the
-    // absolute path its containment checks compare against (#261).
+    // absolute path its containment checks compare against.
     let workspace = std::fs::canonicalize(workspace_root)
         .ok()
         .filter(|p| p.is_dir())
@@ -83,7 +83,7 @@ pub(super) fn validate_document(
     }
 
     // Validate supported features — reject only what the runner truly can't
-    // handle yet. `genie/*` is supported (WI-2.2); webhooks are not.
+    // handle yet. `genie/*` is supported; webhooks are not.
     for (i, step) in workflow.steps.iter().enumerate() {
         let step_id = step.id.as_deref().unwrap_or("(unnamed)");
         if step.uses.starts_with("webhook/") {
@@ -96,7 +96,7 @@ pub(super) fn validate_document(
         }
     }
 
-    // The dependency graph is validated HERE, not left to the runner (#522).
+    // The dependency graph is validated HERE, not left to the runner.
     // A duplicate id, an unknown `needs:` target or a cycle makes
     // `topological_sort` fail. Left to the runner, that failure arrives after
     // this command has already returned `Ok` with an execution id: the runner
@@ -107,7 +107,7 @@ pub(super) fn validate_document(
     // and no run is spawned.
     super::runner::topological_sort(workflow.steps.clone()).map_err(CommandError::invalid_input)?;
 
-    // And a save target the pre-run snapshot cannot identify (#521/#551).
+    // And a save target the pre-run snapshot cannot identify.
     super::prepare::reject_dynamic_save_paths(&workflow)?;
 
     Ok((workflow, workspace))

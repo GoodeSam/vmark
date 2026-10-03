@@ -52,7 +52,7 @@ function applyEscapeResult(
     const tr = state.tr.setSelection(escapeResult);
     // Clear all escapable mark types present in the schema.
     // Different cursors may be in different marks, so we can't rely
-    // on the primary cursor's marks alone (#10).
+    // on the primary cursor's marks alone.
     for (const name of ESCAPABLE_MARK_NAMES) {
       const markType = state.schema.marks[name];
       if (markType) {

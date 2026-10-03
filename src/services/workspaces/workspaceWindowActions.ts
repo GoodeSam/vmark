@@ -59,7 +59,7 @@ export async function moveWorkspaceInstanceToNewWindow(
     // WI-TS2.3 (D-T6): PTY/xterm state cannot cross webviews, so the moved
     // instance's terminal sessions are killed in the SOURCE, strictly after
     // the ack (the timeout/cancel path above returns before reaching here and
-    // kills nothing). The shared finalizer (audit #26) also cleans its
+    // kills nothing). The shared finalizer also cleans its
     // closed-tab history, keeps the placeholder/empty-window invariants, and
     // fully hydrates the promoted successor when the moved instance was
     // active. Per-instance UI/pane snapshots deliberately stay: rail-plan gap

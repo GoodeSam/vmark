@@ -120,7 +120,7 @@ export type CharSequence = { readonly length: number; readonly [index: number]: 
 /**
  * Nearest non-space character to the left of `pos` (handles surrogate pairs).
  *
- * `skipSpaces` is FALSE for punctuation conversion (WI-CJKF3.1): a mark
+ * `skipSpaces` is FALSE for punctuation conversion: a mark
  * separated from the CJK character by a space must not become fullwidth,
  * because fullwidth punctuation carries its own sidebearing and is never
  * preceded by a space in any CJK orthography. Skipping produced

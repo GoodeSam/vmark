@@ -3,7 +3,7 @@
  *
  * Purpose: Central save logic — normalizes content (line endings, hard breaks),
  * re-emits the document's BOM (decision D1), writes to disk, updates stores
- * with the dual save snapshots (WI-1.4), records history snapshots, and
+ * with the dual save snapshots, records history snapshots, and
  * manages pending save tracking for file watcher coordination.
  *
  * Key decisions:
@@ -39,7 +39,7 @@
  * @coordinates-with documentStore.ts — markSaved/markAutoSaved state updates
  * @coordinates-with serializeByPath.ts — the per-path save queue
  * @coordinates-with saveTargetClaim.ts — per-DOCUMENT identity ordering, which
- *     the per-path queue cannot provide (audit 20260906, F3)
+ *     the per-path queue cannot provide
  * @coordinates-with saveHistorySnapshot.ts — version history snapshots
  * @coordinates-with saveOutcome.ts — who asked for a save and how it ended
  * @coordinates-with saveCapture.ts — fire-and-forget provenance capture, one per
@@ -103,7 +103,7 @@ function parseParentMissingError(error: unknown): string | null {
  * detected state plus user settings, and apply them to produce the bytes that
  * will be written to disk.
  *
- * @public — exported for the Phase 1 all-ingress matrix (WI-1.9), which proves
+ * @public — exported for the Phase 1 all-ingress matrix, which proves
  * round-trip fidelity against the REAL save pipeline rather than a re-implementation
  * that could drift from it.
  */
@@ -165,7 +165,7 @@ function handleWriteError(
   // a notification every interval. The next manual save (or an external
   // signal like the file becoming missing) will surface the problem.
   if (saveType === "manual") {
-    // Two-line toast (WI-UI4.4): paths/permission details as the detail.
+    // Two-line toast: paths/permission details as the detail.
     // Raw error — errorDetail owns the normalization (commandErrorMessage,
     // so a typed rejection cannot render "[object Object]").
     toast.errorDetail(i18n.t("dialog:toast.failedToSaveGeneric"), error);
@@ -227,7 +227,7 @@ function submitSave(
   // Claimed HERE — at submission, outside the per-path queue. Path
   // serialization orders writes to one file; it cannot order two saves of one
   // DOCUMENT to different files, which is exactly the autosave-then-Save-As
-  // case (audit 20260906, F3). Claiming at submission also means the user's
+  // case. Claiming at submission also means the user's
   // most recent choice wins even if its write finishes first.
   const claim = claimSaveTarget(tabId);
   return serializeByPath(normalizePath(path), () =>

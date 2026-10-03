@@ -6,7 +6,7 @@
  *   component, `StepWithSection`.
  *
  * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired) §6
- *   Phase 7 / WI-7.1 + WI-7.2.
+ *   Phase 7.
  *
  * Key decisions:
  *   - `uses:` is read-only in this form (Phase 7). Changing the action
@@ -35,7 +35,7 @@ interface StepFormProps {
   /** The PRE-EDIT step — what a field (and a `with:` row) compares itself
    *  against to decide the user has reverted it. `step` is the preview and
    *  already carries this step's queued edits, so comparing against it
-   *  cancelled the edit just committed (audit R2, #1020). Defaults to `step`,
+   *  cancelled the edit just committed. Defaults to `step`,
    *  which is only the same thing while nothing is queued. */
   baseline?: StepIR | undefined;
   /** Total number of steps in this job — used to render N of M.

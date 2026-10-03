@@ -1,4 +1,4 @@
-//! Native screenshot capture for the browser surface (WI-P1.1, macOS).
+//! Native screenshot capture for the browser surface (macOS).
 //!
 //! Included via `#[path]` from surface_macos.rs; `super::` is that module.
 //!

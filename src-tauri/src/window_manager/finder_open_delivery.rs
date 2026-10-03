@@ -79,7 +79,7 @@ pub(crate) fn bring_up_queue_owner<R: tauri::Runtime>(app: &tauri::AppHandle<R>)
 
 /// Bring `window` to the front, whatever state it is in.
 ///
-/// The ONE copy of the reveal sequence (#480). `single_instance::surface_a_window`
+/// The ONE copy of the reveal sequence. `single_instance::surface_a_window`
 /// carried a second one — same three calls, same order, and its own three log
 /// lines — so a fix to either was a divergence from the other, on the two
 /// paths a user reaches by the same gesture: double-clicking a file, and

@@ -1,4 +1,4 @@
-// WI-3.3 — Standalone HTML (.html / .htm) adapter.
+// Standalone HTML (.html / .htm) adapter.
 //
 // Per ADR-4 the preview renders inside <iframe sandbox="" srcdoc={...}>
 // with an EMPTY sandbox allow-list (no allow-scripts, no
@@ -12,7 +12,7 @@
 //
 // Defense-in-depth: DOMPurify sanitizes the content first, removing
 // script tags + javascript: URLs + event handlers before the iframe
-// renders anything. WI-3.4 (security review) is the gating sign-off
+// renders anything. A security review is the gating sign-off
 // before this adapter is considered production-ready; until then the
 // adapter ships in code but is marked UNVERIFIED in the file header.
 //

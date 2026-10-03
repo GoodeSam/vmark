@@ -1,5 +1,5 @@
 /**
- * browserWaitForPoll — the pieces of `vmark.browser.wait_for` (round 3, #71):
+ * browserWaitForPoll — the pieces of `vmark.browser.wait_for`:
  * request validation, the URL poll answered from the webview mirror, and the eval
  * poll raced against the request deadline. Each is a function on its own, with the
  * handler's gates and responses kept out, so each is tested for what it decides.
@@ -11,7 +11,7 @@
  * changed: an attachment is per page).
  *
  * The eval poll honours the deadline by RACING each poll against it, not by
- * refusing to poll near it (round 2, #70): the native eval has its own timeout
+ * refusing to poll near it: the native eval has its own timeout
  * (seconds on a busy page), so a poll may answer after the request budget — a late
  * answer would land after the bridge deadline as a redelivery, not as a result.
  * The abandoned poll's outcome is discarded and its rejection swallowed (nothing is
@@ -36,7 +36,7 @@ const DEADLINE_PASSED: unique symbol = Symbol("deadline-passed");
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 /** A wait mode: a page condition checked by eval, or a URL check answered from
- *  the webview mirror without touching the page (WI-NB1.4). */
+ *  the webview mirror without touching the page. */
 type WaitMode = { kind: "script"; condition: WaitCondition } | { kind: "url"; needle: string };
 
 interface WaitRequest {
@@ -72,7 +72,7 @@ function readCondition(wire: WaitForRead["wire"]): WaitMode | null {
  * Validate the wait request: a bounded timeout (defaulting to the single wait
  * budget), exactly one condition, and — for `urlContains` — a needle that can
  * match the REDACTED url at all (query and fragment are stripped so a redirect-set
- * token cannot be probed, audit A-06; a `?` or `#` in the needle can never match).
+ * token cannot be probed; a `?` or `#` in the needle can never match).
  * A malformed `timeoutMs` is refused, never read as absent (which would wait the
  * default).
  */

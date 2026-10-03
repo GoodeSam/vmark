@@ -1,4 +1,4 @@
-// WI-4.2 — IR → SVG / PNG via html-to-image.
+// IR → SVG / PNG via html-to-image.
 //
 // Plan §6 Phase 4 + ADR-8. Wrapper over `html-to-image`'s toSvg/toPng,
 // applied to the live `@xyflow/react` viewport DOM element.

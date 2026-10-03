@@ -1,7 +1,7 @@
 //! # External Editor
 //!
 //! Purpose: Launch the user's `$EDITOR` (or platform default) on a file
-//! path. Backs the WI-4.4 "Open in external editor" button surfaced
+//! path. Backs the "Open in external editor" button surfaced
 //! inside the read-only code viewer.
 //!
 //! Pipeline: frontend `invoke("open_in_external_editor", { path,

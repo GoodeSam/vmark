@@ -1,5 +1,5 @@
 /**
- * Purpose: `vmark.workspace.open` — background file open (WI-14 / plan D10).
+ * Purpose: `vmark.workspace.open` — background file open.
  *
  * Split from workspace.ts (file-size gate). MCP opens are BACKGROUND: the
  * user's visible tab and workspace do not change; only the explicit
@@ -79,7 +79,7 @@ export async function handleWorkspaceOpen(
     const tabStore = useTabStore.getState();
     const docStore = useDocumentStore.getState();
     const windowLabel = wire.windowLabel || getCurrentWindowLabel();
-    // WI-14 (plan D10): MCP opens are BACKGROUND. Remember what the human had
+    // MCP opens are BACKGROUND. Remember what the human had
     // focused; `createTab` activates, so we restore afterwards. Only the
     // explicit `switch_tab` action may change the visible context.
     const prevActiveTabId = tabStore.activeTabId[windowLabel] ?? null;
@@ -103,7 +103,7 @@ export async function handleWorkspaceOpen(
         (useTabStore.getState().activeTabId[windowLabel] ?? null) !== prevActiveTabId,
     };
 
-    // WI-3: re-initialising an already-open tab replaces the whole document
+    // Re-initialising an already-open tab replaces the whole document
     // entry (savedContent, isDirty, documentId), so an open file with local
     // content would be silently reset to disk content with no checkpoint.
     // Focus it instead and tell the caller why nothing was reloaded.
@@ -145,7 +145,7 @@ export async function handleWorkspaceOpen(
     // `loadContent` itself is gone: it duplicated this door's baseline branch
     // and had drifted, retaining stale line metadata.
     //
-    // WI-2.6 — registry handles YAML routing; the force-source bandaid is
+    // The registry handles YAML routing; the force-source bandaid is
     // retired. .yaml/.yml route to the YAML adapter (kind: split-pane).
     docStore.ingestExternalContent(tabId, content, "disk-open", { filePath });
     if (existing) {
@@ -166,7 +166,7 @@ export async function handleWorkspaceOpen(
 
 /**
  * D10: undo `createTab`'s focus steal so an MCP open stays in the background.
- * Pane-aware through `setActiveTab` itself (WI-2 seam, ADR-1): under a split
+ * Pane-aware through `setActiveTab` itself (ADR-1): under a split
  * the previous document returns to the focused pane.
  */
 function restoreBackgroundActivation(

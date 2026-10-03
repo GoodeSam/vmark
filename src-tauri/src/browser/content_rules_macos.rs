@@ -15,7 +15,7 @@
 //! **Fail closed.** Compilation is asynchronous, so the run loop is pumped (as
 //! `browser_store::forget_profile` does) until the handler fires, bounded at five
 //! seconds. A compile error or a timeout fails the creation with the typed
-//! `ContentRulesFailed` (round 4, #31): an AI webview is never created without its
+//! `ContentRulesFailed`: an AI webview is never created without its
 //! rules. Human tabs get nothing — a human's page is not reshaped by the AI's
 //! policy.
 //!
@@ -27,7 +27,7 @@
 //! compiled list. A posture change bumps the policy epoch, which makes existing AI
 //! tabs stale for driving; their webviews keep the list they were created with.
 //!
-//! **Tested against the real store** (round 4, #16). The store and the run loop
+//! **Tested against the real store**. The store and the run loop
 //! are parameters of the compile step — `compile_list` pumps the CURRENT thread's
 //! run loop, which on the main thread (`configure`'s `mtm` proves it) is the main
 //! run loop, and under `cargo test` is the thread WebKit answers on. So

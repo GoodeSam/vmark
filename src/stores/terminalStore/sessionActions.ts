@@ -62,7 +62,7 @@ function nextTerminalOrdinal(sessions: TerminalSession[]): number {
 
 /**
  * Activate `activeId` on the state, clearing the activated session's
- * hasActivity (D-T11). THE one activation transition (audit R2-6):
+ * hasActivity (D-T11). THE one activation transition:
  * terminalSetActiveSession and every scope action apply it, so the
  * activity-clear rule cannot fork.
  */
@@ -157,7 +157,7 @@ export function createTerminalActions(set: TerminalSet, get: TerminalGet): Termi
         label: `Terminal ${ordinal}`,
         ordinal,
         isAlive: true,
-        // "Open Terminal Here" pins the start directory (WI-4.2); the spawn
+        // "Open Terminal Here" pins the start directory; the spawn
         // path takes it exactly once.
         ...(options?.requestedCwd ? { requestedCwd: options.requestedCwd } : {}),
         // Owner stamp (WI-TS1.1, D-T1). Key absent ⇒ window-scoped.
@@ -185,14 +185,14 @@ export function createTerminalActions(set: TerminalSet, get: TerminalGet): Termi
         activeId =
           candidates.length > 0 ? candidates[candidates.length - 1].id : null;
       }
-      // The fallback is an ACTIVATION, so it goes through the one transition
-      // (audit round 3, R3-1): a fallback session carrying an activity dot
+      // The fallback is an ACTIVATION, so it goes through the one transition:
+      // a fallback session carrying an activity dot
       // has just become the visible session, and the dot must clear (D-T11).
       set((s) => withActiveSession({ ...s, sessions: remaining }, activeId));
     },
     terminalSetActiveSession: (id) => {
       if (get().sessions.some((s) => s.id === id)) {
-        // Activating a session clears its background-activity flag (WI-4.3)
+        // Activating a session clears its background-activity flag
         // — via the ONE activation transition (withActiveSession).
         set((s) => withActiveSession(s, id));
       }
@@ -204,7 +204,7 @@ export function createTerminalActions(set: TerminalSet, get: TerminalGet): Termi
       updateSession(set, id, { isAlive: true });
     },
     terminalRenameSession: (id, label) => {
-      // isUserRenamed locks the label so a later program title (G4/WI-3.2)
+      // isUserRenamed locks the label so a later program title (G4)
       // can't override the user's explicit choice.
       updateSession(set, id, { label, isUserRenamed: true });
     },

@@ -17,7 +17,7 @@
  *     back to spaces and strips defensive backslash escapes ($, [, ], *, _,
  *     `, !, (, ), :, @) — but only when re-parsing the cleaned output yields the
  *     exact same mdast as the conservative output, so it can never change
- *     document meaning (audit H6/H7).
+ *     document meaning.
  *   - hardBreakStyle picks the spelling of a `break` NODE (serializerBreak.ts).
  *     It is never applied to the finished string, where a hard break cannot be
  *     told from math, HTML or a literal backslash that ends a line
@@ -194,6 +194,6 @@ export function serializeMdastToMarkdown(
 
   // Verified cosmetic pass: restore serializer-emitted &#x20; entities and
   // strip defensive escapes, accepted only when the cleaned string re-parses
-  // identically to the conservative one (audit H6/H7).
+  // identically to the conservative one.
   return applyCosmeticPass(result);
 }

@@ -1,5 +1,5 @@
 /**
- * The server-level `initialize.instructions` primer (WI-NB2.1).
+ * The server-level `initialize.instructions` primer.
  *
  * Purpose: the one piece of text every MCP client hands its model BEFORE any
  * tool is called. Written as operational guidance — the core loop, each failure

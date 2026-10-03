@@ -150,7 +150,7 @@ export function restoreTabMetadata(
     tabStore.togglePin(windowLabel, newTabId);
   }
 
-  // WI-1A.13 — restore multi-format fields.
+  // Restore multi-format fields.
   //
   // For tabs WITH a file_path, `formatId` derives deterministically from
   // the extension via dispatchEditor — restoration is automatic.
@@ -213,7 +213,7 @@ export function restoreActiveTab(
   tabIdMap: Map<string, string>,
   duplicateToRetained: Map<string, string>,
 ): void {
-  // WI-TNAV2.5 — whatever branch this takes, the MRU ends up holding exactly
+  // Whatever branch this takes, the MRU ends up holding exactly
   // the active tab. Restore creates each tab with an ACTIVATING `createTab`
   // (`restoreHelpers.ts:212`), so without the collapse the session opens with a
   // history the user never produced. In `finally`, because the early return for

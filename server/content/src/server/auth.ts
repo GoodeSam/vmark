@@ -53,8 +53,7 @@ export const SESSION_COOKIE = "vmark_cs_session";
  * runs on `127.0.0.1` with an OS-assigned port and mints its own incompatible
  * session token, so with one shared cookie name the second workspace to
  * authenticate overwrote the first's cookie and the first started returning
- * 401 — with two ordinary previews open and no attacker anywhere (audit
- * 20260906, MCP-C05).
+ * 401 — with two ordinary previews open and no attacker anywhere.
  *
  * The namespace is derived from the workspace ROOT rather than being random,
  * and that is the point: restarting the same workspace REPLACES its cookie

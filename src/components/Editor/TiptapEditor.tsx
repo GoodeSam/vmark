@@ -10,7 +10,7 @@
  *   - Adaptive debounce (100ms–5s) scales with document size: larger docs get longer
  *     delays to reduce serialization frequency without losing keystrokes on unmount.
  *   - Initial parse is deferred via setTimeout(0) so the shell renders first; a parse that
- *     fails goes to services/editor/unparseableDocument.ts (Source mode + message, #1407).
+ *     fails goes to services/editor/unparseableDocument.ts (Source mode + message).
  *   - shouldRerenderOnTransaction: false — Tiptap's default full-React-rerender per
  *     transaction is wasted work here since state flows through Zustand selectors.
  *   - content-visibility only on large docs and never on macOS: .cv-enabled marks those
@@ -183,7 +183,7 @@ export function TiptapEditorInner({ hidden = false, readOnly = false, preview = 
       // Wire MCP revision tracking so user edits bump the revision token that
       // optimistic-concurrency (STALE) checks in the MCP bridge depend on. The
       // transaction listener is bound to this editor and torn down with it.
-      // Revision is keyed per tab (WI-0.10); this editor owns the active tab.
+      // Revision is keyed per tab; this editor owns the active tab.
       if (activeTabId) initializeRevisionTracking(editor, activeTabId);
 
       // Capture content at mount time — the closure value is stable for this editor instance.
@@ -217,7 +217,7 @@ export function TiptapEditorInner({ hidden = false, readOnly = false, preview = 
           }
         } catch (error) {
           editorInitialized.current = true; // Unblock external sync even on parse error
-          if (hiddenRef.current) { /* #1407: a hidden editor re-syncs, and reports, when shown */ }
+          if (hiddenRef.current) { /* A hidden editor re-syncs, and reports, when shown */ }
           else if (contentRef.current !== contentSnapshot) syncMarkdownToEditor(editor, contentRef.current, lastExternalContent, preserveLineBreaksRef.current, activeTabId); // report the LATEST content
           else reportUnparseableDocument(activeTabId, error);
         } finally {

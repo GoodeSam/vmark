@@ -1,4 +1,4 @@
-//! Genie step executor (WI-2.2).
+//! Genie step executor.
 //!
 //! Resolves a `uses: genie/<name>` step end-to-end:
 //!   1. Look up the markdown genie by name in the global genies directory.
@@ -308,7 +308,7 @@ pub async fn execute_genie(
 
     // 2. Fence untrusted with-values (document text, selections, file reads,
     //    prior step outputs) so they read as data, not instructions, in the
-    //    prompt handed to autonomous CLI agents (audit 20260612 H13).
+    //    prompt handed to autonomous CLI agents.
     let nonce = untrusted::fence_nonce();
     let (fenced_map, any_fenced) = untrusted::fence_untrusted(with_map, &nonce);
 

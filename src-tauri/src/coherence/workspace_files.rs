@@ -104,7 +104,7 @@ pub(super) fn ignore_rules_complete(vmark: &Path) -> bool {
 }
 
 /// Append `line` to `path` when absent, preserving existing content
-/// (audit R22 — a pre-existing file must still gain the required rules).
+/// (a pre-existing file must still gain the required rules).
 /// The write is ATOMIC (7th-review 6R-4): a crash mid-write must never leave a
 /// truncated `.gitattributes` that a later `open` would trust as initialized, so
 /// the new content is staged in a temp file, fsync'd, then renamed into place.
@@ -206,7 +206,7 @@ pub fn load_or_create_writer_id(app_data_dir: &Path) -> Result<WriterId, String>
     }
     let id = Uuid::now_v7();
     fs::create_dir_all(app_data_dir).map_err(|e| format!("writer-id dir: {e}"))?;
-    // Write-then-link (audit A17): the file becomes visible ONLY with its
+    // Write-then-link: the file becomes visible ONLY with its
     // full content — no window where another process reads it empty. A
     // link collision means we lost the race: adopt THEIR id.
     let tmp = app_data_dir.join(format!(".writer-id-{id}"));

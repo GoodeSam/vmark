@@ -1,4 +1,4 @@
-//! Browser tab lifecycle + identity registry (WI-1.2 / R11 / R7a).
+//! Browser tab lifecycle + identity registry (R11 / R7a).
 //!
 //! Purpose: the pure, platform-independent core of the embedded-browser surface.
 //! It owns the identity map — `tabId ↔ window ↔ navigation generation ↔ lifecycle
@@ -6,7 +6,7 @@
 //! `MAX_AI_TABS` cap (audit 2026-09-03 X-01). The native surface (WKWebView on
 //! macOS today; WebView2/webkit2gtk backends planned for Windows/Linux) is layered
 //! on top and holds the actual view handle; this module owns the invariants the
-//! native layer, the automation lease (R11), and the eval watchdog (WI-1.8) all
+//! native layer, the automation lease (R11), and the eval watchdog all
 //! depend on.
 //!
 //! The **navigation generation** is load-bearing: every driver command is stamped
@@ -18,7 +18,7 @@
 //! origin its profile-open grant approved). The driver gate confines the AI's reads
 //! to that origin for the tab's whole life — unlike the per-navigation shared-origin
 //! approval, it is never cleared — so a persistent-login profile cannot be read
-//! cross-origin after a redirect (WI-P6.1 H1).
+//! cross-origin after a redirect.
 //!
 //! An **AI tab** records the request that reserved it (`registry_ai.rs`): a
 //! `browser_ai_create` retry naming an existing id is honoured only as that same
@@ -39,7 +39,7 @@
 //! all. The frontend mounts one surface for the active page only and destroys
 //! the view on unmount, so an inactive page's entry here is simply `Destroyed`
 //! and a fresh entry is created on reactivation. (A `Hibernated` variant used
-//! to sit in this enum "awaiting WI-1.6"; that WI's hibernation-cap store was
+//! to sit in this enum awaiting a hibernation-cap store; that store was
 //! judged fiction and deleted — review finding E4, 2026-08-03.)
 //!
 //! `Navigating` is entered by `didCommitNavigation` alone, so it is reachable
@@ -65,7 +65,7 @@ pub enum Lifecycle {
     Live,
     /// A navigation is in flight (provisional → committed).
     Navigating,
-    /// The content process died (WI-1.8) — awaiting a user reload.
+    /// The content process died — awaiting a user reload.
     Crashed,
     /// The webview has been torn down. Terminal.
     Destroyed,
@@ -182,7 +182,7 @@ struct Entry {
     /// approved. Set ONCE at creation and NEVER cleared on navigation (unlike
     /// `shared_navigation_origin`), so read-confinement persists for the tab's whole
     /// life: a profile tab may navigate anywhere (logins/redirects work), but the AI
-    /// may only READ this origin (sec review WI-P6.1 H1). `None` for a profile-less
+    /// may only READ this origin. `None` for a profile-less
     /// tab, which reads its committed page unconfined.
     profile_origin: Option<String>,
     policy_epoch: u64,

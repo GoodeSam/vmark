@@ -66,7 +66,7 @@ export function useExplorerOperations() {
         }
 
         await writeTextFile(filePath, "");
-        captureExplorerNewFile(filePath); // coherence WI-1.6
+        captureExplorerNewFile(filePath); // register the new file with coherence from birth
         return filePath;
       } catch (error) {
         fileExplorerError(" Failed to create file:", error);

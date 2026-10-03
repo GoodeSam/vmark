@@ -78,7 +78,7 @@ export function registerWorkflowTool(server: VMarkMcpServer): void {
           return VMarkMcpServer.errorResult('patches (array) is required');
         }
         // Refuse a supplied-but-invalid revision instead of converting it to
-        // "write unconditionally" (audit R2 #237).
+        // "write unconditionally".
         const revision = readOptionalRevision(args.expected_revision);
         if (!revision.ok) return VMarkMcpServer.errorResult(revision.error);
         const expected_revision = revision.value;

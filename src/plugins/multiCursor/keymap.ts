@@ -95,7 +95,7 @@ export function buildMultiCursorKeymapBindings(): Record<string, Command> {
     // Never clobber a chord already bound above (the fixed occurrence-selector
     // mechanics). If a user rebinds e.g. skipOccurrence onto Mod-d, the fixed
     // "select next occurrence" wins and the rebind is inert on that chord —
-    // rather than silently destroying the fixed mechanic (audit-fix #1).
+    // rather than silently destroying the fixed mechanic.
     if (pmKey in bindings) return;
     bindings[pmKey] = command;
   };
@@ -145,7 +145,7 @@ export function multiCursorKeymap(): Plugin {
       // instantiated for a headless/state-only EditorState never runs view(), so
       // it must not open a store subscription it can never close; and each mounted
       // view owns its own unsubscribe, so destroying one view can't tear down
-      // another's live subscription (audit-fix #2).
+      // another's live subscription.
       const unsubscribe = hostShortcuts.onChange(() => {
         handler = keydownHandler(buildMultiCursorKeymapBindings());
       });

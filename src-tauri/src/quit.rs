@@ -251,8 +251,7 @@ fn start_quit_in(app: &AppHandle, mode: QuitMode) {
 
     // Register the full target set BEFORE emitting close requests — a window
     // replying before registration completed would race the quit bookkeeping
-    // (safe today only by accident of the single-threaded event loop;
-    // audit 20260612).
+    // (safe today only by accident of the single-threaded event loop).
     set_quit_targets(targets);
 
     if let Err((label, e)) = broadcast::request_quit_of(&document_windows, mode) {

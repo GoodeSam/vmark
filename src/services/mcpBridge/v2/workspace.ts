@@ -6,7 +6,7 @@
  *   in-document. The pruned MCP surface relies on these for everything
  *   the AI cannot derive from text round-trip alone.
  *
- * Origin: MCP pruning plan (2026-05-04, retired), work item WI-1.2.
+ * Origin: MCP pruning plan (2026-05-04, retired).
  *
  * Key decisions:
  *   - `tabId`-based addressing, not `windowId` + "active tab" implicit.
@@ -178,7 +178,7 @@ export async function handleWorkspaceSwitchTab(
     }
     const { windowLabel } = owned;
     const tabId = owned.tab.id;
-    // WI-14 (plan D10): the ONE MCP action allowed to change the visible
+    // The ONE MCP action allowed to change the visible
     // context — full workspace switch when the tab's owner is hidden, with
     // the change disclosed so the AI client can inform the user.
     const result = activateTabWithWorkspaceContext(windowLabel, tabId);
@@ -188,7 +188,7 @@ export async function handleWorkspaceSwitchTab(
     // window had not moved. `workspaceSwitched` is likewise downgraded when the
     // window is not actually showing the instance the coordinator named.
     //
-    // Reading `activated` off the alias is safe under a split: the WI-2
+    // Reading `activated` off the alias is safe under a split: the
     // activation seam converges `activeTabId` with the focused pane, and
     // `activateTabWithWorkspaceContext.test.ts` pins that for the background,
     // other-pane and browser-tab cases. If that invariant is ever relaxed, this

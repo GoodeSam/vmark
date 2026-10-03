@@ -145,8 +145,7 @@ export function registerDocumentTool(server: VMarkMcpServer): void {
       const tabId = tab.value;
       // A SUPPLIED but invalid revision is refused, never normalised to
       // `undefined` — that conversion turned a guarded write into an
-      // unconditional one for exactly the callers who got it wrong
-      // (audit R2 #226).
+      // unconditional one for exactly the callers who got it wrong.
       const revision = readOptionalRevision(args.expected_revision);
       if (!revision.ok) return VMarkMcpServer.errorResult(revision.error);
       const expected_revision = revision.value;
@@ -166,7 +165,7 @@ export function registerDocumentTool(server: VMarkMcpServer): void {
           }
           // Default save: true — only forward an explicit false. A SUPPLIED
           // non-boolean is refused: `=== false` read the string "false" as
-          // "use the default" and wrote to disk (audit R2 #227).
+          // "use the default" and wrote to disk.
           const saveArg = readOptionalBoolean(args.save, 'save');
           if (!saveArg.ok) return VMarkMcpServer.errorResult(saveArg.error);
           const save = saveArg.value === false ? false : undefined;
@@ -197,7 +196,7 @@ export function registerDocumentTool(server: VMarkMcpServer): void {
       // Generated from DOCUMENT_ACTIONS, the exported source of truth the
       // schema enum also reads. The hardcoded prose went stale the moment an
       // action was added or renamed, and it is the only thing a caller who got
-      // the action wrong has to go on (audit R3 #228).
+      // the action wrong has to go on.
       return VMarkMcpServer.errorResult(
         `Invalid action: ${String(action)}. Expected: ${DOCUMENT_ACTIONS.join(', ')}`,
       );

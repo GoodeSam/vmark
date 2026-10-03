@@ -31,7 +31,7 @@ pub struct McpHealthInfo {
 }
 
 /// How long the sidecar may take to answer `--health-check`: it prints one
-/// JSON line and exits, so anything longer is a wedged child (#395).
+/// JSON line and exits, so anything longer is a wedged child.
 const HEALTH_CHECK_TIMEOUT: Duration = Duration::from_secs(20);
 
 /// Most bytes kept from either sidecar stream — the reply is a few hundred
@@ -73,7 +73,7 @@ async fn collect_health(rx: &mut tauri::async_runtime::Receiver<CommandEvent>) -
 /// Run MCP sidecar health check.
 /// This runs the sidecar binary with --health-check flag to get real tool/version info.
 ///
-/// Bounded, and the child is KILLED when the bound elapses (#395): `output()`
+/// Bounded, and the child is KILLED when the bound elapses: `output()`
 /// waits forever and keeps whatever the child writes. A timeout that only
 /// dropped that future would leave the process running, which is why the
 /// pipes are drained by hand.

@@ -1,6 +1,5 @@
 /**
- * Observe a scroll container and report which overflow affordances it owes
- * (WI-TNAV1.1).
+ * Observe a scroll container and report which overflow affordances it owes.
  *
  * Purpose: keep `overflowState` fresh for the status-bar tab strip, whose
  * scrollbar is suppressed in both engines — so without an affordance, tabs

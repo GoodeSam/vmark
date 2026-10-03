@@ -131,7 +131,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
     }),
   setSidebarViewMode: (mode) => set({ sidebarViewMode: mode }),
   // Each kind remembers its own sub-view, so switching between a document tab and a
-  // browser tab does not clobber the other's (WI-S2.3).
+  // browser tab does not clobber the other's.
   setSidebarBrowserViewMode: (mode) => set({ sidebarBrowserViewMode: mode }),
   showSidebarWithView: (mode) =>
     set({ sidebarVisible: true, sidebarViewMode: mode }),

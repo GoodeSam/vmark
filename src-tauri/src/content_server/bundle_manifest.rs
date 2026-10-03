@@ -1,5 +1,5 @@
 //! The one join between `resolve_cli`'s bundled-resource lookup and the bundle
-//! manifest (`tauri.conf.json` → `bundle.resources`) — WI-FL0.8.
+//! manifest (`tauri.conf.json` → `bundle.resources`).
 //!
 //! `spawn::resolve_cli` used to name `content-server-dist/cli.js` as a Tauri
 //! resource directly, and nothing checked that anything produced or bundled it.

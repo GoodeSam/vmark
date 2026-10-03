@@ -1,4 +1,4 @@
-// WI-1A.8 — Normalized validation gutter.
+// Normalized validation gutter.
 //
 // Consumes ValidationDiagnostic[] from any format's validator() output.
 // Single component, single visual language across markdown lint, JSON
@@ -11,7 +11,7 @@
 // technology to announce (audit 20260907, #282).
 //
 // The rule pill shows the bare id and carries the engine's documented title
-// (WI-FL0.3), localized here at the UI boundary — see RuleBadge.
+// localized here at the UI boundary — see RuleBadge.
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -84,7 +84,7 @@ function RuleBadge({ id, t }: { id: string; t: EditorTranslate }) {
 
 type SeverityCounts = Record<ValidationDiagnostic["severity"], number>;
 
-/** The three severity counters — glyph + accessible name, not colour alone (R13, WI-UI4.5). */
+/** The three severity counters — glyph + accessible name, not colour alone (R13). */
 function ValidationSummary({ counts, t }: { counts: SeverityCounts; t: EditorTranslate }) {
   const rows: [ValidationDiagnostic["severity"], string, string][] = [
     ["error", "✗", t("splitPane.errorCount", { count: counts.error })],

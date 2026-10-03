@@ -39,7 +39,7 @@ const CLI_TIMEOUT: Duration = Duration::from_secs(300);
 /// carry the prompt.
 ///
 /// `cancel` allows the caller to kill the child process from another task —
-/// the runner's per-step timeout (WI-2.5) and the user's Cancel button
+/// the runner's per-step timeout and the user's Cancel button
 /// (Phase 4) both signal this token. The CLI process is force-killed within
 /// one tokio scheduler tick of the cancel signal.
 ///

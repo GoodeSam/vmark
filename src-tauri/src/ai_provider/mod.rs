@@ -101,7 +101,7 @@ pub async fn run_ai_prompt(
     endpoint: Option<String>,
     cli_path: Option<String>,
 ) -> Result<(), String> {
-    // WI-0B.2: `cli_path` is untrusted webview input and previously overrode the
+    // `cli_path` is untrusted webview input and previously overrode the
     // spawned binary outright (`cli_path="/bin/sh"` → RCE). Validate at the
     // boundary; internal callers stay injectable.
     cli_path_guard::validate_cli_path(&provider, cli_path.as_deref())?;
@@ -109,7 +109,7 @@ pub async fn run_ai_prompt(
     let sink: Arc<dyn AiSink> = Arc::new(WindowSink::new(window, request_id.clone()));
     // Dispatched under a token registered for exactly the dispatch's lifetime,
     // so `cancel_ai_prompt` can fire it — killing a CLI child or dropping the
-    // in-flight REST request (audit #375).
+    // in-flight REST request.
     cancel::dispatch_registered(
         &cancel_registry,
         &request_id,
