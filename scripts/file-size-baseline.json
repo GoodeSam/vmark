@@ -113,7 +113,7 @@
     "src/plugins/search/tiptap.test.ts": 1752,
     "src/plugins/sourceLinkCreatePopup/SourceLinkCreatePopupView.test.ts": 1247,
     "src/plugins/tabIndent/tiptap.test.ts": 817,
-    "src/plugins/tableUI/tableActions.tiptap.test.ts": 1243,
+    "src/plugins/tableUI/tableActions.tiptap.test.ts": 1237,
     "src/plugins/textDragDrop/tiptap.test.ts": 1040,
     "src/plugins/toolbarActions/enableRules.test.ts": 1251,
     "src/plugins/toolbarActions/sourceAdapter.test.ts": 1050,
