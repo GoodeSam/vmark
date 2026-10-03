@@ -73,16 +73,18 @@ export type MarginSide = "marginTop" | "marginRight" | "marginBottom" | "marginL
  * inch, and letting it become 25 silently changes the page geometry.
  */
 function MarginInput({
-  side, value, onChange,
+  side, value, label, onChange,
 }: {
   side: MarginSide;
   value: number;
+  label: string;
   onChange: (side: MarginSide, value: number) => void;
 }) {
   return (
     <input
       type="number"
       className="margin-layout-input"
+      aria-label={label}
       value={value}
       min={0}
       max={100}
@@ -97,9 +99,15 @@ function MarginInput({
   );
 }
 
-/** Visual page margin diagram with editable mm inputs on all 4 sides. */
+/**
+ * Visual page margin diagram with editable mm inputs on all 4 sides.
+ *
+ * The inputs sit around a drawing with no visible caption, so each takes its
+ * accessible name from `sideLabels` — without it a screen reader announced
+ * four identical unnamed number fields.
+ */
 export function MarginLayoutDiagram({
-  top, right, bottom, left, landscape, unitLabel, onChange,
+  top, right, bottom, left, landscape, unitLabel, sideLabels, onChange,
 }: {
   top: number;
   right: number;
@@ -107,20 +115,21 @@ export function MarginLayoutDiagram({
   left: number;
   landscape: boolean;
   unitLabel: string;
+  sideLabels: Readonly<Record<MarginSide, string>>;
   onChange: (side: MarginSide, value: number) => void;
 }) {
   return (
     <div className="margin-layout">
       <div className="margin-layout-top">
-        <MarginInput side="marginTop" value={top} onChange={onChange} />
+        <MarginInput side="marginTop" value={top} label={sideLabels.marginTop} onChange={onChange} />
       </div>
       <div className="margin-layout-middle">
-        <MarginInput side="marginLeft" value={left} onChange={onChange} />
+        <MarginInput side="marginLeft" value={left} label={sideLabels.marginLeft} onChange={onChange} />
         <div className={`margin-layout-page ${landscape ? "margin-layout-page--landscape" : ""}`} />
-        <MarginInput side="marginRight" value={right} onChange={onChange} />
+        <MarginInput side="marginRight" value={right} label={sideLabels.marginRight} onChange={onChange} />
       </div>
       <div className="margin-layout-bottom">
-        <MarginInput side="marginBottom" value={bottom} onChange={onChange} />
+        <MarginInput side="marginBottom" value={bottom} label={sideLabels.marginBottom} onChange={onChange} />
       </div>
       <span className="margin-layout-unit">{unitLabel}</span>
     </div>

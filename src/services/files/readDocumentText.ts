@@ -53,12 +53,15 @@ const REFUSED_MARKS: readonly { encoding: UnsupportedEncoding; mark: readonly nu
 
 /** A document whose bytes VMark will not decode as UTF-8. */
 export class UnsupportedEncodingError extends Error {
+  readonly path: string;
   readonly encoding: UnsupportedEncoding;
 
+  /** The message is for logs; the UI translates from `path` and `encoding`. */
   constructor(path: string, encoding: UnsupportedEncoding, mark: readonly number[]) {
     const hex = mark.map((b) => b.toString(16).toUpperCase().padStart(2, "0")).join(" ");
     super(`${path}: ${encoding} text (byte-order mark ${hex}); VMark reads and writes UTF-8 only`);
     this.name = "UnsupportedEncodingError";
+    this.path = path;
     this.encoding = encoding;
   }
 }

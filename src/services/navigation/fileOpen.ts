@@ -2,6 +2,7 @@ import { imeToast as toast } from "@/services/ime/imeToast";
 import i18n from "@/i18n";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readDocumentText } from "@/services/files/readDocumentText";
+import { openFailureDetail } from "@/services/files/openFailureDetail";
 import { fileOpsError } from "@/utils/debug";
 import { perfReset, perfStart, perfEnd, perfMark } from "@/utils/perfLog";
 import { useDocumentStore, useFileLoadStore } from "@/stores/documentStore";
@@ -141,8 +142,8 @@ export async function openFileInNewTabCore(
     // Use detachTab (not closeTab) to avoid polluting the "reopen closed tab" history.
     useTabStore.getState().detachTab(windowLabel, tabId);
     // Two-line toast (WI-UI4.4): paths/codes as the detail.
-    // Raw error — errorDetail owns the normalization (commandErrorMessage).
-    toast.errorDetail(i18n.t("dialog:toast.failedToOpenFile"), error);
+    // A cause VMark diagnosed is translated; any other error goes through raw and errorDetail normalizes it.
+    toast.errorDetail(i18n.t("dialog:toast.failedToOpenFile"), openFailureDetail(error));
     // Clear the indicator immediately on error so no stale spinner lingers.
     if (loadId !== null) useFileLoadStore.getState().endLoad(loadId);
     return "failed";

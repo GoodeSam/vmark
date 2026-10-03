@@ -16,7 +16,8 @@ const {
   mockCountMatches,
 } = vi.hoisted(() => ({
   mockSetSearchQuery: { of: vi.fn(() => "set-search-query-effect") },
-  mockSearchQuery: vi.fn(function(this: unknown, opts: unknown) { Object.assign(this as object, opts); }),
+  // getCursor finds nothing; match positions are pinned in *.replaceResume.test.ts.
+  mockSearchQuery: vi.fn(function(this: unknown, opts: unknown) { Object.assign(this as object, opts, { getCursor: () => [][Symbol.iterator]() }); }),
   mockFindNext: vi.fn(),
   mockFindPrevious: vi.fn(),
   mockReplaceNext: vi.fn(),
@@ -50,9 +51,8 @@ import { useSourceEditorSearch } from "./useSourceEditorSearch";
 function createMockView(docText = "hello world") {
   return {
     state: {
-      doc: {
-        toString: () => docText,
-      },
+      doc: { toString: () => docText },
+      selection: { main: { from: 0, to: 0 } },
     },
     dispatch: vi.fn(),
   } as unknown;
@@ -684,7 +684,7 @@ describe("useSourceEditorSearch", () => {
     });
 
     expect(mockReplaceNext).toHaveBeenCalledWith(mockView);
-    // After double-rAF, recomputeMatches should be called with preserveIndex=true
+    // After the double rAF the matches are recounted
     expect(mockCountMatches).toHaveBeenCalled();
 
     mockRaf.mockRestore();
@@ -717,7 +717,7 @@ describe("useSourceEditorSearch", () => {
     mockRaf.mockRestore();
   });
 
-  it("preserves currentIndex when it is valid after replace-current", () => {
+  it("updates the match count after replace-current", () => {
     const mockView = createMockView("hello world hello");
     viewRef.current = mockView;
 
@@ -738,7 +738,7 @@ describe("useSourceEditorSearch", () => {
       window.dispatchEvent(new Event("search:replace-current"));
     });
 
-    // The recomputeMatches with preserveIndex=true should keep index at 1
+    // The replace recount reports the new total
     const state = useUIStore.getState().search;
     expect(state.matchCount).toBe(2);
 

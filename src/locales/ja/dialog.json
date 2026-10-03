@@ -63,6 +63,7 @@
   "toast.failedToSaveDocuments": "ドキュメントの保存に失敗しました",
   "toast.fileMovedCantDeleteOriginal": "ファイルを新しい場所に保存しましたが、元のファイルを削除できませんでした",
   "toast.failedToOpenFile": "ファイルを開けませんでした",
+  "toast.unsupportedEncodingDetail": "{{path}} は {{encoding}} でエンコードされています。VMark が開けるのは UTF-8 のファイルだけです。別のエディタで UTF-8 として保存してから、もう一度開いてください。",
   "toast.failedToOpen": "{{filename}} を開けませんでした",
   "toast.operationFailed": "操作を完了できませんでした",
   "toast.workflowEngineDisableFailed": "ワークフローエンジンを無効にできませんでした。VMark を再起動するまでワークフローが実行される可能性があります。確実に停止するには VMark を終了して開き直してください。",

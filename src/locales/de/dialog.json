@@ -63,6 +63,7 @@
   "toast.failedToSaveDocuments": "Dokumente konnten nicht gespeichert werden",
   "toast.fileMovedCantDeleteOriginal": "Datei am neuen Speicherort gespeichert, aber Originaldatei konnte nicht gelöscht werden",
   "toast.failedToOpenFile": "Datei konnte nicht geöffnet werden",
+  "toast.unsupportedEncodingDetail": "{{path}} ist als {{encoding}} codiert. VMark öffnet nur UTF-8-Dateien — speichern Sie sie in einem anderen Editor als UTF-8 und öffnen Sie sie dann erneut.",
   "toast.failedToOpen": "{{filename}} konnte nicht geöffnet werden",
   "toast.operationFailed": "Die Aktion konnte nicht abgeschlossen werden",
   "toast.workflowEngineDisableFailed": "Die Workflow-Engine konnte nicht deaktiviert werden. Sie führt möglicherweise weiterhin Workflows aus, bis VMark neu gestartet wird — beenden Sie VMark und öffnen Sie es erneut, um sicherzugehen.",
