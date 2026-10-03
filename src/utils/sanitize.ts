@@ -2,7 +2,7 @@
  * HTML Sanitization Utilities
  *
  * Purpose: Secure HTML sanitization via DOMPurify to prevent XSS attacks. Tailored
- * allowlists per content type — general HTML (including media tags), SVG, KaTeX.
+ * allowlists per content type — general HTML, SVG, KaTeX.
  *
  * Key decisions:
  *   - Separate functions for each content type (general HTML, SVG, KaTeX) because
@@ -11,12 +11,8 @@
  *     (Mermaid uses HTML inside SVG for text layout)
  *   - Style attribute sanitization uses a property allowlist to block
  *     expression() and javascript: attacks in inline styles
- *   - DOMPurify's output is re-parsed (style filter, iframe filter) only in an
- *     inert document: the page's own document would load what it parses
- *   - Video, audio, and source tags are allowed in sanitizeMediaHtml (separate function)
- *   - Iframe is allowed in sanitizeMediaHtml only at a video embed origin
- *     (`VIDEO_EMBED_ORIGINS`, the provider registry's list — the same origins
- *     the release CSP lets a frame load from), via a post-pass
+ *   - DOMPurify's output is re-parsed (the style filter) only in an inert
+ *     document: the page's own document would load what it parses
  *   - escapeHtml is a simple entity escape for non-HTML text display
  *   - Preview allow-lists (strict/extended) + the always-on `DANGEROUS_TAGS`
  *     deny-list live in `utils/htmlAllowlists.ts`; `FORBID_TAGS` overrides
@@ -25,14 +21,12 @@
  * @coordinates-with htmlAllowlists.ts — preview allow/deny tag + attr lists
  * @coordinates-with mermaid/index.ts — uses sanitizeSvg for Mermaid diagram output
  * @coordinates-with codePreview/renderers/renderLatex.ts — uses sanitizeKatex for math rendering
- * @coordinates-with videoProviderRegistry.ts — the embed origins an iframe may point at
  * @module utils/sanitize
  */
 
 import DOMPurify from "dompurify";
 export { sanitizeSvg } from "./svgSanitize";
 import { KATEX_STYLE_PROPS, filterStyleAttributes } from "./styleSafety";
-import { isVideoEmbedSrc } from "./videoProviderRegistry";
 import {
   type HtmlAllowlistLevel,
   PREVIEW_TAGS_INLINE_STRICT,
@@ -87,69 +81,6 @@ export function sanitizeHtmlPreview(html: string, options?: HtmlPreviewOptions):
   }
 
   return filterStyleAttributes(sanitized, HTML_PREVIEW_STYLE_PROPS);
-}
-
-/**
- * Sanitize media HTML content (video, audio, video embed iframes).
- * Allows media-specific tags and attributes while preventing XSS.
- *
- * Video embed iframes survive only at a video embed origin (YouTube's
- * privacy-enhanced host, Vimeo's and Bilibili's players), via a post-sanitize
- * DOM pass that strips every other iframe.
- */
-export function sanitizeMediaHtml(html: string): string {
-  // Sanitize with DOMPurify, then post-process to strip iframes outside the embed origins
-  const result = DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: [
-      "video",
-      "audio",
-      "source",
-      "iframe",
-    ],
-    ALLOWED_ATTR: [
-      "src",
-      "title",
-      "controls",
-      "preload",
-      "poster",
-      "loop",
-      "muted",
-      "width",
-      "height",
-      "type",
-      "allowfullscreen",
-      "frameborder",
-      "allow",
-    ],
-    ALLOW_DATA_ATTR: false,
-  });
-
-  // Post-process: strip iframes whose src is not at an embed origin
-  if (/<iframe\b/i.test(result)) {
-    return stripNonEmbedIframes(result);
-  }
-  return result;
-}
-
-function stripNonEmbedIframes(html: string): string {
-  if (typeof DOMParser === "undefined") {
-    // No DOM — strip all iframes for safety (can't verify src)
-    // Handles both paired (<iframe>...</iframe>) and self-closing (<iframe ... />) forms
-    return html
-      .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, "")
-      .replace(/<iframe\b[^>]*\/\s*>/gi, "");
-  }
-  // Re-parsed in an inert document: a <video> or <img> the parser creates in
-  // the page's own document starts loading there, attached or not.
-  const container = new DOMParser().parseFromString("", "text/html").createElement("div");
-  container.innerHTML = html;
-  const iframes = container.querySelectorAll("iframe");
-  for (const iframe of iframes) {
-    if (!isVideoEmbedSrc(iframe.getAttribute("src") ?? "")) {
-      iframe.remove();
-    }
-  }
-  return container.innerHTML;
 }
 
 /**
