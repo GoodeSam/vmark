@@ -33,7 +33,7 @@
 import { runWebWorkflow } from "@/lib/browser/workflow/runner";
 import { WorkflowPause, type RunStopCode } from "@/lib/browser/workflow/engine";
 import type { WorkflowStep } from "@/lib/browser/workflow/types";
-import { useBrowserLeaseStore } from "@/services/browser/lease";
+import { browserLease } from "@/services/browser/lease";
 import { useBrowserApprovalStore } from "@/stores/browserApprovalStore";
 import { makeRunExecutor } from "./runExecutor";
 import { createRunClock, type RunClock } from "./runClock";
@@ -93,9 +93,8 @@ function stepIndexOf(stepId: string | undefined): number | null {
  *  interruption of this run — it ends with the run (W-04). */
 function releaseRunLease(run: RunState): void {
   if (!releaseLeaseClaim(run.tabId, run.runId)) return;
-  const lease = useBrowserLeaseStore.getState();
-  const holder = lease.currentHolder(run.tabId);
-  if (holder !== null) lease.release(run.tabId, holder);
+  const holder = browserLease.currentHolder(run.tabId);
+  if (holder !== null) browserLease.release(run.tabId, holder);
 }
 
 /** Start a run; returns a runId synchronously and executes detached. */
@@ -121,8 +120,7 @@ export function startWorkflowRun(source: string, ctx: StartRunContext): StartRun
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 
-  const lease = useBrowserLeaseStore.getState();
-  if (!lease.acquireForAi(ctx.tabId)) return { ok: false, error: "the human is currently driving this tab" };
+  if (!browserLease.acquireForAi(ctx.tabId)) return { ok: false, error: "the human is currently driving this tab" };
 
   const skipPolicy: SkipPolicy = {
     tabId: ctx.tabId,
@@ -150,7 +148,7 @@ export function startWorkflowRun(source: string, ctx: StartRunContext): StartRun
   const controller = new AbortController();
   registerRunAbort(run.runId, controller);
   // Human takeover (reclaim) and release fire this: the in-flight step exits at once.
-  lease.setInflightCancel(ctx.tabId, () =>
+  browserLease.setInflightCancel(ctx.tabId, () =>
     controller.abort(new WorkflowPause("lease-lost", "automation lease lost — a human took control")),
   );
   const executor = makeRunExecutor({
@@ -160,7 +158,7 @@ export function startWorkflowRun(source: string, ctx: StartRunContext): StartRun
     resolveTab: ctx.resolveTab,
     clock,
     signal: controller.signal,
-    leaseEpoch: lease.epochOf(ctx.tabId),
+    leaseEpoch: browserLease.epochOf(ctx.tabId),
     now,
     ...(ctx.pollMs !== undefined ? { pollMs: ctx.pollMs } : {}),
     onPendingApproval: (info) => setPendingApproval(run.runId, info),
@@ -171,7 +169,7 @@ export function startWorkflowRun(source: string, ctx: StartRunContext): StartRun
 
   void runWebWorkflow(workflow, guarded, {
     maxRetries: 2,
-    leaseHeld: () => useBrowserLeaseStore.getState().currentHolder(ctx.tabId) === "ai",
+    leaseHeld: () => browserLease.currentHolder(ctx.tabId) === "ai",
   })
     .then((result) => finish(run.runId, result))
     .catch((error: unknown) => {

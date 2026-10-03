@@ -45,7 +45,7 @@ import { activateTabInFocusedPane } from "@/services/navigation/activateTabInFoc
 import { closeTabWithDirtyCheck } from "@/services/tabs/tabOperations";
 import { isRovingNavKey, moveRovingTabFocus } from "@/utils/rovingTabFocus";
 import { NEW_BROWSER_TAB_URL } from "@/services/commands/browserCommands";
-import { useBrowserLeaseStore } from "@/services/browser/lease";
+import { useBrowserLeaseStore } from "@/stores/browserLeaseStore";
 
 interface BrowserPageTabsProps {
   pages: BrowserTab[];

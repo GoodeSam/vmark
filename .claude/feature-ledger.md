@@ -2789,10 +2789,10 @@ The browser is macOS-only end to end: `src-tauri/src/browser/surface_stub.rs` re
 - status: shipped-on, macos-only
 - gate: always on
 - surfaces: browser chrome indicator; page-tab dot; automatic (native input monitor)
-- code: `src/services/browser/lease.ts`, `src/services/browser/leaseTransitions.ts`, `src/services/browser/browserLeaseWiring.ts`, `src/components/Browser/BrowserChrome.tsx`, `src/components/Browser/BrowserPageTabs.tsx`, `src-tauri/src/browser/user_input_monitor_macos.rs`, `src-tauri/src/browser/user_input_resolve_macos.rs`
+- code: `src/services/browser/lease.ts`, `src/stores/browserLeaseStore.ts`, `src/services/browser/leaseTransitions.ts`, `src/services/browser/browserLeaseWiring.ts`, `src/components/Browser/BrowserChrome.tsx`, `src/components/Browser/BrowserPageTabs.tsx`, `src-tauri/src/browser/user_input_monitor_macos.rs`, `src-tauri/src/browser/user_input_resolve_macos.rs`
 - rust: module `browser::user_input_monitor_macos` (event emitter; no command)
 - docs: `website/guide/browser.md` §"Co-driving: watch an AI drive the browser from the terminal"
-- tests: `src/services/browser/lease.test.ts`, `src/services/browser/leaseTransitions.test.ts`, `src/services/browser/browserLeaseWiring.test.ts`; e2e `e2e/journeys/36-browser-takeover.mjs` (darwin-only). Gap: the native monitor modules have no unit tests
+- tests: `src/services/browser/lease.test.ts`, `src/stores/browserLeaseStore.test.ts`, `src/services/browser/leaseTransitions.test.ts`, `src/services/browser/browserLeaseWiring.test.ts`; e2e `e2e/journeys/36-browser-takeover.mjs` (darwin-only). Gap: the native monitor modules have no unit tests
 - notes: The monitor's installed-once guard is a declared `static` exception (rule 50). While an overlay is up the native views are hidden, so an input event resolves to no tab and is a no-op.
 
 ### Policy epochs and navigation-generation freshness
