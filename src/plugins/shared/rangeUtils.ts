@@ -14,16 +14,6 @@ function sortByPosition(ranges: SelectionRange[]): SelectionRange[] {
 }
 
 /**
- * Sort ranges by position (descending) for safe editing.
- * Editing from end to start preserves earlier positions.
- */
-export function sortRangesDescending(
-  ranges: readonly SelectionRange[]
-): SelectionRange[] {
-  return [...ranges].sort((a, b) => b.$from.pos - a.$from.pos);
-}
-
-/**
  * Check if two ranges overlap (boundary-touching does not count).
  */
 function rangesOverlap(a: SelectionRange, b: SelectionRange): boolean {
@@ -144,6 +134,12 @@ function normalizeRanges(
  * range back to its closest original range (by from-position) and copies
  * the corresponding backward flag.
  *
+ * Every cursor's flags are remapped on each arrow key and each edit made
+ * elsewhere, so this runs in O(n log n): exact matches come from a map, and
+ * a merged range searches only the originals that start inside it (merged
+ * ranges overlap at most at their ends, so each original is visited a
+ * bounded number of times).
+ *
  * @param originalRanges - Ranges before normalization
  * @param originalBackward - Backward flags before normalization (same length as originalRanges)
  * @param normalizedRanges - Ranges after normalization
@@ -154,30 +150,46 @@ export function remapBackwardFlags(
   originalBackward: boolean[],
   normalizedRanges: readonly SelectionRange[]
 ): boolean[] {
-  return normalizedRanges.map((nr) => {
-    // Find the original range that best matches this normalized range.
-    // For dedup: exact position match. For merge: the range whose from is closest.
-    for (let i = 0; i < originalRanges.length; i++) {
-      if (
-        originalRanges[i].$from.pos === nr.$from.pos &&
-        originalRanges[i].$to.pos === nr.$to.pos
-      ) {
-        return originalBackward[i] ?? false;
-      }
-    }
-    // Merged range — find original range contained within normalized range.
-    // Use the last original range that falls within (highest from-pos), as
-    // that's the range the user was most recently interacting with.
-    for (let i = originalRanges.length - 1; i >= 0; i--) {
-      if (
-        originalRanges[i].$from.pos >= nr.$from.pos &&
-        originalRanges[i].$to.pos <= nr.$to.pos
-      ) {
-        return originalBackward[i] ?? false;
-      }
-    }
-    return false;
+  const key = (range: SelectionRange) => `${range.$from.pos}:${range.$to.pos}`;
+  // For dedup: the FIRST original at exactly the same positions.
+  const firstExact = new Map<string, number>();
+  originalRanges.forEach((range, i) => {
+    if (!firstExact.has(key(range))) firstExact.set(key(range), i);
   });
+  let byFrom: number[] | null = null;
+
+  return normalizedRanges.map((nr) => {
+    const exact = firstExact.get(key(nr));
+    if (exact !== undefined) return originalBackward[exact] ?? false;
+    // Merged range — the last original (highest index) inside it, as that's
+    // the range the user was most recently interacting with.
+    byFrom ??= originalRanges
+      .map((_, i) => i)
+      .sort((a, b) => originalRanges[a].$from.pos - originalRanges[b].$from.pos);
+    const inside = lastOriginalInside(originalRanges, byFrom, nr);
+    return inside >= 0 ? (originalBackward[inside] ?? false) : false;
+  });
+}
+
+/** The highest index of an original range inside `outer`, or -1. `byFrom` orders the originals by start. */
+function lastOriginalInside(
+  originalRanges: readonly SelectionRange[],
+  byFrom: readonly number[],
+  outer: SelectionRange
+): number {
+  let lo = 0;
+  let hi = byFrom.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (originalRanges[byFrom[mid]].$from.pos < outer.$from.pos) lo = mid + 1;
+    else hi = mid;
+  }
+  let last = -1;
+  for (let k = lo; k < byFrom.length && originalRanges[byFrom[k]].$from.pos <= outer.$to.pos; k++) {
+    const i = byFrom[k];
+    if (originalRanges[i].$to.pos <= outer.$to.pos && i > last) last = i;
+  }
+  return last;
 }
 
 /**

@@ -3,30 +3,27 @@
  *
  * Handles typing, backspace, and delete operations across multiple cursors.
  * The three share one frame (editEachRange): edits are applied in reverse
- * document order to preserve position validity, then the selection is rebuilt.
+ * document order by rangeEdits.ts, then the selection is rebuilt.
  */
 import { Selection, SelectionRange } from "@tiptap/pm/state";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
+import type { Node } from "@tiptap/pm/model";
 import type { EditorView } from "@tiptap/pm/view";
 import { MultiSelection } from "@/plugins/shared/MultiSelection";
 import { isImeKeyEvent } from "@/utils/imeGuard";
 import {
   normalizeRangesWithPrimary,
   remapBackwardFlags,
-  sortRangesDescending,
 } from "@/plugins/shared/rangeUtils";
 import {
   handleMultiCursorHorizontal,
   type HorizontalUnit,
 } from "./horizontalMovement";
 import { handleMultiCursorEnter } from "./enterHandling";
+import { editRangesFromEnd, type RangeEdit } from "./rangeEdits";
 
-
-/** Edits one range of the selection; returns the transaction to continue with. */
-type RangeEdit = (tr: Transaction, range: SelectionRange) => Transaction;
-
-/** Where a pre-edit range ends up once every edit has been applied. */
-type RangeRemap = (tr: Transaction, range: SelectionRange) => SelectionRange;
+/** The range rebuilt in the edited document from its ends, each mapped through every edit. */
+type RangeRemap = (doc: Node, from: number, to: number) => SelectionRange;
 
 /**
  * The frame every per-cursor edit shares: merge overlapping ranges so each
@@ -50,12 +47,12 @@ function editEachRange(
   const preMerged = normalizeRangesWithPrimary(
     selection.ranges, state.doc, selection.primaryIndex, true
   );
-  let tr = state.tr;
-  for (const range of sortRangesDescending(preMerged.ranges)) {
-    tr = edit(tr, range);
-  }
+  const edits = editRangesFromEnd(state, preMerged.ranges, edit);
+  let { tr } = edits;
 
-  const newRanges = preMerged.ranges.map((range) => remap(tr, range));
+  const newRanges = preMerged.ranges.map((range, index) =>
+    remap(tr.doc, edits.map(index, range.$from.pos), edits.map(index, range.$to.pos))
+  );
   const merged = normalizeRangesWithPrimary(newRanges, tr.doc, preMerged.primaryIndex, true);
   tr = tr.setSelection(new MultiSelection(merged.ranges, merged.primaryIndex));
   tr = tr.setMeta("addToHistory", true);
@@ -64,15 +61,12 @@ function editEachRange(
 }
 
 /** Both ends of the range, mapped through the edits. */
-const remapBothEnds: RangeRemap = (tr, range) =>
-  new SelectionRange(
-    tr.doc.resolve(tr.mapping.map(range.$from.pos)),
-    tr.doc.resolve(tr.mapping.map(range.$to.pos))
-  );
+const remapBothEnds: RangeRemap = (doc, from, to) =>
+  new SelectionRange(doc.resolve(from), doc.resolve(to));
 
 /** A cursor where the range started, mapped through the edits. */
-const remapToCursor: RangeRemap = (tr, range) => {
-  const $pos = tr.doc.resolve(tr.mapping.map(range.$from.pos));
+const remapToCursor: RangeRemap = (doc, from) => {
+  const $pos = doc.resolve(from);
   return new SelectionRange($pos, $pos);
 };
 
