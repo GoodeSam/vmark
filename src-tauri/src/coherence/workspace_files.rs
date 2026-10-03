@@ -219,15 +219,48 @@ pub fn load_or_create_writer_id(app_data_dir: &Path) -> Result<WriterId, String>
             let existing = fs::read_to_string(&path).map_err(|e| format!("writer-id read: {e}"))?;
             match Uuid::parse_str(existing.trim()) {
                 Ok(other) => Ok(WriterId(other)), // lost the race — adopt theirs
-                Err(_) => {
-                    // Corrupt file, not a race: replace it (no healthy
-                    // writer can be relying on unparseable identity).
-                    fs::write(&path, id.to_string())
-                        .map_err(|e| format!("writer-id rewrite: {e}"))?;
-                    Ok(WriterId(id))
-                }
+                // Corrupt file, not a race: replace it (no healthy writer
+                // can be relying on unparseable identity).
+                Err(_) => repair_writer_id(app_data_dir, &path, id),
             }
         }
         Err(e) => Err(format!("writer-id create: {e}")),
     }
 }
+
+/// Replace a corrupt writer-id file so that concurrent repairs CONVERGE.
+///
+/// Every process starting against the corrupt file repairs it. Writing it in
+/// place let each repairer return its own id while only the last write
+/// survived, so the others stamped entries with an identity no later run
+/// loads. Here the repair holds an exclusive lock and re-reads first: the
+/// first repairer writes, every later one adopts its id. The new id arrives
+/// by rename, so a reader outside the lock sees the corrupt file or the
+/// repaired one, never a partial write. The lock file stays in app data.
+fn repair_writer_id(dir: &Path, path: &Path, id: Uuid) -> Result<WriterId, String> {
+    let lock = fs::OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .write(true)
+        .open(dir.join("coherence-writer-id.lock"))
+        .and_then(|lock| lock.lock().map(|()| lock))
+        .map_err(|e| format!("writer-id lock: {e}"))?;
+    if let Some(other) = fs::read_to_string(path)
+        .ok()
+        .and_then(|existing| Uuid::parse_str(existing.trim()).ok())
+    {
+        return Ok(WriterId(other)); // another repairer got here first
+    }
+    let tmp = dir.join(format!(".writer-id-{id}"));
+    let written = fs::write(&tmp, id.to_string()).and_then(|()| fs::rename(&tmp, path));
+    if written.is_err() {
+        let _ = fs::remove_file(&tmp); // never leave a stray temp behind
+    }
+    drop(lock);
+    written.map_err(|e| format!("writer-id rewrite: {e}"))?;
+    Ok(WriterId(id))
+}
+
+#[cfg(test)]
+#[path = "workspace_files.test.rs"]
+mod tests;
