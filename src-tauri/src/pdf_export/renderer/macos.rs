@@ -8,7 +8,7 @@
 //! `@page` CSS rules drive those, unlike the other two platforms (ADR-PDF1a).
 //! It sets the PAGE SIZE for the silent export path and leaves it alone for the
 //! interactive Print dialog (WI-PDF1.4). This header used to say it never set a
-//! page size at all (#415), which the function has contradicted since
+//! page size at all, which the function has contradicted since
 //! `@page { size }` was measured to be ignored entirely here; the reasoning is
 //! at the `if let Some(p) = page` block and is the authoritative account.
 //!
@@ -47,7 +47,7 @@ define_class!(
 
     unsafe impl NSObjectProtocol for LoadDelegate {}
 
-    /// The load's own verdict (#210). `isLoading` alone went false for a
+    /// The load's own verdict. `isLoading` alone went false for a
     /// FAILED navigation too, and the render then printed WebKit's error
     /// page — or nothing — and reported success.
     unsafe impl WKNavigationDelegate for LoadDelegate {
@@ -79,7 +79,7 @@ define_class!(
 );
 
 impl LoadDelegate {
-    /// What EITHER navigation-failure callback does (#416): say which stage
+    /// What EITHER navigation-failure callback does: say which stage
     /// failed, then record the verdict `load_html_and_wait` reads.
     ///
     /// One function rather than two copies: the copies differed only in the
@@ -150,7 +150,7 @@ pub(super) fn create_offscreen_webview(mtm: objc2::MainThreadMarker) -> Offscree
 }
 
 /// Load HTML from a file URL and wait for the navigation to REPORT — finished
-/// or failed — through a `WKNavigationDelegate` (#210).
+/// or failed — through a `WKNavigationDelegate`.
 ///
 /// Returns Err if the load fails, or times out (10 seconds). The delegate is
 /// held by this frame for the duration; the webview references it weakly and
@@ -224,7 +224,7 @@ pub(super) fn load_html_and_wait(
 ///
 /// Returns a copy of the shared print info to avoid mutating global state —
 /// and, on the silent export path, one whose layout-affecting properties are
-/// all set here rather than inherited from the user's last print (#420).
+/// all set here rather than inherited from the user's last print.
 ///
 /// `_mtm` proves we're on the main thread — `NSPrintInfo::sharedPrintInfo()`
 /// is main-thread-only.
@@ -253,7 +253,7 @@ pub(super) fn configure_print_info(
     // `PageSpec` already carries orientation as a width/height swap, so
     // landscape needs nothing extra.
     //
-    // But the COPY carries whatever the user last printed with (#420):
+    // But the COPY carries whatever the user last printed with:
     // `sharedPrintInfo` is a persisted, mutable global, and a scaling factor
     // left at 50% by an unrelated print silently halved every export. So the
     // silent path — `page` is `Some` — normalises every layout-affecting

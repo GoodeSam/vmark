@@ -1,5 +1,5 @@
 //! The staging file a render writes, published onto the output only on a
-//! delivered success (#224, #198).
+//! delivered success.
 //!
 //! Purpose: the platforms used to print straight to the caller's output
 //! path. A render that outlived its caller's timeout — WebView2's
