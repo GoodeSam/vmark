@@ -86,7 +86,7 @@ import type { Bridge } from './bridge/types.js';
  * --health-check describes it. Everything below derives from this list, so the
  * registrations, the category descriptors and `EXPECTED_TOOL_COUNT` cannot
  * disagree — they used to be four hand-kept copies, and the action counts in
- * the prose drifted to 7/5/2 against a real 8/13/5 (20260728 audit) and to
+ * the prose drifted to 7/5/2 against a real 8/13/5 (found by an audit) and to
  * 8/6 against 12/8 (feature-ledger inspection) before anything noticed.
  *
  * Nothing here is retyped from a tool module: `name` and `actions` are the

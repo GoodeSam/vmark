@@ -9,13 +9,13 @@
  * (ask the user), and `upload` is never permitted.
  *
  * Pure observation lives in `browser_read`, which declares
- * `readOnlyHint: true`. The two were one tool until the 2026-07-28 audit
- * remediation: a tool carries ONE annotation set, so bundling the ARIA snapshot
+ * `readOnlyHint: true`. The two were one tool until an audit remediation
+ * split them: a tool carries ONE annotation set, so bundling the ARIA snapshot
  * with `execute_js` forced the composite to declare the dangerous value and
  * charged a human approval to the safest, most frequent call in the surface.
  * Splitting along "does this modify anything?" lets each half tell the truth.
  *
- * Origin: Embedded browser sites and workflows plan (2026-07-12, retired).
+ * Origin: Embedded browser sites and workflows plan (retired).
  *
  * The schema and this registration live here; the per-action handlers are the
  * table in `browserActions.ts`, and the `action` enum DERIVES from that table's

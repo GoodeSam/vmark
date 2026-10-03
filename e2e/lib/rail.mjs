@@ -291,9 +291,9 @@ async function clickRailMenuClose(client, name) {
  * Close — which runs `closeWorkspaceInstance`: the instance is REMOVED, a
  * successor is promoted and hydrated.
  *
- * History, and why this exists: until 2026-09-07 `menu:close-workspace`
- * (`workspace.close`) only nulled the workspace store's root and left the
- * instance registered and ACTIVE with no root. From then on the status-bar tab
+ * History, and why this exists: `menu:close-workspace` (`workspace.close`)
+ * used to only null the workspace store's root and leave the instance
+ * registered and ACTIVE with no root. After such a close the status-bar tab
  * strip, scoped to the active instance, had nothing to show and unmounted, and
  * every new untitled tab was claimed into the inactive "Loose Files" —
  * invisible; after journey 17 ran on a rail-on profile, every document-tab

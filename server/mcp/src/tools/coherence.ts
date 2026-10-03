@@ -13,7 +13,7 @@
  * `coherence_resolve`, so the name, the header and the annotation agree again
  * and a client can auto-approve the reads.
  *
- * Origin: Coherence layer plan (2026-07-18, retired).
+ * Origin: Coherence layer plan (retired).
  *
  * @coordinates-with tools/coherenceResolve.ts (the one mutating action)
  */

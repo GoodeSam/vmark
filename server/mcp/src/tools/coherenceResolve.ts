@@ -16,7 +16,7 @@
  * and fail-closed — it keys off the authenticated bridge principal, never off
  * anything the client asserts, so this split changes no security property.
  *
- * Origin: Coherence layer plan (2026-07-18, retired).
+ * Origin: Coherence layer plan (retired).
  *
  * @coordinates-with tools/coherence.ts (the read-only view)
  */
