@@ -32,6 +32,19 @@ function laterImageSettled(): Promise<void> {
   });
 }
 
+/**
+ * Wait, with a bound, for something that should happen. A control's positive
+ * result is waited for directly: the settle helpers only bound a load that
+ * should never happen, since the engine can finish a later request first.
+ */
+async function eventually(happened: () => boolean): Promise<boolean> {
+  const began = performance.now();
+  while (!happened() && performance.now() - began < 5_000) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  return happened();
+}
+
 beforeEach(() => {
   window.__ra85Loads = [];
 });
@@ -40,7 +53,7 @@ describe("clipboard HTML and the network, real engine", () => {
   it("control: markup parsed into the page's own document does load", async () => {
     const detached = document.createElement("div");
     detached.innerHTML = probe("page");
-    await laterImageSettled();
+    expect(await eventually(() => (window.__ra85Loads ?? []).length > 0)).toBe(true);
     expect(window.__ra85Loads).toEqual(["page"]);
   });
 
@@ -79,8 +92,7 @@ describe("the preview sanitizer and the network, real engine", () => {
     const url = probeUrl("page");
     const detached = document.createElement("div");
     detached.innerHTML = `<span style="color: red">x</span><img src="${url}">`;
-    await laterFetchSettled();
-    expect(fetched(url)).toBe(true);
+    expect(await eventually(() => fetched(url))).toBe(true);
   });
 
   it("sanitizeHtmlPreview with styles fetches nothing", async () => {
