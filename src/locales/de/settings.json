@@ -312,7 +312,7 @@
   "files.mergeWindow.1m": "1 Minute",
   "files.mergeWindow.2m": "2 Minuten",
   "files.maxFileSize.label": "Maximale Dateigröße für Verlauf",
-  "files.maxFileSize.description": "Verlaufs-Schnappschüsse für Dateien überspringen, die größer als dieser Wert sind",
+  "files.maxFileSize.description": "Verlaufs-Snapshots der automatischen Speicherung für Dateien überspringen, die größer als dieser Wert sind — manuelle Speicherungen, MCP-Speicherungen und die Sicherheitskopie vor dem Wiederherstellen einer Version werden immer behalten",
   "files.maxFileSize.256kb": "256 KB",
   "files.maxFileSize.512kb": "512 KB",
   "files.maxFileSize.1mb": "1 MB",

@@ -312,7 +312,7 @@
   "files.mergeWindow.1m": "1 分鐘",
   "files.mergeWindow.2m": "2 分鐘",
   "files.maxFileSize.label": "歷史紀錄最大檔案大小",
-  "files.maxFileSize.description": "超過此大小的檔案將跳過歷史紀錄快照",
+  "files.maxFileSize.description": "超過此大小的檔案將跳過自動儲存的歷史紀錄快照；手動儲存、MCP 儲存以及還原版本前的安全副本一律保留",
   "files.maxFileSize.256kb": "256 KB",
   "files.maxFileSize.512kb": "512 KB",
   "files.maxFileSize.1mb": "1 MB",

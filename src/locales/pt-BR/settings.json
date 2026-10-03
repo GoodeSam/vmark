@@ -312,7 +312,7 @@
   "files.mergeWindow.1m": "1 minuto",
   "files.mergeWindow.2m": "2 minutos",
   "files.maxFileSize.label": "Tamanho máximo do arquivo para histórico",
-  "files.maxFileSize.description": "Ignorar instantâneos do histórico para arquivos maiores que este",
+  "files.maxFileSize.description": "Ignorar instantâneos do histórico do salvamento automático para arquivos maiores que este — salvamentos manuais, salvamentos via MCP e a cópia de segurança feita antes de restaurar uma versão são sempre mantidos",
   "files.maxFileSize.256kb": "256 KB",
   "files.maxFileSize.512kb": "512 KB",
   "files.maxFileSize.1mb": "1 MB",

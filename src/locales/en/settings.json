@@ -312,7 +312,7 @@
   "files.mergeWindow.1m": "1 minute",
   "files.mergeWindow.2m": "2 minutes",
   "files.maxFileSize.label": "Max file size for history",
-  "files.maxFileSize.description": "Skip history snapshots for files larger than this",
+  "files.maxFileSize.description": "Skip autosave history snapshots for files larger than this — manual saves, MCP saves and the safety copy before restoring a version are always kept",
   "files.maxFileSize.256kb": "256 KB",
   "files.maxFileSize.512kb": "512 KB",
   "files.maxFileSize.1mb": "1 MB",
