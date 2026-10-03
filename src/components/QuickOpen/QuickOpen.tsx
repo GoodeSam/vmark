@@ -124,7 +124,7 @@ export function QuickOpen({ windowLabel }: QuickOpenProps) {
   // the resets are bound to the open/close transition and bundled with real side
   // effects (focus capture/restore, RAF focus, picker close), so they can't be
   // derived during render (#1063).
-  /* eslint-disable react-hooks/set-state-in-effect */
+  /* eslint-disable react-hooks/set-state-in-effect -- resets bound to the open/close transition alongside focus capture/restore and RAF focus */
   useEffect(() => {
     /* v8 ignore next -- @preserve reason: false branch (close path) restores focus; jsdom focus tracking unreliable */
     if (isOpen) {

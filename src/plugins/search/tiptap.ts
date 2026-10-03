@@ -78,8 +78,7 @@ export const searchExtension = Extension.create({
     // Debounce state: pending timeout ID and a weak reference to the view
     // used to dispatch the deferred rebuild transaction.
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-    // eslint-disable-next-line prefer-const
-    let viewRef: { current: import("@tiptap/pm/view").EditorView | null } = { current: null };
+    const viewRef: { current: import("@tiptap/pm/view").EditorView | null } = { current: null };
 
     return [
       new Plugin({

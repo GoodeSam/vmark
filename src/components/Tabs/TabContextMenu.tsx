@@ -164,7 +164,7 @@ export function TabContextMenu({ tab, position, windowLabel, onClose }: TabConte
   // below; not derivable during render without losing mount-time focus init (#1063).
   useEffect(() => {
     /* v8 ignore next -- @preserve reason: ?? -1 fallback only when focusableIndices is empty; menu always has enabled items in tests */
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- re-seeds focus when the focusable set changes, paired with the DOM-focus effect; mount-time init cannot run during render
     setFocusedIndex(focusableIndices[0] ?? -1);
   }, [focusableIndices]);
 

@@ -10,6 +10,7 @@
  */
 
 import { create } from "zustand";
+import { publishDevGlobal } from "@/utils/devDebugHandle";
 
 /** Phases of installing a content-server runtime. Nothing produces them today: no Rust code provisions one. */
 type ProvisionPhase =
@@ -118,12 +119,8 @@ export const useContentServerStore = create<ContentServerStore>((set) => ({
   reset: () => set({ ...initialState }),
 }));
 
-/* Dev helper: expose the store so E2E (Tauri MCP) can toggle the panel. */
-/* v8 ignore next 3 */
-if (import.meta.env.DEV) {
-  (window as unknown as { __contentServerStore: typeof useContentServerStore }).__contentServerStore =
-    useContentServerStore;
-}
+/* Dev helper: expose the store so E2E (Tauri MCP) can toggle the panel (DEV-gated inside publishDevGlobal). */
+publishDevGlobal("__contentServerStore", useContentServerStore);
 
 /* Selectors — components MUST use these (no store destructuring). */
 export const selectServerStatus = (s: ContentServerStore): ServerStatus => s.status;

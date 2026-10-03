@@ -95,4 +95,17 @@ describe("useStepNavigation", () => {
     pressAlt("ArrowLeft");
     expect(selection().selectedStepId).toBeNull();
   });
+
+  // WI-RA17F.7 — the shortcut must follow the CURRENT job. Two jobs can share
+  // neighbouring step ids (both `null` at an end, or the same generated id),
+  // so a job switch that leaves prev/next unchanged must still re-target.
+  it("Alt+Arrow selects in the current job after the job changes but the neighbours do not", () => {
+    const { rerender } = renderHook(
+      ({ jobId }) => useStepNavigation(jobId, "s0", "s2"),
+      { initialProps: { jobId: "build" } },
+    );
+    rerender({ jobId: "test" });
+    pressAlt("ArrowLeft");
+    expect(selection()).toEqual({ selectedJobId: "test", selectedStepId: "s0" });
+  });
 });

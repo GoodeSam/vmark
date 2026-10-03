@@ -200,7 +200,7 @@ describe("searchExtension", () => {
     it("returns null for invalid regex patterns gracefully", () => {
       let result: RegExp | null;
       try {
-        // eslint-disable-next-line no-invalid-regexp
+        // eslint-disable-next-line no-invalid-regexp -- the pattern is deliberately invalid; the test pins that constructing it throws
         result = new RegExp("[invalid", "gi");
       } catch {
         result = null;

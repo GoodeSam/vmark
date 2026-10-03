@@ -127,7 +127,7 @@ export function EditorContextMenu() {
 
   // Seed roving focus on open; clear on close.
   // Legitimate setState-in-effect: reacts to the open/close transition (#1063).
-  /* eslint-disable react-hooks/set-state-in-effect */
+  /* eslint-disable react-hooks/set-state-in-effect -- seeds or clears roving focus on the open/close transition */
   useEffect(() => {
     if (isOpen) {
       focusFirst();
@@ -148,7 +148,7 @@ export function EditorContextMenu() {
   // so it never assumes the CSS anchor and never inherits a stale offset
   // when switching between submenus.
   // Legitimate setState-in-effect: depends on post-render geometry (#1063).
-  /* eslint-disable react-hooks/set-state-in-effect */
+  /* eslint-disable react-hooks/set-state-in-effect -- the submenu flip and shift depend on post-render geometry */
   useEffect(() => {
     if (nav.openSubmenu < 0) {
       setSubmenuFlipped(false);

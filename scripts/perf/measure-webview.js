@@ -55,7 +55,7 @@
 //   timestamp: string;
 // }
 
-/* eslint-disable */
+/* eslint-disable -- a self-contained payload pasted verbatim into the WebView, not a module of this codebase */
 
 (function defineMeasurePayload() {
   /**

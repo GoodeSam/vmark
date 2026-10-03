@@ -82,7 +82,7 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
   const setSelectedTextRef = useRef(setSelectedText);
   const cursorInfoRef = useRef(cursorInfo);
   // Latest-value refs synced during render: read by CodeMirror's update listener, a delayed focus/restore setTimeout, and an interval poll — all of which can fire before a passive effect would flush, so they need pre-commit freshness (#1063).
-  /* eslint-disable react-hooks/refs */
+  /* eslint-disable react-hooks/refs -- latest-value refs read by CodeMirror listeners and timers that can fire before passive effects flush */
   hiddenRef.current = hidden;
   setContentRef.current = setContent;
   setCursorInfoRef.current = setCursorInfo;
@@ -262,7 +262,7 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
       view.destroy();
       viewRef.current = null;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once: creates the CodeMirror view; later prop changes are pushed by dedicated effects
   }, []);
 
   // Handle visibility transitions: hidden → visible
@@ -296,7 +296,7 @@ export function SourceEditor({ hidden = false, readOnly = false }: SourceEditorP
       if (!viewRef.current || hiddenRef.current) return;
       focusAndRestoreSource(view, visibleTabId, cursorInfoRef.current);
     }, 50);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts to the visibility transition only; it reads the current render's values when it runs
   }, [hidden]);
 
   // Toggle read-only mode when prop changes

@@ -161,7 +161,7 @@ export function OutlineView() {
     const newHeadings = extracted.length > MAX_HEADING_COUNT ? extracted.slice(0, MAX_HEADING_COUNT) : extracted;
     perfEnd("OutlineView:extractHeadings", { count: newHeadings.length });
     return newHeadings;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- headingLinesKey stands in for deferredContent so edits that leave the heading lines alone do not re-extract
   }, [headingLinesKey, isTooLarge, filePath]);
 
   const tree = useMemo(() => {

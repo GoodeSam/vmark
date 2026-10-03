@@ -112,7 +112,7 @@ function MermaidPreview({ content, diagnostics, path }: PreviewRendererProps) {
   // Legitimate setState-in-effect: clears then fills from an async Mermaid render
   // (token-guarded against rapid edits) — driven by I/O keyed on content, not
   // derivable during render (#1063).
-  /* eslint-disable react-hooks/set-state-in-effect */
+  /* eslint-disable react-hooks/set-state-in-effect -- clears then fills from a token-guarded async Mermaid render keyed on content */
   useEffect(() => {
     if (!content.trim()) {
       setSvg(null);

@@ -128,7 +128,7 @@ export function FormatsSettings() {
     ) {
       setEditorDraft(formats.externalEditor);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pushes store changes into the draft only; editorDraft is not a trigger, so an active edit is never clobbered
   }, [formats.externalEditor]);
 
   const browseForEditor = async () => {

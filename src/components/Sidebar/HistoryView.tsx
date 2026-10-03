@@ -66,7 +66,7 @@ export function HistoryView() {
     if (!filePath || !historyEnabled) {
       // Legitimate: clears the list as part of a cancellable async fetch keyed on
       // filePath, not derivable during render (#1063).
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears the list inside a cancellable fetch keyed on filePath; not derivable during render
       setSnapshots([]);
       return;
     }

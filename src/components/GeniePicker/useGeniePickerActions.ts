@@ -80,7 +80,7 @@ export function useGeniePickerActions({
     promptHistory.recordAndReset(text);
     resetInput();
     void settleInvocation(() => invokeFreeform(text, scope), (e) => genieWarn("Freeform genie invocation failed:", e), session.claim());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- promptHistory is a fresh object each render; listing it would rebuild the handler every render
   }, [filter, activeScope, resetInput, invokeFreeform, session]);
 
   // Every exit from a response mode.

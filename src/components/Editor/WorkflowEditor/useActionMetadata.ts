@@ -104,7 +104,7 @@ export function useActionMetadata(
   // Legitimate setState-in-effect: transitions to loading then resolves from an
   // async metadata fetch (with a mounted guard) — driven by I/O keyed on `uses`,
   // not derivable during render (#1063).
-  /* eslint-disable react-hooks/set-state-in-effect */
+  /* eslint-disable react-hooks/set-state-in-effect -- loading transition and an async metadata fetch keyed on `uses`, with a mounted guard */
   useEffect(() => {
     if (!uses || !isResolvableRef(uses)) {
       setResult({ state: "idle" });

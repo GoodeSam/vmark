@@ -26,6 +26,7 @@ import type { StoreApi } from "zustand";
 import type { PopupStoreBase } from "@/plugins/shared";
 import type { LinkPopupState } from "@/plugins/shared/popupPorts";
 import { activeFilePathForCurrentWindow, hostDocument } from "@/plugins/shared/hostDocument";
+import { requirePort } from "@/plugins/shared/requirePort";
 import { navigateToHeadingById } from "@/utils/headingSlug";
 import { classifyLinkAction } from "./operations";
 import { LinkPopupView } from "./LinkPopupView";
@@ -256,26 +257,19 @@ class LinkPopupPluginView {
 /** Tiptap extension that shows a popup when the cursor is on a link. */
 export interface LinkPopupOptions {
   /** The edit popup's state — a PORT, no default (ADR-015). */
-  store: StoreApi<LinkPopupState>;
+  store: StoreApi<LinkPopupState> | undefined;
   /** The create popup's, which this plugin only dismisses. */
-  createStore: StoreApi<PopupStoreBase>;
+  createStore: StoreApi<PopupStoreBase> | undefined;
 }
 
 export const linkPopupExtension = Extension.create<LinkPopupOptions>({
   name: "linkPopup",
   addOptions() {
-    return {
-      store: undefined as unknown as StoreApi<LinkPopupState>,
-      createStore: undefined as unknown as StoreApi<PopupStoreBase>,
-    };
+    return { store: undefined, createStore: undefined };
   },
   addProseMirrorPlugins() {
-    const { store, createStore } = this.options;
-    if (!store || !createStore) {
-      throw new Error(
-        "linkPopupExtension requires `store` and `createStore` options — see services/assembly/tiptapExtensions.ts"
-      );
-    }
+    const store = requirePort(this.options.store, "linkPopupExtension", "store");
+    const createStore = requirePort(this.options.createStore, "linkPopupExtension", "createStore");
     return [
       new Plugin({
         key: linkPopupPluginKey,

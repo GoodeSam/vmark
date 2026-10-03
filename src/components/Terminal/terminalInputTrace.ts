@@ -24,6 +24,7 @@
  * @module components/Terminal/terminalInputTrace
  */
 import { isDev } from "@/utils/debug/internals";
+import { publishDevGlobal } from "@/utils/devDebugHandle";
 
 /** One recorded step in a keystroke's journey. Field set mirrors the fixture
  *  schema WI-0.3 requires (audit "unknowable" list). */
@@ -184,6 +185,6 @@ export function maybeInstallDevInputTrace(textarea: HTMLTextAreaElement): () => 
       URL.revokeObjectURL(url);
     },
   };
-  (globalThis as unknown as { __vmarkInputTrace?: typeof api }).__vmarkInputTrace = api;
+  publishDevGlobal("__vmarkInputTrace", api);
   return detach;
 }

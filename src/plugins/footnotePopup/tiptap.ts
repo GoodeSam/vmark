@@ -34,6 +34,7 @@ import { HOVER_OPEN_DELAY_MS, HOVER_CLOSE_DELAY_MS, getHoverState, clearHoverTim
 import { FootnotePopupView } from "./FootnotePopupView";
 import { createFootnoteCleanupOnEdit } from "./cleanupOnEdit";
 import { findFootnoteDefinition, findFootnoteReference, getFootnoteDefFromTarget, getFootnoteRefFromTarget, scrollToPosition } from "./tiptapDomUtils";
+import { requirePort } from "@/plugins/shared/requirePort";
 import "./footnote-popup.css";
 
 export const footnotePopupPluginKey = new PluginKey("footnotePopup");
@@ -206,17 +207,16 @@ class FootnotePopupPluginView {
 /** Options for the footnote-popup extension. */
 export interface FootnotePopupOptions {
   /** The popup state this plugin drives — a PORT, not the app's store. */
-  store: StoreApi<FootnotePopupState>;
+  store: StoreApi<FootnotePopupState> | undefined;
 }
 
 export const footnotePopupExtension = Extension.create<FootnotePopupOptions>({
   name: "footnotePopup",
   addOptions() {
-    return { store: undefined as unknown as StoreApi<FootnotePopupState> };
+    return { store: undefined };
   },
   addProseMirrorPlugins() {
-    const { store } = this.options;
-    if (!store) throw new Error("footnotePopupExtension requires a `store` option");
+    const store = requirePort(this.options.store, "footnotePopupExtension", "store");
     return [
       new Plugin({
         key: footnotePopupPluginKey,

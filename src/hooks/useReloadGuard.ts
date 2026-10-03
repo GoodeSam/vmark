@@ -103,10 +103,10 @@ function useDevReloadGuard(): void {
  */
 export function useReloadGuard(): void {
   if (import.meta.env.DEV) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- import.meta.env.DEV is a build-time constant, so each build calls exactly one hook unconditionally
     useDevReloadGuard();
   } else {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- import.meta.env.DEV is a build-time constant, so each build calls exactly one hook unconditionally
     useProductionReloadGuard();
   }
 }
