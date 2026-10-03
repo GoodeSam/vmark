@@ -148,7 +148,7 @@ describe("pointer reorder", () => {
     pressTab(a, false, 50);
     pointer("pointermove", 250, 20);
     expect(hook().dragMode).toBe("reorder");
-    expect(hook().dragHint).toBe("Reorder tab");
+    expect(hook().dragHint).toBe(i18n.t("statusbar:tabDrag.reorder"));
     expect(document.body.style.cursor).toBe("grabbing");
     pointer("pointerup", 250, 20);
 
@@ -184,7 +184,7 @@ describe("pointer reorder", () => {
     pointer("pointermove", 10, 20);
     expect(hook().isReorderBlocked).toBe(true);
     expect(hook().isDropInvalid).toBe(true);
-    expect(hook().dragHint).toBe("Pinned zone is locked");
+    expect(hook().dragHint).toBe(i18n.t("statusbar:tabDrag.pinnedZone"));
     expect(document.body.style.cursor).toBe("not-allowed");
     pointer("pointerup", 10, 20);
 
@@ -235,7 +235,7 @@ describe("drag-out", () => {
     pointer("pointermove", 50, 200);
     expect(hook().dragMode).toBe("dragout");
     expect(hook().isDropInvalid).toBe(true);
-    expect(hook().dragHint).toBe("Cannot move the last tab in main window");
+    expect(hook().dragHint).toBe(i18n.t("statusbar:tabDrag.lastTab"));
     pointer("pointerup", 50, 200);
     await act(async () => { await vi.advanceTimersByTimeAsync(0); });
 
@@ -255,11 +255,11 @@ describe("drag-out", () => {
 
     pressTab(a, false, 50);
     pointer("pointermove", 50, 200);
-    expect(hook().dragHint).toBe("Drop to create a new window");
+    expect(hook().dragHint).toBe(i18n.t("statusbar:tabDrag.newWindow"));
     await act(async () => { await vi.advanceTimersByTimeAsync(60); });
 
     expect(invokeMock).toHaveBeenCalledWith("find_drop_target_window", { screenX: 1050, screenY: 700 });
-    expect(hook().dragHint).toBe("Drop to move to doc-2");
+    expect(hook().dragHint).toBe(i18n.t("statusbar:tabDrag.moveToWindow", { window: "doc-2" }));
     expect(emitMock).toHaveBeenCalledWith("tab:drop-preview", {
       sourceWindowLabel: "doc-1", targetWindowLabel: "doc-2",
     });
@@ -294,7 +294,7 @@ describe("drag-out", () => {
     emitMock.mockClear();
 
     await act(async () => { answer("doc-2"); await vi.advanceTimersByTimeAsync(500); });
-    expect(hook().dragHint).toBe("Reorder tab");
+    expect(hook().dragHint).toBe(i18n.t("statusbar:tabDrag.reorder"));
     expect(emitMock).not.toHaveBeenCalledWith("tab:drop-preview", expect.objectContaining({
       targetWindowLabel: "doc-2",
     }));

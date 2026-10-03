@@ -114,7 +114,7 @@ function buildExportCommandSpecs(): CommandDefinition[] {
       id: "export.html",
       errorLabel: "Failed to export HTML:",
       exec: async (doc) => {
-        const defaultName = getExportFolderName(doc.content, doc.filePath);
+        const defaultName = getExportFolderName(doc.content, doc.filePath, i18n.t("common:untitled"));
         const defaultDir = doc.filePath ? getDirectory(doc.filePath) : undefined;
         const { exportToHtml } = await import("@/export/useExportOperations");
         await exportToHtml({
@@ -139,7 +139,7 @@ function buildExportCommandSpecs(): CommandDefinition[] {
       id: "export.pdfNative",
       errorLabel: "Failed to export PDF:",
       exec: async (doc) => {
-        const defaultName = getExportFolderName(doc.content, doc.filePath);
+        const defaultName = getExportFolderName(doc.content, doc.filePath, i18n.t("common:untitled"));
         const { exportToPdfNative } = await import("@/export/useExportOperations");
         await exportToPdfNative({
           markdown: doc.content,
@@ -203,7 +203,7 @@ function pandocFormatCommand(fmt: string): CommandDefinition {
     title: () => `${i18n.t("commands:export.pandocFormat")} (${fmt})`,
     errorLabel: `Failed to export via Pandoc (${fmt}):`,
     exec: async (doc) => {
-      const defaultName = getExportFolderName(doc.content, doc.filePath);
+      const defaultName = getExportFolderName(doc.content, doc.filePath, i18n.t("common:untitled"));
       const defaultDir = doc.filePath ? getDirectory(doc.filePath) : undefined;
       const { exportViaPandoc } = await import("@/export/pandocExport");
       await exportViaPandoc({

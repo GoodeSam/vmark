@@ -183,22 +183,24 @@ function truncateAtWordBoundary(text: string, maxLength: number): string {
  * Priority:
  * 1. First H1 heading from markdown (sanitized)
  * 2. File name without extension (if file path provided)
- * 3. Fallback value (default: "Untitled")
+ * 3. `fallback` — the caller's translated untitled name. Required, with no
+ *    English default: this module is leaf-pure and cannot translate, and a
+ *    default here is how the English "Untitled" reached every locale.
  *
  * @param markdown - The document's markdown content
  * @param filePath - The document's file path (optional)
- * @param fallback - Fallback name if no title found (default: "Untitled")
+ * @param fallback - Name used when neither gives one, already translated
  * @returns A filesystem-safe folder name
  *
  * @example
- * getExportFolderName("# My Doc", "/path/to/file.md") // "My Doc"
- * getExportFolderName("No heading", "/path/to/notes.md") // "notes"
- * getExportFolderName("No heading", null) // "Untitled"
+ * getExportFolderName("# My Doc", "/path/to/file.md", "Untitled") // "My Doc"
+ * getExportFolderName("No heading", "/path/to/notes.md", "Untitled") // "notes"
+ * getExportFolderName("No heading", null, "未命名") // "未命名"
  */
 export function getExportFolderName(
   markdown: string,
   filePath: string | null | undefined,
-  fallback: string = "Untitled"
+  fallback: string
 ): string {
   // Try H1 first
   const h1 = extractFirstH1(markdown);
@@ -290,19 +292,21 @@ function stripInlineMarkdown(text: string): string {
  * Priority:
  * 1. First H1 heading from content (markdown stripped, then sanitized)
  * 2. Tab title (if provided and non-empty)
- * 3. "Untitled"
+ * 3. `fallback` — the caller's translated untitled name (required, as for
+ *    `getExportFolderName`)
  *
  * @param content - The document's markdown content
  * @param tabTitle - The current tab title (e.g., "Untitled-1")
+ * @param fallback - Name used when neither gives one, already translated
  * @returns A filesystem-safe filename (without extension)
  *
  * @example
- * getSaveFileName("# My Document", "Untitled-1") // "My Document"
- * getSaveFileName("# **Bold** Title", "Untitled-1") // "Bold Title"
- * getSaveFileName("No heading", "Untitled-1") // "Untitled-1"
- * getSaveFileName("No heading", "") // "Untitled"
+ * getSaveFileName("# My Document", "Untitled-1", "Untitled") // "My Document"
+ * getSaveFileName("# **Bold** Title", "Untitled-1", "Untitled") // "Bold Title"
+ * getSaveFileName("No heading", "Untitled-1", "Untitled") // "Untitled-1"
+ * getSaveFileName("No heading", "", "Sans titre") // "Sans titre"
  */
-export function getSaveFileName(content: string, tabTitle: string): string {
+export function getSaveFileName(content: string, tabTitle: string, fallback: string): string {
   // Try H1 first
   const h1 = extractFirstH1(content);
   if (h1) {
@@ -320,5 +324,5 @@ export function getSaveFileName(content: string, tabTitle: string): string {
   }
 
   // Final fallback
-  return "Untitled";
+  return fallback;
 }
