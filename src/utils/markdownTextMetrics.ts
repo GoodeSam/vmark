@@ -1,4 +1,4 @@
-// NOTE: incrementalTextMetrics.ts mirrors this file's fence-pairing and
+// NOTE: components/StatusBar/incrementalTextMetrics.ts mirrors this file's fence-pairing and
 // list-marker semantics for its segment model. Any behavioral change to
 // stripMarkdown must keep incrementalTextMetrics.test.ts equivalence green.
 import { countWords as alfaazCount } from "alfaaz";

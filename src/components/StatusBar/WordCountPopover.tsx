@@ -20,14 +20,14 @@
  *     StatusBarCounts, whose wrapper element contains both trigger and popover.
  *
  * @coordinates-with StatusBarCounts.tsx — owns open state, anchor ref, dismiss
- * @coordinates-with statusTextMetrics.ts — TextMetrics shape
+ * @coordinates-with utils/markdownTextMetrics.ts — TextMetrics shape
  * @module components/StatusBar/WordCountPopover
  */
 
 import type { RefObject } from "react";
 import { useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { TextMetrics } from "./statusTextMetrics";
+import type { TextMetrics } from "@/utils/markdownTextMetrics";
 import "./word-count-popover.css";
 import { useBrowserOccluder } from "@/hooks/useBrowserOccluder";
 

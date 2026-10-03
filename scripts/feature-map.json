@@ -530,6 +530,8 @@
         "src/hooks/useSidebarResize.ts",
         "src/hooks/useOutlineSync.ts",
         "src/hooks/useSourceOutlineSync.ts",
+        "src/utils/markdownOutline.ts",
+        "src/utils/markdownOutline.test.ts",
         "src/hooks/useFileOperations.ts",
         "src/hooks/useDragDropOpen.ts",
         "src/hooks/useFinderFileOpen.ts",
@@ -1234,6 +1236,8 @@
       "paths": [
         "src/components/TitleBar",
         "src/components/StatusBar",
+        "src/utils/markdownTextMetrics.ts",
+        "src/utils/markdownTextMetrics.test.ts",
         "src/components/BottomBar",
         "src/components/Welcome",
         "src/components/QuickLook",

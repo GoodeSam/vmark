@@ -14,8 +14,8 @@
 // (`lint`, `outline`, `toPlainText`) the stores call per keystroke.
 
 import { lintMarkdown } from "@/lib/lintEngine";
-import { extractHeadings } from "@/components/Sidebar/outlineUtils";
-import { stripMarkdown } from "@/components/StatusBar/statusTextMetrics";
+import { extractHeadings } from "@/utils/markdownOutline";
+import { stripMarkdown } from "@/utils/markdownTextMetrics";
 import { registerFormat } from "../registry";
 import type { FormatConfig } from "../types";
 
