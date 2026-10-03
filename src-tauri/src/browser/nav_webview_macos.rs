@@ -40,7 +40,7 @@ pub(super) fn current_title(web_view: &WKWebView) -> String {
         .unwrap_or_default()
 }
 
-/// The webview's back/forward-list state as `(can_go_back, can_go_forward)` (WI-S1.6).
+/// The webview's back/forward-list state as `(can_go_back, can_go_forward)`.
 ///
 /// The omnibox disables its history controls from these, so a stale mirror would be
 /// worse than no state at all — hence the direct read.

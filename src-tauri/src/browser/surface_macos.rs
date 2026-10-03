@@ -1,5 +1,5 @@
 //! macOS native browser surface — the objc2 WKWebView implementation of the
-//! WI-1.2 surface. Split from surface.rs (which keeps the cross-platform
+//! browser surface. Split from surface.rs (which keeps the cross-platform
 //! struct + command-facing re-exports) to stay under the file-size limit.
 //! Included via `#[path]` from surface.rs; `super::` refers to that module.
 
@@ -67,8 +67,8 @@ mod user_input_resolve;
 use user_input_resolve::{tab_id_at_window_point, tab_id_for_responder};
 
 /// Run `f` on the main thread and return its result (20s cap). Every failure —
-/// the body's, the hop's, the scheduler's — is a typed `NativeSurfaceError`
-/// (round 4, #31); nothing on this path renders a `fail::` string.
+/// the body's, the hop's, the scheduler's — is a typed `NativeSurfaceError`;
+/// nothing on this path renders a `fail::` string.
 ///
 /// **Already on the main thread → run inline.** `run_on_main_thread` always
 /// ENQUEUES on the event loop, so a caller that is itself inside an event-loop
@@ -139,7 +139,7 @@ fn webview_for(tab_id: &str) -> Result<Retained<WKWebView>, NativeSurfaceError> 
         .ok_or_else(|| NativeSurfaceError::NoWebview(format!("no webview: {tab_id}")))
 }
 
-/// Load `url` in an existing webview. Typed end to end (round 4, #31): the
+/// Load `url` in an existing webview. Typed end to end: the
 /// caller's closure in `ai_transactions::navigate_native` takes this error as is.
 pub fn navigate(app: &AppHandle, tab_id: String, url: String) -> Result<(), NativeSurfaceError> {
     on_main(app, move |_mtm| {
@@ -213,7 +213,7 @@ pub fn set_bounds(
     })
 }
 
-/// Resume a parked `confirm()` dialog with the user's answer (WI-1.7) — but only
+/// Resume a parked `confirm()` dialog with the user's answer — but only
 /// from the window that owns the dialog's tab (audit 20260903).
 ///
 /// A dialog id is a small integer that travels through the frontend; a guessed or
@@ -255,7 +255,7 @@ pub fn dialog_respond(
 }
 
 /// Hide (freeze) or show (thaw) the native view — the occlusion mechanism
-/// (R2/WI-1.4). Hiding lets a DOM overlay paint in the rect instead of the
+/// (R2). Hiding lets a DOM overlay paint in the rect instead of the
 /// live page that would otherwise sit above all DOM.
 pub fn set_hidden(app: &AppHandle, tab_id: String, hidden: bool) -> Result<(), NativeSurfaceError> {
     on_main(app, move |_mtm| {

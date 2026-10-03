@@ -1,4 +1,4 @@
-//! Window-destroy teardown for the embedded browser (WI-S0.4).
+//! Window-destroy teardown for the embedded browser.
 //!
 //! `BrowserSurface` sends `browser_destroy` from a React unmount cleanup. That works
 //! for closing a tab — but not for closing a WINDOW: the webview running that cleanup

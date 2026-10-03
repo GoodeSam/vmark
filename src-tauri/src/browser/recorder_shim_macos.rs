@@ -1,4 +1,4 @@
-//! Page-world recorder-capture shim injection (WI-NB7.1, native half).
+//! Page-world recorder-capture shim injection (native half).
 //!
 //! Registers a **dormant page-world** `WKUserScript` that captures user actions
 //! (`click`/`change` LOCATORS — never typed values) into a capped ring buffer on a

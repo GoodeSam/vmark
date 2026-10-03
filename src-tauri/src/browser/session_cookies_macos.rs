@@ -1,4 +1,4 @@
-//! Native `WKHTTPCookieStore` capture/replay for storage-state (WI-P6.2, macOS).
+//! Native `WKHTTPCookieStore` capture/replay for storage-state (macOS).
 //!
 //! Included via `#[path]` from surface_macos.rs; `super::` is that module, so this
 //! reaches its private `on_main`/`WEBVIEWS`/`pump_until`. The cookie APIs are async

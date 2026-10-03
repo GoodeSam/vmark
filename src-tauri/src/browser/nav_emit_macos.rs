@@ -1,4 +1,4 @@
-//! Window-routed emission for browser events (WI-S0.2 / ADR-6).
+//! Window-routed emission for browser events (ADR-6).
 //!
 //! The nav delegate used to emit via `app.emit`, which BROADCASTS to every window. With
 //! two document windows each showing a browser tab, every window's listeners saw every

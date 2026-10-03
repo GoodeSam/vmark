@@ -2,8 +2,8 @@
 //! (`prepare_navigation_action`), subframe loads (`subframe_load_allowed`, audit
 //! 20260903 P-01) and the commit-time re-check (`ai_commit_allowed`).
 //!
-//! The DECISIONS live in `nav_decision.rs`, platform-independent and table-tested
-//! (round 3, #22); this file gathers each decision's facts under the registry guard
+//! The DECISIONS live in `nav_decision.rs`, platform-independent and table-tested;
+//! this file gathers each decision's facts under the registry guard
 //! and performs what it names — minting a ticket, recording a shared approval,
 //! remembering the ticket the load rides.
 //!

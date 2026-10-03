@@ -1,4 +1,4 @@
-//! Native user-input takeover signal (WI-NB5.2).
+//! Native user-input takeover signal.
 //!
 //! React cannot see input inside a browser tab: the WKWebView is a native
 //! SIBLING view painted above the DOM placeholder, so a click on the page never
@@ -10,7 +10,7 @@
 //! when — the AI holds that tab; ordinary browsing input is a no-op there, so
 //! the emission itself carries no policy.
 //!
-//! STATIC EXCEPTION (rule 50, WI-20): the installed-once guard and the leaked
+//! STATIC EXCEPTION (rule 50): the installed-once guard and the leaked
 //! monitor are process-global by nature — AppKit's local event monitor is one
 //! hook for the whole app, is never removed for the process lifetime, and must
 //! survive every managed-state teardown. This is the sanctioned "no narrower

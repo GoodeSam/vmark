@@ -161,7 +161,7 @@ pub(super) fn js_result_to_outcome(
 /// show it in. Attaching anyway drops a live web page into a window that never asked for
 /// one, on top of a document the user is editing, taking the clicks meant for it. A create
 /// that cannot find its window fails, the command layer rolls the registry entry back, and
-/// the surface shows the error (WI-S0.9). (Audit, High.)
+/// the surface shows the error. (Audit, High.)
 pub(super) fn content_view(
     app: &AppHandle,
     window_label: &str,

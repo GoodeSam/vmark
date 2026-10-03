@@ -1,4 +1,4 @@
-//! Native-view lifecycle for the browser surface (WI-S0.10 / WI-S0.11).
+//! Native-view lifecycle for the browser surface.
 //!
 //! `evict_existing` and `destroy` both tear a WKWebView out of the view hierarchy, and
 //! both are about the same hazard: a native view that outlives the thing that owned it.
@@ -7,7 +7,7 @@
 //!
 //! **The pairing invariant.** A tab is in `WEBVIEWS` if and only if it is in `DELEGATES`,
 //! and `create` registers the two together before anything can pump the run loop. That is
-//! not tidiness — teardown depends on it. Since WI-S0.11 the delegate is a **KVO observer**
+//! not tidiness — teardown depends on it. The delegate is a **KVO observer**
 //! on its webview's `URL`, and the only way to unregister an observer is through the object
 //! being observed. So `detach` must find the webview to reach the delegate's observation,
 //! and the delegate may only be dropped afterwards.
@@ -26,7 +26,7 @@ use tauri::AppHandle;
 /// Remove any webview already registered under `tab_id` from the view hierarchy.
 ///
 /// Nothing normally hits this — `destroy` runs on unmount. It exists for the rapid
-/// switch-away-and-back race (WI-S0.10), where a second `create` for the same tab can
+/// switch-away-and-back race, where a second `create` for the same tab can
 /// land before the first `destroy`. Without it the superseded view is dropped from the
 /// map but never removed from its superview: a live page, invisible to us, still
 /// painting over the UI, with no handle left to tear it down.

@@ -1,4 +1,4 @@
-//! The authoritative driver-authorization gate (WI-2.1 / R4 / I3 / R7a).
+//! The authoritative driver-authorization gate (R4 / I3 / R7a).
 //!
 //! Split from `commands_auth.rs` (the `#[tauri::command]` entry points) so the
 //! security core lives in one small, unit-testable file — and so the file-size
@@ -73,7 +73,7 @@ pub(crate) fn authorize_driver_op(
     target: Option<&OneShotTarget>,
     // Hex SHA-256 of the exact script, for `style`/`eval` (`None` otherwise). The
     // one-shot path binds it so an approved script cannot be swapped for another on
-    // the retry. (Security review P5, High #1.)
+    // the retry.
     payload_hash: Option<&str>,
 ) -> Result<(), CommandError> {
     let policy = ai_policy(state)?;
@@ -148,7 +148,7 @@ fn fresh_under_guard(
 /// Verify freshness and SUBMIT, both under the registry guard — then hand the
 /// caller a handle to await outside it.
 ///
-/// This is the actual close on the WI-2 race. `dispatch_if_fresh` released the
+/// This is the actual close on the check-then-dispatch race. `dispatch_if_fresh` released the
 /// guard before dispatching, so another thread could navigate, destroy the tab, or
 /// bump the policy epoch in the gap; an audit was right that the earlier "nothing
 /// can interleave" claim only covered main-thread work. Holding the registry lock
