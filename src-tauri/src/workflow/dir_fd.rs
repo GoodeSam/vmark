@@ -50,17 +50,21 @@ impl Dir {
     }
 
     /// Open the absolute, already-canonical `path` by walking it from `/`
-    /// one component at a time with `O_NOFOLLOW` (#74). A canonical path has
-    /// no link in it, so a link found at any component now means the name was
-    /// swapped after it was resolved — refused, never followed.
+    /// one component at a time with `O_NOFOLLOW` (#74). A link found at any
+    /// component means the name was swapped after it was resolved — refused,
+    /// never followed. So is a relative path, never re-read from `/`.
     pub(super) fn open_nofollow(path: &Path) -> Result<Self, String> {
         use std::path::Component;
+        let not_canonical = || format!("{} is not a canonical path", path.display());
+        let mut components = path.components();
+        if components.next() != Some(Component::RootDir) {
+            return Err(not_canonical());
+        }
         let mut dir = Self::open(Path::new("/"))?;
-        for component in path.components() {
+        for component in components {
             match component {
-                Component::RootDir => {}
                 Component::Normal(name) => dir = dir.open_child(&c_name(name)?)?,
-                _ => return Err(format!("{} is not a canonical path", path.display())),
+                _ => return Err(not_canonical()),
             }
         }
         Ok(dir)
@@ -263,15 +267,10 @@ impl Dir {
 }
 
 /// A syscall's return code as a `Result` — the ONE place `-1` becomes an
-/// `io::Error` (audit 20260907 #533).
-///
-/// Five call sites hand-wrote `if rc != 0 { last_os_error() }` and then applied
-/// their own policy to the result, and the two halves drifted into five
-/// slightly different shapes for one idiom. Splitting them apart leaves each
-/// function's policy — `mkdirat` forgiving `EEXIST` (its caller proves what is
-/// there with `open_child`), `fstatat` and `unlinkat` forgiving `ENOENT`
-/// (#534, #535), `renameat` forgiving nothing — visible as the only thing that
-/// differs between them.
+/// `io::Error` (#533). Keeping it apart leaves each caller's policy —
+/// `mkdirat` forgiving `EEXIST` (its caller proves what is there with
+/// `open_child`), `fstatat` and `unlinkat` forgiving `ENOENT` (#534, #535),
+/// `renameat` forgiving nothing — as the only thing that differs between them.
 ///
 /// `errno` MUST be read immediately: any intervening call can overwrite it.
 fn checked(rc: libc::c_int) -> Result<(), std::io::Error> {
@@ -295,3 +294,6 @@ fn checked_fd(fd: libc::c_int) -> Result<libc::c_int, std::io::Error> {
 pub(super) fn c_name(name: &OsStr) -> Result<CString, String> {
     CString::new(name.as_bytes()).map_err(|_| format!("{:?} is not a usable file name", name))
 }
+#[cfg(test)]
+#[path = "dir_fd.test.rs"]
+mod tests;
