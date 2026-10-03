@@ -183,13 +183,11 @@ function truncateAtWordBoundary(text: string, maxLength: number): string {
  * Priority:
  * 1. First H1 heading from markdown (sanitized)
  * 2. File name without extension (if file path provided)
- * 3. `fallback` — the caller's translated untitled name. Required, with no
- *    English default: this module is leaf-pure and cannot translate, and a
- *    default here is how the English "Untitled" reached every locale.
+ * 3. `fallback`, the caller's translated untitled name (no English default:
+ *    a leaf util cannot translate, and a default here reached every locale)
  *
  * @param markdown - The document's markdown content
  * @param filePath - The document's file path (optional)
- * @param fallback - Name used when neither gives one, already translated
  * @returns A filesystem-safe folder name
  *
  * @example
@@ -292,12 +290,10 @@ function stripInlineMarkdown(text: string): string {
  * Priority:
  * 1. First H1 heading from content (markdown stripped, then sanitized)
  * 2. Tab title (if provided and non-empty)
- * 3. `fallback` — the caller's translated untitled name (required, as for
- *    `getExportFolderName`)
+ * 3. `fallback`, the caller's translated untitled name (as above)
  *
  * @param content - The document's markdown content
  * @param tabTitle - The current tab title (e.g., "Untitled-1")
- * @param fallback - Name used when neither gives one, already translated
  * @returns A filesystem-safe filename (without extension)
  *
  * @example
