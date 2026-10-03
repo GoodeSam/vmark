@@ -1,4 +1,4 @@
-//! Tests for `workspace_transfer.rs` (extracted to keep the production
+//! Tests for `workspace/transfer.rs` (extracted to keep the production
 //! file under the size gate; included via `#[path]`).
 
 use super::*;

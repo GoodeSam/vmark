@@ -17,7 +17,7 @@
 //!     save lands where the swap pointed rather than where the user meant.
 //!   - Windows has no `openat`/`renameat` in std, so the save stays path-based
 //!     there (`atomic_replace`), guarded by name and by identity
-//!     (`workspace_grants/protect.rs`); a folder swapped between that check
+//!     (`workspace/grants/protect.rs`); a folder swapped between that check
 //!     and the rename is not caught.
 //!
 //! Metadata is carried as `atomic_replace` carries it — permission bits and
@@ -26,7 +26,7 @@
 //! folder, never by path.
 //!
 //! @coordinates-with file_write.rs — write_checked, create_checked
-//! @coordinates-with workspace_grants/protect.rs — held_write_reaches_list
+//! @coordinates-with workspace/grants/protect.rs — held_write_reaches_list
 //! @module file_write_anchored
 
 use std::ffi::{CString, OsStr};

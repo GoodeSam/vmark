@@ -12,7 +12,7 @@ use std::fs;
 use tauri::Manager;
 
 use crate::command_error::ErrorCode;
-use crate::workspace_grants::WorkspaceGrants;
+use crate::workspace::grants::WorkspaceGrants;
 
 fn set_quarantine(path: &Path) {
     // Realistic value matching what the Mixin app writes.

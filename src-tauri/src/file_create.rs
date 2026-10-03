@@ -7,7 +7,7 @@
 //! in (`file_write_anchored.rs`) and on Windows by its canonical path.
 //!
 //! @coordinates-with file_write.rs — WriteAt, reject_unsafe_target, parent_missing
-//! @coordinates-with workspace_grants/protect.rs — what counts as the list
+//! @coordinates-with workspace/grants/protect.rs — what counts as the list
 //! @module file_create
 
 use crate::command_error::{CommandError, ErrorCode};

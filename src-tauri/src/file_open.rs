@@ -10,7 +10,7 @@
 //!
 //! Key decisions:
 //!   - A folder opened from Finder is a folder the user chose: it is granted
-//!     and recorded through `workspace_grants` before its window opens.
+//!     and recorded through `workspace::grants` before its window opens.
 //!   - `RunEvent::Opened` arrives on the event loop, and handling it touches
 //!     the disk — classifying each URL, resolving and recording a folder, a
 //!     grant file fsync. On a stale network mount any of those blocks for the
@@ -214,7 +214,7 @@ fn log_skipped_opens(skipped: &[String]) {
 pub(crate) fn open_finder_directory<R: tauri::Runtime>(app: &tauri::AppHandle<R>, dir: &str) {
     use crate::peer_text::peer_message;
 
-    let root = match crate::workspace_grants::grant_chosen_root(app, std::path::Path::new(dir)) {
+    let root = match crate::workspace::grants::grant_chosen_root(app, std::path::Path::new(dir)) {
         Ok(root) => root,
         Err(e) => {
             // The error text quotes the path it refused, so both go escaped.

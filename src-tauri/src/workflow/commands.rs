@@ -122,7 +122,7 @@ pub async fn run_workflow<R: tauri::Runtime>(
     // A root that contains app data would let a save-file step rewrite the
     // workspace-grant list (WI-LX1.1). Refused before anything is claimed, so
     // the ordinary refusal spends no execution id…
-    crate::workspace_grants::refuse_root_containing_list(
+    crate::workspace::grants::refuse_root_containing_list(
         &app,
         std::path::Path::new(&workspace_root),
     )?;
@@ -133,7 +133,7 @@ pub async fn run_workflow<R: tauri::Runtime>(
     // above resolved the caller's string on its own, and a link retargeted in
     // between could answer it differently; this is the check that binds. A
     // refusal here drops `admission`, releasing the claim and the published id.
-    crate::workspace_grants::refuse_root_containing_list(&app, &workspace)?;
+    crate::workspace::grants::refuse_root_containing_list(&app, &workspace)?;
     let capture_policy = capture_policy.unwrap_or(CapturePolicy::TrackedOnly);
 
     let genies_dir = prepare_run(&app, &state, &workflow, &workspace, &execution_id).await?;

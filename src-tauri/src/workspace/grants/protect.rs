@@ -43,8 +43,8 @@
 //! @coordinates-with file_write.rs — atomic_write_file
 //! @coordinates-with file_create.rs — create_file_exclusive
 //! @coordinates-with workflow/commands.rs — run_workflow refuses a root containing the list
-//! @coordinates-with workspace_grants/mod.rs — where the list file lives
-//! @module workspace_grants/protect
+//! @coordinates-with workspace/grants/mod.rs — where the list file lives
+//! @module workspace/grants/protect
 
 use std::ffi::OsStr;
 use std::io::ErrorKind;

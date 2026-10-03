@@ -1,4 +1,4 @@
-//! Tests for `workspace_grants/protect.rs` — keeping webview-supplied writes,
+//! Tests for `workspace/grants/protect.rs` — keeping webview-supplied writes,
 //! and workflow roots, off the workspace-grant list.
 //!
 //! WI-LX1.1 — the list decides what is granted at the next launch, so it is
@@ -16,7 +16,7 @@ mod names_grant_list {
     use std::path::Path;
 
     use super::super::names_grant_list;
-    use crate::workspace_grants::GRANTS_FILE;
+    use crate::workspace::grants::GRANTS_FILE;
 
     fn data() -> (tempfile::TempDir, std::path::PathBuf) {
         let dir = tempfile::tempdir().expect("tempdir");
@@ -213,7 +213,7 @@ mod list_protection {
     use tauri_plugin_fs::FsExt;
 
     use crate::command_error::ErrorCode;
-    use crate::workspace_grants::{refuse_list_write, restore_from, WorkspaceGrants, GRANTS_FILE};
+    use crate::workspace::grants::{refuse_list_write, restore_from, WorkspaceGrants, GRANTS_FILE};
 
     fn mock_app() -> tauri::App<tauri::test::MockRuntime> {
         tauri::test::mock_builder()
@@ -251,7 +251,7 @@ mod list_protection {
 
         let bytes = std::fs::read(&file).expect("created at launch");
         assert!(
-            crate::workspace_grants::registry::GrantList::parse(&bytes).is_ok(),
+            crate::workspace::grants::registry::GrantList::parse(&bytes).is_ok(),
             "an empty, valid list"
         );
         #[cfg(target_os = "macos")]
@@ -326,7 +326,7 @@ mod list_protection {
 // (WI-LX1.1 follow-up). The run is refused up front instead.
 mod root_contains_list {
     use super::super::root_contains_list;
-    use crate::workspace_grants::GRANTS_FILE;
+    use crate::workspace::grants::GRANTS_FILE;
 
     fn data() -> (tempfile::TempDir, std::path::PathBuf) {
         let dir = tempfile::tempdir().expect("tempdir");

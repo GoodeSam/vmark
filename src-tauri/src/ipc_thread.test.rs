@@ -17,8 +17,8 @@ use std::path::Path;
 
 /// (file, command) pairs that do blocking work.
 const BLOCKING_COMMANDS: &[(&str, &str)] = &[
-    ("workspace.rs", "read_workspace_config"),
-    ("workspace.rs", "write_workspace_config"),
+    ("workspace/mod.rs", "read_workspace_config"),
+    ("workspace/mod.rs", "write_workspace_config"),
     ("watcher.rs", "start_watching"),
     ("shell_env.rs", "get_login_shell_path"),
     ("shell_env.rs", "get_default_shell"),
@@ -77,7 +77,7 @@ fn blocking_commands_are_async_and_leave_the_ipc_thread() {
 
 #[test]
 fn the_workspace_config_helper_itself_uses_the_blocking_pool() {
-    let text = source("workspace.rs");
-    let helper = function(&text, "config_io").expect("workspace.rs: no fn config_io");
+    let text = source("workspace/mod.rs");
+    let helper = function(&text, "config_io").expect("workspace/mod.rs: no fn config_io");
     assert!(helper.contains("spawn_blocking("));
 }

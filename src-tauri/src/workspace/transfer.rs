@@ -12,7 +12,6 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::peer_text::peer_text;
 use crate::window_manager;
 
-#[path = "workspace_transfer_payloads.rs"]
 mod payloads;
 pub use payloads::{WorkspaceTransferAck, WorkspaceTransferData};
 
@@ -135,7 +134,7 @@ fn take_workspace_transfer(window_label: &str) -> Option<WorkspaceTransferData> 
         .and_then(|map| map.remove(window_label))
 }
 
-/// Generic over the runtime so `workspace_transfer.test.rs` drives the real
+/// Generic over the runtime so `transfer.test.rs` drives the real
 /// command on a mock app; the `#[tauri::command]` wrapper resolves to `Wry`.
 #[tauri::command]
 pub fn ack_workspace_transfer<R: tauri::Runtime>(
@@ -255,5 +254,5 @@ pub fn clear_unclaimed_transfer(window_label: &str) {
 }
 
 #[cfg(test)]
-#[path = "workspace_transfer.test.rs"]
+#[path = "transfer.test.rs"]
 mod tests;

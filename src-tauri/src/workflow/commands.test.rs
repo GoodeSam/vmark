@@ -556,10 +556,10 @@ mod through_the_command {
         let app_data = ws.path().join("app-data");
         std::fs::create_dir(&app_data).expect("app data inside the root");
         let app = mock_app(engine_on());
-        app.manage(crate::workspace_grants::WorkspaceGrants::default());
-        crate::workspace_grants::restore_from(
+        app.manage(crate::workspace::grants::WorkspaceGrants::default());
+        crate::workspace::grants::restore_from(
             app.handle(),
-            app_data.join(crate::workspace_grants::GRANTS_FILE),
+            app_data.join(crate::workspace::grants::GRANTS_FILE),
             std::time::Duration::from_secs(5),
         );
 

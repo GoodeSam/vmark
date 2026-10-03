@@ -22,11 +22,11 @@
 //!     lasts until restart (`fs_scope::confirm_grant_target` states the
 //!     residual and what it takes to reach it).
 //!
-//! @coordinates-with workspace_grants/mod.rs — grant_chosen_root
-//! @coordinates-with workspace_grants/commands.rs — allow_workspace_access
-//! @coordinates-with workspace_grants/launch.rs — re-granting recorded roots
+//! @coordinates-with workspace/grants/mod.rs — grant_chosen_root
+//! @coordinates-with workspace/grants/commands.rs — allow_workspace_access
+//! @coordinates-with workspace/grants/launch.rs — re-granting recorded roots
 //! @coordinates-with fs_scope.rs — confirm_grant_target
-//! @module workspace_grants/scope
+//! @module workspace/grants/scope
 
 use std::path::Path;
 

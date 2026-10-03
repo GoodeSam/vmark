@@ -1,4 +1,4 @@
-//! Tests for `workspace_grants/mod.rs` — choosing a root, persisting it, and
+//! Tests for `workspace/grants/mod.rs` — choosing a root, persisting it, and
 //! re-issuing it at launch.
 //!
 //! WI-LX1.1 — a picked or Finder-opened root is granted and recorded; a

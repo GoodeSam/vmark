@@ -26,7 +26,7 @@
 //! folder on the path swapped after the check cannot redirect the write. On
 //! Windows the write stays path-based; that module states the residual.
 //!
-//! @coordinates-with workspace_grants/protect.rs — what counts as the list
+//! @coordinates-with workspace/grants/protect.rs — what counts as the list
 //! @coordinates-with file_write_anchored.rs — the held-folder write (Unix)
 //! @coordinates-with file_create.rs — the exclusive create, same guard
 
@@ -68,10 +68,10 @@ impl<'a> WriteAt<'a> {
         &self,
         app: &tauri::AppHandle<R>,
     ) -> Result<(), CommandError> {
-        crate::workspace_grants::refuse_list_write(app, self.path)?;
+        crate::workspace::grants::refuse_list_write(app, self.path)?;
         #[cfg(unix)]
         if let Some(name) = self.path.file_name() {
-            crate::workspace_grants::refuse_held_write(
+            crate::workspace::grants::refuse_held_write(
                 app,
                 self.held.identity(),
                 name,
@@ -272,7 +272,7 @@ pub async fn atomic_write_file<R: tauri::Runtime>(
 ) -> Result<(), CommandError> {
     tokio::task::spawn_blocking(move || {
         let target = std::path::Path::new(&path);
-        crate::workspace_grants::refuse_list_write(&app, target)?;
+        crate::workspace::grants::refuse_list_write(&app, target)?;
         write_checked(target, &content, |at| at.refuse_grant_list(&app))
     })
     .await

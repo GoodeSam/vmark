@@ -112,7 +112,7 @@ VMark は完全なオープンソースです。ここに記載されている�
 
 - 更新エンドポイントの設定：[`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json)
 - マシンハッシュの生成：[`src-tauri/src/app_setup.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/app_setup.rs)——`machine_id_hash` を検索
-- ファイルシステムとアセットのスコープ：[`src-tauri/capabilities/default.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/capabilities/default.json)、[`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json) の `assetProtocol` 項目、[`src-tauri/src/fs_scope.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/fs_scope.rs)、[`src-tauri/src/workspace_grants/`](https://github.com/xiaolai/vmark/tree/main/src-tauri/src/workspace_grants)
+- ファイルシステムとアセットのスコープ：[`src-tauri/capabilities/default.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/capabilities/default.json)、[`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json) の `assetProtocol` 項目、[`src-tauri/src/fs_scope.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/fs_scope.rs)、[`src-tauri/src/workspace/grants/`](https://github.com/xiaolai/vmark/tree/main/src-tauri/src/workspace/grants)
 - キーチェーンへの保存：[`src-tauri/src/secure_store.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/secure_store.rs)
 - サーバー側の統計集計：[`scripts/vmark-stats-json`](https://github.com/xiaolai/vmark/blob/main/scripts/vmark-stats-json)——[公開統計](https://log.vmark.app/api/stats)を生成するためにサーバーで実行される正確なスクリプト
 - ネットワーク呼び出しの箇所は上に挙げたものだけです——リポジトリで `reqwest`（Rust）と `fetch(`（TypeScript）を検索して、自分で確認してください

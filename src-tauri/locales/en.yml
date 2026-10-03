@@ -419,7 +419,7 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "Keychain access was denied. Allow VMark in the keychain prompt, or grant it access in Keychain Access, then try again."
 
-  # === Workspace grants (workspace_grants/commands.rs, WI-LX1.1) ===
+  # === Workspace grants (workspace/grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "VMark has not been given access to “%{path}”. Choose the folder with File → Open Workspace… to allow it."
   workspaceAccess.pickerBusy: "A folder dialog is already open"
   workspaceAccess.checkBusy: "VMark is still checking access to that folder. Try again in a moment"

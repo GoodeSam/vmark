@@ -73,9 +73,6 @@ mod webview_edit;
 mod window_manager;
 pub mod workflow;
 mod workspace;
-mod workspace_grants; // WI-LX1.1 Rust-owned workspace grants (picker, Finder, recorded roots)
-mod workspace_transfer;
-mod workspace_validation;
 
 #[cfg(target_os = "macos")]
 mod app_nap;
@@ -154,7 +151,7 @@ fn manage_state<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder
         .manage(close_to_tray::CloseToTrayState::default())
         // WI-LX1.1: the workspace roots the user chose. Loaded from app data
         // and re-granted in `setup_app`; picks made before that are merged.
-        .manage(workspace_grants::WorkspaceGrants::default())
+        .manage(workspace::grants::WorkspaceGrants::default())
         // Serializes terminal-transcript CLI hook configuration writes.
         .manage(terminal_transcript::TranscriptConfigState::default())
 }

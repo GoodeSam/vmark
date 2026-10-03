@@ -21,8 +21,8 @@
 //!     the whole array, so a file larger than any list this build writes is
 //!     refused before it is read into memory.
 //!
-//! @coordinates-with workspace_grants/mod.rs — owns the state and the file
-//! @module workspace_grants/registry
+//! @coordinates-with workspace/grants/mod.rs — owns the state and the file
+//! @module workspace/grants/registry
 
 use std::path::Path;
 

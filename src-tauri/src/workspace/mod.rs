@@ -16,6 +16,9 @@
 //!     one at a time under `ConfigIoLock` (see there for the migration race the
 //!     IPC thread used to prevent). Legacy layouts live in `workspace/legacy.rs`.
 //!
+//! Child modules: `grants` (recursive folder grants), `transfer` (moving a
+//! workspace between windows), `validation` (the MCP `open_workspace` path).
+//!
 //! Known limitations:
 //!   - Hash collisions are possible in theory but vanishingly unlikely (2^64 space).
 
@@ -27,7 +30,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tauri::Manager;
 
+pub(crate) mod grants;
 mod legacy;
+pub(crate) mod transfer;
+pub(crate) mod validation;
 #[cfg(test)]
 use legacy::{clean_excludes, try_rename_legacy_hash, HashMigrationOutcome};
 use legacy::{cleanup_old_vmark, fallback_after_rename, migrate_from_legacy};
@@ -282,9 +288,9 @@ fn write_config_in(paths: &ConfigPaths, config: &WorkspaceConfig) -> Result<(), 
 // ============================================================================
 
 #[cfg(test)]
-#[path = "workspace.test.rs"]
+#[path = "mod.test.rs"]
 mod tests;
 
 #[cfg(test)]
-#[path = "workspace_io.test.rs"]
+#[path = "io.test.rs"]
 mod io_tests;

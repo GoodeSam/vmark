@@ -18,7 +18,7 @@ use std::path::Path;
 
 use super::authorize;
 use crate::command_error::{CommandError, ErrorCode};
-use crate::workspace_grants::{canonical_dir, WorkspaceGrants};
+use crate::workspace::grants::{canonical_dir, WorkspaceGrants};
 
 /// A recorded root with a subfolder, as a user's earlier choice leaves it.
 fn chosen() -> (tempfile::TempDir, WorkspaceGrants, String) {

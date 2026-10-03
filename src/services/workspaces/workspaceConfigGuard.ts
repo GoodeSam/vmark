@@ -11,7 +11,7 @@
  * highest-blast-radius boundary (drives tab restore + file-explorer
  * filtering), so the frontend re-checks the core fields before trusting the
  * typed result. Mirrors what the Rust `WorkspaceConfig` struct actually
- * serializes (`workspace.rs`): `version` (number), `excludeFolders` /
+ * serializes (`src-tauri/src/workspace/mod.rs`): `version` (number), `excludeFolders` /
  * `lastOpenTabs` (string arrays), `showHiddenFiles` (bool). `showAllFiles`
  * is a frontend-only field the store defaults — Rust never emits it, so it
  * is NOT required here. `version` is checked as a number (not literal `1`)

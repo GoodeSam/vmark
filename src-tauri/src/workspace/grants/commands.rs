@@ -17,11 +17,11 @@
 //!     grant it gets is the one it already had.
 //!   - No oracle (#83): see `authorize`.
 //!
-//! @coordinates-with workspace_grants/mod.rs — the state and `canonical_dir`
-//! @coordinates-with workspace_grants/scope.rs — the grant itself
-//! @coordinates-with workspace_grants/picker.rs — the folder pickers
+//! @coordinates-with workspace/grants/mod.rs — the state and `canonical_dir`
+//! @coordinates-with workspace/grants/scope.rs — the grant itself
+//! @coordinates-with workspace/grants/picker.rs — the folder pickers
 //! @coordinates-with services/workspaces/workspaceAccess.ts — the only caller
-//! @module workspace_grants/commands
+//! @module workspace/grants/commands
 
 use std::path::{Path, PathBuf};
 

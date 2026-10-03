@@ -1,4 +1,4 @@
-//! Tests for `workspace_grants/picker.rs` — the folder pickers.
+//! Tests for `workspace/grants/picker.rs` — the folder pickers.
 //!
 //! WI-LX1.1 — the one dialog slot, through each command's WHOLE body, and every
 //! kind of answer. The native panel is injected: MockRuntime cannot show one,
@@ -17,7 +17,7 @@ use tokio::sync::oneshot;
 
 use super::{claim, confirm_with, pick_with, request_workspace_confirmation, settle, Answer};
 use crate::command_error::{CommandError, ErrorCode};
-use crate::workspace_grants::WorkspaceGrants;
+use crate::workspace::grants::WorkspaceGrants;
 
 fn mock_app() -> tauri::App<tauri::test::MockRuntime> {
     tauri::test::mock_builder()

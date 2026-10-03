@@ -111,7 +111,7 @@ VMark는 완전한 오픈 소스입니다. 여기서 설명한 모든 것을 확
 
 - 업데이트 엔드포인트 구성: [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json)
 - 기기 해시 생성: [`src-tauri/src/app_setup.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/app_setup.rs) — `machine_id_hash` 검색
-- 파일 시스템 및 에셋 범위: [`src-tauri/capabilities/default.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/capabilities/default.json), [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json)의 `assetProtocol` 항목, [`src-tauri/src/fs_scope.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/fs_scope.rs), [`src-tauri/src/workspace_grants/`](https://github.com/xiaolai/vmark/tree/main/src-tauri/src/workspace_grants)
+- 파일 시스템 및 에셋 범위: [`src-tauri/capabilities/default.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/capabilities/default.json), [`src-tauri/tauri.conf.json`](https://github.com/xiaolai/vmark/blob/main/src-tauri/tauri.conf.json)의 `assetProtocol` 항목, [`src-tauri/src/fs_scope.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/fs_scope.rs), [`src-tauri/src/workspace/grants/`](https://github.com/xiaolai/vmark/tree/main/src-tauri/src/workspace/grants)
 - 키체인 저장소: [`src-tauri/src/secure_store.rs`](https://github.com/xiaolai/vmark/blob/main/src-tauri/src/secure_store.rs)
 - 서버 측 통계 집계: [`scripts/vmark-stats-json`](https://github.com/xiaolai/vmark/blob/main/scripts/vmark-stats-json) — [공개 통계](https://log.vmark.app/api/stats)를 생성하기 위해 서버에서 실행되는 정확한 스크립트
 - 네트워크 호출 위치는 위에 나열된 것이 전부입니다 — 저장소에서 `reqwest`(Rust)와 `fetch(`(TypeScript)를 검색해 직접 확인해 보세요

@@ -33,14 +33,14 @@
 //!     anything outside VMark — which can edit it like any other file. An edit
 //!     takes effect at the next launch.
 //!
-//! @coordinates-with workspace_grants/commands.rs — the re-grant command
-//! @coordinates-with workspace_grants/picker.rs — the folder pickers
-//! @coordinates-with workspace_grants/registry.rs — the list and its file format
-//! @coordinates-with workspace_grants/protect.rs — refusing writes to the list
-//! @coordinates-with workspace_grants/scope.rs — the recursive grant itself
-//! @coordinates-with workspace_grants/launch.rs — re-granting at launch
+//! @coordinates-with workspace/grants/commands.rs — the re-grant command
+//! @coordinates-with workspace/grants/picker.rs — the folder pickers
+//! @coordinates-with workspace/grants/registry.rs — the list and its file format
+//! @coordinates-with workspace/grants/protect.rs — refusing writes to the list
+//! @coordinates-with workspace/grants/scope.rs — the recursive grant itself
+//! @coordinates-with workspace/grants/launch.rs — re-granting at launch
 //! @coordinates-with file_open.rs — Finder folder opens
-//! @module workspace_grants
+//! @module workspace/grants
 
 pub mod commands;
 mod launch;

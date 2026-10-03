@@ -1,11 +1,11 @@
 //! The payloads a workspace transfer carries between windows.
 //!
-//! Split out of `workspace_transfer.rs` to keep it under the size gate: these
+//! Split out of `workspace/transfer.rs` to keep it under the size gate: these
 //! are the serialized shapes the frontend sends and receives, and nothing here
 //! has behaviour.
 //!
-//! @coordinates-with workspace_transfer.rs — the registry and commands that carry them
-//! @module workspace_transfer_payloads
+//! @coordinates-with workspace/transfer.rs — the registry and commands that carry them
+//! @module workspace/transfer/payloads
 
 use serde::{Deserialize, Serialize};
 

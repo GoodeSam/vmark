@@ -194,7 +194,7 @@ mod list_aliases {
 
     use super::super::write_checked;
     use crate::command_error::{CommandError, ErrorCode};
-    use crate::workspace_grants::{names_grant_list, GRANTS_FILE};
+    use crate::workspace::grants::{names_grant_list, GRANTS_FILE};
 
     fn guard(list: &Path) -> impl Fn(&super::super::WriteAt<'_>) -> Result<(), CommandError> + '_ {
         move |at| {
@@ -264,7 +264,7 @@ mod grant_list {
     use super::super::{atomic_write_file, write_checked};
     use crate::command_error::{CommandError, ErrorCode};
     use crate::file_create::{create_checked, create_file_exclusive};
-    use crate::workspace_grants::{restore_from, WorkspaceGrants, GRANTS_FILE};
+    use crate::workspace::grants::{restore_from, WorkspaceGrants, GRANTS_FILE};
 
     const FORGED: &str = r#"["vmark-workspace-grants/1","/"]"#;
 

@@ -418,7 +418,7 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "Se denegó el acceso al llavero. Permite VMark en el aviso del llavero o concédele acceso en Acceso a Llaveros y vuelve a intentarlo."
 
-  # === Permisos de espacios de trabajo (workspace_grants/commands.rs, WI-LX1.1) ===
+  # === Permisos de espacios de trabajo (workspace/grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "VMark no tiene acceso a «%{path}». Elige la carpeta con Archivo → Abrir espacio de trabajo... para permitirlo."
   workspaceAccess.pickerBusy: "Ya hay un diálogo de carpetas abierto"
   workspaceAccess.checkBusy: "VMark aún está comprobando el acceso a esa carpeta. Inténtalo de nuevo en un momento"

@@ -3,14 +3,14 @@
 //! Purpose: everything that reads or retires an OLD on-disk form of a
 //! workspace config: the 8-byte hash filename used by releases <= 0.7.22, the
 //! `.vmark/vmark.code-workspace` directory format and the ancient plain
-//! `.vmark` file. Split out of `workspace.rs` so the commands there stay small.
+//! `.vmark` file. Split out of `workspace/mod.rs` so the commands there stay small.
 //!
 //! Sunset: the `.vmark` half (`clean_excludes`, `migrate_from_legacy`,
 //! `cleanup_old_vmark`) goes once no supported upgrade path starts below
 //! 0.4.18 (the last release that wrote that layout was 0.4.17); the hash half
 //! once none starts below 0.7.23.
 //!
-//! @coordinates-with workspace.rs — `read_workspace_config` migrates through these
+//! @coordinates-with mod.rs — `read_workspace_config` migrates through these
 //! @module workspace/legacy
 
 use std::fs;

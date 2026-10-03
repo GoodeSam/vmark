@@ -1,4 +1,4 @@
-//! Tests for `workspace_grants/scope.rs` — the recursive workspace grant.
+//! Tests for `workspace/grants/scope.rs` — the recursive workspace grant.
 //!
 //! WI-LX1.1 — the grant is the widest the app makes, so it is strict (a grant
 //! that did not take is an error) and confirmed (a root that moved while it was

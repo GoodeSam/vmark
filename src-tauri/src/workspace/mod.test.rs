@@ -1,6 +1,6 @@
-//! Unit tests for `workspace.rs` (config serde, path hashing, legacy
+//! Unit tests for `workspace/mod.rs` (config serde, path hashing, legacy
 //! migration). Split to an external file via `#[path]` to keep
-//! `workspace.rs` under its size baseline (see 00-engineering-principles).
+//! `workspace/mod.rs` under its size baseline (see 00-engineering-principles).
 
 use super::*;
 use std::fs;

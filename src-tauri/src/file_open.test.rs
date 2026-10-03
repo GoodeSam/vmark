@@ -150,7 +150,7 @@ mod finder_directory {
     use tauri_plugin_fs::FsExt;
 
     use super::super::{off_event_loop, open_finder_directory};
-    use crate::workspace_grants::WorkspaceGrants;
+    use crate::workspace::grants::WorkspaceGrants;
 
     fn mock_app() -> tauri::App<tauri::test::MockRuntime> {
         tauri::test::mock_builder()

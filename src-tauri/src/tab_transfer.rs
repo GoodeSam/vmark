@@ -28,7 +28,7 @@
 //!   - `find_drop_target_window` uses screen coordinates and prefers focused windows
 //!     to support spring-loaded drag targeting.
 //!   - Undoing a move is a round trip (`prepare` → `commit`), mirroring the
-//!     claim/ack protocol in `workspace_transfer.rs`. `prepare` asks the
+//!     claim/ack protocol in `workspace/transfer.rs`. `prepare` asks the
 //!     destination for the tab's CURRENT state and destroys nothing; the source
 //!     restores from that ack (never from its stale pre-transfer snapshot) and
 //!     only then sends `commit`, which removes the destination's copy. A
@@ -116,7 +116,7 @@ pub fn detach_tab_to_new_window(
     data: TabTransferData,
 ) -> Result<String, CommandError> {
     // Register the payload BEFORE creating the window — the ordering
-    // `workspace_transfer.rs` already documents, and the reason it gives holds
+    // `workspace/transfer.rs` already documents, and the reason it gives holds
     // here verbatim: the target invokes `claim_tab_transfer` on mount, and a
     // claim that arrives before the registry is populated silently opens an
     // EMPTY window with the user's tab nowhere.

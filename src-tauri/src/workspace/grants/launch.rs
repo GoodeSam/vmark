@@ -22,10 +22,10 @@
 //!     (#250): Tauri also inserts the canonical form of a granted path, so
 //!     re-granting a name that has since become a link would grant its target.
 //!
-//! @coordinates-with workspace_grants/mod.rs — the state, the list file
-//! @coordinates-with workspace_grants/scope.rs — the grant itself
+//! @coordinates-with workspace/grants/mod.rs — the state, the list file
+//! @coordinates-with workspace/grants/scope.rs — the grant itself
 //! @coordinates-with app_setup.rs — calls restore_at_launch
-//! @module workspace_grants/launch
+//! @module workspace/grants/launch
 
 use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};

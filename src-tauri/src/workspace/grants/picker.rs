@@ -27,9 +27,9 @@
 //!     Everything else — the slot's whole lifecycle through each command, and
 //!     every kind of answer — runs in `picker.test.rs` with the panel injected.
 //!
-//! @coordinates-with workspace_grants/mod.rs — the slot and `grant_chosen_root`
+//! @coordinates-with workspace/grants/mod.rs — the slot and `grant_chosen_root`
 //! @coordinates-with services/workspaces/workspaceAccess.ts — the only caller
-//! @module workspace_grants/picker
+//! @module workspace/grants/picker
 
 use std::path::PathBuf;
 use std::time::Duration;

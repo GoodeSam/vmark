@@ -1,4 +1,4 @@
-//! Tests for `workspace_grants/commands.rs` — the webview's side of the grant.
+//! Tests for `workspace/grants/commands.rs` — the webview's side of the grant.
 //!
 //! WI-LX1.1 — `allow_workspace_access` used to grant recursive fs + asset scope
 //! on ANY path a script handed it, including `/`. It now re-issues only a root
@@ -16,7 +16,7 @@ use tauri_plugin_fs::FsExt;
 
 use super::allow_workspace_access;
 use crate::command_error::{CommandError, ErrorCode};
-use crate::workspace_grants::WorkspaceGrants;
+use crate::workspace::grants::WorkspaceGrants;
 
 fn mock_app() -> tauri::App<tauri::test::MockRuntime> {
     tauri::test::mock_builder()

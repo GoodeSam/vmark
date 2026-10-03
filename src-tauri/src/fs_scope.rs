@@ -16,7 +16,7 @@
 //!   - a runtime fs grant is NOT read-only: the fs plugin accepts a
 //!     runtime-granted path for every command the capability permits (write,
 //!     rename, remove). The recursive workspace grant therefore lives in
-//!     `workspace_grants/scope.rs`, private to the module that decides a root
+//!     `workspace/grants/scope.rs`, private to the module that decides a root
 //!     was chosen, never here;
 //!   - Tauri resolves a granted name AGAIN while granting, and also allows
 //!     whatever it resolves to then (`confirm_grant_target`).
@@ -25,7 +25,7 @@
 //! granting scope is a separate concern from queueing Finder/CLI opens.
 //!
 //! @coordinates-with file_open.rs — queues the opens these grants make readable
-//! @coordinates-with workspace_grants/scope.rs — the recursive workspace grant
+//! @coordinates-with workspace/grants/scope.rs — the recursive workspace grant
 //! @coordinates-with asset_access.rs — the media grant, confirmed the same way
 
 use tauri::Manager;

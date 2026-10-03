@@ -627,11 +627,7 @@
       "paths": [
         "src/components/Workspace",
         "src/services/workspaces",
-        "src-tauri/src/workspace.rs",
         "src-tauri/src/workspace",
-        "src-tauri/src/workspace_transfer.rs",
-        "src-tauri/src/workspace_transfer_payloads.rs",
-        "src-tauri/src/workspace_validation.rs",
         "src/stores/workspaceStore.ts",
         "src/stores/workspaceStoreHelpers.ts",
         "src/stores/workspaceConfigDefaults.ts",
@@ -652,8 +648,8 @@
         "src/hooks/useRecentFilesSync.ts",
         "src/services/commands/recentFilesCommands.ts",
         "src/services/commands/recentWorkspacesCommands.ts",
-        "src-tauri/src/workspace.test.rs",
-        "src-tauri/src/workspace_transfer.test.rs",
+        "src-tauri/src/workspace/mod.test.rs",
+        "src-tauri/src/workspace/transfer.test.rs",
         "src/stores/workspaceStore.test.ts",
         "src/stores/workspaceStoreHelpers.test.ts",
         "src/stores/workspaceConfigDefaults.test.ts",
@@ -670,8 +666,7 @@
         "src/hooks/useRecentFilesSync.test.ts",
         "src/services/commands/recentFilesCommands.test.ts",
         "src/services/commands/recentWorkspacesCommands.test.ts",
-        "src/stores/workspaceStorePersist.ts",
-        "src-tauri/src/workspace_grants"
+        "src/stores/workspaceStorePersist.ts"
       ],
       "flag": null,
       "flagDefault": null,

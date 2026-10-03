@@ -1,4 +1,4 @@
-//! Tests for `workspace_grants/launch.rs` — re-granting recorded roots at
+//! Tests for `workspace/grants/launch.rs` — re-granting recorded roots at
 //! launch, within a bounded wait.
 //!
 //! WI-LX1.1 — launch must not wait on a stale mount, a stale mount must not
@@ -16,7 +16,7 @@ use tauri_plugin_fs::FsExt;
 
 use super::{regrant_all, Regrant};
 use crate::command_error::CommandError;
-use crate::workspace_grants::{canonical_dir, WorkspaceGrants};
+use crate::workspace::grants::{canonical_dir, WorkspaceGrants};
 
 fn mock_app() -> tauri::App<tauri::test::MockRuntime> {
     tauri::test::mock_builder()

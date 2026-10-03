@@ -418,7 +418,7 @@ errors:
   # === Secure store (secure_store.rs) ===
   secureStore.keychainDenied: "O acesso às chaves foi negado. Permita o VMark no aviso das chaves ou conceda o acesso no app Acesso às Chaves e tente novamente."
 
-  # === Permissões de espaços de trabalho (workspace_grants/commands.rs, WI-LX1.1) ===
+  # === Permissões de espaços de trabalho (workspace/grants/commands.rs, WI-LX1.1) ===
   workspaceAccess.notGranted: "O VMark não tem acesso a “%{path}”. Escolha a pasta em Arquivo → Abrir espaço de trabalho... para permitir."
   workspaceAccess.pickerBusy: "Já há uma caixa de diálogo de pasta aberta"
   workspaceAccess.checkBusy: "O VMark ainda está verificando o acesso a essa pasta. Tente novamente em instantes"
