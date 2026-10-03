@@ -35,6 +35,7 @@
  *     callers can rely on sorted, strictly non-overlapping regions
  *
  * @coordinates-with formatter.ts — calls findProtectedRegions before formatting
+ * @coordinates-with fencedCode.ts — the fenced-code detector
  * @coordinates-with segments.ts — segment extraction/reconstruction over these regions
  * @coordinates-with rules.ts — formatting rules operate only on non-protected segments
  * @module lib/cjkFormatter/markdownParser
@@ -44,6 +45,7 @@ import type { ProtectedRegion, ProtectedRegionOptions } from "./types";
 import { detectLineOrientedRegions } from "./markdownParserBlocks";
 import { detectInlineSpanRegions } from "./markdownParserInline";
 import { createRegionLookup } from "./protectedRegionSearch";
+import { findFencedCodeRegions } from "./fencedCode";
 
 /**
  * Find all protected regions in markdown text.
@@ -87,47 +89,10 @@ export function findProtectedRegions(
     }
   }
 
-  // 2. Fenced code blocks (``` or ~~~), paired first.
-  //    Up to three spaces of indentation is a legal fence; four is indented
-  //    code, which detector 12 owns.
-  //
-  //    The closer must be AT LEAST as long as the opener (CommonMark), which
-  //    needs the fence CHARACTER captured separately from the run: `\2` pins
-  //    the opener's exact length and `\3*` allows more of the same character
-  //    after it. Matching `\2` alone — as this did — refuses a legal
-  //    ```` ``` ````-opened block closed by four backticks, and the block then
-  //    falls through to the unclosed-fence rule below and swallows the rest of
-  //    the document.
-  const fencedCodeRegex =
-    /^([ ]{0,3})((`|~)\3{2,})([^\n]*)\n([\s\S]*?)^[ ]{0,3}\2\3*[ \t]*$/gm;
-  let match;
-  while ((match = fencedCodeRegex.exec(text)) !== null) {
-    regions.push({
-      start: match.index,
-      end: match.index + match[0].length,
-      type: "fenced_code",
-    });
-  }
-
-  // 2b. An UNCLOSED fence claims the rest of the document (WI-CJKF2.2).
-  //     CommonMark closes an unterminated fence at end of input, and a document
-  //     being edited is unterminated most of the time — so without this, the
-  //     SAFE entry point rewrote the code the user was in the middle of typing:
-  //     `s = {'中文key': 1}` came back as `s = {‘中文 key’: 1}`, a broken Python
-  //     string literal. Detected on the ORIGINAL text and skipped when already
-  //     inside a paired fence, so a closed block's interior cannot re-open one.
-  const fenceOpenerRegex = /^[ ]{0,3}(`{3,}|~{3,})[^\n]*$/gm;
-  const insidePairedFence = createRegionLookup(regions);
-  let opener;
-  while ((opener = fenceOpenerRegex.exec(text)) !== null) {
-    if (insidePairedFence(opener.index)) continue;
-    regions.push({
-      start: opener.index,
-      end: text.length,
-      type: "fenced_code",
-    });
-    break;
-  }
+  // 2. Fenced code blocks (``` or ~~~), in one pass over the lines. An
+  //    unclosed fence claims the rest of the document (WI-CJKF2.2); see
+  //    fencedCode.ts for the closing rule.
+  regions.push(...findFencedCodeRegions(text));
 
   // Detectors 3-11 are the inline SPAN detectors; they live in
   // ./markdownParserInline.ts and append to `regions` in place, because
