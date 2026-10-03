@@ -1,5 +1,5 @@
 /**
- * Session-tab persistence — versioned records + legacy migration (WI-1.1 / R1).
+ * Session-tab persistence — versioned records + legacy migration (R1).
  *
  * Purpose: the pure translation layer between the live `Tab` union and what is
  * written to a workspace config for session restore. Introduced when a tab
@@ -208,8 +208,8 @@ export function serializeSessionTabs(tabs: readonly Tab[]): SessionTabsV1 {
  * returns only non-null document paths.
  *
  * Browser records are intentionally skipped here (`browserSupported: false`) —
- * browser-tab restore is wired together with the live browser surface (WI-1.3+)
- * and its feature flag (WI-1.10); until then restoring a browser record would
+ * browser-tab restore is wired together with the live browser surface
+ * and its feature flag; until then restoring a browser record would
  * create a tab with no surface. Document restore is unchanged: when `sessionTabs`
  * is present its document paths equal `lastOpenTabs` (both are written together).
  */

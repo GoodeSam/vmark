@@ -48,7 +48,7 @@ export function finalizeInstanceRemoval(
 
   store.removeWorkspaceInstance(windowLabel, workspaceInstanceId);
   if (cleanupPerInstanceUi) {
-    // WI-9.1/10.2 lifecycle: a closed instance's parallel per-instance state
+    // Lifecycle: a closed instance's parallel per-instance state
     // must not linger as orphans.
     useWorkspaceInstanceUiStore.getState().removeInstanceUiState(workspaceInstanceId);
     useWorkspacePaneLayoutsStore.getState().removePaneLayout(workspaceInstanceId);

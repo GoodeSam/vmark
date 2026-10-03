@@ -89,7 +89,7 @@ export function applyFileOwnershipAfterOpen(
   const resolution = resolveFileOpenOwnership(filePath, { ...options, currentTabId: tabId });
   const windowLabel = findWindowLabelForTab(tabId);
   if (windowLabel) {
-    // WI-12.2: every USER-facing open lands here (fileOpen, Finder, media,
+    // Every USER-facing open lands here (fileOpen, Finder, media,
     // replace-tab). The claim is atomic and, when this tab is the ACTIVE one,
     // the visible workspace follows its owner — an active tab must never be
     // hidden by the projection. MCP opens use their own background path (D10).

@@ -16,7 +16,7 @@ export interface WorkspaceContextClassificationInput {
 }
 
 /**
- * Path classification — delegates to the pure ownership kernel (WI-1R) so
+ * Path classification — delegates to the pure ownership kernel so
  * classification, visibility, capture, and persistence share ONE rule.
  */
 export function classifyWorkspaceContextForTab(

@@ -190,7 +190,7 @@ type V2TabState = Omit<
  * Migrate v2 -> v3: Add tab-format fields (formatId / editingEnabled / activeSchemaId)
  *
  * v3 adds three fields to TabState in support of the multi-format
- * workspace (plan WI-1A.13). All v2 sessions are markdown-only by
+ * workspace. All v2 sessions are markdown-only by
  * definition, so the backfill is:
  *   - format_id = "markdown" (the only format that existed pre-v3)
  *   - editing_enabled = true  (markdown is editable by default)

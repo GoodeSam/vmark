@@ -174,7 +174,7 @@ export async function closeWorkspaceInstance(
     }
     if (freshRemaining) return { ok: false, reason: "busy" };
 
-    // The shared post-removal lifecycle (audit #25/#26): store removal,
+    // The shared post-removal lifecycle: store removal,
     // per-instance UI/pane cleanup, terminal + closed-history cleanup, the
     // placeholder/empty-window invariants, and FULL successor hydration when
     // the closed instance was active.

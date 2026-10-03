@@ -1,5 +1,5 @@
 /**
- * Workflow run orchestrator (WI-NB6.2/6.3) — starts, tracks, and cancels async
+ * Workflow run orchestrator — starts, tracks, and cancels async
  * workflow runs.
  *
  * `startWorkflowRun` validates the request (`workflowRunValidate.ts`), acquires
@@ -108,7 +108,7 @@ export function startWorkflowRun(source: string, ctx: StartRunContext): StartRun
   const { workflow, identity, resume } = checked;
   // Wall-clock for timestamps the registry records; the RUN CLOCK below is
   // monotonic by default (`createRunClock`'s own source) — a system-clock
-  // rollback must not extend the execution budget (#191).
+  // rollback must not extend the execution budget.
   const now = ctx.now ?? Date.now;
   // Validate the budget BEFORE anything is mutated: a bad deadline used to throw
   // after the lease was acquired, the run registered and a resumed run superseded,
@@ -213,7 +213,7 @@ export function workflowRunStatus(runId: string): RunState | null {
   return getRun(runId);
 }
 
-/** Cancel a run — never approval-gated (stopping is always allowed, WI-19).
+/** Cancel a run — never approval-gated (stopping is always allowed).
  *  Aborts the in-flight step, withdraws its prompts and releases the lease it
  *  holds. A terminal run is left alone; an unknown run is reported as such. */
 export function cancelWorkflowRun(runId: string): CancelResult {

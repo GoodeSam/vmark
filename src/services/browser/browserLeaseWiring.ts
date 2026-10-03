@@ -1,9 +1,9 @@
 /**
- * Lease event wiring (WI-NB5.1) — the real-world edges that make the browser
+ * Lease event wiring — the real-world edges that make the browser
  * automation lease a control instead of a specification.
  *
  * Purpose: connect the browser lease service (`browserLease`) to its event sources:
- *   - `browser://user-input` — the native signal (WI-NB5.2) that a click or
+ *   - `browser://user-input` — the native signal that a click or
  *     keydown reached a browser WKWebView. React cannot see input inside the
  *     native view (it is a sibling native layer, not DOM), so this is the only
  *     way "the human clicked the page" can reclaim the lease. Reclaim only when
