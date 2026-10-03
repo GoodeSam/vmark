@@ -4,7 +4,7 @@ VMark는 AI 어시스턴트에게 **아홉 가지 복합 MCP 도구** 를 노출
 
 아홉 가지 중 셋 — `session`, `browser_read`, `coherence` — 은 `readOnlyHint: true`를 선언하므로 MCP 클라이언트가 자동 승인할 수 있습니다. `browser`/`browser_read`와 `coherence`/`coherence_resolve`가 애초에 별개의 도구인 이유가 바로 이것입니다: 주석(annotation)은 액션별이 아니라 **도구별** 이므로, ARIA 스냅샷과 `execute_js`를 한데 묶은 도구는 `execute_js`의 위험성을 알려야 합니다. "이것이 무언가를 수정하는가?"를 기준으로 분리하면 각 절반이 진실을 말할 수 있고, 표면에서 정말로 파괴적인 액션들이 도구 목록에서 눈에 띄게 유지됩니다.
 
-이전 12-도구 / 76-액션 표면은 정리되었습니다. 문서 내 서식 도구 (굵게, 제목, 테이블 등)는 AI 에이전트가 마크다운 왕복을 통해 이미 쉽게 수행하는 작업과 중복되기 때문입니다. `selection`은 (정리 계획의 ADR-7에 따라) 유지되었는데, 큰 파일에서는 전체 문서 왕복이 비경제적이기 때문입니다 — 편집할 때마다 전체 문서를 입력 토큰으로, 전체 문서를 출력 토큰으로 (입력의 약 5배 가격) 지불하며, 쓰기 창이 길어져 오래된 리비전 재시도 루프가 넓어집니다. 전체 근거는 [MCP 정리 계획](https://github.com/xiaolai/vmark/blob/main/dev-docs/plans/20260504-mcp-pruning.md)을 참조하세요.
+이전 12-도구 / 76-액션 표면은 정리되었습니다. 문서 내 서식 도구 (굵게, 제목, 테이블 등)는 AI 에이전트가 마크다운 왕복을 통해 이미 쉽게 수행하는 작업과 중복되기 때문입니다. `selection`은 (정리 계획의 ADR-7에 따라) 유지되었는데, 큰 파일에서는 전체 문서 왕복이 비경제적이기 때문입니다 — 편집할 때마다 전체 문서를 입력 토큰으로, 전체 문서를 출력 토큰으로 (입력의 약 5배 가격) 지불하며, 쓰기 창이 길어져 오래된 리비전 재시도 루프가 넓어집니다. 전체 근거는 [MCP 정리 계획](https://github.com/xiaolai/vmark/blob/main/.claude/adr/plans/20260504-mcp-pruning.md)을 참조하세요.
 
 ::: tip 권장 워크플로우
 1. `session.get_state`를 한 번 호출하여 열린 창, 탭, 탭별 `{filePath, dirty, revision, kind}`를 확인합니다.
@@ -220,6 +220,8 @@ MCP를 통해 AI로 Mermaid 다이어그램을 생성할 때 [mermaid-validator 
 
 기본적으로 쓰기는 저장됩니다: 응답에 `saved: true`가 담기거나, `saved: false`와 함께 `save_skipped` (`"untitled"` — 탭에 아직 파일이 없으므로 `save_as`를 사용하세요; `"opt_out"` — `save: false`를 전달함) 또는 `save_error` (디스크 쓰기 실패) 가 담깁니다. 대상이 마크다운 문서의 활성 WYSIWYG 탭이면 텍스트는 실시간 에디터에 (실행 취소 가능한 한 단계로) 로드되며, 저장되는 것은 에디터가 이를 직렬화한 결과입니다 — 같은 마크다운이지만 정규화될 수 있으므로, 보낸 문자와 정확히 같다는 보장은 없습니다. 다른 탭은 보낸 텍스트를 그대로 저장하되 줄 끝만 정규화합니다.
 
+AI 클라이언트가 하는 모든 저장은 — `write`, `workspace.save`, `workspace.save_as` 중 무엇을 통하든 — 문서 기록에 `mcp` 스냅샷으로 남으므로 (히스토리 사이드바에 *(mcp)* 로 표시됩니다) AI가 쓴 버전을 사용자의 버전과 구별할 수 있습니다. 수동 저장과 마찬가지로 인접한 자동 저장과 병합되거나 크기 때문에 건너뛰어지지 않습니다.
+
 `expected_revision`이 제공되었고 해당 read 이후 문서가 변경된 경우, 응답은 현재 리비전이 포함된 `STALE` 구조화된 오류 봉투입니다; 다시 읽고 재시도하세요.
 
 ```json
@@ -229,6 +231,8 @@ MCP를 통해 AI로 Mermaid 다이어그램을 생성할 때 [mermaid-validator 
 // 오래됨
 { "error": "STALE", "message": "Document has changed since the last read", "current_revision": "rev-currentNow" }
 ```
+
+탭을 보여 주는 WYSIWYG 에디터에서 사용자가 입력기 (IME) 로 텍스트를 조합하는 동안에는 쓰기가 `BUSY`로 거부되고 아무것도 바뀌지 않습니다: 조합 중인 텍스트는 확정될 때까지 입력기의 것이기 때문입니다. 잠시 후 다시 시도하세요. 소스 모드에서는 쓰기가 받아들여지고, 조합이 끝나는 대로 에디터에 표시됩니다.
 
 ### `transform`
 
@@ -242,7 +246,7 @@ MCP를 통해 AI로 Mermaid 다이어그램을 생성할 때 [mermaid-validator 
 
 `cjk-format`은 사용자의 CJK 서식 설정을 끝에서 끝까지 적용합니다. `cjk-spacing`은 CJK 문자와 인접한 라틴/숫자 사이에 단일 공백을 삽입합니다. `cjk-punctuation`은 CJK 문자 옆에 있는 ASCII 구두점을 전각 형태로 변환합니다.
 
-`{revision}`을 반환합니다.
+`{revision}`을 반환합니다. `write`와 마찬가지로, 탭을 보여 주는 WYSIWYG 에디터에서 사용자가 입력기로 조합하는 동안에는 아무것도 바꾸지 않고 `BUSY`로 거부됩니다.
 
 ---
 
@@ -335,6 +339,8 @@ GitHub Actions 워크플로우 YAML을 위한 `actionlint` 검증과 **CST 안�
 성공 시 `{revision, replaced_chars}`를 반환합니다. `replaced_chars`는 호출 전에 선택되어 있던 텍스트의 길이입니다 — AI가 예상한 것을 편집했는지 확인하는 데 유용합니다.
 
 `STALE`은 `document.write`와 똑같이 `{error: "STALE", message, current_revision}`을 반환합니다. 문서 수준 리비전은 `get`과 `set` 사이의 키 입력을 잡아냅니다. 순수한 커서 이동은 (키 입력 없이) 서버가 중재하지 않습니다 — 사용자가 `get`과 `set` 사이에 커서를 옮겼다면, 편집은 새 위치에 적용됩니다.
+
+포커스된 에디터에서 사용자가 입력기로 텍스트를 조합하는 동안 `set`은 WYSIWYG 모드든 소스 모드든 아무것도 바꾸지 않고 `BUSY`를 반환합니다; 잠시 후 다시 시도하세요. `get`은 이 이유로 거부되지 않습니다.
 
 ---
 
@@ -744,7 +750,7 @@ VMark로 되돌아가는 **메시징 채널이 열리지 않습니다** (무브�
 | `INVALID_TAB` | 봉투 | `tabId`를 해석할 수 없음 |
 | `INVALID_PATH` | 봉투 | `filePath`를 읽을 수 없거나, 열린 워크스페이스 / 문서 범위를 벗어남 |
 | `APPROVAL_REQUIRED` | 봉투 | **새 위치로 저장 및 지니 결과 자동 승인** 이 꺼진 상태에서 `save_as`로 새 위치에 저장, 또는 `open_workspace`가 사용자의 승인이나 VMark 폴더 선택기에서의 폴더 선택을 기다리는 중 |
-| `BUSY` | 봉투 | `open_workspace`를 진행할 수 없음: 다른 폴더 대화상자가 열려 있거나 해당 창에서 작업 공간 전환이 진행 중. 승인은 유지됨 — 다시 시도 |
+| `BUSY` | 봉투 | `open_workspace`를 진행할 수 없음: 다른 폴더 대화상자가 열려 있거나 해당 창에서 작업 공간 전환이 진행 중. 승인은 유지됨 — 다시 시도. 또는 사용자가 입력기로 텍스트를 조합하는 중에 `document.write`, `document.transform`, `selection.set`이 도착함. 아무것도 바뀌지 않음 — 잠시 후 다시 시도 |
 | `NOT_WORKFLOW` | 봉투 | YAML 워크플로우가 아닌 탭에서 `workflow.*`가 호출됨 |
 | `READ_ONLY` | 봉투 | 읽기 전용 문서에 대해 변형이 시도됨 |
 | `NO_EDITOR` | 봉투 | `selection.*`이 호출되었으나 포커스된 탭에 활성 편집기가 없음 |

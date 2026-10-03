@@ -59,7 +59,7 @@ A claim the inspector could not confirm is marked **unverified** in place rather
 
 ## Open findings
 
-Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 159 open.
+Everything below was verified true at `2675ad132`, and every entry citing a file the audit fixes changed was re-checked at `bf8b69ceb`. Each entry names the area whose blocks carry the detail and at least one evidence path. Nothing here is a recommendation, and nothing resolved is kept — when a finding is fixed, delete its line in the same change. 156 open.
 
 ### Security boundaries (14)
 
@@ -141,7 +141,7 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 14) The PDF export dialog seeds CJK letter spacing at `0.05em` regardless of `appearance.cjkLetterSpacing` (default off), while it seeds fonts from settings (`src/export/PdfExportDialog.tsx`).
 - (area 14) `advanced.customLinkProtocols` is unioned with the defaults on every hydration, so removing `obsidian` / `vscode` / `dict` / `x-dictionary` in Settings lasts only until restart (now stated in `website/guide/settings.md` §"Link Protocols", but the UI still offers the removal) — `src/stores/settingsStore.ts`.
 
-### Test gaps (33)
+### Test gaps (32)
 
 - (area 1) `src/services/media/closeCleanup.ts` has no test of its own (its callers mock it: `src/services/windowClose/windowCloseFlow.test.ts`). `src/components/Editor/MediaView/useMediaAsset.ts` (grant lifecycle, reload key) and `src/plugins/tableOfContents/TocNodeView.ts` have no dedicated tests. `src/plugins/safeBlockSplit/` has no test beside it (its pins are in `src/test/splitBlockSelection.test.ts`).
 - (area 2) `src/plugins/search/__tests__/search.test.ts` mocks `@/stores/searchStore`, a module that no longer exists (state moved to `src/stores/uiStore/searchSlice.ts`); the mock is dead, and `src/plugins/search/tiptap.test.ts` still names a test "view subscribes to searchStore".
@@ -167,9 +167,8 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 11) `src/components/BreakdownPanel/ProvenanceGroup.tsx` and `src/components/BreakdownPanel/DelegationsSection.tsx` have no component tests.
 - (area 12) `src/test/i18nNamespaces.ts` does not load the `workflow` namespace, so the run-panel and restore tests assert raw keys (`workflow:run.start`, `workflow:restore.button` in `src/components/Editor/WorkflowPanel/__tests__/WorkflowRunPanel.test.tsx`) and cannot catch a key missing from `src/locales/en/workflow.json`.
 - (area 12) No e2e journey exercises the engine (Run, Cancel, Restore Files), forms Save, or the fence snapshot; `e2e/journeys/13-workflow-split-pane.mjs` only checks that the GitHub Actions split pane mounts.
-- (area 13) No Rust tests for `src-tauri/src/menu/commands.rs` or `src-tauri/src/menu/dynamic.rs` (Genies and recent submenus).
+- (area 13) No Rust tests for `src-tauri/src/menu/commands.rs`. For `src-tauri/src/menu/dynamic.rs` (Genies and recent submenus) only the layout is pinned — item ids, labels, the Search Genies accelerator and the genie grouping, in `src-tauri/src/menu/dynamic_layout.test.rs`; building and inserting the native items has no test.
 - (area 13) `src/services/updates/updateFlows.ts` and `src/services/updates/updateSingleFlight.ts` have no dedicated tests (exercised only via `src/hooks/useUpdateOperations.test.ts`).
-- (area 13) `src/main.tsx` has no test; nothing pins the bootstrap order (secure storage before the `App` import, formats before stores).
 - (area 13) `src/pages/settings/WorkspaceSettingsGroup.tsx` (workspace-rail toggle row) has no dedicated test.
 - (area 13) The five window-status Tauri commands (`report_window_status`, `set_window_attention`, `clear_window_attention`, `get_window_statuses`, `focus_window`) have no tests; the `#[cfg(test)]` module in `src-tauri/src/window_status/mod.rs` covers only the registry helpers. `focus_window` still returns `Result<(), String>`.
 - (area 14) No e2e journey drives lint or link check (`e2e/journeys/`); `src/utils/appName.ts` has no test.
@@ -177,7 +176,7 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 14) The IME chord guard has no automated real-IME case: `e2e/run-ime.mjs` documents that System Events injection produces no modifier keydown, so the real-IME half is a manual checklist step in `src/test/editorComposition.webkit.test.ts`.
 - (area 15) No tests for `src-tauri/src/app_nap.rs`, `apply_linux_webkit_workarounds` (`src-tauri/src/main.rs`), the logging commands, or `handle_run_event`'s window-destroyed cleanup as a whole (`src-tauri/src/app_setup.rs`).
 
-### Stale comments and headers (61)
+### Stale comments and headers (60)
 
 - (area 1) `src/plugins/shared/mediaSecurity.ts` header argues that refusing `..` bought no containment because "the asset protocol scope is `**`"; `src-tauri/tauri.conf.json` now scopes it to the fs static roots plus runtime grants.
 - (area 1) `src-tauri/src/trusted_html/mod.rs` says a grant ends "in exactly two ways" (revoke or process exit) and that a destroyed webview leaves its grants resident until quit; `src-tauri/src/window_manager/window_events.rs` calls `TrustedHtmlState::revoke_window` on window destroy. `state.rs` and `commands.rs` both carry `@coordinates-with ../app_setup.rs` for that call, but `app_setup.rs` does not make it (the header-refs gate passes because the file exists).
@@ -210,7 +209,7 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 7) `src/components/Terminal/setupWebglRenderer.ts` carries a release-keyed exit condition: the renderer broadcast becomes redundant once a stable `@xterm/addon-webgl` includes upstream `0b1c0b5c`, and `patches/@xterm__addon-webgl@0.19.0.patch` must be re-evaluated on any addon bump (install fails until then). Correct today; listed so the upgrade is not missed.
 - (area 8) `src/stores/tabStoreBrowserWorkspace.ts` has no module header at all (no `Purpose:` / `@module`).
 - (area 9) `src-tauri/src/secure_store.rs` header pipeline names a frontend `secureSecrets.ts` that does not exist; the consumer is `src/services/secrets/apiKeySecrets.ts`.
-- (area 9) `src-tauri/src/menu/dynamic.rs` `refresh_genies_menu` doc says it scans "global and workspace genie directories" (only the global directory is scanned), and `hide_genies_menu` / the `src/hooks/useGenieShortcuts.ts` header speak of the genie feature being "toggled off" / "switched off" — no setting disables genies; the hook unmounts only with the main window (`src/hooks/lifecycle/MainWindowRunners.tsx`).
+- (area 9) The `src/hooks/useGenieShortcuts.ts` header says its cleanup runs for a feature the user "had just switched off", and its effect comment reads "On unmount (feature disabled)" — no setting disables genies; the hook unmounts only with the main window (`src/hooks/lifecycle/MainWindowRunners.tsx`).
 - (area 10) `src/stores/workspaceApprovalStore.ts` header says the one-shot is bound to "the authenticated client (Codex F-10)" — the handler does not do that — and its `@coordinates-with services/mcpBridge/v2/workspace.ts` names the wrong module (the handler is `workspaceOpenFolder.ts`).
 - (area 10) `src/stores/settingsTypes/system.ts` describes `autoApproveEdits` as "Auto-approve AI document edits without preview"; it gates only `save_as` to a new path and genie direct-apply (`src/services/mcpBridge/v2/workspaceSaveAs.ts`, `src/services/genieInvocation/applyGenieResult.ts`).
 - (area 10) `src/services/mcpBridge/handleRequest.ts` header says it routes to a "5-tool dispatcher"; `dispatchV2` also routes every `vmark.browser.*` operation (`src/services/mcpBridge/v2/dispatch.ts`).
@@ -220,7 +219,6 @@ Everything below was verified true at `2675ad132`, and every entry citing a file
 - (area 13) `src-tauri/src/menu/localized/file_menu.rs` `//!` header says non-macOS omits Print; the file adds `export-pdf` on every platform.
 - (area 13) `src/stores/settingsStore/shortcutDefinitions.ts` says `newBrowserTab` "is disabled until `browser.enabled` is on"; the item is hidden (`src-tauri/src/menu/conditional_items.rs`).
 - (area 13) `src-tauri/src/window_status/mod.rs` header says the panel is opened "under the Window menu"; it is in View.
-- (area 13) `src/main.tsx` `bootstrap()` carries an "ADR-011: register every plugin's manifest…" comment with no code under it.
 - (area 13) `src/components/FeatureErrorBoundary.tsx` header lists "Editor, Terminal, PDF export route" and omits the `/settings` route `src/App.tsx` also wraps.
 - (area 13) `src/hooks/useStatusToasts.ts` header says a stalled flow raises a toast "with a Reset action"; the action's label is Retry (`updateRetryAction` in `src/locales/en/statusbar.json`).
 - (area 13) `@coordinates-with` lines in `src/pages/settings/FontSettingRow.tsx` and `src/services/fonts/systemFonts.ts` point the custom-family validator at `src/utils/fontStacks.ts`; it lives in `src/utils/customFont.ts`.
@@ -629,7 +627,7 @@ Every WYSIWYG block plugin below is registered in `src/services/assembly/tiptapE
 
 Verified: `2675ad132`
 
-Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/assembly/tiptapExtensions.ts`) and ordered by `WYSIWYG_COMPOSITION_ORDER` (`src/services/assembly/compositionOrder.ts`); settings and stores reach plugins only through the `plugins/shared/host*` seams bound once in `src/main.tsx` (block *plugin-host-seams*). Source-mode popups and Source Peek are described in Area 3 (*source-popups*, *source-peek*); the footnote and math popups in Area 1 (*footnotes*, *math*); code-block line numbers in Area 1 (*code-blocks*).
+Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/assembly/tiptapExtensions.ts`) and ordered by `WYSIWYG_COMPOSITION_ORDER` (`src/services/assembly/compositionOrder.ts`); settings and stores reach plugins only through the `plugins/shared/host*` seams bound once in `src/bootstrap.tsx` (block *plugin-host-seams*). Source-mode popups and Source Peek are described in Area 3 (*source-popups*, *source-peek*); the footnote and math popups in Area 1 (*footnotes*, *math*); code-block line numbers in Area 1 (*code-blocks*).
 
 ### Inline mark input rules (CJK-aware bold/italic)
 - id: mark-input-rules
@@ -777,7 +775,7 @@ Every WYSIWYG block below is registered in `buildExtensionList` (`src/services/a
 - summary: Not user-facing: narrow interfaces through which plugins read settings, document, shortcuts, search, view toggles and live views, and ask the host for chrome, without importing the app's stores.
 - capabilities: `hostSettings` (tab size, HTML allowlist, CJK formatting, paste mode, hard-break style); `hostDocument` (window label, active file path, content, dirty flag, format id); `hostPopups` (media popup, heading picker, editor context menu, image path, universal-toolbar dismiss — no-op defaults); `hostShortcuts` (`getShortcut` + `onChange`, default unbound); `hostSearch` (find-bar query/flags/index/replace text, match reporting; default closed bar); `hostViewModes` (`focusMode`, `typewriterMode`, `diagramPreview` + `onChange`, default off); `hostEditors` (live Source/WYSIWYG views and Source cursor context); `popupPorts` (state contracts for popups with Source twins); `pasteSettings` (paste vocabulary owned plugin-side)
 - status: shipped-on
-- gate: always on; bound once by `bindPluginHostSettings()` from `src/main.tsx`
+- gate: always on; bound once by `bindPluginHostSettings()` from `src/bootstrap.tsx`
 - surfaces: none
 - code: `src/plugins/shared/{hostSettings,hostDocument,hostPopups,hostShortcuts,hostSearch,hostViewModes,hostEditors,popupPorts,pasteSettings}.ts`; `src/services/assembly/bindHostSettings.ts`; `src/services/assembly/hostAdapters.ts`
 - rust: none
@@ -4586,7 +4584,7 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - code: `src/services/menu/rebuildNativeMenu.ts`, `src/services/menu/startupMenuSync.ts`, `src-tauri/src/menu/commands.rs`, `src-tauri/src/menu/dynamic.rs`
 - rust: `menu::rebuild_menu`, `menu::refresh_genies_menu`, `menu::update_recent_files`, `menu::update_recent_workspaces`, `menu::set_locale`
 - docs: none
-- tests: `src/services/menu/rebuildNativeMenu.test.ts`; no Rust tests for `commands.rs` or `dynamic.rs`
+- tests: `src/services/menu/rebuildNativeMenu.test.ts`; no Rust tests for `commands.rs`; for `dynamic.rs` only the submenu layout (`src-tauri/src/menu/dynamic_layout.test.rs`)
 - notes: `startupMenuSync` runs as a side-effect import from `src/main.tsx`.
 
 ### Dynamic menu items (recents, genies)
@@ -4597,10 +4595,10 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - status: shipped-on
 - gate: always on; the Genies submenu exists only while `src/hooks/useGenieShortcuts.ts` is mounted
 - surfaces: File → Open Recent, File → Open Recent Workspace, Edit → Genies
-- code: `src-tauri/src/menu/dynamic.rs`, `src-tauri/src/menu/mod.rs`, `src-tauri/src/menu/commands.rs`, `src/stores/workspaceStoreHelpers.ts`, `src/hooks/useGenieShortcuts.ts`, `src/services/menu/rebuildNativeMenu.ts`
+- code: `src-tauri/src/menu/dynamic.rs`, `src-tauri/src/menu/dynamic_layout.rs`, `src-tauri/src/menu/mod.rs`, `src-tauri/src/menu/commands.rs`, `src/stores/workspaceStoreHelpers.ts`, `src/hooks/useGenieShortcuts.ts`, `src/services/menu/rebuildNativeMenu.ts`
 - rust: `menu::update_recent_files`, `menu::update_recent_workspaces`, `menu::refresh_genies_menu`, `menu::hide_genies_menu`
 - docs: `website/guide/ai-genies.md`; `website/guide/workspace-management.md` (recent lists)
-- tests: `src-tauri/src/menu/events/dispatch.test.rs` (index parsing and classification of the dynamic ids); no Rust test for `src-tauri/src/menu/dynamic.rs`
+- tests: `src-tauri/src/menu/events/dispatch.test.rs` (index parsing and classification of the dynamic ids); `src-tauri/src/menu/dynamic_layout.test.rs` (the ids, labels, Search Genies accelerator and genie grouping `dynamic.rs` builds from); building and inserting the native items in `src-tauri/src/menu/dynamic.rs` has no test
 - notes: `rebuild_menu` resets all three submenus, so `src/services/menu/rebuildNativeMenu.ts` re-invokes `refresh_genies_menu` and re-syncs both recent lists after every rebuild (see *menu-rebuild*).
 
 ### Menu → command dispatch
@@ -4704,16 +4702,16 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 ### Frontend bootstrap
 - id: frontend-bootstrap
 - feature: App chrome (titlebar/statusbar/welcome)
-- summary: Not user-facing: a staged bootstrap in `src/main.tsx` runs before React mounts, so i18n, secure storage, format adapters, plugin host settings and the platform class are in place at first paint.
-- capabilities: side-effect imports of `./i18n` and `./services/menu/startupMenuSync` (the non-English startup menu rebuild); platform root class before first paint; `initSecureStorage(["vmark-ai-providers"])` awaited before `App` is dynamically imported (its Zustand persist hydrates at module evaluation); `setTabExistenceGuard` wiring documentStore to tabStore; `bindPluginHostSettings` (ADR-015 host-settings seam); `bootstrapFormats` honouring the user's `formats.*` opt-ins; global stylesheet order (index.css → shared `.vm-*` primitive sheets → KaTeX → KaTeX fixes); `StrictMode` + `BrowserRouter`; a bootstrap failure is logged through `appError`
+- summary: Not user-facing: a staged bootstrap runs before React mounts — `src/main.tsx` is the entry, `src/bootstrap.tsx` the startup sequence — so i18n, secure storage, format adapters, plugin host settings and the platform class are in place at first paint.
+- capabilities: side-effect imports of `./i18n` and `./services/menu/startupMenuSync` (the non-English startup menu rebuild); platform root class before first paint; `initSecureStorage(["vmark-ai-providers"])` started first and awaited before the App loader the entry passes in runs (its Zustand persist hydrates at module evaluation), the synchronous setup overlapping its IPCs; `setTabExistenceGuard` wiring documentStore to tabStore; `bindPluginHostSettings` (ADR-015 host-settings seam); `bootstrapFormats` honouring the user's `formats.*` opt-ins; global stylesheet order (index.css → shared `.vm-*` primitive sheets → KaTeX → KaTeX fixes); `StrictMode` + `BrowserRouter`; a bootstrap failure is logged through `appError`
 - status: shipped-on
 - gate: always on
 - surfaces: automatic
-- code: `src/main.tsx`
+- code: `src/main.tsx`, `src/bootstrap.tsx`
 - rust: none
 - docs: none
-- tests: none for `src/main.tsx` itself; individual wirings are mirrored by `src/utils/platform.test.ts` (root class) and `src/stores/documentStore.test.ts` (tab-existence guard)
-- notes: a comment "ADR-011: register every plugin's manifest with the central registry…" sits in `bootstrap()` with no code under it — the plugin registry it describes no longer exists. A bootstrap rejection is only logged; the window stays blank with no user-visible error (unverified whether any fallback UI exists outside `main.tsx`).
+- tests: `src/main.boot.test.tsx` (the setup runs while secure storage loads; formats and host settings are bound, and App is loaded only once the cache is filled), `src/main.test.tsx` (the entry renders the real App into `#root`), `src/main.bootFailure.test.tsx` (a failed bootstrap is logged through `appError` and renders nothing); `src/utils/platform.test.ts` (root class) and `src/stores/documentStore.test.ts` (tab-existence guard) mirror individual wirings
+- notes: A bootstrap rejection is only logged; the window stays blank with no user-visible error (unverified whether any fallback UI exists outside `main.tsx`).
 
 ### Quick Look preview overlay
 - id: quick-look

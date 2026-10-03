@@ -220,7 +220,7 @@ Supporto completo per le immagini:
 - Incolla dagli appunti
 - Copia automatica nella cartella delle risorse del progetto
 - Doppio clic per modificare il percorso sorgente e il testo alternativo — le dimensioni dell'immagine sono mostrate in sola lettura
-- Clic destro per Cambia immagine, Elimina immagine, Copia percorso e Mostra nel Finder
+- Clic destro per Cambia immagine, Elimina immagine, Copia percorso e Mostra nel Finder (Mostra in Esplora risorse su Windows, Mostra nel gestore file su Linux)
 - Alterna tra visualizzazione inline e a blocco
 
 ## Video e Audio
@@ -500,7 +500,7 @@ Alcuni comportamenti che funzionano senza alcuna impostazione:
 
 - **La selezione resta visibile quando l'editor perde il focus.** Fai clic nel terminale, nella barra laterale o in un popup e il testo selezionato mantiene un'evidenziazione più tenue, così puoi vedere su cosa agirà un comando o uno strumento IA. La modalità Sorgente mostra ogni intervallo di una selezione multi-cursore.
 - **Digitare sul bordo sinistro del codice inline scrive al suo interno.** Con il cursore subito prima di un frammento di codice inline in modalità WYSIWYG — in qualunque modo ci sia arrivato — il carattere successivo entra nel codice invece di finire fuori.
-- **I metodi di input (IME) sono sicuri.** Mentre componi con un metodo di input cinese, giapponese o coreano, e per 50 ms dopo la fine della composizione, le scorciatoie dell'editor e le conversioni automatiche non scattano, quindi premere Invio per accettare un candidato non divide anche il paragrafo. Annulla e ripristina continuano a funzionare. Una sillaba coreana confermata con Invio inizia anche la nuova riga. La romanizzazione residua davanti al testo confermato viene rimossa, e un carattere confermato in una cella di tabella vuota resta come è stato digitato. Le notifiche informative attendono la fine della composizione; errori e avvisi compaiono subito. Una modifica dell'IA o di MCP attende invece di sovrascrivere il testo che stai ancora componendo.
+- **I metodi di input (IME) sono sicuri.** Mentre componi con un metodo di input cinese, giapponese o coreano, e per 50 ms dopo la fine della composizione, le scorciatoie dell'editor e le conversioni automatiche non scattano, quindi premere Invio per accettare un candidato non divide anche il paragrafo. Annulla e ripristina continuano a funzionare. Una sillaba coreana confermata con Invio inizia anche la nuova riga. La romanizzazione residua davanti al testo confermato viene rimossa, e un carattere confermato in una cella di tabella vuota resta come è stato digitato. Le notifiche informative attendono la fine della composizione; errori e avvisi compaiono subito. Una modifica di un client IA tramite MCP viene rifiutata (il client riprova) o trattenuta fino alla fine della composizione, e anche una modifica del file su disco attende, così nessuna delle due sovrascrive il testo che stai ancora componendo.
 - **La riduzione del movimento viene rispettata.** Quando l'impostazione di accessibilità *riduci movimento* del sistema operativo è attiva, VMark disattiva animazioni e transizioni e scorre istantaneamente invece che in modo fluido (modalità macchina da scrivere inclusa). Non esiste un'impostazione separata in VMark. Allo stesso modo, l'impostazione di sistema *riduci trasparenza* disattiva la sfocatura dello sfondo.
 
 ## Visualizzazione e Focus

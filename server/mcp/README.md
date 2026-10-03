@@ -226,6 +226,11 @@ both updated), or `saved: false` with exactly one of `save_skipped`
 (`"untitled"` — call `workspace.save_as`; or `"opt_out"` — you passed
 `save: false`) and `save_error` (the filesystem rejected it; do not retry).
 
+Every save a client makes — `document.write`, `workspace.save`,
+`workspace.save_as` — runs VMark's own save pipeline and is filed in the
+document's version history as an `mcp` snapshot. It is kept as a manual save
+is: never merged into a neighbouring autosave, never skipped for its size.
+
 ### `workflow` — GitHub Actions YAML (2 actions)
 
 Only for tabs whose `kind` is `"yaml-workflow"`.
@@ -342,6 +347,13 @@ A `STALE` refusal from `document.write`, `document.transform`, or
 
 Branch on `current_revision` — re-read and retry with the new token rather than
 writing the stale content back.
+
+While the user is composing text with an input method (IME), a write into the
+editor they are typing in is refused with `BUSY` and changes nothing:
+`document.write` and `document.transform` for the tab the WYSIWYG editor is
+showing, and `selection.set` in the focused editor in either mode. The refusal
+is a plain error result whose text is the `{"error": "BUSY", …}` envelope, with
+no `structuredContent`; retry shortly.
 
 ## Output bound
 

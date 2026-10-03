@@ -81,7 +81,8 @@ So funktioniert es und das können Sie erwarten:
   dekodieren kann. Auf macOS ist das umfangreich — HEIC, TIFF, `.mov`/H.264 und FLAC
   werden alle wiedergegeben. Formate, die die Webview nicht dekodieren kann (z. B.
   `.mkv`, `.avi`, `.wmv`), öffnen sich trotzdem und zeigen ein Ersatzfeld mit
-  **Mit Standard-App öffnen** und **Im Finder anzeigen**.
+  **Mit Standard-App öffnen** und **Im Finder anzeigen** (**Im Explorer anzeigen**
+  unter Windows, **Im Dateimanager anzeigen** unter Linux).
 - **Schreibgeschützt.** Medien-Tabs werden nie als geändert markiert und schließen
   ohne Speichern-Abfrage.
 

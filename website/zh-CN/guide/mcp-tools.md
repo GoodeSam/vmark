@@ -4,7 +4,7 @@ VMark 向 AI 助手暴露 **九个复合 MCP 工具**：`session`、`workspace`�
 
 九个工具中有三个——`session`、`browser_read` 和 `coherence`——声明了 `readOnlyHint: true`，因此 MCP 客户端可以自动批准它们。这也正是 `browser`/`browser_read` 与 `coherence`/`coherence_resolve` 之所以要拆成独立工具的原因：注解是**按工具**而非按操作生效的，所以一个把 ARIA 快照和 `execute_js` 捆在一起的工具，不得不对外声明 `execute_js` 的危险性。按“这个操作会不会修改任何东西？”来拆分，能让两半各自如实陈述，也让接口中真正具有破坏性的操作在工具列表里保持醒目。
 
-之前的 12 工具 / 76 操作接口已被精简，因为文档内的格式化工具（粗体、标题、表格等）与 AI 智能体通过 Markdown 往返已经能轻松完成的工作重复。之所以保留 `selection`（依据精简方案的 ADR-7），是因为整篇文档往返在大文件上并不划算——每次编辑都要在输入 token 上付出整篇文档的代价、在输出 token 上再付出整篇文档的代价（约为输入价格的 5 倍），还要承受更长的写入窗口，从而扩大过期版本的重试循环。完整的设计取舍参见 [MCP 精简方案](https://github.com/xiaolai/vmark/blob/main/dev-docs/plans/20260504-mcp-pruning.md)。
+之前的 12 工具 / 76 操作接口已被精简，因为文档内的格式化工具（粗体、标题、表格等）与 AI 智能体通过 Markdown 往返已经能轻松完成的工作重复。之所以保留 `selection`（依据精简方案的 ADR-7），是因为整篇文档往返在大文件上并不划算——每次编辑都要在输入 token 上付出整篇文档的代价、在输出 token 上再付出整篇文档的代价（约为输入价格的 5 倍），还要承受更长的写入窗口，从而扩大过期版本的重试循环。完整的设计取舍参见 [MCP 精简方案](https://github.com/xiaolai/vmark/blob/main/.claude/adr/plans/20260504-mcp-pruning.md)。
 
 ::: tip 推荐工作流
 1. 调用一次 `session.get_state`，即可看到所有打开的窗口、标签页，以及每个标签页的 `{filePath, dirty, revision, kind}`。
@@ -216,6 +216,8 @@ VMark 向 AI 助手暴露 **九个复合 MCP 工具**：`session`、`workspace`�
 
 默认情况下，写入会被保存：响应中带有 `saved: true`，或者带有 `saved: false` 以及 `save_skipped`（`"untitled"`——标签页尚无文件，请使用 `save_as`；`"opt_out"`——你传入了 `save: false`）或 `save_error`（磁盘写入失败）。当目标是 Markdown 文档的活动所见即所得标签页时，文本会被加载进实时编辑器（作为一个可撤销的步骤），保存的是编辑器对它的序列化结果——同样的 Markdown，可能经过规范化，不一定与发送的字符完全一致。其他标签页按发送的文本原样保存，仅规范化换行符。
 
+AI 客户端的每一次保存——无论通过 `write`、`workspace.save` 还是 `workspace.save_as`——都会以 `mcp` 快照的形式记入文档历史（在历史侧边栏中标为 *(mcp)*），让 AI 写入的版本与你自己的版本区分开来。与手动保存一样，它从不会被并入相邻的自动保存，也不会因体积过大而被跳过。
+
 如果传入了 `expected_revision`，而文档自那次读取后已经发生变化，响应将是带 `STALE` 的结构化错误信封，并附上当前的 revision；请重新读取后再试。
 
 ```json
@@ -225,6 +227,8 @@ VMark 向 AI 助手暴露 **九个复合 MCP 工具**：`session`、`workspace`�
 // 过期
 { "error": "STALE", "message": "Document has changed since the last read", "current_revision": "rev-currentNow" }
 ```
+
+当用户在显示该标签页的所见即所得编辑器中用输入法（IME）组字时，写入会以 `BUSY` 被拒绝，且不做任何改动：正在组字的文本在确认之前归输入法所有。请稍后重试。在源码模式下写入会被接受，并在组字结束后显示在编辑器中。
 
 ### `transform`
 
@@ -238,7 +242,7 @@ VMark 向 AI 助手暴露 **九个复合 MCP 工具**：`session`、`workspace`�
 
 `cjk-format` 会按用户的 CJK 排版设置整篇执行一遍。`cjk-spacing` 在 CJK 字符与相邻拉丁字母 / 数字之间插入单个空格。`cjk-punctuation` 把贴在 CJK 字符旁边的 ASCII 标点转换为对应的全角形式。
 
-返回 `{revision}`。
+返回 `{revision}`。与 `write` 一样，当用户在显示该标签页的所见即所得编辑器中用输入法组字时，它会以 `BUSY` 被拒绝，不做任何改动。
 
 ---
 
@@ -331,6 +335,8 @@ VMark 向 AI 助手暴露 **九个复合 MCP 工具**：`session`、`workspace`�
 成功时返回 `{revision, replaced_chars}`。`replaced_chars` 是调用前被选中文本的长度——便于 AI 确认它编辑的正是自己预期的内容。
 
 `STALE` 返回 `{error: "STALE", message, current_revision}`，与 `document.write` 完全一致。文档级 revision 会捕捉 `get` 与 `set` 之间发生的按键。纯粹的光标移动（不含按键）不由服务器仲裁——如果用户在 `get` 与 `set` 之间移动了光标，编辑就会落在新位置上。
+
+当用户在获得焦点的编辑器中用输入法组字时，无论是所见即所得模式还是源码模式，`set` 都会返回 `BUSY`，不做任何改动；请稍后重试。`get` 从不会因此被拒绝。
 
 ---
 
@@ -568,7 +574,7 @@ VMark 向 AI 助手暴露 **九个复合 MCP 工具**：`session`、`workspace`�
 | `INVALID_TAB` | 信封 | `tabId` 无法解析 |
 | `INVALID_PATH` | 信封 | `filePath` 无法读取，或位于已打开的工作区 / 文档范围之外 |
 | `APPROVAL_REQUIRED` | 信封 | 在**自动批准保存到新位置和精灵结果**关闭时用 `save_as` 保存到新位置；或 `open_workspace` 正在等待用户批准，或等待用户在 VMark 的文件夹选择器中选择该文件夹 |
-| `BUSY` | 信封 | `open_workspace` 无法继续：另一个文件夹对话框已打开，或该窗口中正在切换工作区；批准仍保留——请重试 |
+| `BUSY` | 信封 | `open_workspace` 无法继续：另一个文件夹对话框已打开，或该窗口中正在切换工作区；批准仍保留——请重试。或者 `document.write`、`document.transform` 或 `selection.set` 在用户用输入法组字时到达；未做任何改动——请稍后重试 |
 | `NOT_WORKFLOW` | 信封 | 在非 yaml-workflow 标签页上调用了 `workflow.*` |
 | `READ_ONLY` | 信封 | 试图对只读文档进行变更 |
 | `NO_EDITOR` | 信封 | 调用了 `selection.*`，但聚焦的标签页没有活动编辑器 |

@@ -6,7 +6,8 @@
  * deterministic CJK rewriter, preserved because the rules are too
  * nuanced for AI prose to reproduce reliably.
  *
- * Origin: MCP pruning plan (2026-05-04, retired) ADR-1, ADR-2, ADR-4.
+ * Origin: the MCP pruning plan's ADR-1, ADR-2 and ADR-4, recorded in
+ * `.claude/adr/plans/20260504-mcp-pruning.md`.
  */
 
 import { z } from 'zod';

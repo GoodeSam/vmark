@@ -4,7 +4,7 @@ VMark stellt KI-Assistenten **neun zusammengesetzte MCP-Tools** zur Verfügung: 
 
 Drei der neun — `session`, `browser_read` und `coherence` — deklarieren `readOnlyHint: true`, sodass ein MCP-Client sie automatisch genehmigen kann. Genau deshalb sind `browser`/`browser_read` und `coherence`/`coherence_resolve` überhaupt getrennte Tools: Annotationen gelten **pro Tool**, nicht pro Aktion, sodass ein Tool, das einen ARIA-Snapshot mit `execute_js` bündelt, die Gefahr von `execute_js` ausweisen müsste. Die Aufteilung entlang der Frage „Verändert dies etwas?“ lässt jede Hälfte die Wahrheit sagen und hält die wirklich destruktiven Aktionen der Oberfläche in der Tool-Liste auffällig.
 
-Die frühere Oberfläche mit 12 Tools und 76 Aktionen wurde reduziert, weil dokumentinterne Formatierungs-Tools (Fettdruck, Überschriften, Tabellen usw.) Arbeit duplizieren, die KI-Agenten ohnehin trivial über einen Markdown-Roundtrip erledigen. `selection` wurde beibehalten (gemäß ADR-7 des Pruning-Plans), weil der Roundtrip über das gesamte Dokument bei großen Dateien unwirtschaftlich ist — jede Bearbeitung bezahlt das ganze Dokument an Eingabe-Tokens, das ganze Dokument an Ausgabe-Tokens (~5× Eingabepreis) und ein längeres Schreibfenster, das die Wiederholungsschleife bei veralteten Revisionen vergrößert. Die vollständige Begründung steht im [MCP-Pruning-Plan](https://github.com/xiaolai/vmark/blob/main/dev-docs/plans/20260504-mcp-pruning.md).
+Die frühere Oberfläche mit 12 Tools und 76 Aktionen wurde reduziert, weil dokumentinterne Formatierungs-Tools (Fettdruck, Überschriften, Tabellen usw.) Arbeit duplizieren, die KI-Agenten ohnehin trivial über einen Markdown-Roundtrip erledigen. `selection` wurde beibehalten (gemäß ADR-7 des Pruning-Plans), weil der Roundtrip über das gesamte Dokument bei großen Dateien unwirtschaftlich ist — jede Bearbeitung bezahlt das ganze Dokument an Eingabe-Tokens, das ganze Dokument an Ausgabe-Tokens (~5× Eingabepreis) und ein längeres Schreibfenster, das die Wiederholungsschleife bei veralteten Revisionen vergrößert. Die vollständige Begründung steht im [MCP-Pruning-Plan](https://github.com/xiaolai/vmark/blob/main/.claude/adr/plans/20260504-mcp-pruning.md).
 
 ::: tip Empfohlener Arbeitsablauf
 1. Rufen Sie `session.get_state` einmal auf, um offene Fenster, Tabs und pro Tab `{filePath, dirty, revision, kind}` zu sehen.
@@ -222,6 +222,8 @@ Den vollständigen Dokumentinhalt ersetzen.
 
 Standardmäßig wird der Schreibvorgang gespeichert: Die Antwort trägt `saved: true` oder `saved: false` mit `save_skipped` (`"untitled"` — der Tab hat noch keine Datei, verwenden Sie `save_as`; `"opt_out"` — Sie haben `save: false` übergeben) oder `save_error` (das Schreiben auf den Datenträger ist fehlgeschlagen). Ist das Ziel der aktive WYSIWYG-Tab eines Markdown-Dokuments, wird der Text in den laufenden Editor geladen (als ein rückgängig machbarer Schritt), und gespeichert wird dessen Serialisierung durch den Editor — dasselbe Markdown, möglicherweise normalisiert, nicht unbedingt genau die gesendeten Zeichen. Andere Tabs speichern den Text wie gesendet, mit normalisierten Zeilenenden.
 
+Jede Speicherung durch einen KI-Client — über `write`, `workspace.save` oder `workspace.save_as` — wird im Verlauf des Dokuments als `mcp`-Snapshot abgelegt (in der Verlaufs-Seitenleiste mit *(mcp)* beschriftet), sodass sich die von einer KI geschriebenen Versionen von Ihren abheben. Wie eine manuelle Speicherung wird sie nie mit einer benachbarten automatischen Speicherung zusammengeführt oder wegen ihrer Größe übersprungen.
+
 Wird `expected_revision` übergeben und das Dokument hat sich seit diesem Lesevorgang geändert, ist die Antwort eine strukturierte Fehlerhülle `STALE` mit der aktuellen Revision; erneut lesen und wiederholen.
 
 ```json
@@ -231,6 +233,8 @@ Wird `expected_revision` übergeben und das Dokument hat sich seit diesem Lesevo
 // stale
 { "error": "STALE", "message": "Document has changed since the last read", "current_revision": "rev-currentNow" }
 ```
+
+Während der Benutzer im WYSIWYG-Editor, der den Tab anzeigt, mit einer Eingabemethode (IME) Text komponiert, wird der Schreibvorgang mit `BUSY` abgelehnt und nichts ändert sich: Der Text in Komposition gehört der Eingabemethode, bis er bestätigt ist. Kurz darauf erneut versuchen. Im Quellmodus wird der Schreibvorgang angenommen, und der Editor zeigt ihn, sobald die Komposition endet.
 
 ### `transform`
 
@@ -244,7 +248,7 @@ Eine deterministische Umschreibung anwenden. Aktuell werden CJK-spezifische Tran
 
 `cjk-format` wendet die CJK-Formatierungseinstellungen des Benutzers durchgehend an. `cjk-spacing` fügt einzelne Leerzeichen zwischen CJK-Zeichen und benachbarten lateinischen Zeichen oder Ziffern ein. `cjk-punctuation` konvertiert ASCII-Interpunktion, die neben CJK-Zeichen steht, in ihre Vollbreitenform.
 
-Gibt `{revision}` zurück.
+Gibt `{revision}` zurück. Wie `write` wird es mit `BUSY` abgelehnt, ohne etwas zu ändern, während der Benutzer im WYSIWYG-Editor, der den Tab anzeigt, mit einer Eingabemethode komponiert.
 
 ---
 
@@ -337,6 +341,8 @@ Ersetzt, was auch immer der Editor als aktuelle Auswahl meldet. **Im WYSIWYG-Mod
 Gibt bei Erfolg `{revision, replaced_chars}` zurück. `replaced_chars` ist die Länge des Textes, der vor dem Aufruf ausgewählt war — nützlich für die KI, um zu bestätigen, dass sie das Erwartete bearbeitet hat.
 
 `STALE` gibt `{error: "STALE", message, current_revision}` zurück, genau wie `document.write`. Die Revision auf Dokumentebene erfasst Tastenanschläge zwischen `get` und `set`. Reine Cursorbewegung (ohne Tastenanschlag) wird vom Server nicht arbitriert — wenn der Benutzer den Cursor zwischen `get` und `set` bewegt hat, landet die Bearbeitung an der neuen Position.
+
+`set` gibt `BUSY` zurück und ändert nichts, während der Benutzer im fokussierten Editor mit einer Eingabemethode Text komponiert, im WYSIWYG- wie im Quellmodus; kurz darauf erneut versuchen. `get` wird deswegen nie abgelehnt.
 
 ---
 
@@ -575,7 +581,7 @@ Es treten zwei Fehlerformen auf:
 | `INVALID_TAB` | Hülle | `tabId` konnte nicht aufgelöst werden |
 | `INVALID_PATH` | Hülle | Ein `filePath` konnte nicht gelesen werden oder liegt außerhalb des Geltungsbereichs des offenen Arbeitsbereichs / Dokuments |
 | `APPROVAL_REQUIRED` | Hülle | `save_as` an einen neuen Ort, während **Speichern an neuem Ort und Genie-Ergebnisse automatisch genehmigen** aus ist; oder `open_workspace` wartet auf die Bestätigung des Benutzers oder darauf, dass er den Ordner im Ordnerdialog von VMark auswählt |
-| `BUSY` | Hülle | `open_workspace` konnte nicht fortfahren: Ein anderer Ordnerdialog ist offen oder in diesem Fenster läuft ein Arbeitsbereichswechsel; die Bestätigung bleibt erhalten — erneut versuchen |
+| `BUSY` | Hülle | `open_workspace` konnte nicht fortfahren: Ein anderer Ordnerdialog ist offen oder in diesem Fenster läuft ein Arbeitsbereichswechsel; die Bestätigung bleibt erhalten — erneut versuchen. Oder `document.write`, `document.transform` bzw. `selection.set` kam an, während der Benutzer mit einer Eingabemethode Text komponierte; nichts wurde geändert — kurz darauf erneut versuchen |
 | `NOT_WORKFLOW` | Hülle | `workflow.*` wurde auf einem Tab aufgerufen, der kein YAML-Workflow ist |
 | `READ_ONLY` | Hülle | Eine Mutation wurde auf einem schreibgeschützten Dokument versucht |
 | `NO_EDITOR` | Hülle | `selection.*` wurde aufgerufen, aber der fokussierte Tab hat keinen aktiven Editor |

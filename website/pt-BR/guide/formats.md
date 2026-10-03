@@ -78,7 +78,8 @@ Como funciona e o que esperar:
   plataforma, então o suporte acompanha o que a webview do seu sistema consegue decodificar. No macOS
   isso é amplo — HEIC, TIFF, `.mov`/H.264 e FLAC funcionam. Formatos que a
   webview não consegue decodificar (por exemplo, `.mkv`, `.avi`, `.wmv`) ainda abrem, mostrando um
-  painel alternativo com **Abrir com o aplicativo padrão** e **Mostrar no Finder**.
+  painel alternativo com **Abrir com o aplicativo padrão** e **Mostrar no Finder**
+  (**Mostrar no Explorador** no Windows, **Mostrar no gerenciador de arquivos** no Linux).
 - **Somente leitura.** Abas de mídia nunca ficam com alterações pendentes e fecham sem pedir para salvar.
 
 ## Prévias com reconhecimento de esquema

@@ -78,7 +78,8 @@ How it works and what to expect:
   engine, so support tracks what your system's webview can decode. On macOS
   that is wide — HEIC, TIFF, `.mov`/H.264, and FLAC all play. Formats the
   webview can't decode (e.g. `.mkv`, `.avi`, `.wmv`) still open, showing a
-  fallback panel with **Open with default app** and **Reveal in Finder**.
+  fallback panel with **Open with default app** and **Reveal in Finder**
+  (**Show in Explorer** on Windows, **Show in File Manager** on Linux).
 - **Read-only.** Media tabs never become dirty and close without a save prompt.
 
 ## Schema-aware previews

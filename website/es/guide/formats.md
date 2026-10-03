@@ -78,7 +78,8 @@ Cómo funciona y qué esperar:
   plataforma, por lo que la compatibilidad depende de lo que el webview de tu sistema pueda
   decodificar. En macOS es amplia — HEIC, TIFF, `.mov`/H.264 y FLAC se reproducen. Los
   formatos que el webview no puede decodificar (p. ej. `.mkv`, `.avi`, `.wmv`) se abren igualmente,
-  mostrando un panel alternativo con **Abrir con la aplicación predeterminada** y **Mostrar en Finder**.
+  mostrando un panel alternativo con **Abrir con la aplicación predeterminada** y **Mostrar en Finder**
+  (**Mostrar en Explorador** en Windows, **Mostrar en gestor de archivos** en Linux).
 - **Solo lectura.** Las pestañas multimedia nunca quedan modificadas y se cierran sin pedir guardar.
 
 ## Vistas previas con conocimiento de esquema
