@@ -130,24 +130,27 @@ fn a_child_whose_attribute_cannot_be_removed_is_counted_and_the_rest_continue() 
         fs::write(root.join(name), b"x").unwrap();
         set_quarantine(&root.join(name));
     }
-    // An immutable file (`uchg`): removing its attribute fails with EPERM.
-    // The guard clears the flag on every exit so the temp dir can be removed.
+    // An immutable file (`UF_IMMUTABLE`): removing its attribute fails with
+    // EPERM. The guard clears the flag on every exit so the temp dir can be
+    // removed.
+    fn set_flags(path: &Path, flags: libc::c_uint) -> std::io::Result<()> {
+        use std::os::unix::ffi::OsStrExt;
+        let c_path = std::ffi::CString::new(path.as_os_str().as_bytes())?;
+        // SAFETY: `c_path` is a NUL-terminated string that outlives the call.
+        if unsafe { libc::chflags(c_path.as_ptr(), flags) } == 0 {
+            Ok(())
+        } else {
+            Err(std::io::Error::last_os_error())
+        }
+    }
     struct Immutable(PathBuf);
     impl Drop for Immutable {
         fn drop(&mut self) {
-            let _ = std::process::Command::new("chflags")
-                .arg("nouchg")
-                .arg(&self.0)
-                .status();
+            let _ = set_flags(&self.0, 0);
         }
     }
     let locked = root.join("b.md");
-    let status = std::process::Command::new("chflags")
-        .arg("uchg")
-        .arg(&locked)
-        .status()
-        .expect("chflags");
-    assert!(status.success());
+    set_flags(&locked, libc::UF_IMMUTABLE).expect("chflags");
     let _unlock = Immutable(locked.clone());
 
     let stats = strip_workspace_quarantine(root);
