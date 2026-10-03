@@ -55,7 +55,7 @@
     "src/services/history/historyOperations.ts": 333,
     "src/stores/aiStore/provider.ts": 324,
     "src/stores/aiStore/suggestion.ts": 336,
-    "src/stores/mcpStore.ts": 324,
+    "src/stores/mcpStore.ts": 321,
     "src/stores/tabStore.ts": 457,
     "src/utils/exportNaming.ts": 324,
     "src/utils/textTransformations.ts": 335
