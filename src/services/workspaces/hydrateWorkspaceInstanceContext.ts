@@ -15,7 +15,7 @@
  * @coordinates-with syncLegacyWorkspaceContext.ts — sidebar re-root
  * @module services/workspaces/hydrateWorkspaceInstanceContext
  */
-import { useUIStore } from "@/stores/uiStore";
+import { useTerminalStore } from "@/stores/terminalStore";
 import { useWorkspaceInstancesStore } from "@/stores/workspaceInstancesStore";
 import { isWorkspaceRailEnabled } from "@/services/featureFlags/workspaceRailFeatureFlag";
 import { contextKindOf } from "./workspaceOwnershipKernel";
@@ -48,9 +48,9 @@ export function hydrateWorkspaceInstanceContext(windowLabel: string): Promise<vo
   // and re-deriving activation from the active id cannot clobber it. A
   // placeholder active skips adoption (D-T1 carve-out).
   if (active.kind !== "placeholder") {
-    useUIStore.getState().terminalAdoptUnscopedSessions(activeId);
+    useTerminalStore.getState().terminalAdoptUnscopedSessions(activeId);
   }
-  useUIStore.getState().terminalHydrateScope(activeId);
+  useTerminalStore.getState().terminalHydrateScope(activeId);
 
   return syncLegacyWorkspaceContext(
     windowLabel,

@@ -11,7 +11,7 @@ import {
   getHeadingLinesKey,
   type HeadingItem,
   type HeadingNode,
-} from "../outlineUtils";
+} from "./markdownOutline";
 
 describe("extractHeadings", () => {
   describe("basic extraction", () => {

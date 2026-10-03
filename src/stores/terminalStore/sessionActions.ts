@@ -1,13 +1,12 @@
 /**
- * uiStore `terminal` slice — terminal session registry initial state and
- * actions.
+ * terminalStore base session actions — the session registry's initial state,
+ * ID/ordinal generators, and the per-session action implementations.
  *
  * Purpose: initial value, ID/ordinal generators, and action implementations
- * for the `s.terminal` namespace of the UI store. Type declarations
- * (TerminalSession, slice and action shapes) live in `./types.ts`
- * (one-directional imports — no cycles). The module-level ID counter lives
- * here; the test-only reset in the composition root calls
- * `resetTerminalIdCounter()`.
+ * for the terminal session store. Type declarations (TerminalSession, state
+ * and action shapes) live in `./types.ts` (one-directional imports — no
+ * cycles). The module-level ID counter lives here; the test-only reset in the
+ * composition root calls `resetTerminalIdCounter()`.
  *
  * Key decisions:
  *   - A session's display number is its `ordinal` field, allocated on create
@@ -18,21 +17,21 @@
  *     cleared only after a spawn using it succeeds, so a failed first attempt
  *     stays retryable in the directory the user asked for.
  *
- * @module stores/uiStore/terminalSlice
+ * @module stores/terminalStore/sessionActions
  */
 
 import type {
   TerminalActions,
+  TerminalGet,
   TerminalSession,
-  TerminalSlice,
-  UIGet,
-  UISet,
+  TerminalSet,
+  TerminalState,
 } from "./types";
-import { isSessionVisibleInScope } from "./terminalScopeSelectors";
+import { isSessionVisibleInScope } from "./scopeSelectors";
 
 export const MAX_TERMINAL_SESSIONS = 5;
 
-export const initialTerminal: TerminalSlice = {
+export const initialTerminal: TerminalState = {
   sessions: [],
   activeSessionId: null,
   lastActiveByScope: {},
@@ -62,15 +61,15 @@ function nextTerminalOrdinal(sessions: TerminalSession[]): number {
 }
 
 /**
- * Activate `activeId` on the slice, clearing the activated session's
+ * Activate `activeId` on the state, clearing the activated session's
  * hasActivity (D-T11). THE one activation transition (audit R2-6):
  * terminalSetActiveSession and every scope action apply it, so the
  * activity-clear rule cannot fork.
  */
-export function withActiveSession(
-  terminal: TerminalSlice,
+export function withActiveSession<T extends TerminalState>(
+  terminal: T,
   activeId: string | null,
-): TerminalSlice {
+): T {
   return {
     ...terminal,
     activeSessionId: activeId,
@@ -109,7 +108,7 @@ export function resetTerminalIdCounter(): void {
 }
 
 /** Apply a partial update to one session by id (no-op for unknown ids). */
-function updateSession(set: UISet, id: string, patch: Partial<TerminalSession>): void {
+function updateSession(set: TerminalSet, id: string, patch: Partial<TerminalSession>): void {
   mapSession(set, id, (session) => ({ ...session, ...patch }));
 }
 
@@ -123,7 +122,7 @@ function updateSession(set: UISet, id: string, patch: Partial<TerminalSession>):
  * session that never had one.
  */
 function mapSession(
-  set: UISet,
+  set: TerminalSet,
   id: string,
   transform: (session: TerminalSession) => TerminalSession
 ): void {
@@ -131,22 +130,19 @@ function mapSession(
     // Genuinely a no-op for an unknown id: mapping unconditionally would build
     // a new sessions array and wake every subscriber for a stale PTY/title
     // event about a session that is already gone.
-    if (!s.terminal.sessions.some((session) => session.id === id)) return s;
+    if (!s.sessions.some((session) => session.id === id)) return s;
     return {
-      terminal: {
-        ...s.terminal,
-        sessions: s.terminal.sessions.map((session) =>
-          session.id === id ? transform(session) : session,
-        ),
-      },
+      sessions: s.sessions.map((session) =>
+        session.id === id ? transform(session) : session,
+      ),
     };
   });
 }
 
-export function createTerminalActions(set: UISet, get: UIGet): TerminalActions {
+export function createTerminalActions(set: TerminalSet, get: TerminalGet): TerminalActions {
   return {
     terminalCreateSession: (options) => {
-      const state = get().terminal;
+      const state = get();
       // Cap and ordinal run over the VISIBLE union (D-T5), a creation-time
       // gate only — adoption/rekey never consult it, so a scope can
       // transiently exceed the cap without anything being killed.
@@ -170,16 +166,13 @@ export function createTerminalActions(set: UISet, get: UIGet): TerminalActions {
           : {}),
       };
       set((s) => ({
-        terminal: {
-          ...s.terminal,
-          sessions: [...s.terminal.sessions, session],
-          activeSessionId: session.id,
-        },
+        sessions: [...s.sessions, session],
+        activeSessionId: session.id,
       }));
       return session;
     },
     terminalRemoveSession: (id, opts) => {
-      const state = get().terminal;
+      const state = get();
       const remaining = state.sessions.filter((s) => s.id !== id);
       let activeId = state.activeSessionId;
       if (activeId === id) {
@@ -195,19 +188,13 @@ export function createTerminalActions(set: UISet, get: UIGet): TerminalActions {
       // The fallback is an ACTIVATION, so it goes through the one transition
       // (audit round 3, R3-1): a fallback session carrying an activity dot
       // has just become the visible session, and the dot must clear (D-T11).
-      set((s) => ({
-        terminal: withActiveSession(
-          { ...s.terminal, sessions: remaining },
-          activeId,
-        ),
-      }));
+      set((s) => withActiveSession({ ...s, sessions: remaining }, activeId));
     },
     terminalSetActiveSession: (id) => {
-      const state = get().terminal;
-      if (state.sessions.some((s) => s.id === id)) {
+      if (get().sessions.some((s) => s.id === id)) {
         // Activating a session clears its background-activity flag (WI-4.3)
         // — via the ONE activation transition (withActiveSession).
-        set((s) => ({ terminal: withActiveSession(s.terminal, id) }));
+        set((s) => withActiveSession(s, id));
       }
     },
     terminalMarkSessionDead: (id) => {
@@ -243,12 +230,12 @@ export function createTerminalActions(set: UISet, get: UIGet): TerminalActions {
       updateSession(set, id, { programTitle: clean });
     },
     terminalPeekRequestedCwd: (id) =>
-      get().terminal.sessions.find((s) => s.id === id)?.requestedCwd,
+      get().sessions.find((s) => s.id === id)?.requestedCwd,
     terminalClearRequestedCwd: (id) => {
       // Cleared only after a SUCCESSFUL spawn (see useTerminalShellLifecycle).
       // Clearing on read would lose the user's directory when the first spawn
       // fails, and their retry would silently open somewhere else.
-      if (get().terminal.sessions.find((s) => s.id === id)?.requestedCwd === undefined) return;
+      if (get().sessions.find((s) => s.id === id)?.requestedCwd === undefined) return;
       // Take the key OFF, restoring the shape a session created without a
       // requested directory has — see mapSession.
       mapSession(set, id, ({ requestedCwd: _requestedCwd, ...rest }) => rest);
@@ -256,7 +243,7 @@ export function createTerminalActions(set: UISet, get: UIGet): TerminalActions {
     terminalMarkActivity: (id) => {
       // The active session's output is visible — flagging it would leave a
       // stale activity dot after the user switches away (audit-fix).
-      if (get().terminal.activeSessionId === id) return;
+      if (get().activeSessionId === id) return;
       updateSession(set, id, { hasActivity: true });
     },
   };

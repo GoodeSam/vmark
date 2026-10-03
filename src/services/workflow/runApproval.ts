@@ -36,7 +36,7 @@ import { useBrowserApprovalStore } from "@/stores/browserApprovalStore";
 import { grantPatternFor } from "@/stores/browserApprovalStore.helpers";
 import type { ActionTarget } from "@/stores/browserApprovalStore.types";
 import { mintOneShotConfirmed, revokeOneShot } from "@/services/browser/grantSync";
-import { useBrowserLeaseStore } from "@/services/browser/lease";
+import { browserLease } from "@/services/browser/lease";
 import { originForAgent } from "@/lib/browser/url";
 import { WorkflowPause } from "@/lib/browser/workflow/engine";
 import type { RunClock } from "./runClock";
@@ -161,7 +161,7 @@ type PollOutcome = "authorized" | "dropped";
 async function pollPrompt(ctx: ApprovalWaitContext, req: ApprovalRequest, reqId: string, page: AuthorizedPage): Promise<PollOutcome> {
   for (;;) {
     throwIfAborted(ctx.signal);
-    if (useBrowserLeaseStore.getState().epochOf(ctx.tabId) !== ctx.leaseEpoch) {
+    if (browserLease.epochOf(ctx.tabId) !== ctx.leaseEpoch) {
       throw new WorkflowPause("lease-lost", "automation lease lost while waiting for approval — a human took control");
     }
     const store = useBrowserApprovalStore.getState();

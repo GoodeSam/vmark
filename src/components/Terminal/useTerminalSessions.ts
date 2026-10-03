@@ -34,7 +34,7 @@
  * @coordinates-with terminalSessionStoreSync.ts — theme / workspace / settings sync effects
  * @coordinates-with terminalSessionInputWiring.ts — IME and onData → PTY wiring
  * @coordinates-with spawnPty.ts — shell process creation
- * @coordinates-with stores/uiStore/terminalSlice.ts — store slice driving session list and active ID
+ * @coordinates-with stores/terminalStore/sessionActions.ts — session store driving session list and active ID
  * @module components/Terminal/useTerminalSessions
  */
 import { useRef, useEffect, useCallback } from "react";
@@ -42,7 +42,7 @@ import type { IPty } from "@/lib/pty";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { initialState } from "@/stores/settingsStore/defaults";
 import { currentTerminalThemeId } from "./terminalThemeId";
-import { useUIStore } from "@/stores/uiStore";
+import { useTerminalStore } from "@/stores/terminalStore";
 import { createTerminalInstance } from "./createTerminalInstance";
 import { sessionBellHandler } from "./terminalSessionBell";
 import { useUIStoreSync } from "./terminalSessionStoreSync";
@@ -79,7 +79,7 @@ export function useTerminalSessions(
 
   // Fit the active terminal (and propagate the new dimensions to its PTY)
   const fit = useCallback(() => {
-    const activeId = useUIStore.getState().terminal.activeSessionId;
+    const activeId = useTerminalStore.getState().activeSessionId;
     if (!activeId) return;
     const entry = sessionsRef.current.get(activeId);
     if (!entry) return;
@@ -91,7 +91,7 @@ export function useTerminalSessions(
 
   /** Get search addon of active session. */
   const getActiveSearchAddon = useCallback((): SearchAddon | null => {
-    const activeId = useUIStore.getState().terminal.activeSessionId;
+    const activeId = useTerminalStore.getState().activeSessionId;
     if (!activeId) return null;
     const entry = sessionsRef.current.get(activeId);
     return entry?.instance.searchAddon ?? null;
@@ -99,7 +99,7 @@ export function useTerminalSessions(
 
   /** Get terminal + pty refs for context menu. */
   const getActiveTerminal = useCallback(() => {
-    const activeId = useUIStore.getState().terminal.activeSessionId;
+    const activeId = useTerminalStore.getState().activeSessionId;
     if (!activeId) return null;
     const entry = sessionsRef.current.get(activeId);
     if (!entry) return null;
@@ -168,7 +168,7 @@ export function useTerminalSessions(
         // permanently blank tab that neither fit nor restart could recover
         // (no entry ever registered). Remove it — the reconcile's removal
         // pass is a no-op for an id with no live instance.
-        useUIStore.getState().terminalRemoveSession(sessionId);
+        useTerminalStore.getState().terminalRemoveSession(sessionId);
         return;
       }
 
@@ -180,7 +180,7 @@ export function useTerminalSessions(
       // title it set, and swallowing it left a stale tab name forever. The store
       // trims, so "" lands as "" and the tab falls back to its label (audit #18).
       instance.term.onTitleChange((title) => {
-        useUIStore.getState().terminalSetProgramTitle(sessionId, title);
+        useTerminalStore.getState().terminalSetProgramTitle(sessionId, title);
       });
 
       const entry: SessionEntry = {

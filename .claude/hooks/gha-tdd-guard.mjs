@@ -49,6 +49,7 @@
 //     - src/components/Browser/**/*.{ts,tsx}
 //     - src/services/browser/**/*.{ts,tsx}
 //     - src/stores/browserApprovalStore.ts
+//     - src/stores/browserLease*.ts (the automation lease's state)
 //
 //   Browser automation — the MCP browser handlers
 //     - src/services/mcpBridge/v2/browser*.{ts,tsx}
@@ -198,6 +199,9 @@ const SCOPED = [
   // judged fiction and deleted (review finding E4, WI-6 2026-08-03).
   // src/stores/webWorkflowStore.ts went the same way in WI-19: never created.
   /^src\/stores\/browserApprovalStore\.ts$/,
+  // The automation lease's state, moved here from services/browser (which the
+  // glob above guards) so the store sits with the other stores.
+  /^src\/stores\/browserLease\w*\.ts$/,
 
   // ── Browser automation — the MCP browser handlers ──
   // (browser.ts, browserNavigation.ts, browserScreenshot.ts, browserHelpers.ts).

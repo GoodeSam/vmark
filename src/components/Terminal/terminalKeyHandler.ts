@@ -46,7 +46,7 @@
 import type { IPty } from "@/lib/pty";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { Terminal } from "@xterm/xterm";
-import { useUIStore } from "@/stores/uiStore";
+import { useTerminalStore } from "@/stores/terminalStore";
 import { useSettingsStore, useShortcutsStore } from "@/stores/settingsStore";
 import { initialState as settingsDefaults } from "@/stores/settingsStore/defaults";
 import { isImeKeyEvent } from "@/utils/imeGuard";
@@ -282,7 +282,7 @@ export function createTerminalKeyHandler(
         // hidden scope's sessions are not addressable from the keyboard.
         const visible = getVisibleTerminalSessions(getCurrentWindowLabel());
         if (idx < visible.length) {
-          useUIStore.getState().terminalSetActiveSession(visible[idx].id);
+          useTerminalStore.getState().terminalSetActiveSession(visible[idx].id);
         }
         return false;
       }

@@ -14,11 +14,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // registers the window's resolver, exactly as useTerminalSessions does.
 const terminalResolver = vi.fn<(sessionId: string) => unknown>();
 
-import {
-  useUIStore,
-  resetTerminalSessionStore,
-  MAX_TERMINAL_SESSIONS,
-} from "@/stores/uiStore";
+import { useUIStore } from "@/stores/uiStore";
+import { MAX_TERMINAL_SESSIONS, resetTerminalSessionStore, useTerminalStore } from "@/stores/terminalStore";
 import {
   isShellLanguage,
   isTranscriptLanguage,
@@ -195,7 +192,7 @@ describe("runInTerminal (WI-4.3)", () => {
   });
 
   it("does not append a newline — the block never auto-executes", async () => {
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     await runInTerminal("rm -rf /tmp/scratch", "bash");
 
     expect(paste).toHaveBeenCalledTimes(1);
@@ -206,7 +203,7 @@ describe("runInTerminal (WI-4.3)", () => {
   });
 
   it("refuses a multi-line block when bracketed paste never turns on", async () => {
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     installTerminal(false);
     // Drain the retry budget synchronously so the refusal is reached.
     const raf = vi
@@ -227,7 +224,7 @@ describe("runInTerminal (WI-4.3)", () => {
     // A session created a moment ago has bracketed paste off simply because
     // its shell has not finished starting — the common "no terminal open yet"
     // path. Refusing immediately would break it.
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     let calls = 0;
     paste = vi.fn();
     focus = vi.fn();
@@ -251,7 +248,7 @@ describe("runInTerminal (WI-4.3)", () => {
   });
 
   it("still delivers a SINGLE-line block without bracketed paste", async () => {
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     installTerminal(false);
 
     const result = await runInTerminal("make build", "bash");
@@ -261,35 +258,35 @@ describe("runInTerminal (WI-4.3)", () => {
   });
 
   it("writes a multi-line block as ONE paste, not N writes", async () => {
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     await runInTerminal("a\nb\nc", "bash");
     expect(paste).toHaveBeenCalledTimes(1);
     expect(paste).toHaveBeenCalledWith("a\nb\nc");
   });
 
   it("pastes only the commands from a console transcript", async () => {
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     await runInTerminal("$ npm test\nPASS", "console");
     expect(paste).toHaveBeenCalledWith("npm test");
   });
 
   it("creates a session when none exists", async () => {
-    expect(useUIStore.getState().terminal.sessions).toHaveLength(0);
+    expect(useTerminalStore.getState().sessions).toHaveLength(0);
     const result = await runInTerminal("echo hi", "bash");
     expect(result.ok).toBe(true);
-    expect(useUIStore.getState().terminal.sessions).toHaveLength(1);
+    expect(useTerminalStore.getState().sessions).toHaveLength(1);
   });
 
   it("reuses the active session when one exists", async () => {
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     await runInTerminal("echo hi", "bash");
-    expect(useUIStore.getState().terminal.sessions).toHaveLength(1);
+    expect(useTerminalStore.getState().sessions).toHaveLength(1);
   });
 
   it("delivers to the session that was ACTIVE at request time", async () => {
     // The race this closes: a deferred paste that re-resolved "the active
     // terminal" would land in whatever tab the user switched to meanwhile.
-    const first = useUIStore.getState().terminalCreateSession()!;
+    const first = useTerminalStore.getState().terminalCreateSession()!;
     await runInTerminal("echo hi", "bash");
     expect(terminalResolver).toHaveBeenCalledWith(first.id);
   });
@@ -301,20 +298,20 @@ describe("runInTerminal (WI-4.3)", () => {
   });
 
   it("focuses the terminal so Enter goes to the shell, not the editor", async () => {
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     await runInTerminal("echo hi", "bash");
     expect(focus).toHaveBeenCalled();
   });
 
   it("refuses a non-shell language and pastes nothing", async () => {
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     const result = await runInTerminal("print('hi')", "python");
     expect(result).toEqual({ ok: false, reason: "not-shell" });
     expect(paste).not.toHaveBeenCalled();
   });
 
   it("refuses an empty block and pastes nothing", async () => {
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     const result = await runInTerminal("   \n  ", "bash");
     expect(result).toEqual({ ok: false, reason: "empty" });
     expect(paste).not.toHaveBeenCalled();
@@ -324,15 +321,15 @@ describe("runInTerminal (WI-4.3)", () => {
     // The cap only blocks CREATING a session. With five open, the active one
     // is a perfectly good target — refusing here would be a bug.
     for (let i = 0; i < MAX_TERMINAL_SESSIONS; i++) {
-      useUIStore.getState().terminalCreateSession();
+      useTerminalStore.getState().terminalCreateSession();
     }
     const result = await runInTerminal("echo hi", "bash");
     expect(result).toEqual({ ok: true });
-    expect(useUIStore.getState().terminal.sessions).toHaveLength(MAX_TERMINAL_SESSIONS);
+    expect(useTerminalStore.getState().sessions).toHaveLength(MAX_TERMINAL_SESSIONS);
   });
 
   it("reports paste-failed rather than claiming success", async () => {
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     paste.mockImplementation(() => {
       throw new Error("terminal disposed mid-paste");
     });
@@ -342,7 +339,7 @@ describe("runInTerminal (WI-4.3)", () => {
 
   it("reports a timeout when the session's terminal never mounts", async () => {
     // Previously this returned ok:true and silently dropped the payload.
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     terminalResolver.mockReturnValue(null);
     // Drive rAF synchronously so the bounded retry drains immediately.
     const raf = vi
@@ -361,7 +358,7 @@ describe("runInTerminal (WI-4.3)", () => {
   it("delivers once the terminal appears on a later frame", async () => {
     // A freshly created session's xterm mounts in a React effect, so the
     // first resolve attempt legitimately finds nothing.
-    useUIStore.getState().terminalCreateSession();
+    useTerminalStore.getState().terminalCreateSession();
     let calls = 0;
     terminalResolver.mockImplementation(() =>
       ++calls < 3 ? null : { paste, focus, modes: { bracketedPasteMode: true } },
@@ -389,7 +386,7 @@ describe("id-pinned delivery across a rail switch (WI-TS4.2, D-T10)", () => {
   });
 
   it("delivers to the ORIGINALLY targeted session after the visible scope swaps mid-delivery", async () => {
-    const first = useUIStore
+    const first = useTerminalStore
       .getState()
       .terminalCreateSession({ ownerInstanceId: "wsi-a" })!;
     const paste = vi.fn();
@@ -403,8 +400,8 @@ describe("id-pinned delivery across a rail switch (WI-TS4.2, D-T10)", () => {
 
     const pending = runInTerminal("make build", "bash");
     // Rail switch lands mid-delivery: A's scope hides, nothing is active.
-    useUIStore.getState().terminalSwitchScope("wsi-a", "wsi-b");
-    expect(useUIStore.getState().terminal.activeSessionId).toBeNull();
+    useTerminalStore.getState().terminalSwitchScope("wsi-a", "wsi-b");
+    expect(useTerminalStore.getState().activeSessionId).toBeNull();
 
     const result = await pending;
 

@@ -196,8 +196,8 @@ package while it has a Rust half.** Do not claim otherwise in the plan.
 
 ### D7 — Feature state moves *into* the extension; `ctx.state` exposes only genuinely shared state
 
-Of 59 stores, most are one feature's private state. `uiStore/terminalSlice.ts`
-belongs to the terminal extension, not to the app.
+Of 59 stores, most are one feature's private state. `terminalStore` (terminal
+sessions) belongs to the terminal extension, not to the app.
 
 `ctx.state` exposes only what is truly cross-cutting — active tab, workspace
 root, settings, theme — as **read-only selectors**. Mutation happens through

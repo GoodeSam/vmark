@@ -24,9 +24,8 @@
  * @coordinates-with spawnPty.ts — consumes { cwd, workspaceRoot }
  * @module components/Terminal/resolveTerminalSpawnContext
  */
-import { useUIStore } from "@/stores/uiStore";
 import { useWorkspaceInstancesStore } from "@/stores/workspaceInstancesStore";
-import type { TerminalSession } from "@/stores/uiStore/types";
+import { useTerminalStore, type TerminalSession } from "@/stores/terminalStore";
 import {
   resolveActiveFileCwd,
   resolveTerminalWorkspaceRoot,
@@ -65,7 +64,7 @@ export function resolveTerminalSpawnContext(
   // from the SAME scope — another workspace's shell is somewhere the user
   // never put THIS scope.
   if (!cwd && session) {
-    for (const sibling of useUIStore.getState().terminal.sessions) {
+    for (const sibling of useTerminalStore.getState().sessions) {
       if (sibling.id === session.id) continue;
       if ((sibling.workspaceInstanceId ?? null) !== scopeKey) continue;
       const live = liveSiblingCwd(sibling.id);

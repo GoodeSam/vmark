@@ -8,11 +8,7 @@ vi.mock("@/utils/imeGuard", () => ({
 }));
 
 import { ContextMenu, type ContextMenuType } from "./ContextMenu";
-import {
-  useUIStore,
-  resetTerminalSessionStore,
-  MAX_TERMINAL_SESSIONS,
-} from "@/stores/uiStore";
+import { MAX_TERMINAL_SESSIONS, resetTerminalSessionStore, useTerminalStore } from "@/stores/terminalStore";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -224,7 +220,7 @@ describe("ContextMenu ARIA and keyboard", () => {
 
     it("is disabled at the session cap, and clicking it does nothing", () => {
       for (let i = 0; i < MAX_TERMINAL_SESSIONS; i++) {
-        useUIStore.getState().terminalCreateSession();
+        useTerminalStore.getState().terminalCreateSession();
       }
       const { onAction } = renderMenu("folder");
       const item = screen.getByRole("menuitem", { name: /max 5 sessions/i });

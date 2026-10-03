@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { useWindowLabel } from "@/contexts/WindowContext";
 import { useTabStore } from "@/stores/tabStore";
-import { useBrowserLeaseStore } from "@/services/browser/lease";
+import { browserLease } from "@/services/browser/lease";
+import { useBrowserLeaseStore } from "@/stores/browserLeaseStore";
 import { BrowserOmnibox } from "./BrowserOmnibox";
 import { BrowserPageTabs } from "./BrowserPageTabs";
 import { getBrowserWorkspaceView } from "./browserWorkspace";
@@ -71,8 +72,8 @@ export function BrowserChrome({
   if (!activePageId) return null;
 
   const reclaim = (): void => {
-    if (useBrowserLeaseStore.getState().currentHolder(activePageId) === "ai") {
-      useBrowserLeaseStore.getState().reclaimForHuman(activePageId);
+    if (browserLease.currentHolder(activePageId) === "ai") {
+      browserLease.reclaimForHuman(activePageId);
     }
   };
 

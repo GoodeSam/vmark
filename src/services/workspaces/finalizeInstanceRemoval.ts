@@ -9,14 +9,14 @@
  * cleanup, the main-window placeholder / empty-window-close invariants, and —
  * when the removed instance was ACTIVE — the FULL context hydration of the
  * promoted successor (panes, active tab, sidebar root, config, terminal
- * realign), not just the terminal slice.
+ * realign), not just the terminal store.
  *
  * @coordinates-with closeWorkspaceInstance.ts — cleanupPerInstanceUi: true
  * @coordinates-with workspaceWindowActions.ts — move; UI/pane state stays (rail-plan gap G2, deferred)
  * @module services/workspaces/finalizeInstanceRemoval
  */
 import { invoke } from "@tauri-apps/api/core";
-import { useUIStore } from "@/stores/uiStore";
+import { useTerminalStore } from "@/stores/terminalStore";
 import { useClosedTabScopesStore } from "@/stores/tabStoreClosedScopes";
 import { useWorkspaceInstanceUiStore } from "@/stores/workspaceInstanceUiStore";
 import { useWorkspaceInstancesStore } from "@/stores/workspaceInstancesStore";
@@ -56,7 +56,7 @@ export function finalizeInstanceRemoval(
   // WI-TS2.3 (D-T6): the instance's terminal sessions die with it — the store
   // removal IS the PTY kill — its lastActiveByScope slot drops with them, and
   // its closed-tab reopen history is cleaned per-instance.
-  useUIStore.getState().terminalRemoveScopeSessions(workspaceInstanceId);
+  useTerminalStore.getState().terminalRemoveScopeSessions(workspaceInstanceId);
   useClosedTabScopesStore.getState().removeClosedScope(windowLabel, workspaceInstanceId);
 
   if (windowLabel === "main") {
@@ -79,6 +79,6 @@ export function finalizeInstanceRemoval(
   if (!wasActive) return Promise.resolve();
   // Audit 20260831 #25: the promoted successor (ids[0], promoted with no
   // switch event) needs its FULL context — panes, active tab, sidebar root,
-  // config, and the terminal realign — not only the terminal slice.
+  // config, and the terminal realign — not only the terminal store.
   return hydrateWorkspaceInstanceContext(windowLabel);
 }

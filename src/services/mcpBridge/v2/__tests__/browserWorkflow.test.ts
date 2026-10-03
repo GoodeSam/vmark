@@ -24,7 +24,7 @@ import {
 } from "@/services/mcpBridge/v2/browserWorkflow";
 import { useTabStore } from "@/stores/tabStore";
 import { useBrowserApprovalStore } from "@/stores/browserApprovalStore";
-import { useBrowserLeaseStore } from "@/services/browser/lease";
+import { useBrowserLeaseStore } from "@/stores/browserLeaseStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { browserEventBroker } from "@/services/browser/browserEventBroker";
 import { __resetRunRegistry } from "@/services/workflow/runRegistry";

@@ -45,6 +45,7 @@
 import { useRef, useEffect, useState, useCallback, useId, type RefObject, type MutableRefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { useUIStore } from "@/stores/uiStore";
+import { useTerminalStore } from "@/stores/terminalStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useWorkspaceInstancesStore } from "@/stores/workspaceInstancesStore";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
@@ -92,7 +93,7 @@ export function TerminalPanel() {
     setSearchVisible((v) => !v);
   }, []);
 
-  const activeSessionId = useUIStore((s) => s.terminal.activeSessionId);
+  const activeSessionId = useTerminalStore((s) => s.activeSessionId);
   const transcript = useRenderedTranscript(activeSessionId, transcriptEnabled, visible, transcriptConfiguration);
   const transcriptId = useId();
 
@@ -213,7 +214,7 @@ export function TerminalPanel() {
   // Tab bar actions — the ONE remove+hide policy (audit 20260831 #32):
   // membership-verified, visible fallback, no hidden-panel resurrect.
   const handleClose = useCallback(() => {
-    const activeId = useUIStore.getState().terminal.activeSessionId;
+    const activeId = useTerminalStore.getState().activeSessionId;
     if (!activeId) return;
     removeTerminalSessionWithPanelPolicy(activeId, { onlyIfVisible: true });
   }, []);

@@ -26,7 +26,7 @@
  * @module services/workspaces/switchWorkspaceInstance
  */
 import { useTabStore } from "@/stores/tabStore";
-import { useUIStore } from "@/stores/uiStore";
+import { useTerminalStore } from "@/stores/terminalStore";
 import { usePaneStore } from "@/stores/paneStore";
 import {
   useWorkspaceInstancesStore,
@@ -152,7 +152,7 @@ export function switchWorkspaceInstance(
   const outgoingIsReal =
     outgoingRecord !== undefined && outgoingRecord.kind !== "placeholder";
   if (outgoingIsReal && outgoingId) {
-    useUIStore.getState().terminalAdoptUnscopedSessions(outgoingId);
+    useTerminalStore.getState().terminalAdoptUnscopedSessions(outgoingId);
   }
 
   useWorkspaceInstancesStore.getState().activateWorkspaceInstance(windowLabel, instanceId);
@@ -164,7 +164,7 @@ export function switchWorkspaceInstance(
   // shown session, activate the incoming scope's remembered ?? first ?? null
   // (D-T2, activity cleared per D-T11). Synchronous store op (invariant 6).
   // A placeholder outgoing writes no memory: its slot could never be read.
-  useUIStore
+  useTerminalStore
     .getState()
     .terminalSwitchScope(outgoingIsReal ? outgoingId : null, instanceId);
 

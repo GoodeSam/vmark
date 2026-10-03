@@ -97,7 +97,8 @@ vi.mock("@/plugins/mermaid", () => ({ renderMermaid: vi.fn().mockResolvedValue(n
 vi.mock("./useTranscriptConfiguration", () => ({ useTranscriptConfiguration: (enabled: boolean) => (enabled ? "ready" : "pending") }));
 
 import { TerminalPanel } from "./TerminalPanel";
-import { useUIStore, resetTerminalSessionStore } from "@/stores/uiStore";
+import { useUIStore } from "@/stores/uiStore";
+import { resetTerminalSessionStore, useTerminalStore } from "@/stores/terminalStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 
 const TABLE_REPLY =
@@ -124,7 +125,7 @@ beforeEach(() => {
   tauri.reads.length = 0;
   useUIStore.setState({ terminalVisible: true, terminalHeight: 200, terminalWidth: 300, effectiveTerminalPosition: "bottom" } as never);
   resetTerminalSessionStore();
-  useUIStore.getState().terminalCreateSession();
+  useTerminalStore.getState().terminalCreateSession();
   useSettingsStore.getState().updateTerminalSetting("transcriptPreview", false);
 });
 

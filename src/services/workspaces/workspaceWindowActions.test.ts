@@ -3,7 +3,7 @@
 // ack (never on timeout/cancel) and realigns to the promoted successor.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useDocumentStore, useRevisionStore } from "@/stores/documentStore";
-import { resetTerminalSessionStore, useUIStore } from "@/stores/uiStore";
+import { resetTerminalSessionStore, useTerminalStore } from "@/stores/terminalStore";
 import {
   selectWindowWorkspaceState,
   useWorkspaceInstancesStore,
@@ -213,7 +213,7 @@ describe("workspace window actions", () => {
 });
 
 describe("terminal scope lifecycle on move (WI-TS2.3, D-T6)", () => {
-  const termIds = () => useUIStore.getState().terminal.sessions.map((s) => s.id);
+  const termIds = () => useTerminalStore.getState().sessions.map((s) => s.id);
 
   beforeEach(() => {
     resetTerminalSessionStore();
@@ -224,13 +224,13 @@ describe("terminal scope lifecycle on move (WI-TS2.3, D-T6)", () => {
     addInstance("main", "wsi-repo", "/repo");
     addInstance("main", "wsi-stay", "/stay");
     useWorkspaceInstancesStore.getState().activateWorkspaceInstance("main", "wsi-repo");
-    const moved = useUIStore
+    const moved = useTerminalStore
       .getState()
       .terminalCreateSession({ ownerInstanceId: "wsi-repo" })!;
-    const stay = useUIStore
+    const stay = useTerminalStore
       .getState()
       .terminalCreateSession({ ownerInstanceId: "wsi-stay" })!;
-    useUIStore.getState().terminalSetActiveSession(moved.id);
+    useTerminalStore.getState().terminalSetActiveSession(moved.id);
     mockInvoke.mockResolvedValueOnce("doc-2");
 
     const move = moveWorkspaceInstanceToNewWindow("main", "wsi-repo");
@@ -245,9 +245,9 @@ describe("terminal scope lifecycle on move (WI-TS2.3, D-T6)", () => {
     expect(termIds()).toEqual([stay.id]);
     // The moved instance was ACTIVE — realign shows the successor's session
     // instead of a blank panel over hidden PTYs.
-    expect(useUIStore.getState().terminal.activeSessionId).toBe(stay.id);
+    expect(useTerminalStore.getState().activeSessionId).toBe(stay.id);
     expect(
-      "wsi-repo" in useUIStore.getState().terminal.lastActiveByScope,
+      "wsi-repo" in useTerminalStore.getState().lastActiveByScope,
     ).toBe(false);
   });
 
@@ -255,7 +255,7 @@ describe("terminal scope lifecycle on move (WI-TS2.3, D-T6)", () => {
     vi.useFakeTimers();
     setRailMode(true);
     addInstance("main", "wsi-repo", "/repo");
-    const s = useUIStore
+    const s = useTerminalStore
       .getState()
       .terminalCreateSession({ ownerInstanceId: "wsi-repo" })!;
     mockInvoke.mockResolvedValueOnce("doc-2");

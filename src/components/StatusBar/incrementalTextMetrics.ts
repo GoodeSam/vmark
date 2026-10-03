@@ -34,7 +34,7 @@
  * inline-code or link literal containing an empty line — invalid CommonMark)
  * strip per-block here rather than across blocks.
  *
- * @coordinates-with statusTextMetrics.ts — the per-segment metrics kernel
+ * @coordinates-with utils/markdownTextMetrics.ts — the per-segment metrics kernel
  * @coordinates-with StatusBarCounts.tsx — holds one cache per status bar
  * @module components/StatusBar/incrementalTextMetrics
  */
@@ -43,7 +43,7 @@ import {
   computeTextMetrics,
   stripMarkdown,
   type TextMetrics,
-} from "./statusTextMetrics";
+} from "@/utils/markdownTextMetrics";
 
 interface SegmentEntry {
   metrics: TextMetrics;

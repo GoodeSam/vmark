@@ -22,7 +22,7 @@ import {
   filterHeadingTree,
   getHeadingLinesKey,
   type HeadingNode,
-} from "./outlineUtils";
+} from "@/utils/markdownOutline";
 import { dispatchEditor } from "@/lib/formats/registry";
 
 // Memoized so a cursor move (active-heading change) reconciles only the items

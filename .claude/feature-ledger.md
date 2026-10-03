@@ -1533,10 +1533,10 @@ A window's workspace lives in `src/stores/workspaceStore.ts` (window-scoped, reh
 - status: shipped-on
 - gate: always on
 - surfaces: sidebar Outline view; shortcut `toggleOutline` Ctrl+Shift+1 (menu `outline`); palette `view.toggleOutline`; window event `outline:scroll-to-heading`
-- code: `src/components/Sidebar/OutlineView.tsx`; `src/components/Sidebar/{outlineUtils,useOutlineInstanceState}.ts`; `src/hooks/useOutlineSync.ts`; `src/hooks/useSourceOutlineSync.ts`
+- code: `src/components/Sidebar/OutlineView.tsx`; `src/components/Sidebar/useOutlineInstanceState.ts`; `src/utils/markdownOutline.ts`; `src/hooks/useOutlineSync.ts`; `src/hooks/useSourceOutlineSync.ts`
 - rust: none
 - docs: `website/guide/features.md` §"Outline Panel (`Ctrl + Shift + 1`)"; `website/guide/shortcuts.md`
-- tests: `src/components/Sidebar/__tests__/outlineUtils.test.ts`, `src/components/Sidebar/__tests__/OutlineView.render.test.tsx`, `src/components/Sidebar/OutlineView.a11y.test.tsx`, `src/components/Sidebar/useOutlineInstanceState.test.ts`, `src/hooks/useOutlineSync.test.ts`, `src/hooks/__tests__/useOutlineSync.test.ts`, `src/hooks/useSourceOutlineSync.test.ts`, `src/hooks/__tests__/useSourceOutlineSync.test.ts`, `e2e/journeys/08-outline-toggle.mjs`
+- tests: `src/utils/markdownOutline.test.ts`, `src/components/Sidebar/__tests__/OutlineView.render.test.tsx`, `src/components/Sidebar/OutlineView.a11y.test.tsx`, `src/components/Sidebar/useOutlineInstanceState.test.ts`, `src/hooks/useOutlineSync.test.ts`, `src/hooks/__tests__/useOutlineSync.test.ts`, `src/hooks/useSourceOutlineSync.test.ts`, `src/hooks/__tests__/useSourceOutlineSync.test.ts`, `e2e/journeys/08-outline-toggle.mjs`
 - notes: The active heading is recomputed, never restored. `useOutlineSync` polls for editor readiness every 100 ms up to 5 s. Its header names the event `outline:navigate`; the event emitted and listened for is `outline:scroll-to-heading`.
 
 ### Quick Open (fuzzy file finder)
@@ -2241,7 +2241,7 @@ Every export command is registered in `src/services/commands/exportCommands.ts` 
 
 Verified: `2675ad132`
 
-The panel is lazy-imported in `src/App.tsx` behind a `FeatureErrorBoundary`; `src/components/Terminal/TerminalPanel.tsx` is the root, `src/components/Terminal/useTerminalSessions.ts` owns the per-session xterm instances, `src/stores/uiStore/terminalSlice.ts` owns session state, and `src/services/terminal/` holds the non-React entry points (gate, focus, create/close, Open Terminal Here, Run in Terminal, cd-follow). The Rust side is `src-tauri/src/pty.rs` plus `src-tauri/src/pty/`, `src-tauri/src/shell_env.rs` and `src-tauri/src/shell_integration.rs`.
+The panel is lazy-imported in `src/App.tsx` behind a `FeatureErrorBoundary`; `src/components/Terminal/TerminalPanel.tsx` is the root, `src/components/Terminal/useTerminalSessions.ts` owns the per-session xterm instances, `src/stores/terminalStore.ts` owns session state, and `src/services/terminal/` holds the non-React entry points (gate, focus, create/close, Open Terminal Here, Run in Terminal, cd-follow). The Rust side is `src-tauri/src/pty.rs` plus `src-tauri/src/pty/`, `src-tauri/src/shell_env.rs` and `src-tauri/src/shell_integration.rs`.
 
 ### Terminal panel
 - id: terminal-panel
@@ -2279,11 +2279,11 @@ The panel is lazy-imported in `src/App.tsx` behind a `FeatureErrorBoundary`; `sr
 - status: shipped-on
 - gate: always on; `MAX_TERMINAL_SESSIONS = 5`
 - surfaces: tab bar buttons carrying `data-terminal-action="new|close|restart|swap"` (E2E contract driven by `e2e/lib/terminal.mjs`); keyboard `Mod+1..5`
-- code: `src/components/Terminal/TerminalTabBar.tsx`, `src/components/Terminal/TerminalTabRename.tsx`, `src/components/Terminal/useTerminalSessions.ts`, `src/components/Terminal/useTerminalSessionsInit.ts`, `src/components/Terminal/useTerminalShellLifecycle.ts`, `src/components/Terminal/terminalShellExit.ts`, `src/components/Terminal/terminalSessionReset.ts`, `src/components/Terminal/terminalMessages.ts`, `src/stores/uiStore/terminalSlice.ts`, `src/services/terminal/createTerminalSession.ts`, `src/services/terminal/closeTerminalSession.ts`
+- code: `src/components/Terminal/TerminalTabBar.tsx`, `src/components/Terminal/TerminalTabRename.tsx`, `src/components/Terminal/useTerminalSessions.ts`, `src/components/Terminal/useTerminalSessionsInit.ts`, `src/components/Terminal/useTerminalShellLifecycle.ts`, `src/components/Terminal/terminalShellExit.ts`, `src/components/Terminal/terminalSessionReset.ts`, `src/components/Terminal/terminalMessages.ts`, `src/stores/terminalStore/sessionActions.ts`, `src/services/terminal/createTerminalSession.ts`, `src/services/terminal/closeTerminalSession.ts`
 - rust: none
 - docs: `website/guide/terminal.md` §"Sessions"
 - tests: `src/components/Terminal/TerminalTabBar.test.tsx`, `src/components/Terminal/TerminalTabBar.a11y.test.tsx`, `src/components/Terminal/TerminalTabBar.scope.test.tsx`, `src/components/Terminal/TerminalTabRename.test.ts`, `src/components/Terminal/useTerminalShellLifecycle.test.ts`, `src/components/Terminal/useTerminalShellLifecycle.reset.test.ts`, `src/components/Terminal/terminalSessionReset.test.ts`, `src/components/Terminal/terminalSessionReset.webkit.test.ts`, `src/components/Terminal/useTerminalSessions.createFail.test.tsx`, `src/components/Terminal/terminalSessionReconcile.test.ts`, `src/components/Terminal/terminalSessionRegistry.test.ts`, `src/components/Terminal/terminalMessages.test.ts`, `src/services/terminal/closeTerminalSession.test.ts`, `src/services/terminal/createTerminalSession.test.ts`
-- notes: Program titles are sanitized in `src/stores/uiStore/terminalSlice.ts` (C0/C1/DEL and bidi embeddings/isolates stripped, whitespace collapsed, 256-char cap). A `createTerminalInstance` throw removes the store session so no permanently blank tab remains.
+- notes: Program titles are sanitized in `src/stores/terminalStore/sessionActions.ts` (C0/C1/DEL and bidi embeddings/isolates stripped, whitespace collapsed, 256-char cap). A `createTerminalInstance` throw removes the store session so no permanently blank tab remains.
 
 ### PTY backend (spawn, stream, resize, kill, flow control)
 - id: pty-backend
@@ -2419,7 +2419,7 @@ The panel is lazy-imported in `src/App.tsx` behind a `FeatureErrorBoundary`; `sr
 - status: shipped-on
 - gate: `terminal.bellMode = "visual"`, `terminal.notifyOnBell = true`
 - surfaces: settings pane (Accessibility group); tab indicator; OS notification; Window Status panel
-- code: `src/components/Terminal/terminalBell.ts`, `src/components/Terminal/terminalSessionBell.ts`, `src/services/terminalAttention.ts`, `src/stores/uiStore/terminalSlice.ts`
+- code: `src/components/Terminal/terminalBell.ts`, `src/components/Terminal/terminalSessionBell.ts`, `src/services/terminalAttention.ts`, `src/stores/terminalStore/sessionActions.ts`
 - rust: `set_window_attention` (window status registry, Area 13 *Window status panel*; consumed here)
 - docs: `website/guide/terminal.md` §"Sessions" (Notifications paragraph); `website/guide/settings.md` §"Terminal" (Accessibility table); `website/guide/workspace-management.md` §"Window Status Panel"
 - tests: `src/components/Terminal/terminalBell.test.ts`, `src/services/terminalAttention.test.ts`
@@ -2475,10 +2475,10 @@ The panel is lazy-imported in `src/App.tsx` behind a `FeatureErrorBoundary`; `sr
 - status: shipped-off
 - gate: `general.workspaceRailMode = false`
 - surfaces: automatic (workspace rail switch); tab bar; empty-state hint
-- code: `src/stores/uiStore/terminalScopeActions.ts`, `src/stores/uiStore/terminalScopeSelectors.ts`, `src/services/terminal/resolveTerminalOwnerInstanceId.ts`, `src/services/terminal/visibleTerminalSessions.ts`, `src/services/terminal/createTerminalSession.ts`, `src/services/terminal/maybeAutoCreateTerminalSession.ts`, `src/components/Terminal/useVisibleTerminalSessions.ts`, `src/services/workspaces/finalizeInstanceRemoval.ts`
+- code: `src/stores/terminalStore.ts`, `src/stores/terminalStore/scopeActions.ts`, `src/stores/terminalStore/scopeSelectors.ts`, `src/services/terminal/resolveTerminalOwnerInstanceId.ts`, `src/services/terminal/visibleTerminalSessions.ts`, `src/services/terminal/createTerminalSession.ts`, `src/services/terminal/maybeAutoCreateTerminalSession.ts`, `src/components/Terminal/useVisibleTerminalSessions.ts`, `src/services/workspaces/finalizeInstanceRemoval.ts`
 - rust: none
 - docs: `website/guide/terminal.md` §"Terminal sessions and the workspace rail"; `website/guide/workspace-rail.md` §"Terminal sessions"
-- tests: `src/stores/uiStore/terminalScopeActions.test.ts`, `src/stores/uiStore/terminalScopeSelectors.test.ts`, `src/stores/uiStore/terminalSlice.scope.test.ts`, `src/components/Terminal/terminalSessionStoreSync.scope.test.ts`, `src/components/Terminal/terminalSessionStoreSync.railswitch.test.ts`, `src/components/Terminal/terminalSessionStoreSync.live.test.ts`, `src/components/Terminal/useTerminalSessionsInit.scope.test.ts`, `src/components/Terminal/useTerminalShellLifecycle.scope.test.ts`, `src/services/terminal/resolveTerminalOwnerInstanceId.test.ts`, `src/services/terminal/maybeAutoCreateTerminalSession.test.ts`; e2e `e2e/journeys/35-terminal-rail-scoping.mjs` with `e2e/lib/rail.mjs`
+- tests: `src/stores/terminalStore.test.ts`, `src/stores/terminalStore/scopeActions.test.ts`, `src/stores/terminalStore/scopeSelectors.test.ts`, `src/stores/terminalStore/sessionActions.scope.test.ts`, `src/components/Terminal/terminalSessionStoreSync.scope.test.ts`, `src/components/Terminal/terminalSessionStoreSync.railswitch.test.ts`, `src/components/Terminal/terminalSessionStoreSync.live.test.ts`, `src/components/Terminal/useTerminalSessionsInit.scope.test.ts`, `src/components/Terminal/useTerminalShellLifecycle.scope.test.ts`, `src/services/terminal/resolveTerminalOwnerInstanceId.test.ts`, `src/services/terminal/maybeAutoCreateTerminalSession.test.ts`; e2e `e2e/journeys/35-terminal-rail-scoping.mjs` with `e2e/lib/rail.mjs`
 - notes: Accepted limitation: a scope can transiently exceed 5 sessions via the placeholder-adoption path — the cap is a creation-time gate, not a population invariant. No session persistence across restarts. Plan: `.claude/tdd-guardian/20260831-terminal-per-instance-sessions.md`.
 
 ### Workspace cd-follow
@@ -2789,10 +2789,10 @@ The browser is macOS-only end to end: `src-tauri/src/browser/surface_stub.rs` re
 - status: shipped-on, macos-only
 - gate: always on
 - surfaces: browser chrome indicator; page-tab dot; automatic (native input monitor)
-- code: `src/services/browser/lease.ts`, `src/services/browser/leaseTransitions.ts`, `src/services/browser/browserLeaseWiring.ts`, `src/components/Browser/BrowserChrome.tsx`, `src/components/Browser/BrowserPageTabs.tsx`, `src-tauri/src/browser/user_input_monitor_macos.rs`, `src-tauri/src/browser/user_input_resolve_macos.rs`
+- code: `src/services/browser/lease.ts`, `src/stores/browserLeaseStore.ts`, `src/services/browser/leaseTransitions.ts`, `src/services/browser/browserLeaseWiring.ts`, `src/components/Browser/BrowserChrome.tsx`, `src/components/Browser/BrowserPageTabs.tsx`, `src-tauri/src/browser/user_input_monitor_macos.rs`, `src-tauri/src/browser/user_input_resolve_macos.rs`
 - rust: module `browser::user_input_monitor_macos` (event emitter; no command)
 - docs: `website/guide/browser.md` §"Co-driving: watch an AI drive the browser from the terminal"
-- tests: `src/services/browser/lease.test.ts`, `src/services/browser/leaseTransitions.test.ts`, `src/services/browser/browserLeaseWiring.test.ts`; e2e `e2e/journeys/36-browser-takeover.mjs` (darwin-only). Gap: the native monitor modules have no unit tests
+- tests: `src/services/browser/lease.test.ts`, `src/stores/browserLeaseStore.test.ts`, `src/services/browser/leaseTransitions.test.ts`, `src/services/browser/browserLeaseWiring.test.ts`; e2e `e2e/journeys/36-browser-takeover.mjs` (darwin-only). Gap: the native monitor modules have no unit tests
 - notes: The monitor's installed-once guard is a declared `static` exception (rule 50). While an overlay is up the native views are hidden, so an input event resolves to no tab and is a no-op.
 
 ### Policy epochs and navigation-generation freshness
@@ -4782,21 +4782,21 @@ The Settings window is its own route (`src/pages/Settings.tsx`, panes under `src
 - code: `src/components/StatusBar/StatusBar.tsx`, `src/components/StatusBar/StatusBarRight.tsx`, `src/components/StatusBar/StatusBarCounts.tsx`, `src/components/StatusBar/StatusBarAiIndicator.tsx`, `src/components/StatusBar/WordCountPopover.tsx`, `src/components/StatusBar/LintBadge.tsx`, `src/components/StatusBar/useAutoSaveDisplay.ts`, `src/components/StatusBar/useQuitFeedback.ts`, `src/components/StatusBar/FileLoadIndicator.tsx`, `src/components/StatusBar/SourceModeUpgrade.tsx`, `src/components/BottomBar/BottomBar.tsx`
 - rust: none (listens for `app:quit-first-press` emitted by `src-tauri/src/quit.rs`)
 - docs: `website/guide/index.md` (Status Bar bullet); `website/guide/large-files.md` §"Status bar cues"; `website/guide/tab-navigation.md`; `website/guide/shortcuts.md` (F7); `website/guide/features.md` §"Status Bar" (every right-side indicator)
-- tests: `src/components/StatusBar/StatusBar.test.tsx`, `src/components/StatusBar/StatusBar.a11y.test.tsx`, `src/components/StatusBar/StatusBarRight.test.tsx`, `src/components/StatusBar/StatusBarCounts.test.tsx`, `src/components/StatusBar/WordCountPopover.test.tsx`, `src/components/StatusBar/useAutoSaveDisplay.test.ts`, `src/components/StatusBar/useQuitFeedback.test.ts`, `src/components/StatusBar/FileLoadIndicator.test.tsx`, `src/components/StatusBar/SourceModeUpgrade.test.tsx`, `src/components/StatusBar/LintBadge.test.tsx`, `src/components/StatusBar/incrementalTextMetrics.test.ts`, `src/components/StatusBar/statusTextMetrics.test.ts`, `src/components/StatusBar/__tests__/mcpTooltip.test.ts`, `src/components/BottomBar/BottomBar.test.tsx`
+- tests: `src/components/StatusBar/StatusBar.test.tsx`, `src/components/StatusBar/StatusBar.a11y.test.tsx`, `src/components/StatusBar/StatusBarRight.test.tsx`, `src/components/StatusBar/StatusBarCounts.test.tsx`, `src/components/StatusBar/WordCountPopover.test.tsx`, `src/components/StatusBar/useAutoSaveDisplay.test.ts`, `src/components/StatusBar/useQuitFeedback.test.ts`, `src/components/StatusBar/FileLoadIndicator.test.tsx`, `src/components/StatusBar/SourceModeUpgrade.test.tsx`, `src/components/StatusBar/LintBadge.test.tsx`, `src/components/StatusBar/incrementalTextMetrics.test.ts`, `src/utils/markdownTextMetrics.test.ts`, `src/components/StatusBar/__tests__/mcpTooltip.test.ts`, `src/components/BottomBar/BottomBar.test.tsx`
 - notes: the tab strip inside the status bar (`src/components/StatusBar/StatusBarTabStrip.tsx`, drag, keyboard) is spine-owned by this feature but described by the tab-strip block in area 5. Rare states (update lifecycle, auto-save paused, divergent) are toasts — see `resilient-chrome`. The `src/components/BottomBar/BottomBar.tsx` header still says "StatusBar and FindBar always render"; FindBar is withheld on a browser tab.
 
 ### Window UI toggles (uiStore)
 - id: ui-toggles
 - feature: App chrome (titlebar/statusbar/welcome)
 - summary: Per-window transient chrome state: sidebar visibility/width/view, status bar, universal toolbar, terminal panel geometry, focus/typewriter modes, source/split view, word wrap, line numbers, diagram preview.
-- capabilities: `sidebarVisible`, `sidebarWidth` (clamped 180–480, default 260 — the single bounds definition, reused by hot-exit restore), `sidebarViewMode` (default outline) and a separate `sidebarBrowserViewMode`; `statusBarVisible` plus a displace/restore pair used by FindBar and the universal toolbar; universal toolbar visibility + focus flag; terminal visible/height/width/effective position (floors 100/200 px, `TERMINAL_MAX_RATIO = 0.8` enforced by the layout layers); `focusModeEnabled`, `typewriterModeEnabled`; `sourceMode` and `markdownSplitView` mutually exclusive; `wordWrap` (default true), `showLineNumbers`, `diagramPreviewEnabled`; namespaced `search`, `contentSearch` and `terminal` slices with per-workspace terminal scope actions/selectors
+- capabilities: `sidebarVisible`, `sidebarWidth` (clamped 180–480, default 260 — the single bounds definition, reused by hot-exit restore), `sidebarViewMode` (default outline) and a separate `sidebarBrowserViewMode`; `statusBarVisible` plus a displace/restore pair used by FindBar and the universal toolbar; universal toolbar visibility + focus flag; terminal visible/height/width/effective position (floors 100/200 px, `TERMINAL_MAX_RATIO = 0.8` enforced by the layout layers); `focusModeEnabled`, `typewriterModeEnabled`; `sourceMode` and `markdownSplitView` mutually exclusive; `wordWrap` (default true), `showLineNumbers`, `diagramPreviewEnabled`; namespaced `search` and `contentSearch` slices (terminal SESSION state lives in `src/stores/terminalStore.ts`, owned by the Integrated terminal feature)
 - status: shipped-on
 - gate: always on
 - surfaces: View menu items, shortcuts (F7 status bar, F8 focus, F9 typewriter, Alt+Z wrap, Ctrl+Shift+1 outline…), sidebar chrome, status bar
-- code: `src/stores/uiStore.ts`, `src/stores/uiStore/types.ts`, `src/stores/uiStore/searchSlice.ts`, `src/stores/uiStore/contentSearchSlice.ts`, `src/stores/uiStore/terminalSlice.ts`, `src/stores/uiStore/terminalScopeActions.ts`, `src/stores/uiStore/terminalScopeSelectors.ts`, `src/hooks/useViewMenuStateSync.ts` (native menu checkmarks)
+- code: `src/stores/uiStore.ts`, `src/stores/uiStore/types.ts`, `src/stores/uiStore/searchSlice.ts`, `src/stores/uiStore/contentSearchSlice.ts`, `src/hooks/useViewMenuStateSync.ts` (native menu checkmarks)
 - rust: `menu::sync_view_menu_state` (menu checkmarks, via `src/hooks/useViewMenuStateSync.ts`)
 - docs: `website/guide/features.md` §"View & Focus"
-- tests: `src/stores/uiStore.test.ts`, `src/stores/__tests__/uiStore.test.ts`, `src/stores/uiStore.slices.test.ts`, `src/stores/uiStore/terminalScopeActions.test.ts`, `src/stores/uiStore/terminalScopeSelectors.test.ts`, `src/stores/uiStore/terminalSlice.scope.test.ts`, `src/services/persistence/hotExit/sidebarWidthBounds.test.ts`, `src/hooks/useViewMenuStateSync.test.ts`, `src/pages/settings/terminalSettingsHelpers.test.ts` (pins `TERMINAL_MAX_RATIO` to `CLAMP_RANGES.terminal.panelRatio`)
+- tests: `src/stores/uiStore.test.ts`, `src/stores/__tests__/uiStore.test.ts`, `src/stores/uiStore.slices.test.ts`, `src/services/persistence/hotExit/sidebarWidthBounds.test.ts`, `src/hooks/useViewMenuStateSync.test.ts`, `src/pages/settings/terminalSettingsHelpers.test.ts` (pins `TERMINAL_MAX_RATIO` to `CLAMP_RANGES.terminal.panelRatio`)
 - notes: `TERMINAL_MAX_RATIO` must equal the settings clamp maximum for `terminal.panelRatio` (`CLAMP_RANGES.terminal.panelRatio = [0.1, 0.8]` in `src/stores/settingsStore/clamp.ts`); only `src/pages/settings/terminalSettingsHelpers.test.ts` joins them.
 
 ### Resilient UI chrome (boundaries, lazy retry, toasts)

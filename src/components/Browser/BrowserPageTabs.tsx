@@ -32,7 +32,7 @@
  *     one (audit 2026-09-03 #15).
  *
  * @coordinates-with BrowserChrome.tsx — parent placement wrapper
- * @coordinates-with services/browser/lease.ts — the AI-hold indicator source
+ * @coordinates-with stores/browserLeaseStore.ts — the AI-hold indicator source
  * @coordinates-with services/navigation/activateTabInFocusedPane — pane-aware activation
  * @module components/Browser/BrowserPageTabs
  */
@@ -45,7 +45,7 @@ import { activateTabInFocusedPane } from "@/services/navigation/activateTabInFoc
 import { closeTabWithDirtyCheck } from "@/services/tabs/tabOperations";
 import { isRovingNavKey, moveRovingTabFocus } from "@/utils/rovingTabFocus";
 import { NEW_BROWSER_TAB_URL } from "@/services/commands/browserCommands";
-import { useBrowserLeaseStore } from "@/services/browser/lease";
+import { useBrowserLeaseStore } from "@/stores/browserLeaseStore";
 
 interface BrowserPageTabsProps {
   pages: BrowserTab[];

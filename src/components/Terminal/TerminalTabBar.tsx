@@ -33,15 +33,15 @@
  *     breaks E2E, not just a unit test — TerminalTabBar.test.tsx pins all four.
  *
  * @coordinates-with TerminalPanel.tsx — provides onClose and onRestart callbacks
- * @coordinates-with stores/uiStore/terminalSlice.ts — reads sessions and activeSessionId
+ * @coordinates-with stores/terminalStore/sessionActions.ts — reads sessions and activeSessionId
  * @coordinates-with e2e/lib/terminal.mjs — drives the data-terminal-action hooks
  * @module components/Terminal/TerminalTabBar
  */
 import { useCallback, useState } from "react";
 import { Plus, Trash2, RotateCcw, ArrowLeftRight, ArrowUpDown, ChartColumn } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useUIStore, MAX_TERMINAL_SESSIONS, type EffectiveTerminalPosition } from "@/stores/uiStore";
-import type { TerminalSession } from "@/stores/uiStore/types";
+import type { EffectiveTerminalPosition } from "@/stores/uiStore";
+import { MAX_TERMINAL_SESSIONS, useTerminalStore, type TerminalSession } from "@/stores/terminalStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { getCurrentWindowLabel } from "@/services/persistence/workspaceStorage";
 import { createTerminalSessionInScope } from "@/services/terminal/createTerminalSession";
@@ -99,7 +99,7 @@ export function TerminalTabBar({ onClose, onRestart, orientation = "vertical", p
   // WI-TS3.1: the tab bar renders the VISIBLE population — the active
   // workspace scope's sessions ∪ window-scoped (everything with rail off).
   const sessions = useVisibleTerminalSessions();
-  const activeId = useUIStore((s) => s.terminal.activeSessionId);
+  const activeId = useTerminalStore((s) => s.activeSessionId);
 
   const handleCreate = useCallback(() => {
     // The ONE owner-aware creation service (D-T1; audit 20260831 #17) — it
@@ -124,7 +124,7 @@ export function TerminalTabBar({ onClose, onRestart, orientation = "vertical", p
   const SwapIcon = isHorizontalTerminalAxis(position) ? ArrowLeftRight : ArrowUpDown;
 
   const handleSwitch = useCallback((id: string) => {
-    useUIStore.getState().terminalSetActiveSession(id);
+    useTerminalStore.getState().terminalSetActiveSession(id);
   }, []);
 
   // Which tab is being renamed, if any (WI-4.1).
@@ -138,7 +138,7 @@ export function TerminalTabBar({ onClose, onRestart, orientation = "vertical", p
     setRenamingId(null);
   }
   const handleRename = useCallback((id: string, name: string) => {
-    useUIStore.getState().terminalRenameSession(id, name);
+    useTerminalStore.getState().terminalRenameSession(id, name);
   }, []);
 
   // The cap gates on what the user can SEE (D-T5's visible union) — a hidden

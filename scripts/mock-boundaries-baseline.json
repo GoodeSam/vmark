@@ -364,11 +364,6 @@
       "target": "src/stores/settingsStore"
     },
     {
-      "file": "src/components/Terminal/imeAsciiHandoff.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/uiStore"
-    },
-    {
       "file": "src/components/Terminal/setupFileLinks.test.ts",
       "api": "vi.mock",
       "target": "src/stores/documentStore"
@@ -402,11 +397,6 @@
       "file": "src/components/Terminal/terminalKeyHandler.test.ts",
       "api": "vi.mock",
       "target": "src/stores/settingsStore"
-    },
-    {
-      "file": "src/components/Terminal/terminalKeyHandler.test.ts",
-      "api": "vi.mock",
-      "target": "src/stores/uiStore"
     },
     {
       "file": "src/components/Terminal/useTerminalResize.test.ts",

@@ -7,15 +7,14 @@
  * components use useVisibleTerminalSessions. Both delegate to the pure
  * selector so the rule cannot fork.
  *
- * @coordinates-with stores/uiStore/terminalScopeSelectors.ts — the pure rule
+ * @coordinates-with stores/terminalStore/scopeSelectors.ts — the pure rule
  * @coordinates-with components/Terminal/useVisibleTerminalSessions.ts — React face
  * @module services/terminal/visibleTerminalSessions
  */
 import { isWorkspaceRailEnabled } from "@/services/featureFlags/workspaceRailFeatureFlag";
-import { useUIStore } from "@/stores/uiStore";
 import { useWorkspaceInstancesStore } from "@/stores/workspaceInstancesStore";
-import { selectVisibleTerminalSessions } from "@/stores/uiStore/terminalScopeSelectors";
-import type { TerminalSession } from "@/stores/uiStore/types";
+import { selectVisibleTerminalSessions } from "@/stores/terminalStore/scopeSelectors";
+import { useTerminalStore, type TerminalSession } from "@/stores/terminalStore";
 
 /** The window's currently-visible terminal sessions (live store read). */
 export function getVisibleTerminalSessions(windowLabel: string): TerminalSession[] {
@@ -23,7 +22,7 @@ export function getVisibleTerminalSessions(windowLabel: string): TerminalSession
     useWorkspaceInstancesStore.getState().windows[windowLabel]
       ?.activeWorkspaceInstanceId ?? null;
   return selectVisibleTerminalSessions(
-    useUIStore.getState().terminal,
+    useTerminalStore.getState(),
     activeInstanceId,
     isWorkspaceRailEnabled(),
   );
@@ -38,7 +37,7 @@ export function getVisibleTerminalSessions(windowLabel: string): TerminalSession
  * a visible active session is left alone.
  */
 export function realignTerminalActiveToVisible(windowLabel: string): void {
-  useUIStore
+  useTerminalStore
     .getState()
     .terminalRealignActive(getVisibleTerminalSessions(windowLabel).map((s) => s.id));
 }

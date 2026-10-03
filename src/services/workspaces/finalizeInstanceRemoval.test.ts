@@ -12,7 +12,7 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: (...args: unknown[]) => invoke(...args),
 }));
 
-import { resetTerminalSessionStore, useUIStore } from "@/stores/uiStore";
+import { resetTerminalSessionStore, useTerminalStore } from "@/stores/terminalStore";
 import { useClosedTabScopesStore } from "@/stores/tabStoreClosedScopes";
 import { useWorkspaceInstanceUiStore } from "@/stores/workspaceInstanceUiStore";
 import { useWorkspaceInstancesStore } from "@/stores/workspaceInstancesStore";
@@ -68,7 +68,7 @@ function seedParallelState(windowLabel: string, instanceId: string): void {
     focusedPane: "primary",
     syncScroll: false,
   });
-  useUIStore.getState().terminalCreateSession({ ownerInstanceId: instanceId });
+  useTerminalStore.getState().terminalCreateSession({ ownerInstanceId: instanceId });
   const tab: Tab = {
     kind: "document",
     id: `closed-${instanceId}`,
@@ -93,9 +93,9 @@ const uiStates = () => useWorkspaceInstanceUiStore.getState().instanceUiStates;
 const paneLayout = (id: string) =>
   useWorkspacePaneLayoutsStore.getState().getPaneLayout(id);
 const terminalScopeSessions = (id: string) =>
-  useUIStore
+  useTerminalStore
     .getState()
-    .terminal.sessions.filter((s) => s.workspaceInstanceId === id);
+    .sessions.filter((s) => s.workspaceInstanceId === id);
 const closedScope = (windowLabel: string, id: string) =>
   useClosedTabScopesStore.getState().scopesByWindow[windowLabel]?.[id];
 

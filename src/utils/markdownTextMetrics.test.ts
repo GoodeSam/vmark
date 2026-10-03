@@ -5,7 +5,7 @@ import {
   countWordsFromPlain,
   countCharsFromPlain,
   computeTextMetrics,
-} from "./statusTextMetrics";
+} from "./markdownTextMetrics";
 
 describe("stripMarkdown", () => {
   it("strips heading markers", () => {
