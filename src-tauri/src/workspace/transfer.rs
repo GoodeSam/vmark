@@ -3,12 +3,17 @@
 //! Moves or duplicates workspace-instance payloads through a Rust-side registry.
 //! The source keeps its state until the target window applies the payload and
 //! sends an ack, so failed target startup does not delete the source instance.
+//!
+//! Failures reject with a typed `CommandError`: a target window that cannot be
+//! built and an ack that cannot be emitted are both `internal` (the webview
+//! cannot fix either by changing its request).
 
 use std::collections::HashMap;
 use std::sync::Mutex;
 
 use tauri::{AppHandle, Emitter, Manager};
 
+use crate::command_error::CommandError;
 use crate::peer_text::peer_text;
 use crate::window_manager;
 
@@ -57,7 +62,7 @@ pub fn detach_workspace_to_new_window(
     app: AppHandle,
     window: tauri::Window,
     data: WorkspaceTransferData,
-) -> Result<String, String> {
+) -> Result<String, CommandError> {
     let data = WorkspaceTransferData {
         source_window_label: window.label().to_string(),
         ..data
@@ -67,7 +72,7 @@ pub fn detach_workspace_to_new_window(
 
 /// Register a transfer whose source is already the calling window, then open
 /// its target window.
-fn register_and_open(app: &AppHandle, data: WorkspaceTransferData) -> Result<String, String> {
+fn register_and_open(app: &AppHandle, data: WorkspaceTransferData) -> Result<String, CommandError> {
     // Pre-allocate the target label and register the transfer + ack routes
     // BEFORE creating the window. A fast-loading target could otherwise invoke
     // `claim_workspace_transfer` before the registry is populated and silently
@@ -98,7 +103,7 @@ fn register_and_open(app: &AppHandle, data: WorkspaceTransferData) -> Result<Str
         "/?workspaceTransfer=true".to_string(),
     ) {
         rollback_transfer_registration(&label, &data.request_id);
-        return Err(e.to_string());
+        return Err(CommandError::internal(e.to_string()));
     }
 
     Ok(label)
@@ -141,7 +146,7 @@ pub fn ack_workspace_transfer<R: tauri::Runtime>(
     window: tauri::Window<R>,
     app: AppHandle<R>,
     data: WorkspaceTransferAck,
-) -> Result<(), String> {
+) -> Result<(), CommandError> {
     // Validate the ack against the registered route BEFORE mutating anything.
     // A wrong or stale ack (mismatched target window label or workspace
     // instance id) must not remove the route or notify the source — otherwise
@@ -188,7 +193,7 @@ pub fn ack_workspace_transfer<R: tauri::Runtime>(
     };
     window
         .emit("workspace:transfer-ack", data)
-        .map_err(|e| e.to_string())
+        .map_err(|e| CommandError::internal(e.to_string()))
 }
 
 /// Explicitly abandon a still-pending transfer from the source side (e.g. the

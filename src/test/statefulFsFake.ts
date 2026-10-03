@@ -202,7 +202,13 @@ class StatefulFsFake {
         return this.performWrite(String(args.path), String(args.content), "atomic_write_file");
       case "get_file_size_bytes": {
         const size = this.disk.byteSize(String(args.path));
-        if (size === null) return Promise.reject(new Error(`ENOENT: ${String(args.path)}`));
+        // The real command's typed rejection (`files/ops.rs` via `from_io`).
+        if (size === null) {
+          return Promise.reject({
+            code: "not-found",
+            message: `invalid path '${String(args.path)}': No such file or directory (os error 2)`,
+          });
+        }
         return Promise.resolve(size);
       }
       default:

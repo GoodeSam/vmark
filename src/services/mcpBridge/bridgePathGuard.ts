@@ -35,6 +35,7 @@ import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { openDocuments } from "@/services/tabs/openDocuments";
 import { invoke } from "@tauri-apps/api/core";
 import { getParentDir } from "@/utils/paths";
+import { commandErrorMessage } from "@/services/commands/commandError";
 import {
   resolveBridgePathDecision,
   type BridgePathDecision,
@@ -66,7 +67,8 @@ export function collectAllowedRoots(): string[] {
 /**
  * Decide whether the bridge may touch `filePath`. Pulls allowed roots from
  * the stores, delegates to the pure policy for cheap lexical rejection, then
- * asks Rust to resolve symlinks for existing paths / ancestors.
+ * asks Rust to resolve symlinks for existing paths / ancestors. A Rust
+ * rejection becomes a denial whose reason is the error's message.
  */
 export async function checkBridgePath(
   filePath: string,
@@ -79,9 +81,8 @@ export async function checkBridgePath(
     await invoke("mcp_bridge_check_path", { filePath, allowedRoots });
     return { allowed: true };
   } catch (error) {
-    return {
-      allowed: false,
-      reason: error instanceof Error ? error.message : String(error),
-    };
+    // The command rejects with a typed CommandError (an object); its message
+    // is the agent-facing reason.
+    return { allowed: false, reason: commandErrorMessage(error) };
   }
 }
