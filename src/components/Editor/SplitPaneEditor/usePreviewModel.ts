@@ -5,7 +5,7 @@
  * WHICH diagnostics annotate it — all from the same revision of the document.
  *
  * Those three were derived separately in `SplitPaneEditor`, and once preview
- * content became deferred (#1273) they could disagree: schema detection and
+ * content became deferred they could disagree: schema detection and
  * diagnostics read the current content while the renderer was handed the
  * deferred one, so a schema-changing edit could mount the new schema's renderer
  * with the previous document and a third revision's diagnostics. Deriving them

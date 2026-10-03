@@ -16,7 +16,7 @@
  *     hasn't run yet (#755).
  *   - scheduleFlush uses RAF for small docs (≤100ms tier) and a debounced
  *     timeout for large docs — see getAdaptiveDebounceDelay.
- *   - A tab whose document the editor could not parse (#1407) gets no write
+ *   - A tab whose document the editor could not parse gets no write
  *     at all: the editor holds empty or stale content, not the document.
  *   - Every flush reports whether a USER edit is behind it (userEditPending,
  *     set by scheduleFlush). Auto-save and Save All flush before reading
@@ -106,7 +106,7 @@ export function useTiptapFlush(options: TiptapFlushOptions): TiptapFlushHandle {
       }
 
       const tabId = activeTabId ?? useTabStore.getState().activeTabId[windowLabel];
-      // This editor could not parse the tab's document (#1407), so what it
+      // This editor could not parse the tab's document, so what it
       // holds is empty or stale — writing it would overwrite the real text.
       // Covers the pending edit, Save's flush and the unmount flush alike.
       if (tabId && useLargeFileSessionStore.getState().forcedSourceReason(tabId) === "unparseable") {

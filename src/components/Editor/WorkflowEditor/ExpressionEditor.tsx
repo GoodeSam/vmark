@@ -10,7 +10,7 @@
  *   handler used by the inline textarea's onBlur). Cancel discards.
  *
  * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired) §6
- *   Phase 7 / WI-7.1 + Phase 9 finish.
+ *   Phase 7 + Phase 9 finish.
  *
  * Key decisions:
  *   - Plain CodeMirror — no language extension yet for `run:` since

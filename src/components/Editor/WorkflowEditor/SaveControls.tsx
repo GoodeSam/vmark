@@ -6,7 +6,7 @@
  *   from source).
  *
  * Origin: GitHub Actions workflow viewer plan (2026-05-04, retired) §6
- *   Phase 7 / WI-7.2.
+ *   Phase 7.
  *
  * Key decisions:
  *   - Both onSave and onDiscard are caller-owned. The control bar is

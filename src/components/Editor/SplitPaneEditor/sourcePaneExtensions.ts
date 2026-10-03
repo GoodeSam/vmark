@@ -211,7 +211,7 @@ export function buildSourcePaneExtensions(args: BuildExtensionsArgs): Extension[
     ...(extrasCompartment ? [extrasCompartment.of([])] : []),
     persistOnUpdate,
     // Right-click menu, reduced to clipboard + Select All — split panes
-    // have no markdown context detection (plan WI-3.3).
+    // have no markdown context detection.
     reducedEditorContextMenuExtension,
   ];
 

@@ -1,4 +1,4 @@
-// Media tab surface — the component Editor.tsx mounts for kind:"media" (WI-2).
+// Media tab surface — the component Editor.tsx mounts for kind:"media".
 //
 // Purpose: Bridge the tab/document store to the store-agnostic <MediaView>
 //   render core. Reads the tab's absolute filePath via a store selector
