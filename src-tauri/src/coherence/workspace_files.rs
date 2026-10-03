@@ -243,8 +243,8 @@ fn repair_writer_id(dir: &Path, path: &Path, id: Uuid) -> Result<WriterId, Strin
         .truncate(false)
         .write(true)
         .open(dir.join("coherence-writer-id.lock"))
+        .and_then(|lock| lock.lock().map(|()| lock))
         .map_err(|e| format!("writer-id lock: {e}"))?;
-    lock.lock().map_err(|e| format!("writer-id lock: {e}"))?;
     if let Some(other) = fs::read_to_string(path)
         .ok()
         .and_then(|existing| Uuid::parse_str(existing.trim()).ok())
