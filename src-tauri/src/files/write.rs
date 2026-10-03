@@ -18,24 +18,23 @@
 //! every message here resolves through `t!` instead of being raw English that
 //! `lint:i18n` could not see.
 //!
-//! WI-LX1.1: this command and `file_create::create_file_exclusive` let the
+//! WI-LX1.1: this command and `files::create::create_file_exclusive` let the
 //! webview name a path, so both refuse the workspace-grant list — the folders
 //! re-granted at the next launch. The path is RESOLVED ONCE and the check runs
 //! on what it resolved to ([`WriteAt`]). On Unix the folder is then HELD open,
-//! judged by identity, and written through (`file_write_anchored.rs`), so a
+//! judged by identity, and written through (`files/write/anchored.rs`), so a
 //! folder on the path swapped after the check cannot redirect the write. On
 //! Windows the write stays path-based; that module states the residual.
 //!
 //! @coordinates-with workspace/grants/protect.rs — what counts as the list
-//! @coordinates-with file_write_anchored.rs — the held-folder write (Unix)
-//! @coordinates-with file_create.rs — the exclusive create, same guard
+//! @coordinates-with files/write/anchored.rs — the held-folder write (Unix)
+//! @coordinates-with files/create.rs — the exclusive create, same guard
 
 use crate::command_error::{CommandError, ErrorCode};
 use crate::localized_error;
 use serde_json::json;
 
 #[cfg(unix)]
-#[path = "file_write_anchored.rs"]
 pub(crate) mod anchored;
 
 /// Where a checked write lands, as the list guard judges it: the resolved
@@ -197,7 +196,7 @@ fn stage_failure(dir: &std::path::Path, stage: anchored::Stage) -> CommandError 
 }
 
 /// Write `target`, whose links are already resolved, through its path
-/// (Windows: no `openat`/`renameat` in std — see `file_write_anchored.rs`).
+/// (Windows: no `openat`/`renameat` in std — see `files/write/anchored.rs`).
 #[cfg(not(unix))]
 fn write_resolved(
     target: &std::path::Path,
@@ -286,5 +285,5 @@ pub async fn atomic_write_file<R: tauri::Runtime>(
 }
 
 #[cfg(test)]
-#[path = "file_write.test.rs"]
+#[path = "write.test.rs"]
 mod tests;

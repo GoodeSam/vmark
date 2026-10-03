@@ -1,17 +1,17 @@
 //! Claiming a new file name without touching an existing file.
 //!
-//! Purpose: `create_file_exclusive`, split out of `file_write.rs` (size gate)
+//! Purpose: `create_file_exclusive`, split out of `files/write.rs` (size gate)
 //! when both writers moved onto a held folder. It shares that module's guard
 //! and trust boundary: the webview names the path, so the workspace-grant list
 //! is refused, judged on Unix by the identity of the folder the claim is made
-//! in (`file_write_anchored.rs`) and on Windows by its canonical path.
+//! in (`files/write/anchored.rs`) and on Windows by its canonical path.
 //!
-//! @coordinates-with file_write.rs — WriteAt, reject_unsafe_target, parent_missing
+//! @coordinates-with files/write.rs — WriteAt, reject_unsafe_target, parent_missing
 //! @coordinates-with workspace/grants/protect.rs — what counts as the list
-//! @module file_create
+//! @module files/create
 
 use crate::command_error::{CommandError, ErrorCode};
-use crate::file_write::{parent_missing, reject_unsafe_target, WriteAt};
+use crate::files::write::{parent_missing, reject_unsafe_target, WriteAt};
 use crate::localized_error;
 
 /// Atomically claim `path` for a document that does not have one yet, without
@@ -94,7 +94,7 @@ fn claim(
     name: &std::ffi::OsStr,
     authorize: impl FnOnce(&WriteAt<'_>) -> Result<(), CommandError>,
 ) -> Result<std::io::Result<()>, CommandError> {
-    let held = match crate::file_write::anchored::HeldDir::open(dir) {
+    let held = match crate::files::write::anchored::HeldDir::open(dir) {
         Ok(held) => held,
         Err(e) => return Ok(Err(e)),
     };
@@ -103,7 +103,7 @@ fn claim(
 }
 
 /// Windows: resolved once to a canonical folder, judged, and claimed there by
-/// path (no `openat` in std; `file_write_anchored.rs` states the residual).
+/// path (no `openat` in std; `files/write/anchored.rs` states the residual).
 #[cfg(not(unix))]
 fn claim(
     _target: &std::path::Path,

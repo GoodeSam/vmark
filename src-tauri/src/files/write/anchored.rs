@@ -1,6 +1,6 @@
 //! Saving through a HELD folder (Unix) — audit F2 #60/#61/#91.
 //!
-//! Purpose: the webview names a path; `file_write` resolves it once, and the
+//! Purpose: the webview names a path; `files::write` resolves it once, and the
 //! workspace-grant list guard judges the result. A path is only a NAME,
 //! though: a folder on it swapped for a link after the check would take the
 //! write somewhere else — onto the list included. So on Unix the folder is
@@ -25,9 +25,9 @@
 //! synced (#528) — but read from the existing entry opened through the held
 //! folder, never by path.
 //!
-//! @coordinates-with file_write.rs — write_checked, create_checked
+//! @coordinates-with files/write.rs — write_checked, create_checked
 //! @coordinates-with workspace/grants/protect.rs — held_write_reaches_list
-//! @module file_write_anchored
+//! @module files/write/anchored
 
 use std::ffi::{CString, OsStr};
 use std::fs::File;
@@ -223,5 +223,5 @@ fn carry_xattrs(existing: &File, temp: &File) {
 }
 
 #[cfg(test)]
-#[path = "file_write_anchored.test.rs"]
+#[path = "anchored.test.rs"]
 mod tests;

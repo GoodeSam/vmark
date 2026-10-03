@@ -140,7 +140,7 @@ impl Walk<'_> {
             self.nodes += 1;
             let name = entry.file_name().to_string_lossy().to_string();
             let is_directory = entry.file_type().map(|t| t.is_dir()).unwrap_or(false);
-            let is_hidden = crate::file_tree::compute_is_hidden(&name, &entry);
+            let is_hidden = crate::files::tree::compute_is_hidden(&name, &entry);
             let mut node = TreeEntry {
                 name,
                 is_directory,
@@ -204,5 +204,5 @@ fn root_prefix(root: &str) -> String {
 }
 
 #[cfg(test)]
-#[path = "file_tree_walk.test.rs"]
+#[path = "tree_walk.test.rs"]
 mod tests;

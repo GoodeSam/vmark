@@ -14,7 +14,7 @@ use tauri::test::MockRuntime;
 use tauri::Manager;
 
 use super::file_open_state;
-use crate::file_open::{get_pending_file_opens, remove_document_window, route_file_opens};
+use crate::files::open::{get_pending_file_opens, remove_document_window, route_file_opens};
 use crate::window_manager::{QueueOwner, MAIN_LABEL};
 
 fn mock_app() -> tauri::App<MockRuntime> {

@@ -9,7 +9,7 @@
 //!   - A root is granted only when Rust can attribute it to the user: the
 //!     folder picker Rust shows (`pick_workspace_folder`,
 //!     `request_workspace_confirmation`), a folder opened from Finder
-//!     (`file_open.rs`), or a root recorded from one of those in an earlier
+//!     (`files/open.rs`), or a root recorded from one of those in an earlier
 //!     session. `allow_workspace_access` used to grant ANY path a script handed
 //!     it, `/` included; it now only re-issues a recorded root (or a folder
 //!     inside one) and refuses the rest.
@@ -39,7 +39,7 @@
 //! @coordinates-with workspace/grants/protect.rs — refusing writes to the list
 //! @coordinates-with workspace/grants/scope.rs — the recursive grant itself
 //! @coordinates-with workspace/grants/launch.rs — re-granting at launch
-//! @coordinates-with file_open.rs — Finder folder opens
+//! @coordinates-with files/open.rs — Finder folder opens
 //! @module workspace/grants
 
 pub mod commands;

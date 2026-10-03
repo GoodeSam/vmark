@@ -225,7 +225,7 @@ phase3() {
   assert_no_file src/components/Editor/WorkflowPanel/WorkflowPanelShell.tsx "WI-FL3.1 WorkflowPanelShell.tsx"
   assert_no_file src/workspace/useWorkspace.ts "WI-FL3.1 useWorkspace.ts"
   assert_not_grep 'addMarkSyntaxDecorations' src/plugins/syntaxReveal/marks.ts "WI-FL3.1 syntaxReveal decoration half removed"
-  assert_not_grep 'file_tree::list_directory_entries' src-tauri/src/command_registry.rs "WI-FL3.2 list_directory_entries unregistered"
+  assert_not_grep '::list_directory_entries' src-tauri/src/command_registry.rs "WI-FL3.2 list_directory_entries unregistered"
   assert_not_grep 'window_manager::request_quit' src-tauri/src/command_registry.rs "WI-FL3.2 request_quit command unregistered"
   assert_ts_code_grep 'reopenClosed' src/services/commands/tabCommands.ts "WI-FL3.3 reopen-closed-tab command"
   assert_rust_code_grep '"reopen-closed-tab"' src-tauri/src/menu/localized/file_menu.rs "WI-FL3.3 reopen-closed-tab menu item" --keep-strings

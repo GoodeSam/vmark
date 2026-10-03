@@ -307,7 +307,7 @@ errors:
   workflow.restoreWhileRunning: "Hay un flujo de trabajo en ejecución. Espere a que termine o cancélelo antes de restaurar archivos."
   workflow.restoreSuperseded: "Otro flujo de trabajo se ejecutó después de esta instantánea, así que restaurarla podría deshacer sus cambios. No se restauró nada."
 
-  # === Ruta de guardado (file_write.rs, WI-14 CommandError) ===
+  # === Ruta de guardado (files/write.rs, WI-14 CommandError) ===
   save.parentMissing: "La carpeta de este archivo ya no existe: %{dir}"
   save.noParentDirectory: "La ruta del archivo no tiene carpeta contenedora"
   save.symlinkLoop: "El alias de este archivo apunta en círculo, así que no se encontró el archivo real"

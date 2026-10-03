@@ -5,7 +5,7 @@
 //! Key decisions:
 //!   - `lib.rs` stays a declarative composition root: setup steps and
 //!     app-level event dispatch live in `app_setup`, Finder/CLI file-open
-//!     queueing and fs-scope extension in `file_open`, the extension gate in
+//!     queueing and fs-scope extension in `files::open`, the extension gate in
 //!     `supported_files`, terminal shell resolution in `shell_env`, and the
 //!     temp-HTML export writer in `temp_html`.
 //!   - AI provider API keys persist in the OS keychain (`secure_store`),
@@ -33,12 +33,7 @@ pub mod command_error; // WI-14 crate-wide typed command error ({code, message, 
 mod content_search;
 mod content_server;
 mod external_editor;
-mod file_create;
-mod file_open;
-mod file_ops;
-mod file_tree;
-mod file_tree_walk;
-mod file_write;
+mod files;
 mod fs_scope;
 pub mod genies;
 mod gha_workflow;
@@ -92,7 +87,7 @@ mod text_substitution;
 mod window_status;
 
 // Crate-wide re-exports: existing `crate::` call sites (post lib.rs split).
-pub use file_open::PendingFileOpen;
+pub use files::open::PendingFileOpen;
 pub(crate) use fs_scope::allow_fs_read;
 pub(crate) use supported_files::is_openable_supported;
 // macOS-gated: sole consumer (quarantine sweep) is macOS-only, so an unconditional re-export is an unused-import error on Linux/Windows CI (guarded by lib.test.rs).

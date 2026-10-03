@@ -1,4 +1,4 @@
-//! Tests for `file_open.rs` (moved with `allow_fs_read` out of `lib.rs`;
+//! Tests for `files/open.rs` (moved with `allow_fs_read` out of `lib.rs`;
 //! included via `#[path]`).
 
 use super::{partition_opened_urls, OpenedPaths};

@@ -21,10 +21,10 @@
 //!   - Tauri resolves a granted name AGAIN while granting, and also allows
 //!     whatever it resolves to then (`confirm_grant_target`).
 //!
-//! Split out of `file_open.rs` when that file crossed the 300-line limit:
+//! Split out of `files/open.rs` when that file crossed the 300-line limit:
 //! granting scope is a separate concern from queueing Finder/CLI opens.
 //!
-//! @coordinates-with file_open.rs — queues the opens these grants make readable
+//! @coordinates-with files/open.rs — queues the opens these grants make readable
 //! @coordinates-with workspace/grants/scope.rs — the recursive workspace grant
 //! @coordinates-with asset_access.rs — the media grant, confirmed the same way
 

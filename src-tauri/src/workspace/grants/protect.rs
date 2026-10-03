@@ -14,7 +14,7 @@
 //!     ignoring ASCII case, cut at a stream `:`, trailing dots and spaces
 //!     dropped. Over-refusing `WORKSPACE-GRANTS.JSON.` on a case-sensitive
 //!     Linux disk costs nothing.
-//!   - A HELD folder (Unix saves, `file_write_anchored.rs`) is judged by its
+//!   - A HELD folder (Unix saves, `files/write/anchored.rs`) is judged by its
 //!     identity instead of its path (`held_write_reaches_list`).
 //!   - FAIL CLOSED, in the identity check and the folder check alike. Only
 //!     "nothing is there" (no such file or folder, or a link loop, which
@@ -28,20 +28,20 @@
 //!     directory launch WILL read. A registration or setup regression cannot
 //!     switch the protection off; an app data directory that cannot be
 //!     resolved refuses the write instead.
-//!   - Link resolution is the caller's (`file_write.rs`, the one place that
+//!   - Link resolution is the caller's (`files/write.rs`, the one place that
 //!     follows document links); this module only compares.
 //!   - WHAT A PATH CHECK CANNOT HOLD (audit F2 #91): a verdict on a path is
 //!     about the path at that instant. The generic writers therefore also
 //!     judge the folder they HOLD open and write through
-//!     (`held_write_reaches_list`, `file_write_anchored.rs`), which a later
+//!     (`held_write_reaches_list`, `files/write/anchored.rs`), which a later
 //!     swap cannot redirect; on Windows they stay path-based. A workflow
 //!     root is judged by path here (`root_contains_list`) — once on the
 //!     caller's string and again on the admitted canonical root
 //!     (`workflow/commands.rs`) — and a root renamed and replaced by a link
 //!     after that is the workflow engine's to hold, not this module's.
 //!
-//! @coordinates-with file_write.rs — atomic_write_file
-//! @coordinates-with file_create.rs — create_file_exclusive
+//! @coordinates-with files/write.rs — atomic_write_file
+//! @coordinates-with files/create.rs — create_file_exclusive
 //! @coordinates-with workflow/commands.rs — run_workflow refuses a root containing the list
 //! @coordinates-with workspace/grants/mod.rs — where the list file lives
 //! @module workspace/grants/protect
@@ -113,7 +113,7 @@ pub(crate) fn names_grant_list(list: &Path, target: &Path) -> bool {
 /// Does writing `name` inside a HELD folder write the list? Judged by identity
 /// — the held folder's (device, inode) and the existing entry's, not following
 /// a link — so a folder on the path swapped after the check cannot redirect
-/// the write (`file_write_anchored.rs`). An identity that could not be read is
+/// the write (`files/write/anchored.rs`). An identity that could not be read is
 /// refused, like every other resolution failure here.
 #[cfg(unix)]
 pub(crate) fn held_write_reaches_list(

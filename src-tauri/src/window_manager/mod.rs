@@ -75,7 +75,7 @@ pub use commands::*;
 pub use document_windows::*;
 pub use file_open_state::*;
 pub(crate) use file_open_store::*;
-// Not macOS-gated: `file_open::route_file_opens` is the shared destination for
+// Not macOS-gated: `files::open::route_file_opens` is the shared destination for
 // BOTH macOS `RunEvent::Opened` and the Windows/Linux single-instance callback
 // (#1330), and this is where it delivers.
 pub(crate) use finder_open_delivery::*;

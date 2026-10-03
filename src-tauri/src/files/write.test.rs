@@ -1,4 +1,4 @@
-//! Tests for `file_write.rs` (moved with the code out of `lib.test.rs`;
+//! Tests for `files/write.rs` (moved with the code out of `lib.test.rs`;
 //! included via `#[path]`).
 //!
 //! WI-14 — this command is the first migration to `CommandError`. It was the
@@ -263,7 +263,7 @@ mod grant_list {
 
     use super::super::{atomic_write_file, write_checked};
     use crate::command_error::{CommandError, ErrorCode};
-    use crate::file_create::{create_checked, create_file_exclusive};
+    use crate::files::create::{create_checked, create_file_exclusive};
     use crate::workspace::grants::{restore_from, WorkspaceGrants, GRANTS_FILE};
 
     const FORGED: &str = r#"["vmark-workspace-grants/1","/"]"#;
@@ -370,7 +370,7 @@ mod grant_list {
     // through, so the swap is too late. `authorize` is where each command runs
     // its check; each test swaps right after the real check passes — the worst
     // moment a concurrent swap can land. Windows stays path-based (stated in
-    // `file_write_anchored.rs`), so these are Unix-only.
+    // `files/write/anchored.rs`), so these are Unix-only.
 
     /// Move `folder` aside and put a link to `to` where it was.
     #[cfg(unix)]

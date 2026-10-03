@@ -51,7 +51,7 @@ thread_local! {
 /// file's own `sync_all` makes its contents durable, but until the directory
 /// is synced a crash can come back with the old entry — the previous file, or
 /// no file at all for a first write. So the directory is synced after the
-/// rename, which is what the document save path (`file_write_anchored`) and
+/// rename, which is what the document save path (`files::write::anchored`) and
 /// hot-exit already do for their own renames.
 ///
 /// The sync is best-effort: by the time it runs the new file IS in place, and

@@ -1,7 +1,7 @@
 //! # File Tree — hidden-entry detection
 //!
 //! Purpose: decides whether a directory entry is hidden, for the file
-//! explorer's one-call tree listing (`file_tree_walk.rs`, #1357).
+//! explorer's one-call tree listing (`files/tree_walk.rs`, #1357).
 //!
 //! History: this module was the per-directory `list_directory_entries` IPC
 //! (one invoke per expanded folder, serially awaited). #1357 replaced that

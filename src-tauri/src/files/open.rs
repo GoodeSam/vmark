@@ -288,5 +288,5 @@ pub(crate) fn route_file_opens<R: tauri::Runtime>(
 }
 
 #[cfg(test)]
-#[path = "file_open.test.rs"]
+#[path = "open.test.rs"]
 mod tests;

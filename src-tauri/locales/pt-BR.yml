@@ -307,7 +307,7 @@ errors:
   workflow.restoreWhileRunning: "Há um fluxo de trabalho em execução. Aguarde a conclusão ou cancele-o antes de restaurar arquivos."
   workflow.restoreSuperseded: "Outro fluxo de trabalho foi executado depois deste instantâneo, então restaurá-lo poderia desfazer as alterações dele. Nada foi restaurado."
 
-  # === Caminho de salvamento (file_write.rs, WI-14 CommandError) ===
+  # === Caminho de salvamento (files/write.rs, WI-14 CommandError) ===
   save.parentMissing: "A pasta deste arquivo não existe mais: %{dir}"
   save.noParentDirectory: "O caminho do arquivo não tem pasta superior"
   save.symlinkLoop: "O atalho deste arquivo aponta em círculo, então o arquivo real não foi encontrado"

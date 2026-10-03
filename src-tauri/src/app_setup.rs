@@ -138,7 +138,7 @@ pub(crate) fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::
     app.listen("ready", move |event| {
         if let Some(label) = crate::window_manager::ready_window_label(event.payload()) {
             menu::events::mark_window_ready(&app_handle, &label);
-            crate::file_open::record_ready_document_window(&app_handle, &label);
+            crate::files::open::record_ready_document_window(&app_handle, &label);
         }
     });
 
@@ -193,7 +193,7 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
             event: tauri::WindowEvent::Destroyed,
             ..
         } => {
-            crate::file_open::remove_document_window(app, &label);
+            crate::files::open::remove_document_window(app, &label);
             quit::handle_window_destroyed(app, &label);
             menu::events::clear_window_ready(&label);
             tab_transfer::clear_unclaimed_transfer(&label);
@@ -221,7 +221,7 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
             label,
             event: tauri::WindowEvent::Focused(focused),
             ..
-        } => crate::file_open::record_document_window_focus(
+        } => crate::files::open::record_document_window_focus(
             app,
             &label,
             focused,
@@ -231,9 +231,9 @@ pub(crate) fn handle_run_event(app: &tauri::AppHandle, event: tauri::RunEvent) {
         tauri::RunEvent::Reopen {
             has_visible_windows,
             ..
-        } => crate::file_open::handle_reopen(app, has_visible_windows),
+        } => crate::files::open::handle_reopen(app, has_visible_windows),
         #[cfg(target_os = "macos")]
-        tauri::RunEvent::Opened { urls } => crate::file_open::handle_finder_opened(app, urls),
+        tauri::RunEvent::Opened { urls } => crate::files::open::handle_finder_opened(app, urls),
         _ => {}
     }
 }

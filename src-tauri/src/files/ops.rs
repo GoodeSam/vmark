@@ -1,8 +1,8 @@
 //! # File Ops
 //!
-//! Purpose: Lightweight metadata commands used by the frontend before it commits
-//! to reading a file into a tab. Currently exposes `get_file_size_bytes`, the
-//! size-check step of the large-file open flow.
+//! Purpose: Lightweight per-file commands. `get_file_size_bytes` is the
+//! size-check step of the large-file open flow; `move_paths_to_trash` moves
+//! orphaned files to the system trash instead of unlinking them.
 //!
 //! Pipeline: Frontend invoke("get_file_size_bytes") → fs::metadata → len in bytes.
 //!

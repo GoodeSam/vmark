@@ -28,7 +28,7 @@ The four dangerous commands:
 |---|---|---|
 | `pty::pty_spawn` | none — arbitrary exe, args, env, cwd | The terminal spawns a **user-configured** shell (`spawnPty.ts:188` reads `settings.terminal.shell`). Any binary allowlist breaks custom shells |
 | `ai_provider::run_ai_prompt` | now basename-validated (WI-0B.2) | Fixed, because `cli_path`'s legitimate use is a custom *install location* for the same binary — the only one of the four with a natural allowlist |
-| `file_write::atomic_write_file` | rejects `..`, requires absolute, checks parent | Save paths come from the **native dialog** (`hooks/saveDialog.ts:14`); a user may legitimately save anywhere. A root allowlist breaks Save As |
+| `files::write::atomic_write_file` | rejects `..`, requires absolute, checks parent | Save paths come from the **native dialog** (`hooks/saveDialog.ts:14`); a user may legitimately save anywhere. A root allowlist breaks Save As |
 | `secure_store::get_secret` | flat keyspace | Re-namespacing per caller strands every key users already stored |
 
 Three of the four cannot be fixed by constraining *what* is requested. They can

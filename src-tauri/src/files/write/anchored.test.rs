@@ -1,6 +1,6 @@
 // WI-RA14B.3 — the held-folder save: every entry named relative to the open
 // folder, a link never written through, and a failed save leaving the old
-// content and no temp file behind. `file_write.test.rs` drives the guard that
+// content and no temp file behind. `files/write.test.rs` drives the guard that
 // sits on top; this file pins the folder primitives themselves.
 
 use super::{HeldDir, Stage};

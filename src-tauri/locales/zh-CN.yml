@@ -307,7 +307,7 @@ errors:
   workflow.restoreWhileRunning: "有工作流正在运行。请等待其完成或取消后再恢复文件。"
   workflow.restoreSuperseded: "此快照之后又运行了其他工作流，恢复它可能会撤销该运行的更改。未恢复任何内容。"
 
-  # === 保存路径（file_write.rs，WI-14 CommandError）===
+  # === 保存路径（files/write.rs，WI-14 CommandError）===
   save.parentMissing: "该文件所在的文件夹已不存在：%{dir}"
   save.noParentDirectory: "文件路径没有上级文件夹"
   save.symlinkLoop: "此文件的替身指向形成循环，因此找不到真正的文件"
