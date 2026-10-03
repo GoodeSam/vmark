@@ -75,7 +75,10 @@ fn a_session_stop_ends_a_blocked_write() {
 #[test]
 fn a_shell_that_reads_gets_all_of_a_long_input() {
     // `wc -c` reads every byte and reports the count once input ends.
-    let running = start_sh("echo ready; stty -icanon -echo; head -c 300000 | wc -c");
+    // `ready` is printed only after `stty`: written while the terminal is
+    // still canonical, a line longer than its input limit (MAX_CANON, about a
+    // kilobyte) is cut short, so the count never reaches 300000.
+    let running = start_sh("stty -icanon -echo; echo ready; head -c 300000 | wc -c");
     let data: Vec<u8> = b"0123456789abcdef"
         .iter()
         .copied()
