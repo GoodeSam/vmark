@@ -53,7 +53,7 @@ export const aiSuggestionExtension = Extension.create<AiSuggestionOptions>({
   },
 
   // Remap pending suggestion positions through every document change so
-  // decorations and accept always target the intended text (audit H8).
+  // decorations and accept always target the intended text.
   onTransaction({ transaction }) {
     if (!transaction.docChanged) return;
     const store = requireSuggestionStore(this.options.store).getState();

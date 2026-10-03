@@ -49,7 +49,7 @@ function parseLinkMarkdown(
 }
 
 /**
- * Stale-range guard (WI-1 / D1): the captured `[from, to)` is only safe to
+ * Stale-range guard (D1): the captured `[from, to)` is only safe to
  * mutate while it is in bounds and still holds link markdown. A concurrent
  * edit (MCP, AI suggestion, external reload) shifts or destroys the range —
  * dispatching the captured offsets blindly would rewrite unrelated text.
@@ -65,7 +65,7 @@ function getIntactLinkFromRange(
 }
 
 /**
- * The user's intent, read at ACTION time (audit 20260804-F2).
+ * The user's intent, read at ACTION time.
  *
  * The popup closes on the same click that starts a save/remove, and closing
  * RESETS the store (`href: ""`, `linkFrom: 0`, `linkTo: 0`). While the user is

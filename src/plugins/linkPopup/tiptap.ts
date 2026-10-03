@@ -71,7 +71,7 @@ function makeHandleClick(
             return false;
           }
           if (action.kind === "external") {
-            // Scheme-allowlisted opener (audit 20260612) — a hostile doc
+            // Scheme-allowlisted opener — a hostile doc
             // must not reach file:/javascript:/smb: via the OS opener.
             openExternalLink(href).catch(linkPopupError);
             event.preventDefault();

@@ -49,7 +49,7 @@
   gap: var(--space-half);
 }
 
-/* Zoom buttons are canonical `.vm-icon-btn--sm` (WI-UI2.3); the class name
+/* Zoom buttons are canonical `.vm-icon-btn--sm`; the class name
    stays in the DOM as the view's event-delegation hook. The residual below is
    glyph-only: these draw text (+ / −), not svgs. */
 .mermaid-preview-zoom-glyph {

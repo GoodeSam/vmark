@@ -8,7 +8,7 @@
  * derives for the toolbar, plus the per-context info shapes. Consumed by the
  * toolbar adapters' enable rules and the WYSIWYG context extractor. The
  * `ToolbarIntent` union that once lived here went with its only producer,
- * `resolveToolbarIntent` (feature-ledger plan, WI-FL3.12).
+ * `resolveToolbarIntent` (feature-ledger plan).
  */
 
 /**

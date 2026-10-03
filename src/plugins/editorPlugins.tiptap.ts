@@ -57,7 +57,7 @@ export function buildEditorKeymapBindings(): Record<string, Command> {
   // through the shared editor executor (runEditorAction) — the SAME path the menu
   // uses (IME queue, read-only re-validation, isActionExecutable gate). NOT
   // executeCommand: that applies the palette actionAvailability gate, which is
-  // stricter and would drop keyboard formatting the executor accepts (WI-4.2).
+  // stricter and would drop keyboard formatting the executor accepts.
   bindIfKey(
     bindings,
     hostShortcuts.getShortcut("bold"),

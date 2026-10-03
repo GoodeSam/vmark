@@ -66,7 +66,7 @@ export function getHeadingLevelFromParams(params?: Record<string, unknown>): Hea
   const level = params?.level;
   // Require a whole number 1–6: HeadingLevel is the discrete set {1,2,3,4,5,6};
   // a fractional value (e.g. 2.5) would be cast through and produce a malformed
-  // heading in the WYSIWYG/Source setters (audit-fix #4).
+  // heading in the WYSIWYG/Source setters.
   if (typeof level === "number" && Number.isInteger(level) && level >= 1 && level <= 6) {
     return level as HeadingLevel;
   }

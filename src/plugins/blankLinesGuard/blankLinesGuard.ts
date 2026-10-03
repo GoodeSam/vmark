@@ -5,7 +5,7 @@
  * being duplicated by edits. ProseMirror's split copies a node's attributes to
  * BOTH halves, so a paragraph carrying a captured run of N blank lines would
  * give the newly-created second paragraph N too — emitting N spurious blank
- * lines on the next serialize (plan ADR-5 / WI-1.5).
+ * lines on the next serialize (plan ADR-5).
  *
  * Rule: null `blankLinesBefore` on any block that this transaction newly
  * created — the second half of a split, or a fully-inserted (pasted) block —
