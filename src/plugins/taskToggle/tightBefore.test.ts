@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { TextSelection } from "@tiptap/pm/state";
-import { taskListItemExtension } from "../taskToggle/tiptap";
+import { taskListItemExtension } from "./tiptap";
 
 function editorWith(tightBefore: boolean) {
   return new Editor({
