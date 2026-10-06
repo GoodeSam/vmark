@@ -178,6 +178,9 @@ describe("buildBaseTerminalEnv", () => {
     const version = buildBaseTerminalEnv("/usr/bin", undefined).TERM_PROGRAM_VERSION;
     // Real WezTerm's shape: YYYYMMDD-HHMMSS-<commit>.
     expect(version).toMatch(/^\d{8}-\d{6}-[0-9a-f]{8}$/);
+    // The same read supports-hyperlinks' parseVersion makes: split on ".",
+    // then parseInt the first part. A WezTerm id has no dots, so that part is
+    // the whole id, and parseInt stops at the first dash — leaving YYYYMMDD.
     expect(parseInt(version.split(".")[0], 10)).toBeGreaterThanOrEqual(20200620);
   });
 
